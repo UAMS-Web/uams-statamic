@@ -184,6 +184,87 @@ it('runs the pest job checkout step, unchanged, in a manual-run-only job of ci.y
     }
 });
 
+/**
+ * The jobs of ci.yml that run the browser suite, each with the index of the step
+ * that runs it and the step that checks out the gate submodules, if any.
+ *
+ * @param  array<mixed>  $jobs  The workflow's `jobs` map.
+ * @return array<string, array{suite: int, checkout: int|null, step: array<mixed>|null}>
+ */
+$browserSuiteJobs = function (array $jobs): array {
+    $found = [];
+
+    foreach ($jobs as $id => $job) {
+        $steps = is_array($job) && is_array($job['steps'] ?? null) ? array_values($job['steps']) : [];
+        $suite = null;
+        $checkout = null;
+
+        foreach ($steps as $index => $step) {
+            $run = is_array($step) && is_string($step['run'] ?? null) ? $step['run'] : '';
+
+            if ($suite === null && preg_match('#vendor/bin/pest\s+tests/Browser\b#', $run) === 1) {
+                $suite = $index;
+            }
+
+            if ($checkout === null && str_contains($run, 'submodule update --init')) {
+                $checkout = $index;
+            }
+        }
+
+        if ($suite !== null) {
+            $checkoutStep = $checkout === null ? null : $steps[$checkout];
+
+            $found[(string) $id] = [
+                'suite' => $suite,
+                'checkout' => $checkout,
+                'step' => is_array($checkoutStep) ? $checkoutStep : null,
+            ];
+        }
+    }
+
+    return $found;
+};
+
+it('checks out the pest job checkout step, unchanged, before every browser suite run in ci.yml', function () use ($root, $browserSuiteJobs): void {
+    // #378. The browser job booted the application without content, users and
+    // resources/forms, so four Control Panel smokes failed on a runner while
+    // passing locally. Any job that runs tests/Browser carries the pest job's
+    // step, compared whole, and runs it before the suite.
+    $workflow = Yaml::parseFile($root.'/.github/workflows/ci.yml');
+    $jobs = is_array($workflow) && is_array($workflow['jobs'] ?? null) ? $workflow['jobs'] : [];
+    $pestSteps = is_array($jobs['pest'] ?? null) && is_array($jobs['pest']['steps'] ?? null) ? $jobs['pest']['steps'] : [];
+    $pestStep = array_values(array_filter(
+        $pestSteps,
+        fn (mixed $step): bool => is_array($step) && is_string($step['run'] ?? null) && str_contains($step['run'], 'submodule update --init')
+    ))[0] ?? null;
+
+    $found = $browserSuiteJobs($jobs);
+
+    // At least the browser job, so a renamed suite command cannot leave this
+    // with nothing to check.
+    expect($found)->toHaveKey('browser')
+        ->and($pestStep)->toBeArray();
+
+    foreach ($found as $id => $job) {
+        expect($job['checkout'])->not->toBeNull("Job {$id} runs tests/Browser without checking out content, users and resources/forms.")
+            ->and($job['checkout'])->toBeLessThan($job['suite'])
+            ->and($job['step'])->toBe($pestStep);
+    }
+});
+
+it('finds a browser suite run that lacks the checkout, or runs it too late', function () use ($browserSuiteJobs): void {
+    // The control for the case above: the shapes it must refuse.
+    $suite = ['run' => 'vendor/bin/pest tests/Browser'];
+    $checkout = ['run' => 'git submodule update --init --depth 1 content users resources/forms'];
+
+    expect($browserSuiteJobs(['browser' => ['steps' => [$suite]]]))
+        ->toBe(['browser' => ['suite' => 0, 'checkout' => null, 'step' => null]])
+        ->and($browserSuiteJobs(['browser' => ['steps' => [$suite, $checkout]]])['browser']['checkout'])->toBe(1)
+        ->and($browserSuiteJobs(['browser' => ['steps' => [$checkout, $suite]]])['browser'])
+        ->toBe(['suite' => 1, 'checkout' => 0, 'step' => $checkout])
+        ->and($browserSuiteJobs(['other' => ['steps' => [$checkout]]]))->toBe([]);
+});
+
 it('checks out content, users and resources/forms through GATE_SUBMODULES in scripts/local-ci.mjs', function () use ($root, $readFile): void {
     $script = $readFile($root.'/scripts/local-ci.mjs');
     $module = $readFile($root.'/scripts/gate-slot.mjs');
