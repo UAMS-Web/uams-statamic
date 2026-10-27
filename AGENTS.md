@@ -1,5 +1,7 @@
 # Agent instructions for uams-statamic
 
+**This is the live repository.** New work, issues and pull requests go here. The history before the snapshot of `UAMS-Web/uams-statamic-archive` at `fc1031537`, and the issues and pull requests filed until then, are in [`UAMS-Web/uams-statamic-archive`](https://github.com/UAMS-Web/uams-statamic-archive); a reference written `UAMS-Web/uams-statamic-archive#N` points there, and the open issues move here (UAMS-Web/uams-statamic-archive#2661, UAMS-Web/uams-statamic-archive#2659).
+
 This file is the single source of agent instructions for this repository (UAMS-Web/uams-statamic-archive#2539). Cursor and Claude Code both read it directly: the repository has no `CLAUDE.md` since UAMS-Web/uams-statamic-archive#2833, and Claude Code reads `AGENTS.md` itself when there is none. Edit instructions here, and do not add a `CLAUDE.md`.
 
 The Laravel Boost block below, between its opening and closing tags, is generated from `.ai/guidelines/`. Edit its source there, not the block. Never write that block's tag name literally anywhere else in this file: Boost finds the block by a pattern that spans from the first occurrence of the opening tag, so a mention above the block makes the next regeneration overwrite everything in between. `boost:update --ignore-skills` rewrites the block in place and leaves the rest of this file alone. Both of Boost's agents write this file (`config/boost.php` points Claude Code's `guidelines_path` here), so a regeneration never creates a `CLAUDE.md`.
