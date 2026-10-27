@@ -4,7 +4,7 @@
 	@desc The signed-in state in the site chrome — a log-in link, or the member's name and a way out.
 
 #}}
-{{# AC1 of #2113 asks for "a signed-in state in the site chrome — at minimum a way to log
+{{# AC1 of #206 asks for "a signed-in state in the site chrome — at minimum a way to log
 	out". This is that, and it is deliberately the smallest thing that satisfies it: this
 	partial renders on EVERY page, so anything richer here is blast radius for no benefit.
 
@@ -13,7 +13,7 @@
 	rendered for a guest — Statamic does not cache authenticated responses.
 
 	Log out uses `{{ member:logout_url }}` because Statamic owns that URL. The two
-	entry-backed targets are hardcoded because their final URLs are #2305's to choose —
+	entry-backed targets are hardcoded because their final URLs are #211's to choose —
 	`/login` against `/account/login` is an open decision on that ticket. They are kept
 	together here so that when it lands there are two hrefs to update in one file, rather
 	than the same guess scattered across templates.

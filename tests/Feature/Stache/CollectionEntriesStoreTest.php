@@ -20,7 +20,7 @@ uses(StacheIsolatedTestCase::class);
 /**
  * `App\Stache\CollectionEntriesStore` re-wraps the entries it builds from content files:
  * `knowledge_bases` rows become `KnowledgeBaseEntry` and `people` rows `PersonEntry`, with
- * the stock entry's state copied across (#2834 coverage batch 12).
+ * the stock entry's state copied across (#255 coverage batch 12).
  *
  * Each test builds an entry straight from YAML through the store, as the Stache does when it
  * indexes a file, on a throwaway Stache so the collections can be dated or not.

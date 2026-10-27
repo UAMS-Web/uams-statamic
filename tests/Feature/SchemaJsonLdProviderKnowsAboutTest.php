@@ -18,7 +18,7 @@ use Tests\TestCase;
  * emission is wired on the routable `people` `[Person]` node (`430ada55…`), NOT the
  * non-routable `clinical_providers` `IndividualPhysician` node — `people` natively
  * carries the UAMS-Web/uams-statamic-archive#1063 `implied_services`/`implied_conditions` transitive computeds and
- * is the identity #803 folds `clinical_providers` into.
+ * is the identity #47 folds `clinical_providers` into.
  *
  * The node emits `knowsAbout` over both implied sets: each implied `clinical_services`
  * entry resolves to its `MedicalProcedure` node and each `clinical_conditions` entry to

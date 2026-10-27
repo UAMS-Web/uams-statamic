@@ -14,7 +14,7 @@ use UAMSWeb\FormSettings\Jobs\SendFormNotification;
 /**
  * Proves the site's submission context hands the form settings add-on's notification
  * job the request context captured at submit time, and re-activates it for the send
- * (UAMS-Web/uams-statamic-archive#830, #3072).
+ * (UAMS-Web/uams-statamic-archive#830, #263).
  *
  * @command  php artisan test --compact tests/Feature/Support/Forms/FormRequestSubmissionContextTest.php
  */

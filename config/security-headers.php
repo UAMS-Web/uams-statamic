@@ -121,15 +121,15 @@ return [
     | and needs `'unsafe-eval'` for its Vue tooling. Nonce support for those
     | belongs upstream in `statamic/cms`, so this config does not special-case
     | the CP. While in Report-Only mode the CP's un-nonced inline assets simply
-    | surface as violation reports; flipping cp/* to enforce (#667) should be
+    | surface as violation reports; flipping cp/* to enforce (#33) should be
     | gated on upstream nonce support.
     |
     | Dropping `'unsafe-eval'` (UAMS-Web/uams-statamic-archive#1859) widens that same CP gap rather than
     | creating a new one: the CP now reports an `'unsafe-eval'` violation
     | alongside the inline ones it already reported. Nothing breaks while the
-    | policy is Report-Only, and #667 cannot flip cp/* to enforce until upstream
+    | policy is Report-Only, and #33 cannot flip cp/* to enforce until upstream
     | ships nonce support regardless. Whether cp/* then gets an `exclude_paths`
-    | entry or its own directive set is #667's call, not this config's.
+    | entry or its own directive set is #33's call, not this config's.
     */
 
     'csp' => [
@@ -188,7 +188,7 @@ return [
                 // `lwcw.js` from the UAMS calendar host. Surfaced by the UAMS-Web/uams-statamic-archive#1741
                 // inline-script audit — the host was never allow-listed, so it
                 // reports as a violation today and would break outright when
-                // #667 flips CSP to enforcing. The widget needs three
+                // #33 flips CSP to enforcing. The widget needs three
                 // directives, not one — see connect-src and style-src below.
                 'https://calendar.uams.edu',
 
@@ -251,7 +251,7 @@ return [
                 // widget with `format=html`, which takes jQuery's `dataType:
                 // 'html'` branch — a cross-origin XHR to
                 // `/live/widget/<id>` on this host, not JSONP. Without this the
-                // events feed itself is blocked at the #667 enforce flip, so the
+                // events feed itself is blocked at the #33 enforce flip, so the
                 // widget renders empty rather than merely unstyled.
                 'https://calendar.uams.edu',
             ],

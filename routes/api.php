@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 | Find-a-Doc read API (UAMS-Web/uams-statamic-archive#1043): a versioned, read-only analog of the WordPress
 | UAMSWP-Find-a-Doc `provider_meta` REST payload consumed by the shipped "UAMS
 | Health" native app. FindADocProviderRepository enforces the UAMS-Web/uams-statamic-archive#919 eligibility +
-| searchable gate, and the payload is an allow-list, so no `people` PII (#803) is
+| searchable gate, and the payload is an allow-list, so no `people` PII (#47) is
 | exposed. Backward compatibility is a hard requirement (uncontrolled consumer),
 | hence the explicit `/v1/` version segment.
 |

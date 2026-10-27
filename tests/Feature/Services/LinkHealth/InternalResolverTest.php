@@ -182,7 +182,7 @@ it('reports kinds outside this slice as not checked, rather than omitting them',
 ]);
 
 it('never reports an unchecked or redirected occurrence as broken', function (): void {
-    // `Redirected` resolves today; recommending a new target is #1767's job.
+    // `Redirected` resolves today; recommending a new target is #172's job.
     expect(irResolver()->resolve(irOccurrence('mailto:x@y.z', LinkKind::NonHttp))->isBroken())
         ->toBeFalse();
 });

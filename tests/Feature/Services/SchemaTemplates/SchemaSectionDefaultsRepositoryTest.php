@@ -13,7 +13,7 @@ uses(StacheIsolatedTestCase::class);
 /**
  * `SchemaSectionDefaultsRepository` reads and writes a collection's or taxonomy's own
  * Schema Templates defaults in its `inject` cascade, under
- * `schema_templates.section_defaults` (#2834 coverage batch 12).
+ * `schema_templates.section_defaults` (#255 coverage batch 12).
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaSectionDefaultsRepositoryTest.php
  */

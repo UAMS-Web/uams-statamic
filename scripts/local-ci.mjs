@@ -2452,7 +2452,7 @@ function main() {
             //      replays and reports a green suite having executed nothing. Pest
             //      5.0.1 does not warn about this.
             //   2. No persistent cache. Tia's graph lives at tests/.pest/tia/,
-            //      which #1992 pins via `pest()->tia()->directory()` instead of the
+            //      which #192 pins via `pest()->tia()->directory()` instead of the
             //      default ~/.pest/tia/<key>/. That default keys on the normalized
             //      remote URL with the folder name in front, and in a linked
             //      worktree `Storage::rawOriginUrl()` does `is_file()` on `.git` (a

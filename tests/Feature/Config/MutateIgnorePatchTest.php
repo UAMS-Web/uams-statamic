@@ -9,7 +9,7 @@ declare(strict_types=1);
  * closes is that `composer install` does not re-patch an already-installed package, so a
  * reused `vendor/` keeps the unpatched code while the install reports success.
  *
- * Retire this with the patch, per #2330.
+ * Retire this with the patch, per #212.
  *
  * @command  php artisan test --compact tests/Feature/Config/MutateIgnorePatchTest.php
  */

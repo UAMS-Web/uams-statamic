@@ -119,7 +119,7 @@ it('restricts the five containers closed by 1739 to their intended types', funct
     expect(collect($rules)->contains(fn (string $rule): bool => str_starts_with($rule, 'max:')))
         ->toBeTrue("container [{$handle}] declares no max: size cap");
 })->with([
-    // `logos` is 64/64 SVG and #832's work order is entirely SVG.
+    // `logos` is 64/64 SVG and #49's work order is entirely SVG.
     'logos' => ['logos', 'svg'],
     // Matches the MIME list `logo_list_item.yaml` declares.
     'logos_unrestricted' => ['logos_unrestricted', 'svg,png'],

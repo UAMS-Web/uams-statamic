@@ -108,7 +108,7 @@ const ALLOWLIST = [
     // side would only break the assertion. The test compares two strings and
     // touches no file, so Rule B's race on a shared path cannot happen here.
     // Retire this row when ContentRoot::path() or this test reads or writes the
-    // filesystem, or when the mirror path becomes per-worker (#2834, UAMS-Web/uams-statamic-archive#2919).
+    // filesystem, or when the mirror path becomes per-worker (#255, UAMS-Web/uams-statamic-archive#2919).
     'tests/Unit/Support/ContentRootTest.php' => [
         'rules' => ['B'],
         'reason' => 'Asserts the fixed testing mirror path as a string; no filesystem access.',

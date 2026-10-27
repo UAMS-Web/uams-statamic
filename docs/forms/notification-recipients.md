@@ -52,7 +52,7 @@ An unset or empty per-site variable fails the submit as described below for any 
 
 ## Where an edit is written
 
-Statamic's Git Automation tracks `resource_path('forms')` in [`config/statamic/git.php`](../../config/statamic/git.php) and commits each tracked path to the repository it sits in, so a form edit is committed to `uams-statamic-forms`, not to this repository. When production commits and pushes is [#2815](https://github.com/UAMS-Web/uams-statamic-archive/issues/2815).
+Statamic's Git Automation tracks `resource_path('forms')` in [`config/statamic/git.php`](../../config/statamic/git.php) and commits each tracked path to the repository it sits in, so a form edit is committed to `uams-statamic-forms`, not to this repository. When production commits and pushes is [#253](https://github.com/UAMS-Web/uams-statamic-archive/issues/2815).
 
 The field definitions in `resources/blueprints/forms/` stay in this repository: the same split as collection blueprints here and their entries in the `content` submodule.
 

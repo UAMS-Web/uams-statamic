@@ -7,7 +7,7 @@ if (! function_exists('runningUnderMutate')) {
      * Whether this process was started with Pest's `--mutate` flag.
      *
      * Several mutation-hardened suites pad the plugin's per-mutant child timeout by
-     * sleeping once in their first test when this is true (#2834). Each copy read
+     * sleeping once in their first test when this is true (#255). Each copy read
      * `implode(' ', $_SERVER['argv'] ?? [])` directly, and `$_SERVER['argv']` is
      * `mixed` to PHPStan, so every copy failed the `phpstan` job. Reading it here
      * keeps the copies identical in behavior: any argument containing `--mutate`

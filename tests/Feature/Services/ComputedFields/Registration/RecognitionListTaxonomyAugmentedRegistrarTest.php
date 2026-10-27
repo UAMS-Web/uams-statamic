@@ -14,7 +14,7 @@ uses(StacheIsolatedTestCase::class);
 /**
  * `RecognitionListTaxonomyAugmentedRegistrar` hooks term augmentation so a
  * `recognition_lists_series` term augments through `AugmentedRecognitionListsSeriesTerm`,
- * and every other taxonomy's terms keep Statamic's own (#2834 coverage batch 12).
+ * and every other taxonomy's terms keep Statamic's own (#255 coverage batch 12).
  *
  * The registrar runs when the app boots, so these tests augment real terms on a throwaway
  * Stache.

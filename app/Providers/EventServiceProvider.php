@@ -223,7 +223,7 @@ class EventServiceProvider extends BaseServiceProvider
         // Refuse a submission its choice limits reject, then capture the
         // submitter's request context for the form emails. The form-level
         // restrictions gate is the form settings add-on's, which registers it
-        // itself, so it runs after these (#3072)
+        // itself, so it runs after these (#263)
         FormSubmitted::class => [
             EnforceChoiceSubmissionLimits::class,
             CaptureFormRequestContext::class,

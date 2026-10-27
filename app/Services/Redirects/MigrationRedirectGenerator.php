@@ -318,7 +318,7 @@ class MigrationRedirectGenerator
     /**
      * Plan a `301` from each dropped duplicate's WordPress path to its canonical entry (UAMS-Web/uams-statamic-archive#2943).
      *
-     * The WXR cleaner drops all but one post of each duplicate set before import (#798) and
+     * The WXR cleaner drops all but one post of each duplicate set before import (#46) and
      * writes a pair per dropped post: its WordPress URL, and the kept post's. A dropped post is
      * never imported, so {@see planEntryRedirects()} never sees it, and only this app can name
      * the kept post's Statamic URL, through the entry whose `original_wordpress_url` is the

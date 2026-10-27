@@ -9,7 +9,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * UAMS-Web/uams-statamic-archive#1618 — Hold Dart Sass below 3.0 until #623 migrates `resources/scss/` off `@import`.
+ * UAMS-Web/uams-statamic-archive#1618 — Hold Dart Sass below 3.0 until #30 migrates `resources/scss/` off `@import`.
  *
  * Dart Sass 3.0 removes the `@import` rule that `resources/scss/` still relies on
  * (deprecation-warned but still compiling on the 1.x line), so a `sass` bump to
@@ -19,7 +19,7 @@ uses(TestCase::class);
  * major.
  *
  * Retire this test AND the Step 5 "Held back — `sass` below 3.0" note in
- * `.claude/skills/update-dependencies-ticket/SKILL.md` when #623 lands and the
+ * `.claude/skills/update-dependencies-ticket/SKILL.md` when #30 lands and the
  * `@import` usage is gone — the two artifacts must be removed together.
  *
  * No mutable App\ PHP surface under test: this asserts package-manifest constraints
@@ -29,7 +29,7 @@ uses(TestCase::class);
 // Both guards judge "does this reach Dart Sass 3.0?" with one mechanism — interval
 // intersection with `>=3.0.0` — so they agree on every version, prereleases included
 // (`3.0.0-rc.1` intersects `>=3.0.0`; `version_compare` would wrongly rank it below).
-it('never lets the package.json sass range reach Dart Sass 3.0 (which removes @import; see #623)', function (): void {
+it('never lets the package.json sass range reach Dart Sass 3.0 (which removes @import; see #30)', function (): void {
     /** @var array{devDependencies?: array<string, string>, dependencies?: array<string, string>} $manifest */
     $manifest = json_decode((string) file_get_contents(base_path('package.json')), true, flags: JSON_THROW_ON_ERROR);
 
@@ -44,7 +44,7 @@ it('never lets the package.json sass range reach Dart Sass 3.0 (which removes @i
     } catch (UnexpectedValueException $e) {
         // An unparseable range can't be proven safe — surface it for a human rather than passing silently.
         throw new RuntimeException(
-            sprintf('Could not parse the package.json `sass` range "%s" — review it by hand; it must stay below Dart Sass 3.0 until #623 migrates off `@import`.', $range),
+            sprintf('Could not parse the package.json `sass` range "%s" — review it by hand; it must stay below Dart Sass 3.0 until #30 migrates off `@import`.', $range),
             previous: $e,
         );
     }
@@ -52,7 +52,7 @@ it('never lets the package.json sass range reach Dart Sass 3.0 (which removes @i
     // `haveIntersections` is exact where fixed-version probes fail: it catches narrow
     // windows (`~3.1.0`, an exact `3.2.5`) and compound ranges (`^2 || ^3`, `*`) too.
     expect(Intervals::haveIntersections($declared, $parser->parseConstraints('>=3.0.0')))->toBeFalse(
-        sprintf('package.json pins `sass` to "%s", which permits Dart Sass 3.0+. 3.0 removes the `@import` rule still used across `resources/scss/`, so `npm run build` would hard-fail. Hold `sass` below 3.0 until #623 migrates to `@use`/`@forward`.', $range),
+        sprintf('package.json pins `sass` to "%s", which permits Dart Sass 3.0+. 3.0 removes the `@import` rule still used across `resources/scss/`, so `npm run build` would hard-fail. Hold `sass` below 3.0 until #30 migrates to `@use`/`@forward`.', $range),
     );
 });
 
@@ -68,6 +68,6 @@ it('never lets the resolved package-lock sass version reach Dart Sass 3.0', func
     $parser = new VersionParser;
 
     expect(Intervals::haveIntersections($parser->parseConstraints($resolved), $parser->parseConstraints('>=3.0.0')))->toBeFalse(
-        sprintf('package-lock.json resolves `sass` to %s, at or above Dart Sass 3.0, which removes the `@import` rule still used across `resources/scss/`. Hold `sass` below 3.0 until #623.', $resolved),
+        sprintf('package-lock.json resolves `sass` to %s, at or above Dart Sass 3.0, which removes the `@import` rule still used across `resources/scss/`. Hold `sass` below 3.0 until #30.', $resolved),
     );
 });

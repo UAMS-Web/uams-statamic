@@ -15,7 +15,7 @@ use Statamic\Facades\Entry as EntryFacade;
  * "UAMS Health" app consumes.
  *
  * The payload is an explicit **allow-list**: it names every emitted field and
- * never spreads the entry, so `people` PII (#803) — identifiers (`npi`,
+ * never spreads the entry, so `people` PII (#47) — identifiers (`npi`,
  * `epic_ser_id`, `uams_workday_id`), contact (`email`, `telephone`, `fax`),
  * HR/separation internals, `gender`, hometown/death fields — cannot leak by
  * construction. Display values reuse the same computed name / clinical-title

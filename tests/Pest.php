@@ -28,7 +28,7 @@ use Tests\TestCase;
 |
 */
 
-// Pin Tia's impact-graph cache to a path inside this checkout (#1992).
+// Pin Tia's impact-graph cache to a path inside this checkout (#192).
 //
 // By default Pest stores it at `~/.pest/tia/<folder-slug>-<origin-hash>/`, where the
 // hash is derived from the git remote. Two checkouts of this repo therefore share one
@@ -144,5 +144,5 @@ require_once __DIR__.'/Support/StringPositions.php';
 require_once __DIR__.'/Support/TypeNarrowing.php';
 
 // Shared runningUnderMutate() helper: the typed `--mutate` check the mutation-hardened
-// suites use to pad a mutant child's timeout (#2834).
+// suites use to pad a mutant child's timeout (#255).
 require_once __DIR__.'/Support/MutateRun.php';

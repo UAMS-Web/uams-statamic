@@ -6,7 +6,7 @@ how the request context that some custom merge tags depend on survives the path.
 > Settles issues [#706](https://github.com/UAMS-Web/uams-statamic-archive/issues/706) (document + guard)
 > and [#830](https://github.com/UAMS-Web/uams-statamic-archive/issues/830) (async-safe request context).
 > Companion to the tag audit in [#199](https://github.com/UAMS-Web/uams-statamic-archive/issues/199) and the
-> form-email epic [#15](https://github.com/UAMS-Web/uams-statamic-archive/issues/15).
+> form-email epic [#3](https://github.com/UAMS-Web/uams-statamic-archive/issues/15).
 
 ## Rendering mode: synchronous (today)
 
@@ -151,7 +151,7 @@ values. Three pieces cooperate:
    [`SendFormNotification::__construct()`](../../vendor/uams-web/statamic-form-settings/src/Jobs/SendFormNotification.php) runs in the
    live submit request (before the job is serialized) and asks the bound `SubmissionContext` for the
    captured context. The site binds
-   [`FormRequestSubmissionContext`](../../app/Support/Forms/FormRequestSubmissionContext.php) (#3072),
+   [`FormRequestSubmissionContext`](../../app/Support/Forms/FormRequestSubmissionContext.php) (#263),
    which reads the submission's stashed context with `FormRequestContext::peek()`, so every notification job of the submission gets it (the map holds only the latest submission); the job stores it as a plain array in a public `$requestContext`
    property that serializes cleanly onto the queued job. This sidesteps the
    [`Submission::toArray()`](../../vendor/statamic/cms/src/Forms/Submission.php) limitation — that it

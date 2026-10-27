@@ -22,7 +22,7 @@ uses(StacheIsolatedTestCase::class);
 
 /**
  * `LocalizeEntryController` creating a localization, and reporting a failure to create one
- * (#2834 coverage batch 17). `LocalizeEntryControllerTest` covers the site validation
+ * (#255 coverage batch 17). `LocalizeEntryControllerTest` covers the site validation
  * against real content; these tests save a localization, so they run on a throwaway Stache.
  *
  * The acting user is never saved, so nothing is written to the `users` submodule.

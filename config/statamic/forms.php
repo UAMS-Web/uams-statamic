@@ -50,7 +50,7 @@ return [
     |
     | The class name of the job that will be used to send an email.
     |
-    | Overridden with the form settings add-on's job (#3072), which honors the
+    | Overridden with the form settings add-on's job (#263), which honors the
     | email config's `from_name` field in the `From:` header (UAMS-Web/uams-statamic-archive#213), routes
     | recipients and gates conditional notifications. With the add-on's
     | `notifications` switch off, that job sends the way Statamic's own does.

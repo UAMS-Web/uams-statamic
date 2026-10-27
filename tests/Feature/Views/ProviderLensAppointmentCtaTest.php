@@ -257,7 +257,7 @@ it('branch 8 — no location, not accepting: the main line regardless of the tog
 it('branch 9 — the catch-all drops the referral sentence for a referral-required, not-accepting provider', function (): void {
     // WordPress's final `else` claims one combination in its comment but absorbs
     // every one the eight explicit conditions miss — including this. Reproduced
-    // deliberately: #1228 owns any revision to the copy, and a port that "fixed" it
+    // deliberately: #89 owns any revision to the copy, and a port that "fixed" it
     // here would diverge silently.
     $html = renderAppointmentCta(appointmentContext([
         'referral_required' => true,
@@ -485,7 +485,7 @@ it('offers the main line rather than a dead locations anchor for a referral-requ
         ->and($html)->not->toContain('contacting the clinic')
         ->and($html)->toContain('by calling the UAMS Health appointment line at')
         // The copy still drops the referral sentence, exactly as the catch-all does —
-        // only the dead link changed. #1228 owns any revision to the copy itself.
+        // only the dead link changed. #89 owns any revision to the copy itself.
         ->and($html)->not->toContain('by referral only');
 });
 

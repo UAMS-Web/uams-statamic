@@ -15,7 +15,7 @@ use Statamic\Entries\Entry;
  * that supply them: the entry class a collection's rows are built as, a sitemap inclusion rule, a
  * document title, and taking part in scheduled publishing. The `people` collection registers all four
  * through {@see App\Providers\PeopleCollectionServiceProvider}, so its code can move into
- * `uams-web/statamic-people` (#3181) and register the same behavior from there.
+ * `uams-web/statamic-people` (#281) and register the same behavior from there.
  *
  * Registration happens while providers register, before any provider boots, so every consumer reads
  * a complete set: the computed field registrars in `ComputedPropertiesProvider::boot()`, the Stache

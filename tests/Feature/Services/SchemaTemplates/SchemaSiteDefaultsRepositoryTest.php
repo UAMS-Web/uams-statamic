@@ -12,7 +12,7 @@ uses(TestCase::class);
 
 /**
  * `SchemaSiteDefaultsRepository` reads and writes each site's Schema Templates defaults in
- * `resources/addons/schema-templates.yaml` (#2834 coverage batch 12).
+ * `resources/addons/schema-templates.yaml` (#255 coverage batch 12).
  *
  * The repository writes under `base_path()`, so every test points the base path at a
  * directory of its own and the repository's real file is never read or written.

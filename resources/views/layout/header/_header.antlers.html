@@ -17,7 +17,7 @@
 	{{ unless ( $hide_resource_nav && $hide_primary_nav ) }}
 		{{ partial:layout/header/navbar/resource-nav :hide_primary_nav="$hide_primary_nav" :hide_resource_nav="$hide_resource_nav" }}
 	{{ /unless }}
-	{{# The signed-in state and the way out (#2113 AC1). Rendered outside the
+	{{# The signed-in state and the way out (#206 AC1). Rendered outside the
 		`$hide_primary_nav` guards deliberately: a marketing-landing entry hides its
 		navigation, and a member who lands on one must still be able to log out. #}}
 	{{ partial:layout/header/account }}

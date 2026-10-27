@@ -12,7 +12,7 @@ uses(TestCase::class);
 
 /**
  * The `scope-alias-cache` command: clear, warm or refresh the EntriesBySchemaType alias list
- * (#2834 coverage batch 12).
+ * (#255 coverage batch 12).
  *
  * Every test switches to the array store first, so clearing or warming the list never
  * touches the file cache that other test processes share.

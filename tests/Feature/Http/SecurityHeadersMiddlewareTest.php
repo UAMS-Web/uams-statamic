@@ -209,7 +209,7 @@ it('allow-lists every external script host the views load', function (): void {
     // ---
     // Every host resources/views/** loads a <script src> from. The UAMS-Web/uams-statamic-archive#1741
     // audit found calendar.uams.edu missing, which reports as a violation
-    // today and breaks the LiveWhale calendar when #667 flips CSP to
+    // today and breaks the LiveWhale calendar when #33 flips CSP to
     // enforcing. radiomd.com serves the Health Talk podcast embed on
     // clinical provider profiles (UAMS-Web/uams-statamic-archive#1683).
     // ---
@@ -230,7 +230,7 @@ it('allow-lists the livewhale widget on every directive it actually uses', funct
     // appends a <link rel="stylesheet"> from the same host (style-src), and
     // because both templates request `format=html` it fetches the events
     // feed over a cross-origin XHR rather than JSONP (connect-src). Miss
-    // either and the #667 enforce flip leaves the widget empty or unstyled,
+    // either and the #33 enforce flip leaves the widget empty or unstyled,
     // which is precisely what allow-listing only script-src would have done.
     // ---
     // Collect the directives that fail to allow-list the widget's host

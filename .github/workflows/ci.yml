@@ -106,7 +106,7 @@ concurrency:
 # two tests deleted by UAMS-Web/uams-statamic-archive#1847 ran and passed in a reusing run that was validating
 # their absence. No counterpart here because every CI run is a fresh checkout, which
 # cannot carry residue from a previous one. See UAMS-Web/uams-statamic-archive#1889.
-# REMOTE-ONLY (no job in local-ci.mjs until #2837): `synced-files` runs the shared
+# REMOTE-ONLY (no job in local-ci.mjs until #256): `synced-files` runs the shared
 # check that a synced rule or skill was not edited by hand. It sits outside the chain:
 # nothing `needs:` it and it `needs:` nothing. See UAMS-Web/uams-statamic-archive#3084.
 # REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
@@ -182,7 +182,7 @@ jobs:
     # it cannot skip or hold up a gate job, and it reports beside them.
     #
     # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
-    # own synced-files job arrives with the shared runner in #2837. Until then
+    # own synced-files job arrives with the shared runner in #256. Until then
     # run `node .claude/skills/synced-files/scripts/check-synced-files.mjs` by
     # hand before a pull request that touches .claude/, .agents/ or .cursor/.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -346,7 +346,7 @@ jobs:
       #      With no driver it records zero edges, and a graph with no edges marks
       #      nothing affected -- so every run replays and reports a green suite
       #      having executed nothing. Pest 5.0.1 does not warn about this.
-      #   2. No persistent cache. Tia's graph lives at tests/.pest/tia/, which #1992
+      #   2. No persistent cache. Tia's graph lives at tests/.pest/tia/, which #192
       #      pins via `pest()->tia()->directory()` instead of the default
       #      ~/.pest/tia/<key>/. Either way every Actions job is a fresh checkout on
       #      a fresh runner, so the graph never survives; Tia here would need the

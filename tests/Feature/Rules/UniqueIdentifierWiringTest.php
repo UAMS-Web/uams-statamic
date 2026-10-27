@@ -24,7 +24,7 @@ use Tests\TestCase;
  *     the rule is wired per blueprint field rather than in the fieldset -- an
  *     easy and invisible thing to get wrong later.
  *   - `clinical_providers` must stay unwired. It holds no entries, is unrouted,
- *     and #803 retires it into `people`.
+ *     and #47 retires it into `people`.
  *
  * @command  php artisan test --compact tests/Feature/Rules/UniqueIdentifierWiringTest.php
  */

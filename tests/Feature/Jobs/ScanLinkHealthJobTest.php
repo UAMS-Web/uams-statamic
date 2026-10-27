@@ -11,7 +11,7 @@ uses(TestCase::class);
 
 /**
  * The scheduled link-health scan job: it runs the scan command and logs a non-zero exit
- * instead of failing the job (#2834 coverage batch 12).
+ * instead of failing the job (#255 coverage batch 12).
  *
  * @command  php artisan test --compact tests/Feature/Jobs/ScanLinkHealthJobTest.php
  */

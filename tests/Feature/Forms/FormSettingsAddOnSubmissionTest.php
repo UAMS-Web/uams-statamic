@@ -20,7 +20,7 @@ use function Pest\Laravel\withServerVariables;
 
 /**
  * Proves the form settings behaviors this site relies on still hold now that they
- * come from the `uams-web/statamic-form-settings` add-on (#3072).
+ * come from the `uams-web/statamic-form-settings` add-on (#263).
  *
  * Each test submits a real form over HTTP on the sync queue connection, so the
  * add-on's notification job, confirmation middleware and restriction listener all

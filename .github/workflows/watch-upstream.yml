@@ -14,7 +14,7 @@ name: Watch upstream fixes
 # A row earns its place only if a terminal signal would make us DO something. UAMS-Web/uams-statamic-archive#1979 and UAMS-Web/uams-statamic-archive#1982 track
 # two upstream threads filed 2026-08-12 (`statamic/ideas`#1479 and `statamic/cms`#15173) and were
 # deliberately left unwatched on exactly that test: whichever way either resolves, nothing here
-# changes until #1931's own trigger fires, and that ticket re-measures the bundle when it does. Note
+# changes until #189's own trigger fires, and that ticket re-measures the bundle when it does. Note
 # also that GitHub already notifies the participant on maintainer replies, so a watch adds nothing
 # for a thread we filed ourselves — it only covers the terminal signal.
 #

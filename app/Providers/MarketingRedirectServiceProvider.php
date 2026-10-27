@@ -22,7 +22,7 @@ use Statamic\Statamic;
  * queue (labelled with its pending-request count) for approvers.
  *
  * The utility writes to the shared `redirects` global (served on every site via
- * the UAMS-Web/uams-statamic-archive#1110 read-time merge) and is the safe, staff-only increment the #1105
+ * the UAMS-Web/uams-statamic-archive#1110 read-time merge) and is the safe, staff-only increment the #56
  * trust-boundary decision settled on — no public creation path, and a created
  * redirect stays pending until an approver promotes it.
  */

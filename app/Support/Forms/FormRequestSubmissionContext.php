@@ -15,7 +15,7 @@ use UAMSWeb\FormSettings\Contracts\SubmissionContext;
  * when it is built, in the live submit request, and again when a queue worker
  * sends the email. Binding this class hands it the context the site's
  * FormSubmitted listener captured, so the four request-context merge tags
- * render the submitter's values on a real queue (UAMS-Web/uams-statamic-archive#830, #3072).
+ * render the submitter's values on a real queue (UAMS-Web/uams-statamic-archive#830, #263).
  */
 final class FormRequestSubmissionContext implements SubmissionContext
 {

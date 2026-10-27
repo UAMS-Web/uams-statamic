@@ -28,7 +28,7 @@ use Statamic\Http\Controllers\CP\CpController;
  * gated by the `create marketing redirects` permission; review is gated by the
  * separate `approve marketing redirects` permission, and a creator may never
  * review their own request. There is no public creation path in this slice (the
- * #1105 trust-boundary decision).
+ * #56 trust-boundary decision).
  */
 class MarketingRedirectController extends CpController
 {

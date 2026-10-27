@@ -24,7 +24,7 @@ use function Pest\Laravel\withoutVite;
 /**
  * Proves the Control Panel form settings screen, now served by the
  * `uams-web/statamic-form-settings` add-on, saves each setting and shows it again
- * when the form is reopened (#3072).
+ * when the form is reopened (#263).
  *
  * One setting is taken from each area the add-on adds: notifications, the
  * confirmation, and restrictions. The test goes through the real Control Panel

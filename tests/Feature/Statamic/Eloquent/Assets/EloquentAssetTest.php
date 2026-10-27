@@ -15,7 +15,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 /**
  * The app's Eloquent asset adds a bitrate to the metadata it generates for audio and video,
- * and reads it back (#2834 coverage batch 12).
+ * and reads it back (#255 coverage batch 12).
  *
  * Each test puts its file on a local disk rooted in a directory of its own, so the parent's
  * metadata pass reads a real file. Statamic's own attribute pass is stubbed, so the only

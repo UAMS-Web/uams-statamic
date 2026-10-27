@@ -133,7 +133,7 @@ abstract class BaseDateComparisonRule implements Rule
             // above already rejected anything that cannot parse, and appending ' UTC'
             // has not been found to change whether such a string parses (400,000 sampled
             // strings across four timezones, none). So these mutants cannot be told
-            // apart; this is a sampled bound, not a proof (#2834). Each value has its
+            // apart; this is a sampled bound, not a proof (#255). Each value has its
             // own guard so each annotation reaches exactly one mutant.
             if (
                 // @pest-mutate-ignore: FalseToTrue
