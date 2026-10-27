@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { subfieldId } from './subfieldId.js';
 
-describe('subfieldId (publish container in subfield ids, #3363)', () => {
+describe('subfieldId (publish container in subfield ids, #327)', () => {
     it('builds on the id Statamic gives the fieldtype', () => {
         expect(subfieldId('field_base_address', 'address', 'zip_code')).toBe('field_base_address__zip_code');
     });

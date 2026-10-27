@@ -174,7 +174,7 @@ export default {
 			instance.update(updated);
 		}
 
-		// `id` is Statamic's id for this field, carrying the publish container (#3363).
+		// `id` is Statamic's id for this field, carrying the publish container (#327).
 		function subfieldId(subfieldHandle) {
 			return buildSubfieldId(props.id, props.handle, subfieldHandle);
 		}

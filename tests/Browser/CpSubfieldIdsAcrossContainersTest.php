@@ -12,7 +12,7 @@ use Statamic\Facades\Collection;
 use Statamic\Facades\Stache;
 
 /*
- * #3363: the element ids of first-party fieldtypes carry the publish
+ * #327: the element ids of first-party fieldtypes carry the publish
  * container, as Statamic's own field ids do. The entry editor is one container
  * and the inline-create stack of an `entries` field is another, so one
  * blueprint renders the `address` fieldtype twice at once.

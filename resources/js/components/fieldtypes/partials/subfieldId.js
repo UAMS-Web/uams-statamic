@@ -4,7 +4,7 @@
  * `fieldId` is the id Statamic gives the fieldtype (its `id` prop), which
  * carries the publish container and the field's full path, for example
  * `field_base_address`. Building on it gives two containers rendering the same
- * fieldtype different ids (#3363). Without a `fieldId`, as when the component
+ * fieldtype different ids (#327). Without a `fieldId`, as when the component
  * renders outside a publish form, the parent handle stands in for it.
  *
  * The subfield handle follows a double underscore. Statamic's handles cannot

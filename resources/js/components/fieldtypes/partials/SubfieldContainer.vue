@@ -64,7 +64,7 @@ const props = defineProps({
 	customClass: { type: String, default: '' },
 	fieldtypeHandle: { type: String, required: true },
 	parentHandle: { type: String, required: true },
-	// The fieldtype's id from Statamic, which carries the publish container (#3363).
+	// The fieldtype's id from Statamic, which carries the publish container (#327).
 	fieldId: { type: String, default: '' },
 });
 
