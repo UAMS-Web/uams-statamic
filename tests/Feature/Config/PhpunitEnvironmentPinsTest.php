@@ -25,6 +25,11 @@ use Tests\TestCase;
  * every pinned name for a reader, so a renamed variable cannot leave a dead pin
  * behind again.
  *
+ * A grandchild the child spawns with the inherited environment reads each pin
+ * too, because that is what a test's own child process sees. A pin written as
+ * `false` reaches it as an empty string, and on Windows not at all when the
+ * shell exported the name, so no pin is written as `false` (UAMS-Web/uams-statamic-archive#3303).
+ *
  * @command  php artisan test --compact tests/Feature/Config/PhpunitEnvironmentPinsTest.php
  */
 uses(TestCase::class);
@@ -65,14 +70,15 @@ function phpunitPins(string $phpunitXml): array
 /**
  * Boot the application's environment and configuration in a child process
  * after applying a PHPUnit configuration's `<php>` section, and report what
- * each named variable and a few pinned configuration values resolve to.
+ * each named variable and a few pinned configuration values resolve to, and
+ * what a grandchild process inheriting the child's environment reads for each.
  *
  * @param  string  $phpunitXml  Absolute path of the PHPUnit configuration to apply.
  * @param  array<string, string|false>  $environment  Variables to export to the child,
  *                                                    `false` to remove one.
  * @param  list<string>  $names  Variables to report.
- * @return array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>}
- *                                                                                                      The raw value Laravel's environment repository returns and `getenv()` for each name, and the configuration values.
+ * @return array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>, grandchild: array<string, mixed>}
+ *                                                                                                                                        The raw value Laravel's environment repository returns and `getenv()` for each name, the configuration values, and `getenv()` in a grandchild for each name.
  */
 function environmentSeenByChild(string $phpunitXml, array $environment, array $names): array
 {
@@ -92,9 +98,13 @@ function environmentSeenByChild(string $phpunitXml, array $environment, array $n
             $seen['env'][$name] = Illuminate\Support\Env::getRepository()->get($name);
             $seen['getenv'][$name] = getenv($name);
         }
-        foreach (['cache.default', 'database.default', 'database.connections.sqlite.database', 'mail.default', 'queue.default', 'session.driver'] as $key) {
+        foreach (['cache.default', 'database.default', 'database.connections.sqlite.database', 'mail.default', 'queue.default', 'session.driver', 'statamic.stache.lock.enabled', 'link_health.on_publish.enabled', 'maps.census.enabled'] as $key) {
             $seen['config'][$key] = $app['config']->get($key);
         }
+        $grandchild = proc_open([PHP_BINARY, '-r', 'echo json_encode(array_map("getenv", json_decode($argv[1], true)));', '--', $argv[3]], [1 => ['pipe', 'w']], $pipes);
+        $seen['grandchild'] = array_combine(json_decode($argv[3], true), json_decode(stream_get_contents($pipes[1]), true));
+        fclose($pipes[1]);
+        proc_close($grandchild);
         echo json_encode($seen);
         PHP;
 
@@ -104,7 +114,7 @@ function environmentSeenByChild(string $phpunitXml, array $environment, array $n
     $process = new Process([PHP_BINARY, '-d', 'display_errors=stderr', '-r', $script, '--', base_path(), $phpunitXml, json_encode($names, JSON_THROW_ON_ERROR)], base_path(), $environment);
     $process->mustRun();
 
-    /** @var array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>} */
+    /** @var array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>, grandchild: array<string, mixed>} */
     return json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
 }
 
@@ -117,7 +127,7 @@ function environmentSeenByChild(string $phpunitXml, array $environment, array $n
  * @param  string  $to  Its replacement.
  * @param  array<string, string|false>  $environment  Variables to export to the child.
  * @param  list<string>  $names  Variables to report.
- * @return array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>}
+ * @return array{env: array<string, mixed>, getenv: array<string, mixed>, config: array<string, mixed>, grandchild: array<string, mixed>}
  */
 function environmentSeenByChildWithout(string $from, string $to, array $environment, array $names): array
 {
@@ -136,32 +146,16 @@ function environmentSeenByChildWithout(string $from, string $to, array $environm
 
 /**
  * The text a pin leaves in the process environment, which `getenv()` reads and
- * a spawned child inherits. PHPUnit's loader turns `true` and `false` into
- * booleans before writing them with `putenv()`, so they arrive as `1` and an
- * empty string. Laravel reads the server entry first, so `env()` still sees the
- * boolean.
- *
- * On Windows, `putenv('NAME=')` over a variable the process inherited removes it,
- * so a pin written as an empty string over an exported value reads back as
- * `false` there. Over a variable that was never set it still reads `''` (UAMS-Web/uams-statamic-archive#3295).
+ * a spawned child inherits. PHPUnit's loader turns `true` into a boolean before
+ * writing it with `putenv()`, so it arrives as `1`. Laravel reads the server
+ * entry first, so `env()` still sees the boolean. No pin is written as `false`;
+ * the case below says why.
  *
  * @param  string  $value  The pin's value as `phpunit.xml` writes it.
- * @param  bool  $exported  Whether the shell exported the variable before the pin applied.
  */
-function pinAsWrittenToTheProcessEnvironment(string $value, bool $exported = false): string|false
+function pinAsWrittenToTheProcessEnvironment(string $value): string
 {
-    $written = match (strtolower($value)) {
-        'true' => '1',
-        'false' => '',
-        default => $value,
-    };
-
-    // Windows removes an inherited variable that is rewritten empty
-    if ($written === '' && $exported && PHP_OS_FAMILY === 'Windows') {
-        return false;
-    }
-
-    return $written;
+    return strtolower($value) === 'true' ? '1' : $value;
 }
 
 /**
@@ -201,6 +195,25 @@ it('binds every pin with a forced env entry and a matching server entry', functi
     expect(array_keys(array_diff_key($pins['server'], $pins['env'])))->toBe([]);
 });
 
+it('writes no pin as false or empty, which a spawned child could not read back', function () {
+    $pins = phpunitPins(base_path('phpunit.xml'));
+    $values = [...array_column($pins['env'], 'value'), ...array_values($pins['server'])];
+    expect($values)->not->toBeEmpty();
+
+    // PHPUnit writes `false` with putenv('NAME='), and on Windows that removes
+    // a variable the shell exported, so a child reads the reader's default.
+    $empty = array_values(array_filter($values, fn (string $value): bool => in_array(strtolower($value), ['false', ''], true)));
+    expect($empty)->toBe([]);
+
+    // The three switches that once carried `false` read 0, which every reader
+    // casts to false with `(bool) env(...)`.
+    expect(array_intersect_key($pins['server'], array_flip(['STATAMIC_STACHE_LOCK_ENABLED', 'LINK_HEALTH_SCAN_ON_PUBLISH', 'MAP_CENSUS_GEOCODER_ENABLED'])))->toBe([
+        'STATAMIC_STACHE_LOCK_ENABLED' => '0',
+        'LINK_HEALTH_SCAN_ON_PUBLISH' => '0',
+        'MAP_CENSUS_GEOCODER_ENABLED' => '0',
+    ]);
+});
+
 it('keeps every pinned value when the shell exports another', function (bool $export) {
     $pins = phpunitPins(base_path('phpunit.xml'))['env'];
     $names = array_keys($pins);
@@ -210,7 +223,8 @@ it('keeps every pinned value when the shell exports another', function (bool $ex
 
     $pinned = array_map(fn (array $entry): string => $entry['value'], $pins);
     expect($seen['env'])->toBe($pinned);
-    expect($seen['getenv'])->toBe(array_map(fn (string $value): string|false => pinAsWrittenToTheProcessEnvironment($value, $export), $pinned));
+    expect($seen['getenv'])->toBe(array_map(pinAsWrittenToTheProcessEnvironment(...), $pinned));
+    expect($seen['grandchild'])->toBe($seen['getenv']);
     expect($seen['config'])->toBe([
         'cache.default' => 'file',
         'database.default' => 'sqlite',
@@ -218,6 +232,9 @@ it('keeps every pinned value when the shell exports another', function (bool $ex
         'mail.default' => 'array',
         'queue.default' => 'sync',
         'session.driver' => 'array',
+        'statamic.stache.lock.enabled' => false,
+        'link_health.on_publish.enabled' => false,
+        'maps.census.enabled' => false,
     ]);
 })->with([
     'a different value exported for every pin' => [true],
@@ -231,7 +248,7 @@ it('lets an exported value through a pin without its server entry', function (st
 
     // The exported value reaches env(); the forced env entry still reaches getenv().
     expect($seen['env'][$name])->toBe(EXPORTED_BY_SHELL);
-    expect($seen['getenv'][$name])->toBe(pinAsWrittenToTheProcessEnvironment($value, exported: true));
+    expect($seen['getenv'][$name])->toBe(pinAsWrittenToTheProcessEnvironment($value));
 })->with(pinnedNamesDataset());
 
 it('lets an exported CACHE_STORE through a plain unforced env entry', function () {

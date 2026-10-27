@@ -84,9 +84,16 @@
              return 503 — the UAMS-Web/uams-statamic-archive#1689 `Error404PageTest` flake, and the `GET /` 503
              that put `ExampleTest` in the serial tail. Each worker has its own
              cache store and warms independently, so the lock deduplicates nothing
-             here. Read at boot by config/statamic/stache.php. -->
-        <env name="STATAMIC_STACHE_LOCK_ENABLED" value="false" force="true"/>
-        <server name="STATAMIC_STACHE_LOCK_ENABLED" value="false"/>
+             here. Read at boot by config/statamic/stache.php.
+
+             This pin and the two other switches below are written as 0, never
+             false (UAMS-Web/uams-statamic-archive#3303). PHPUnit writes `false` to the environment as an empty value, and on
+             Windows that removes a variable the shell exported instead of
+             emptying it, so a child process the suite spawns reads it as unset
+             and gets the production default `true`. Every reader casts with
+             `(bool) env(...)`, so 0 reads as false. -->
+        <env name="STATAMIC_STACHE_LOCK_ENABLED" value="0" force="true"/>
+        <server name="STATAMIC_STACHE_LOCK_ENABLED" value="0"/>
         <env name="DB_CONNECTION" value="sqlite" force="true"/>
         <server name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:" force="true"/>
@@ -101,15 +108,17 @@
              link-health:scan inline and issues real outbound requests to every
              host that entry links to. Its own suite re-enables it (config())
              alongside Queue::fake. The recurring scan is left on: it only
-             registers a schedule entry, which nothing in a test executes. -->
-        <env name="LINK_HEALTH_SCAN_ON_PUBLISH" value="false" force="true"/>
-        <server name="LINK_HEALTH_SCAN_ON_PUBLISH" value="false"/>
+             registers a schedule entry, which nothing in a test executes.
+             Written as 0, not false: see the Stache lock pin above (UAMS-Web/uams-statamic-archive#3303). -->
+        <env name="LINK_HEALTH_SCAN_ON_PUBLISH" value="0" force="true"/>
+        <server name="LINK_HEALTH_SCAN_ON_PUBLISH" value="0"/>
         <!-- Disable coordinate-derived location regions (UAMS-Web/uams-statamic-archive#962) by default in
              tests so saving a clinical_locations entry never makes a real Census
              reverse-geocode HTTP call. The geocoder's own test re-enables it
-             (config()->set) alongside Http::fake. -->
-        <env name="MAP_CENSUS_GEOCODER_ENABLED" value="false" force="true"/>
-        <server name="MAP_CENSUS_GEOCODER_ENABLED" value="false"/>
+             (config()->set) alongside Http::fake. Written as 0, not false: see
+             the Stache lock pin above (UAMS-Web/uams-statamic-archive#3303). -->
+        <env name="MAP_CENSUS_GEOCODER_ENABLED" value="0" force="true"/>
+        <server name="MAP_CENSUS_GEOCODER_ENABLED" value="0"/>
         <!-- PubMed lookups refuse without a contact email (UAMS-Web/uams-statamic-archive#2409). The suite runs
              as a configured client would; the refusal itself is asserted by a test
              that clears this value explicitly. -->
