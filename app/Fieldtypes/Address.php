@@ -77,23 +77,11 @@ class Address extends Fieldtype
         // Read merged field config (cached) for the preset key
         $config = $this->getCachedConfig();
 
-        // Load preset option keys (extended or simple format)
-        $presetOptionsRaw = $this->getPresetOptions();
+        // Load the selectable preset keys
+        $presetOptions = $this->getPresetOptions()['options'];
 
-        // Extract the selectable preset keys for default resolution.
-        // Field config always supplies a default `preset`, so the coalesce onto
-        // the raw map and the non-array ternary branch are unreachable for a
-        // bound field instance: equivalent mutants under --covered-only.
-        // @pest-mutate-ignore: CoalesceRemoveLeft
-        $presetOptions = $presetOptionsRaw['options'] ?? $presetOptionsRaw;
-
-        // Resolve preset from config, falling back to the first defined option.
-        // @pest-mutate-ignore: TernaryNegated
-        $preset = $config['preset'] ?? (
-            \is_array($presetOptions)
-                ? array_key_first($presetOptions)
-                : null
-        );
+        // Resolve preset from config, falling back to the first defined option
+        $preset = $config['preset'] ?? array_key_first($presetOptions);
 
         // Write the resolved preset onto the stored subfield map
         $result['preset'] = $preset;
@@ -101,7 +89,6 @@ class Address extends Fieldtype
         unset(
             $data,
             $config,
-            $presetOptionsRaw,
             $presetOptions,
             $preset,
         );
@@ -262,7 +249,7 @@ class Address extends Fieldtype
     /**
      * Preset options for Address Type.
      *
-     * @return array<string, mixed> Preset options for Address Type
+     * @return array{display: string, options: array<string, string>} Preset options
      */
     protected function getPresetOptions(): array
     {

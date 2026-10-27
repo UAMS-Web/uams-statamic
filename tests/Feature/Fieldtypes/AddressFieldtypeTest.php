@@ -466,11 +466,18 @@ it('defines every subfield scalar default exactly', function (): void {
     ])->and(mustBeArray($byHandle['country'], 'the country subfield')['default_choices'])->toHaveKey('US');
 });
 
-it('falls back to the first preset option when config omits preset', function (): void {
+it('stores the default american preset when config omits preset', function (): void {
     $out = addressFieldtype()->process(['city' => 'Little Rock']);
 
     expect($out['preset'] ?? null)->toBe('american')
         ->and($out['city'] ?? null)->toBe('Little Rock');
+});
+
+it('falls back to the first preset option when config sets preset to null', function (): void {
+    // An explicit null skips the configured preset, so the first option key is stored
+    $out = addressFieldtype(['preset' => null])->process(['city' => 'Little Rock']);
+
+    expect($out['preset'] ?? null)->toBe('american');
 });
 
 it('prefers the configured preset over the first option', function (): void {
