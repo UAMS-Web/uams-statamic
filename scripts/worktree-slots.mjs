@@ -884,7 +884,7 @@ export function releaseCheckoutArgs(path) {
  * The git arguments that fetch `origin` for a tree, without fetching its submodules.
  *
  * With `submodule.recurse=true` in a developer's global config, a bare `fetch` also fetches every
- * initialized submodule over the network, which turned `release` from seconds into minutes (#3291).
+ * initialized submodule over the network, which turned `release` from seconds into minutes (#289).
  * The script never needs those objects from a fetch: `refresh` and `provision` run their own
  * `submodule update --init`. Every fetch in this file goes through here, so the time one takes no
  * longer depends on a global setting.

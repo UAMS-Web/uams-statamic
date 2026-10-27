@@ -1711,9 +1711,9 @@ describe('releasing a slot when submodule.recurse is set globally (#3288)', () =
     })
 })
 
-// #3291. With `submodule.recurse=true` in a developer's global config, a bare `fetch` fetches every
+// #289. With `submodule.recurse=true` in a developer's global config, a bare `fetch` fetches every
 // initialized submodule as well, over the network, though the script never needs those objects.
-describe('fetching origin when submodule.recurse is set globally (#3291)', () => {
+describe('fetching origin when submodule.recurse is set globally (#289)', () => {
     const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.test', '-c', 'init.defaultBranch=main', '-c', 'protocol.file.allow=always', ...args], { cwd, stdio: 'pipe' })
 
     it('turns submodule recursion off for the fetch', () => {
