@@ -235,7 +235,7 @@ it('still debounces at the smallest window that is not zero', function (): void 
     // that one, `<= 0` and `<= 1` are indistinguishable -- and under `<= 1` a one-second
     // window would silently stop debouncing at all.
     //
-    // The clock is pinned to the start of a second (#3328). The cache stores expiry in whole
+    // The clock is pinned to the start of a second (#298). The cache stores expiry in whole
     // seconds, so a one-second window ends at the next second boundary on the wall clock;
     // two saves on a real clock that straddle one push twice, which a loaded machine made
     // happen often enough to fail a parallel run.
