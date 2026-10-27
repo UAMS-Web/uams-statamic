@@ -121,7 +121,7 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
 
     it('keeps every remote-only job in ci.yml', () => {
         // Each listed job must exist, so a rename cannot leave a stale exemption
-        // pointing at nothing while the renamed job goes unmirrored and unnoticed.
+        // pointing at nothing while the renamed job slips past this guard unseen.
         // The "outside the chain" half of this case retired with #373: no job in
         // ci.yml carries an edge any more, and the unchained case below asserts
         // that for every job at once rather than for these two.
