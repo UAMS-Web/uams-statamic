@@ -190,7 +190,12 @@ trait ConfigSectionWrapper
 
             // Check if we have fields to add to this section
             if (isset($fieldsToAdd[$sectionDisplayKey]) && isset($section['fields'])) {
-                // Add the new fields to the existing section based on position
+                // Add the new fields to the existing section based on position. PHP
+                // treats a `continue` in a switch as `break`, and the switch ends the
+                // loop body, so turning any `break` below into `continue` is equivalent.
+                // The marker sits on the switch because, on Windows, one on a `break`
+                // cannot suppress a mutator aimed at that `break` itself.
+                // @pest-mutate-ignore: BreakToContinue
                 switch ($position) {
                     // Add fields before existing fields
                     case 'before':

@@ -73,13 +73,11 @@ trait InputMaskValueStorage
      *
      * @param  mixed  $value  The value to process (must be array with masked/unmasked)
      * @param  array<string, mixed>  $config  The field configuration
-     * @param  string  $fieldHandle  The field handle
      * @return mixed The value to store (masked or unmasked based on config)
      */
     protected function processInputMaskValue(
         mixed $value,
-        array $config,
-        string $fieldHandle
+        array $config
     ): mixed {
         // ---
         // Check if this is structured data from our Vue component (contains both masked
@@ -126,7 +124,9 @@ trait InputMaskValueStorage
         mixed $value,
         array $config
     ): mixed {
-        // Check if this is a numeric mask type
+        // Check if this is a numeric mask type. The '' fallback only has to match
+        // neither class, so replacing it with any other non-class string is equivalent.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $isNumericMask = \in_array(
             $config['input_mask_class'] ?? '',
             [
