@@ -1,0 +1,61 @@
+diff --git a/scripts/local-ci.mjs b/scripts/local-ci.mjs
+index 01331bac4..df347afb5 100755
+--- a/scripts/local-ci.mjs
++++ b/scripts/local-ci.mjs
+@@ -877,0 +878,51 @@ export function resolveTool({ name, candidates = [], onPath, hint, envVar }) {
++/**
++ * Ask the resolved PHP for its version, and refuse to continue if it could not answer.
++ *
++ * `capture()` returns trimmed stdout and discards the exit status, so a PHP that was KILLED
++ * and one that printed nothing are the same empty string. Preflight then carried that empty
++ * value forward: it printed `PHP: /path/to/php84 ()` — its own evidence that discovery had
++ * failed — and went on to probe `extension_loaded("imagick")` the same way, whose identically
++ * empty answer was read as the extension being absent (#2312).
++ *
++ * The cost is not the false negative but the REMEDY it prescribes. A bare wrong answer leaves
++ * a reader puzzled; this one told them to install imagick and read README_Imagick.md, which
++ * does nothing whatever for a PHP that cannot execute. Preflight also runs before job
++ * selection, so it aborted node-only runs that never needed PHP at all.
++ *
++ * So this fails HERE, naming the interpreter, and the extension check is never reached unless
++ * PHP has been shown to run. `captureResult()` is what makes that possible, and it exists in
++ * this file for exactly this reason — see its comment on a probe whose absence of output is
++ * indistinguishable from a probe that failed.
++ *
++ * @param  {string}  php        resolved path to the PHP binary
++ * @param  {string}  repoRoot   cwd for the probe
++ * @return {string}  the reported version, guaranteed non-empty
++ */
++export function phpVersionOrRefuse(php, repoRoot) {
++    let probe
++
++    try {
++        probe = captureResult(php, ['-r', 'echo PHP_VERSION;'], repoRoot)
++    } catch (error) {
++        // spawn itself failed — no such file, not executable, EAGAIN.
++        throw new Error(
++            `Could not run PHP at '${php}': ${error.message}. `
++            + 'Fix the interpreter before anything else — no other preflight result is meaningful '
++            + 'until it runs, and none is reported.',
++        )
++    }
++
++    const version = probe.stdout.trim()
++
++    if (probe.status !== 0 || version === '') {
++        throw new Error(
++            `PHP at '${php}' did not report a version (exit ${probe.status}). It is not executing, `
++            + 'so nothing further has been established about it — including which extensions it has. '
++            + 'Run it directly to see the underlying error; `php -n -v` bypasses the ini if an '
++            + 'extension is at fault.',
++        )
++    }
++
++    return version
++}
++
+@@ -1393 +1444,3 @@ function main() {
+-    const phpVersion = capture(php, ['-r', 'echo PHP_VERSION;'], repoRoot)
++    // Refuses when PHP cannot answer, so the imagick check below is only ever reached by an
++    // interpreter that has been shown to run (#2312).
++    const phpVersion = phpVersionOrRefuse(php, repoRoot)
