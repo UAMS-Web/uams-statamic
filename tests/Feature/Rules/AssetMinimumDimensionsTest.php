@@ -201,3 +201,49 @@ it('passes when the value is empty or contains no usable references', function (
     'empty array' => [[]],
     'array of blanks' => [['', null]],
 ]);
+
+it('goes on to check the next asset after one it skips', function (mixed $skipped) {
+    // The skipped reference is listed first, so a skip that stopped the loop would pass
+    Asset::shouldReceive('find')->with('assets::skipped.jpg')->andReturn($skipped);
+    Asset::shouldReceive('find')->with('assets::small.jpg')->andReturn(assetStub(300, 200, 'small.jpg'));
+
+    expect(runAssetMinDimensions(new AssetMinimumDimensions(800, 600), ['assets::skipped.jpg', 'assets::small.jpg']))
+        ->toBe(['small.jpg must be at least 800x600 pixels; it is 300x200.']);
+})->with([
+    'unresolvable' => fn (): null => null,
+    'an SVG' => fn (): AssetItem => assetStub(16, 16, 'icon.svg', isSvg: true),
+    'no width' => fn (): AssetItem => assetStub(null, 480),
+    'no height' => fn (): AssetItem => assetStub(640, null),
+    'zero width' => fn (): AssetItem => assetStub(0, 480),
+    'zero height' => fn (): AssetItem => assetStub(640, 0),
+]);
+
+it('measures a one-pixel dimension rather than skipping it', function (int $width, int $height, string $expected) {
+    Asset::shouldReceive('find')->with('assets::pixel.jpg')->andReturn(assetStub($width, $height, 'pixel.jpg'));
+
+    expect(runAssetMinDimensions(new AssetMinimumDimensions(800, 600), ['assets::pixel.jpg']))->toBe([$expected]);
+})->with([
+    'one pixel wide' => [1, 900, 'pixel.jpg must be at least 800x600 pixels; it is 1x900.'],
+    'one pixel tall' => [900, 1, 'pixel.jpg must be at least 800x600 pixels; it is 900x1.'],
+]);
+
+it('names both minimums once each is set, however small', function (int $minWidth, int $minHeight, int $width, int $height, string $expected) {
+    Asset::shouldReceive('find')->with('assets::photo.jpg')->andReturn(assetStub($width, $height));
+
+    expect(runAssetMinDimensions(new AssetMinimumDimensions($minWidth, $minHeight), ['assets::photo.jpg']))->toBe([$expected]);
+})->with([
+    'a one-pixel width minimum' => [1, 600, 500, 400, 'photo.jpg must be at least 1x600 pixels; it is 500x400.'],
+    'a one-pixel height minimum' => [800, 1, 500, 400, 'photo.jpg must be at least 800x1 pixels; it is 500x400.'],
+]);
+
+it('never looks up a value that is empty or not a string', function () {
+    Asset::shouldReceive('find')->never();
+
+    expect(runAssetMinDimensions(new AssetMinimumDimensions(800, 600, ['assets']), ['', 42, null]))->toBe([]);
+});
+
+it('skips a repository result that is not a concrete asset', function () {
+    Asset::shouldReceive('find')->with('assets::other.jpg')->andReturn(new stdClass);
+
+    expect(runAssetMinDimensions(new AssetMinimumDimensions(800, 600), ['assets::other.jpg']))->toBe([]);
+});

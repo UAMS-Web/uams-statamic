@@ -122,6 +122,9 @@ final class DateBoundary implements DataAwareRule, ValidationRule
             }
 
             if (DateBoundaryEngine::isDateUnavailable($day, $allowedDays, $exceptions)) {
+                // The allowed days are digit strings, so loose and strict matching
+                // agree on them.
+                // @pest-mutate-ignore: TrueToFalse
                 $onDisallowedWeekday = $allowedDays !== null
                     && ! \in_array((string) $day->dayOfWeek, $allowedDays, true);
 
@@ -136,7 +139,8 @@ final class DateBoundary implements DataAwareRule, ValidationRule
 
     /**
      * The calendar-day endpoints of the submitted value: the single day, or a
-     * range's start and end. Empty values yield an empty list (nothing to check).
+     * range's start and end. An empty value reads as no calendar day, so there is
+     * nothing to check.
      *
      * @param  mixed  $value  Preprocessed field value
      * @param  string  $timezone  The display timezone (for time-bearing values)
@@ -144,10 +148,6 @@ final class DateBoundary implements DataAwareRule, ValidationRule
      */
     private function endpointDays(mixed $value, string $timezone): array
     {
-        if (in_array($value, [null, '', []], true)) {
-            return [];
-        }
-
         if (\is_array($value) && (\array_key_exists('start', $value) || \array_key_exists('end', $value))) {
             return [
                 $this->dayOf($value['start'] ?? null, $timezone),
@@ -215,14 +215,15 @@ final class DateBoundary implements DataAwareRule, ValidationRule
         $appTimezone = config('app.timezone');
 
         return match (true) {
-            is_scalar($displayTimezone) && (string) $displayTimezone !== '' => (string) $displayTimezone,
-            is_scalar($appTimezone) && (string) $appTimezone !== '' => (string) $appTimezone,
+            \is_string($displayTimezone) && $displayTimezone !== '' => $displayTimezone,
+            \is_string($appTimezone) && $appTimezone !== '' => $appTimezone,
             default => 'UTC',
         };
     }
 
     /**
-     * Today's calendar date in the display timezone. Client "today" is the
+     * Today's calendar date in the display timezone, anchored at UTC midnight like
+     * every day DateBoundaryEngine::parseDay() returns. Client "today" is the
      * browser-local day, so at the midnight edge the two can differ by a calendar
      * day; that day-granularity gap is accepted. Honors {@see Carbon::setTestNow()}
      * for deterministic tests.
@@ -231,7 +232,6 @@ final class DateBoundary implements DataAwareRule, ValidationRule
      */
     private function today(string $timezone): CarbonImmutable
     {
-        return DateBoundaryEngine::parseDay(CarbonImmutable::now($timezone))
-            ?? CarbonImmutable::now($timezone)->startOfDay();
+        return CarbonImmutable::now($timezone)->shiftTimezone('UTC')->startOfDay();
     }
 }

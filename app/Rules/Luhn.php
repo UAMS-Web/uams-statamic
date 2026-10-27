@@ -23,6 +23,14 @@ use Closure;
 class Luhn extends BaseValidationRule
 {
     /**
+     * Each digit's contribution when doubled: twice the digit, less 9 when that is
+     * two digits (for example 7 doubles to 14, which contributes 5).
+     *
+     * @var list<int>
+     */
+    private const array DOUBLED_DIGITS = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9];
+
+    /**
      * Create a new Luhn validation rule instance.
      *
      * @param  ?string  $prepend  Optional string to prepend to the value before validation
@@ -134,40 +142,30 @@ class Luhn extends BaseValidationRule
         // Initialize sum to zero for accumulating digit values
         $sum = 0;
 
-        // Get the length of the digits array
-        $length = \count($digits);
-
         // ---
         // Process each digit from right to left
         // ---
 
+        // Start at the rightmost digit, which is not doubled
+        $double = false;
+
         // Iterate through digits from rightmost to leftmost
-        for ($i = $length - 1; $i >= 0; $i--) {
-            // Cast the digit character to an integer
+        for ($i = \count($digits) - 1; $i >= 0; $i--) {
+            // Cast the digit character to an integer. Equivalent without the cast:
+            // both callers allow digits only, which PHP reads as integers anyway.
+            // @pest-mutate-ignore: RemoveIntegerCast
             $digit = (int) $digits[$i];
 
-            // ---
-            // Double every second digit from the right
-            // ---
+            // Add the digit, or its doubled contribution for every second digit.
+            // Equivalent subtracting: a negated sum is divisible by 10 exactly when
+            // the sum is.
+            // @pest-mutate-ignore: PlusEqualToMinusEqual
+            $sum += $double
+                ? self::DOUBLED_DIGITS[$digit]
+                : $digit;
 
-            // Check if this is an even position from the right
-            if (($length - $i) % 2 === 0) {
-                // Double the digit
-                $digit *= 2;
-
-                // ---
-                // If doubling results in a number greater than 9, subtract 9
-                // ---
-
-                // Check if the doubled digit is greater than 9
-                if ($digit > 9) {
-                    // Subtract 9 from the digit
-                    $digit -= 9;
-                }
-            }
-
-            // Add the processed digit to the sum
-            $sum += $digit;
+            // Alternate doubling for the next digit to the left
+            $double = ! $double;
         }
 
         // The number is valid if the sum is divisible by 10

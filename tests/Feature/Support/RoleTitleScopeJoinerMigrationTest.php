@@ -266,6 +266,7 @@ it('accepts a typed in scope with the article, a linked one, and one with no nam
 })->with([
     'typed with the article' => [['scope_joiner' => 'in', 'scope_article' => ' the ', 'scope_name' => 'Department of Medicine']],
     'linked' => [['scope_joiner' => 'in', 'scope_unit' => 'peds', 'scope_name' => '']],
+    'linked, beside a typed name' => [['scope_joiner' => 'in', 'scope_unit' => 'peds', 'scope_name' => 'Department of Medicine']],
     'no name' => [['scope_joiner' => 'in', 'scope_article' => null, 'scope_name' => '  ']],
     'a name that is not text' => [['scope_joiner' => 'in', 'scope_article' => null, 'scope_name' => ['x']]],
 ]);

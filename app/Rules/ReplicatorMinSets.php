@@ -77,15 +77,14 @@ class ReplicatorMinSets implements DataAwareRule, ValidationRule
             return;
         }
 
-        // Get the min_sets value from the field config
+        // Read min_sets as an integer; an unset, zero or negative minimum is met by
+        // any list, including an empty one
         /** @var scalar|null $minSets */
         $minSets = $this->fieldConfig['min_sets'] ?? null;
+        $min = (int) $minSets;
 
-        // Check if min_sets is not set or is less than or equal to 0
-        if (
-            $minSets === null
-            || (int) $minSets <= 0
-        ) {
+        // Check if the number of sets is greater than or equal to min_sets
+        if (\count($value) >= $min) {
             // Return early
             return;
         }
@@ -98,15 +97,6 @@ class ReplicatorMinSets implements DataAwareRule, ValidationRule
                 $attribute
             )
         ) {
-            // Return early
-            return;
-        }
-
-        // Convert min_sets to an integer
-        $min = (int) $minSets;
-
-        // Check if the number of sets is greater than or equal to min_sets
-        if (\count($value) >= $min) {
             // Return early
             return;
         }

@@ -233,3 +233,22 @@ it('fails each direction with its own message key', function (): void {
     });
     expect($firstMessages)->toBe([__('statamic::validation.url_first_party')]);
 });
+
+it('short-circuits a non-URL in the first-party direction too', function (): void {
+    $messages = [];
+
+    (new FirstPartyUrl(true))->validate('profile_url', 'not a url', function (string $message) use (&$messages): void {
+        $messages[] = $message;
+    });
+
+    expect($messages)->toBe([__('statamic::validation.url')]);
+});
+
+it('never matches a host of dots against an empty configured domain', function (string $url): void {
+    config(['first_party.domains' => ['', 'uams.edu']]);
+
+    expect(FirstPartyUrl::isFirstPartyUrl($url))->toBeFalse();
+})->with([
+    'one dot' => ['http://./'],
+    'two dots' => ['http://../x'],
+]);
