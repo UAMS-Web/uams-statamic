@@ -11,14 +11,14 @@ use Statamic\Facades\AssetContainer;
 use Tests\TestCase;
 
 // Serial because it persists a file-backed asset container into the shared
-// content mirror, the asset-container leak class (#1120), as
+// content mirror, the asset-container leak class (UAMS-Web/uams-statamic-archive#1120), as
 // SeoMetaSocialImageTest does.
 uses(TestCase::class)->group('serial');
 
 covers(PictureWithAlt::class);
 
 /**
- * The Image Bard set renders its `alt_override` as the image's alt text (#3390).
+ * The Image Bard set renders its `alt_override` as the image's alt text (#340).
  *
  * The peak-tools `picture` tag reads `alt` only from the asset, so the set
  * renders through `{{ picture_with_alt }}`, which applies a non-empty `alt`
@@ -135,7 +135,7 @@ it('leaves the asset alt text unchanged', function (): void {
 });
 
 it('renders the Image set override as the alt text, falling back to the asset alt', function (?string $override, string $expected): void {
-    // Render trusted: the user-content sandbox blocks tags outright (#2040)
+    // Render trusted: the user-content sandbox blocks tags outright (UAMS-Web/uams-statamic-archive#2040)
     $html = (string) Antlers::parse('{{ partial:sets/image }}', [
         'image' => pictureAltFixtureAsset('photo.jpg'),
         'alt_override' => $override,

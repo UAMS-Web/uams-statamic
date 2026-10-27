@@ -10,7 +10,7 @@ use Studio1902\PeakTools\Tags\Picture;
 
 /**
  * `{{ picture_with_alt }}`: the peak-tools `picture` tag with an `alt` parameter
- * that overrides the asset's own alt text (#3390).
+ * that overrides the asset's own alt text (#340).
  *
  * The vendor tag reads `alt` only from the asset, so a per-placement override
  * (the Image set's `alt_override`) never reaches the rendered `<img>`. A
