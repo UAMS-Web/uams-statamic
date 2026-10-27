@@ -3,8 +3,9 @@ name: Shard spike (#384)
 # Research spike for UAMS-Web/uams-statamic#384, on its branch only; never merged.
 # Measures the Pest parallel band split across separate GitHub-hosted runners
 # with --shard, against the same band run whole, and checks that every shard
-# count's union of shards runs exactly the baseline's test cases. The mode
-# (count-based or time-balanced) comes from .github/shard-spike/plan.txt.
+# count's union of shards runs exactly the baseline's test cases. Each push
+# measures the one shard configuration named in .github/shard-spike/plan.txt,
+# so a run occupies at most six runners at once.
 
 on:
   push:
@@ -20,6 +21,7 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       mode: ${{ steps.plan.outputs.mode }}
+      total: ${{ steps.plan.outputs.total }}
     steps:
       - uses: actions/checkout@v7
       - id: plan
@@ -130,7 +132,7 @@ jobs:
           if-no-files-found: warn
 
   union:
-    needs: band
+    needs: [plan, band]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -143,4 +145,4 @@ jobs:
         run: |
           set -o pipefail
           ls -la artifacts artifacts/tests/.pest 2>/dev/null || true
-          php .github/shard-spike/union.php artifacts | tee -a "$GITHUB_STEP_SUMMARY"
+          php .github/shard-spike/union.php artifacts "${{ needs.plan.outputs.total }}" | tee -a "$GITHUB_STEP_SUMMARY"

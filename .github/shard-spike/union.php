@@ -90,8 +90,27 @@ $out[] = sprintf("Baseline: %d test cases.\n", array_sum(array_map('count', $bas
 $out[] = '| N | Cases in union | Missing | Extra | Run more than once | Outcome differs |';
 $out[] = '| --- | --- | --- | --- | --- | --- |';
 
+// Find the shard counts this run measured, from the reports of their first shard
+$totals = [];
+foreach (glob("{$dir}/junit-n*-s1.xml") ?: [] as $first) {
+    if (preg_match('/junit-n(\d+)-s1\.xml$/', $first, $m) === 1) {
+        $totals[] = (int) $m[1];
+    }
+}
+sort($totals);
+
+// Prefer the shard count the plan names, so a shard that left no report is caught
+if (isset($argv[2]) && ctype_digit($argv[2])) {
+    $totals = [(int) $argv[2]];
+}
+
+if ($totals === []) {
+    $failed = true;
+    $out[] = '| - | no shard reports found | | | | |';
+}
+
 // Compare each shard count's union with the baseline
-foreach ([2, 3, 4] as $total) {
+foreach ($totals as $total) {
     $union = [];
     $absent = [];
 

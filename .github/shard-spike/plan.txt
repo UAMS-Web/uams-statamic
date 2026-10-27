@@ -1,1 +1,1 @@
-count
+count 2 serial
