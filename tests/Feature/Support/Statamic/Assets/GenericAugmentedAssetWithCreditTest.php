@@ -16,7 +16,7 @@ covers(ComputesAssetCreditText::class, ComputesAssetIptcDigitalSourceValues::cla
 
 /**
  * The computed fields the fallback augmented asset adds: `credit_text` and the IPTC digital
- * source value and schema keys for each digital source group (#3343 coverage).
+ * source value and schema keys for each digital source group (#310 coverage).
  *
  * Each asset is made in memory on an unsaved container, so nothing is written to disk.
  *
@@ -53,7 +53,7 @@ it('computes the credit line from the creator and the creator organization', fun
 ]);
 
 it('does not yet reach the credit line through augmentation', function (): void {
-    // Statamic dispatches `credit_text` to a `creditText()` method; fixing that is #3358
+    // Statamic dispatches `credit_text` to a `creditText()` method; fixing that is #323
     $augmented = new GenericAugmentedAssetWithCredit(genericCreditAsset(['creator' => 'Ann Lee', 'creator_organization' => 'UAMS']));
 
     expect($augmented->get('credit_text')->value())->toBeNull();

@@ -9,7 +9,7 @@ use Statamic\Fields\Values;
 
 /**
  * The news-magazine `sections` grid read as plain section configs, however Antlers hands it
- * over (#3343 coverage).
+ * over (#310 coverage).
  *
  * @command  php artisan test --compact tests/Unit/Support/Statamic/NewsSectionGridTest.php
  */

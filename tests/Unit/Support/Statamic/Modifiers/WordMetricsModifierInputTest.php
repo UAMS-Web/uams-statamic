@@ -8,7 +8,7 @@ use Statamic\Fields\Values;
 
 /**
  * The text the UAMS word-count and read-time modifiers count, normalized as Statamic core does
- * (#3343 coverage).
+ * (#310 coverage).
  *
  * @command  php artisan test --compact tests/Unit/Support/Statamic/Modifiers/WordMetricsModifierInputTest.php
  */

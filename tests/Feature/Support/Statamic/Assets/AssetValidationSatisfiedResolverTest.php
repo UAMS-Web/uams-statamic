@@ -12,7 +12,7 @@ uses(TestCase::class);
 
 /**
  * Whether an asset's metadata passes its blueprint, with a single-select terms value stored as
- * a bare slug read as the one-item list the terms field validates (#3343 coverage).
+ * a bare slug read as the one-item list the terms field validates (#310 coverage).
  *
  * Each asset carries a blueprint made for the test, so the field order and configuration are
  * exactly what each case needs.

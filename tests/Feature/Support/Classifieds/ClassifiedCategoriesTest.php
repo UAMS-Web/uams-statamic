@@ -12,7 +12,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 /**
  * The classified categories a listing can be filed under, read from the `classified_categories`
- * taxonomy in title order (#2834 coverage).
+ * taxonomy in title order (#255 coverage).
  *
  * The term query is mocked, so each test controls exactly which terms the taxonomy holds and
  * can assert the query it asks for.
