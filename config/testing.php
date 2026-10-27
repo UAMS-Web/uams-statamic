@@ -25,8 +25,9 @@ return [
     // Optional override for the Formidable Forms XML export fixtures consumed
     // by the importer package's FormidableNotificationAuditTest and
     // FormidableRealImportSpotCheckTest. Both run against that package's
-    // committed synthetic corpus by default; point this at a local copy of the
-    // full wordpress-importer exports to audit the real-world corpus instead.
+    // committed synthetic corpus by default; point this at the FormidableForms
+    // directory of a clone of UAMS-Web/wordpress-importer-exports to audit the
+    // real-world corpus instead. Null leaves the committed corpus in place.
     'frm_audit_fixtures_dir' => env('FRM_AUDIT_FIXTURES_DIR'),
 
 ];
