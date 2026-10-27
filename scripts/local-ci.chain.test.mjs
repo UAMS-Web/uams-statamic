@@ -17,11 +17,17 @@ import {
 } from './local-ci.mjs'
 
 // UAMS-Web/uams-statamic-archive#1735 — `scripts/local-ci.mjs` is a HAND-maintained mirror of
-// `.github/workflows/ci.yml`, and the cost-ordered chain is the part of it that
-// silently rots: edit one file's `needs:` graph and the other keeps running the
-// old order, so a locally-green branch is gated differently than it would be on
-// CI. The `.githooks/pre-commit` hook only catches staging one file without the
-// other — it cannot see whether the two agree. These assert that they do.
+// `.github/workflows/ci.yml`, and the job SET is the part of it that silently
+// rots: add a job to one file and the other keeps gating a branch by the old set,
+// so a locally-green branch is gated differently than it would be on CI. The
+// `.githooks/pre-commit` hook only catches staging one file without the other; it
+// cannot see whether the two agree. These assert that they do.
+// Since #373 the ORDER is deliberately not shared. ci.yml declares no `needs:` and
+// runs its jobs in parallel, because GitHub does not meter the standard runners
+// they use for a public repository; the local runner keeps its cost-ordered chain
+// because one machine runs the jobs serially whatever any graph says. So these
+// cases pin the SET, and pin that ci.yml stays unchained, rather than comparing
+// two orders that no longer both exist.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
@@ -46,12 +52,12 @@ const JOB_KEYS = {
     browser: 'browser',
 }
 
-// ci.yml jobs with deliberately no local counterpart, each outside the chain. Kept as an
+// ci.yml jobs with deliberately no local counterpart. Kept as an
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
 // (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
 // gains its own job with #2837. The first case in the parity block below pins that each
-// stays outside the chain.
+// still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
 const REMOTE_ONLY = new Set(['submodule-access', 'synced-files'])
 
 /**
@@ -109,56 +115,18 @@ function parseWorkflowJobs(yaml) {
     return jobs
 }
 
-/**
- * Flatten the `needs:` graph into the sequential order it encodes.
- *
- * The chain is a strict linked list by design (docs/DECISIONS.md, 2026-07-15):
- * exactly one head with no `needs:`, every other job depending on exactly one
- * predecessor, and no job depended on twice. Each of those is asserted here —
- * a fan-out would mean the chain stopped being sequential, which is a decision
- * to make deliberately, not to discover through a passing parity test.
- */
-function linearize(jobs) {
-    const heads = [...jobs].filter(([, job]) => job.needs === null).map(([id]) => id)
-    expect(heads).toHaveLength(1)
-
-    const nextOf = new Map()
-    for (const [id, job] of jobs) {
-        if (job.needs === null) {
-            continue
-        }
-        expect(job.needs).toHaveLength(1)
-        const parent = job.needs[0]
-        expect(jobs.has(parent)).toBe(true)
-        expect(nextOf.has(parent)).toBe(false)
-        nextOf.set(parent, id)
-    }
-
-    const order = []
-    for (let id = heads[0]; id !== undefined; id = nextOf.get(id)) {
-        order.push(id)
-    }
-    expect(order).toHaveLength(jobs.size)
-
-    return order
-}
-
 describe('ci.yml <-> local-ci.mjs chain parity', () => {
     const allJobs = parseWorkflowJobs(workflow)
     const jobs = new Map([...allJobs].filter(([id]) => !REMOTE_ONLY.has(id)))
 
-    it('keeps every remote-only job in ci.yml and outside the chain', () => {
-        // Each listed job must exist, so a rename cannot leave a stale exemption, and must
-        // neither need a job nor be needed by one. A remote-only job joined to the chain
-        // would gate or be gated by jobs local-ci runs while local-ci never runs it.
+    it('keeps every remote-only job in ci.yml', () => {
+        // Each listed job must exist, so a rename cannot leave a stale exemption
+        // pointing at nothing while the renamed job goes unmirrored and unnoticed.
+        // The "outside the chain" half of this case retired with #373: no job in
+        // ci.yml carries an edge any more, and the unchained case below asserts
+        // that for every job at once rather than for these two.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
-            expect(allJobs.get(id).needs).toBeNull()
-        }
-        for (const [, job] of allJobs) {
-            for (const parent of job.needs ?? []) {
-                expect(REMOTE_ONLY.has(parent)).toBe(false)
-            }
         }
     })
 
@@ -166,8 +134,29 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect([...jobs.keys()].sort()).toEqual(Object.keys(JOB_KEYS).sort())
     })
 
-    it('runs local-ci jobs in the exact order ci.yml `needs:` encodes', () => {
-        expect(linearize(jobs).map((id) => JOB_KEYS[id])).toEqual(CHAIN)
+    it('declares no `needs:` edge, so every remote job runs in parallel (#373)', () => {
+        // The remote jobs fan out. The cost-ordered chain they used to run as was
+        // there to protect a metered Actions budget, and GitHub does not meter the
+        // standard runners every job here uses for a public repository. An edge
+        // added back would restore the serial wall-clock for nothing and diverge
+        // from the local runner, whose chain is deliberately NOT mirrored, so this
+        // fails rather than letting one return unnoticed. Reintroducing an edge is
+        // a decision to take deliberately in docs/DECISIONS.md, not to discover
+        // through a passing parity test.
+        //
+        // An empty result is evidence only if the scanner can still SEE an edge: a
+        // parser that stopped matching `needs:` would report a clean fan-out for a
+        // fully chained workflow, which is byte-identical to the truth. So the
+        // control is a fixture carrying one edge, read by the same function, and it
+        // has to come back with that edge AND with its head still null.
+        const control = parseWorkflowJobs(
+            ['jobs:', '  alpha:', '    runs-on: ubuntu-latest', '  beta:', '    needs: alpha', ''].join('\n'),
+        )
+        expect(control.get('beta').needs).toEqual(['alpha'])
+        expect(control.get('alpha').needs).toBeNull()
+
+        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id]) => id)
+        expect(chained).toEqual([])
     })
 
     it('addresses every chained job by a valid `--jobs` key', () => {
