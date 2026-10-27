@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
@@ -14,6 +14,7 @@ import {
     checkVerdictLine,
     driftReasons,
     expectationsFor,
+    fetchOriginArgs,
     installStaleReason,
     isOwnToplevel,
     judgeTree,
@@ -1704,6 +1705,69 @@ describe('releasing a slot when submodule.recurse is set globally (#3288)', () =
             expect(result.status).toBe(0)
             expect(git(slot, 'rev-parse', 'HEAD').toString().trim()).toBe(target)
             expect(git(slot, 'status', '--porcelain').toString()).toBe('')
+        } finally {
+            rmSync(root, { recursive: true, force: true })
+        }
+    })
+})
+
+// #3291. With `submodule.recurse=true` in a developer's global config, a bare `fetch` fetches every
+// initialized submodule as well, over the network, though the script never needs those objects.
+describe('fetching origin when submodule.recurse is set globally (#3291)', () => {
+    const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.test', '-c', 'init.defaultBranch=main', '-c', 'protocol.file.allow=always', ...args], { cwd, stdio: 'pipe' })
+
+    it('turns submodule recursion off for the fetch', () => {
+        const args = fetchOriginArgs('C:/Users/dev/Herd/uams-statamic-a', '--quiet')
+
+        expect(args).toEqual(['-C', 'C:/Users/dev/Herd/uams-statamic-a', 'fetch', '--no-recurse-submodules', 'origin', '--quiet'])
+    })
+
+    it('provisions with the same fetch', () => {
+        const fetch = provisionSteps('C:/Users/dev/Herd/uams-statamic', 'C:/Users/dev/Herd/uams-statamic-a')
+            .find((step) => step.args.includes('fetch'))
+
+        expect(fetch.args).toEqual(fetchOriginArgs('C:/Users/dev/Herd/uams-statamic'))
+    })
+
+    // `refresh` and `release` call `run()` directly, so their arguments cannot be read from outside.
+    // Every fetch in the script goes through fetchOriginArgs(), which this pins: a fetch written
+    // inline again adds a second `'fetch'` literal.
+    it('fetches nowhere else in the script', () => {
+        const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'worktree-slots.mjs'), 'utf8')
+
+        expect(source.match(/'fetch'/g)).toHaveLength(1)
+        expect(source.match(/fetchOriginArgs\(/g).length).toBeGreaterThanOrEqual(4)
+    })
+
+    // The submodule's remote is removed after it is initialized, so a fetch that recursed into it
+    // would fail. The control runs the same fetch without the flag and must fail.
+    it('fetches a tree whose submodule remote is gone, where a recursing fetch fails', () => {
+        const root = mkdtempSync(join(tmpdir(), 'wts-fetch-'))
+        const env = { ...process.env, GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'submodule.recurse', GIT_CONFIG_VALUE_0: 'true' }
+
+        try {
+            const sub = join(root, 'sub')
+            const origin = join(root, 'origin')
+            const clone = join(root, 'clone')
+
+            git(root, 'init', '-q', sub)
+            writeFileSync(join(sub, 'file.txt'), 'sub')
+            git(sub, 'add', '.')
+            git(sub, 'commit', '-q', '-m', 'sub')
+
+            git(root, 'init', '-q', origin)
+            git(origin, 'submodule', 'add', '-q', '../sub', 'sub')
+            git(origin, 'commit', '-q', '-m', 'add the submodule')
+
+            git(root, 'clone', '-q', '--recurse-submodules', origin, clone)
+            rmSync(sub, { recursive: true, force: true })
+
+            const recursing = spawnSync('git', ['-C', clone, 'fetch', 'origin'], { cwd: clone, encoding: 'utf8', env })
+            const result = spawnSync('git', fetchOriginArgs(clone), { cwd: clone, encoding: 'utf8', env })
+
+            expect(recursing.status).not.toBe(0)
+            expect(result.stderr).not.toMatch(/fatal|error/i)
+            expect(result.status).toBe(0)
         } finally {
             rmSync(root, { recursive: true, force: true })
         }

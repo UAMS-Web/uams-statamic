@@ -880,6 +880,23 @@ export function releaseCheckoutArgs(path) {
     return ['-C', path, '-c', 'submodule.recurse=false', 'checkout', '--detach', 'origin/main'];
 }
 
+/**
+ * The git arguments that fetch `origin` for a tree, without fetching its submodules.
+ *
+ * With `submodule.recurse=true` in a developer's global config, a bare `fetch` also fetches every
+ * initialized submodule over the network, which turned `release` from seconds into minutes (#3291).
+ * The script never needs those objects from a fetch: `refresh` and `provision` run their own
+ * `submodule update --init`. Every fetch in this file goes through here, so the time one takes no
+ * longer depends on a global setting.
+ *
+ * @param  string  $path
+ * @param  array<int, string>  $extra
+ * @return array<int, string>
+ */
+export function fetchOriginArgs(path, ...extra) {
+    return ['-C', path, 'fetch', '--no-recurse-submodules', 'origin', ...extra];
+}
+
 export function releaseRefusal(porcelainStatus, submodules) {
     return releaseRefusalReason(porcelainStatus) ?? submoduleReleaseRefusalReason(submodules);
 }
@@ -1755,7 +1772,7 @@ function commandRefresh(repoRoot, name) {
     // `composer install`, `npm ci`, and a `git submodule update` that talks to this same remote, so
     // one more git call is neither a surprise nor measurable against them.
     if (expected.checkBase) {
-        run('git', ['-C', path, 'fetch', 'origin', '--quiet'], path);
+        run('git', fetchOriginArgs(path, '--quiet'), path);
     }
 
     const base = expected.checkBase
@@ -1808,7 +1825,7 @@ function commandRelease(repoRoot, name, requestedBranch) {
     // The fetch runs BEFORE the tree is judged, deliberately. It touches no working-tree file, and
     // moving it out from between the guard and the detach takes the one network round-trip out of
     // the window in which a tree can be dirtied without the guard noticing.
-    run('git', ['-C', path, 'fetch', 'origin'], path);
+    run('git', fetchOriginArgs(path), path);
 
     // Scoped to the same submodules `status` judges this tree by, so the two halves of the gate
     // cannot disagree about what the tree is even supposed to carry.
@@ -1873,7 +1890,7 @@ function commandRelease(repoRoot, name, requestedBranch) {
  */
 export function provisionSteps(repoRoot, path) {
     return [
-        { command: 'git', args: ['-C', repoRoot, 'fetch', 'origin'], cwd: repoRoot },
+        { command: 'git', args: fetchOriginArgs(repoRoot), cwd: repoRoot },
         { command: 'git', args: ['-C', repoRoot, 'worktree', 'add', '--detach', path, 'origin/main'], cwd: repoRoot },
         { command: 'git', args: ['-C', path, 'submodule', 'update', '--init', ...SUBMODULES], cwd: path },
         { command: 'composer', args: ['install', '--no-interaction'], cwd: path },
