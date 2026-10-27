@@ -953,6 +953,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The served application boots from the same three submodules the `pest`
+      # job checks out: collection and asset-container configs in `content/`, the
+      # Control Panel login user in `users/`, and the form configurations in
+      # `resources/forms/`. Without them every smoke stops at the login screen
+      # and fails on whatever it reaches first (#378); tests/Pest.php now refuses
+      # the run and names what is missing instead. Same token wiring as `pest`.
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
+
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
@@ -975,10 +988,9 @@ jobs:
       - name: Configure Composer auth for private GitHub packages
         run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
 
-      # The browser smoke seeds its own throwaway collection, so it needs no
-      # `content/` submodule. It does need the framework booted: `.env` + app
-      # key, plus `statamic:install` (run by post-autoload-dump) to publish the
-      # Statamic core CP assets the served Control Panel loads.
+      # The framework has to be booted: `.env` + app key, plus `statamic:install`
+      # (run by post-autoload-dump) to publish the Statamic core CP assets the
+      # served Control Panel loads.
       - name: Prepare environment file
         run: cp .env.example .env
 
