@@ -707,6 +707,35 @@ On `main`'s own lock (laravel/framework `v13.35.0`) the commands still reach the
 
 **Guard test.** `tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php`. In the booted application it calls the patched resolver's command lookup and requires each of the seven commands in `app/Console/Commands` and a command registered through `Artisan::starting()` (`migrate`). With the unpatched resolver restored in `vendor/`, it fails naming the missing patch.
 
+### `symfony/console` Windows null device for the stty restore
+
+<!-- cspell:ignore stty -->
+
+`patches/symfony-console-terminal-input-windows-null-device.patch` is temporary, carried in by #2769 and removed by #2771. It applies to the locked `v8.1.9`. The defect is diagnosed in `UAMS-Web/wordpress-importer#83`.
+
+**What it fixes.** A `ChoiceQuestion` (a numbered prompt) offers its choices for autocompletion, so `QuestionHelper` reads the answer through `TerminalInputHelper` whenever `stty` is available, which it is in a Git Bash session. `TerminalInputHelper` restores the terminal with `stty <state> 2>/dev/null || stty sane`, in `finish()` and in its signal handler. `shell_exec()` runs that through `cmd.exe` on Windows, which has no `/dev/null`, so `cmd.exe` prints `The system cannot find the path specified.` after every answer and runs `stty sane` instead of the exact restore. `UAMS-Web/wordpress-importer#83` counted 16 of these in one import run.
+
+Measured on Windows 11 Pro 10.0.26200.9711 with Herd PHP 8.4.20 (NTS x64), with a `ChoiceQuestion` answered at a Windows console, `shell_exec()` running through `cmd.exe`, and Git for Windows 2.55.0's `stty` (GNU coreutils 8.32) on `PATH`:
+
+| Run | Unpatched | Patched |
+| --- | --- | --- |
+| Lines reading `The system cannot find the path specified.` after the answer | 1 | 0 |
+| The answer read | `cherry` | `cherry` |
+
+**What the patch does.** Both restores send `stty`'s error output to `NUL` on Windows and to `/dev/null` elsewhere, the same choice `Terminal::hasSttyAvailable()` already makes. On macOS and Linux the command is unchanged.
+
+**Upstream.** [`symfony/symfony#67161`](https://github.com/symfony/symfony/pull/67161), merged into `6.4` on 2026-10-19, fixes `finish()` only. On the `8.1` and `8.2` branches the signal handler's restore still sends its errors to `/dev/null` (read 2026-10-27), and no tag carries even the `finish()` fix: `v8.1.9` is the latest. Offering the signal-handler half upstream is #2770.
+
+**Retirement condition.** A released `symfony/console` on the line this application installs whose `TerminalInputHelper` picks the null device by platform at both restores. Check the tag, per *Checking whether the fix shipped* in the [`upstream-patch-lifecycle`](../.claude/skills/upstream-patch-lifecycle/SKILL.md) skill. A release carrying only `#67161` makes the first hunk fail to apply; the patch then has to be cut down to the signal-handler hunk, not removed. The guard test changes with it: upstream writes the `finish()` restore through a `$nullDevice` variable, so its second case must then count one inline restore instead of two.
+
+**Removal checklist.** Remove all of these together, the patch before the package moves:
+
+- `patches/symfony-console-terminal-input-windows-null-device.patch`
+- `tests/Feature/Config/SymfonyConsoleWindowsNullDevicePatchTest.php`, which reads the patched vendor source and goes red once the patch is gone
+- Its `extra.patches` entry in `composer.json`, then `composer patches-relock --no-interaction` and `composer update --lock --no-interaction`
+
+**Guard test.** `tests/Feature/Config/SymfonyConsoleWindowsNullDevicePatchTest.php`. It requires no `2>/dev/null || stty sane` restore and exactly two platform-chosen restores in the vendored `TerminalInputHelper`. With the unpatched file restored in `vendor/`, both cases fail. It reads the source rather than driving a prompt, because the defect only shows with a real terminal attached.
+
 ## Required end-to-end steps
 
 1. Update the relevant `.original.php` and `.patched.php` snippet files in
