@@ -15,7 +15,7 @@ use Statamic\Facades\Stache;
 use Statamic\Facades\YAML;
 
 /*
- | Does the HTTP Response Code radio show the code a redirect stores (#3362)?
+ | Does the HTTP Response Code radio show the code a redirect stores (#326)?
  |
  | Every writer stores `response` as a string such as `'301'`, and both
  | blueprints default to `'301'`. The radio selects an option only when its key

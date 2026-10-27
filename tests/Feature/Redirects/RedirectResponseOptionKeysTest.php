@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 /**
  * The HTTP Response Code options in both redirect blueprints are strings, the
- * same type every writer stores (#3362).
+ * same type every writer stores (#326).
  *
  * The Control Panel's radio selects an option only when its key is identical to
  * the stored value. With integer keys and `'301'` stored, an imported entry and a
