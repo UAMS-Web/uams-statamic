@@ -132,19 +132,19 @@ tabs:
               instructions: 'You should almost always use `301 Moved Permanently`.'
               options:
                 -
-                  key: 301
+                  key: '301'
                   value: '301 Moved Permanently'
                 -
-                  key: 302
+                  key: '302'
                   value: '302 Found'
                 -
-                  key: 303
+                  key: '303'
                   value: '303 See Other'
                 -
-                  key: 307
+                  key: '307'
                   value: '307 Temporary Redirect'
                 -
-                  key: 308
+                  key: '308'
                   value: '308 Permanent Redirect'
               default: '301'
               listable: false
