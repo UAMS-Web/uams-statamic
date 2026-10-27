@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Pest\Browser\Playwright\Playwright;
 use Tests\Support\BrowserAssetFreshness;
+use Tests\Support\BrowserSubmodules;
 use Tests\Support\BrowserWriteIsolation;
 use Tests\TestCase;
 
@@ -83,6 +84,11 @@ pest()->tia()->directory('tests/.pest/tia');
 // relocation rather than an ignore rule.
 uses(TestCase::class)
     ->beforeEach(function () {
+        // Refuse the run when content/, users/ or resources/forms/ is absent (#378).
+        // Without them every Control Panel smoke fails on whatever it reaches first,
+        // a missing collection, asset container or login user, rather than on this.
+        BrowserSubmodules::assertPresent();
+
         // Refuse the run outright when the built assets are older than their
         // sources (UAMS-Web/uams-statamic-archive#2252). A browser fixture resolves its script tag through
         // `public/build/manifest.json`, so a stale build makes the suite report a
