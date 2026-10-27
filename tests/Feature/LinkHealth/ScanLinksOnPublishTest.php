@@ -6,6 +6,7 @@ use App\Jobs\ScanEntryLinks;
 use App\Jobs\ScanLinkHealth;
 use App\Listeners\ScanLinksOnPublish;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -233,13 +234,41 @@ it('still debounces at the smallest window that is not zero', function (): void 
     // Pairs with the zero-window test above to pin the boundary from both sides. With only
     // that one, `<= 0` and `<= 1` are indistinguishable -- and under `<= 1` a one-second
     // window would silently stop debouncing at all.
+    //
+    // The clock is pinned to the start of a second (#3328). The cache stores expiry in whole
+    // seconds, so a one-second window ends at the next second boundary on the wall clock;
+    // two saves on a real clock that straddle one push twice, which a loaded machine made
+    // happen often enough to fail a parallel run.
     Queue::fake();
     config(['link_health.on_publish.debounce_seconds' => 1]);
+    $this->travelTo(Carbon::parse('2026-10-26 12:00:00.000'));
 
     publishSaved(fakeEntry('entry-8'));
     publishSaved(fakeEntry('entry-8'));
 
     Queue::assertPushed(ScanEntryLinks::class, 1);
+});
+
+it('holds a one-second window until the next second and no longer', function (): void {
+    // Pins the window's far edge, which the test above cannot see: a window that never
+    // expired would pass it too. One millisecond before the next second the entry is still
+    // debounced; at the second, the window has passed and the next save scans again.
+    Queue::fake();
+    config(['link_health.on_publish.debounce_seconds' => 1]);
+    $this->travelTo(Carbon::parse('2026-10-26 12:00:00.000'));
+
+    // Claim the window, then save again just inside it
+    publishSaved(fakeEntry('entry-9'));
+    $this->travelTo(Carbon::parse('2026-10-26 12:00:00.999'));
+    publishSaved(fakeEntry('entry-9'));
+
+    Queue::assertPushed(ScanEntryLinks::class, 1);
+
+    // Save once the window has passed
+    $this->travelTo(Carbon::parse('2026-10-26 12:00:01.000'));
+    publishSaved(fakeEntry('entry-9'));
+
+    Queue::assertPushed(ScanEntryLinks::class, 2);
 });
 
 it('ignores an entry that cannot name itself', function (): void {
