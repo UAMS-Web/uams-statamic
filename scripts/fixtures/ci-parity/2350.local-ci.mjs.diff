@@ -1,0 +1,7 @@
+diff --git a/scripts/local-ci.mjs b/scripts/local-ci.mjs
+index bed2a902f..01331bac4 100755
+--- a/scripts/local-ci.mjs
++++ b/scripts/local-ci.mjs
+@@ -849 +849 @@ function assertExit(code, what) {
+-function resolveTool({ name, candidates = [], onPath, hint, envVar }) {
++export function resolveTool({ name, candidates = [], onPath, hint, envVar }) {
