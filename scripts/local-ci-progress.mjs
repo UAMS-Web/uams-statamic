@@ -211,7 +211,7 @@ export function runHasStalled(idleSeconds, stallAfterSeconds) {
     return stallAfterSeconds > 0 && idleSeconds >= stallAfterSeconds;
 }
 
-// #3388: read the summary block by its own delimiters, never by a line count.
+// #338: read the summary block by its own delimiters, never by a line count.
 //
 // The block opens with the `CI summary` rule, prints a preamble (`Runner:`, `PHP:`,
 // one line per pest band), a `----` rule, one verdict row per job, and a closing

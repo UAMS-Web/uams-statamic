@@ -51,7 +51,7 @@ describe('runHasStalled', () => {
     })
 })
 
-// #3388: the summary block is read by its own delimiters. The fixtures are built the
+// #338: the summary block is read by its own delimiters. The fixtures are built the
 // way the runner prints them (`job.padEnd(9)`, colored verdicts, a preamble before the
 // `----` rule), and the job list is the runner's own CHAIN, so a job added there is a
 // job these cases expect to see.
