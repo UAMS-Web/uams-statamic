@@ -144,20 +144,31 @@ describe('the gate decision', () => {
 })
 
 describe('the two commits that had to bypass it (criterion 5)', () => {
-    // Read at each commit's OWN file state: the markers have moved since.
-    const at = (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: repoRoot, encoding: 'utf8' })
-    const diffAt = (sha, file) => execFileSync(
-        'git', ['diff', '--unified=0', `${sha}^1`, sha, '--', file], { cwd: repoRoot, encoding: 'utf8' },
-    )
+    // Read at each commit's OWN file state: the markers have moved since. The two
+    // commits are on the line in UAMS-Web/uams-statamic-archive (its pull requests
+    // #2373 and #2375), which this repository shares no history with, so each one's
+    // `scripts/local-ci.mjs` and its `git diff --unified=0` against its first parent
+    // are committed under scripts/fixtures/ci-parity/ rather than read from git. A
+    // live read resolved only where the archive's objects happened to be present: in
+    // a local checkout, never on a CI runner (#375).
+    const fixture = (name) => readFileSync(join(repoRoot, 'scripts', 'fixtures', 'ci-parity', name), 'utf8')
 
-    it.each([
-        ['#2350', 'dc036a092'],
-        ['#2312', 'b792b083b'],
-    ])('%s would no longer need --no-verify', (_label, sha) => {
-        const source = at(sha, 'scripts/local-ci.mjs')
-        const diff = diffAt(sha, 'scripts/local-ci.mjs')
+    it.each(['#2350', '#2312'])('%s would no longer need --no-verify', (label) => {
+        const number = label.slice(1)
+        const source = fixture(`${number}.local-ci.mjs.txt`)
+        const diff = fixture(`${number}.local-ci.mjs.diff`)
         expect(diff).not.toBe('')                       // the diff really is non-empty
         expect(touchesRegion(touchedLines(diff), parityRegions(source, 'mjs'))).toBe(false)
+    })
+
+    it('reads fixtures that still carry marked regions, so a false result is not vacuous', () => {
+        // An empty or truncated fixture has no regions at all, and nothing touches no
+        // region: the case above would then pass whatever the diff said. Each fixture
+        // must still hold the file's marked regions, and the diff must name lines.
+        for (const number of ['2350', '2312']) {
+            expect(parityRegions(fixture(`${number}.local-ci.mjs.txt`), 'mjs').length).toBeGreaterThan(0)
+            expect(touchedLines(fixture(`${number}.local-ci.mjs.diff`)).length).toBeGreaterThan(0)
+        }
     })
 })
 
@@ -275,7 +286,7 @@ describe('a marker in the middle of a comment block (#3238)', () => {
     })
 
     it('covers the run: body of the real mutate step, not only the comment above it', () => {
-        // Measured on main at 32ad877cb: this marker's region was lines 675 to 689,
+        // Measured on UAMS-Web/uams-statamic-archive main at 32ad877cb: this marker's region was lines 675 to 689,
         // the comment block alone, and an edit to the step's run: body was refused.
         const real = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
         const lines = real.split('\n')

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -251,25 +252,35 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // may be OLDER than this file. A pre-#1882 `parseArgs` has no case for the
         // flag, so its `default:` arm throws `Unknown option` — which would make
         // every branch cut before this change un-validatable the moment it merged.
-        // Asserted against the real base-branch source, not a hand-written stand-in.
         const argv = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
         expect(argv).not.toContain(RUNNER_PINNED_FLAG)
-
-        const baseRunner = execFileSync('git', ['-C', repoRoot, 'show', 'origin/main:scripts/local-ci.mjs'], { encoding: 'utf8' })
-        for (const arg of argv) {
-            if (!arg.startsWith('-')) {
-                continue
-            }
-            // Every flag the handoff forwards must be one the BASE branch's parser
-            // already knows, or that older runner dies before it validates anything.
-            expect(baseRunner).toContain(`'${arg}'`)
-        }
 
         // And the env channel is what the child actually reads — a name an older
         // parser cannot see at all.
         expect(RUNNER_PINNED_ENV).toBe('LOCAL_CI_RUNNER_PINNED')
         expect(readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8'))
             .toContain(`[RUNNER_PINNED_ENV]: '1'`)
+    })
+
+    it('forwards only flags the base branch\'s runner already parses', (context) => {
+        // Asserted against the real base-branch source, not a hand-written stand-in.
+        // A CI checkout fetches only the commit under test and creates no
+        // `origin/main`, so there the base cannot be read at all (#375). That case
+        // is a skip that names the missing ref, never a pass: with no base source
+        // the loop below would have nothing to compare against.
+        const base = readAtRef(repoRoot, 'origin/main', 'scripts/local-ci.mjs')
+        if (base.unreachable !== null) {
+            context.skip(base.unreachable)
+        }
+
+        const flags = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
+            .filter((arg) => arg.startsWith('-'))
+        expect(flags.length).toBeGreaterThan(0)
+        for (const arg of flags) {
+            // Every flag the handoff forwards must be one the BASE branch's parser
+            // already knows, or that older runner dies before it validates anything.
+            expect(base.source).toContain(`'${arg}'`)
+        }
     })
 
     it('rejects an unknown job name even when `all` is also requested', () => {
@@ -424,5 +435,81 @@ describe('--jobs usage text', () => {
 
         expect(opts.jobs).toEqual(documentedJobs())
         expect(unknownJobs(opts.jobs)).toEqual([])
+    })
+})
+
+/**
+ * Read a file as it stands at a git ref, or say why the ref cannot be read.
+ *
+ * A ref that does not resolve is reported, not thrown, so a caller can skip with
+ * a stated reason: a CI checkout has the commit under test and nothing else. A
+ * ref that resolves but lacks the file throws, because that is a real finding
+ * about the ref and must fail rather than skip.
+ *
+ * @param {string} cwd Any directory inside the repository to read.
+ * @param {string} ref The ref to read the file at, such as `origin/main`.
+ * @param {string} file The file's path relative to the repository root.
+ * @returns {{source: string|null, unreachable: string|null}} The file's text, or
+ *          the reason the ref could not be read.
+ */
+function readAtRef(cwd, ref, file) {
+    // Check whether the ref names a commit in this checkout at all
+    try {
+        execFileSync('git', ['-C', cwd, 'rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+        })
+    } catch {
+        return {
+            source: null,
+            unreachable: `${ref} does not resolve in this checkout, so ${file} cannot be read at it`,
+        }
+    }
+
+    // Read the file at the ref; a missing file throws out of here on purpose
+    return {
+        source: execFileSync('git', ['-C', cwd, 'show', `${ref}:${file}`], {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        }),
+        unreachable: null,
+    }
+}
+
+describe('reading a file at a ref a checkout may not have (#375)', () => {
+    // A throwaway repository with one commit and no remote: the shape of a CI
+    // checkout, which has the commit under test and no `origin/main`.
+    const withRepo = (body) => {
+        const dir = mkdtempSync(join(tmpdir(), 'read-at-ref-'))
+        try {
+            const git = (...args) => execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+            git('init', '--quiet')
+            writeFileSync(join(dir, 'present.txt'), 'present\n')
+            git('add', 'present.txt')
+            git('-c', 'user.name=test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '-m', 'one')
+            body(dir)
+        } finally {
+            rmSync(dir, { recursive: true, force: true })
+        }
+    }
+
+    it('reports a ref that does not resolve, naming it, instead of reading nothing', () => {
+        withRepo((dir) => {
+            expect(readAtRef(dir, 'origin/main', 'present.txt')).toEqual({
+                source: null,
+                unreachable: 'origin/main does not resolve in this checkout, so present.txt cannot be read at it',
+            })
+        })
+    })
+
+    it('reads the file when the ref resolves', () => {
+        withRepo((dir) => {
+            expect(readAtRef(dir, 'HEAD', 'present.txt')).toEqual({ source: 'present\n', unreachable: null })
+        })
+    })
+
+    it('throws when the ref resolves but the file is not there, rather than skipping', () => {
+        withRepo((dir) => {
+            expect(() => readAtRef(dir, 'HEAD', 'absent.txt')).toThrow()
+        })
     })
 })
