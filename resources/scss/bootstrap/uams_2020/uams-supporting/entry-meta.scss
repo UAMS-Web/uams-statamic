@@ -1,0 +1,30 @@
+.entry-meta {
+    color: $gray-600;
+    font-size: 1rem;
+
+    &.entry-segment-meta {
+        margin: 0 0 1rem;
+        padding: 1em;
+        border-radius: $border-radius;
+        border: $border-width solid $card-border-color;
+    }
+
+    .entry-meta-item {
+        margin-bottom: calc($font-size-base / 2);
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        .entry-meta-icon {
+            // WCAG 1.4.3/1.4.11: was $gray-400 (2.39 vs #fff); $gray-600 = 4.64 PASS. (UAMS-Web/uams-statamic-archive#1047)
+            color: $gray-600;
+        }
+
+        .entry-meta-label {
+            font-weight: $font-weight-medium;
+        }
+
+        // .entry-meta-value {}
+    }
+}

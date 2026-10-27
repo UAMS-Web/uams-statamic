@@ -1,0 +1,469 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the building. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_place
+              type: entries
+              display: 'Schema Object for the Building'
+              instructions: 'Select a schema object for the building, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Place'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Building Name'
+              instructions: |-
+                Name the facility using only its full official name (e.g., "Outpatient Center").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the facility with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Name(s) for the Building'
+              if:
+                schema_object: 'equals empty'
+      -
+        display: 'Building Type'
+        fields:
+          -
+            handle: subtype_building
+            field:
+              options:
+                -
+                  key: Wikidata_Building_Q41176
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_CommercialBuilding
+                  value: 'Commercial Building'
+                -
+                  key: Wikidata_MedicalFacility_Q4260475
+                  value: 'Medical Facility'
+                -
+                  key: Wikidata_OfficeBuilding_Q1021645
+                  value: 'Office Building'
+                -
+                  key: Wikidata_PublicBuilding_Q294422
+                  value: 'Public Building'
+                -
+                  key: Wikidata_SchoolBuilding_Q1244442
+                  value: 'School Building'
+              type: radio
+              display: 'Specific Type of Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_commercialbuilding
+            field:
+              options:
+                -
+                  key: Wikidata_CommercialBuilding
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_RetailBuilding_Q18760388
+                  value: 'Retail Building'
+              type: radio
+              display: 'Specific Type of Commercial Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                subtype_building: 'equals Wikidata_CommercialBuilding'
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_retailbuilding
+            field:
+              options:
+                -
+                  key: Wikidata_RetailBuilding_Q18760388
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_ShoppingCenter_Q11315
+                  value: 'Shopping Center'
+              type: radio
+              display: 'Specific Type of Retail Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building_commercialbuilding: 'equals Wikidata_RetailBuilding_Q18760388'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_medicalfacility
+            field:
+              options:
+                -
+                  key: Wikidata_MedicalFacility_Q4260475
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_Hospital
+                  value: Hospital
+              type: radio
+              display: 'Specific Type of Medical Facility'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building: 'equals Wikidata_MedicalFacility_Q4260475'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_officebuilding
+            field:
+              options:
+                -
+                  key: Wikidata_OfficeBuilding_Q1021645
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_AdministrativeBuilding_Q2519340
+                  value: 'Administrative Building'
+              type: radio
+              display: 'Specific Type of Office Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building: 'equals Wikidata_OfficeBuilding_Q1021645'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_administrativebuilding
+            field:
+              options:
+                -
+                  key: Wikidata_AdministrativeBuilding_Q2519340
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_GovernmentBuilding
+                  value: 'Government Building'
+              type: radio
+              display: 'Specific Type of Administrative Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building_officebuilding: 'equals Wikidata_AdministrativeBuilding_Q2519340'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_publicbuilding
+            field:
+              options:
+                -
+                  key: Wikidata_PublicBuilding_Q294422
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_CivicStructure
+                  value: 'Civic Structure'
+              type: radio
+              display: 'Specific Type of Public Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building: 'equals Wikidata_PublicBuilding_Q294422'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_civicstructure
+            field:
+              options:
+                -
+                  key: SchemaOrg_CivicStructure
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_EventVenue
+                  value: 'Event Venue'
+                -
+                  key: SchemaOrg_GovernmentBuilding
+                  value: 'Government Building'
+              type: radio
+              display: 'Specific Type of Civic Structure'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building_publicbuilding: 'equals SchemaOrg_CivicStructure'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_governmentbuilding
+            field:
+              options:
+                -
+                  key: SchemaOrg_GovernmentBuilding
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_CityHall
+                  value: 'City Hall'
+                -
+                  key: SchemaOrg_Courthouse
+                  value: Courthouse
+                -
+                  key: SchemaOrg_LegislativeBuilding
+                  value: 'Legislative Building'
+              type: radio
+              display: 'Specific Type of Government Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if_any:
+                subtype_building_administrativebuilding: 'equals SchemaOrg_GovernmentBuilding'
+                subtype_building_civicstructure: 'equals SchemaOrg_GovernmentBuilding'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_eventvenue
+            field:
+              options:
+                -
+                  key: SchemaOrg_EventVenue
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_Arena_Q641226
+                  value: Arena
+                -
+                  key: Wikidata_Stadium_Q483110
+                  value: Stadium
+              type: radio
+              display: 'Specific Type of Event Venue'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building_civicstructure: 'equals SchemaOrg_EventVenue'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_schoolbuilding
+            field:
+              options:
+                -
+                  key: Wikidata_SchoolBuilding_Q1244442
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: Wikidata_UniversityBuilding_Q19844914
+                  value: 'University Building'
+              type: radio
+              display: 'Specific Type of School Building'
+              instructions: 'Select the specific type of place that most closely matches this building. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building: 'equals Wikidata_SchoolBuilding_Q1244442'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Additional Details'
+        fields:
+          -
+            handle: additional_type
+            field: uamsweb_brand_organization.additional_type
+            config:
+              display: 'More Specific Type(s) for This Building From External Vocabularies in Microdata Syntax'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Building'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: google_business_profile_cid_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this building have a listing on Google Business Profiles?'
+              validate:
+                - required
+          -
+            handle: google_business_profile_cid
+            field: uamsweb_common_identifiers.google_business_profile_cid
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                google_business_profile_cid_query: 'equals true'
+          -
+            handle: brand_organization_query
+            field: uamsweb_schema.brand_organization_query
+            config:
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: brand_organization
+            field: uamsweb_schema.brand_organization
+            config:
+              display: 'Third-Party Brand Organization'
+              if:
+                schema_object: 'equals empty'
+                brand_organization_query: 'equals true'
+          -
+            handle: streetaddress
+            field: uamsweb_common_address.street_address
+            config:
+              display: 'Street Address'
+              validate:
+                - required
+          -
+            handle: city
+            field:
+              type: text
+              display: City
+              validate:
+                - required
+              localizable: false
+          -
+            handle: state
+            field: uamsweb_common_address.state
+            config:
+              validate:
+                - required
+          -
+            handle: zip
+            field: uamsweb_common_address.zip
+            config:
+              validate:
+                - required
+          -
+            handle: regions
+            field: uamsweb_common_address.regions
+            config:
+              display: 'Arkansas Region'
+              max_items: 1
+              validate:
+                - required
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Main Facility Entrance'
+              validate:
+                - required
+                - lat_lng
+          -
+            handle: parking_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is parking available at this facility?'
+              localizable: false
+          -
+            handle: parking_facility
+            field:
+              type: entries
+              display: 'Main Parking Area for the Facility'
+              collections:
+                - facilities
+              query_scopes:
+                - entries_by_blueprint_parking_facility
+                - entries_by_blueprint_parking_division
+              if:
+                parking_query: 'equals true'
+              select_across_sites: true
+              max_items: 1
+              create: false
+              localizable: false
+          -
+            handle: photo
+            field:
+              max_files: 1
+              container: images
+              type: assets
+              display: 'Photo of the Facility Exterior'
+              instructions: |-
+                Select an image that will help the patient find the appropriate facility from the road.
+
+                The photo orientation must be landscape (i.e., horizontal).
+
+                It is restricted to a 16:9 aspect ratio (or close to it) and has a minimum dimension of 1200x675.
+
+                The image will be automatically cropped to a 16:9 aspect ratio when used on the site; and a 1.91:1 aspect ratio when shared to Facebook and Twitter.
+              validate:
+                - 'dimensions:min_width=1200,min_height=675,ratio=16/9'
+              localizable: false
+          -
+            handle: globallocationnumber
+            field: uamsweb_common_identifiers.globallocationnumber
+            config:
+              display: 'Global Location Number for the Facility'
+              if:
+                schema_object: 'equals empty'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            handle: contained_locations
+            field:
+              type: entries
+              display: 'Locations Contained in This Facility'
+              instructions: 'Read-only. The clinical locations whose containing facility is this building.'
+              visibility: computed
+              localizable: false
+title: Building

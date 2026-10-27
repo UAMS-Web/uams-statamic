@@ -1,0 +1,21 @@
+.text-callout {
+    margin: $uams-module-padding-mobile 0;
+    padding: $card-spacer-x;
+    border: 1px solid $card-border-color;
+    border-left-width: $border-radius;
+    border-radius: $border-radius;
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@each $color, $value in $theme-colors {
+    .text-callout-#{$color} {
+        border-left-color: $value;
+    }
+}

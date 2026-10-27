@@ -1,0 +1,32 @@
+<div class="custom-control custom-switch">
+	<input type="hidden" name="{{ handle }}" value="0">
+	<input
+		class="{{
+			[
+				'custom-control-input' => true,
+				'is-invalid' => error
+			] | classes | collapse_whitespace
+		}}"
+		id="{{ id }}"
+		type="checkbox"
+		name="{{ handle }}"
+		value="1"
+		{{ if js_driver }}{{ js_attributes }}{{ /if }}
+		{{ ( value && value !== '0' ) | attribute:checked }}
+		{{ ( validate| contains:required ) | attribute:required }}
+		{{# `visibility: read_only` — see README.md in this directory. The hidden
+			input above still submits `0`, which is the documented read-only
+			fallback when the user can't change the toggle. #}}
+		{{ ( visibility == 'read_only' ) | attribute:disabled }}
+		{{ if error }}
+			aria-invalid="true" aria-describedby="{{ id }}-error"
+		{{ elseif instructions }}
+			aria-describedby="{{ id }}-instructions"
+		{{ /if }}
+	>
+	{{ if inline_label }}
+		<label class="custom-control-label" for="{{ id }}">
+			{{ inline_label }}
+		</label>
+	{{ /if }}
+</div>

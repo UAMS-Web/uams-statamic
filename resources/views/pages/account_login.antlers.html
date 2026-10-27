@@ -1,0 +1,70 @@
+{{#
+	@name Account: Log in
+	@desc The public sign-in page. Selected by a `pages` entry's `template:` override (#2113).
+#}}
+
+{{# `member:login_form` emits the <form> element, its action, method and CSRF itself
+	(Statamic\Auth\UserTags::loginForm), so this template supplies only the fields. The
+	session data it parses the contents with — `errors`, `success`, `old` — is what the
+	alerts and value repopulation below read.
+
+	Email is the login handle here, not `username`. `statamic.users.login_type` is not set
+	in this installation, so Statamic authenticates on email; the `username` field the user
+	blueprint carries (UAMS-Web/uams-statamic-archive#2235) is a record of what the source forms collected and does NOT
+	sign anyone in. Labelling this input "Email" is therefore accurate rather than a
+	simplification. #}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		<h1>Log in</h1>
+
+		{{ member:login_form }}
+			{{ if errors }}
+				{{# Antlers is raw-by-default and these strings reach the page from a
+					failed submission, so they are escaped. #}}
+				<div class="alert alert-danger" role="alert">
+					<ul class="mb-0 list-unstyled">
+						{{ errors }}
+							<li>{{ value | entities }}</li>
+						{{ /errors }}
+					</ul>
+				</div>
+			{{ /if }}
+
+			<div class="mb-3">
+				<label class="form-label" for="login-email">Email</label>
+				<input
+					class="form-control"
+					id="login-email"
+					type="email"
+					name="email"
+					value="{{ old:email | entities }}"
+					autocomplete="email"
+					required
+				>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label" for="login-password">Password</label>
+				<input
+					class="form-control"
+					id="login-password"
+					type="password"
+					name="password"
+					autocomplete="current-password"
+					required
+				>
+			</div>
+
+			<div class="form-check mb-3">
+				<input class="form-check-input" id="login-remember" type="checkbox" name="remember" value="1">
+				<label class="form-check-label" for="login-remember">Keep me signed in</label>
+			</div>
+
+			<button type="submit" class="btn btn-primary">Log in</button>
+		{{ /member:login_form }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

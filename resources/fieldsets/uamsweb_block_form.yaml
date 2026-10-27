@@ -1,0 +1,45 @@
+title: 'UAMSWeb Block, Form'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include the Description From the Form Settings?'
+      default: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+      if:
+        block_description_query: 'equals false'
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: form
+    field: uamsweb_common.form
+    config:
+      validate:
+        - required

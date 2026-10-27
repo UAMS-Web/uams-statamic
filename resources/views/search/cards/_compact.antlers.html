@@ -1,0 +1,69 @@
+{{#
+	@name  Search Card: Compact
+	@desc  The compact search-result card (UAMS-Web/uams-statamic-archive#1510): an optional 16:9 thumbnail beside the
+	       title, an optional "Part of {parent}" line, and a short excerpt. Shared by the
+	       generic fallback (`pages`, `knowledge_bases`, any unmapped type), the Area of
+	       Expertise card, and the Area-of-Expertise section card, so they read as one
+	       family in a one-per-row results list rather than as grid cards stretched to
+	       full width. Expects one search hit in scope (`title`, `url`, and optionally
+	       `excerpt` and `featured_image_16_9`).
+
+	       Antlers output is raw by default, so the editor/importer-controlled title,
+	       excerpt and parent name are escaped here. The thumbnail is decorative (the
+	       title beside it names the result), so it carries an empty `alt`, and it is a
+	       Glide crop rather than the original, which the field requires to be at least
+	       1200 pixels wide. It is hidden below `sm`, where it would push the title under
+	       the fold of a narrow result.
+
+	       Both columns are `position-static`: Bootstrap gives every `.col` a relative
+	       position, which would bound the `stretched-link` overlay to the text column
+	       and leave the thumbnail unclickable. Static columns let it cover the card.
+	@param parent_name   Optional. A parent's name, shown as "Part of {parent}".
+	@param parent_url    Optional. The parent's url, linking that name.
+	@param subtitle      Optional. A line under the title, such as a person's clinical
+	                     title. Escaped here.
+	@param portrait_url  Optional. A portrait asset url. When set it replaces the 16:9
+	                     thumbnail with a small 3:4 crop, shown at every width because a
+	                     face identifies a person more than a landscape photo identifies a
+	                     page. With none, the card has no image at all rather than a
+	                     "no image available" placeholder.
+#}}
+
+{{# Capture the hit's own url first: the featured-image asset pair rebinds `url`. #}}
+{{ $card_url = url }}
+
+<div class="item">
+	<div class="card search-card h-100">
+		<div class="row no-gutters">
+			{{ if portrait_url }}
+				<div class="col-3 col-sm-2 position-static">
+					<img src="{{ glide :src="portrait_url" w="240" h="320" fit="crop_focal" }}" alt="" class="search-card-thumb search-card-portrait img-fluid" loading="lazy">
+				</div>
+			{{ elseif featured_image_16_9 }}
+				{{ featured_image_16_9 }}
+					<div class="col-sm-4 col-md-3 d-none d-sm-block position-static">
+						<img src="{{ glide :src="url" w="480" h="270" fit="crop_focal" }}" alt="" class="search-card-thumb img-fluid" loading="lazy">
+					</div>
+				{{ /featured_image_16_9 }}
+			{{ /if }}
+			<div class="col position-static">
+				<div class="card-body">
+					{{# A whole-card `stretched-link` would cover the parent link, so it
+					    is used only when the card carries no second link. #}}
+					<h2 class="card-title h5">
+						<a href="{{ $card_url }}"{{ unless parent_url }} class="stretched-link"{{ /unless }}>{{ title | strip_tags | entities }}</a>
+					</h2>
+					{{ if subtitle }}
+						<p class="card-subtitle text-muted mb-1">{{ subtitle | strip_tags | entities }}</p>
+					{{ /if }}
+					{{ if parent_name }}
+						<p class="card-parent mb-1"><small>Part of {{ if parent_url }}<a href="{{ parent_url }}">{{ parent_name | strip_tags | entities }}</a>{{ else }}{{ parent_name | strip_tags | entities }}{{ /if }}</small></p>
+					{{ /if }}
+					{{ if excerpt }}
+						<p class="card-text text-muted mb-0">{{ excerpt | strip_tags | safe_truncate(200, '…') | entities }}</p>
+					{{ /if }}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

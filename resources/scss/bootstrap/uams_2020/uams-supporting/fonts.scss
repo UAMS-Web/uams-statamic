@@ -1,0 +1,101 @@
+// FiraGO self-hosted webfonts.
+// Files live at resources/fonts/firago/ and are resolved through the
+// `@resources` Vite alias declared in vite.config.js.
+// Source: https://github.com/bBoxType/FiraGO (OFL-licensed, see firago/OFL.txt).
+// Weights mirror the values consumed by $font-weight-* tokens in variables.scss.
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-Thin.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 100;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-ThinItalic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 200;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-ExtraLight.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 200;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-ExtraLightItalic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-Light.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 300;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-LightItalic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-Medium.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 500;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-MediumItalic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 600;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-SemiBoldItalic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-ExtraBold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "FiraGO";
+    font-style: italic;
+    font-weight: 800;
+    font-display: swap;
+    src: url("@resources/fonts/firago/FiraGO-ExtraBoldItalic.woff2") format("woff2");
+}

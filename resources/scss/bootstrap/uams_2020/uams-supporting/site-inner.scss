@@ -1,0 +1,8 @@
+
+.site-inner,
+.site-container > .content-sidebar-wrap {
+    flex-grow: 1;
+    // If .site-container isn't as tall as the viewport, expand this container vertically.
+    // Paired with display:flex on .site-container.
+
+}

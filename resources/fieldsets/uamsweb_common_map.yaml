@@ -1,0 +1,34 @@
+title: 'UAMSWeb Map'
+fields:
+  -
+    handle: map
+    field:
+      type: gps
+      display: 'Map Location'
+      instructions: 'Click the map or drag the marker to set the location, or type the latitude and longitude in decimal degrees.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: caption
+    field:
+      type: text
+      display: Caption
+      instructions: 'Optional. Names what the map shows — used as the map''s accessible name ("Map of …").'
+      localizable: true
+  -
+    handle: height
+    field:
+      type: integer
+      display: 'Height (pixels)'
+      instructions: 'Optional. Map height in pixels. Defaults to 320.'
+      min: 120
+      localizable: false
+  -
+    handle: zoom
+    field:
+      type: integer
+      display: 'Zoom Override'
+      instructions: 'Optional. Overrides the stored zoom level (1–19).'
+      min: 1
+      max: 19
+      localizable: false

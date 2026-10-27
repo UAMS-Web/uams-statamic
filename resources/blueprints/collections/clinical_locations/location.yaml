@@ -1,0 +1,2601 @@
+title: Location
+order: 1
+tabs:
+  main:
+    display: 'General Details'
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Name(s) for the Location'
+          -
+            handle: generic_name
+            field:
+              type: text
+              display: 'Generic Name'
+              instructions: 'An optional plain, patient-facing name for this location. Shown in directory listings where a simpler label reads better than the full (disambiguated) title. Leave blank to use the title. Does not change the entry title or URL.'
+              localizable: false
+          -
+            handle: location_types
+            field: uamsweb_common_fad.location_types
+            config:
+              display: 'Location Type(s)'
+              instructions: 'Used for filtering only'
+          -
+            handle: portals
+            field: uamsweb_common_fad.portal
+            config:
+              display: 'Patient Portal'
+              validate:
+                - required
+          -
+            handle: prepend_the
+            field: uamsweb_common.true_false
+            config:
+              display: 'Automatically prepend location name with "the" in phrases?'
+              instructions: 'Setting this to "Yes" will add the word "the" before the location name in headings such as "About [Location Name]".'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: hidden_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Exclude this location from the primary location list?'
+              instructions: 'Setting this to "Yes" will remove this location from the Location archive. This input will not affect whether the location will be displayed on profiles and search results.'
+              default: false
+              validate:
+                - required
+          -
+            handle: service_line_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this location associated with one or more UAMS Health service lines?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: service_line
+            field: uamsweb_common_fad.service_line_multiple
+            config:
+              instructions: 'If the location is not associated with a UAMS Health service line, select the relevant option that begins with "None."'
+              if:
+                service_line_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: epic_dep_ids_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have one or more UAMS Health Epic Department (DEP) IDs?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: epic_dep_ids
+            field: uamsweb_common_fad.epic_dep_ids
+            config:
+              instructions: "The location's Epic Department (DEP) IDs. Each MyChart open-scheduling widget references one or more of these in its own Department (DEP) ID field. Each ID may be listed once here and must not be declared by another location; IDs are compared ignoring capitalization and surrounding spaces."
+              if:
+                epic_dep_ids_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+                - 'unique_identifier_list:clinical_locations,{id},dep'
+          -
+            handle: npi_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a National Provider Identifier (NPI)?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: npi
+            field:
+              type: replicator
+              display: 'National Provider Identifier (NPI)'
+              instructions: "This value can be found by searching for the location in the <a href='https://npiregistry.cms.hhs.gov/search' target='_blank'>NPPES NPI Registry</a>. Each NPI may be listed once here and must not be held by another location; NPIs are compared ignoring capitalization and surrounding spaces."
+              button_label: 'Add NPI'
+              if:
+                npi_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+                - 'unique_identifier_list:clinical_locations,{id},item'
+              localizable: false
+              sets:
+                new_set_group:
+                  display: 'New NPI Group'
+                  sets:
+                    new_set:
+                      display: 'New NPI'
+                      fields:
+                        -
+                          handle: item
+                          field: uamsweb_common_identifiers.npi
+                          config:
+                            display: 'Organizational National Provider Identifier (NPI)'
+                            validate:
+                              - required
+                              - sometimes
+  brand:
+    display: Brand
+    sections:
+      -
+        fields:
+          -
+            handle: brand_organization_query
+            field: uamsweb_schema.brand_organization_query
+            config:
+              validate:
+                - required
+          -
+            handle: brand_organization
+            field: uamsweb_schema.brand_organization
+            config:
+              display: 'Third-Party Brand Organization'
+              validate:
+                - required
+                - sometimes
+              if:
+                brand_organization_query: 'equals true'
+  address:
+    display: Address
+    sections:
+      -
+        fields:
+          -
+            handle: parent_address_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a different address from its parent location?'
+              instructions: 'Leave this off to use the address of the location this one sits under. Turn it on, then choose which parts differ: the street address, the facility, the floor or suite, or the entrance map pin. Every part left off still comes from the parent.'
+              default: false
+              if:
+                parent: 'not empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parent_address_override_street_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a different street address and region from its parent location?'
+              instructions: 'Turn this on when this location sits at a different street address from its parent.'
+              default: false
+              if:
+                parent: 'not empty'
+                parent_address_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parent_address_override_facility_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location sit in a different facility from its parent location?'
+              instructions: 'Turn this on when this location is in a different building or wing from its parent, or is standalone while its parent is not.'
+              default: false
+              if:
+                parent: 'not empty'
+                parent_address_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parent_address_override_unit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a different floor or suite from its parent location?'
+              instructions: 'Turn this on when this location checks patients in on another floor or in another suite of the same facility.'
+              default: false
+              if:
+                parent: 'not empty'
+                parent_address_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parent_address_override_map_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a different entrance map pin from its parent location?'
+              instructions: 'Turn this on when patients reach this location through a different entrance from its parent.'
+              default: false
+              if:
+                parent: 'not empty'
+                parent_address_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: facility_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this location contained within a larger facility rather than being its own standalone facility?'
+              clearable: true
+              if:
+                parent_address_override_query: 'custom parentOverride:facility'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: facility
+            field: uamsweb_common_fad.facility
+            config:
+              instructions: 'Choose the most specific building or wing where this location is situated.'
+              if:
+                facility_query: 'equals true'
+                parent_address_override_query: 'custom parentOverride:facility'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: facility_level
+            field: uamsweb_common_fad.facility_level
+            config:
+              instructions: 'Choose the level of the facility where the patient will initially check in.'
+              if:
+                parent_address_override_query: 'custom parentOverride:unit'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: suite
+            field:
+              placeholder: 'e.g., Suite 1A'
+              type: text
+              display: 'Suite or Other Unit'
+              instructions: |-
+                Indicate the area where the patient would first check in.
+
+                Do not just include the number (e.g., enter "Suite 1A" not just "1A.").
+
+                Do not include landmarks (i.e., don't say "Next to this other thing").
+
+                If you are putting the name of another clinic here, this location should instead be set as a child of that location.
+              if:
+                parent_address_override_query: 'custom parentOverride:unit'
+              localizable: false
+          -
+            handle: address
+            field:
+              type: address
+              address_line_2_include: false
+              display: Address
+              if:
+                parent_address_override_query: 'custom parentOverride:street'
+              validate:
+                - sometimes
+                - required
+              localizable: false
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Facility Entrance'
+              validate:
+                - required
+                - sometimes
+                - lat_lng
+              if:
+                parent_address_override_query: 'custom parentOverride:map'
+          -
+            handle: regions
+            field: uamsweb_common_address.regions
+            config:
+              display: 'Arkansas Region'
+              max_items: 1
+              if:
+                parent_address_override_query: 'custom parentOverride:street'
+              validate:
+                - required
+                - sometimes
+  parking_information:
+    display: 'Parking Information'
+    sections:
+      -
+        fields:
+          -
+            handle: parent_parking_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have different parking or directions from its parent location?'
+              instructions: 'Leave this off to use the parking and directions of the location this one sits under. Turn it on when this location is reached differently — a different parking area, or its own suite-level directions from the parking area to check-in.'
+              default: false
+              if:
+                parent: 'not empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parking_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is parking available at this location?'
+              default: true
+              if:
+                facility_query: 'equals false'
+                parent_parking_override_query: 'custom parentOverride:parking'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: parking_facility_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the parking facility from the facility this location is in?'
+              instructions: 'Leave this on to use the parking of the building or wing this location sits in. Turn it off to choose a different parking facility for this location.'
+              default: true
+              if:
+                facility_query: 'custom parkingVisible:facilityInherit'
+          -
+            handle: parking_facility
+            field:
+              type: entries
+              display: 'Main Parking Area for This Location'
+              collections:
+                - facilities
+              query_scopes:
+                - entries_by_blueprint_parking_facility
+                - entries_by_blueprint_parking_division
+              if:
+                facility_query: 'custom parkingVisible:facility'
+              select_across_sites: true
+              max_items: 1
+              create: false
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parking_instructions_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the parking instructions?'
+              instructions: 'Leave this on to use the parking instructions from the selected parking facility. Turn it off to write instructions specific to this location.'
+              default: true
+              if:
+                facility_query: 'custom parkingVisible:inheritToggle'
+          -
+            handle: parking_instructions
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Instructions for Parking in the Main Parking Area'
+              instructions: |-
+                Indicate whether patients will park in a parking deck or surface-level parking.
+
+                Indicate which parking lot, parking deck or other area in which patients will park when coming to this location.
+
+                If patients will be parking in a specific parking deck, indicate the ideal area of the parking deck in which patients should park. If there is a patient drop-off area, also include details about that.
+              if:
+                parking_instructions_inherit_query: 'custom parkingVisible:instructions'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: directions_from_parking_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the directions from parking?'
+              instructions: 'Leave this on to use the directions from the selected parking facility. Turn it off to write directions specific to this location.'
+              default: true
+              if:
+                facility_query: 'custom parkingVisible:inheritToggle'
+          -
+            handle: directions_from_parking
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Directions From the Main Parking Area'
+              instructions: |-
+                Comprehensively describe the path patients should take when coming from their vehicle — whether at the patient drop-off area or in the main parking area — to the entrance or check-in area for the location.
+
+                If the main parking area is a parking deck, include instructions regarding how to locate the appropriate elevators and stairs in the parking deck, then include the parking deck level to which they should take those elevators or stairs.
+              if:
+                directions_from_parking_inherit_query: 'custom parkingVisible:directions'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  description_of_the_location:
+    display: 'Description of the Location'
+    sections:
+      -
+        fields:
+          -
+            handle: about
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Lead Description'
+              instructions: 'Lead description for the location — the opening prose only. This field does not allow headings; add any subheaded content as Description Sections below.'
+              localizable: false
+          -
+            handle: description_sections
+            field:
+              type: replicator
+              display: 'Additional Description Sections'
+              instructions: 'Optional subheaded sections that follow the lead description. Use a Generic Section for one-off content (its heading becomes a subheading). Use the Affiliation block for affiliations with other medical centers or clinics. Use the Billing or Medical Records blocks to include those standard sections (maintained in Find-a-Doc Settings), optionally modifying the standard copy.'
+              button_label: 'Add Section'
+              collapse: false
+              localizable: false
+              sets:
+                sections:
+                  display: 'Additional Description Sections'
+                  sets:
+                    section:
+                      display: 'Generic Section'
+                      instructions: 'A subheading and its content.'
+                      fields:
+                        -
+                          handle: heading
+                          field:
+                            type: text
+                            display: Heading
+                            instructions: 'Renders as a subheading above the content.'
+                            validate:
+                              - required
+                        -
+                          handle: body
+                          field: uamsweb_common.bard_simple_lists_links_h4
+                          config:
+                            display: Content
+                            validate:
+                              - required
+                    affiliation:
+                      display: Affiliation
+                      instructions: 'Affiliations with other medical centers or clinics. Rendered under a fixed "Affiliation" subheading.'
+                      fields:
+                        -
+                          handle: body
+                          field: uamsweb_common.bard_simple_lists_links
+                          config:
+                            display: Affiliation
+                            validate:
+                              - required
+                    billing:
+                      display: 'Billing (Standard Section)'
+                      instructions: 'Adds the standard Billing section (copy maintained in Find-a-Doc Settings). Rendered under a fixed "Billing" subheading. Choose whether to use the standard copy as-is or modify it for this location.'
+                      fields:
+                        -
+                          handle: modification
+                          field: uamsweb_common.standard_content_modification
+                        -
+                          handle: body
+                          field: uamsweb_common.bard_simple_lists_links_h4
+                          config:
+                            display: 'Your Content'
+                            if:
+                              modification: 'contains_any prepend, append, override'
+                            validate:
+                              - required
+                              - sometimes
+                            localizable: false
+                    medical_records:
+                      display: 'Medical Records (Standard Section)'
+                      instructions: 'Adds the standard Medical Records section (copy maintained in Find-a-Doc Settings). Rendered under a fixed "Medical Records" subheading. Choose whether to use the standard copy as-is or modify it for this location.'
+                      fields:
+                        -
+                          handle: modification
+                          field: uamsweb_common.standard_content_modification
+                        -
+                          handle: body
+                          field: uamsweb_common.bard_simple_lists_links_h4
+                          config:
+                            display: 'Your Content'
+                            if:
+                              modification: 'contains_any prepend, append, override'
+                            validate:
+                              - required
+                              - sometimes
+                            localizable: false
+          -
+            handle: short_desc
+            field: uamsweb_common.excerpt
+            config:
+              display: 'Short Description'
+          -
+            handle: video_url
+            field: uamsweb_common_video.video_url
+            config:
+              display: 'Featured Video'
+          -
+            handle: prescription_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Include information about prescription refills?'
+              default: false
+              validate:
+                - required
+          -
+            handle: prescription_type
+            field:
+              options:
+                -
+                  key: pharm
+                  value: 'Preset Text Instructing Patients to Call Their Pharmacy'
+                -
+                  key: clinic
+                  value: 'Preset Text Instructing Patients to Call the Clinic'
+                -
+                  key: custom
+                  value: 'Custom Text'
+              default: pharm
+              type: radio
+              display: 'Which Prescription Information to Include'
+              instructions: 'Administrators can change the preset text in Find-a-Doc Settings > Clinical Locations.'
+              sortable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                prescription_query: 'equals true'
+              localizable: false
+          -
+            handle: current_prescription_clinic
+            field:
+              type: textarea
+              display: 'Current Prescription Information Instructing Patients to Call the Clinic'
+              visibility: read_only
+              if:
+                prescription_query: 'equals true'
+                prescription_type: 'equals clinic'
+              localizable: false
+          -
+            handle: current_prescription_pharmacy
+            field:
+              type: textarea
+              display: 'Current Prescription Information Instructing Patients to Call Their Pharmacy'
+              visibility: read_only
+              if:
+                prescription_query: 'equals true'
+                prescription_type: 'equals pharm'
+              localizable: false
+          -
+            handle: prescription
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Custom Prescription Refills Information'
+              if:
+                prescription_query: 'equals true'
+                prescription_type: 'equals custom'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  language_interpreter_assistance:
+    display: 'Language Interpreter Assistance'
+    sections:
+      -
+        fields:
+          -
+            handle: interpreter_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location offer language interpreter assistance?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: interpreter_language
+            field: uamsweb_common.language
+            config:
+              display: 'Language Interpreter Assistance Available at This Location'
+              if:
+                interpreter_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  appointment_information:
+    display: 'Appointment Information'
+    sections:
+      -
+        fields:
+          -
+            handle: restricted_access
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is access to this location restricted to specific patients?'
+              instructions: 'Turn on for eligibility-restricted locations where only certain patients may book — for example an athletics clinic or a residents-only clinic.'
+              default: false
+              validate:
+                - required
+          -
+            handle: restricted_access_message
+            field: uamsweb_common.article
+            config:
+              display: 'Eligibility Restriction Message'
+              instructions: 'Explain who may make an appointment at this location. Shown on the profile only when access is restricted.'
+              if:
+                restricted_access: 'equals true'
+              buttons:
+                - bold
+                - italic
+                - unorderedlist
+                - orderedlist
+                - anchor
+              localizable: false
+          -
+            handle: accepting_new_patients_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this location currently accepting new patients?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: appointments_required_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is an appointment required for services rendered at this location?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: appointments_schedule_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Can a patient schedule an appointment for services rendered at this location?'
+              clearable: true
+              if:
+                appointments_required_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: setting_up_appointment_info
+            field: uamsweb_common.article
+            config:
+              display: 'Information on Setting up an Appointment'
+              buttons:
+                - h3
+                - bold
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+                - anchor
+              if:
+                appointments_schedule_query: 'equals true'
+              localizable: false
+          -
+            handle: bring_to_appointment_info
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'What to Bring to Your Visit'
+              instructions: 'Leave empty to use the standard What to Bring copy from Find-a-Doc Settings. Enter content here only to override it for this location.'
+              localizable: false
+          -
+            handle: expect_at_appointment_info
+            field: uamsweb_common.article
+            config:
+              display: 'What to Expect at Your Visit'
+              instructions: |-
+                This section should ideally not contain headings. But if it does ...
+
+                If "Information on Setting up an Appointment" or "What to Bring to Your Visit" has text, use Heading 4 and down. Otherwise, use Heading 3 and down.
+              buttons:
+                - h3
+                - h4
+                - h5
+                - h6
+                - bold
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+                - anchor
+              localizable: false
+          -
+            handle: what_to_expect_after
+            field: uamsweb_common.article
+            config:
+              display: 'What to Expect After Your Appointment'
+              instructions: 'Optional. What happens after the visit — follow-up, discharge, or next-step guidance. Leave blank to omit this section from the location profile.'
+              buttons:
+                - h3
+                - h4
+                - h5
+                - h6
+                - bold
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+                - anchor
+              localizable: false
+          -
+            handle: no_show_cancellation_late_policy
+            field: uamsweb_common.article
+            config:
+              display: 'No Show, Cancellation and Late Arrival Policy'
+              instructions: 'Optional. The policy patients should follow if they miss, cancel, or arrive late for an appointment. Leave blank to omit this section from the location profile.'
+              buttons:
+                - h3
+                - h4
+                - h5
+                - h6
+                - bold
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+                - anchor
+              localizable: false
+  contact_information:
+    display: 'Contact Information'
+    sections:
+      -
+        fields:
+          -
+            handle: phone
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'General Information Phone Number'
+              instructions: 'The phone number that patients can call for general information related to this location. Format the phone number as 999-999-9999.'
+              validate:
+                - required
+          -
+            handle: shared_phone_number
+            field: uamsweb_common.true_false
+            config:
+              display: "Does this Arkansas Children's location use one phone number for both general information and appointments?"
+              instructions: 'Turn on when the location publishes a single number for everything. The shared number is then used for both the information and appointment displays.'
+              default: false
+              if:
+                brand_organization_query: 'equals true'
+                brand_organization: 'contains b4446161-809f-48fd-8a58-a9c488e8ce67'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: shared_phone
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Shared Phone Number'
+              instructions: 'The single number used for both general information and appointments. Format the phone number as 999-999-9999.'
+              if:
+                shared_phone_number: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: conditional_phone_message_brand_organization_query
+            field:
+              type: html
+              display: 'Empty Fields in the "Brand" Tab Are Hiding Additional Contact Information Fields'
+              instructions: 'Set a value for the "Primary Brand Organization for This Location" field in the "Brand" tab to reveal the relevant contact information fields.'
+              if_any:
+                brand_organization_query: 'equals null'
+              localizable: false
+          -
+            handle: conditional_phone_message_brand_organization
+            field:
+              type: html
+              display: 'Empty Fields in the "Brand" Tab Are Hiding Additional Contact Information Fields'
+              instructions: 'Set a value for the "Third-Party Brand Organization" field in the "Brand" tab to reveal the relevant contact information fields.'
+              if:
+                brand_organization_query: 'equals true'
+                brand_organization: 'equals empty'
+              localizable: false
+          -
+            handle: conditional_phone_message_appointments_query
+            field:
+              type: html
+              display: 'Empty Fields in the "Appointment Information" Tab Are Hiding Additional Contact Information Fields'
+              instructions: 'Set values for the required fields in the "Appointment Information" tab to reveal the relevant contact information fields.'
+              if_any:
+                appointments_schedule_query: 'equals null'
+              localizable: false
+          -
+            handle: phone_appointment_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is there a separate appointment number for patients?'
+              clearable: true
+              if:
+                appointments_schedule_query: 'equals true'
+          -
+            handle: ac_appointments_query
+            field: uamsweb_common.true_false
+            config:
+              display: "Does this Arkansas Children's location have separate phone numbers for primary care appointments and specialty care appointments?"
+              if:
+                brand_organization_query: 'equals true'
+                brand_organization: 'contains b4446161-809f-48fd-8a58-a9c488e8ce67'
+                appointments_schedule_query: 'equals true'
+                phone_appointment_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: ac_appointments_primary
+            field: uamsweb_common_contact.phone
+            config:
+              display: "Arkansas Children's Primary Care Appointments Phone Number"
+              instructions: 'Leave empty to use the standard Arkansas Children''s primary-care number from Find-a-Doc Settings. Enter a number here only to override it for this location.'
+              if:
+                brand_organization_query: 'equals true'
+                brand_organization: 'contains b4446161-809f-48fd-8a58-a9c488e8ce67'
+                phone_appointment_query: 'equals true'
+                ac_appointments_query: 'equals true'
+          -
+            handle: ac_appointments_specialty
+            field: uamsweb_common_contact.phone
+            config:
+              display: "Arkansas Children's Specialty Care Appointments Phone Number"
+              instructions: 'Leave empty to use the standard Arkansas Children''s specialty-care number from Find-a-Doc Settings. Enter a number here only to override it for this location.'
+              if:
+                brand_organization_query: 'equals true'
+                brand_organization: 'contains b4446161-809f-48fd-8a58-a9c488e8ce67'
+                phone_appointment_query: 'equals true'
+                ac_appointments_query: 'equals true'
+          -
+            handle: phone_appointment_new
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Appointments Phone Number'
+              instructions: |-
+                The phone number for new patients, if there are separate numbers for new and returning patients.
+
+                Format your phone number using dashes. Include the area code. Example: 999-999-9999
+              validate:
+                - required
+                - sometimes
+              if:
+                phone_appointment_query: 'equals true'
+                ac_appointments_query: 'not true'
+          -
+            handle: phone_appointment_return_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is there a separate number for returning patients?'
+              if:
+                phone_appointment_query: 'equals true'
+                ac_appointments_query: 'not true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: phone_appointment_return
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Appointments Phone Number for Returning Patients'
+              validate:
+                - required
+                - sometimes
+              if:
+                phone_appointment_return_query: 'equals true'
+          -
+            handle: fax
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Clinic Fax Number'
+              instructions: 'Format your fax number using dashes. Include the area code. Example: 999-999-9999'
+              validate:
+                - sometimes
+          -
+            handle: takes_referrals
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this fax number accept incoming referrals?'
+              instructions: 'Turn on if the fax accepts referrals — the profile then labels it "Referrals Fax." Off (the default) labels it "Records Fax" for medical-records requests. The fax number itself is unchanged either way.'
+              default: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: phone_additional
+            field:
+              type: replicator
+              display: 'Additional Phone Numbers'
+              instructions: 'Add any additional phone numbers for this location (e.g., after-hours nurse line).'
+              button_label: 'Add Phone Number'
+              localizable: false
+              sets:
+                new_set_group:
+                  display: 'New Phone Number Group'
+                  sets:
+                    new_set:
+                      display: 'New Phone Number'
+                      fields:
+                        -
+                          handle: text
+                          field:
+                            type: text
+                            display: 'Label for Phone Number'
+                            validate:
+                              - required
+                        -
+                          handle: phone
+                          field: uamsweb_common_contact.phone
+                          config:
+                            display: 'Phone Number'
+                            validate:
+                              - required
+                        -
+                          handle: description
+                          field:
+                            type: text
+                            display: 'Phone Number Note'
+  photos:
+    display: Photos
+    sections:
+      -
+        display: 'New Section'
+        fields:
+          -
+            handle: image_parent_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Override Parent Images?'
+              clearable: true
+              if:
+                parent: 'not empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: featured_image_parent_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Override Parent Featured Image?'
+              clearable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                parent: 'not empty'
+                image_parent_override_query: 'equals true'
+          -
+            handle: featured_image
+            field: uamsweb_common_images.image_1200x675
+            config:
+              display: 'Featured Image'
+              instructions: |-
+                Select an image that will be used on card layouts, schema data, social sharing, etc.
+
+                You can select an image that is also used as the Wayfinding Photo or in the Photo Gallery.
+
+                The photo orientation must be landscape / horizontal.
+
+                Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675.
+              validate:
+                - sometimes
+                - 'dimensions:min_width=1200,min_height=675'
+              if_any:
+                parent: 'equals empty'
+                featured_image_parent_override_query: 'equals true'
+          -
+            handle: wayfinding_image_parent_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Override Parent Wayfinding Photo?'
+              instructions: 'To remove the parent wayfinding photo, select "Yes" and leave the image blank.'
+              clearable: true
+              if:
+                parent: 'not empty'
+                image_parent_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: wayfinding_image
+            field: uamsweb_common_images.image_1200x675
+            config:
+              display: 'Wayfinding Photo'
+              instructions: |-
+                Select an image that will help the patient find the appropriate facility from the road.
+
+                The photo orientation must be landscape / horizontal.
+
+                Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675.
+              validate:
+                - sometimes
+                - 'dimensions:min_width=1200,min_height=675'
+              if_any:
+                parent: 'equals empty'
+                wayfinding_image_parent_override_query: 'equals true'
+          -
+            handle: interior_wayfinding_image
+            field: uamsweb_common_images.image_1200x675
+            config:
+              display: 'Interior Wayfinding Photo'
+              instructions: |-
+                Optional. A photo that helps patients navigate once inside the building — hallways, floors, or check-in points. Leave blank to omit it from the profile.
+
+                The photo orientation must be landscape / horizontal.
+
+                Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675.
+              validate:
+                - sometimes
+                - 'dimensions:min_width=1200,min_height=675'
+          -
+            handle: gallery_image_parent_override_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Override Parent Photo Gallery?'
+              instructions: 'To remove the parent gallery, select "Yes" and leave the gallery input empty.'
+              clearable: true
+              if:
+                parent: 'not empty'
+                image_parent_override_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: gallery_image
+            field: uamsweb_common_images.image_1200x675
+            config:
+              display: 'Photo Gallery'
+              instructions: |-
+                You may select up to four images.
+
+                These could include a photo of the interior entrance to the clinic or photos of the clinic in use.
+
+                The photo orientation must be landscape / horizontal.
+
+                Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675.
+              validate:
+                - sometimes
+                - 'dimensions:min_width=1200,min_height=675'
+              if_any:
+                parent: 'equals empty'
+                gallery_image_parent_override_query: 'equals true'
+  accepted_payment:
+    display: 'Accepted Payment'
+    sections:
+      -
+        fields:
+          -
+            handle: payment_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location accept payment on-site?'
+              instructions: 'Turn on to record the payment methods this location accepts at the point of care. Leave off for locations where payment is handled centrally (e.g. through insurance or central billing).'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: accepted_payment_methods
+            field:
+              options:
+                -
+                  key: cash
+                  value: Cash
+                -
+                  key: check
+                  value: Check
+                -
+                  key: creditCard
+                  value: 'Credit Card'
+                -
+                  key: debitCard
+                  value: 'Debit Card'
+                -
+                  key: digitalWallet
+                  value: 'Digital Wallet (Apple Pay, Google Pay, etc.)'
+              type: checkboxes
+              display: 'Accepted Payment Methods'
+              instructions: 'Select every payment method this location accepts.'
+              if:
+                payment_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: accepted_card_brands
+            field:
+              options:
+                -
+                  key: visa
+                  value: VISA
+                -
+                  key: mastercard
+                  value: MasterCard
+                -
+                  key: americanExpress
+                  value: 'American Express'
+                -
+                  key: discover
+                  value: Discover
+                -
+                  key: dinersClub
+                  value: 'Diners Club'
+                -
+                  key: jcb
+                  value: JCB
+                -
+                  key: chinaUnionPay
+                  value: 'China Union Pay'
+              type: checkboxes
+              display: 'Accepted Card Brands'
+              instructions: 'Select the card brands this location accepts.'
+              if:
+                accepted_payment_methods: 'contains_any creditCard, debitCard'
+              localizable: false
+  hours_of_operation:
+    display: 'Hours of Operation'
+    sections:
+      -
+        display: 'Regular Hours'
+        instructions: "Define this location's recurring weekly hours as a list of rules. Each rule applies a status (and, when open, one or more time spans) to one or more days for a single service mode. Use the day presets (Weekday, Weekend, Daily) to quickly add common patterns, or add a Custom rule. Add a telemedicine-mode rule only when telemedicine hours differ from the in-person hours (see the Telemedicine section)."
+        fields:
+          -
+            handle: hours_variable_query
+            field: uamsweb_common.true_false
+            config:
+              display: "Do this location's hours of operation either vary or follow an irregular schedule?"
+              instructions: 'For example, does this location operate only periodically or as needed? If so, describe the schedule in prose below instead of adding hours rules.'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: variable_hours_description
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: "Description of the Location's Variable Hours of Operation"
+              instructions: 'Describe how the hours of operation work for this location.'
+              if:
+                hours_variable_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: regular_hours
+            field:
+              type: replicator
+              display: 'Hours Rules'
+              instructions: 'Each rule sets a status (and time spans, when open) for the selected days and service mode.'
+              button_label: 'Add Hours Rule'
+              if:
+                hours_variable_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+              sets:
+                rules:
+                  display: 'Hours Rules'
+                  sets:
+                    weekday:
+                      display: 'Weekday Rule (Mon-Fri)'
+                      instructions: 'Defaults to Monday through Friday; adjust the days if needed.'
+                      fields:
+                        -
+                          handle: days
+                          field: uamsweb_common_fad_hours_rule.days
+                          config:
+                            default:
+                              - monday
+                              - tuesday
+                              - wednesday
+                              - thursday
+                              - friday
+                            replicator_preview: false
+                        -
+                          handle: service_mode
+                          field: uamsweb_common_fad_hours_rule.service_mode
+                        -
+                          handle: status
+                          field: uamsweb_common_fad_hours_rule.status
+                        -
+                          handle: time_span
+                          field: uamsweb_common_fad_hours_rule.time_span
+                    weekend:
+                      display: 'Weekend Rule (Sat-Sun)'
+                      instructions: 'Defaults to Saturday and Sunday; adjust the days if needed.'
+                      fields:
+                        -
+                          handle: days
+                          field: uamsweb_common_fad_hours_rule.days
+                          config:
+                            default:
+                              - saturday
+                              - sunday
+                            replicator_preview: false
+                        -
+                          handle: service_mode
+                          field: uamsweb_common_fad_hours_rule.service_mode
+                        -
+                          handle: status
+                          field: uamsweb_common_fad_hours_rule.status
+                        -
+                          handle: time_span
+                          field: uamsweb_common_fad_hours_rule.time_span
+                    daily:
+                      display: 'Daily Rule (All Days)'
+                      instructions: 'Applies to every day of the week. To cover only some days, use a Weekday, Weekend, or Custom rule instead.'
+                      fields:
+                        -
+                          handle: days
+                          field: uamsweb_common_fad_hours_rule.days
+                          config:
+                            default:
+                              - monday
+                              - tuesday
+                              - wednesday
+                              - thursday
+                              - friday
+                              - saturday
+                              - sunday
+                            visibility: read_only
+                            replicator_preview: false
+                            instructions: 'This rule applies to every day of the week. To cover only some days, use a Weekday, Weekend, or Custom rule instead.'
+                        -
+                          handle: service_mode
+                          field: uamsweb_common_fad_hours_rule.service_mode
+                        -
+                          handle: status
+                          field: uamsweb_common_fad_hours_rule.status
+                        -
+                          handle: time_span
+                          field: uamsweb_common_fad_hours_rule.time_span
+                    custom:
+                      display: 'Custom Rule'
+                      instructions: 'Choose the specific days this rule applies to.'
+                      fields:
+                        -
+                          handle: days
+                          field: uamsweb_common_fad_hours_rule.days
+                        -
+                          handle: service_mode
+                          field: uamsweb_common_fad_hours_rule.service_mode
+                        -
+                          handle: status
+                          field: uamsweb_common_fad_hours_rule.status
+                        -
+                          handle: time_span
+                          field: uamsweb_common_fad_hours_rule.time_span
+          -
+            handle: after_hours_description
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Information for When the Location Is Closed'
+              instructions: 'Describe what patients should do if they need assistance when this location is closed.'
+              localizable: false
+      -
+        display: 'Special / Modified Hours'
+        instructions: 'Add exceptions to the regular schedule here. Use a Holiday Hours entry for a specific holiday or short closure, and a Temporary Change for an extended period when hours differ for an exceptional reason (for example, a renovation or public-health emergency). Each entry overrides the regular hours for its date range.'
+        fields:
+          -
+            handle: system_closures
+            field:
+              type: radio
+              display: 'System-Wide Closures'
+              instructions: 'System-wide holiday closures (for example, Thanksgiving) are set once in Find-a-Doc Settings and broadcast to every location. Choose whether this location honors them. Any Holiday Hours or Temporary Change you set below for the same date always takes precedence, so honoring the broadcast is safe.'
+              options:
+                -
+                  key: honor
+                  value: 'Honor system-wide closures'
+                -
+                  key: suppress
+                  value: 'Ignore system-wide closures at this location'
+              default: honor
+              validate:
+                - required
+              localizable: false
+          -
+            handle: special_hours
+            field:
+              type: replicator
+              display: 'Special Hours'
+              instructions: 'Each entry overrides the regular hours for its date range.'
+              button_label: 'Add Special Hours'
+              localizable: false
+              sets:
+                special:
+                  display: 'Special Hours'
+                  sets:
+                    holiday:
+                      display: 'Holiday Hours'
+                      instructions: 'A named holiday or short closure. Add a rule for each day (or contiguous range of days) whose hours differ from the regular schedule; days that are already correct in the regular schedule need no rule.'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: Title
+                            instructions: 'The name of the holiday (for example, "Thanksgiving").'
+                            validate:
+                              - required
+                            localizable: false
+                        -
+                          handle: description
+                          field: uamsweb_common.bard_simple_lists_links
+                          config:
+                            display: Description
+                            instructions: 'Optionally add a brief note (for example, "Reopening Tuesday at 8 a.m.").'
+                            localizable: false
+                        -
+                          handle: rules
+                          field:
+                            type: replicator
+                            display: 'Hours Rules'
+                            instructions: 'Each rule applies a status (and time spans, when open) to a date or a contiguous range of dates within this holiday.'
+                            button_label: 'Add Rule'
+                            validate:
+                              - required
+                              - sometimes
+                            localizable: false
+                            sets:
+                              rules:
+                                display: 'Hours Rules'
+                                sets:
+                                  rule:
+                                    display: Rule
+                                    fields:
+                                      -
+                                        handle: date
+                                        field:
+                                          type: date
+                                          display: Date
+                                          instructions: 'The date this rule applies.'
+                                          validate:
+                                            - required
+                                          localizable: false
+                                      -
+                                        handle: through
+                                        field:
+                                          type: date
+                                          display: Through
+                                          instructions: 'For a contiguous range of days with the same status (for example, Friday through Monday), the last date. Leave blank for a single day.'
+                                          localizable: false
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                        config:
+                                          default: closed
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+                    temporary_change:
+                      display: 'Temporary Change'
+                      instructions: 'An extended period when hours differ from the regular schedule for an exceptional reason (for example, a renovation or public-health emergency). Set the date range, then add the hours rules that apply during it. Leave the through date blank if the change is ongoing.'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: Title
+                            instructions: 'A short name for this change (for example, "Temporary Closure for Renovation").'
+                            validate:
+                              - required
+                            localizable: false
+                        -
+                          handle: description
+                          field: uamsweb_common.bard_simple_lists_links
+                          config:
+                            display: Description
+                            instructions: 'Explain the reason for the change and what patients should do.'
+                            validate:
+                              - required
+                            localizable: false
+                        -
+                          handle: valid_from
+                          field:
+                            type: date
+                            display: 'Valid From'
+                            instructions: 'The first date this change applies.'
+                            validate:
+                              - required
+                            localizable: false
+                        -
+                          handle: valid_through
+                          field:
+                            type: date
+                            display: 'Valid Through'
+                            instructions: 'The last date this change applies. Leave blank if the change is ongoing or the end date is unknown.'
+                            localizable: false
+                        -
+                          handle: rules
+                          field:
+                            type: replicator
+                            display: 'Hours Rules'
+                            instructions: 'Each rule sets a status (and time spans, when open) for the selected days and service mode during this period.'
+                            button_label: 'Add Hours Rule'
+                            validate:
+                              - required
+                              - sometimes
+                            localizable: false
+                            sets:
+                              rules:
+                                display: 'Hours Rules'
+                                sets:
+                                  weekday:
+                                    display: 'Weekday Rule (Mon-Fri)'
+                                    instructions: 'Defaults to Monday through Friday; adjust the days if needed.'
+                                    fields:
+                                      -
+                                        handle: days
+                                        field: uamsweb_common_fad_hours_rule.days
+                                        config:
+                                          default:
+                                            - monday
+                                            - tuesday
+                                            - wednesday
+                                            - thursday
+                                            - friday
+                                          replicator_preview: false
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+                                  weekend:
+                                    display: 'Weekend Rule (Sat-Sun)'
+                                    instructions: 'Defaults to Saturday and Sunday; adjust the days if needed.'
+                                    fields:
+                                      -
+                                        handle: days
+                                        field: uamsweb_common_fad_hours_rule.days
+                                        config:
+                                          default:
+                                            - saturday
+                                            - sunday
+                                          replicator_preview: false
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+                                  daily:
+                                    display: 'Daily Rule (All Days)'
+                                    instructions: 'Applies to every day of the week. To cover only some days, use a Weekday, Weekend, or Custom rule instead.'
+                                    fields:
+                                      -
+                                        handle: days
+                                        field: uamsweb_common_fad_hours_rule.days
+                                        config:
+                                          default:
+                                            - monday
+                                            - tuesday
+                                            - wednesday
+                                            - thursday
+                                            - friday
+                                            - saturday
+                                            - sunday
+                                          visibility: read_only
+                                          replicator_preview: false
+                                          instructions: 'This rule applies to every day of the week. To cover only some days, use a Weekday, Weekend, or Custom rule instead.'
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+                                  custom:
+                                    display: 'Custom Rule'
+                                    instructions: 'Choose the specific days this rule applies to.'
+                                    fields:
+                                      -
+                                        handle: days
+                                        field: uamsweb_common_fad_hours_rule.days
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+  telemedicine:
+    display: Telemedicine
+    sections:
+      -
+        instructions: 'Telemedicine hours of operation are managed in the Hours of Operation tab: by default they reflect the in-person hours; add one or more rules with Service Mode set to Telemedicine there if they differ.'
+        fields:
+          -
+            handle: telemed_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location offer a telemedicine option?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: telemed_info_message
+            field:
+              type: html
+              display: 'Telemedicine Information'
+              instructions: 'The general information included about telemedicine is set in Find-a-Doc Settings &gt; Clinical Locations.'
+              if:
+                telemed_query: 'equals true'
+              localizable: false
+          -
+            handle: telemed_patients
+            field:
+              options:
+                -
+                  key: all
+                  value: 'New and Existing Patients'
+                -
+                  key: existing
+                  value: 'Existing Patients Only'
+                -
+                  key: new
+                  value: 'New Patients Only'
+              type: radio
+              display: 'Telemedicine Patient Type'
+              instructions: 'Which type of patients can use the telemedicine services offered at this location?'
+              if:
+                telemed_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: Providers
+        fields:
+          -
+            handle: physician_locations
+            field: uamsweb_common_fad.providers
+            config:
+              collections:
+                - people
+              instructions: 'The providers will be displayed in alphabetical order. If there is more than one row of providers, the first row will display before prompting the user to load more.'
+      -
+        display: 'Areas of Expertise'
+        fields:
+          -
+            handle: expertise
+            field: uamsweb_common_fad.expertise
+          -
+            handle: special_interest_clinical_conditions
+            field: uamsweb_common_fad.special_interest_clinical_conditions
+          -
+            handle: special_interest_clinical_services
+            field: uamsweb_common_fad.special_interest_clinical_services
+      -
+        display: Conditions
+        fields:
+          -
+            handle: conditions
+            field: uamsweb_common_fad.conditions
+      -
+        display: 'Treatments and Procedures'
+        fields:
+          -
+            handle: treatments
+            field: uamsweb_common_fad.treatments
+      -
+        display: 'Clinical Resources'
+        fields:
+          -
+            handle: clinical_resources
+            field: uamsweb_common_fad.clinical_resources
+  mychart_scheduling:
+    display: 'MyChart Scheduling'
+    sections:
+      -
+        fields:
+          -
+            handle: mychart_scheduling_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Enable MyChart Scheduling?'
+              instructions: 'Check with the MyChart team before doing anything here. MyChart open scheduling must also be enabled site-wide in Find-a-Doc Settings (MyChart Open Scheduling); when it is off site-wide, this location-level setting has no effect.'
+              default: false
+              validate:
+                - required
+          -
+            handle: mychart_scheduling_title_general
+            field:
+              placeholder: 'Schedule an Appointment Online'
+              type: text
+              display: 'Appointment Section Title (Optional Override)'
+              instructions: |-
+                If there are multiple scheduling widgets, this will define the text used in the main section heading. If you do not define a value here, "Schedule an Appointment Online" will be used.
+
+                If you define a value here, use a very short phrase that makes the purpose of the online scheduling section clear to the user. Do not just use the name of a condition or treatment.
+
+                If there is only one scheduling widget, the heading will be defined by a value from within the *MyChart Open Scheduling Widget(s)* repeater instead.
+              if:
+                mychart_scheduling_query: 'equals true'
+              localizable: false
+          -
+            handle: mychart_scheduling_intro_general
+            field:
+              placeholder: 'Use your UAMS Health MyChart account to schedule an appointment at this clinic. If you are not a MyChart user, you can continue as a guest.'
+              type: textarea
+              display: 'Appointment Section Introduction (Optional Override)'
+              instructions: |-
+                This paragraph introduces the online scheduling section. If you do not define a value here, it will display "Use your UAMS Health MyChart account to schedule an appointment at this clinic. If you are not a MyChart user, you can continue as a guest."
+
+                The paragraph should provide brief general information about MyChart open scheduling.
+
+                There is a 221-character limit.
+              if:
+                mychart_scheduling_query: 'equals true'
+              character_limit: 221
+              localizable: false
+          -
+            handle: mychart_scheduling_options
+            field:
+              type: replicator
+              display: 'MyChart Open Scheduling Widget Option(s)'
+              instructions: 'Define the information for each specific open scheduling widget. One or more must be defined.'
+              button_label: 'Add Scheduling Option'
+              validate:
+                - required
+                - sometimes
+              if:
+                mychart_scheduling_query: 'equals true'
+              localizable: false
+              sets:
+                new_set_group:
+                  display: 'New Option Group'
+                  sets:
+                    new_set:
+                      display: 'New Option'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: 'Standalone Heading Text'
+                            instructions: |-
+                              If this is the only scheduling widget, this value will replace the main section heading (defined by *Appointment Section Title*).
+
+                              Use a very short phrase that makes the purpose of this specific scheduling widget clear to the user. Do not just use the name of a condition or treatment.
+                            validate:
+                              - required
+                        -
+                          handle: intro
+                          field:
+                            character_limit: 221
+                            type: textarea
+                            display: 'Standalone Appointment Section Introduction (Optional Override)'
+                            instructions: |-
+                              If this is the only scheduling widget, you can define a value here to replace the main section introduction (defined by *Appointment Section Introduction*) if that general introduction does not adequately introduce this specific widget.
+
+                              If used, this paragraph should provide general information about MyChart open scheduling and a brief overview of anything necessary for users to know about this specific scheduling widget.
+
+                              There is a 221-character limit.
+                        -
+                          handle: item_title_nested
+                          field:
+                            type: text
+                            display: 'Nested Heading Text'
+                            instructions: |-
+                              If this is one of multiple scheduling widgets, this field defines the text of the heading immediately preceding this specific scheduling widget. This heading will be nested below the main section heading (defined by *Appointment Section Title*) in the heading outline. This will also set the label of the multiple-choice option the user can select to display this specific scheduling widget.
+
+                              Use a very short phrase, a visit type name or a treatment name that makes the purpose of this specific scheduling widget clear to the user.
+                            validate:
+                              - required
+                        -
+                          handle: item_intro_nested
+                          field:
+                            character_limit: 221
+                            type: textarea
+                            display: 'Nested Appointment Section Introduction (Optional)'
+                            instructions: |-
+                              If this is one of multiple scheduling widgets, this field defines the paragraph introducing this specific scheduling widget. If used, this paragraph will not need to cover information addressed in the *Appointment Section Introduction* field but should provide a brief overview of any information necessary for users to know about this specific scheduling widget.
+
+                              There is a 221-character limit.
+                        -
+                          handle: vt
+                          field:
+                            type: text
+                            display: 'Visit Type (PRC) ID from Epic'
+                            instructions: 'A single visit type available for scheduling in this specific widget.'
+                            validate:
+                              - required
+                        -
+                          handle: ser
+                          field:
+                            type: text
+                            display: 'Provider (SER) ID from Epic'
+                            instructions: |-
+                              ID for one or more providers available for scheduling in this specific widget. Separate multiple values with a comma (<code>,</code>).
+
+                              If you specify a department, you *can* omit the list of provider IDs so all providers who are enabled for open scheduling in that department with that visit type are automatically included in the widget.
+
+                              **Be sure to include an ID for either a provider or a department (or both). Otherwise, *all* providers and departments with that visit type will be displayed.**
+                        -
+                          handle: dep
+                          field: uamsweb_common_fad.epic_dep_ids
+                          config:
+                            display: 'Department (DEP) ID(s) from UAMS Health Epic'
+                            validate:
+                              - 'dep_in_declared_list:epic_dep_ids'
+                            instructions: |-
+                              The departments available for scheduling in this specific widget. Each must be one of the location's Department (DEP) IDs (declared in General Details).
+
+                              If you specify a provider, you *can* omit the departments so all departments enabled for open scheduling with that provider and visit type are automatically included in the widget.
+
+                              **Be sure to include either a provider or a department (or both). Otherwise, *all* providers and departments with that visit type will be displayed.**
+                        -
+                          handle: fallback
+                          field: uamsweb_common.article
+                          config:
+                            display: 'Fallback Information'
+                            instructions: |-
+                              This is an optional paragraph that appears after this specific scheduling widget where you can present users an alternative scheduling options. Keep it as brief as possible, limiting it to one to three sentences in a single paragraph. Add tel links to any phone number (e.g., <code>tel:501-555-6162</code>).
+
+                              Example Paragraph: "If you are unable to register for your appointment using the method above, call 501-555-6162 to schedule an appointment. This line is staffed Monday through Friday from 10 a.m. – 5:30 p.m. If the lines are busy, you will be prompted to leave a voicemail."
+                            buttons:
+                              - italic
+                              - removeformat
+                              - anchor
+  external_website:
+    display: 'External Website'
+    sections:
+      -
+        fields:
+          -
+            handle: link_message
+            field:
+              type: html
+              display: 'External Website Instructions'
+              instructions: |-
+                Include a title and URL for a link to an external non-UAMS website if the location is a non-UAMS location where our providers practice.
+
+                This link should only be used when it is critical to the patient experience (e.g., for becoming a patient, making an appointment, receiving follow-up information). This must not be used as a link to secondary things like a social media account.'
+              if:
+                parent: 'equals empty'
+              localizable: false
+          -
+            handle: external_website_url
+            field:
+              type: text
+              input_type: url
+              display: 'Non-UAMS URL'
+              if:
+                parent: 'equals empty'
+              validate:
+                - non_first_party_url
+              localizable: false
+          -
+            handle: external_website_label
+            field:
+              type: text
+              display: 'Non-UAMS Website Name'
+              if:
+                parent: 'equals empty'
+                external_website_url: 'not empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  alert:
+    display: Alert
+    sections:
+      -
+        fields:
+          -
+            handle: current_alert
+            field:
+              type: textarea
+              display: 'Current Alert'
+              visibility: read_only
+              localizable: false
+          -
+            handle: alert_modification
+            field:
+              options:
+                -
+                  key: nothing
+                  value: 'No modification'
+                -
+                  key: suppress
+                  value: 'Suppress alert'
+                -
+                  key: override
+                  value: 'Override alert'
+                -
+                  key: prepend
+                  value: 'Insert before alert'
+                -
+                  key: append
+                  value: 'Insert after alert'
+              default: nothing
+              type: radio
+              display: 'Alert Modification'
+              instructions: 'How do you want to modify the alert from Find-a-Doc Settings?'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alert_body_override_tip
+            field:
+              type: html
+              display: 'Overriding the Alert From Find-a-Doc Settings'
+              instructions: 'If you are overriding the system alert, adding values to the Alert Heading or Alert Body fields will replace the value from Find-a-Doc Settings. Leaving them blank will inherit the values from Find-a-Doc Settings.'
+              if:
+                alert_modification: 'equals override'
+              localizable: false
+          -
+            handle: alert_body_prepend_tip
+            field:
+              type: html
+              display: 'Inserting an Alert Before the Alert From Find-a-Doc Settings'
+              instructions: "If you are inserting content before the system alert, make sure the system alert's body begins with a heading (Heading 2). This way, your alert value here will be separated from the system alert in the heading outline."
+              if:
+                alert_modification: 'equals prepend'
+              localizable: false
+          -
+            handle: alert_body_append_tip
+            field:
+              type: html
+              display: 'Inserting an Alert After the Alert From Find-a-Doc Settings'
+              instructions: "If you are inserting content after the system alert, make sure your alert's body begins with a heading (Heading 2). This way, your alert value here will be separated from the system alert in the heading outline."
+              if:
+                alert_modification: 'equals append'
+              localizable: false
+          -
+            handle: alert_heading
+            field:
+              type: text
+              display: 'Alert Heading'
+              if:
+                alert_modification: 'equals override'
+              localizable: false
+          -
+            handle: alert_body
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Alert Body'
+              if:
+                alert_modification: 'contains_any override, prepend, append'
+              localizable: false
+          -
+            handle: alert_color
+            field:
+              options:
+                -
+                  key: inherit
+                  value: 'Inherit from Find-a-Doc Settings'
+                -
+                  key: alert-success
+                  value: Success
+                -
+                  key: alert-danger
+                  value: Danger
+                -
+                  key: alert-warning
+                  value: Warning
+                -
+                  key: alert-info
+                  value: Info
+              type: radio
+              display: 'Alert Color'
+              default: inherit
+              if:
+                alert_modification: 'equals override'
+              localizable: false
+  closing:
+    display: Closing
+    sections:
+      -
+        fields:
+          -
+            handle: closing_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this location closing?'
+              default: false
+              validate:
+                - required
+          -
+            handle: closing_date
+            field:
+              format: Y-m-d
+              type: date
+              display: 'Closing Date'
+              if:
+                closing_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: closing_permanent_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is the closure permanent?'
+              if:
+                closing_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: reopening_date_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Reopening date known?'
+              if:
+                closing_query: 'equals true'
+                closing_permanent_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: reopening_date
+            field:
+              format: Y-m-d
+              type: date
+              display: 'Reopening Date'
+              if:
+                closing_query: 'equals true'
+                closing_permanent_query: 'equals false'
+                reopening_date_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: closing_info
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Closure Information'
+              if:
+                closing_query: 'equals true'
+              localizable: false
+          -
+            handle: closing_telemed_available_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Will telemedicine still be available?'
+              clearable: true
+              if:
+                closing_query: 'equals true'
+                closing_permanent_query: 'equals false'
+                telemed_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+  google_business_profile_details:
+    display: 'Google Business Profile Details'
+    sections:
+      -
+        fields:
+          -
+            handle: google_business_profile_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this location have a listing on Google Business Profiles?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: google_business_profile_cid
+            field: uamsweb_common_identifiers.google_business_profile_cid
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                google_business_profile_query: 'equals true'
+          -
+            handle: google_business_profile_exclude_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Should this location be excluded from any bulk imports and updates in Google Business Profiles?'
+              default: false
+              validate:
+                - required
+          -
+            handle: google_business_profile_prefix_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Should "UAMS Health" be prepended to the location name on the Google Business Profiles listing?'
+              validate:
+                - required
+                - sometimes
+              default: true
+              if:
+                google_business_profile_exclude_query: 'equals false'
+      -
+        display: 'Google Business Profile Attributes'
+        fields:
+          -
+            handle: google_business_profile_categories
+            field:
+              type: terms_search_index
+              display: 'Google Business Profile Category'
+              instructions: |-
+                Select up to ten categories. Rearrange them so that the first item is the primary category. "Medical Clinic" is a good standard choice, if you cannot find a better option.
+
+                For reference, you can <a href='https://communications.uams.edu/web/kb/google-my-business-categories/' target='_blank'>view a list of available categories</a>.
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              create: false
+              taxonomies:
+                - google_business_profile_categories
+              localizable: false
+          -
+            handle: google_business_profile_has_hearing_loop
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Assistive hearing loop'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_auracast_broadcast_audio
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Auracast broadcast audio'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_wheelchair_accessible_entrance
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Wheelchair accessible entrance (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_wheelchair_accessible_parking
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Wheelchair accessible parking lot (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_wheelchair_accessible_restroom
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Wheelchair accessible restroom (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_wheelchair_accessible_seating
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Accessibility: Wheelchair accessible seating (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_restroom_unisex
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Amenities: Gender-neutral restroom (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_restroom
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Amenities: Restroom (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_wi_fi
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Amenities: Wi-Fi (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_lactation_space
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Children: Nursing room (for patients)'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_welcomes_lgbtq
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Crowd: LGBTQ+ friendly'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_is_transgender_safespace
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Crowd: Transgender safespace'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_allows_dogs_inside
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Pets: Dogs allowed inside'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_allows_dogs_offleash
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Pets: Dogs allowed off leash'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_allows_dogs_outside
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Pets: Dogs allowed outside'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_requires_appointments
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Planning: Appointment required'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_offers_online_classes
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Service options: Online classes'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_onsite_services
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Service options: Onsite services'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_has_outdoor_services
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Service options: Outdoor services'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: google_business_profile_offers_home_visits
+            field:
+              options:
+                -
+                  key: notapplicable
+                  value: 'Not Applicable'
+                -
+                  key: 'false'
+                  value: 'No'
+                -
+                  key: 'true'
+                  value: 'Yes'
+              cast_booleans: true
+              type: radio
+              display: 'Service options: Visits patients'
+              if:
+                google_business_profile_exclude_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  schema_data:
+    display: 'Schema Data'
+    sections:
+      -
+        display: 'Categorization Schema'
+        fields:
+          -
+            handle: schema_medicalorganization_subtype
+            field:
+              type: schema_type
+              display: 'MedicalOrganization Subtype'
+              instructions: 'Select the Schema.org type that most closely matches this location.'
+              mode: single
+              multiple: false
+              clearable: true
+              searchable: true
+              starting_types:
+                - Hospital
+                - MedicalClinic
+                - Pharmacy
+                - Dentist
+                - DiagnosticLab
+              localizable: false
+          -
+            handle: schema_additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              display: 'More Specific Type(s) for This Location From External Vocabularies in Microdata Syntax'
+          -
+            handle: schema_medicalspecialty
+            field: uamsweb_schema.medical_specialty_multiple
+            config:
+              display: 'Relevant Medical Specialties'
+      -
+        display: 'Identification Schema'
+        fields:
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) Specifically About This Location'
+          -
+            handle: va_substation_id
+            field: uamsweb_common_identifiers.va_substation_id
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                brand_organization: 'contains_any 4d8e2c71-83ee-49e7-ab2f-110a3b01b598, bc34d1cd-756d-4a77-b9d4-8ad6b3f9a0fe'
+          -
+            handle: ahaid
+            field: uamsweb_common_identifiers.ahaid
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_medicalorganization_subtype: 'equals Hospital'
+          -
+            handle: hospital_aha_name
+            field:
+              type: text
+              display: 'Name of the Hospital on the American Hospital Association Hospital Identifier (AHAID) Record'
+              instructions: "This information can be found in the hospital profile at <a href='https://www.aha.org/aha-hospital-lookup' target='_blank'>https://www.aha.org/aha-hospital-lookup</a>."
+              if:
+                schema_medicalorganization_subtype: 'equals Hospital'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: hospital_ccn_id
+            field:
+              type: text
+              display: 'Centers for Medicare & Medicaid Services Certification Number (CCN) for the Hospital'
+              instructions: 'This information can be found in the Centers for Medicare & Medicaid Services "Hospital General Information" dataset at <a href="https://data.cms.gov/provider-data/dataset/xubh-q36u" target="_blank">https://data.cms.gov/provider-data/dataset/xubh-q36u</a>.'
+              if:
+                schema_medicalorganization_subtype: 'equals Hospital'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: hospital_ccn_name
+            field:
+              type: text
+              display: 'Name of the Hospital on the Centers for Medicare & Medicaid Services Certification Number (CRN) Record'
+              instructions: 'This information can be found in the Centers for Medicare & Medicaid Services "Hospital General Information" dataset at <a href="https://data.cms.gov/provider-data/dataset/xubh-q36u" target="_blank">https://data.cms.gov/provider-data/dataset/xubh-q36u</a>.'
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_medicalorganization_subtype: 'equals Hospital'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:30'
+              instructions: 'There is a 30-character limit.'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {  }

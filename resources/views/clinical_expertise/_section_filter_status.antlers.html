@@ -1,0 +1,16 @@
+{{#
+	@name Area of Expertise section filter status
+	@desc The "no matches" empty state + a polite live region for a filtered Area of
+	      Expertise section subpage (UAMS-Web/uams-statamic-archive#1439), shown and updated by the `fadFilter`
+	      Alpine engine. The inline `display: none` (not `x-cloak`) keeps the empty
+	      state hidden until Alpine's `x-show` takes over, so it never flashes on
+	      load; without JavaScript neither element is shown and the full list stays
+	      visible.
+	@set clinical_expertise.section
+#}}
+<p class="ajax-filter-message aoe-section-empty" role="status" x-show="visibleCount === 0" style="display: none;">
+	No {{ filter_noun_plural ?? 'results' }} match the selected filters.
+	<button type="button" class="btn btn-link p-0 align-baseline" @click="reset()">Reset the filters</button>
+</p>
+{{# Polite live region announcing the visible count on each change. #}}
+<div class="sr-only" aria-live="polite" x-text="announcement"></div>

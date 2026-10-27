@@ -1,0 +1,75 @@
+{{#
+	@name UAMS News
+	@desc The UAMS News page builder block.
+	@set page.page_builder.uamsweb_block_stacked
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Check if the required top-level block fields have values #}}
+	{{ $block_valid = block_heading && background_color }}
+
+	{{# Count the number of items #}}
+	{{ if $block_valid }}
+		{{ $item_count = ( items | safe_count ) }}
+	{{ /if }}
+
+	{{# Check if there is at least one item #}}
+	{{ if $block_valid }}
+		{{ $block_valid = $item_count >= 1 }}
+	{{ /if }}
+
+	{{# Check if the required more fields have values #}}
+	{{ if $block_valid && more_query }}
+		{{ $block_valid = more_heading && more_button_text && more_button_url }}
+	{{ /if }}
+
+	{{# Check if each item has the required field values #}}
+	{{ if $block_valid }}
+		{{ items }}
+			{{# Check if the item has the required general field values #}}
+			{{ if ( !heading || !body || !image || ( image | safe_count != 1 ) ) }}
+				{{ $block_valid = false }}
+			{{ /if }}
+
+			{{# If the item has button text, check if the button URL is present #}}
+			{{ if button_text && !button_url }}
+				{{ $block_valid = false }}
+			{{ /if }}
+		{{ /items }}
+	{{ /if }}
+
+	{{# Block Class #}}
+	{{ if $block_valid }}
+		{{ $stacked_image_text_class = 'stacked-image-text' }}
+	{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$stacked_image_text_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header }}
+			{{ partial:page_builder/components/card_list }}
+				{{ $card_item_position_increment = 'card_list_' + {increment:card_list} }}
+				{{ items }}
+					{{ partial:page_builder/components/card_item :card_item_position_increment="$card_item_position_increment" }}
+						{{ partial:page_builder/components/card_image :image="image" :alt_override="alt_override" }}
+						{{ partial:page_builder/components/card_body }}
+							{{ partial:page_builder/components/card_title :heading="heading" }}
+							<p class="card-text">{{ body | widont }}</p>
+							{{ partial:page_builder/components/item_button stretched_link="1" }}
+						{{ /partial:page_builder/components/card_body }}
+					{{ /partial:page_builder/components/card_item }}
+				{{ /items }}
+			{{ /partial:page_builder/components/card_list }}
+			{{ partial:page_builder/components/block_more block_item_button_outline="true" }}
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

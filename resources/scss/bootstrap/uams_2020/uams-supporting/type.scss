@@ -1,0 +1,440 @@
+@use "sass:map";
+@use "sass:math";
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+p,
+ul,
+ol,
+li,
+dl,
+dd,
+dt {
+    &:first-child {
+        margin-top: 0;
+    }
+    //&:last-child {
+        //margin-bottom: 0;
+    //}
+
+    .name,
+    .supertitle,
+    .subtitle {
+        display: block;
+    }
+
+    .supertitle,
+    .subtitle {
+        font-size: $small-font-size;
+        font-weight: $font-weight-normal;
+        color: $bg-gray-color-lightest;
+    }
+
+    .supertitle {
+        margin-bottom: 0.25em;
+    }
+
+    .subtitle {
+        margin-top: 0.25em;
+    }
+}
+
+@for $level from 1 through 6 {
+	h#{$level},
+	.h#{$level} {
+		margin-top: $headings-margin-top;
+		margin-bottom: $headings-margin-bottom;
+
+		.supertitle {
+			a {
+				text-decoration: none;
+
+				@include hover-focus() {
+					text-decoration: underline;
+				}
+			}
+		}
+
+		&:has(+ .subtitle) {
+			margin-bottom: 0.25em;
+		}
+	}
+
+	.supertitle.h#{$level}-supertitle,
+	.subtitle.h#{$level}-subtitle {
+		font-weight: $headings-font-weight;
+		line-height: $headings-line-height;
+		margin-bottom: $headings-margin-bottom;
+		margin-top: 0.25em;
+		font-size: map.get($type-scale-heading-font-sizes, $level) * $small-font-size-multiplier;
+	}
+}
+
+.lwcw:not(:first-child) {
+    .lw_events_day {
+        h4.lw_events_header_date:first-child {
+            margin-top: $headings-margin-top;
+        }
+    }
+}
+
+address,
+dl,
+ol,
+ul {
+    margin-bottom: $paragraph-margin-bottom;
+}
+
+dl {
+    &:last-child {
+        margin-bottom: 0;
+
+        dt, dd {
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}
+
+ul,
+ol {
+    padding-left: 2em;
+
+    li {
+        margin-bottom: 0.5em;
+    }
+
+    ul, ol, ul:first-child, ol:first-child {
+        margin-top: 0.5em;
+    }
+}
+
+ul {
+    list-style: disc;
+
+	ul {
+		list-style: circle;
+	}
+}
+
+ol {
+    &.decimal {
+        list-style-type: decimal;
+
+        ol {
+            list-style-type: decimal;
+        }
+    }
+
+    &.upper-alpha {
+        list-style-type: upper-alpha;
+
+        ol {
+            list-style-type: upper-alpha;
+        }
+    }
+
+    &.lower-alpha {
+        list-style-type: lower-alpha;
+
+        ol {
+            list-style-type: lower-alpha;
+        }
+    }
+
+    &.upper-roman {
+        list-style-type: upper-roman;
+
+        ol {
+            list-style-type: upper-roman;
+        }
+    }
+
+    &.lower-roman {
+        list-style-type: lower-roman;
+
+        ol {
+            list-style-type: lower-roman;
+        }
+    }
+
+    &.outline {
+        list-style-type: upper-roman;
+
+        > li > ol {
+            list-style-type: upper-alpha;
+
+            > li > ol {
+                list-style-type: decimal;
+
+                > li > ol {
+                    list-style-type: lower-alpha;
+
+                    > li > ol {
+                        list-style-type: lower-roman;
+
+                        > li > ol {
+                            counter-reset: list;
+
+                            > li {
+                                list-style: none;
+
+                                &:before {
+                                    content:  "(" counter(list, decimal) ") ";
+                                    counter-increment: list;
+                                }
+
+                                > ol {
+                                    counter-reset: list;
+
+                                    > li {
+                                        list-style: none;
+
+                                        &:before {
+                                            content:  "(" counter(list, lower-alpha) ") ";
+                                            counter-increment: list;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+strong,
+b {
+    font-weight: $font-weight-bold;
+}
+
+.page-title,
+.module-title,
+.module-inner-title {
+    text-align: center;
+    @include line-length-em(min);
+    margin-bottom: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(sm) {
+        margin-bottom: $uams-module-padding;
+    }
+
+    + .note {
+        @include line-length-em(max);
+        text-align: center;
+        margin-top: -(math.div($uams-module-padding-mobile, 2));
+        margin-bottom: $uams-module-padding-mobile;
+
+        @include media-breakpoint-up(sm) {
+            margin-top: -(math.div($uams-module-padding, 2));
+            margin-bottom: $uams-module-padding;
+        }
+    }
+
+    &.sr-only + .note {
+        margin-top: 0;
+
+        @include media-breakpoint-up(sm) {
+            margin-top: 0;
+        }
+    }
+}
+
+.page-title,
+.module-title {
+    margin-top: 0 !important;
+
+    + .note {
+        @include media-breakpoint-up(xs) {
+            font-size: $lead-font-size;
+            font-weight: $lead-font-weight;
+        }
+    }
+
+    .title {
+        position: relative;
+        display: inline-block;
+        padding-bottom: 0.618em;
+
+        &:after {
+            content: "";
+            display: block;
+            height: 2px;
+            background-color: $primary;
+            position: absolute;
+            bottom: 0;
+            left: 19.1%;
+            right: 19.1%;
+        }
+    }
+}
+
+.page-title {
+    font-weight: $font-weight-bolder;
+}
+
+.module-inner-title {
+    margin-top: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(sm) {
+        margin-top: $uams-module-padding;
+    }
+}
+
+.module-description {
+    @include line-length-em(max);
+    text-align: center;
+    margin-bottom: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(xs) {
+        font-size: $lead-font-size;
+    }
+
+    @include media-breakpoint-up(sm) {
+        margin-bottom: $uams-module-padding;
+    }
+}
+
+// Blockquotes
+blockquote,
+.blockquote,
+.wp-block-quote {
+    margin: 1em 0;
+    padding: 0 0 0 1em;
+    border-left: $blockquote-border-width solid $body-color;
+    @include font-size($blockquote-font-size);
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    &.is-style-large,
+    &.is-large {
+        margin: 1em 0;
+        padding: 0 0 0 1em;
+        @include font-size($blockquote-large-font-size);
+
+        p {
+            font-size: inherit;
+            font-style: inherit;
+            line-height: inherit;
+        }
+
+        cite,
+        .blockquote-footer {
+            @include font-size($blockquote-small-font-size);
+            text-align: inherit;
+        }
+    }
+}
+
+cite,
+.blockquote-footer {
+    display: block;
+    @include font-size($blockquote-small-font-size);
+    color: $blockquote-small-color;
+    font-style: italic;
+
+    &::before {
+        content: "\2014\00A0"; // em dash, nbsp
+    }
+}
+
+.wp-block-pullquote {
+    margin: 3em 0;
+    padding: 3em 0;
+    border-bottom: $blockquote-border-width solid $body-color;
+    border-top: $blockquote-border-width solid $body-color;
+    text-align: center;
+
+    // &.is-style-default {}
+
+    &.is-style-solid-color {
+        padding: 3em;
+        border-bottom: none;
+        border-top: none;
+        text-align: center;
+
+        blockquote,
+        .blockquote,
+        .wp-block-quote {
+            text-align: inherit;
+            max-width: none;
+
+            p {
+                font-size: inherit;
+                margin: 0 0 $paragraph-margin-bottom 0;
+            }
+
+            cite,
+            .blockquote-footer {
+                color: inherit;
+                @include font-size($blockquote-small-font-size);
+                font-style: italic;
+            }
+        }
+    }
+
+    blockquote,
+    .blockquote,
+    .wp-block-quote {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        @include font-size($blockquote-large-font-size);
+        text-align: inherit;
+        max-width: none;
+
+        p {
+            font-size: inherit;
+        }
+
+        cite,
+        .blockquote-footer {
+            color: $blockquote-small-color;
+            @include font-size($blockquote-small-font-size);
+            font-style: italic;
+        }
+    }
+}
+
+hr {
+    margin-top: $uams-module-padding-mobile;
+    margin-bottom: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(sm) {
+        margin-top: $uams-module-padding;
+        margin-bottom: $uams-module-padding;
+    }
+
+    &.wp-block-separator.is-style-wide {
+        @include media-breakpoint-up(md) {
+            @include alignwide(1.309);
+        }
+        @include media-breakpoint-up(lg) {
+            @include alignwide(1.618);
+        }
+    }
+}
+
+// Source Citation Container
+.cite {
+    @include cite();
+}

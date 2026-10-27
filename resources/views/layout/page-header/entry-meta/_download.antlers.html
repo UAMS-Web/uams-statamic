@@ -1,0 +1,24 @@
+{{#
+
+	@name Entry Meta Item: Download
+	@desc Renders a download link entry-meta row via components/link (label + link).
+	Expects: label, value (asset URL string). Optional: icon, link_text, itemprop,
+	use_download, download_filename, rel, target.
+
+#}}
+
+{{
+	partial:layout/page-header/entry-meta/components/label
+	:label="label"
+	:icon="( icon ?? 'fas fa-download fa-fw' )"
+}}
+{{
+	partial:layout/page-header/entry-meta/components/link
+	:url="value"
+	:link_text="link_text"
+	:itemprop="itemprop"
+	:rel="rel"
+	:target="target"
+	:use_download="use_download ?? true"
+	:download_filename="download_filename"
+}}

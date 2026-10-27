@@ -1,0 +1,72 @@
+{{#
+	@name Areas of Expertise Listing
+	@desc Paginated card grid of the site's Areas of Expertise (the
+	      `clinical_expertise`-blueprint entries only — content-page descendants are
+	      excluded), alphabetical by title, with an empty state. Modeled on the
+	      clinical_resources listing (UAMS-Web/uams-statamic-archive#576). (UAMS-Web/uams-statamic-archive#572)
+
+	      UAMS-Web/uams-statamic-archive#1440: a faceted search narrows the grid to the Areas of Expertise whose
+	      associated conditions/treatments match the visitor's term (by title or
+	      alternate name), via the `expertise_by_associated_ontology_search` scope.
+	      The term rides the `q` query param: it is reflected into the input and the
+	      empty state ESCAPED with `sanitize` (Antlers output is raw by default),
+	      and passed raw to the scope, where it is used only for PHP-side matching.
+#}}
+
+<form method="get" role="search" class="expertise-search" aria-label="Search areas of expertise by condition or treatment">
+	<label for="expertise-search-q" class="expertise-search-label">Search by condition or treatment</label>
+	<input type="search" id="expertise-search-q" name="q" class="expertise-search-input"
+		value="{{ get:q | sanitize }}"
+		placeholder="e.g. diabetes, knee replacement"
+		autocomplete="off">
+	<button type="submit" class="expertise-search-submit">Search</button>
+	{{ if get:q }}
+		<a href="{{ current_url }}" class="expertise-search-clear">Clear</a>
+	{{ /if }}
+</form>
+
+{{
+	collection:clinical_expertise
+	blueprint:is="clinical_expertise"
+	query_scope="expertise_by_associated_ontology_search"
+	q="{{ get:q }}"
+	sort="title:asc"
+	paginate="12"
+	as="areas"
+}}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12">
+			{{ if no_results }}
+				{{ if get:q }}
+					<p class="expertise-empty">No areas of expertise match &ldquo;{{ get:q | sanitize }}&rdquo;.</p>
+				{{ else }}
+					<p class="expertise-empty">No areas of expertise found.</p>
+				{{ /if }}
+			{{ else }}
+				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+					{{ areas }}
+						{{# Image-forward card at WP-archive parity: 16:9 featured image (+ fallback),
+						    "Part of {parent}" subtitle, and a CTA link, all sanitized (UAMS-Web/uams-statamic-archive#1467). #}}
+						{{ partial:clinical_expertise/card }}
+					{{ /areas }}
+				</div>
+
+				{{ if paginate:total_pages > 1 }}
+					<nav class="expertise-pagination" aria-label="Areas of expertise pagination">
+						<ul class="pagination">
+							{{ if paginate:prev_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+							{{ /if }}
+							<li class="page-item active" aria-current="page">
+								<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+							</li>
+							{{ if paginate:next_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+							{{ /if }}
+						</ul>
+					</nav>
+				{{ /if }}
+			{{ /if }}
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /collection:clinical_expertise }}

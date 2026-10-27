@@ -1,0 +1,42 @@
+title: 'UAMSWeb Bard Set, Form'
+fields:
+  -
+    handle: form
+    field: uamsweb_common.form
+    config:
+      validate:
+        - required
+  -
+    handle: heading_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include the Heading From the Form Settings?'
+      default: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: heading_level
+    field: uamsweb_common.heading_level
+    config:
+      localizable: false
+      if:
+        heading_query: 'equals true'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: description_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include the Description From the Form Settings?'
+      default: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: import_wordpress_notes
+    field: uamsweb_common.import_wordpress_notes
+    config:
+      instructions: 'Notes from WordPress import (e.g., original Formidable Forms ID).'
+      localizable: false

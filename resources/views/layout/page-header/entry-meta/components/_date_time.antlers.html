@@ -1,0 +1,16 @@
+{{#
+
+	@name Entry Meta Component: Date/Time
+	@desc Renders a date/time value inside a semantic value wrapper (time element, datetime + schema).
+	Expects: value (date), itemprop (schema.org property name). Used by date_modified and date_published.
+
+#}}
+
+{{
+	partial:layout/page-header/entry-meta/components/value
+	element="time"
+	:content_attr="(value | format('c'))"
+	:datetime_attr="(value | format('c'))"
+}}
+	{{ value | ap_style_date }}
+{{ /partial:layout/page-header/entry-meta/components/value }}

@@ -1,0 +1,79 @@
+{{#
+	@name UAMS Block Header
+	@desc The header element in UAMS page builder blocks.
+
+	      Every `<h2>` sink pipes `heading` through `strip_tags` (UAMS-Web/uams-statamic-archive#1675). Antlers is raw
+	      by default, so a caller interpolating editor- or importer-controlled text into
+	      `heading` would otherwise emit live HTML on a public page — the people lenses
+	      pass a person's name (`About {name}`), which the WordPress importer writes
+	      verbatim. `widont` is a typographic filter, NOT an escape, and it only replaces
+	      the LAST space, so a space-free payload such as `<svg/onload=…>` passed through
+	      it intact. Escaping here rather than at each call site means a new consumer
+	      cannot reintroduce the sink by forgetting.
+
+	      `strip_tags` (not `sanitize`) matches the sibling name sinks —
+	      `people/components/identity_header`, `page_builder/components/card_title` — and
+	      leaves legitimate punctuation (`&`, apostrophes) untouched rather than
+	      double-encoding it.
+
+	      The `description` branch below is deliberately NOT escaped: it renders Bard
+	      output, whose markup is the point.
+	@set page.page_builder.uamsweb_block_*
+#}}
+
+{{# Use parameter values if provided and non-empty, otherwise fall back to block values #}}
+{{ heading = ( heading === '' ) ? null : ( heading ?? block:block_heading ) }}
+{{ description = ( description === '' ) ? null : ( description ?? block:block_description ) }}
+{{ block_id = ( block_id === '' ) ? null : ( block_id ?? null ) }}
+{{ $heading_id = block_id ? ( block_id + '-title' ) : null }}
+
+{{ if block:hide_block_heading && !description }}
+	<h2 
+		class="sr-only" 
+		{{ $heading_id | attribute:id }}
+	><span
+		{{ ( block_header_heading_itemprop ?? null ) | attribute:itemprop }}
+		{{ ( block_header_heading_itemscope ?? null ) | attribute:itemscope }}
+		{{ ( block_header_heading_itemtype ?? null ) | attribute:itemtype }}
+	>{{ heading | strip_tags }}</span></h2>
+{{ else }}
+	<div class="col-12">
+		{{ if block:hide_block_heading }}
+			<h2 
+				class="sr-only" 
+				{{ $heading_id | attribute:id }}
+			><span
+				{{ ( block_header_heading_itemprop ?? null ) | attribute:itemprop }}
+				{{ ( block_header_heading_itemscope ?? null ) | attribute:itemscope }}
+				{{ ( block_header_heading_itemtype ?? null ) | attribute:itemtype }}
+			>{{ heading | strip_tags }}</span></h2>
+		{{ else }}
+			<h2 
+				class="module-title"
+				{{ $heading_id | attribute:id }}
+			><span 
+				class="title"
+				{{ ( block_header_heading_itemprop ?? null ) | attribute:itemprop }}
+				{{ ( block_header_heading_itemscope ?? null ) | attribute:itemscope }}
+				{{ ( block_header_heading_itemtype ?? null ) | attribute:itemtype }}
+			>{{ heading | strip_tags | widont }}</span></h2>
+		{{ /if }}
+		{{ if description }}
+			<div 
+				class="module-description"
+				{{ ( block_header_description_itemprop ?? null ) | attribute:itemprop }}
+				{{ ( block_header_description_itemscope ?? null ) | attribute:itemscope }}
+				{{ ( block_header_description_itemtype ?? null ) | attribute:itemtype }}
+			>
+				{{# Wrap the description in a paragraph tag if the input is not a Bard fieldtype (which comes with its own HTML wrappers) #}}
+				{{ if description | starts_with('<') }}
+					{{ description | widont }}
+
+				{{ else }}
+					{{ description | widont | wrap('p') }}
+
+				{{ /if }}
+			</div>
+		{{ /if }}
+	</div>
+{{ /if }}

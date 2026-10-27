@@ -1,0 +1,18 @@
+{{#
+	@name Pull quote
+	@desc The pull quote component. A pull quote with an optional author.
+	@set page.article.pull_quote
+#}}
+
+<blockquote
+	class="{{
+		[
+			'blockquote' => true,
+			'lead' => ( align == 'alignwide' ),
+			align
+		] | classes | collapse_whitespace
+	}}"
+>
+	{{ quote }}
+	{{ partial:typography/caption as="footer" class="blockquote-footer" :caption="author" }}
+</blockquote>

@@ -1,0 +1,94 @@
+{{# Product fieldtype (App\Fieldtypes\Product) — Gravity Forms product-field
+    analog. Two modes, driven by the blueprint `selection_type`:
+
+      single   → a fixed base price plus a quantity input (the quantity input
+                 is replaced by a hidden value="1" when `disable_quantity`).
+      multiple → a <select> of priced option rows plus a quantity input.
+
+    Submitted shape (flat associative under the handle, mirroring address.antlers):
+      single   → `{handle}[quantity]` (+ hidden `{handle}[line_total]`)
+      multiple → `{handle}[key]`, `{handle}[quantity]` (+ hidden `{handle}[line_total]`)
+
+    `product-pricing-engine.js` reads the `data-product-*` hooks below, computes
+    `line_total = quantity × unit price`, writes it to the hidden `[line_total]`
+    input and the visible subtotal, and dispatches `product:price-changed` on the
+    <form> so a Total field (issue UAMS-Web/uams-statamic-archive#488) can sum every product line on the page.
+    Server-side `Product::process()` recomputes `line_total` authoritatively from
+    config — the hidden input is a client-side convenience, not a trust boundary.
+
+    `formatted_price` and `product_options` (each with `price` + `formatted_price`)
+    come from `Product::extraRenderableFieldData()`. #}}
+{{ product_mode = selection_type ?? 'single' }}
+{{ selected_key = value.key ?? '' }}
+<div
+	data-product-field
+	data-product-handle="{{ handle }}"
+	data-product-mode="{{ product_mode }}"
+>
+	{{ if product_mode == 'multiple' }}
+		<select
+			id="{{ id }}"
+			class="{{
+				[
+					'form-control' => true,
+					'is-invalid' => error
+				] | classes | collapse_whitespace
+			}}"
+			name="{{ handle }}[key]"
+			data-product-select
+			{{ ( validate | contains:required ) | attribute:required }}
+			{{# `visibility: read_only` — see README.md in this directory. <select readonly> is
+				invalid HTML; selects use `disabled` (value omitted from submission). #}}
+			{{ ( visibility == 'read_only' ) | attribute:disabled }}
+		>
+			<option value="" data-price="0">{{ trans key="Please select..." }}</option>
+			{{ product_options }}
+				<option
+					value="{{ key }}"
+					data-price="{{ price }}"
+					{{ if selected_key == key }}selected{{ /if }}
+				>{{ label }} ({{ formatted_price }})</option>
+			{{ /product_options }}
+		</select>
+	{{ else }}
+		<p class="mb-2" data-product-single-price data-price="{{ price ?? 0 }}">
+			{{ formatted_price }}
+		</p>
+	{{ /if }}
+
+	{{# Quantity — shown for multiple always, and for single unless disable_quantity. #}}
+	{{ if product_mode != 'single' || disable_quantity != true }}
+		<label for="{{ id }}-quantity" class="small text-muted mb-1">{{ trans key="Quantity" }}</label>
+		<input
+			type="number"
+			id="{{ id }}-quantity"
+			class="form-control"
+			name="{{ handle }}[quantity]"
+			value="{{ (value.quantity ?? 1) | sanitize }}"
+			min="0"
+			step="1"
+			inputmode="numeric"
+			data-product-quantity
+			{{# `visibility: read_only` — see README.md in this directory. #}}
+			{{ if visibility == 'read_only' }}
+				readonly
+				aria-readonly="true"
+			{{ /if }}
+		>
+	{{ else }}
+		{{# disable_quantity: a fixed order of one. #}}
+		<input type="hidden" name="{{ handle }}[quantity]" value="1" data-product-quantity>
+	{{ /if }}
+
+	{{# Hidden line total maintained by product-pricing-engine.js; server recomputes. #}}
+	<input
+		type="hidden"
+		name="{{ handle }}[line_total]"
+		value="{{ (value.line_total ?? '0') | sanitize }}"
+		data-product-line-total-input
+	>
+
+	<p class="mt-2 small" data-product-line-total-display>
+		{{ trans key="Subtotal" }}: <span data-product-line-total-text>{{ (value.line_total ?? '0.00') | sanitize }}</span>
+	</p>
+</div>

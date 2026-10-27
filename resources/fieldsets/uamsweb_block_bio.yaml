@@ -1,0 +1,81 @@
+title: 'UAMSWeb Block, Bio'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: bio_person
+    field:
+      type: entries
+      display: 'Connect a Person'
+      instructions: 'Optional. Source the portrait and biography from an existing Person entry instead of entering them manually. When set, the Image and Body fields below are hidden and this block renders the connected person''s portrait and the selected biography — edit the person once and every connected Bio block follows.'
+      collections:
+        - people
+      max_items: 1
+      create: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: bio_field
+    field:
+      type: select
+      display: 'Biography to Show'
+      instructions: 'Which of the connected person''s biographies to render.'
+      default: bio
+      clearable: false
+      options:
+        bio: 'General (Full)'
+        bio_short: 'General (Short)'
+        bio_institutional: 'Institutional (Full)'
+        bio_institutional_short: 'Institutional (Short)'
+        bio_clinical: 'Clinical (Full)'
+        bio_clinical_short: 'Clinical (Short)'
+        bio_academic: 'Academic (Full)'
+        bio_academic_short: 'Academic (Short)'
+        bio_research: 'Research (Full)'
+        bio_research_short: 'Research (Short)'
+        bio_creator: 'Creator (Full)'
+        bio_creator_short: 'Creator (Short)'
+      localizable: false
+      if:
+        bio_person: 'not empty'
+  -
+    handle: image
+    field: uamsweb_common_images.image
+    config:
+      display: Image
+      instructions: 'Optional. Displays right-aligned beside the text at roughly half the text width.'
+      replicator_preview: false
+      if:
+        bio_person: empty
+  -
+    handle: body
+    field: uamsweb_common.article
+    config:
+      display: Body
+      instructions: 'The bio text. This field has no inline "add media" control — use the Image field above for the portrait.'
+      validate:
+        # Required for a manual bio, but not when a person is connected (the body is
+        # then hidden and sourced from the person) — a hidden `required` field still
+        # fails Statamic validation, so the requirement is made conditional instead.
+        - 'required_without:bio_person'
+      if:
+        bio_person: empty
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required

@@ -1,0 +1,16 @@
+{{#
+	@name Areas of Expertise Index
+	@desc The `clinical_expertise` collection index (listing) page — a browsable
+	      directory of Areas of Expertise as cards, in the standard article shell.
+	      (UAMS-Web/uams-statamic-archive#572)
+	@set clinical_expertise.index
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{ partial:clinical_expertise/listing }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

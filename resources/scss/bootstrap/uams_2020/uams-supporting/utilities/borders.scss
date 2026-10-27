@@ -1,0 +1,202 @@
+// =============================================================================
+// Rounded utilities
+@each $dir, $props in $radius-directions {
+	@each $size-suffix, $value in $radius-sizes {
+		// Name is declared here so the @if branch updates the same var (Sass block scope).
+		$class-name: 'rounded#{$size-suffix}';
+
+		@if $dir !='' {
+			$class-name: 'rounded#{$dir}#{$size-suffix}';
+		}
+
+		.#{$class-name} {
+			@each $prop in $props {
+				#{$prop}: $value;
+			}
+		}
+	}
+}
+
+// =============================================================================
+// Border width utilities – using 0–16 range
+.border {
+	border-width: 1px;
+}
+
+@each $dir, $prop in $border-width-directions {
+	.border#{$dir} {
+		#{$prop}: 1px;
+	}
+}
+
+// Numeric scale: .border-0 … .border-16  (and all directions)
+@each $dir, $prop in $border-width-directions {
+	@for $num from 0 through 16 {
+		.border#{$dir}-#{$num} {
+			#{$prop}: #{$num}px;
+		}
+	}
+}
+
+// Divide widths (default 1px + full 0–16 range)
+.divide-x {
+	&> :not(:last-child) {
+		border-inline-start-width: 0px;
+		border-inline-end-width: 1px;
+	}
+}
+
+.divide-y {
+	&> :not(:last-child) {
+		border-top-width: 0px;
+		border-bottom-width: 1px;
+	}
+}
+
+@for $num from 0 through 16 {
+	.divide-x-#{$num} {
+		&> :not(:last-child) {
+			border-inline-start-width: 0px;
+			border-inline-end-width: #{$num}px;
+		}
+	}
+
+	.divide-y-#{$num} {
+		&> :not(:last-child) {
+			border-top-width: 0px;
+			border-bottom-width: #{$num}px;
+		}
+	}
+}
+
+// =============================================================================
+// Border color utilities
+@mixin generate-border-colors($prefix, $color-prop) {
+
+	// Fixed values
+	.border#{$prefix}-inherit {
+		#{$color-prop}: inherit;
+	}
+
+	.border#{$prefix}-current {
+		#{$color-prop}: currentColor;
+	}
+
+	.border#{$prefix}-transparent {
+		#{$color-prop}: transparent;
+	}
+
+	.border#{$prefix}-black {
+		#{$color-prop}: $black;
+	}
+
+	.border#{$prefix}-white {
+		#{$color-prop}: $white;
+	}
+
+	// Gray palette
+	@each $key, $val in $grays {
+		.border#{$prefix}-gray-#{$key} {
+			#{$color-prop}: $val;
+		}
+	}
+
+	// Colors palette
+	@each $key, $val in $colors {
+		.border#{$prefix}-#{$key} {
+			#{$color-prop}: $val;
+		}
+	}
+
+	// Theme colors
+	@each $key, $val in $theme-colors {
+		.border#{$prefix}-#{$key} {
+			#{$color-prop}: $val;
+		}
+	}
+
+	// Theme colors -text / -link
+	@each $key, $val in $theme-colors-text {
+		.border#{$prefix}-#{$key}-text {
+			#{$color-prop}: $val;
+		}
+	}
+
+	@each $key, $val in $theme-colors-link {
+		.border#{$prefix}-#{$key}-link {
+			#{$color-prop}: $val;
+		}
+	}
+}
+
+@each $dir, $prop in $border-color-directions {
+	@include generate-border-colors($dir, $prop);
+}
+
+// Divide colors (non-directional)
+@each $name, $val in ('inherit': inherit,
+	'current': currentColor,
+	'transparent': transparent,
+	'black': $black,
+	'white': $white,
+) {
+	.divide-#{$name} {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+@each $key, $val in $grays {
+	.divide-gray-#{$key} {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+@each $key, $val in $colors {
+	.divide-#{$key} {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+@each $key, $val in $theme-colors {
+	.divide-#{$key} {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+@each $key, $val in $theme-colors-text {
+	.divide-#{$key}-text {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+@each $key, $val in $theme-colors-link {
+	.divide-#{$key}-link {
+		&> :not(:last-child) {
+			border-color: $val;
+		}
+	}
+}
+
+// =============================================================================
+// Border style utilities
+@each $style in $border-styles {
+	.border-#{$style} {
+		border-style: $style;
+	}
+
+	.divide-#{$style} {
+		&> :not(:last-child) {
+			border-style: $style;
+		}
+	}
+}

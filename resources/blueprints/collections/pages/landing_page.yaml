@@ -1,0 +1,161 @@
+title: 'Landing Page'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Page Title and Header'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: true
+              listable: true
+              display: 'Page Title'
+              validate:
+                - required
+          -
+            import: uamsweb_header_selector_landing
+      -
+        display: 'Featured Image'
+        collapsible: true
+        fields:
+          -
+            handle: featured_image_16_9
+            field: uamsweb_post_cover_image.featured_image_16_9
+            config:
+              validate:
+                - 'dimensions:min_width=1200,min_height=675'
+          -
+            handle: featured_image_4_3
+            field: uamsweb_post_cover_image.featured_image_4_3
+          -
+            handle: featured_image_1_1
+            field: uamsweb_post_cover_image.featured_image_1_1
+          -
+            handle: featured_image_credit_query
+            field: uamsweb_post_cover_image.featured_image_credit_query
+      -
+        display: 'Page Builder'
+        fields:
+          -
+            import: page_builder
+  scripts:
+    display: Scripts
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_entry_scripts
+  seo:
+    display: SEO
+    sections:
+      -
+        display: 'Meta'
+        fields:
+          -
+            import: uamsweb_entry_seo_meta
+      -
+        display: 'Clinical Subject Matter'
+        fields:
+          -
+            import: uamsweb_clinical_aboutness
+      -
+        display: 'Meta Robots Settings'
+        fields:
+          -
+            import: uamsweb_entry_seo_robots
+      -
+        display: 'Sitemap'
+        fields:
+          -
+            import: uamsweb_entry_sitemap
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: 'Status and Visibility'
+        fields:
+          -
+            handle: status_and_visibility
+            field: uamsweb_common_status.status_and_visibility
+            config:
+              localizable: false
+              options:
+                -
+                  key: draft
+                  value: "Draft\_— Not ready to publish"
+                -
+                  key: pending
+                  value: "Pending\_— Waiting for review before publishing"
+                -
+                  key: private
+                  value: "Private\_— Only visible to site admins and editors"
+                -
+                  key: published
+                  value: "Published\_— Visible to everyone"
+          -
+            handle: publish_at
+            field:
+              type: date
+              display: 'Publish At'
+              instructions: 'Optional. Leave the status as Draft or Pending, and this page is published automatically once this time passes. Cleared once it has been applied.'
+              mode: single
+              time_enabled: true
+              localizable: false
+          -
+            handle: unpublish_at
+            field:
+              type: date
+              display: 'Unpublish At'
+              instructions: 'Optional. This page is unpublished (set back to Draft) automatically once this time passes. Cleared once it has been applied.'
+              mode: single
+              time_enabled: true
+              localizable: false
+          -
+            handle: password_protected
+            field: uamsweb_common_status.password_protected
+            config:
+              localizable: false
+          -
+            handle: visibility_password
+            field: uamsweb_common_status.visibility_password
+            config:
+              localizable: false
+          -
+            handle: is_password_hashed
+            field: uamsweb_common_status.is_password_hashed
+            config:
+              localizable: false
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate:
+                - required
+              display: Slug
+          -
+            handle: excerpt
+            field: uamsweb_entry_meta.excerpt
+            config:
+              validate:
+                - required
+                - 'max:160'
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: pages/page_landing
+              localizable: false
+      -
+        display: 'Site Navigation'
+        fields:
+          -
+            import: uamsweb_entry_site_navigation

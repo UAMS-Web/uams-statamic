@@ -1,0 +1,26 @@
+title: 'UAMSWeb Clinical Resource, Related Items'
+fields:
+  -
+    handle: clinical_providers
+    field: uamsweb_common_fad.providers
+    config:
+      collections:
+        - people
+  -
+    handle: clinical_locations
+    field: uamsweb_common_fad.clinical_locations
+  -
+    handle: clinical_expertise
+    field: uamsweb_common_fad.expertise
+  -
+    handle: clinical_conditions
+    field: uamsweb_common_fad.conditions
+  -
+    handle: clinical_services
+    field: uamsweb_common_fad.treatments
+  -
+    handle: clinical_resources
+    field: uamsweb_common_fad.clinical_resources
+    config:
+      query_scopes:
+        - exclude_self

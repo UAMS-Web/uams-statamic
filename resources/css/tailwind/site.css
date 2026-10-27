@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@source "../views";
+@source "../../content";
+
+/* Safelist classes used dynamically in Antlers */
+@source inline("alignleft aligncenter alignright alignwide alignfull");
+@source inline("embed-responsive-1920by714 embed-responsive-21by9 embed-responsive-4by3 embed-responsive-1by1 embed-responsive-16by9");

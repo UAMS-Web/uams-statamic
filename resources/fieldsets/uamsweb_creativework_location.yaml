@@ -1,0 +1,25 @@
+title: 'UAMSWeb Creative Work Location'
+fields:
+  -
+    handle: geographic_location
+    field:
+      collections:
+        - geographic_locations
+      type: entries
+      select_across_sites: true
+      search_index: geographic_locations
+      display: 'Geographic Location Where the Work Was Created'
+      localizable: false
+      instructions: 'e.g., where a post was written or where a photo was taken'
+      create: false
+  -
+    handle: geographic_location_content
+    field:
+      collections:
+        - geographic_locations
+      search_index: geographic_locations
+      type: entries
+      select_across_sites: true
+      display: 'Geographic Location(s) Depicted or Described in the Content'
+      localizable: false
+      create: false

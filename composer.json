@@ -1,0 +1,200 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "uams-web/uams-statamic",
+    "type": "project",
+    "description": "Statamic",
+    "license": "MIT",
+    "keywords": [
+        "statamic",
+        "cms",
+        "flat file",
+        "laravel"
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/wordpress-importer.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/wordpress-wxr-cleanup.git"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-imagick": "*",
+        "cweagans/composer-patches": "^2.0",
+        "el-schneider/statamic-admin-bar": "^0.3.2",
+        "ezyang/htmlpurifier": "^4.19",
+        "jacksleight/statamic-bard-mutator": "^3.0.5",
+        "jacksleight/statamic-bard-texstyle": "^4.1.1",
+        "james-heinrich/getid3": "^1.9",
+        "joshdaugherty/ipa-unicode-inventory": "^1.5",
+        "laravel/framework": "^13.0",
+        "laravel/prompts": "^0.3.5",
+        "laravel/tinker": "^3.0",
+        "league/commonmark": "^2.8.1",
+        "maatwebsite/excel": "^3.1",
+        "mitydigital/sitemapamic": "^3.5.0",
+        "propaganistas/laravel-phone": "^6.0",
+        "smalot/pdfparser": "^2.0",
+        "spatie/browsershot": "^5.0",
+        "spatie/image": "^3.8",
+        "spatie/laravel-pdf": "^2.5",
+        "spatie/schema-org": "^4.0",
+        "statamic/cms": "6.37.0",
+        "statamic/eloquent-driver": "5.12.3",
+        "statamic/ssg": "^4.1",
+        "stillat/relationships": "^2.4",
+        "studio1902/statamic-peak-tools": "9.2.3",
+        "uams-web/statamic-alpine-csp-forms": "^0.1.0",
+        "uams-web/statamic-form-settings": "^0.1",
+        "uams-web/statamic-multisite-forms": "^0.6",
+        "uams-web/wordpress-importer": "^0.29"
+    },
+    "require-dev": {
+        "brianium/paratest": "^7.23",
+        "driftingly/rector-laravel": "^2.0",
+        "fakerphp/faker": "^1.23",
+        "fruitcake/laravel-debugbar": "^4.0",
+        "larastan/larastan": "^3.0",
+        "laravel/boost": "^2.0",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.13",
+        "laravel/sail": "^1.41",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "pestphp/pest": "^5.2",
+        "pestphp/pest-plugin-browser": "^5.0",
+        "pestphp/pest-plugin-laravel": "*",
+        "pestphp/pest-plugin-phpstan": "^5.0",
+        "phpstan/phpstan-mockery": "^2.0",
+        "phpunit/phpunit": "^13.0",
+        "rector/rector": "^2.5",
+        "spatie/laravel-ignition": "^2.9.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "UAMSWeb\\WordPressImporter\\Tests\\": "vendor/uams-web/wordpress-importer/tests/"
+        }
+    },
+    "scripts": {
+        "pre-update-cmd": [
+            "Statamic\\Console\\Composer\\Scripts::preUpdateCmd"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi",
+            "@php artisan statamic:install --ansi"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\""
+        ],
+        "post-install-cmd": [
+            "@php scripts/setup-git-hooks.php"
+        ],
+        "test": [
+            "@php vendor/bin/pest"
+        ],
+        "refactor": [
+            "@php vendor/bin/rector"
+        ],
+        "refactor:sweep": [
+            "@php vendor/bin/rector --config=rector-sweep.php"
+        ],
+        "test:refactor": [
+            "@php vendor/bin/rector --dry-run"
+        ],
+        "test:refactor:sweep": [
+            "@php vendor/bin/rector --dry-run --config=rector-sweep.php"
+        ],
+        "stan": [
+            "@php vendor/bin/phpstan analyse --no-progress --memory-limit=2G"
+        ],
+        "mutate": [
+            "@php vendor/bin/pest --mutate --path=app"
+        ],
+        "mutate-ignore": [
+            "@php scripts/check-mutate-ignore-changed.php"
+        ],
+        "test:tia": [
+            "@php scripts/check-tia-safe.php --quiet",
+            "@php vendor/bin/pest --tia"
+        ],
+        "test:tia:fresh": [
+            "@php scripts/check-tia-safe.php --quiet --record",
+            "@php vendor/bin/pest --tia --fresh"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php scripts/setup-git-hooks.php"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev:with-cp\" --names=server,queue,logs,vite"
+        ]
+    },
+    "extra": {
+        "composer-exit-on-patch-failure": true,
+        "patches": {
+            "larastan/larastan": {
+                "Resolve console commands the console kernel registers, so argument() and option() keep their signature types on Laravel 13.36 and later (temporary; see #3156)": "patches/larastan-console-kernel-commands.patch"
+            },
+            "pestphp/pest-plugin-browser": {
+                "Fail a request instead of busy-looping when the Playwright socket closes (temporary; see #1814)": "patches/pest-plugin-browser-client-bounded-requests.patch",
+                "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
+                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch"
+            },
+            "pestphp/pest-plugin-mutate": {
+                "Launch each mutant child process so a run cannot score every mutant killed without executing one (temporary; see #2322)": "patches/pest-plugin-mutate-mutant-process-launch.patch",
+                "Stop three silent @pest-mutate-ignore parsing defects suppressing nothing or the wrong set (temporary; see #2327)": "patches/pest-plugin-mutate-annotation-parsing.patch",
+                "Let a mutant child on Windows run its tests and write files, so its failure is a real kill (temporary; see #2524)": "patches/pest-plugin-mutate-windows-mutant-child.patch",
+                "Drop the run's own --filter from each mutant child so a filtered run cannot score every mutant killed (temporary; see #2570)": "patches/pest-plugin-mutate-drop-run-filter.patch",
+                "Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)": "patches/pest-plugin-mutate-windows-filter-length.patch",
+                "Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)": "patches/pest-plugin-mutate-write-mutated-source.patch",
+                "Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)": "patches/pest-plugin-mutate-drop-parallel-runner-options.patch"
+            },
+            "statamic/cms": {
+                "Add blueprint-aware collection create labels": "patches/statamic-collection-create-label-blueprint.patch",
+                "Add blueprint-aware taxonomy create labels": "patches/statamic-taxonomy-create-label-blueprint.patch",
+                "Align CP updates badge with updater availableUpdatesCount": "patches/statamic-updates-overview-badge.patch",
+                "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see #2241)": "patches/statamic-stache-traverser-vanished-file.patch",
+                "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-paths.patch",
+                "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-modified.patch",
+                "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-modified.patch",
+                "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-paths.patch",
+                "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-get-item.patch",
+                "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-basic-vanished-file-get-item.patch"
+            }
+        },
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "process-timeout": 0,
+        "sort-packages": true,
+        "allow-plugins": {
+            "cweagans/composer-patches": true,
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true,
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -1,0 +1,244 @@
+title: Audio
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          -
+            import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_cover_image
+      -
+        display: Syndication
+        collapsible: true
+        fields:
+          -
+            handle: syndication_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this syndicated from another source?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+          -
+            handle: syndication_url
+            field: uamsweb_common.url
+            config:
+              display: 'Syndication Source URL'
+              localizable: false
+              if:
+                syndication_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content'
+        collapsible: true
+        fields:
+          -
+            handle: intro
+            field: uamsweb_common.article
+            config:
+              display: Introduction
+              localizable: false
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_text
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+      -
+        display: 'Audio Content'
+        collapsible: true
+        fields:
+          -
+            handle: series
+            field:
+              max_items: 1
+              mode: select
+              taxonomies:
+                - audio_series
+              type: terms
+              display: 'Audio Series'
+              localizable: false
+          -
+            handle: segments
+            field:
+              collapse: true
+              type: replicator
+              display: 'Audio Segments'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              sets:
+                new_audio_segment_group:
+                  display: 'New Audio Segment Group'
+                  sets:
+                    local_file:
+                      display: 'Local Audio File'
+                      icon: media-music-sound-equalizer
+                      fields:
+                        -
+                          import: uamsweb_audio_segment_local_file
+                    remote_audio:
+                      display: 'Remote Audio (URL)'
+                      icon: media-music-sound-equalizer
+                      fields:
+                        -
+                          import: uamsweb_audio_segment_remote_url
+                new_video_segment_group:
+                  display: 'New Video Segment Group'
+                  sets:
+                    youtube:
+                      display: 'YouTube Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_youtube
+                    vimeo:
+                      display: 'Vimeo Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_vimeo
+                    box:
+                      display: 'Box.com Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_box
+          -
+            handle: episode_number
+            field:
+              type: integer
+              display: 'Episode Number'
+              localizable: false
+              if:
+                series: 'not empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: season_number
+            field:
+              type: integer
+              display: 'Season Number'
+              instructions: 'Optional. For shows organized into seasons.'
+              localizable: false
+              if:
+                series: 'not empty'
+          -
+            handle: show_notes
+            field: uamsweb_common.article
+            config:
+              display: 'Show Notes'
+              instructions: 'Episode show notes: summary, topics, and links.'
+              localizable: false
+              if:
+                series: 'not empty'
+          -
+            handle: episode_transcript
+            field: uamsweb_common.bard_transcript
+            config:
+              display: 'Episode Transcript'
+              localizable: false
+              if:
+                series: 'not empty'
+          -
+            handle: episode_duration
+            field:
+              type: text
+              display: 'Episode Duration'
+              instructions: 'Optional. Total run time as `HH:MM:SS` (e.g. `00:42:15`).'
+              localizable: false
+              if:
+                series: 'not empty'
+          -
+            handle: podcast_credits
+            field:
+              type: group
+              display: 'Episode Credits'
+              instructions: 'Credit the people involved in this episode: host, featured guests, and production roles.'
+              if:
+                series: 'not empty'
+              always_save: true
+              localizable: false
+              fields:
+                -
+                  import: uamsweb_post_creator_roles_audio
+          -
+            handle: source_item_id
+            field:
+              type: hidden
+              display: 'Source Item ID'
+              instructions: "Set by the UAMS Health Talk sync: the feed item's id, the key a later run updates this entry by. Never rendered."
+              localizable: false
+          -
+            handle: source_speaker_names
+            field:
+              type: list
+              display: 'Source Speaker Names'
+              instructions: "Set by the UAMS Health Talk sync: the speaker names exactly as the feed gave them. Provenance only; never rendered."
+              visibility: hidden
+              localizable: false
+          -
+            handle: source_speaker_slugs
+            field:
+              type: list
+              display: 'Source Speaker Slugs'
+              instructions: "Set by the UAMS Health Talk sync: each speaker's provider-page slug, in the same order as the names, or empty. Lets credits be re-resolved without refetching. Provenance only; never rendered."
+              visibility: hidden
+              localizable: false
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        fields:
+          -
+            import: uamsweb_clinical_resource_related
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config:
+              localizable: false

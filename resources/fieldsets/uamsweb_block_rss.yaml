@@ -1,0 +1,145 @@
+title: 'UAMSWeb Block, RSS Feed'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+  -
+    handle: section_feed
+    field:
+      type: subsection
+      display: 'Feed Settings'
+      localizable: false
+  -
+    handle: feed_url
+    field:
+      input_mask_autofix: false
+      input_mask_eager: false
+      input_mask_overwrite: false
+      type: url
+      display: 'RSS or Atom Feed URL'
+      localizable: false
+      validate:
+        - required
+        - feed_url
+  -
+    handle: item_limit
+    field:
+      default: '5'
+      placeholder: 'e.g., 5'
+      min: '1'
+      max: '20'
+      step: '1'
+      input_mask_lazy: 1
+      input_mask_skipInvalid: 1
+      type: integer
+      display: 'Number of Items to Display'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: author_query
+    field:
+      type: toggle
+      display: 'Display Author'
+      localizable: false
+  -
+    handle: date_query
+    field:
+      type: toggle
+      display: 'Display Date'
+      localizable: false
+  -
+    handle: excerpt_query
+    field:
+      type: toggle
+      display: 'Display Excerpt'
+      localizable: false
+  -
+    handle: excerpt_limit
+    field:
+      min: 1
+      step: 1
+      input_mask_lazy: 1
+      input_mask_skipInvalid: 1
+      type: integer
+      display: 'Character Limit for Excerpt'
+      localizable: false
+      if:
+        excerpt_query: 'equals true'
+  -
+    handle: section_display_settings
+    field:
+      type: subsection
+      display: 'Display Settings'
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      validate:
+        - required
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

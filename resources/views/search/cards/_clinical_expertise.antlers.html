@@ -1,0 +1,11 @@
+{{#
+	@name  Search Card: Areas of Expertise
+	@desc  A `clinical_expertise` (Area of Expertise) search hit (UAMS-Web/uams-statamic-archive#1510). Areas of
+	       Expertise are a dropdown filter scope of their own, so they get a card rather
+	       than the generic fallback: the shared compact card, plus a "Part of {parent}"
+	       line for a child Area, taken from the structure-tree computeds the directory
+	       card uses. The directory card itself (`clinical_expertise/card`) is an
+	       image-forward grid card with a call-to-action button, built for a
+	       multi-column listing, so it is not reused in a one-per-row results list.
+#}}
+{{ partial:search/cards/compact :parent_name="parent_expertise_name" :parent_url="parent_expertise_url" }}

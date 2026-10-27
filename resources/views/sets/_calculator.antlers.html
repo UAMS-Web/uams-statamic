@@ -1,0 +1,40 @@
+{{#
+    @name Calculator
+    @desc Bard set that embeds a Calculator collection entry. Resolves the
+          picked entry, gates on published, and delegates rendering to
+          partials/calculator.
+    @set page.article.calculator
+#}}
+
+{{ calculator_entry }}
+	{{ if !id || !published }}
+		{{ return }}
+	{{ /if }}
+	{{#
+		The handles are passed to the `calculator` component as an argument —
+		every variable handle, including each split sub-handle — so Alpine's
+		`x-model="<handle>"` resolves against this component's own scope.
+
+		An argument rather than a `data-` attribute, and rather than the inline
+		object literal this replaced (UAMS-Web/uams-statamic-archive#2247): the literal is a CSP parse error, so
+		the component never existed; and an attribute could only be read in
+		`init()`, after the bindings have resolved, leaving each handle to be
+		found on an ANCESTOR scope instead of here. Seeding every handle is mandatory under the
+		`@alpinejs/csp` build (UAMS-Web/uams-statamic-archive#1859): its interpreter resolves identifiers only
+		from the Alpine scope stack and throws `Undefined variable: <handle>` on
+		a miss, with no `window.<handle>` fallback to mask the omission. The
+		throw yields `undefined` for that binding, so a missed handle costs one
+		silently dead input rather than a visibly wrong value.
+
+		(Before the CSP build the same omission was survivable but wrong:
+		browsers reflect every element with an `id` attribute as a global of the
+		same name, so the lookup fell through to `window.<handle>` and wrote
+		`[object HTMLInputElement]` into the input's visible value.)
+
+		Handles are guaranteed ASCII identifiers (`ascii_identifier` rule), safe
+		to emit unquoted.
+	#}}
+	<div x-data="calculator([{{ parts }}'{{ handle }}'{{ if split }}{{ split }}, '{{ handle }}'{{ /split }}{{ /if }}{{ unless last }}, {{ /unless }}{{ /parts }}])" data-calculator-context>
+		{{ partial:partials/calculator }}
+	</div>
+{{ /calculator_entry }}

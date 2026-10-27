@@ -1,0 +1,23 @@
+.alert {
+    a {
+        color: inherit;
+    }
+
+    p,
+    ul,
+    ol,
+    ul li,
+    ol li {
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.bg-white {
+    .alert {
+        a:not(.btn) {
+            color: inherit;
+        }
+    }
+}

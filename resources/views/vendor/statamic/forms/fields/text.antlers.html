@@ -1,0 +1,35 @@
+<input
+	class="{{
+		[
+			'form-control' => true,
+			'is-invalid' => error
+		] | classes | collapse_whitespace
+	}}"
+	id="{{ id }}"
+	type="{{ input_type ?? 'text' }}"
+	name="{{ handle }}"
+	value="{{ value | sanitize }}"
+	{{ placeholder | attribute:placeholder }}
+	{{ character_limit | attribute:maxlength }}
+	{{ autocomplete | attribute:autocomplete }}
+	{{ if calculation_query == true }}
+		{{# See default.antlers.html for the calculation_* wiring rationale. #}}
+		data-calculation-type="{{ calculation_type ?? 'math' }}"
+		data-calculation-formula="{{ calculation_formula ?? calculation_formula_math ?? calculation_formula_text ?? '' }}"
+		data-calculation-decimals="{{ calculation_decimals }}"
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{# `visibility: read_only` — see README.md in this directory. #}}
+	{{ if visibility == 'read_only' && calculation_query !== true }}
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+	{{ ( validate| contains:required ) | attribute:required }}
+	{{ if error }}
+		aria-invalid="true" aria-describedby="{{ id }}-error"
+	{{ elseif instructions }}
+		aria-describedby="{{ id }}-instructions"
+	{{ /if }}
+>

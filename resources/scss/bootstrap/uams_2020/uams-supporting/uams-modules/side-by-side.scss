@@ -1,0 +1,196 @@
+@use "sass:math";
+
+.side-by-side {
+    // When hovering over the section, the image increases in size.
+    // When hover ends, the image decreases in size.
+    // In order to achieve desired sizing no matter the size of the text content,
+    // an img element is used at SM breakpoint and down, while a background image
+    // is used for MD breakpoint and up.
+    // The transform and transition properties are applied to different elements
+    // based on the two image methods.
+
+    &:hover,
+    &:active {
+        .image-container {
+            .image-inner-container {
+                @include media-breakpoint-up(md) {
+                    //-webkit-transform: scale($image-hover-size);
+                    //transform: scale($image-hover-size);
+                }
+
+                img {
+                    @include media-breakpoint-down(sm) {
+                        //-webkit-transform: scale($image-hover-size);
+                        //transform: scale($image-hover-size);
+                    }
+                }
+            }
+        }
+    }
+
+    .image-container, .text-container {
+        @include media-breakpoint-up(md) {
+            min-height: 30.5rem;
+            height: math.div(100vw, 8) * 3; // double the width of 4:3 ratio
+            max-height: 100vh;
+        }
+    }
+
+    .image-container {
+        position: relative;
+        //display: block; // commented out to try and fix IE flex flow bug
+        //width: 100%; // commented out to try and fix IE flex flow bug
+        padding: 0;
+        overflow: hidden;
+        background-size: cover;
+        background-repeat: no-repeat;
+        @include responsive-bg;
+
+        @include media-breakpoint-up(md) {
+            //width: auto;
+        }
+
+        &:before {
+            content: "";
+            display: block;
+            padding-top: math.div(100%, 16) * 9;
+
+            @include media-breakpoint-up(md) {
+                padding-top: math.div(100%, (16 * 2)) * 9;
+            }
+        }
+    }
+
+    .text-container {
+        padding: $uams-module-padding-mobile;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        //max-width: 100%; // commented out to try and fix IE flex flow bug
+
+        @include media-breakpoint-up(sm) {
+            padding: $uams-module-padding;
+        }
+
+        .text-inner-container {
+            width: 100%;
+            max-width: $line-length-max+em;
+
+            > :first-child {
+                margin-top: 0;
+            }
+
+            .category {
+                display: block;
+                font-size: 0.5em;
+                text-transform: uppercase;
+                color: $body-color-lightest;
+
+                a {
+                    text-decoration: none;
+                    @include hover-focus {
+                        text-decoration: underline;
+                    }
+                }
+            }
+
+            .title {
+                display: block;
+            }
+
+            // Blockquote with Citation layout (UAMS-Web/uams-statamic-archive#2757). The figure takes the paragraph's
+            // place, so it gets a paragraph's spacing instead of the 2rem margins a bare
+            // `figure` gets from the WordPress block styles. The global blockquote
+            // margin, padding, border and font size are removed. The figcaption carries
+            // `.blockquote-footer` in the markup; the block's own `.alignfull` class would
+            // otherwise center it, cap its width and add a top margin.
+            figure {
+                margin: 0 0 $paragraph-margin-bottom;
+            }
+
+            figure > blockquote {
+                margin: 0;
+                padding: 0;
+                border: 0;
+                font-size: inherit;
+                color: inherit;
+            }
+
+            figure > figcaption {
+                max-width: none;
+                margin: 0;
+                text-align: inherit;
+            }
+
+            ul {
+                list-style: none;
+                padding: 0 0 0 (1.5 * $font-size-base);
+                //margin: 0 0 (1.444 * $font-size-base - 0.75 * $font-size-base);
+                margin: 0 0 $font-size-base;
+
+                @include media-breakpoint-up(xs) {
+                    column-count: 2;
+                    column-gap: (1 * $font-size-base);
+                }
+
+                @include media-breakpoint-only(md) {
+                    font-size: 1rem;
+                }
+
+                li {
+                    margin: 0 0 (0.75 * $font-size-base);
+                    padding: 0;
+                }
+            }
+        }
+    }
+
+    /////////////////////
+    // Widget settings
+    /////////////////////
+
+    // Image on left, text on right
+    // (Affects MD breakpoint and up)
+
+    &.image-on-left .row {
+        @include media-breakpoint-up(md) {
+            flex-direction: row;
+        }
+    }
+
+    // Image on right, text on left
+    // (Affects MD breakpoint and up)
+
+    &.image-on-right .row {
+        @include media-breakpoint-up(md) {
+            flex-direction: row-reverse;
+        }
+    }
+
+    // Background image is anchored to left edge of container
+    // (Affects MD breakpoint and up)
+
+    &.image-background-left .image-container {
+        @include media-breakpoint-up(md) {
+            background-position: left center;
+        }
+    }
+
+    // Background image is anchored to horizontal center of container
+    // (Affects MD breakpoint and up)
+
+    &.image-background-center .image-container {
+        @include media-breakpoint-up(md) {
+            background-position: center center;
+        }
+    }
+
+    // Background image is anchored to right edge of container
+    // (Affects MD breakpoint and up)
+
+    &.image-background-right .image-container {
+        @include media-breakpoint-up(md) {
+            background-position: right center;
+        }
+    }
+}

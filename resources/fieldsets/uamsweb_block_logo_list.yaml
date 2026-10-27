@@ -1,0 +1,313 @@
+title: 'UAMSWeb Block, Logo List'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: section_list
+    field:
+      type: subsection
+      display: 'List Configuration'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: logo_list_filter_category
+    field:
+      create: false
+      collections:
+        - logos_item_categories
+      type: entries
+      mode: select
+      display: 'Categories to Display'
+      instructions: 'Select one or more categories to determine which organizations will be displayed.'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: logo_list_filter_category_logic
+    field: uamsweb_common.taxonomy_query_modifiers
+    config:
+      display: 'Display Logic for Categories'
+      instructions: 'Indicate how the selection of multiple categories will affect which items are displayed.'
+      if:
+        logo_list_filter_category: 'not empty'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_filter_label
+    field:
+      create: false
+      collections:
+        - logos_item_labels
+      type: entries
+      mode: select
+      display: 'Organizations Labels'
+      instructions: 'You have the option narrow down the list of items by selecting one or more organization labels. If a selection is made here, only items in the categories above that are also in this selection of organization labels will be displayed.'
+      localizable: false
+  -
+    handle: logo_list_filter_label_logic
+    field: uamsweb_common.taxonomy_query_modifiers
+    config:
+      display: 'Display Logic for Organization Labels'
+      instructions: 'Indicate how the selection of multiple organization labels will affect which items are displayed.'
+      if:
+        logo_list_filter_label: 'not empty'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_featured
+    field: uamsweb_common.true_false
+    config:
+      display: 'Should this list be featured more prominently than other lists on the page?'
+      instructions: "Note that enabling this setting will limit this block's list to three items. Don't enable this option if this is the only logo list block on the page."
+      default: false
+  -
+    handle: logo_list_layout
+    field:
+      options:
+        -
+          key: grid
+          value: Grid
+        -
+          key: vertical
+          value: 'Vertical List'
+      default: grid
+      type: radio
+      display: 'List Layout'
+      localizable: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_width
+    field:
+      options:
+        -
+          key: aligncenter
+          value: Standard
+        -
+          key: alignwide
+          value: Wide
+        -
+          key: alignfull
+          value: Full
+      default: alignfull
+      type: radio
+      display: 'Grid Width'
+      localizable: false
+      validate:
+        - required
+        - sometimes
+      if:
+        logo_list_layout: 'equals grid'
+  -
+    handle: logo_list_titles
+    field: uamsweb_common.true_false
+    config:
+      display: 'Always Display Organization Titles?'
+      default: false
+      if:
+        logo_list_layout: 'equals grid'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_labels
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Organization Labels?'
+      default: false
+      validate:
+        - required
+  -
+    handle: logo_list_shortdescr
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Short Descriptions?'
+      default: false
+      if:
+        logo_list_layout: 'equals grid'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_links
+    field: uamsweb_common.true_false
+    config:
+      display: 'Enable Links to Organizations?'
+      default: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: logo_list_links_target
+    field: uamsweb_common.true_false
+    config:
+      display: 'Open Links in New Window?'
+      default: true
+      validate:
+        - required
+        - sometimes
+      if:
+        logo_list_links: 'equals true'
+  -
+    handle: logo_list_sort
+    field:
+      type: replicator
+      display: 'Sort Options'
+      localizable: false
+      validate:
+        - required
+      default:
+        -
+          type: sort_option
+          sort_by: logo_title
+          sort_order: asc
+      sets:
+        sort_option_group:
+          display: 'Sort Option Group'
+          sets:
+            sort_option:
+              display: 'Sort Option'
+              fields:
+                -
+                  handle: sort_by
+                  field:
+                    options:
+                      -
+                        key: logo_title
+                        value: 'Alphabetical by Organization Title'
+                      -
+                        key: title
+                        value: 'Alphabetical by Entry Title'
+                      -
+                        key: order_values
+                        value: 'Order Key and Value'
+                      -
+                        key: random
+                        value: 'Random Order'
+                    type: radio
+                    display: 'Sort By'
+                    default: logo_title
+                    localizable: false
+                    validate:
+                      - required
+                    width: 33
+                -
+                  handle: sort_key
+                  field:
+                    type: text
+                    display: 'Order Key'
+                    localizable: false
+                    validate:
+                      - required
+                      - sometimes
+                    if:
+                      sort_by: 'equals order_values'
+                    width: 33
+                -
+                  handle: sort_order
+                  field:
+                    options:
+                      -
+                        key: asc
+                        value: Ascending
+                      -
+                        key: desc
+                        value: Descending
+                    default: asc
+                    type: radio
+                    display: 'Sort Order'
+                    localizable: false
+                    if:
+                      sort_by: 'contains_any logo_title,title,order_values'
+                    validate:
+                      - required
+                      - sometimes
+                    width: 33
+  -
+    handle: logo_list_max
+    field:
+      type: integer
+      display: 'Maximum Number of Items'
+      instructions: 'Enter the maximum number of items to display. By default, all items will be displayed. However, if Featured mode is active, three items will be displayed. Entering a number higher than 3 will not allow more items to display when Featured mode is active.'
+      localizable: false
+  -
+    handle: section_more
+    field:
+      type: subsection
+      display: 'Linking Block to More'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      validate:
+        - required
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

@@ -1,0 +1,151 @@
+@use "sass:math";
+
+.logo-list-layout-vertical {
+    // Copy variables and values from logo-list.php
+    // Image Calculations
+    // Vertical List Layout
+    $vertical_image_ratio: math.div(4, 3);
+    $vertical_image_width_xxs: 236;
+    $vertical_image_width_xxs_featured: $vertical_image_width_xxs;
+    $vertical_image_width_xs: 172;
+    $vertical_image_width_xs_featured: $vertical_image_width_xs;
+    $vertical_image_width_sm: $vertical_image_width_xs;
+    $vertical_image_width_sm_featured: 224;
+    $vertical_image_width_md: $vertical_image_width_xs;
+    $vertical_image_width_md_featured: 275;
+    $vertical_image_width_lg: $vertical_image_width_xs;
+    $vertical_image_width_lg_featured: 350; // max 359
+    $vertical_image_width_xl: $vertical_image_width_xs;
+    $vertical_image_width_xl_featured: 359;
+    $vertical_image_width_xxl: $vertical_image_width_xs;
+    $vertical_image_width_xxl_featured: $vertical_image_width_xl_featured;
+
+    // .item-list-container {
+    // }
+    .item-list {
+        margin: -(math.div($uams-module-padding-mobile, 2)) 0;
+
+        @include media-breakpoint-up(sm) {
+            margin: -(math.div($uams-module-padding, 2)) 0;
+        }
+
+        .item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            padding: $uams-module-padding-mobile 0;
+
+            @include media-breakpoint-up(xs) {
+                flex-wrap: nowrap;
+            }
+
+            @include media-breakpoint-up(sm) {
+                padding: $uams-module-padding 0;
+            }
+
+            .item-img,
+            .item-body {
+                position: relative;
+            }
+
+            .item-img {
+                display: block;
+                padding: 0;
+
+                @include media-breakpoint-down(xxs) {
+                    width: 61.8%;
+                    min-height: math.div(61.8vw, 21) * 9;
+                    min-height: calc((100vw - ($uams-module-padding-mobile * 2)) * 0.618 / 21 * 9);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                @include media-breakpoint-up(xs) {
+                    @include make-col(3);
+                    overflow: hidden;
+                    max-width: (math.div(($line-length-max * 0.618), 2)) + rem;
+
+                    &::before {
+                      display: block;
+                      content: "";
+                      padding-top: math.percentage(math.div(3, 4));
+                    }
+                }
+
+                img {
+                    display: block;
+
+                    @include media-breakpoint-down(xxs) {
+                        max-height: math.div(61.8vw, 16) * 9;
+                        max-height: calc((100vw - ($uams-module-padding-mobile * 2)) * 0.618 / 16 * 9);
+                    }
+
+                    @include media-breakpoint-up(xs) {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        left: 0;
+                        border: 0;
+                        margin: 0 auto;
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                }
+            }
+
+            .item-body {
+                width: 100%;
+                max-width: $line-length-max + em;
+
+                .item-title,
+                .item-label {
+                    @include media-breakpoint-down(xxs) {
+                        text-align: center;
+                    }
+                }
+                // .item-title {
+                // }
+                // .item-label {
+                // }
+                // .item-title.sr-only + .item-label {
+                // }
+                // .item-text {
+                // }
+                .link-container {
+                    @include media-breakpoint-down(xxs) {
+                        text-align: center;
+                    }
+                }
+            }
+
+            .item-img + .item-body {
+
+                @include media-breakpoint-down(xxs) {
+                    padding-top: $uams-module-padding-mobile;
+                }
+                @include media-breakpoint-up(xs) {
+                    @include make-col(9);
+                    padding-left: $uams-module-padding-mobile;
+                    max-width: $line-length-max + em;
+                }
+                @include media-breakpoint-up(sm) {
+                    padding-left: $uams-module-padding;
+                }
+            }
+        }
+    }
+    &.logo-list-featured {
+        .item-list {
+            .item {
+                .item-img {
+                    @include media-breakpoint-up(sm) {
+                        max-width: $vertical_image_width_xl_featured + px;
+                    }
+                }
+            }
+        }
+    }
+}

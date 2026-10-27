@@ -1,0 +1,83 @@
+{{#
+	@name Clinical Location Show
+	@desc The `clinical_locations` profile: name, lead description, an interactive map,
+	      external website, related Find-a-Doc entities, and — through
+	      `clinical_locations/profile_details` — eligibility messaging, contact and
+	      appointment detail, interior wayfinding and the modified-hours notice.
+
+	      The address, parking and directions sections were added by UAMS-Web/uams-statamic-archive#2389 and live in that
+	      same details partial, read through the `resolved_*` computeds rather than the
+	      stored fields so an inherited value renders like an owned one.
+
+	      STILL NOT RENDERED HERE: the regular opening hours. `hours_of_operation` exists on
+	      the blueprint and is emitted as JSON-LD, and only the UAMS-Web/uams-statamic-archive#1328 modified-hours NOTICE
+	      reaches a reader -- so a location can say its hours are different this week without
+	      ever saying what they are. That is UAMS-Web/uams-statamic-archive#2390.
+
+	      This paragraph previously deferred them to "Group HH's charter (Waves 100/101/102)"
+	      and signed off UAMS-Web/uams-statamic-archive#575. Both pointers are dead: Group HH is marked shipped, via UAMS-Web/uams-statamic-archive#1462
+	      and UAMS-Web/uams-statamic-archive#1470, without these sections, and UAMS-Web/uams-statamic-archive#575 is closed completed although its first
+	      acceptance criterion names address and hours. A reader checking whether this gap was
+	      owned therefore found a charter and moved on, which is how it went unfiled for two
+	      months. Do not restore a forward pointer here without a ticket that is open.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{# Lead description. #}}
+		{{ if short_desc }}
+			<div class="location-lead" itemprop="https://schema.org/description">{{ short_desc }}</div>
+		{{ /if }}
+		{{ if intro }}
+			<div class="location-intro">{{ intro }}</div>
+		{{ /if }}
+
+		{{# Interactive map from the location's coordinate (the shared viewer
+			renders nothing when the coordinate or tile provider is absent).
+			`resolved_map` rather than the stored `map`: a child that does not own its
+			map group shows its parent's pin, and a location inside a facility shows
+			none (UAMS-Web/uams-statamic-archive#2608). #}}
+		{{ if resolved_map }}
+			<section class="location-map">
+				{{ partial:map :coordinate="resolved_map" :label="title" height="360" }}
+			</section>
+		{{ /if }}
+
+		{{# External website. #}}
+		{{ if external_website_url }}
+			<p class="location-website">
+				<a href="{{ external_website_url }}" rel="noopener noreferrer">{{ external_website_label ? external_website_label : 'Visit website' }}</a>
+			</p>
+		{{ /if }}
+
+		{{# The Group HH profile detail sections (eligibility, contact, appointment
+			guidance, modified hours, wayfinding) — each optional, rendered only
+			when its field has a value. #}}
+		{{ partial:clinical_locations/profile_details }}
+
+		{{# Related Find-a-Doc entities. `clinical_resources/related_list` is a
+			generic (entries + heading) linked-list partial reused here. Related
+			Conditions/Services are the D9 transitive sets (`implied_conditions` /
+			`implied_services`), inferred from the location's specialties — not the
+			deprecated direct `conditions` / `treatments` edges. #}}
+		{{# UAMS-Web/uams-statamic-archive#919: filter providers at this location to clinical-provider-eligible, searchable people once, then reuse. #}}
+		{{ eligible_providers = physician_locations | clinical_provider_eligible }}
+		{{# `expertise` and `clinical_resources` are RAW augmented `entries` values,
+			a query builder that is truthy even when empty, so they gate on a count.
+			`| count` counts the published entries the lists emit (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422).
+			The other three are already plain arrays: the implied ontologies are
+			computed, and `clinical_provider_eligible` returns an array. #}}
+		{{ if ( expertise | count ) || ( implied_conditions | length ) || ( implied_services | length ) || ( eligible_providers | length ) || ( clinical_resources | count ) }}
+			<aside class="location-related" aria-label="Related">
+				{{ partial:clinical_resources/related_list :entries="eligible_providers" heading="Providers at This Location" }}
+				{{ partial:clinical_resources/related_list :entries="expertise" heading="Areas of Expertise" }}
+				{{ partial:clinical_resources/related_list :entries="implied_conditions" heading="Conditions" }}
+				{{ partial:clinical_resources/related_list :entries="implied_services" heading="Treatments" }}
+				{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Clinical Resources" }}
+			</aside>
+		{{ /if }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

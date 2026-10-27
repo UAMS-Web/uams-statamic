@@ -1,0 +1,111 @@
+title: 'Departmental News Hub'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Page Title'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: true
+              display: 'Page Title'
+              validate:
+                - required
+      -
+        display: 'Hero'
+        instructions: 'The thin curated zone above the department’s news. Identity and branding come from the site’s global chrome; the editor adds only a short blurb / mission.'
+        fields:
+          -
+            handle: hero_mission
+            field:
+              type: textarea
+              display: 'Mission / Blurb'
+              instructions: 'A short mission or intro line shown at the top of the hub.'
+              localizable: true
+      -
+        display: 'Action Path'
+        instructions: 'A short set of “what next” links — appointment scheduling, patient portals, faculty / expert bios.'
+        fields:
+          -
+            handle: action_path_links
+            field:
+              type: grid
+              display: 'Action-Path Links'
+              mode: stacked
+              reorderable: true
+              add_row: 'Add Link'
+              localizable: true
+              fields:
+                -
+                  handle: label
+                  field:
+                    type: text
+                    display: Label
+                    validate:
+                      - required
+                -
+                  handle: url
+                  field:
+                    type: text
+                    display: URL
+                    validate:
+                      - required
+                -
+                  handle: description
+                  field:
+                    type: text
+                    display: Description
+      -
+        display: 'News Magazine'
+        instructions: 'The department-filtered news feed: a sticky-first lead across all post types, then a section per type (news, videos, podcasts, news releases). A post flagged “Stick This Post to the Front Page” is guaranteed a lead slot.'
+        fields:
+          -
+            handle: lead_count
+            field:
+              type: integer
+              display: 'Lead Post Count'
+              instructions: 'How many posts show in the featured lead band.'
+              default: 5
+              validate:
+                - 'min:1'
+              localizable: false
+      -
+        display: 'Archive CTA'
+        fields:
+          -
+            handle: archive_cta_url
+            field:
+              type: text
+              display: 'Newsroom Archive URL'
+              instructions: 'The org-filtered news archive this hub links to at the bottom. Leave empty to hide the call to action.'
+              localizable: true
+          -
+            handle: archive_cta_label
+            field:
+              type: text
+              display: 'Archive CTA Label'
+              default: 'See all department news'
+              localizable: true
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: pages/department_hub
+              localizable: false

@@ -1,0 +1,104 @@
+title: 'Basic Page'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Page Title and Header'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: true
+              listable: true
+              display: 'Page Title'
+              validate:
+                - required
+          -
+            import: uamsweb_header_selector_basic
+      -
+        display: Content
+        fields:
+          -
+            handle: content
+            field: uamsweb_common.article_with_sets
+            config:
+              display: Content
+              localizable: false
+  scripts:
+    display: Scripts
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_entry_scripts
+  seo:
+    display: SEO
+    sections:
+      -
+        display: 'Meta'
+        fields:
+          -
+            import: uamsweb_entry_seo_meta
+      -
+        display: 'Meta Robots Settings'
+        fields:
+          -
+            import: uamsweb_entry_seo_robots
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: 'Status and Visibility'
+        fields:
+          -
+            handle: status_and_visibility
+            field: uamsweb_common_status.status_and_visibility
+            config:
+              localizable: false
+          -
+            handle: password_protected
+            field: uamsweb_common_status.password_protected
+            config:
+              localizable: false
+          -
+            handle: visibility_password
+            field: uamsweb_common_status.visibility_password
+            config:
+              localizable: false
+          -
+            handle: is_password_hashed
+            field: uamsweb_common_status.is_password_hashed
+            config:
+              localizable: false
+          -
+            handle: date
+            field: uamsweb_common_status.date_scheduled
+            config: {  }
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate:
+                - required
+              display: Slug
+          -
+            import: uamsweb_entry_meta
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: clinical_locations/basic_page
+              localizable: false
+      -
+        display: 'Site Navigation'
+        fields:
+          -
+            import: uamsweb_entry_site_navigation

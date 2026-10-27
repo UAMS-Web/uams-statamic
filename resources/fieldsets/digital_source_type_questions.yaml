@@ -1,0 +1,160 @@
+title: 'IPTC Digital Source, Questions for Determination'
+fields:
+  -
+    handle: is_composite
+    field: uamsweb_common.true_false
+    config:
+      display: 'Is this a composite of multiple elements?'
+      instructions: 'Select "Yes" if this combines multiple source files, layers, or distinct media types.'
+      if:
+        preset: 'equals empty'
+      localizable: false
+  -
+    handle: composite_type
+    field:
+      type: radio
+      display: 'Composite Type'
+      instructions: 'What kind of elements make up this composite?'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals true'
+      options:
+        -
+          key: compositeCapture
+          value: 'Pure captures (e.g., a photo collage of real locations OR a raw transcript of multiple speakers)'
+        -
+          key: compositeSynthetic
+          value: 'Contains Generative AI (e.g., a photo with an AI-generated background OR a human-written post with AI-generated sections)'
+        -
+          key: composite
+          value: 'General/Mixed (e.g., a graphic with text overlays OR a feature story combining reporting, stock photos, and data charts)'
+      localizable: false
+  -
+    handle: origin_type
+    field:
+      type: radio
+      display: 'Primary Origin'
+      instructions: 'What is the singular source of this content or media?'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+      options:
+        -
+          key: capture
+          value: 'Real-life capture (e.g., a raw digital camera photo OR an unedited verbatim interview recording)'
+        -
+          key: digitized
+          value: 'Digitized analog medium (e.g., a scanned physical 35mm slide OR a post transcribed from paper archives)'
+        -
+          key: algorithmic
+          value: 'Algorithmic / generative AI (e.g., an image created via DALL-E OR a news summary fully drafted by a large language model)'
+        -
+          key: creation
+          value: 'Digital creation (e.g., a digital illustration/UI design OR a post authored by a staff member)'
+      localizable: false
+  -
+    handle: is_computational
+    field: uamsweb_common.true_false
+    config:
+      display: 'Computational/HDR?'
+      instructions: 'Multi-frame processing (e.g., smartphone HDR photos OR automated burst-mode image stacking).'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        origin_type: 'equals capture'
+      localizable: false
+  -
+    handle: is_screen_capture
+    field: uamsweb_common.true_false
+    config:
+      display: 'Is this a screen capture?'
+      instructions: 'A recording of a display (e.g., a screenshot of a medical portal OR a video demo of a new website).'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        origin_type: 'equals capture'
+      localizable: false
+  -
+    handle: digitized_medium
+    field:
+      type: radio
+      display: 'Original Medium'
+      instructions: 'Specify the physical source that was scanned or transcribed.'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        origin_type: 'equals digitized'
+      options:
+        -
+          key: negativeFilm
+          value: 'Negative film (e.g., digitized historical medical X-rays)'
+        -
+          key: positiveFilm
+          value: 'Positive film (e.g., 35mm slides from a legacy lecture series)'
+        -
+          key: print
+          value: 'Print (e.g., a scanned 19th-century land record OR a photo of a physical newspaper clipping)'
+      localizable: false
+  -
+    handle: ai_type
+    field:
+      type: radio
+      display: 'Algorithm Type'
+      instructions: 'Distinguish between generative models and pure mathematical/automated outputs.'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        origin_type: 'equals algorithmic'
+      options:
+        -
+          key: trainedAlgorithmicMedia
+          value: 'Generative AI (trained) (e.g., an AI-generated profile photo OR a text draft from a prompt)'
+        -
+          key: algorithmicMedia
+          value: 'Pure math/formula (e.g., software-generated textures OR an automated financial report based on market triggers)'
+        -
+          key: virtualRecording
+          value: 'Virtual event recording (e.g., a video or transcript of a seminar conducted in a virtual 3D environment)'
+      localizable: false
+  -
+    handle: is_data_driven
+    field: uamsweb_common.true_false
+    config:
+      display: 'Is this data-driven media?'
+      instructions: 'e.g., a COVID-19 interactive dashboard OR an automated report generated from clinical trial data.'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        origin_type: 'equals creation'
+      localizable: false
+  -
+    handle: has_gen_ai_edits
+    field: uamsweb_common.true_false
+    config:
+      display: 'Were generative AI tools used to edit this?'
+      instructions: 'e.g., using AI to expand a photo background (outpainting) OR using AI to rewrite/shorten human-authored text.'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+      localizable: false
+  -
+    handle: enhancement_type
+    field:
+      type: radio
+      display: 'Post-Processing / Enhancements'
+      instructions: 'Were any non-generative enhancements applied?'
+      if:
+        preset: 'equals empty'
+        is_composite: 'equals false'
+        has_gen_ai_edits: 'equals false'
+      options:
+        -
+          key: none
+          value: 'No enhancements (e.g., raw "as-is" field notes OR unedited "straight-out-of-camera" photos)'
+        -
+          key: humanEdits
+          value: 'Human-edited (non-generative) (e.g., a news release with SEO edits OR a photo with manual color grading)'
+        -
+          key: algorithmicallyEnhanced
+          value: 'Algorithmically-altered (e.g., automated spell-check/Grammarly OR digital noise reduction/sharpening)'
+      localizable: false

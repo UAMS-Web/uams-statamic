@@ -1,0 +1,66 @@
+// RSS Feed page-builder block (UAMS-Web/uams-statamic-archive#290). Styles the `rss_feed`-tag list that the
+// template emits with semantic classes but no rules — list reset, item
+// dividers/spacing, title link states, meta/byline, and excerpt — consistent
+// with the syndication and link-list modules. Background colors + the "more"
+// footer come from the shared `.uams-module` chrome.
+.rss-feed {
+    .feed-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .feed-item {
+        padding: $uams-module-padding-mobile 0;
+
+        @include media-breakpoint-up(sm) {
+            padding: $uams-module-padding 0;
+        }
+
+        // Dividers between items, flush top and bottom of the list.
+        + .feed-item {
+            border-top: 1px solid $body-bg-border;
+        }
+
+        &:first-child {
+            padding-top: 0;
+        }
+
+        &:last-child {
+            padding-bottom: 0;
+        }
+    }
+
+    .item-header {
+        margin-bottom: 0.25rem;
+    }
+
+    .item-title {
+        margin-bottom: 0.25rem;
+
+        a {
+            @include hover-focus {
+                text-decoration: underline;
+            }
+        }
+
+        // The "opens in new window" glyph (UAMS-Web/uams-statamic-archive#702) sits on the baseline.
+        .external-link-icon {
+            vertical-align: baseline;
+        }
+    }
+
+    // Published date + author line — muted and secondary; collapses cleanly when
+    // both toggles are off (the template omits the row entirely).
+    .item-meta,
+    .byline {
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+        color: $text-muted;
+    }
+
+    .item-excerpt {
+        margin-bottom: 0;
+        @include line-length-em(max);
+    }
+}

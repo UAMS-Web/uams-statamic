@@ -1,0 +1,568 @@
+title: Article
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Article Content'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Article Title'
+          -
+            handle: title_options
+            field: uamsweb_header_selector_basic.title_options
+            config:
+              validate:
+                - required
+              visibility: hidden
+          -
+            handle: content
+            field: uamsweb_common.article_with_sets
+            config:
+              display: 'Article Content'
+              validate:
+                - required
+      -
+        display: Topic
+        fields:
+          -
+            handle: secondary_topic
+            field:
+              type: entries
+              collections:
+                - knowledge_bases
+              listable: false
+              localizable: true
+              query_scopes:
+                - valid_article_parent
+              display: 'Secondary Topic(s)'
+      -
+        display: Attachments
+        fields:
+          -
+            handle: attachment
+            field:
+              type: replicator
+              display: Attachments
+              localizable: false
+              button_label: 'Add Attachment'
+              sets:
+                main:
+                  display: Main
+                  sets:
+                    asset:
+                      display: Asset
+                      icon: upload-arrow-up
+                      fields:
+                        -
+                          handle: asset
+                          field:
+                            max_files: 1
+                            min_files: 1
+                            container: files
+                            type: assets
+                            display: Asset
+                            localizable: false
+                            validate:
+                              - required
+                        -
+                          handle: label
+                          field:
+                            type: text
+                            display: 'Asset Label Override'
+                            localizable: false
+                    external_file:
+                      display: 'External File'
+                      icon: external-link
+                      fields:
+                        -
+                          handle: label
+                          field:
+                            type: text
+                            display: 'External File Label'
+                            localizable: false
+                            validate:
+                              - required
+                        -
+                          handle: url
+                          field:
+                            input_type: url
+                            type: text
+                            display: 'External File URL'
+                            localizable: false
+                            validate:
+                              - required
+      -
+        display: 'Sharing Details'
+        fields:
+          -
+            handle: title_short
+            field: uamsweb_common.title_short
+            config:
+              localizable: false
+          -
+            handle: excerpt
+            field: uamsweb_entry_meta.excerpt
+            config:
+              validate:
+                - required
+                - 'max:160'
+          -
+            handle: featured_image_16_9
+            field: uamsweb_post_cover_image.featured_image_16_9
+            config:
+              validate:
+                - 'dimensions:min_width=1200,min_height=675'
+          -
+            handle: featured_image_4_3
+            field: uamsweb_post_cover_image.featured_image_4_3
+          -
+            handle: featured_image_1_1
+            field: uamsweb_post_cover_image.featured_image_1_1
+          -
+            handle: featured_image_credit_query
+            field: uamsweb_post_cover_image.featured_image_credit_query
+      -
+        display: Tags
+        fields:
+          -
+            handle: tags
+            field:
+              collections:
+                - knowledge_base_tags
+              type: entries
+              mode: select
+              display: Tags
+              localizable: false
+      -
+        display: 'Related Articles'
+        fields:
+          -
+            handle: related_articles
+            field:
+              collections:
+                - knowledge_bases
+              type: entries
+              display: 'Related Articles'
+              localizable: false
+      -
+        display: 'Restrict Access'
+        fields:
+          -
+            handle: restriction_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Enable Content Restriction for This Article'
+              default: false
+              validate:
+                - required
+                - sometimes
+              if:
+                ancestor_restriction_enabled: true
+          -
+            handle: restriction_message
+            field:
+              placeholder: 'e.g., "The content you are trying to access is for certain users only. Please log in to view it."'
+              default: 'The content you are trying to access is for certain users only. Please log in to view it.'
+              type: textarea
+              display: 'Restricted Content Message'
+              localizable: false
+              if:
+                restriction_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_category
+            field:
+              options:
+                -
+                  key: users
+                  value: 'Specific Users'
+                -
+                  key: user_roles
+                  value: 'Specific User Roles'
+                -
+                  key: user_groups
+                  value: 'Specific User Groups'
+              type: checkboxes
+              display: 'Restriction Categories'
+              localizable: false
+              if:
+                restriction_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_users
+            field:
+              type: users
+              display: 'Restricted to Users'
+              localizable: false
+              if:
+                restriction_query: 'equals true'
+                restriction_category: 'contains users'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_user_roles
+            field:
+              type: user_roles
+              display: 'Restricted to User Roles'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                restriction_query: 'equals true'
+                restriction_category: 'contains user_roles'
+          -
+            handle: restriction_user_groups
+            field:
+              type: user_groups
+              display: 'Restricted to User Groups'
+              localizable: false
+              if:
+                restriction_query: 'equals true'
+                restriction_category: 'contains user_groups'
+              validate:
+                - required
+                - sometimes
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: hide_creator_query
+            field: uamsweb_post_creator_text.hide_creator_query
+            config:
+              if:
+                article_creator_query: 'equals true'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: creator
+            field: uamsweb_post_creator_text.creator
+            config:
+              if:
+                article_creator_query: 'equals true'
+                hide_creator_query: 'equals false'
+              localizable: false
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {  }
+          -
+            handle: template
+            field:
+              default: knowledge_bases/default
+              type: hidden
+              display: Template
+              localizable: false
+          -
+            handle: ancestor_restriction_enabled
+            field:
+              type: hidden
+              localizable: false
+              visibility: computed
+      -
+        display: 'Sitemap'
+        fields:
+          -
+            import: uamsweb_entry_sitemap
+  knowledge_base_settings:
+    display: 'Knowledge Base Settings'
+    sections:
+      -
+        display: 'Knowledge Base'
+        fields:
+          -
+            handle: knowledge_base_title
+            field:
+              type: text
+              display: 'Knowledge Base Title'
+              localizable: false
+              visibility: computed
+          -
+            handle: topic_label
+            field:
+              type: text
+              display: 'Topic Label (Plural)'
+              localizable: false
+              visibility: computed
+          -
+            handle: topic_label_singular
+            field:
+              type: text
+              display: 'Topic Label (Singular)'
+              localizable: false
+              visibility: computed
+          -
+            handle: article_rating_query
+            field:
+              type: toggle
+              display: 'Enable Article Ratings'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_enabled
+            field:
+              type: toggle
+              display: 'Enable Content Restriction for This Knowledge Base'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_global_query
+            field:
+              type: toggle
+              display: 'Apply Global Content Restriction for This Knowledge Base'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_message
+            field:
+              type: textarea
+              display: 'Restricted Content Message'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_category
+            field:
+              options:
+                -
+                  key: users
+                  value: 'Specific Users'
+                -
+                  key: user_roles
+                  value: 'Specific User Roles'
+                -
+                  key: user_groups
+                  value: 'Specific User Groups'
+              type: checkboxes
+              display: 'Restriction Categories'
+              if:
+                knowledge_base_restriction_enabled: 'equals true'
+                knowledge_base_restriction_global_query: 'equals true'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_users
+            field:
+              type: users
+              display: 'Restricted to Users'
+              if:
+                knowledge_base_restriction_enabled: 'equals true'
+                knowledge_base_restriction_global_query: 'equals true'
+                knowledge_base_restriction_category: 'contains users'
+              localizable: false
+              visibility: computed
+          -
+            handle: knowledge_base_restriction_user_roles
+            field:
+              type: user_roles
+              display: 'Restricted to User Roles'
+              localizable: false
+              visibility: computed
+              if:
+                knowledge_base_restriction_enabled: 'equals true'
+                knowledge_base_restriction_global_query: 'equals true'
+                knowledge_base_restriction_category: 'contains user_roles'
+          -
+            handle: knowledge_base_restriction_user_groups
+            field:
+              type: user_groups
+              display: 'Restricted to User Groups'
+              if:
+                knowledge_base_restriction_enabled: 'equals true'
+                knowledge_base_restriction_global_query: 'equals true'
+                knowledge_base_restriction_category: 'contains user_groups'
+              localizable: false
+              visibility: computed
+      -
+        display: Topics
+        fields:
+          -
+            handle: subtopic_label
+            field:
+              type: text
+              display: 'Subtopics Label (Plural)'
+              localizable: false
+              visibility: computed
+          -
+            handle: subtopic_label_singular
+            field:
+              type: text
+              display: 'Subtopics Label (Singular)'
+              localizable: false
+              visibility: computed
+          -
+            handle: topic_article_label
+            field:
+              type: text
+              display: 'Articles Label'
+              localizable: false
+              visibility: computed
+          -
+            handle: topic_article_label_singular
+            field:
+              type: text
+              display: 'Articles Label (Singular)'
+              localizable: false
+              visibility: computed
+      -
+        display: Articles
+        fields:
+          -
+            handle: article_last_modified_query
+            field:
+              type: toggle
+              display: 'Show Last Modified Date'
+              localizable: false
+              visibility: computed
+          -
+            handle: article_last_modified_label
+            field:
+              type: text
+              display: 'Last Modified Date Label'
+              if:
+                article_last_modified_query: 'equals true'
+              localizable: false
+              visibility: computed
+          -
+            handle: article_creator_query
+            field:
+              type: toggle
+              display: 'Show Article Author'
+              localizable: false
+              visibility: computed
+          -
+            handle: article_estimated_reading_time_query
+            field:
+              type: toggle
+              display: 'Show Estimated Reading Time'
+              localizable: false
+              visibility: computed
+          -
+            handle: toc_query
+            field:
+              type: toggle
+              display: 'Enable Dynamic Table of Contents'
+              localizable: false
+              visibility: computed
+          -
+            handle: toc_heading_exclude
+            field:
+              options:
+                -
+                  key: h2
+                  value: 'Heading 2'
+                -
+                  key: h3
+                  value: 'Heading 3'
+                -
+                  key: h4
+                  value: 'Heading 4'
+                -
+                  key: h5
+                  value: 'Heading 5'
+                -
+                  key: h6
+                  value: 'Heading 6'
+              type: checkboxes
+              display: 'Exclude Specific Heading Levels from Table of Contents'
+              localizable: false
+              if:
+                toc_query: 'equals true'
+              visibility: computed
+          -
+            handle: toc_label
+            field:
+              type: text
+              display: 'Table of Contents Label'
+              localizable: false
+              if:
+                toc_query: 'equals true'
+              visibility: computed
+          -
+            handle: attachments_label
+            field:
+              type: text
+              display: 'Attachments Label'
+              localizable: false
+              visibility: computed
+          -
+            handle: related_articles_query
+            field:
+              type: toggle
+              display: 'Show Related Articles'
+              localizable: false
+              visibility: computed
+          -
+            handle: related_articles_label
+            field:
+              type: text
+              display: 'Related Articles Label'
+              localizable: false
+              if:
+                related_articles_query: 'equals true'
+              visibility: computed
+  statistics:
+    display: Statistics
+    sections:
+      -
+        fields:
+          -
+            handle: view_count
+            field:
+              default: '0'
+              type: integer
+              display: 'View Count'
+              localizable: false
+              visibility: computed
+          -
+            handle: like_count
+            field:
+              default: '0'
+              type: integer
+              display: 'Like Count'
+              localizable: false
+              visibility: computed
+              if:
+                article_rating_query: 'equals true'
+          -
+            handle: dislike_count
+            field:
+              default: '0'
+              type: integer
+              display: 'Dislike Count'
+              localizable: false
+              visibility: computed
+              if:
+                article_rating_query: 'equals true'
+          -
+            handle: like_count_net
+            field:
+              default: '0'
+              type: integer
+              display: 'Net Like Count'
+              localizable: false
+              visibility: computed
+              if:
+                article_rating_query: 'equals true'

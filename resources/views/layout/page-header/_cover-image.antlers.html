@@ -1,0 +1,33 @@
+{{#
+
+	@name Page Header Cover Image
+	@desc Renders an optional cover image as a figure when `cover_image` is present. Alt and
+	caption resolve from the asset unless `cover_image_alt_text_override` or
+	`cover_image_caption_override` are passed (null coalescing: overrides win when set).
+
+	The `<figcaption>` renders when there is a caption OR a credit (UAMS-Web/uams-statamic-archive#1291). Gating it on the
+	caption alone dropped the credit of any credited-but-uncaptioned asset, because
+	`typography/media_credit` sits inside it. That partial self-guards on `creator`, so an
+	asset with neither renders no `<figcaption>` at all and no empty element.
+
+#}}
+
+{{ if cover_image }}
+	{{ cover_image }}
+		{{ alt = cover_image_alt_text_override ?? ( exempt_from_alt ? '' : alt ) }}
+		{{ caption = cover_image_caption_override ?? caption }}
+		<figure class="entry-cover-image alignwide">
+			<img
+				src="{{ url }}"
+				alt="{{ alt | sanitize }}"
+				loading="eager"
+			/>
+			{{ if caption || creator }}
+				<figcaption>
+					{{ if caption }}<span class="caption-text">{{ caption | strip_tags | widont }}</span>{{ /if }}
+					{{ partial:typography/media_credit }}
+				</figcaption>
+			{{ /if }}
+		</figure>
+	{{ /cover_image }}
+{{ /if }}

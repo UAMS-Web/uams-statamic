@@ -1,0 +1,121 @@
+{{#
+	Wrapper element. Opts into the `checkboxRequiredGroup` Alpine component only
+	when the field has the `required` rule, so Alpine manages the group's HTML5
+	`required` state in the browser (see comment block at the end of this file).
+#}}
+<div {{ if validate | contains:required }}x-data="checkboxRequiredGroup" @change="sync"{{ /if }}>
+	{{#
+		Hidden input. Guarantees the field's handle appears in submitted form data even
+		when no boxes are checked, so the backend sees an empty array (and can run the
+		`required` rule) rather than a missing key.
+	#}}
+	<input type="hidden" name="{{ handle }}[]">
+		{{#
+			Iterate the field's configured options. Each iteration exposes the option's
+			submitted `value` as `option` and its display string as `label` (which may be
+			null when the blueprint uses simple string options rather than `value: label`
+			pairs).
+		#}}
+		{{ foreach:options as="option|label" }}
+			{{#
+				Per-option Bootstrap form-check wrapper. The `form-check-inline` modifier lays
+				the options on a single line when the field's `inline` config is true; otherwise
+				they stack vertically.
+			#}}
+			<div
+				class="{{
+					[
+						'form-check' => true,
+						'form-check-inline' => inline
+					] | classes | collapse_whitespace
+				}}"
+			>
+				{{#
+					Checkbox input. `name="{{ handle }}[]"` makes the browser POST every checked
+					value under the same array key. `is-invalid` mirrors Bootstrap validation
+					styling when this field has a server-side error. `required` is emitted on every
+					box and managed at runtime by Alpine (see wrapper above and the comment block
+					at the end of this file).
+				#}}
+				<input
+					class="{{
+						[
+							'form-check-input' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					id="{{ id }}-{{ option | slugify }}-option"
+					type="checkbox"
+					name="{{ handle }}[]"
+					value="{{ option }}"
+					{{ if js_driver }}{{ js_attributes }}{{ /if }}
+					{{ if calculation_query == true }}
+						{{# Dynamic Default Value (UAMS-Web/uams-statamic-archive#2924): calculation-engine.js reads the
+							formula's text result as comma-separated option values and writes
+							them as this field's list, which the binding above turns into checked
+							boxes. Every box carries the attributes, as every radio does, so a
+							click on any of them marks the field as the one the visitor last
+							touched, and the engine leaves it alone while it stays so. No
+							`readonly`: the visitor can still change the choice. #}}
+						data-calculation-type="text"
+						data-calculation-formula="{{ calculation_formula ?? '' }}"
+						data-calculation-decimals=""
+					{{ /if }}
+					{{ ( value | in_array:option ) | attribute:checked }}
+					{{ ( validate | contains:required ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+					{{# Per-choice submission limit (UAMS-Web/uams-statamic-archive#292): disable a choice at its cap.
+						`full_choices` is absent (so inert) for fields without limits. #}}
+					{{ ( full_choices | contains:option ) | attribute:disabled }}
+					{{ if error }}
+						aria-invalid="true" aria-describedby="{{ id }}-error"
+					{{ elseif instructions }}
+						aria-describedby="{{ id }}-instructions"
+					{{ /if }}
+				>
+				{{#
+					Option label. The matching `for` attribute ties the label to the input's `id`,
+					so clicking the label toggles the checkbox and assistive tech announces the two
+					as a pair.
+				#}}
+				<label class="form-check-label" for="{{ id }}-{{ option | slugify }}-option">
+					{{#
+						Render the human-readable label when the blueprint provides one
+						(e.g., `value: Label` option pairs); fall back to the raw option value when the
+						blueprint uses simple string options.
+					#}}
+					{{ label !== null ? label : option }}{{ if full_choices | contains:option }} <span class="choice-full">({{ trans key="Full" }})</span>{{ /if }}
+				</label>
+			</div>
+		{{ /foreach:options }}
+</div>
+
+{{#
+
+	================================================================================
+
+	Group "required" handling
+
+	================================================================================
+
+	HTML5 `required` on <input type="checkbox"> demands that *that specific* box
+	be checked, so emitting it on every option in a group would block submission
+	until every box is ticked — not the "at least one must be selected" behavior
+	we want for a required checkbox group.
+
+	When this field has the `required` validation rule, the wrapper <div> opts
+	into the `checkboxRequiredGroup` Alpine component (registered in
+	resources/js/site.js, defined in resources/js/checkbox-required-group.js).
+	On init and on any change inside the wrapper, the component clears `required`
+	from every box in the group if any one is checked, and restores it when none
+	are. Server-side validation in Statamic still catches empty submissions for
+	users without JS.
+
+	Radio buttons don't need this — the browser natively treats `required` on
+	any radio in a named group as "one in the group must be selected" because
+	radios are mutually exclusive. Checkboxes are not, so we manage it ourselves.
+
+	================================================================================
+
+#}}

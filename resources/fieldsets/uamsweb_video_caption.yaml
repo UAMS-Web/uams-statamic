@@ -1,0 +1,33 @@
+title: 'UAMSWeb Video, Caption Track'
+fields:
+  -
+    handle: caption_track_source
+    field:
+      type: button_group
+      display: 'Caption Track Source'
+      instructions: 'How to provide WebVTT (`.vtt`) captions for a **self-hosted Box.com** video. **Upload** a file (preferred — served same-origin as `text/vtt`, so it always loads) or paste an external **URL**.'
+      options:
+        upload: 'Upload WebVTT file'
+        url: 'External / Box URL'
+      default: upload
+      localizable: false
+      validate:
+        - required
+  -
+    handle: caption_track_file
+    field: uamsweb_common_video.caption_track
+    config:
+      if:
+        caption_track_source: 'equals upload'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: caption_track_url
+    field: uamsweb_common_video.caption_track_url
+    config:
+      if:
+        caption_track_source: 'equals url'
+      validate:
+        - required
+        - sometimes

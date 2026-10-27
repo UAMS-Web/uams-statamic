@@ -1,0 +1,5 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      - {  }

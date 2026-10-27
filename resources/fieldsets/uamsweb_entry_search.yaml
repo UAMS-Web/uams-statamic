@@ -1,0 +1,10 @@
+title: 'UAMSWeb Entry Search'
+fields:
+  -
+    handle: searchable
+    field:
+      type: toggle
+      display: 'Show in site search'
+      instructions: "Leave on (the default) so this entry can appear in the site's interactive search results. Turn off to keep it out of interactive search without unpublishing it — useful for a broad parent or organizational entry that should stay reachable at its URL and in the sitemap (SEO-indexable) but shouldn't surface as its own search result. Entries that aren't publicly reachable are excluded automatically regardless of this setting."
+      default: true
+      localizable: false

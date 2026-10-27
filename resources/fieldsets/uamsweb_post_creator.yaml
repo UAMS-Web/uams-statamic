@@ -1,0 +1,25 @@
+title: 'UAMSWeb Posts, Creator'
+fields:
+  -
+    handle: hide_creator_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide Creator Information'
+      localizable: false
+      replicator_preview: false
+      default: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: creator
+    field:
+      type: group
+      display: Creators
+      if:
+        hide_creator_query: 'equals false'
+      always_save: true
+      localizable: false
+      fields:
+        -
+          import: uamsweb_post_creator_roles_all

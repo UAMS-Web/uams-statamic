@@ -1,0 +1,28 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: name
+            field:
+              type: text
+              display: Name
+              localizable: false
+          -
+            handle: email
+            field: uamsweb_common_contact.email_address
+            config:
+              display: 'Email Address'
+          -
+            handle: phone
+            field: uamsweb_common_contact.phone
+          -
+            handle: story
+            field:
+              type: textarea
+              display: Story
+              localizable: false
+              validate:
+                - required

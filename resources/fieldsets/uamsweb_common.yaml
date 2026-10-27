@@ -1,0 +1,717 @@
+title: 'UAMSWeb Common Reusable Fields'
+fields:
+  -
+    handle: excerpt
+    field:
+      character_limit: 160
+      validate:
+        - 'max:160'
+      type: textarea
+      display: Excerpt
+      instructions: |-
+        This will be the description included for this entity when it appears in search results.
+
+        Write a short description that generally informs and interests users with a short, relevant summary of what this entity is about. Think of it like a pitch that convinces the user that this entity is exactly what they're looking for.
+
+        The text will be limited to 160 characters. The preferred length is at least 110 characters.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: true_false
+    field:
+      type: true_false
+      display: 'Yes or No as Boolean'
+      sortable: false
+      label_true: 'Yes'
+      label_false: 'No'
+      reverse_order: true
+      localizable: false
+  -
+    handle: article
+    field:
+      type: bard
+      display: Article
+      replicator_preview: false
+      buttons:
+        - h2
+        - h3
+        - h4
+        - h5
+        - h6
+        - bts_attributes
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - anchor
+        - strikethrough
+        - superscript
+        - subscript
+        - horizontalrule
+        - code
+        - codeblock
+        - removeformat
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+  -
+    handle: article_with_sets
+    field:
+      type: bard
+      display: 'Article with Bard Sets'
+      replicator_preview: false
+      buttons:
+        - h2
+        - h3
+        - h4
+        - h5
+        - h6
+        - bts_attributes
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - anchor
+        - strikethrough
+        - superscript
+        - subscript
+        - horizontalrule
+        - code
+        - codeblock
+        - removeformat
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+      always_show_set_button: true
+      sets:
+        interactive:
+          display: Interactive
+          instructions: 'Interactive sets.'
+          icon: programming-script-code
+          sets:
+            audio:
+              display: Audio
+              instructions: 'Embed a hosted audio file (MP3, optional OGG) with the Audio Post segment fields.'
+              icon: audio-file
+              fields:
+                -
+                  import: uamsweb_set_audio
+            calculator:
+              display: Calculator
+              instructions: 'Embed an interactive calculator entry.'
+              icon: money-cashier-calculator
+              fields:
+                -
+                  import: uamsweb_set_calculator
+            file:
+              display: File
+              instructions: 'Add a downloadable file from the Files asset container.'
+              icon: download-arrow-down
+              fields:
+                -
+                  import: uamsweb_set_file
+            form:
+              display: Form
+              instructions: 'Add a form to embed on the front end.'
+              icon: form-drop-down-menu
+              fields:
+                -
+                  import: uamsweb_set_form
+            map:
+              display: Map
+              instructions: 'Embed an interactive map at a coordinate.'
+              icon: globe-world-wide-web
+              fields:
+                -
+                  import: uamsweb_common_map
+            people:
+              display: People
+              icon: user-multiple
+              fields:
+                -
+                  import: uamsweb_set_people
+        text:
+          display: Text
+          instructions: 'Text based sets.'
+          icon: text-formatting-initial-letter
+          sets:
+            pull_quote:
+              display: 'Pull Quote'
+              instructions: 'Add a pull quote with an optional author.'
+              icon: text-formatting-quotation
+              fields:
+                -
+                  import: uamsweb_set_pull_quote
+            table:
+              display: Table
+              instructions: 'Add a data table with headers, rows and columns.'
+              icon: layout-grid-dots
+              fields:
+                -
+                  import: uamsweb_set_table
+        image_video:
+          display: 'Image and Video'
+          instructions: 'Sets with images or embeddable videos (YouTube, Vimeo, or Box.com direct links for HTML5 video).'
+          icon: media-image-camera
+          sets:
+            image:
+              display: 'Single Image'
+              instructions: 'Add a single image with an optional caption.'
+              icon: media-image-picture-orientation
+              fields:
+                -
+                  import: uamsweb_set_image
+            portrait:
+              display: Portrait
+              instructions: 'Add a single vertical portrait with an optional caption.'
+              icon: user-avatar
+              fields:
+                -
+                  import: uamsweb_set_portrait
+            portrait_wide:
+              display: 'Wide Portrait'
+              instructions: 'Add a single wide portrait with an optional caption.'
+              icon: user-avatar
+              fields:
+                -
+                  import: uamsweb_set_portrait_wide
+            gallery:
+              display: 'Image Gallery'
+              instructions: 'Add a gallery of images with an optional description.'
+              icon: media-image-picture-gallery
+              fields:
+                -
+                  import: uamsweb_set_gallery
+            youtube:
+              display: 'YouTube Video'
+              instructions: 'Add a YouTube video as a simple embed, or as a full segment with transcript, creators, and transparency metadata.'
+              icon: media-webcam-video
+              fields:
+                -
+                  import: uamsweb_set_video_youtube
+            vimeo:
+              display: 'Vimeo Video'
+              instructions: 'Add a Vimeo video as a simple embed, or as a full segment with transcript, creators, and transparency metadata.'
+              icon: media-webcam-video
+              fields:
+                -
+                  import: uamsweb_set_video_vimeo
+            box:
+              display: 'Box.com Video'
+              instructions: 'Add a Box.com direct-link video as a simple embed, or as a full segment with transcript, creators, and transparency metadata.'
+              icon: media-webcam-video
+              fields:
+                -
+                  import: uamsweb_set_video_box
+        reusable_content:
+          display: 'Reusable Content'
+          instructions: 'Sets with reusable content.'
+          icon: content-book-open
+          sets:
+            reusable_content:
+              display: 'Reusable Content'
+              instructions: 'Add a reusable content block.'
+              icon: content-book-open
+              fields:
+                -
+                  import: uamsweb_set_reusable_content_basic_page
+  -
+    handle: bard_simple
+    field:
+      type: bard
+      display: 'Simple Rich Text'
+      replicator_preview: false
+      buttons:
+        - bold
+        - italic
+        - removeformat
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+  -
+    handle: bard_simple_lists
+    field:
+      type: bard
+      display: 'Simple Rich Text With Lists'
+      replicator_preview: false
+      buttons:
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+  -
+    handle: bard_simple_lists_links
+    field:
+      type: bard
+      display: 'Simple Rich Text With Lists and Links'
+      replicator_preview: false
+      buttons:
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - anchor
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+  -
+    handle: bard_simple_lists_links_h4
+    field:
+      type: bard
+      display: 'Simple Rich Text With Subheading, Lists and Links'
+      replicator_preview: false
+      buttons:
+        - h4
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - anchor
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+  -
+    handle: standard_content_modification
+    field:
+      type: radio
+      display: 'Standard Content'
+      instructions: 'How should your content combine with the standard content?'
+      options:
+        -
+          key: inherit
+          value: 'Use the standard content as-is'
+        -
+          key: prepend
+          value: 'Insert my content before the standard content'
+        -
+          key: append
+          value: 'Insert my content after the standard content'
+        -
+          key: override
+          value: 'Replace the standard content with my content'
+      default: inherit
+      validate:
+        - required
+      localizable: false
+  -
+    handle: bard_email_message
+    field:
+      type: bard
+      display: 'Email Message'
+      replicator_preview: false
+      buttons:
+        - h1
+        - h2
+        - h3
+        - h4
+        - h5
+        - h6
+        - bold
+        - italic
+        - strikethrough
+        - superscript
+        - subscript
+        - unorderedlist
+        - orderedlist
+        - quote
+        - anchor
+        - alignleft
+        - aligncenter
+        - alignright
+        - removeformat
+      allow_source: false
+      reading_time: true
+      word_count: true
+      remove_empty_nodes: true
+      always_save: false
+      localizable: false
+      antlers: true
+      target_blank: true
+  -
+    handle: bard_boilerplate
+    field:
+      type: bard
+      display: 'Boilerplate Content'
+      buttons:
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - anchor
+      remove_empty_nodes: true
+      localizable: false
+  -
+    handle: bard_transcript
+    field:
+      type: bard
+      display: Transcript
+      remove_empty_nodes: true
+      replicator_preview: false
+      buttons:
+        - bold
+        - italic
+        - superscript
+        - subscript
+        - removeformat
+      localizable: false
+  -
+    handle: url
+    field:
+      type: url
+      display: 'Website URL'
+      placeholder: 'e.g., https://uams.edu/'
+      localizable: false
+  -
+    handle: url_grid
+    field:
+      type: grid
+      display: 'URLs Grid'
+      fields:
+        -
+          handle: url
+          field: uamsweb_common.url
+          config:
+            display: 'URL'
+            validate:
+              - required
+            localizable: false
+      localizable: false
+  -
+    handle: icon_class
+    field:
+      type: text
+      display: 'Icon Class'
+      localizable: false
+      instructions: 'The class for an icon from an icon toolkit like FontAwesome'
+  -
+    handle: taxonomy_query_modifiers
+    field:
+      type: radio
+      display: 'Taxonomy Query Modifiers'
+      instructions: 'Indicate how the selection of multiple taxonomy terms will affect which entries are fetched.'
+      options:
+        -
+          key: any
+          value: 'Any — Fetch all entries that have any of one or more of the selected taxonomy terms.'
+        -
+          key: not
+          value: "Not — Fetch all entries that don't have one or more of the selected taxonomy terms."
+        -
+          key: all
+          value: 'All — Fetch all entries that contain each of one or more of the selected taxonomy terms.'
+      default: any
+      localizable: false
+  -
+    handle: year
+    field:
+      input_mask: '/^(1|19\d{0,2}|2|20\d{0,2})$/'
+      type: mask_field
+      display: Year
+      localizable: false
+  -
+    handle: month
+    field:
+      options:
+        -
+          key: January
+          value: null
+        -
+          key: February
+          value: null
+        -
+          key: March
+          value: null
+        -
+          key: April
+          value: null
+        -
+          key: May
+          value: null
+        -
+          key: June
+          value: null
+        -
+          key: July
+          value: null
+        -
+          key: August
+          value: null
+        -
+          key: September
+          value: null
+        -
+          key: October
+          value: null
+        -
+          key: November
+          value: null
+        -
+          key: December
+          value: null
+      type: select
+      display: Month
+      clearable: true
+      localizable: false
+  -
+    handle: day
+    field:
+      input_mask: '/^(3[0-1]|[12][0-9]|[1-9])$/'
+      type: mask_field
+      display: 'Day of the Month Without Leading Zeros'
+      localizable: false
+  -
+    handle: align_image
+    field:
+      type: button_group
+      display: 'Size and Alignment'
+      options:
+        aligncenter: Center
+        alignleft: Left
+        alignright: Right
+        alignwide: Wide
+      default: aligncenter
+      localizable: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: align_other
+    field:
+      type: button_group
+      display: 'Size and Alignment'
+      options:
+        aligncenter: Center
+        alignwide: Wide
+      default: aligncenter
+      localizable: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: utility_colors
+    field:
+      options:
+        -
+          key: primary
+          value: Primary
+        -
+          key: secondary
+          value: Secondary
+        -
+          key: success
+          value: Success
+        -
+          key: danger
+          value: Danger
+        -
+          key: warning
+          value: Warning
+        -
+          key: info
+          value: Info
+        -
+          key: light
+          value: Light
+        -
+          key: dark
+          value: Dark
+      default: light
+      type: select
+      display: 'Utility Colors'
+      localizable: false
+  -
+    handle: form
+    field:
+      max_items: 1
+      type: form
+      display: Form
+      localizable: false
+  -
+    handle: files
+    field:
+      container: files
+      type: assets
+      display: Files
+      localizable: false
+  -
+    handle: date_field
+    field:
+      input_type: date
+      type: text
+      display: Date
+      localizable: false
+  -
+    handle: import_wordpress_notes
+    field:
+      type: text
+      display: 'Import Notes'
+      instructions: 'Notes from WordPress import (e.g., original Formidable Forms ID).'
+      localizable: false
+      visibility: hidden
+      duplicate: false
+  -
+    handle: is_password_hashed
+    field:
+      type: hidden
+      display: 'Is Password Hashed?'
+      localizable: false
+  -
+    handle: heading_level
+    field:
+      type: select
+      display: 'Heading Level'
+      options:
+        -
+          key: h2
+          value: 'Heading 2'
+        -
+          key: h3
+          value: 'Heading 3'
+        -
+          key: h4
+          value: 'Heading 4'
+        -
+          key: h5
+          value: 'Heading 5'
+        -
+          key: h6
+          value: 'Heading 6'
+      default: h2
+      localizable: false
+  -
+    handle: title_short
+    field:
+      type: text
+      display: 'Short Title'
+      instructions: 'The text will be limited to 43 characters.'
+      character_limit: 43
+      validate:
+        - 'max:43'
+      localizable: false
+  -
+    handle: genre
+    field:
+      fullscreen: false
+      button_label: 'Add URL'
+      type: replicator
+      display: Genre
+      instructions: 'Include one or more URLs from the [Getty Art & Architecture Thesaurus vocabulary](https://vocab.getty.edu/aat/) that cover the relevant genre of this entity.'
+      localizable: false
+      sets:
+        url_group:
+          display: 'URL Group'
+          sets:
+            aat_set:
+              display: 'Art & Architecture Thesaurus Term'
+              icon: globe-world-wide-web
+              fields:
+                -
+                  handle: label
+                  field:
+                    input_mask_autofix: false
+                    input_mask_eager: false
+                    input_mask_overwrite: false
+                    type: text
+                    display: Label
+                    localizable: false
+                    validate:
+                      - required
+                -
+                  handle: url
+                  field:
+                    input_mask_autofix: false
+                    input_mask_eager: false
+                    input_mask_overwrite: false
+                    type: url
+                    display: URL
+                    localizable: false
+                    validate:
+                      - required
+  -
+    handle: subject_matter
+    field:
+      collections:
+        - subject_matter
+        - clinical_specializations
+      search_index: subject_concepts
+      type: entries
+      select_across_sites: true
+      display: 'Subject Matter'
+      instructions: 'Select the subject matter or clinical specialization this item is related to. A clinical concept is chosen from Clinical Specializations (the NUCC Health Care Provider Taxonomy code set and its UAMS extensions), never from Subject Matter.'
+      localizable: false
+      create: false
+  -
+    handle: language
+    field:
+      type: select
+      display: Language(s)
+      preset: languages
+      language_standard: bcp47
+      clearable: true
+      multiple: true
+      localizable: false
+  -
+    handle: phonetic_text
+    field:
+      type: text
+      display: 'Phonetic Transcription'
+      localizable: false
+      instructions: |-
+        Enter the pronunciation using International Phonetic Alphabet (IPA) symbols.
+
+        Enter the **symbols** only. Do not include forward slashes (`/ /`) or brackets (`[ ]`), as these will be added automatically.
+
+        Example: `təˈmeɪtoʊ` (This will be automatically converted to `/təˈmeɪtoʊ/`.)
+
+        **Note:** Do not use "phonetic respelling" (e.g., "tuh-MAY-toh"). If you are unsure of the correct symbols, use a tool like [toPhonetics](https://tophonetics.com/) / [IPA Reader](https://ipa-reader.com/) or an IPA keyboard like [https://ipa.typeit.org/full/](https://ipa.typeit.org/full/).
+      prepend: /
+      append: /
+      instructions_position: below
+      validate:
+        - international_phonetic_alphabet
+  -
+    handle: text_with_phonetic_text
+    field:
+      type: group
+      display: 'Text with Phonetic Text'
+      localizable: false
+      fields:
+        -
+          handle: text
+          field:
+            type: text
+            display: 'Text Value'
+            validate:
+              - required
+              - sometimes
+            width: 100
+        -
+          handle: phonetic_text
+          field: uamsweb_common.phonetic_text
+          config:
+            width: 100

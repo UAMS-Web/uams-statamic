@@ -1,0 +1,14 @@
+{{#
+
+	@name Google Tag Manager
+	@desc The Google Tag Manager container <script> for the document head (UAMS-Web/uams-statamic-archive#83).
+	      The container ID is read per-site from `uams_multisite_settings`; both
+	      this and the `<noscript>` body fallback are skipped when GTM is disabled
+	      for the site or no container ID is set, so non-prod sites emit nothing.
+	      The inline script carries the CSP nonce.
+
+#}}
+
+	{{ if ( uams_multisite_settings:uamsweb_google_tag_manager_disable != true ) && uams_multisite_settings:uamsweb_google_tag_manager_id }}
+		<script nonce="{{ csp_nonce }}">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ uams_multisite_settings:uamsweb_google_tag_manager_id }}');</script>
+	{{ /if }}

@@ -1,0 +1,263 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: counties_covered
+            field:
+              options:
+                -
+                  key: 'Arkansas County'
+                  value: null
+                -
+                  key: 'Ashley County'
+                  value: null
+                -
+                  key: 'Baxter County'
+                  value: null
+                -
+                  key: 'Benton County'
+                  value: null
+                -
+                  key: 'Boone County'
+                  value: null
+                -
+                  key: 'Bradley County'
+                  value: null
+                -
+                  key: 'Calhoun County'
+                  value: null
+                -
+                  key: 'Carroll County'
+                  value: null
+                -
+                  key: 'Chicot County'
+                  value: null
+                -
+                  key: 'Clark County'
+                  value: null
+                -
+                  key: 'Clay County'
+                  value: null
+                -
+                  key: 'Cleburne County'
+                  value: null
+                -
+                  key: 'Cleveland County'
+                  value: null
+                -
+                  key: 'Columbia County'
+                  value: null
+                -
+                  key: 'Conway County'
+                  value: null
+                -
+                  key: 'Craighead County'
+                  value: null
+                -
+                  key: 'Crawford County'
+                  value: null
+                -
+                  key: 'Crittenden County'
+                  value: null
+                -
+                  key: 'Cross County'
+                  value: null
+                -
+                  key: 'Dallas County'
+                  value: null
+                -
+                  key: 'Desha County'
+                  value: null
+                -
+                  key: 'Drew County'
+                  value: null
+                -
+                  key: 'Faulkner County'
+                  value: null
+                -
+                  key: 'Franklin County'
+                  value: null
+                -
+                  key: 'Fulton County'
+                  value: null
+                -
+                  key: 'Garland County'
+                  value: null
+                -
+                  key: 'Grant County'
+                  value: null
+                -
+                  key: 'Greene County'
+                  value: null
+                -
+                  key: 'Hempstead County'
+                  value: null
+                -
+                  key: 'Hot Spring County'
+                  value: null
+                -
+                  key: 'Howard County'
+                  value: null
+                -
+                  key: 'Independence County'
+                  value: null
+                -
+                  key: 'Izard County'
+                  value: null
+                -
+                  key: 'Jackson County'
+                  value: null
+                -
+                  key: 'Jefferson County'
+                  value: null
+                -
+                  key: 'Johnson County'
+                  value: null
+                -
+                  key: 'Lafayette County'
+                  value: null
+                -
+                  key: 'Lawrence County'
+                  value: null
+                -
+                  key: 'Lee County'
+                  value: null
+                -
+                  key: 'Lincoln County'
+                  value: null
+                -
+                  key: 'Little River County'
+                  value: null
+                -
+                  key: 'Logan County'
+                  value: null
+                -
+                  key: 'Lonoke County'
+                  value: null
+                -
+                  key: 'Madison County'
+                  value: null
+                -
+                  key: 'Marion County'
+                  value: null
+                -
+                  key: 'Miller County'
+                  value: null
+                -
+                  key: 'Mississippi County'
+                  value: null
+                -
+                  key: 'Monroe County'
+                  value: null
+                -
+                  key: 'Montgomery County'
+                  value: null
+                -
+                  key: 'Nevada County'
+                  value: null
+                -
+                  key: 'Newton County'
+                  value: null
+                -
+                  key: 'Ouachita County'
+                  value: null
+                -
+                  key: 'Perry County'
+                  value: null
+                -
+                  key: 'Phillips County'
+                  value: null
+                -
+                  key: 'Pike County'
+                  value: null
+                -
+                  key: 'Poinsett County'
+                  value: null
+                -
+                  key: 'Polk County'
+                  value: null
+                -
+                  key: 'Pope County'
+                  value: null
+                -
+                  key: 'Prairie County'
+                  value: null
+                -
+                  key: 'Pulaski County'
+                  value: null
+                -
+                  key: 'Randolph County'
+                  value: null
+                -
+                  key: 'Saline County'
+                  value: null
+                -
+                  key: 'Scott County'
+                  value: null
+                -
+                  key: 'Searcy County'
+                  value: null
+                -
+                  key: 'Sebastian County'
+                  value: null
+                -
+                  key: 'Sevier County'
+                  value: null
+                -
+                  key: 'Sharp County'
+                  value: null
+                -
+                  key: 'St. Francis County'
+                  value: null
+                -
+                  key: 'Stone County'
+                  value: null
+                -
+                  key: 'Union County'
+                  value: null
+                -
+                  key: 'Van Buren County'
+                  value: null
+                -
+                  key: 'Washington County'
+                  value: null
+                -
+                  key: 'White County'
+                  value: null
+                -
+                  key: 'Woodruff County'
+                  value: null
+                -
+                  key: 'Yell County'
+                  value: null
+              type: checkboxes
+              display: 'Counties Covered'
+              validate:
+                - required
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: Region

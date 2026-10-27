@@ -1,0 +1,6 @@
+{{# Redirect an empty topic (no published descendant article) to the current site root. #}}
+{{ unless has_descendant_articles }}
+	{{ %redirect :to="site:url" response="302" }}
+{{ /unless }}
+
+{{ partial:knowledge_bases/topic_layout }}

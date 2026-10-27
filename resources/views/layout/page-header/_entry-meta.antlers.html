@@ -1,0 +1,121 @@
+{{#
+
+	@name Page Header Article Meta
+	@desc Base component for article meta. Resolves entry-meta params and delegates to reusable
+	sub-partials: entry-meta/date_time, entry-meta/person, entry-meta/text, entry-meta/duration,
+	entry-meta/download. Expects entry-meta params in scope (from page-header pass-through).
+	Defaults *_enabled to false.
+
+#}}
+
+{{# Set default values entry-meta params if not passed in scope. #}}
+
+	{{# Date modified #}}
+	{{ date_modified_enabled = date_modified_enabled ?? false }}
+	{{ if date_modified_enabled }}
+		{{ date_modified_value = date_modified_value ?? null }}
+		{{ if !date_modified_value }}
+			{{ date_modified_enabled = false }}
+		{{ /if }}
+		{{ date_modified_label = date_modified_enabled ? (date_modified_label ?? 'Date Modified:') : null }}
+	{{ /if }}
+
+	{{# Date published #}}
+	{{ date_published_enabled = date_published_enabled ?? false }}
+	{{ if date_published_enabled }}
+		{{ date_published_value = date_published_value ?? null }}
+		{{ if !date_published_value }}
+			{{ date_published_enabled = false }}
+		{{ /if }}
+		{{ date_published_label = date_published_enabled ? (date_published_label ?? 'Date Published:') : null }}
+	{{ /if }}
+
+	{{# Estimated reading time #}}
+	{{ reading_time_enabled = reading_time_enabled ?? false }}
+	{{ if reading_time_enabled }}
+		{{ reading_time_value = reading_time_value ?? null }}
+		{{ if !reading_time_value }}
+			{{ reading_time_enabled = false }}
+		{{ /if }}
+		{{ reading_time_enabled = reading_time_enabled ? (reading_time_label ?? 'Estimated Reading Time:') : null }}
+	{{ /if }}
+
+	{{# Download link #}}
+	{{ download_enabled = download_enabled ?? false }}
+	{{ if download_enabled }}
+		{{ download_value = download_value ?? null }}
+		{{ if !download_value }}
+			{{ download_enabled = false }}
+		{{ /if }}
+		{{ download_label = download_enabled ? (download_label ?? 'Download:') : null }}
+		{{ download_link_text = download_link_text ?? null }}
+		{{ download_use_download = download_use_download ?? true }}
+		{{ download_filename = download_filename ?? null }}
+		{{ download_rel = download_rel ?? null }}
+		{{ download_target = download_target ?? null }}
+	{{ /if }}
+
+{{# Render entry-meta if any are enabled. #}}
+{{ if
+	date_published_enabled
+	|| date_modified_enabled
+	|| reading_time_enabled
+	|| download_enabled
+	|| (
+		hide_creator_query != true
+		&& creator
+	)
+}}
+	<div class="entry-meta">
+		{{ partial:layout/page-header/entry-meta/creator_roles }}
+
+		{{# Date published: delegate to date_time component. #}}
+		{{ if date_published_enabled }}
+			{{ partial:layout/page-header/entry-meta/item
+				type="date_published"
+				:label="date_published_label"
+				:value="date_published_value"
+				:icon="null"
+				itemprop="https://schema.org/datePublished"
+			}}
+		{{ /if }}
+
+		{{# Date modified: delegate to date_time component. #}}
+		{{ if date_modified_enabled }}
+			{{ partial:layout/page-header/entry-meta/item
+				type="date_modified"
+				:label="date_modified_label"
+				:value="date_modified_value"
+				:icon="null"
+				itemprop="https://schema.org/dateModified"
+			}}
+		{{ /if }}
+
+		{{# Reading time: delegate to duration component. #}}
+		{{ if reading_time_enabled }}
+			{{ partial:layout/page-header/entry-meta/item
+				type="reading_time"
+				:label="reading_time_enabled"
+				:value="reading_time_value"
+				:icon="null"
+				itemprop="https://schema.org/timeRequired"
+			}}
+		{{ /if }}
+
+		{{# Download: delegate to link-based download partial. #}}
+		{{ if download_enabled }}
+			{{ partial:layout/page-header/entry-meta/item
+				type="download"
+				:label="download_label"
+				:value="download_value"
+				:icon="null"
+				:link_text="download_link_text"
+				itemprop="https://schema.org/associatedMedia"
+				:use_download="download_use_download"
+				:download_filename="download_filename"
+				:rel="download_rel"
+				:target="download_target"
+			}}
+		{{ /if }}
+	</div>
+{{ /if }}

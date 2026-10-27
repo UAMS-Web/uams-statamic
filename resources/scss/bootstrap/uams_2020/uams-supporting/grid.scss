@@ -1,0 +1,249 @@
+@use "sass:math";
+@use "sass:string";
+
+.padded-grid {
+    .row {
+        margin: -(math.div($grid-gutter-width, 2))
+    }
+
+    .col,
+    [class^=col-] {
+        padding: math.div($grid-gutter-width, 2);
+    }
+
+    // &.uams-module {
+    //     //padding-top: ($module-padding - ($grid-gutter-width / 2));
+    //     //padding-bottom: ($module-padding - ($grid-gutter-width / 2));
+    // }
+}
+
+.container, .container-fluid {
+    .container, .container-fluid {
+        width: auto;
+        margin-right: -15px;
+        margin-left: -15px;
+    }
+}
+
+// Tracks / lines for repeat(), span, and line-based utilities (12 columns
+// => line indices 1-13).
+$grid-utility-track-count: 12;
+$grid-utility-line-count: 13;
+
+// `$prefix` null = base utilities; otherwise Tailwind-style `sm:gap-4` as
+// `.sm\:gap-4` inside `@include media-breakpoint-up(sm)`.
+@mixin uams-grid-utility-selectors($prefix: null) {
+    $p: "";
+
+    @if $prefix != null {
+        $p: "#{$prefix}\\:";
+    }
+
+    .#{$p}grid {
+        display: grid;
+    }
+
+    @for $i from 1 through $grid-utility-track-count {
+        .#{$p}grid-cols-#{$i} {
+            grid-template-columns: string.unquote("repeat(#{$i}, minmax(0, 1fr))");
+        }
+    }
+
+    .#{$p}grid-cols-none {
+        grid-template-columns: none;
+    }
+
+    .#{$p}grid-cols-subgrid {
+        grid-template-columns: subgrid;
+    }
+
+    @for $i from 1 through $grid-utility-track-count {
+        .#{$p}col-span-#{$i} {
+            grid-column: span #{$i} / span #{$i};
+        }
+    }
+
+    .#{$p}col-span-full {
+        grid-column: 1 / -1;
+    }
+
+    @for $i from 1 through $grid-utility-line-count {
+        .#{$p}col-start-#{$i} {
+            grid-column-start: $i;
+        }
+
+        .#{$p}col-end-#{$i} {
+            grid-column-end: $i;
+        }
+
+        .#{$p}#{"-col-start-" + $i} {
+            grid-column-start: #{-$i};
+        }
+
+        .#{$p}#{"-col-end-" + $i} {
+            grid-column-end: #{-$i};
+        }
+    }
+
+    .#{$p}col-start-auto {
+        grid-column-start: auto;
+    }
+
+    .#{$p}col-end-auto {
+        grid-column-end: auto;
+    }
+
+    .#{$p}col-auto {
+        grid-column: auto;
+    }
+
+    @for $i from 1 through $grid-utility-line-count {
+        .grid > .#{$p}col-#{$i} {
+            grid-column: $i;
+        }
+
+        .grid > .#{$p}#{"-col-" + $i} {
+            grid-column: #{-$i};
+        }
+
+        .grid > .#{$p}row-#{$i} {
+            grid-row: $i;
+        }
+
+        .grid > .#{$p}#{"-row-" + $i} {
+            grid-row: #{-$i};
+        }
+    }
+
+    @for $i from 1 through $grid-utility-track-count {
+        .#{$p}grid-rows-#{$i} {
+            grid-template-rows: string.unquote("repeat(#{$i}, minmax(0, 1fr))");
+        }
+    }
+
+    .#{$p}grid-rows-none {
+        grid-template-rows: none;
+    }
+
+    .#{$p}grid-rows-subgrid {
+        grid-template-rows: subgrid;
+    }
+
+    @for $i from 1 through $grid-utility-track-count {
+        .#{$p}row-span-#{$i} {
+            grid-row: span #{$i} / span #{$i};
+        }
+    }
+
+    .#{$p}row-span-full {
+        grid-row: 1 / -1;
+    }
+
+    @for $i from 1 through $grid-utility-line-count {
+        .#{$p}row-start-#{$i} {
+            grid-row-start: $i;
+        }
+
+        .#{$p}row-end-#{$i} {
+            grid-row-end: $i;
+        }
+
+        .#{$p}#{"-row-start-" + $i} {
+            grid-row-start: #{-$i};
+        }
+
+        .#{$p}#{"-row-end-" + $i} {
+            grid-row-end: #{-$i};
+        }
+    }
+
+    .#{$p}row-start-auto {
+        grid-row-start: auto;
+    }
+
+    .#{$p}row-end-auto {
+        grid-row-end: auto;
+    }
+
+    .#{$p}row-auto {
+        grid-row: auto;
+    }
+
+    .#{$p}grid-flow-row {
+        grid-auto-flow: row;
+    }
+
+    .#{$p}grid-flow-col {
+        grid-auto-flow: column;
+    }
+
+    .#{$p}grid-flow-dense {
+        grid-auto-flow: dense;
+    }
+
+    .#{$p}grid-flow-row-dense {
+        grid-auto-flow: row dense;
+    }
+
+    .#{$p}grid-flow-col-dense {
+        grid-auto-flow: column dense;
+    }
+
+    .#{$p}auto-cols-auto {
+        grid-auto-columns: auto;
+    }
+
+    .#{$p}auto-cols-min {
+        grid-auto-columns: min-content;
+    }
+
+    .#{$p}auto-cols-max {
+        grid-auto-columns: max-content;
+    }
+
+    .#{$p}auto-cols-fr {
+        grid-auto-columns: minmax(0, 1fr);
+    }
+
+    .#{$p}auto-rows-auto {
+        grid-auto-rows: auto;
+    }
+
+    .#{$p}auto-rows-min {
+        grid-auto-rows: min-content;
+    }
+
+    .#{$p}auto-rows-max {
+        grid-auto-rows: max-content;
+    }
+
+    .#{$p}auto-rows-fr {
+        grid-auto-rows: minmax(0, 1fr);
+    }
+
+    @each $key, $value in $spacers {
+        .#{$p}gap-#{$key} {
+            gap: $value;
+        }
+
+        .#{$p}gap-x-#{$key} {
+            column-gap: $value;
+        }
+
+        .#{$p}gap-y-#{$key} {
+            row-gap: $value;
+        }
+    }
+}
+
+// Base (no prefix)
+@include uams-grid-utility-selectors(null);
+
+// Responsive: `sm:gap-9` => `.sm\:gap-9` at `min-width` from `$grid-breakpoints`.
+@each $bp-name, $bp-min in $grid-breakpoints {
+    @if $bp-min != 0 {
+        @include media-breakpoint-up($bp-name) {
+            @include uams-grid-utility-selectors($bp-name);
+        }
+    }
+}

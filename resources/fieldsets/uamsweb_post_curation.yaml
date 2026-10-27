@@ -1,0 +1,56 @@
+title: 'UAMSWeb Posts, Curation'
+fields:
+  -
+    handle: related_posts
+    field:
+      type: entries
+      display: 'Related Posts'
+      instructions: 'Optional. Hand-pick related stories to feature, overriding any automatic related logic. Leave empty to fall back to the default behavior.'
+      collections:
+        - posts
+      create: false
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: referenced_by_posts
+    field:
+      type: entries
+      display: 'Referenced by Posts'
+      instructions: 'Read-only. The posts that list this post in their own Related Posts. Automatically derived — editing here has no effect; manage the relationship from the referencing post''s Related Posts field.'
+      localizable: false
+      visibility: computed
+  -
+    handle: cta
+    field:
+      type: group
+      display: 'Call to Action'
+      instructions: 'Optional. A single call-to-action shown on the story page. Both a label and a link are required for it to render.'
+      localizable: false
+      fields:
+        -
+          handle: label
+          field:
+            type: text
+            display: 'CTA Label'
+            character_limit: 40
+        -
+          handle: url
+          field:
+            type: link
+            display: 'CTA Link'
+            container: files
+        -
+          handle: style
+          field:
+            type: select
+            display: 'CTA Style'
+            options:
+              -
+                key: solid
+                value: 'Solid'
+              -
+                key: outline
+                value: 'Outline'
+            default: solid
+            clearable: false

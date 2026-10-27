@@ -1,0 +1,12 @@
+{{# HTML fieldtype (App\Fieldtypes\Html, extends Statamic\Fieldtypes\Html) —
+    renders blueprint-authored HTML content inline. No input, no submitted value.
+    The wrapper at vendor/statamic/forms/fields.antlers.html bypasses the
+    form-group label for this type.
+
+    `html` is the blueprint config key that holds the markup. Statamic's Antlers
+    does not escape `{{ }}` output by default, so the HTML emits as-is — which
+    is what we want for blueprint-authored content. Only fieldtype users with CP
+    access can set this value, so trust is appropriate. #}}
+<div class="form-html my-3">
+	{{ html }}
+</div>

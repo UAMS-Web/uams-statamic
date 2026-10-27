@@ -1,0 +1,22 @@
+{{# Shared article list wrapper. Accepts :heading and slot content (loop of cards). #}}
+{{# Call from _article_list_collection or _article_list_field with heading; put card loop inside. #}}
+{{ 
+	partial:page_builder/uamsweb_block 
+	block_class="mt-0" 
+	itemprop="https://schema.org/hasPart"
+	itemscope="true"
+	itemtype="https://schema.org/Collection"
+}}
+	{{ 
+		partial:page_builder/components/block_header 
+		:heading="heading" 
+		block_header_heading_itemprop="https://schema.org/name"
+	}}
+	{{
+		partial:page_builder/components/card_list
+		:name="heading"
+		:itemprop="( card_list_itemprop ?? 'https://schema.org/mainEntity' )"
+	}}
+		{{ slot }}
+	{{ /partial:page_builder/components/card_list }}
+{{ /partial:page_builder/uamsweb_block }}

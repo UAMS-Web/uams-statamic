@@ -1,0 +1,152 @@
+@use "sass:math";
+
+.landing-page-title {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vw * $lp-header-aspect-ratio-xxs;
+    background-color: $gray-600;
+    color: $white;
+
+    @include media-breakpoint-up(xs) {
+        height: 100vw * $lp-header-aspect-ratio-xs;
+    }
+
+    @include media-breakpoint-up(sm) {
+        height: 100vw * $lp-header-aspect-ratio-sm;
+    }
+
+    @include media-breakpoint-up(md) {
+        height: 100vw * $lp-header-aspect-ratio-md;
+    }
+
+    @include media-breakpoint-up(lg) {
+        height: 100vw * $lp-header-aspect-ratio-lg;
+    }
+
+    @include media-breakpoint-up(xl) {
+        height: 100vw * $lp-header-aspect-ratio-xl;
+    }
+
+    @include media-breakpoint-up(xxl) {
+        height: 100vw * $lp-header-aspect-ratio-xxl;
+    }
+
+    &:first-child {
+        @include media-breakpoint-down(xs) {
+            border-top: 1px solid $body-bg;
+        }
+    }
+
+    &:after {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color: transparent;
+        background-image: $triangles-header-mobile;
+        background-size: cover;
+        background-position: center center;
+        opacity: 0.618;
+        z-index: 0;
+
+        @include media-breakpoint-up(md) {
+            background-image: $triangles-header-desktop;
+        }
+    }
+
+    &.bg-image {
+        &:before {
+            opacity: 0.5;
+            -webkit-filter: grayscale(0%);
+            filter: grayscale(0%);
+            mix-blend-mode: overlay;
+        }
+    }
+
+    .text-container {
+        max-width: 100%;
+        position: relative;
+        z-index: 1;
+
+        $lp-text-shadow-multiplier-1: 3;
+        $lp-text-shadow-multiplier-2: 1;
+        $lp-text-shadow-multiplier-3: math.div(1, 3);
+        $lp-text-shadow-multiplier-4: math.div(math.div(1, 3), 3);
+
+        $lp-heading-size-xxs: 1.25;
+        $lp-heading-size: $h1-font-size-multiplier;
+
+        font-size: $font-size-base;
+
+        @include media-breakpoint-up(xl) {
+            font-size: 1.2vw; // starts proportionally increasing with viewport width
+        }
+
+        @include media-custom-up(2560px) {
+            font-size: 30.72px; // stops proportionally increasing with viewport width
+        }
+
+        .landing-page-title-heading {
+            $lp-text-shadow-header-opacity-1: 0.2;
+            $lp-text-shadow-header-opacity-2: 0.6;
+            $lp-text-shadow-header-opacity-3: 0.4;
+            $lp-text-shadow-header-opacity-4: 0.3;
+
+            text-align: center;
+            text-shadow: 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-1) rgba(0,0,0,$lp-text-shadow-header-opacity-1), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-2) rgba(0,0,0,$lp-text-shadow-header-opacity-2), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-3) rgba(0,0,0,$lp-text-shadow-header-opacity-3), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-4) rgba(0,0,0,$lp-text-shadow-header-opacity-4);
+
+            @include media-breakpoint-up(sm) {
+                text-shadow: 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-1) rgba(0,0,0,$lp-text-shadow-header-opacity-1), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-2) rgba(0,0,0,$lp-text-shadow-header-opacity-2), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-3) rgba(0,0,0,$lp-text-shadow-header-opacity-3), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-4) rgba(0,0,0,$lp-text-shadow-header-opacity-4);
+            }
+
+            h1 {
+                @include line-length-em(min);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.5em;
+                font-family: $page-title-font-family;
+                font-size: $lp-heading-size-xxs + em; // Switched to ems so that font size could proportionally increase with container
+                font-weight: $page-title-font-weight;
+                line-height: $page-title-line-height;
+
+                @include media-breakpoint-up(xs) {
+                    font-size: $lp-heading-size + em; // Switched to ems so that font size could proportionally increase with container
+                }
+            }
+        }
+
+        .landing-page-title-body {
+            $lp-text-shadow-body-opacity-1: 0.2;
+            $lp-text-shadow-body-opacity-2: 0.6;
+            $lp-text-shadow-body-opacity-3: 0.5;
+            $lp-text-shadow-body-opacity-4: 0.6;
+
+            text-align: center;
+            text-shadow: 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-1) rgba(0,0,0,$lp-text-shadow-body-opacity-1), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-2) rgba(0,0,0,$lp-text-shadow-body-opacity-2), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-3) rgba(0,0,0,$lp-text-shadow-body-opacity-3), 0px 0px ($uams-module-padding-mobile * $lp-text-shadow-multiplier-4) rgba(0,0,0,$lp-text-shadow-body-opacity-4);
+
+            @include media-breakpoint-up(xs) {
+                text-shadow: 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-1) rgba(0,0,0,$lp-text-shadow-body-opacity-1), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-2) rgba(0,0,0,$lp-text-shadow-body-opacity-2), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-3) rgba(0,0,0,$lp-text-shadow-body-opacity-3), 0px 0px ($uams-module-padding * $lp-text-shadow-multiplier-4) rgba(0,0,0,$lp-text-shadow-body-opacity-4);
+            }
+
+            p {
+                font-size: 0.875em;
+                font-weight: $font-weight-medium;
+                line-height: $nav-line-height;
+                @include line-length-em(ideal);
+
+                @include media-breakpoint-up(xs) {
+                    font-size: $lead-font-size-multiplier + em;
+                }
+            }
+
+            :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}

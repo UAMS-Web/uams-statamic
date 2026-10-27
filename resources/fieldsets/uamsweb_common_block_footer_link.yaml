@@ -1,0 +1,40 @@
+title: 'UAMSWeb Common Reusable Fields, Block Footer Link'
+fields:
+  -
+    handle: more_heading
+    field:
+      type: text
+      display: 'Link Heading'
+      validate:
+        - required
+        - sometimes
+      replicator_preview: false
+      localizable: false
+  -
+    handle: more_button_text
+    field: uamsweb_common_link.link_text
+    config:
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: more_button_url
+    field: uamsweb_common_link.link_url
+    config:
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: more_button_target
+    field: uamsweb_common_link.new_window_query
+    config:
+      replicator_preview: false
+      validate:
+        - required
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_link.link_description
+    config:
+      replicator_preview: false

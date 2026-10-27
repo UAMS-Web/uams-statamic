@@ -1,0 +1,397 @@
+title: 'UAMSWeb Block, Side-by-Side Image and Text'
+fields:
+  -
+    handle: text_layout
+    field:
+      options:
+        -
+          key: body-only
+          value: 'Paragraph only'
+        -
+          key: paragraph_and_button
+          value: 'Paragraph and button'
+        -
+          key: link-list
+          value: 'Paragraph and link list'
+        -
+          key: paragraph_and_simple_list
+          value: 'Paragraph and simple list'
+        -
+          key: simple_list_only
+          value: 'Simple list only'
+        -
+          key: blockquote_with_citation
+          value: 'Blockquote with Citation'
+        -
+          key: blockquote_with_citation_and_link
+          value: 'Blockquote with Citation and Link'
+      default: body-only
+      type: radio
+      display: 'Text Configuration'
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'There is a 50-character limit.'
+      validate:
+        - required
+      character_limit: 50
+      replicator_preview: true
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: body_body_only
+    field:
+      type: textarea
+      display: Paragraph
+      instructions: 'There is a 449-character limit.'
+      replicator_preview: false
+      character_limit: 449
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals body-only'
+  -
+    handle: body_with_button
+    field:
+      type: textarea
+      display: Paragraph
+      instructions: 'There is a 359-character limit.'
+      replicator_preview: false
+      character_limit: 359
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals paragraph_and_button'
+  -
+    handle: body_link_list
+    field:
+      type: textarea
+      display: Body
+      instructions: 'There is a 173-character limit.'
+      replicator_preview: false
+      character_limit: 173
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals link-list'
+  -
+    handle: body_simple_list
+    field:
+      type: textarea
+      display: Paragraph
+      instructions: 'There is a 173-character limit.'
+      replicator_preview: false
+      character_limit: 173
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals paragraph_and_simple_list'
+  -
+    handle: link_list
+    field:
+      max_sets: 6
+      type: replicator
+      display: 'Link List'
+      instructions: 'You may add up to six links. However, if you add a sixth link, the option for adding "and more" in the sixth position will be hidden.'
+      replicator_preview: false
+      if:
+        text_layout: 'equals link-list'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Item Group'
+          sets:
+            new_set:
+              display: 'New Item'
+              fields:
+                -
+                  handle: text
+                  field: uamsweb_common_link.link_text
+                  config:
+                    display: 'Link Text'
+                    validate:
+                      - required
+                    instructions: 'There is a 22-character limit.'
+                    character_limit: 22
+                    replicator_preview: true
+                -
+                  handle: url
+                  field: uamsweb_common_link.link_url
+                  config:
+                    display: 'Link URL'
+                    validate:
+                      - required
+                -
+                  handle: target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: description
+                  field: uamsweb_common_link.link_description
+                  config:
+                    display: 'Link Accessibility Description'
+  -
+    handle: include_more
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include "and more" at the end of the Link List?'
+      instructions: 'This option is only available if you have 1-5 items in the link list.'
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals link-list'
+        link_list: 'custom selectionCount:lt,6'
+  -
+    handle: simple_list
+    field:
+      type: grid
+      display: 'List Items'
+      instructions: 'A simple bulleted list (no links). Add one item per row, up to six.'
+      max_rows: 6
+      add_row: 'Add Item'
+      replicator_preview: false
+      fields:
+        -
+          handle: text
+          field:
+            type: text
+            display: 'Item Text'
+            instructions: 'There is a 22-character limit.'
+            character_limit: 22
+            validate:
+              - required
+            localizable: false
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'contains_any paragraph_and_simple_list, simple_list_only'
+      localizable: false
+  -
+    handle: quote_text
+    field:
+      type: textarea
+      display: 'Quote Text'
+      instructions: 'The words being quoted, without quotation marks. There is a 306-character limit.'
+      character_limit: 306
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals blockquote_with_citation'
+      localizable: false
+  -
+    handle: quote_text_with_link
+    field:
+      type: textarea
+      display: 'Quote Text'
+      instructions: 'The words being quoted, without quotation marks. There is a 217-character limit.'
+      character_limit: 217
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'equals blockquote_with_citation_and_link'
+      localizable: false
+  -
+    handle: speaker_name
+    field:
+      type: text
+      display: 'Speaker Name'
+      instructions: 'The name of the person being quoted, with any credentials. There is a 58-character limit.'
+      character_limit: 58
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'contains_any blockquote_with_citation, blockquote_with_citation_and_link'
+      localizable: false
+  -
+    handle: speaker_title
+    field:
+      type: text
+      display: 'Speaker Title'
+      instructions: "Optional. The speaker's title or role, shown on the line below their name. There is a 121-character limit."
+      character_limit: 121
+      replicator_preview: false
+      if:
+        text_layout: 'contains_any blockquote_with_citation, blockquote_with_citation_and_link'
+        speaker_name: 'not empty'
+      localizable: false
+  -
+    handle: cta
+    field:
+      type: subsection
+      display: 'Call to Action Button'
+      replicator_preview: false
+      localizable: false
+      if:
+        text_layout: 'contains_any link-list, paragraph_and_simple_list, simple_list_only, paragraph_and_button, blockquote_with_citation_and_link'
+  -
+    handle: button_text
+    field: uamsweb_common_link.link_text
+    config:
+      replicator_preview: false
+      instructions: 'There is a 42-character limit.'
+      character_limit: 42
+      if:
+        text_layout: 'contains_any link-list, paragraph_and_simple_list, simple_list_only, paragraph_and_button, blockquote_with_citation_and_link'
+  -
+    handle: button_url
+    field: uamsweb_common_link.link_url
+    config:
+      replicator_preview: false
+      if:
+        text_layout: 'contains_any link-list, paragraph_and_simple_list, simple_list_only, paragraph_and_button, blockquote_with_citation_and_link'
+        button_text: 'not empty'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: button_target
+    field: uamsweb_common_link.new_window_query
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        text_layout: 'contains_any link-list, paragraph_and_simple_list, simple_list_only, paragraph_and_button, blockquote_with_citation_and_link'
+        button_text: 'not empty'
+  -
+    handle: button_link_description
+    field: uamsweb_common_link.link_description
+    config:
+      replicator_preview: false
+      if:
+        text_layout: 'contains_any link-list, paragraph_and_simple_list, simple_list_only, paragraph_and_button, blockquote_with_citation_and_link'
+        button_text: 'not empty'
+  -
+    handle: image_options
+    field:
+      type: subsection
+      display: 'Image Options'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: image
+    field: uamsweb_common_images.image_1920x1080
+    config:
+      display: Image
+      instructions: 'Recommended image dimensions: 5120x2880. Minimum image dimensions: 1920x1080. The image will be automatically cropped to a 16:9 aspect ratio.'
+  -
+    handle: alt_text
+    field: uamsweb_common_images.image_alt_text_override
+    config:
+      replicator_preview: false
+  -
+    handle: image_crop
+    field:
+      options:
+        -
+          key: top
+          value: Top
+        -
+          key: center
+          value: Center
+        -
+          key: bottom
+          value: Bottom
+      default: center
+      type: radio
+      display: 'Vertical Crop'
+      instructions: 'Your image will be cropped if necessary. Choose whether it should be cropped from the top, middle or bottom.'
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: image_anchor
+    field:
+      options:
+        -
+          key: left
+          value: Left
+        -
+          key: center
+          value: Center
+        -
+          key: right
+          value: Right
+      default: center
+      type: radio
+      display: 'Image Anchor Position'
+      instructions: 'Where is the focus of your image content?'
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: layout_options
+    field:
+      type: subsection
+      display: 'Block Layout and Color'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: image_position
+    field:
+      options:
+        -
+          key: left
+          value: 'Image on Left, Text on Right'
+        -
+          key: right
+          value: 'Image on Right, Text on Left'
+        -
+          key: auto_default_left
+          value: 'Auto-Alternate (image left on the first of a run)'
+        -
+          key: auto_default_right
+          value: 'Auto-Alternate (image right on the first of a run)'
+      default: left
+      type: radio
+      display: 'Image and Text Position'
+      instructions: 'Explicit left/right stays fixed. An Auto-Alternate block flips to the opposite side of the Side-by-Side block directly above it, so a run of them zig-zags automatically; the first block in a run (or one not directly below another Side-by-Side block) uses its chosen default side.'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Overlay the side image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the block's content, so it is off by default."
+      default: false
+      localizable: false

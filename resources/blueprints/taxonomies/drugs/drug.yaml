@@ -1,0 +1,251 @@
+title: Drug
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              display: 'Term Title'
+              instructions: 'This is only for display in the control panel.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Display Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: is_proprietary
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is Proprietary'
+              localizable: false
+              instructions: 'Answer "Yes" if this item''s display name is a proprietary/brand name (vs. generic name).'
+          -
+            handle: proprietary_name
+            field:
+              type: list
+              display: 'Proprietary Name'
+              instructions: 'Proprietary name given to the diet plan, typically by its originator or creator.'
+              localizable: false
+          -
+            handle: rxcui
+            field:
+              preset: rxcui
+              input_mask: 1
+              input_mask_lazy: 1
+              input_mask_skipInvalid: 1
+              type: identifier
+              display: RxCUI
+              instructions: 'The RxCUI drug identifier from RXNORM.'
+              localizable: false
+          -
+            handle: is_available_generically
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is Available Generically'
+              localizable: false
+              instructions: 'True if the drug is available in a generic form (regardless of name).'
+          -
+            handle: non_proprietary_name
+            field:
+              type: list
+              display: 'Non-Proprietary Name'
+              instructions: 'The generic name of this drug or supplement.'
+              localizable: false
+          -
+            handle: description
+            field: uamsweb_schema.description
+            config:
+              localizable: false
+          -
+            handle: disambiguating_description
+            field: uamsweb_schema.disambiguating_description
+            config:
+              localizable: false
+          -
+            handle: dosage_form
+            field:
+              type: list
+              display: 'Dosage Form'
+              instructions: 'A dosage form in which this drug/supplement is available (e.g., tablet, suspension, injection).'
+              localizable: false
+          -
+            handle: drug_unit
+            field:
+              type: list
+              display: 'Drug Unit'
+              instructions: 'The unit in which the drug is measured (e.g., 5 mg tablet).'
+              localizable: false
+          -
+            handle: clinical_pharmacology
+            field:
+              type: textarea
+              display: 'Clinical Pharmacology'
+              instructions: 'Description of the absorption and elimination of drugs, including their concentration (pharmacokinetics, pK) and biological effects (pharmacodynamics, pD).'
+              localizable: false
+          -
+            handle: label_details
+            field:
+              type: url
+              display: 'Label Details'
+              instructions: "Link to the drug's label details."
+              localizable: false
+          -
+            handle: prescribing_info
+            field:
+              type: url
+              display: 'Prescribing Info'
+              instructions: 'Link to prescribing information for the drug.'
+              localizable: false
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              localizable: false
+          -
+            handle: additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              localizable: false
+          -
+            handle: active_ingredient
+            field:
+              type: list
+              display: 'Active Ingredient'
+              instructions: 'An active ingredient, typically chemical compounds and/or biologic substances.'
+              localizable: false
+          -
+            handle: administration_route
+            field:
+              type: list
+              display: 'Administration Route'
+              instructions: 'A route by which this drug may be administered (e.g. oral).'
+              localizable: false
+          -
+            handle: mechanism_of_action
+            field:
+              type: textarea
+              display: 'Mechanism of Action'
+              instructions: 'The specific biochemical interaction through which this drug or supplement produces its pharmacological effect.'
+              localizable: false
+          -
+            handle: alcohol_warning
+            field:
+              type: textarea
+              display: 'Alcohol Warning'
+              instructions: 'Any precaution, guidance, contraindication, etc. related to consumption of alcohol while taking this drug.'
+              localizable: false
+          -
+            handle: breastfeeding_warning
+            field:
+              type: textarea
+              display: 'Breastfeeding Warning'
+              instructions: "Any precaution, guidance, contraindication, etc. related to this drug's use by breastfeeding mothers."
+              localizable: false
+          -
+            handle: food_warning
+            field:
+              type: textarea
+              display: 'Food Warning'
+              instructions: 'Any precaution, guidance, contraindication, etc. related to consumption of specific foods while taking this drug.'
+              localizable: false
+          -
+            handle: pregnancy_warning
+            field:
+              type: textarea
+              display: 'Pregnancy Warning'
+              instructions: "Any precaution, guidance, contraindication, etc. related to this drug's use during pregnancy."
+              localizable: false
+          -
+            handle: warning
+            field:
+              type: replicator
+              display: Warning
+              instructions: 'Any FDA or other warnings about the drug.'
+              localizable: false
+              collapse: true
+              button_label: 'Add Warning'
+              sets:
+                warning_group:
+                  display: Warnings
+                  sets:
+                    text:
+                      display: 'Warning Text'
+                      fields:
+                        -
+                          handle: text
+                          field:
+                            type: textarea
+                            display: 'Warning Text'
+                            instructions: 'Text of a warning.'
+                            localizable: false
+                            validate:
+                              - required
+                    url:
+                      display: 'Warning URL'
+                      fields:
+                        -
+                          handle: url
+                          field:
+                            type: url
+                            display: 'Warning URL'
+                            instructions: 'Link to a warning.'
+                            localizable: false
+                            input_mask_autofix: false
+                            input_mask_eager: false
+                            input_mask_overwrite: false
+                            validate:
+                              - required
+          -
+            handle: overdosage
+            field:
+              type: textarea
+              display: Overdosage
+              instructions: 'Any information related to overdose on a drug, including signs or symptoms, treatments, contact information for emergency response.'
+              localizable: false
+          -
+            handle: interacting_drug
+            field:
+              type: terms_search_index
+              display: 'Interacting Drug'
+              instructions: 'Another drug that is known to interact with this drug in a way that impacts the effect of this drug or causes a risk to the patient. Note: disease interactions are typically captured as contraindications.'
+              taxonomies:
+                - drugs
+              search_index: drugs
+              create: false
+              localizable: false
+          -
+            handle: related_drug
+            field:
+              type: terms_search_index
+              display: 'Related Drug'
+              instructions: 'Any other drug related to this one, for example commonly-prescribed alternatives.'
+              taxonomies:
+                - drugs
+              search_index: drugs
+              create: false
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

@@ -1,0 +1,162 @@
+#!/bin/sh
+#
+# The code-quality skill's generic gate, then two repository gates, both aimed at
+# drift no test can see. Each reports on its own, so a commit that trips several
+# is told about all of them.
+#
+# Installed via `git config core.hooksPath .githooks`, wired automatically from
+# composer post-install/post-update (scripts/setup-git-hooks.php, the code-quality
+# skill's template, UAMS-Web/uams-statamic-archive#3085).
+
+status=0
+
+# --- Generic gate: composer validate ----------------------------------------
+#
+# From the code-quality skill's templates/pre-commit (UAMS-Web/uams-statamic-archive#3085). Runs when
+# composer.json or composer.lock is staged, and catches invalid JSON and a lock
+# file that no longer matches composer.json before they reach a pull request; the
+# chain's `validate` job runs the same command, one push later.
+# --no-check-publish leaves out the checks that matter only to a package published
+# on Packagist (a name, a license), which an application never has.
+
+staged_acmr=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if printf '%s\n' "$staged_acmr" | grep -Eq '^composer\.(json|lock)$'; then
+    if command -v composer >/dev/null 2>&1; then
+        if ! composer validate --no-check-publish --no-check-all --no-interaction; then
+            echo "pre-commit: composer validate failed; fix composer.json or composer.lock." >&2
+            status=1
+        fi
+    else
+        echo "pre-commit: composer is not on PATH, so composer validate did not run." >&2
+    fi
+fi
+
+# --- Gate 1: CI parity ------------------------------------------------------
+#
+# Keep the remote CI (.github/workflows/ci.yml) and the local CI runner
+# (scripts/local-ci.mjs) in lockstep. They are hand-maintained mirrors with no
+# shared source of truth, so they silently drift when only one is edited. This
+# blocks a commit that stages exactly ONE of them.
+#
+# It is a co-change gate, NOT a semantic check: it does not compare commands
+# (the two files are intentionally not byte-identical, e.g. CI runs
+# `vendor/bin/pest` while the script runs `php vendor/bin/pest`). It only
+# insists the two files change together so a human reviews both.
+#
+# It used to fire on ANY staged `scripts/local-ci.mjs`, which forced --no-verify
+# on the roughly half of that file's changes that are legitimately one-sided --
+# toolchain discovery, worktree management, argument parsing, the chain runner,
+# none of which ci.yml has a counterpart for. The cost was not the friction: the
+# same flag also skips gate 2 below, so the prescribed bypass for a routine
+# one-sided change silently disarmed an unrelated safety check (UAMS-Web/uams-statamic-archive#2376).
+#
+# It now asks whether the staged HUNKS land in a `PARITY:`-marked region, via
+# scripts/check-ci-parity.mjs. If node cannot run it, this falls back to the old
+# file-level check -- which can only OVER-fire, never under-fire. Failing the
+# other way would disable a real gate silently, which is the defect above.
+
+CI_FILE=".github/workflows/ci.yml"
+SCRIPT_FILE="scripts/local-ci.mjs"
+
+staged=$(git diff --cached --name-only)
+
+echo "$staged" | grep -qxF "$CI_FILE"     && ci=1 || ci=0
+echo "$staged" | grep -qxF "$SCRIPT_FILE" && sc=1 || sc=0
+
+# `command -v node` asks whether node is INSTALLED, which is not the question:
+# what can be missing is the SCRIPT. Both are checked, and the exit code is then
+# read rather than merely tested for zero — a script that could not RUN exits 1
+# (node's own code for a missing module) while a real violation exits 2, and
+# collapsing the two made the fallback below unreachable. `git bisect` onto any
+# commit before the script existed reproduces it (UAMS-Web/uams-statamic-archive#2376).
+PARITY_CHECK="scripts/check-ci-parity.mjs"
+parity_checked=0
+if [ "$ci" -eq 1 ] || [ "$sc" -eq 1 ]; then
+    if [ -f "$PARITY_CHECK" ] && command -v node >/dev/null 2>&1; then
+        node "$PARITY_CHECK"
+        rc=$?
+        if [ "$rc" -eq 0 ]; then
+            parity_checked=1
+            ci=0; sc=0
+        elif [ "$rc" -eq 2 ]; then
+            parity_checked=1
+            status=1
+        fi
+        # Any other code: the script could not run. parity_checked stays 0, so
+        # the file-level check below still fires — over-firing, never under.
+    fi
+fi
+
+if [ "$parity_checked" -eq 0 ] && [ "$ci" -ne "$sc" ]; then
+    echo "" >&2
+    echo "CI parity gate: you staged only one of the mirrored CI files:" >&2
+    echo "    $CI_FILE" >&2
+    echo "    $SCRIPT_FILE" >&2
+    echo "" >&2
+    echo "These must change together. Update the other (follow the '# PARITY:'" >&2
+    echo "markers), or bypass for an intentional one-sided change:" >&2
+    echo "    git commit --no-verify" >&2
+    echo "" >&2
+    status=1
+fi
+
+# --- Gate 2: unstaged merge resolution --------------------------------------
+#
+# A merge commit records the INDEX. A conflicted file you edited but never
+# `git add`ed is silently dropped from it — while every check still passes,
+# because composer stan, Pest and Pint all read the WORKING TREE. The two
+# disagree, nothing says so, and the branch looks validated (UAMS-Web/uams-statamic-archive#1850).
+#
+# Scoped to merges deliberately. Unstaged changes during an ORDINARY commit are
+# routine and must stay ungated; it is only the merge case where the resolution
+# you just made is the thing at risk, and where a passing working-tree check
+# actively misleads.
+#
+# `git diff --name-only` lists tracked files whose worktree copy differs from
+# the index — exactly the "resolved but not staged" set. Untracked files are not
+# listed: they were never part of the merge, so they are not at risk.
+#
+# `--ignore-submodules=all` is load-bearing, not tidiness. A submodule whose
+# worktree HEAD differs from the recorded pointer shows up in a bare
+# `git diff --name-only`, and the `ignore = dirty` this repo sets on `content`
+# in .gitmodules does NOT suppress a pointer difference — only dirty contents.
+#
+# This comment used to justify the flag by "submodule HEAD is shared across
+# linked worktrees", i.e. another session's checkout leaking into your merge.
+# That premise is false on the pinned git — each worktree has its own gitdir
+# and its own HEAD (measured under UAMS-Web/uams-statamic-archive#1959; see .claude/rules/worktrees.md). The
+# flag stays, because the reason it is needed is closer to home: a merge that
+# moves the `content` gitlink leaves YOUR worktree's submodule at the old
+# revision until you run `git submodule update`. This gate only sees merges you
+# commit by hand — a clean `git merge` commits itself without running
+# pre-commit — so the overlap is "a conflicted merge that also moved the
+# pointer", which is uncommon but is exactly when the advice below would do the
+# most damage: it would have you stage the stale revision, undoing the bump the
+# merge just brought in. A submodule bump is a deliberate act, never a merge
+# resolution you forgot to stage.
+
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+    unstaged=$(git diff --name-only --ignore-submodules=all)
+
+    if [ -n "$unstaged" ]; then
+        echo "" >&2
+        echo "Merge resolution gate: these files are modified but NOT staged:" >&2
+        echo "$unstaged" | sed 's/^/    /' >&2
+        echo "" >&2
+        echo "A merge commit records the index, so they would be dropped from it" >&2
+        echo "— while Pest, Pint and PHPStan keep passing, because those read the" >&2
+        echo "working tree. Stage them:" >&2
+        echo "    git add <file>" >&2
+        echo "" >&2
+        echo "Or, if they are unrelated dirty files you mean to leave out:" >&2
+        echo "    git commit --no-verify" >&2
+        echo "" >&2
+        echo "Note that --no-verify skips the CI-parity gate above as well, so" >&2
+        echo "re-check that you did not stage exactly one of the mirrored CI files." >&2
+        echo "" >&2
+        status=1
+    fi
+fi
+
+exit "$status"

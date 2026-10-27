@@ -1,0 +1,35 @@
+{{# Normalize the content_width parameter to a boolean value. #}}
+{{ if
+	content_width === true
+	|| content_width === 'true'
+	|| content_width === 1
+	|| content_width === '1'
+}}
+	{{ $content_width = true }}
+{{ elseif
+	content_width === false
+	|| content_width === 'false'
+	|| content_width === 0
+	|| content_width === '0'
+	|| content_width === null
+	|| content_width === 'null'
+}}
+	{{ $content_width = false }}
+{{ else }}
+	{{ $content_width = true }}
+{{ /if }}
+
+<footer
+	class="{{
+		[
+			'entry-footer clearfix' => true,
+			'content-width' => $content_width,
+		] | classes | collapse_whitespace
+	}}"
+	{{ ( itemprop ?? null ) | attribute:itemprop }}
+	{{ ( itemscope ?? null ) | attribute:itemscope }}
+	{{ ( itemtype ?? null ) | attribute:itemtype }}
+	{{ ( entry_footer_id ?? 'entry-footer' ) | attribute:id }}
+>
+	{{ slot }}
+</footer>

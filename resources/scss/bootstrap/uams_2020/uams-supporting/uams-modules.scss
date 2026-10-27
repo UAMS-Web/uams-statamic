@@ -1,0 +1,457 @@
+@use "sass:math";
+
+.uams-module,
+.sidebar .widget {
+    //padding-top: $module-padding;
+    //padding-bottom: $module-padding;
+    position: relative;
+
+    @include uams-focus-visible();
+
+    &:not(.no-padding) {
+        padding: $uams-module-padding-mobile;
+
+        @include media-breakpoint-up(sm) {
+            padding: $uams-module-padding;
+        }
+
+        > .container-fluid,
+        > .uamswp-news-syndication-cards > .container-fluid {
+            padding: 0;
+        }
+
+        .more {
+            margin-top: $uams-module-padding-mobile;
+            padding-top: $uams-module-padding-mobile;
+
+            @include media-breakpoint-up(sm) {
+                margin-top: $uams-module-padding;
+                padding-top: $uams-module-padding;
+            }
+        }
+    }
+
+    &.extra-padding {
+
+        @include media-breakpoint-up(xs) {
+            padding: ($uams-module-padding * 2) $uams-module-padding;
+        }
+
+        @include media-breakpoint-up(sm) {
+            padding: ($uams-module-padding * 2) $uams-module-padding;
+        }
+
+        .more {
+            margin-top: ($uams-module-padding-mobile * 2);
+            padding-top: ($uams-module-padding-mobile * 2);
+
+            @include media-breakpoint-up(sm) {
+                margin-top: ($uams-module-padding * 2);
+                padding-top: ($uams-module-padding * 2);
+            }
+        }
+    }
+
+    &.less-padding {
+        padding: math.div($uams-module-padding-mobile, 2) $uams-module-padding-mobile;
+
+        @include media-breakpoint-up(sm) {
+            padding: math.div($uams-module-padding, 2) $uams-module-padding;
+        }
+
+        .more {
+            margin-top: math.div($uams-module-padding-mobile, 2);
+            padding-top: math.div($uams-module-padding-mobile, 2);
+
+            @include media-breakpoint-up(sm) {
+                margin-top: math.div($uams-module-padding, 2);
+                padding-top: math.div($uams-module-padding, 2);
+            }
+        }
+    }
+
+    .cta-container {
+        margin: -0.25em;
+        .btn:not(.btn-outline-white) {
+            margin: 0.25em;
+        }
+    }
+
+    .more {
+        position: relative;
+        text-align: center;
+        font-style: italic;
+
+        &:before {
+            content: '';
+            display: block;
+            height: 1px;
+            background-color: $body-bg-border;
+            position: absolute;
+            top: 0;
+            right: math.div($grid-gutter-width, 2);
+            left: math.div($grid-gutter-width, 2);
+        }
+
+        p {
+            @include line-length-em(max);
+        }
+
+        .cta-container,
+        .pagination {
+            font-style: normal;
+        }
+
+        .pagination {
+            justify-content: center;
+        }
+    }
+
+    &.bg-image,
+    .item.bg-image {
+        position: relative;
+
+        &:before {
+            content: "";
+            display: block;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 0;
+            opacity: 0.3;
+            -webkit-filter: grayscale(100%);
+            filter: grayscale(100%);
+            background-size: cover;
+            background-position: 50%;
+            background-repeat: no-repeat;
+            @include responsive-bg;
+        }
+
+        [class^="col-"] {
+            z-index: 1;
+        }
+    }
+
+    &.bg-white,
+    &.bg-gray,
+    .item.bg-white,
+    .item.bg-gray {
+        color: $body-color;
+
+        &.bg-image {
+            &:before {
+                opacity: 0.15;
+            }
+        }
+
+        //.btn:not([class*="btn-"]) {
+            //@extend .btn-primary;
+        //}
+
+        .more .btn:not([class*="btn-"]) {
+            background-color: transparent;
+            @extend .btn-outline-primary;
+        }
+    }
+
+    &.bg-white {
+        &:not(.bg-image) {
+            + .bg-white:not(.bg-image) {
+                border-top: 2px solid $body-bg-border;
+            }
+        }
+    }
+
+    &.bg-white,
+    .item.bg-white {
+        background-color: $bg-white;
+
+        &.bg-image {
+            &:before {
+                opacity: 0.155; // 1.5 contrast ratio between blacks and whites
+            }
+        }
+    }
+
+    &.bg-gray,
+    .item.bg-gray {
+        background-color: $bg-gray;
+
+        &.bg-image {
+            &:before {
+                opacity: 0.153; // 1.51 contrast ratio between blacks and whites
+            }
+        }
+
+        .more {
+            &:before {
+                background-color: $body-bg-border-dark;
+            }
+        }
+    }
+
+    &.bg-black,
+    &.bg-red,
+    &.bg-blue,
+    &.bg-green,
+    &.bg-teal,
+    &.bg-eggplant,
+    &.bg-orange,
+    .item.bg-black,
+    .item.bg-red,
+    .item.bg-blue,
+    .item.bg-green,
+    .item.bg-teal,
+    .item.bg-eggplant,
+    .item.bg-orange {
+        color: $white;
+        &.bg-image {
+            &:before {
+                mix-blend-mode: overlay;
+            }
+        }
+
+        .more {
+            &:before {
+                background-color: $white;
+            }
+        }
+
+        .page-title,
+        .module-title {
+            .title {
+                &:after {
+                    background-color: $white;
+                }
+            }
+        }
+
+        a:not(.btn) {
+            color: $white;
+
+            @include hover-focus {
+                color: $white;
+            }
+        }
+
+        //.btn:not([class*="btn-"]) {
+            //@extend .btn-white;
+        //}
+
+        .more .btn:not([class*="btn-"]) {
+            background-color: transparent;
+            @extend .btn-outline-white;
+        }
+    }
+
+    &.bg-black,
+    .item.bg-black {
+        background-color: $bg-black;
+
+        &.bg-image {
+            background-color: $gray-900;
+
+            &:before {
+                opacity: 0.72; // 1.5 contrast ratio between blacks and whites
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $gray-900;
+        }
+    }
+
+    &.bg-red,
+    .item.bg-red {
+        background-color: $red;
+
+        &.bg-image {
+            background-color: $red;
+
+            &:before {
+                opacity: 0.2223; // 1.5 contrast ratio between blacks and whites
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $red;
+        }
+    }
+
+    &.bg-blue,
+    .item.bg-blue {
+        background-color: $bg-blue;
+
+        &.bg-image {
+            background-color: $bg-blue;
+
+            &:before {
+                opacity: 0.13; // 1.49 contrast ratio between blacks and whites
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $bg-blue;
+        }
+    }
+
+    &.bg-green,
+    .item.bg-green {
+        background-color: $bg-green;
+
+        &.bg-image {
+            background-color: $bg-green;
+
+            &:before {
+                opacity: 0.13; // 1.52 contrast ratio between blacks and whites (green-darkest)
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $bg-green;
+        }
+    }
+
+    &.bg-teal,
+    .item.bg-teal {
+        background-color: $bg-teal;
+
+        &.bg-image {
+            background-color: $teal-dark;
+
+            &:before {
+                opacity: 0.13; // 1.52 contrast ratio between blacks and whites (teal-darkest)
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $teal;
+        }
+    }
+
+    &.bg-eggplant,
+    .item.bg-eggplant {
+        background-color: $bg-eggplant;
+
+        &.bg-image {
+            &:before {
+                opacity: 0.23; // 1.5 contrast ratio between blacks and whites
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $eggplant;
+        }
+    }
+
+    &.bg-orange,
+    .item.bg-orange {
+        background-color: $bg-orange;
+
+        &.bg-image {
+            background-color: $orange-dark;
+
+            &:before {
+                opacity: 0.237; // 1.5 contrast ratio between dark and light
+            }
+        }
+
+        .btn:not(.btn-outline-white) {
+            color: $bg-orange;
+        }
+    }
+}
+
+:not([class^="bg-"]):not([class*=" bg-"]) {
+    &:not(.archive-description):not(.entry-header) {
+        + .uams-module.bg-white {
+            border-top: 2px solid $body-bg-border;
+        }
+    }
+}
+
+body.page-template-default {
+    .entry-content {
+        // .uams-module {
+        //     &.alignfull {
+        //         margin-top: $uams-module-padding-mobile;
+        //         margin-bottom: $uams-module-padding-mobile;
+        //
+        //         @include media-breakpoint-up(sm) {
+        //             margin-top: $uams-module-padding;
+        //             margin-bottom: $uams-module-padding;
+        //         }
+        //
+        //         &.bg-white:first-child:not(.bg-image) {
+        //             margin-top: -$page-title-margin-bottom-mobile;
+        //
+        //             @include media-breakpoint-up(sm) {
+        //                 margin-top: -$page-title-margin-bottom;
+        //             }
+        //         }
+        //
+        //         + .uams-module.alignfull {
+        //             margin-top: -($uams-module-padding-mobile);
+        //
+        //             @include media-breakpoint-up(sm) {
+        //                 margin-top: -($uams-module-padding);
+        //             }
+        //         }
+        //
+        //         &:last-child {
+        //             margin-bottom: -($uams-module-padding-mobile);
+        //
+        //             @include media-breakpoint-up(sm) {
+        //                 margin-bottom: -($uams-module-padding);
+        //             }
+        //         }
+        //     }
+        // }
+
+        &:first-child {
+            .uams-module {
+                &.alignfull,
+                &.alignfull.bg-white:not(.bg-image) {
+                    &:first-child {
+                        margin-top: -($uams-module-padding-mobile);
+
+                        @include media-breakpoint-up(sm) {
+                            margin-top: -($uams-module-padding);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+body.page-template-page_landing {
+    .entry-content {
+        .uams-module {
+            &.alignfull {
+                width: auto;
+                max-width: 100%;
+                margin: 0;
+            }
+        }
+    }
+}
+
+@import "uams-modules/side-by-side";
+@import "uams-modules/text-image-overlay";
+@import "uams-modules/stacked-image-text";
+@import "uams-modules/cta-bar";
+@import "uams-modules/action-bar";
+@import "uams-modules/call-out";
+@import "uams-modules/post-category-tile";
+@import "uams-modules/syndication";
+@import "uams-modules/graphic-title";
+@import "uams-modules/landing-page-title";
+@import "uams-modules/link-list";
+@import "uams-modules/facetwp-blocks";
+@import "uams-modules/gallery";
+@import "uams-modules/rss-feed";
+@import "uams-modules/bio";
+@import "uams-modules/media-credit";

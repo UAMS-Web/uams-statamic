@@ -1,0 +1,54 @@
+{{# Reusable article wrapper. Accepts slot content and passes through entry-meta and optional cover
+	image params (`cover_image`, `cover_image_alt_text_override`, `cover_image_caption_override`) to
+	page-header. #}}
+
+{{# Default itemid to main_content schema @id so microdata matches JSON-LD; callers may override by passing itemid. #}}
+{{ $schema_main_id = {get_schema_slot slot="main_content" full_id="true"} /}}
+{{ $resolved_itemid = itemid ?? $schema_main_id }}
+
+{{# Article type mirrors WordPress post_class(): the entry's collection (or a
+	term's taxonomy) as the content-type class, falling back to `page`. #}}
+{{ $article_type = collection ?? taxonomy ?? 'page' }}
+{{ $article_type_class = 'type-' + $article_type }}
+
+<article
+	class="{{
+		[
+			$article_type,
+			$article_type_class,
+			'status-draft' => published == false,
+			'status-publish' => published != false,
+			'entry' => true,
+			article_class
+		] | classes | collapse_whitespace
+	}}"
+	itemscope
+	{{ ( $resolved_itemid ?? null ) | attribute:itemid }}
+	{{ ( itemref ?? null ) | attribute:itemref }}
+	{{ ( data_article_id ?? null ) | attribute:data-article-id }}
+	{{ ( data_article_title ?? null ) | attribute:data-article-title }}
+>
+	{{ partial:layout/page-header/page-header
+		:date_modified_enabled="date_modified_enabled"
+		:date_modified_label="date_modified_label"
+		:date_modified_value="date_modified_value"
+		:date_published_enabled="date_published_enabled"
+		:date_published_label="date_published_label"
+		:date_published_value="date_published_value"
+		:reading_time_enabled="reading_time_enabled"
+		:reading_time_label="reading_time_label"
+		:reading_time_value="reading_time_value"
+		:download_enabled="download_enabled"
+		:download_label="download_label"
+		:download_value="download_value"
+		:download_link_text="download_link_text"
+		:download_use_download="download_use_download"
+		:download_filename="download_filename"
+		:download_rel="download_rel"
+		:download_target="download_target"
+		:cover_image="cover_image"
+		:cover_image_alt_text_override="cover_image_alt_text_override"
+		:cover_image_caption_override="cover_image_caption_override"
+	}}
+	{{ slot }}
+</article>

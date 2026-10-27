@@ -1,0 +1,87 @@
+{{#
+	@name Audio
+	@desc Local MP3/OGG assets, a Box.com shared static direct URL, or a remote MP3
+	      URL (`remote_audio_url`, UAMS-Web/uams-statamic-archive#1803), with an optional caption.
+#}}
+{{ $embed_responsive_aspect_ratio = 'embed-responsive-' + ( aspect_ratio ?? '16by9' ) }}
+{{ if file }}
+	{{ $audio_primary_src = file }}
+	{{ $audio_primary_type = 'audio/mpeg' }}
+	{{ $audio_download_href = file }}
+	{{ $audio_fallback_noun = 'segment' }}
+	{{ $audio_preload_loop = true }}
+{{ elseif audio_url }}
+	{{ $audio_primary_src = audio_url }}
+	{{ $audio_primary_type = audio_url | box_mime }}
+	{{ $audio_download_href = audio_url }}
+	{{ $audio_fallback_noun = 'audio' }}
+	{{ $audio_preload_loop = false }}
+{{ elseif remote_audio_url }}
+	{{# A remote MP3 the host publishes, e.g. a podcast enclosure (UAMS-Web/uams-statamic-archive#1803). The URL
+		comes from an outside feed, so it is escaped before it reaches an attribute. #}}
+	{{ $audio_primary_src = remote_audio_url | sanitize }}
+	{{ $audio_primary_type = 'audio/mpeg' }}
+	{{ $audio_download_href = remote_audio_url | sanitize }}
+	{{ $audio_fallback_noun = 'segment' }}
+	{{ $audio_preload_loop = false }}
+{{ /if }}
+{{# The Bard "Audio" set (UAMS-Web/uams-statamic-archive#588) carries the Audio Post segment field names
+	(title_override / excerpt_override). Fall back to them for the audio title and
+	caption when a caller (e.g. a post audio segment) hasn't passed explicit ones.
+	Use private vars — never mutate the cascade `title`/`caption`. #}}
+{{ $audio_title = title ? title : title_override }}
+{{ $audio_caption = caption ? caption : excerpt_override }}
+<figure
+	{{
+		[
+			figure_class,
+			align
+		] | classes | collapse_whitespace | attribute:class
+	}}
+>
+	{{ if $audio_primary_src }}
+		<div
+			class="{{
+				[
+					'wp-block-embed is-type-audio embed-responsive wp-has-aspect-ratio' => true,
+					$embed_responsive_aspect_ratio,
+					(media_player_class ?? null)
+				] | classes | collapse_whitespace
+			}}"
+		>
+			<audio
+				{{ true | attribute:controls }}
+				{{ if $audio_preload_loop }}
+					{{ preload | attribute:preload }}
+					{{ loop | attribute:loop }}
+				{{ /if }}
+				{{
+					[
+						'embed-responsive-item' => true,
+						'w-100' => true,
+						(media_player_class ?? null)
+					] | classes | collapse_whitespace | attribute:class
+				}}
+				{{ $audio_title | attribute:title }}
+			>
+				<source src="{{ $audio_primary_src }}" type="{{ $audio_primary_type }}">
+				{{ if file && file_alternate }}<source src="{{ file_alternate }}" type="audio/ogg">{{ /if }}
+				<p class="entry-segment-media-player-fallback">
+					Your browser does not support the audio element.
+					<a
+						href="{{ $audio_download_href }}"
+						download
+						aria-label="Download the audio file{{ if $audio_caption }} for {{ $audio_caption | sanitize }}{{ elseif $audio_title }} for {{ $audio_title | sanitize }}{{ /if }}"
+					>Download the audio file</a>
+					to listen to the {{ $audio_fallback_noun }} on your device.
+				</p>
+			</audio>
+		</div>
+	{{ /if }}
+	{{
+		partial:typography/caption
+		as="figcaption"
+		:caption="$audio_caption"
+		:hide="caption_hide"
+	}}
+</figure>

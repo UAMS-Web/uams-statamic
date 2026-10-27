@@ -1,0 +1,39 @@
+{{# `calculation_query: true` in the blueprint opts this field into the
+	public-form calculation engine — see default.antlers.html for the same
+	flag on the other simple-input templates. #}}
+<input
+	class="{{
+		[
+			'form-control' => true,
+			'is-invalid' => error
+		] | classes | collapse_whitespace
+	}}"
+	id="{{ id }}"
+	type="number"
+	name="{{ handle }}"
+	value="{{ value | sanitize }}"
+	{{ placeholder | attribute:placeholder }}
+	{{ character_limit | attribute:maxlength }}
+	{{ autocomplete | attribute:autocomplete }}
+	{{# min/max/step config (Integer fieldtype, via the Input trait) so the
+		browser enforces the configured bounds and stepper — server-side
+		Integer::rules() remains the authority. Mirrors default.antlers.html. #}}
+	{{ min | attribute:min }}
+	{{ max | attribute:max }}
+	{{ step | attribute:step }}
+	{{ if calculation_query == true }}
+		data-calculation-type="{{ calculation_type ?? 'math' }}"
+		data-calculation-formula="{{ calculation_formula ?? calculation_formula_math ?? calculation_formula_text ?? '' }}"
+		{{# Antlers `??` treats 0 as falsy; JS engine handles the 2-decimal default. #}}
+		data-calculation-decimals="{{ calculation_decimals }}"
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{# `visibility: read_only` — see README.md in this directory. #}}
+	{{ if visibility == 'read_only' && calculation_query !== true }}
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+	{{ ( validate| contains:required ) | attribute:required }}
+>

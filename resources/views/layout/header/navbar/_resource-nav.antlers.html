@@ -1,0 +1,92 @@
+{{#
+
+	@name Header Navbar Resource Navigation
+	@desc Small right-aligned resource navigation and site search trigger.
+
+#}}
+	<nav class="header-nav" aria-label="Resource Navigation">
+
+		{{# The resource-nav content (utility links, MyChart, search) is hidden when
+			`hide_resource_nav` is on; the mobile hamburger below is gated separately
+			on `hide_primary_nav`, so it survives when only the resource content is
+			hidden and the primary nav it toggles is still shown (UAMS-Web/uams-statamic-archive#1173). #}}
+		{{ unless hide_resource_nav }}
+
+		{{# Text Navigation #}}
+
+		{{ uams_multisite_settings:global_header_resource_navigation as="items" }}
+		<div class="collapse navbar-collapse" id="nav-secondary">
+			<ul class="nav">
+				{{ items }}
+				{{ $target = link_group:new_window ? '_blank' : null }}
+				{{ $rel = link_group:new_window ? 'noopener noreferrer' : null }}
+				<li class="nav-item">
+					<a
+						class="nav-link"
+						href="{{ link_group:url }}"
+						{{ $target | attribute:target }}
+						{{ $rel | attribute:rel }}
+					>{{ link_group:text }}</a>
+				</li>
+				{{ /items }}
+			</ul>
+		</div>
+		{{ /uams_multisite_settings:global_header_resource_navigation }}
+
+		{{# Icon Navigation #}}
+
+		<ul class="nav resource-nav" id="nav-resource">
+			{{ uams_multisite_settings:global_header_resource_navigation_icon }}
+			{{ $target = ( link_group:new_window ) ? '_blank' : null }}
+			{{ $rel = ( link_group:new_window ) ? 'noopener noreferrer' : null }}
+			<li class="nav-item">
+				<a
+					class="{{
+						[
+							'nav-link' => true,
+							link_group:link_class
+						] | classes | collapse_whitespace
+					}}"
+					{{ link_group:url | attribute:href }}
+					{{ link_group:text | attribute:aria-label }}
+					{{ $target | attribute:target }}
+					{{ $rel | attribute:rel }}
+				><i {{ link_group:icon | attribute:class }}></i><span class="sr-only">{{ link_group:text }}</span></a>
+			</li>
+			{{ /uams_multisite_settings:global_header_resource_navigation_icon }}
+			{{# Search entry point: a link to the standalone /search page (UAMS-Web/uams-statamic-archive#890 / UAMS-Web/uams-statamic-archive#815).
+			    Was a tray-toggle button; the empty header tray is removed in this PR. #}}
+			<li class="nav-item">
+				<a class="search-toggler" href="/search" title="Search">
+					<span class="sr-only label">Search</span>
+					<svg class="fa-search fa-fw" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="search" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"></path></svg>
+				</a>
+			</li>
+		</ul>
+		{{ /unless }}
+
+		{{# Controls the framework-free mobile primary nav (UAMS-Web/uams-statamic-archive#53,
+			layout/navigation/main/mobile.antlers.html); wired by
+			resources/js/uams_2020/source/mobile-nav.js. Suppressed when the primary
+			nav it toggles is hidden on a marketing-landing page (UAMS-Web/uams-statamic-archive#1173), so the
+			button never controls a nonexistent `#mobile-nav-primary`. #}}
+		{{ unless hide_primary_nav }}
+		<button class="navbar-toggler mobile-menu-toggler" type="button" aria-controls="mobile-nav-primary" aria-expanded="false" data-mobile-nav-toggler title="Toggle Primary navigation">
+			<span class="sr-only label">Toggle Primary Nav</span>
+			<svg class="" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg=""><path fill="currentColor" d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"></path></svg>
+		</button>
+		{{ /unless }}
+
+		<style nonce="{{ csp_nonce }}">
+			#nav-resource .nav-item .nav-link svg,
+			#nav-resource .nav-item button svg
+			.mobile-menu-toggler svg {
+				display: inline-block;
+				height: 1em;
+				font-size: 1.3333333333em;
+				line-height: .75em;
+				vertical-align: -.0667em;
+			}
+		</style>
+
+	</nav>

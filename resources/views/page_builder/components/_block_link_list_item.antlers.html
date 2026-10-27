@@ -1,0 +1,27 @@
+{{#
+	@name UAMS Link List Block Item
+	@desc A single <li> inside components/block_link_list. Caller supplies normalized fields so the same markup serves both the subpages navigation and the link-list page builder block.
+	@set page.page_builder.uamsweb_block_*
+#}}
+
+{{# Normalize the target into an attribute value (truthy → _blank, otherwise omit). #}}
+{{ $target_attr = target ? '_blank' : null }}
+{{ $rel_attr = target ? 'noopener noreferrer' : null }}
+
+<li class="item">
+	<div class="text-container">
+		<h3 class="h5">
+			<a
+				class="stretched-link"
+				href="{{ url }}"
+				{{ $target_attr | attribute:target }}
+				{{ $rel_attr | attribute:rel }}
+				{{ aria_label | attribute:aria-label }}
+				{{ data_moduletitle | attribute:data-moduletitle }}
+			>{{ text }}</a>
+		</h3>
+		{{ if body }}
+			<p>{{ body }}</p>
+		{{ /if }}
+	</div>
+</li>

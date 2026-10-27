@@ -1,0 +1,14 @@
+{{#
+
+	@name Entry Meta Item: Reading Time
+	@desc Renders the estimated reading time entry-meta item: label (with icon) plus duration.
+	Expects: label, value (minutes), icon (optional), unit_label_singular, unit_label_plural.
+
+#}}
+
+{{
+	partial:layout/page-header/entry-meta/components/label
+	:label="label"
+	:icon="( icon ?? 'fas fa-stopwatch fa-fw' )"
+}}
+{{ partial:layout/page-header/entry-meta/components/duration }}

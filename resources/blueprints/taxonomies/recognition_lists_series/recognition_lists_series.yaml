@@ -1,0 +1,59 @@
+title: 'Recognition Lists, Series'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Term Title'
+              instructions: 'This value is only used for display in the control panel.'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Series Name'
+              instructions: |-
+                Name the taxonomy item using only the full official name of the series (e.g., "Best Doctors in America").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the series with an abbreviation or acronym in parentheses or set off by dashes.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: publication
+            field:
+              taxonomies:
+                - recognition_lists_publications
+              max_items: 1
+              type: terms_search_index
+              search_index: recognition_lists_publications
+              display: Publication
+              localizable: false
+              validate:
+                - required
+          -
+            import: uamsweb_schema_basic
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

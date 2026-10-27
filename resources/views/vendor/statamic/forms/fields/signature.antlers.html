@@ -1,0 +1,77 @@
+{{# Signature fieldtype (App\Fieldtypes\Signature). Captures a drawn signature on
+	a <canvas> via signature_pad, lazy-loaded by the Alpine `signatureField`
+	component (resources/js/signature-field.js — NOT Vue), writing the base64 PNG
+	data URL into the hidden input, matching what Signature::process() stores.
+
+	Accessibility fallback (UAMS-Web/uams-statamic-archive#674): pointer-free users switch to "type" mode and
+	submit a typed full name + attestation checkbox; the hidden input then carries
+	the typed name (a plain string Signature::process() also accepts). A hidden
+	input cannot carry HTML5 `required`, so an empty required signature is caught
+	server-side by the form's `required` rule (Signature::process() nulls empties). #}}
+<div
+	class="signature-field"
+	x-data="signatureField()"
+>
+	{{# Draw mode — canvas capture (default). #}}
+	<div x-show="mode === 'draw'">
+		<canvas
+			x-ref="canvas"
+			class="{{ ['signature-field__canvas' => true, 'is-invalid' => error] | classes | collapse_whitespace }}"
+			role="img"
+			aria-label="{{ trans key='Signature drawing area' }}"
+			tabindex="0"
+		></canvas>
+		<div class="signature-field__toolbar">
+			<button type="button" class="btn btn-sm btn-secondary" @click="clear()">
+				{{ trans key="Clear" }}
+			</button>
+			<button type="button" class="btn btn-sm btn-link" @click="useTypeMode()">
+				{{ trans key="Type your name instead" }}
+			</button>
+		</div>
+	</div>
+
+	{{# Type mode — accessible non-canvas fallback. Hidden until Alpine toggles it
+		(inline style avoids a pre-init flash without depending on an x-cloak rule). #}}
+	<div x-show="mode === 'type'" style="display: none;">
+		<label class="signature-field__typed-label" for="{{ id }}-typed">
+			{{ trans key="Full name" }}
+		</label>
+		<input
+			type="text"
+			id="{{ id }}-typed"
+			class="form-control"
+			autocomplete="name"
+			x-model="typedName"
+			@input="syncTyped()"
+		>
+		<div class="form-check mt-2">
+			<input
+				type="checkbox"
+				class="form-check-input"
+				id="{{ id }}-attest"
+				x-model="attested"
+				@change="syncTyped()"
+			>
+			<label class="form-check-label" for="{{ id }}-attest">
+				{{ trans key="I attest that this typed name is my signature." }}
+			</label>
+		</div>
+		<button type="button" class="btn btn-sm btn-link mt-2" @click="useDrawMode()">
+			{{ trans key="Draw signature instead" }}
+		</button>
+	</div>
+
+	{{# The submitted value: a base64 PNG data URL (drawn) or the attested typed
+		name. Bound to Alpine `value`; App\Fieldtypes\Signature::process() nulls an
+		empty submission. #}}
+	<input
+		type="hidden"
+		x-ref="input"
+		id="{{ id }}"
+		name="{{ handle }}"
+		value="{{ value | sanitize }}"
+		:value="value"
+		{{ if error }}aria-invalid="true" aria-describedby="{{ id }}-error"{{ /if }}
+	>
+</div>

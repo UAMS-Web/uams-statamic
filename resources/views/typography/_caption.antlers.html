@@ -1,0 +1,19 @@
+{{#
+	@name Caption
+	@desc The typography caption partial to render a caption with `as` and `caption` attributes.
+	@param content The caption content.
+	@param as The wrapping element. Defaults to `span`.
+	@param class Add custom CSS classes.
+#}}
+
+{{ if caption }}
+	<{{ as or 'span' }}
+		{{
+			[
+				class,
+				'sr-only' => ( hide ?? false )
+			] | classes | attribute:class
+		}}
+	>{{ caption | widont }}</{{ as or 'span' }}>
+{{ /if }}
+

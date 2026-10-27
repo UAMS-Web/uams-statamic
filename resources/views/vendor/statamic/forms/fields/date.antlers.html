@@ -1,0 +1,105 @@
+{{# Date fieldtype (App\Fieldtypes\Date, extends Statamic\Fieldtypes\Date).
+
+	Single mode (`mode: single`, the default):
+		Renders a native <input type="date"> via the default partial. Assumes the
+		blueprint sets `format: 'Y-m-d'` (or omits time) so `value` arrives as a
+		date-only string. When `time_enabled: true` or a custom `format` is in
+		use the stored string contains time components that HTML5 date inputs
+		will reject; blueprints that need time should use a separate time field
+		or switch to `text` with a custom pattern.
+
+	Range mode (`mode: range`):
+		Renders two date inputs side-by-side as `name="{handle}[start]"` and
+		`name="{handle}[end]"`, which is the shape `Date::process()` (inherited
+		from core, vendor/statamic/cms/src/Fieldtypes/Date.php:234) expects.
+
+	Static earliest/latest bounds:
+		`earliest_date_type: custom` with `earliest_date_custom: 'Y-m-d'` and the
+		equivalent for `latest_date_*` render as `min`/`max` on both modes.
+		`earliest_date_type: today` and the field-relative / offset-based
+		boundary types are out of scope here — they're dynamic and belong with
+		the calculation-engine surface tracked in UAMS-Web/uams-statamic-archive#672. #}}
+
+{{# Resolve effective min/max from Date-specific config, falling back to plain
+	`min`/`max` keys if the blueprint author set those instead. Only the
+	`custom` type is honored here; dynamic types (`today`, `field`) stay
+	unbounded on the public side until a follow-up wires them in. #}}
+{{ if earliest_date_type == 'custom' && earliest_date_custom }}
+	{{ effective_min = earliest_date_custom }}
+{{ else }}
+	{{ effective_min = min }}
+{{ /if }}
+
+{{ if latest_date_type == 'custom' && latest_date_custom }}
+	{{ effective_max = latest_date_custom }}
+{{ else }}
+	{{ effective_max = max }}
+{{ /if }}
+
+{{ if mode == 'range' }}
+	{{ is_required = ( validate | contains:required ) }}
+	<div class="row">
+		<div class="col-md-6">
+			<div class="form-group">
+				<label for="{{ id }}-start" class="small text-muted mb-1">
+					{{ trans key="Start" }}
+				</label>
+				<input
+					type="date"
+					id="{{ id }}-start"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[start]"
+					value="{{ (value.start ?? '') | sanitize }}"
+					{{ effective_min | attribute:min }}
+					{{ effective_max | attribute:max }}
+					{{ if js_driver }}{{ js_attributes }}{{ /if }}
+					{{ is_required | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+		<div class="col-md-6">
+			<div class="form-group">
+				<label for="{{ id }}-end" class="small text-muted mb-1">
+					{{ trans key="End" }}
+				</label>
+				<input
+					type="date"
+					id="{{ id }}-end"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[end]"
+					value="{{ (value.end ?? '') | sanitize }}"
+					{{ effective_min | attribute:min }}
+					{{ effective_max | attribute:max }}
+					{{ if js_driver }}{{ js_attributes }}{{ /if }}
+					{{ is_required | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	</div>
+{{ else }}
+	{{ partial:vendor/statamic/forms/fields/default
+		input_type="date"
+		:min="effective_min"
+		:max="effective_max"
+	}}
+{{ /if }}

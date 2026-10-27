@@ -1,0 +1,49 @@
+title: 'Academic Field of Study'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Name'
+          -
+            handle: subject_matter
+            field:
+              collections:
+                - subject_matter
+                - clinical_specializations
+              type: entries
+              select_across_sites: true
+              search_index: subject_concepts
+              display: 'Subject Matter'
+              instructions: 'Select the subject matter or clinical specialization this field of study is related to. A clinical concept is chosen from Clinical Specializations (the NUCC Health Care Provider Taxonomy code set and its UAMS extensions), never from Subject Matter.'
+              localizable: false
+              validate:
+                - required
+              create: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

@@ -1,0 +1,54 @@
+{{#
+	@name UAMS Block Item Button Link
+	@desc The button link element in items in UAMS page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+{{ if button_text && button_url }}
+
+	{{# Define the Button Attribute Variables #}}
+
+		{{# class #}}
+
+			{{# Button Style and Color #}}
+
+				{{ $block_item_button_color = switch(
+					( block_item_button_outline ) => 'btn-outline-',
+					() => 'btn-'
+				) }}
+				{{ $block_item_button_color += switch(
+					( background_color == 'bg-white' ) => 'primary',
+					( background_color == 'bg-gray' ) => 'primary',
+					( background_color == 'bg-auto' ) => 'primary',
+					() => 'white'
+				) }}
+
+				{{ $block_item_button_class = [
+					'btn',
+					$block_item_button_color,
+					block_item_button_class,
+					'stretched-link' => stretched_link
+				] | classes | collapse_whitespace }}
+
+		{{# ARIA label #}}
+
+			{{ button_link_description = ( button_link_description === '' ) ? null : ( button_link_description ?? null ) }}
+			{{ $block_item_button_aria_label = button_link_description ?? ( [ button_text, heading, block:block_heading ] | filter_empty | join(', ') ) }}
+
+		{{# target #}}
+
+			{{ button_target = ( button_target == 'false' || button_target === false || button_target === '' ) ? null : ( button_target ?? true ) }}
+			{{ $block_item_button_target = button_target ? '_blank' : null }}
+			{{ $block_item_button_rel = button_target ? 'noopener noreferrer' : null }}
+
+	{{# Render the Structure #}}
+
+		<a
+			{{ button_url | attribute:href }}
+			{{ $block_item_button_class | attribute:class }}
+			{{ $block_item_button_aria_label | attribute:aria-label }}
+			{{ $block_item_button_target | attribute:target }}
+			{{ $block_item_button_rel | attribute:rel }}
+			{{ block:block_heading | attribute:data-moduletitle }}
+			{{ heading | attribute:data-itemtitle }}
+		>{{ button_text }}</a>
+{{ /if }}

@@ -1,0 +1,28 @@
+{{#
+	@name UAMS Block Link to More
+	@desc The element containing a link to more of something in UAMS page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+{{ if more_query }}
+
+	{{# Define the Button Attribute Variables #}}
+
+		{{# ARIA label #}}
+
+			{{ more_button_link_description = ( more_button_link_description === '' ) ? null : ( more_button_link_description ?? null ) }}
+			{{ $block_more_button_aria_label = more_button_link_description ?? ( [ more_button_text, block:block_heading ] | join(', ') ) }}
+
+	{{# Render the Structure #}}
+
+		<div class="col-12 more">
+			<p class="lead">{{ more_heading }}</p>
+			<div class="cta-container">
+				{{ partial:page_builder/components/item_button
+					:button_text="more_button_text"
+					:button_url="more_button_url"
+					:button_link_description="$block_more_button_aria_label" :button_target="more_button_target"
+				}}
+			</div>
+		</div>
+
+{{ /if }}

@@ -1,0 +1,59 @@
+{{ date_modified_enabled = true }}
+{{ date_modified_label = "Last Modified:" }}
+{{ date_modified_value = updated_at }}
+{{ date_published_enabled = true }}
+{{ date_published_label = "Published:" }}
+{{ date_published_value = date }}
+{{ reading_time_enabled = true }}
+{{ reading_time_label = "Estimated Reading Time:" }}
+{{ reading_time_value = reading_time }}
+
+{{# Assignments inside an asset tag pair do not persist after it closes, so pass download_* from
+	here using the field path. First asset: news_release_pdf.0.url (Assets fieldtype docs). #}}
+{{ download_enabled = (news_release_pdf | length) > 0 }}
+{{ if download_enabled }}
+	{{ download_label = "Download:" }}
+	{{ download_value = news_release_pdf.0.permalink }}
+	{{ download_link_text = "News Release PDF" }}
+	{{ download_use_download = true }}
+	{{ download_filename = news_release_pdf.0.basename }}
+	{{ download_rel = null }}
+	{{ download_target = null }}
+{{ /if }}
+{{ cover_image = cover_image_query ? featured_image_16_9 : null }}
+
+{{ partial:layout/article
+	:cover_image="cover_image"
+	:cover_image_alt_text_override="cover_image_alt_text_override"
+	:cover_image_caption_override="cover_image_caption_override"
+}}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+		itemprop="https://schema.org/articleBody https://schema.org/text"
+	}}
+		{{# Inject the dateline string after the first opening tag of the first paragraph #}}
+		{{ content = content | ensure_left_bard({{ dateline:separator }}) }}
+
+		{{# Render the content #}}
+		{{ content scope="block" }}
+			{{ partial src="sets/{type}" }}
+		{{ /content }}
+		{{
+			partial:posts/components/boilerplate_text
+			:boilerplate_enabled="( boilerplate_query | raw | bool_string )"
+			:boilerplate_heading="boilerplate ? boilerplate:heading : uams_multisite_settings:boilerplate:heading"
+			:boilerplate_content="boilerplate ? boilerplate:boilerplate : uams_multisite_settings:boilerplate:boilerplate"
+		}}
+	{{ /partial:layout/entry-content }}
+	{{ partial:posts/components/curation }}
+	{{ if media_contact_query }}
+		{{ partial:layout/entry-footer }}
+			{{
+				partial:posts/components/media_contacts
+				:display_enabled="( media_contact_query | raw | bool_string )"
+				include_links="true"
+			}}
+		{{ /partial:layout/entry-footer }}
+	{{ /if }}
+{{ /partial:layout/article }}

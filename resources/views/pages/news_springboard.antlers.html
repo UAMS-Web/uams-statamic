@@ -1,0 +1,62 @@
+{{#
+	@name News Springboard
+	@desc The news-magazine springboard / landing template (UAMS-Web/uams-statamic-archive#1158). Renders the
+	      entry's `sections` grid as stacked category sections via the
+	      {{ news_springboard }} tag, which threads a page-wide accumulator so a
+	      post surfaced in an earlier section never repeats in a later one. Reuses
+	      the UAMS-Web/uams-statamic-archive#76 news query core; the shared news-home (UAMS-Web/uams-statamic-archive#1612) and Departmental
+	      News Hub (UAMS-Web/uams-statamic-archive#1602) are configurations of this core.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+
+		{{ news_springboard }}
+
+			{{ if no_results }}
+
+				{{# No configured section resolved to any post — render nothing. #}}
+
+			{{ else }}
+
+				{{ sections }}
+
+					{{# Skip a section that deduplicated down to nothing, so an
+					    empty heading never renders. #}}
+					{{ if posts | length }}
+
+						<section class="news-springboard-section">
+
+							{{ if heading }}
+								<h2 class="news-springboard-heading">{{ heading | sanitize }}</h2>
+							{{ /if }}
+
+							<ul class="uamswp-news-syndication-list news-springboard-list">
+								{{ posts }}
+									<li class="uamswp-news-syndication-item">
+										<a href="{{ url }}">{{ title }}</a>
+									</li>
+								{{ /posts }}
+							</ul>
+
+							{{ if category_url }}
+								<a class="news-springboard-more" href="{{ category_url }}">
+									More{{ if category_name }} {{ category_name }}{{ /if }}
+								</a>
+							{{ /if }}
+
+						</section>
+
+					{{ /if }}
+
+				{{ /sections }}
+
+			{{ /if }}
+
+		{{ /news_springboard }}
+
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

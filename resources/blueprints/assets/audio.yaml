@@ -1,0 +1,122 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: 'Audio Segment Title'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: series
+            field:
+              type: terms
+              display: 'Audio Series'
+              instructions: 'Select the audio series to which this audio segment belongs.'
+              max_items: 1
+              mode: select
+              create: false
+              taxonomies:
+                - audio_series
+              clearable: true
+              localizable: false
+          -
+            handle: genre
+            field: uamsweb_common.genre
+            config:
+              if:
+                series: 'equals empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: about
+            field: uamsweb_common.subject_matter
+            config:
+              display: 'Primary Subject Matter'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: mentions
+            field: uamsweb_common.subject_matter
+            config:
+              display: 'Concepts Mentioned'
+              instructions: 'Indicates that the creative work contains a reference to, but is not necessarily about a concept.'
+              localizable: false
+          -
+            handle: excerpt
+            field: uamsweb_common.excerpt
+            config:
+              display: 'Audio Segment Summary'
+              instructions: 'Write a short summary of the segment content.'
+              localizable: false
+          -
+            handle: language
+            field: uamsweb_common.language
+            config:
+              display: 'Audio Segment Language(s)'
+              instructions: 'Select the language(s) used in the audio segment.'
+              default:
+                - en
+              validate:
+                - required
+              localizable: false
+          -
+            handle: transcript
+            field: uamsweb_common.bard_transcript
+            config:
+              display: 'Audio Segment Transcript'
+              localizable: false
+              validate:
+                - required
+      -
+        display: Creators
+        fields:
+          -
+            import: uamsweb_post_creator_audio
+      -
+        display: 'Audio Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_audio
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+              validate:
+                - required
+      -
+        display: Location
+        collapsible: true
+        fields:
+          -
+            handle: geographic_location
+            field: uamsweb_creativework_location.geographic_location
+            config:
+              localizable: false
+              instructions: 'e.g., where a audio was recorded and/or edited'
+              validate:
+                - required
+          -
+            handle: geographic_location_content
+            field: uamsweb_creativework_location.geographic_location_content
+            config:
+              localizable: false
+              validate:
+                - required
+          -
+            handle: country_of_origin_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Created within the U.S.?'
+              localizable: false
+              validate:
+                - required

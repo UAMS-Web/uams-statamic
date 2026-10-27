@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    "resources/css/tailwind/**/*.css": "tailwindcss",
+    "vendor/**/*.css": "tailwindcss",
+    "resources/scss/tailwind/**/*.scss": "tailwindcss",
+    "resources/scss/bootstrap/**/*.scss": "scss"
+  },
+  "antlersLanguageServer.diagnostics.warnOnDynamicCssClassNames": false
+}

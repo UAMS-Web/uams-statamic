@@ -1,0 +1,172 @@
+{{#
+	@name Video
+	@desc YouTube or Vimeo iframe embed, or a Box.com direct-link HTML5 video with an optional caption.
+	@set page.article.video
+#}}
+{{ frameborder = '0' }}
+{{ referrerpolicy = 'strict-origin-when-cross-origin' }}
+{{ allowfullscreen = true }}
+{{ $video_url_host = video_url | parse_url('host') }}
+{{ if ['www.youtube.com', 'youtube.com', 'youtu.be'] | in_array($video_url_host) }}
+	{{ allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' }}
+{{ elseif ['vimeo.com'] | in_array($video_url_host) }}
+	{{ allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture; web-share' }}
+{{ else }}
+	{{ allow = null }}
+{{ /if }}
+{{ $embed_responsive_aspect_ratio = 'embed-responsive-' + ( aspect_ratio ?? '16by9' ) }}
+<figure
+	{{
+		[
+			figure_class,
+			align
+		] | classes | collapse_whitespace | attribute:class
+	}}
+>
+	{{ if $video_url_host == 'app.box.com' }}
+		{{# Caption source (UAMS-Web/uams-statamic-archive#1048): an uploaded same-origin asset is preferred and wins;
+		   otherwise fall back to an external (e.g. Box) caption URL. A cross-origin
+		   <track> only loads when the player is marked crossorigin AND the host sends
+		   CORS, so add crossorigin only on the external path (it also makes the video
+		   itself CORS-checked). Trim the free-text URL so a whitespace-only value
+		   yields neither a broken <track> nor a spurious crossorigin. WCAG 1.2.2. #}}
+		{{ $caption_external_url = caption_track_url | trim }}
+		{{ $caption_track_src = caption_track:url ? caption_track:url : $caption_external_url }}
+		{{ $caption_track_is_external = caption_track:url ? false : ( $caption_external_url ? true : false ) }}
+		<div
+			class="{{
+				[
+					'wp-block-embed is-type-video embed-responsive wp-has-aspect-ratio' => true,
+					$embed_responsive_aspect_ratio,
+					(media_player_class ?? null)
+				] | classes | collapse_whitespace
+			}}"
+		>
+			<video
+				controls
+				playsinline
+				preload="metadata"
+				referrerpolicy="strict-origin-when-cross-origin"
+				{{ if $caption_track_is_external }}crossorigin="anonymous"{{ /if }}
+				{{
+					[
+						'embed-responsive-item' => true,
+						'w-100' => true,
+						(media_player_class ?? null)
+					] | classes | collapse_whitespace | attribute:class
+				}}
+				{{ title | attribute:title }}
+			>
+				<source src="{{ video_url }}" type="{{ video_url | box_mime }}">
+				{{ if $caption_track_src }}
+					<track kind="captions" srclang="en" label="English" src="{{ $caption_track_src }}">
+				{{ /if }}
+				<p>
+					Your browser does not support the video element.
+					<a
+						href="{{ video_url }}"
+						download
+						aria-label="Download the video file{{ if caption }} for {{ caption | sanitize }}{{ elseif title }} for {{ title | sanitize }}{{ /if }}"
+					>Download the video file</a>
+					to watch the video on your device.
+				</p>
+			</video>
+		</div>
+	{{ else }}
+		<div
+			class="{{
+				[
+					'wp-block-embed is-type-video embed-responsive wp-has-aspect-ratio' => true,
+					$embed_responsive_aspect_ratio,
+					(media_player_class ?? null)
+				] | classes | collapse_whitespace
+			}}"
+		>
+			{{ if ['www.youtube.com', 'youtube.com', 'youtu.be'] | in_array($video_url_host) }}
+				{{# Lite-YouTube facade (UAMS-Web/uams-statamic-archive#224): a thumbnail + accessible play trigger
+					up front; Alpine swaps in the real player on activation. The
+					<noscript> iframe keeps the video working without JS. Local
+					thumbnail caching and playlist facades are follow-ups. #}}
+				{{# The player src is rendered here rather than bound with `:src` (UAMS-Web/uams-statamic-archive#2245).
+					Under `@alpinejs/csp` an expression on an iframe is refused outright
+					(`evaluator.js` throws for HTMLIFrameElement), so the binding was dropped
+					and the element received no src at all. Alpine still owns WHEN the iframe
+					exists - it stays inside `<template x-if="loaded">` - it just never
+					evaluates anything ON it. #}}
+				{{ $lite_embed_url = video_url | embed_url }}
+				{{ if $lite_embed_url | contains:'?' }}
+					{{ $lite_autoplay_src = $lite_embed_url + '&autoplay=1' }}
+				{{ else }}
+					{{ $lite_autoplay_src = $lite_embed_url + '?autoplay=1' }}
+				{{ /if }}
+				<div
+					{{
+						[
+							'lite-video embed-responsive-item' => true,
+							(media_player_class ?? null)
+						] | classes | collapse_whitespace | attribute:class
+					}}
+					x-data="liteVideo"
+					tabindex="-1"
+					data-video-url="{{ video_url }}"
+					data-embed-url="{{ $lite_embed_url }}"
+				>
+					<template x-if="!loaded">
+						<button
+							type="button"
+							class="lite-video__trigger"
+							@click="load()"
+							:style="thumbnail ? ('background-image: url(' + thumbnail + ')') : ''"
+							aria-label="Play video{{ if title }}: {{ title | sanitize }}{{ /if }}"
+						>
+							<span class="lite-video__play" aria-hidden="true"></span>
+						</button>
+					</template>
+					<template x-if="loaded">
+						<iframe
+							class="lite-video__player"
+							src="{{ $lite_autoplay_src }}"
+							{{ title | attribute:title }}
+							{{ frameborder | attribute:frameborder }}
+							{{ allow | attribute:allow }}
+							{{ referrerpolicy | attribute:referrerpolicy }}
+							{{ allowfullscreen | attribute:allowfullscreen }}
+						></iframe>
+					</template>
+					<noscript>
+						<iframe
+							class="lite-video__player"
+							src="{{ video_url | embed_url }}"
+							{{ title | attribute:title }}
+							{{ frameborder | attribute:frameborder }}
+							{{ allow | attribute:allow }}
+							{{ referrerpolicy | attribute:referrerpolicy }}
+							{{ allowfullscreen | attribute:allowfullscreen }}
+						></iframe>
+					</noscript>
+				</div>
+			{{ else }}
+				<iframe
+					{{
+						[
+							'embed-responsive-item' => true,
+							(media_player_class ?? null)
+						] | classes | collapse_whitespace | attribute:class
+					}}
+					src="{{ video_url | embed_url }}"
+					{{ title | attribute:title }}
+					{{ frameborder | attribute:frameborder }}
+					{{ allow | attribute:allow }}
+					{{ referrerpolicy | attribute:referrerpolicy }}
+					{{ allowfullscreen | attribute:allowfullscreen }}
+				></iframe>
+			{{ /if }}
+		</div>
+	{{ /if }}
+	{{
+		partial:typography/caption
+		as="figcaption"
+		class="embed-video-caption"
+		:hide="caption_hide"
+	}}
+</figure>

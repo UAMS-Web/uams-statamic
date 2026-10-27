@@ -1,0 +1,72 @@
+{{#
+	@name Clinical Resource — Provider Spotlight
+	@desc Flat provider-spotlight body (UAMS-Web/uams-statamic-archive#1425): a "Provider Spotlight" supertitle,
+	      the introduction (screen-reader-only "Description" heading; always the
+	      provider-derived generated prose), the Q&A block (screen-reader-only
+	      "Questions and Answers" heading, the provider 3:4 portrait as the block's
+	      first child, then h3 question / answer pairs), and the eligibility-gated
+	      appointment CTA. There is no closing section, and the generic "Related *"
+	      modules are suppressed by the caller (clinical_resources/show).
+#}}
+
+<p class="resource-supertitle text-uppercase">Provider Spotlight</p>
+
+{{# Introduction — always the generated prose (the spotlight has no editor intro
+	field; it is derived from the featured provider). #}}
+<section class="spotlight-introduction" aria-labelledby="spotlight-description-heading">
+	<h2 id="spotlight-description-heading" class="visually-hidden">Description</h2>
+	<div class="spotlight-introduction-content">
+		<p>{{ spotlight_auto_introduction | sanitize }}</p>
+	</div>
+</section>
+
+{{# Questions and Answers — the provider portrait first, then the Q/A pairs. #}}
+<section class="spotlight-qa" aria-labelledby="spotlight-qa-heading">
+	<h2 id="spotlight-qa-heading" class="visually-hidden">Questions and Answers</h2>
+
+	{{ featured_provider }}
+		{{ portrait }}
+			<figure class="spotlight-portrait">
+				<img src="{{ url }}" alt="{{ spotlight_provider_name | sanitize }}" itemprop="https://schema.org/image">
+			</figure>
+		{{ /portrait }}
+	{{ /featured_provider }}
+
+	{{ if spotlight_qa }}
+		<div class="spotlight-qa-list">
+			{{ spotlight_qa }}
+				{{ if spotlight_qa_question }}
+					<h3 class="spotlight-qa-question">{{ spotlight_qa_question | sanitize }}</h3>
+					{{ if spotlight_qa_answer }}<div class="spotlight-qa-answer">{{ spotlight_qa_answer }}</div>{{ /if }}
+				{{ /if }}
+			{{ /spotlight_qa }}
+		</div>
+	{{ /if }}
+</section>
+
+{{# Eligibility-gated appointment CTA (§4) — one provider-specific CTA in place of
+	the generic appointment module. #}}
+{{ if featured_provider }}
+	<aside class="spotlight-cta" aria-labelledby="spotlight-cta-heading">
+		{{ if spotlight_bookable }}
+			<h2 id="spotlight-cta-heading" class="spotlight-cta-heading">Make an Appointment</h2>
+			{{ if spotlight_referral_required }}
+				<p class="spotlight-cta-referral">Appointments for new patients are by referral only.</p>
+			{{ /if }}
+			<p class="spotlight-cta-actions">
+				{{ if spotlight_phone }}
+					Call <a href="tel:{{ spotlight_appointment_phone_href | sanitize }}">{{ spotlight_appointment_phone_display | sanitize }}</a> to schedule an appointment, or
+					{{ featured_provider }}<a href="{{ url }}">visit {{ spotlight_provider_name | sanitize }}’s profile</a>{{ /featured_provider }}.
+				{{ else }}
+					{{ featured_provider }}<a href="{{ url }}">Visit {{ spotlight_provider_name | sanitize }}’s profile to request an appointment</a>{{ /featured_provider }}.
+				{{ /if }}
+			</p>
+		{{ else }}
+			<h2 id="spotlight-cta-heading" class="spotlight-cta-heading">Learn More</h2>
+			<p class="spotlight-cta-actions">
+				Get to know {{ spotlight_provider_name | sanitize }}{{ if spotlight_provider_title }}, {{ spotlight_provider_title | indefinite_article }} {{ spotlight_provider_title | sanitize }}{{ /if }} at UAMS Health.
+				{{ featured_provider }}<a href="{{ url }}">Visit {{ spotlight_provider_name | sanitize }}’s profile</a>{{ /featured_provider }}.
+			</p>
+		{{ /if }}
+	</aside>
+{{ /if }}

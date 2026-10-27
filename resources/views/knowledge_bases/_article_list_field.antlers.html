@@ -1,0 +1,13 @@
+{{# Lists article entries from an entry's relationship field. #}}
+{{# Requires :articles (entries) and :heading (string). Caller controls which field and label. #}}
+{{# `articles` is a raw augmented `entries` relation, and `| count` counts its
+	published entries, so an article whose related articles are all unpublished
+	renders no heading over an empty list (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422). #}}
+{{ if articles && ( articles | count ) > 0 && heading }}
+	{{ $card_item_position_increment = 'card_list_' + {increment:card_list} }}
+	{{ partial:knowledge_bases/article_list :heading="heading" :card_item_position_increment="$card_item_position_increment" }}
+		{{ articles }}
+			{{ partial:knowledge_bases/article_card }}
+		{{ /articles }}
+	{{ /partial:knowledge_bases/article_list }}
+{{ /if }}

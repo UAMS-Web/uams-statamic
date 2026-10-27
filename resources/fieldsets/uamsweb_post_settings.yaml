@@ -1,0 +1,53 @@
+title: 'UAMSWeb Post Settings'
+fields:
+  -
+    handle: hide_creator_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide Creator Information'
+      validate:
+        - required
+      default: false
+      replicator_preview: false
+  -
+    handle: creator_person
+    field:
+      type: entries
+      display: 'Creator (person)'
+      localizable: false
+      collections:
+        - people
+      create: false
+  -
+    handle: title
+    field:
+      display: Headline
+      type: text
+      instructions: "Enter a clear, compelling headline that summarizes the subject and grabs the reader's attention at a glance."
+      localizable: false
+  -
+    handle: excerpt
+    field: uamsweb_common.excerpt
+    config:
+      display: 'Article Summary'
+      instructions: |-
+        Use the article summary (a.k.a. dek, subheading, excerpt) to elaborate on the headline and give readers more detail about the subject.
+
+        This will be displayed below the headline in the page header. It will also be the description included for this page when it appears in search results.
+
+        The text will be limited to 160 characters. The preferred length is at least 110 characters.
+      localizable: false
+      # A `config:` override REPLACES the referenced field's `validate` wholesale
+      # (`Fields::getReferencedField()` shallow-merges), so `uamsweb_common.excerpt`'s
+      # own `max:160` has to be restated here or the limit is silently dropped (UAMS-Web/uams-statamic-archive#1887).
+      validate:
+        - required
+        - 'max:160'
+  -
+    handle: excerpt_display_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Article Summary'
+      validate:
+        - required
+      default: true

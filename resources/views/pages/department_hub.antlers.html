@@ -1,0 +1,115 @@
+{{#
+	@name Departmental News Hub
+	@desc The Departmental News Hub template (UAMS-Web/uams-statamic-archive#1602) — the `axis=type`,
+	      `scope={the site's org}`, `zones=department` configuration of the shared
+	      news-magazine core. An opt-in department site (one with a
+	      `department_organization`, UAMS-Web/uams-statamic-archive#1556) renders: the site chrome + a curated
+	      hero / Action-Path zone, the org-filtered news magazine (sticky-first lead
+	      + per-type sections, offset dedup), the derived leadership/people zone
+	      (UAMS-Web/uams-statamic-archive#1557), and a bottom CTA to the org-filtered archive (UAMS-Web/uams-statamic-archive#1599). The
+	      schema_subject entity node is emitted by the standard schema subsystem for
+	      any page on a hub site (its population is gated by the UAMS-Web/uams-statamic-archive#1556 audit). A
+	      non-entity / no-org site degrades to the news-only base rung — the UAMS-Web/uams-statamic-archive#179
+	      posts listing — with no people zone.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+
+		{{ department_hub }}
+
+			{{ if is_hub }}
+
+				{{# Curated hero: mission + Action-Path links (editor-filled, sanitized). #}}
+				{{ if hero_mission || action_path_links }}
+					<section class="hub-hero">
+						{{ if hero_mission }}
+							<p class="hub-mission">{{ hero_mission | sanitize }}</p>
+						{{ /if }}
+						{{ if action_path_links }}
+							<ul class="hub-action-path">
+								{{ action_path_links }}
+									<li>
+										<a href="{{ url | sanitize_url }}">{{ label | sanitize }}</a>
+										{{ if description }}<span class="hub-action-desc">{{ description | sanitize }}</span>{{ /if }}
+									</li>
+								{{ /action_path_links }}
+							</ul>
+						{{ /if }}
+					</section>
+				{{ /if }}
+
+				{{ if no_results }}
+
+					{{# The department has no news yet — the chrome above still renders. #}}
+
+				{{ else }}
+
+					{{# Sticky-first, org-filtered lead across all post types. #}}
+					{{ if lead | length }}
+						<section class="hub-lead">
+							<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+								{{ lead }}
+									{{ partial:posts/card show_primary_category="true" }}
+								{{ /lead }}
+							</div>
+						</section>
+					{{ /if }}
+
+					{{# Per-blueprint type sections; each offset past its lead posts. #}}
+					{{ sections }}
+						<section class="hub-section hub-section-{{ type }}">
+							{{ if heading }}
+								<h2 class="hub-section-heading">{{ heading | sanitize }}</h2>
+							{{ /if }}
+							<div class="card-list card-list-left">
+								{{ posts }}
+									{{ partial:posts/card show_primary_category="true" }}
+								{{ /posts }}
+							</div>
+						</section>
+					{{ /sections }}
+
+				{{ /if }}
+
+				{{# Derived leadership / people zone (UAMS-Web/uams-statamic-archive#1557) — the reliable spine. #}}
+				{{ if has_people }}
+					<section class="hub-people">
+						<h2 class="hub-people-heading">Leadership</h2>
+						<ul class="hub-people-list">
+							{{ leadership }}
+								<li class="hub-person">
+									{{ if url }}
+										<a href="{{ url }}">{{ title | sanitize }}</a>
+									{{ else }}
+										{{ title | sanitize }}
+									{{ /if }}
+								</li>
+							{{ /leadership }}
+						</ul>
+					</section>
+				{{ /if }}
+
+				{{# Bottom CTA to the org-filtered news archive (UAMS-Web/uams-statamic-archive#1599). #}}
+				{{ if archive_cta_url }}
+					<div class="hub-archive-cta">
+						<a class="btn btn-primary" href="{{ archive_cta_url | sanitize_url }}">{{ if archive_cta_label }}{{ archive_cta_label | sanitize }}{{ else }}See all department news{{ /if }}</a>
+					</div>
+				{{ /if }}
+
+			{{ else }}
+
+				{{# News-only degrade (UAMS-Web/uams-statamic-archive#1555): a non-entity / no-org site renders the
+				    base-rung posts listing (UAMS-Web/uams-statamic-archive#179) — the site's own posts, no org
+				    filter, no people zone. #}}
+				{{ partial:posts/listing }}
+
+			{{ /if }}
+
+		{{ /department_hub }}
+
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

@@ -1,0 +1,76 @@
+title: 'Other Specialties (Non-Medical, Non-Research)'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              localizable: false
+          -
+            handle: specialty_subspecialty_type
+            field:
+              options:
+                -
+                  key: specialty
+                  value: Specialty
+                -
+                  key: subspecialty
+                  value: Subspecialty
+              type: radio
+              display: Type
+              localizable: false
+              validate:
+                - required
+          -
+            handle: description
+            field:
+              type: textarea
+              display: 'Definition of This Specialty/Subspecialty'
+              localizable: false
+          -
+            handle: disambiguating_description
+            field:
+              type: textarea
+              display: 'Disambiguating Description for This Specialty/Subspecialty'
+              instructions: 'A short description of the item used to disambiguate from other, similar items.'
+              localizable: false
+          -
+            handle: subject_matter
+            field:
+              collections:
+                - subject_matter
+              type: entries
+              select_across_sites: true
+              search_index: subject_matter
+              display: 'Subject Matter / Concept'
+              instructions: 'Select the subject matter or concept that this specialty/subspecialty is related to. Subject Matter is non-clinical; clinical concepts live in Clinical Specializations.'
+              localizable: false
+              validate:
+                - required
+              create: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

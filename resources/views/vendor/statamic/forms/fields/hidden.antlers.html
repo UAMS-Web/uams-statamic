@@ -1,0 +1,12 @@
+{{# Hidden fieldtype (App\Fieldtypes\Hidden) — renders <input type="hidden">.
+    The wrapper at vendor/statamic/forms/fields.antlers.html special-cases
+    `type == 'hidden'` so the form-group/label/instructions/error markup is
+    skipped; show_field is still honored so conditional logic can suppress the
+    field's submission. #}}
+<input
+	type="hidden"
+	id="{{ id }}"
+	name="{{ handle }}"
+	value="{{ value | sanitize }}"
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+>

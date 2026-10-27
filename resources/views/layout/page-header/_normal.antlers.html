@@ -1,0 +1,14 @@
+<header class="entry-header entry-header--default">
+	{{# Begin Page Title #}}
+	<hgroup class="entry-title">
+		<h1>{{ title | widont }}</h1>
+		{{ if excerpt && excerpt_display_query == true }}
+			<p class="entry-summary">{{ excerpt | widont }}</p>
+		{{ /if }}
+	</hgroup>
+	{{# End Page Title #}}
+
+	{{ partial:layout/page-header/cover-image }}
+
+	{{ partial:layout/page-header/entry-meta }}
+</header>

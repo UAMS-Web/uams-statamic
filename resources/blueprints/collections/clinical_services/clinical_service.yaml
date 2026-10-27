@@ -1,0 +1,313 @@
+title: 'Clinical Service'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'General Details'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for This Clinical Service'
+              instructions: |-
+                Add any other names, acronyms, abbreviations, or alternate spellings by which this clinical service may be known. List each alternate name as a separate item.
+
+                These alternate names will help enhance this page's visibility in search results.
+          -
+            handle: excerpt
+            field: uamsweb_common.excerpt
+            config:
+              display: 'Short Description for This Clinical Service'
+  schema:
+    display: 'Schema Data'
+    sections:
+      -
+        display: 'Categorization Schema'
+        collapsible: true
+        fields:
+          -
+            handle: schema_type
+            field:
+              type: schema_type
+              display: 'Schema.org Type'
+              instructions: |-
+                Classify this entry by its Schema.org type. Start with **`MedicalProcedure`** or **`MedicalTest`**, then drill down as far as applies (e.g., `MedicalProcedure` → `TherapeuticProcedure` → `MedicalTherapy`).
+
+                The selection drives which schema fields and relationships below are shown.
+              mode: chained
+              starting_types:
+                - MedicalProcedure
+                - MedicalTest
+              localizable: false
+              validate:
+                - required
+          -
+            handle: schema_relevant_specialty
+            field: uamsweb_schema.medical_specialty_multiple
+            config:
+              display: 'Relevant Medical Specialties'
+              validate:
+                - required
+          -
+            handle: schema_medicine_system
+            field: uamsweb_schema.medicine_system_multiple
+            config:
+              display: 'Related Systems of Medical Practice'
+              validate:
+                - required
+          -
+            handle: additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              display: 'More Specific Types for This Clinical Service From External Vocabularies in Microdata Syntax'
+              if:
+                schema_type.value: 'not empty'
+          -
+            handle: schema_imaging_technique
+            field: uamsweb_schema.medical_imaging_technique
+            config:
+              display: 'Imaging Technique Used'
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_type.selections: 'contains ImagingTest'
+          -
+            handle: schema_tissue_sample
+            field: uamsweb_schema.tissue_sample
+            config:
+              display: 'Tissue Sample Types'
+              if:
+                schema_type.selections: 'contains PathologyTest'
+          -
+            handle: schema_uses_device
+            field: uamsweb_schema.medical_device
+            config:
+              display: 'Medical Devices Used to Perform the Test'
+              if:
+                schema_type.selections: 'contains_any BloodTest,ImagingTest,MedicalTestPanel,PathologyTest'
+          -
+            handle: schema_procedure_type
+            field: uamsweb_schema.medical_procedure_type
+            config:
+              display: 'Procedure Method'
+              if:
+                schema_type.value: 'contains_any DiagnosticProcedure,MedicalProcedure,MedicalTherapy,OccupationalTherapy,PalliativeProcedure,PhysicalExam,PhysicalTherapy,PsychologicalTreatment,RadiationTherapy,TherapeuticProcedure'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: schema_drug_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this a medication procedure?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_type.selections: 'contains TherapeuticProcedure'
+          -
+            handle: schema_drug
+            field: uamsweb_schema.drug
+            config:
+              display: 'Drugs or Medicines Used'
+              instructions: |-
+                Here the term drug is used interchangeably with the term medicine although clinical knowledge makes a clear difference between them.
+
+                For information on the Drug Schema.org type, visit <a href='https://schema.org/Drug' target='_blank'>https://schema.org/Drug</a>.
+              if:
+                schema_type.selections: 'contains TherapeuticProcedure'
+                schema_drug_query: 'equals true'
+      -
+        display: 'Identification Schema'
+        collapsible: true
+        fields:
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages About This Clinical Service'
+          -
+            handle: schema_code
+            field: uamsweb_schema.medical_code
+            config:
+              display: 'Medical Codes for This Clinical Service'
+  related_items:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Clinical Conditions'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_conditions
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Related Clinical Conditions (Legacy Import — Migrate, Then Clear)'
+              instructions: |-
+                Legacy general "related conditions" list imported from the previous site. Re-classify each condition into the appropriate schema condition relationship in this section (e.g., **Conditions Possibly Treated by This Medical Therapy**, **Condition(s) Diagnosed by This Test**, the **Medical Sign(s)** relationships), then clear this field.
+
+                ⚠️ The entry **cannot be saved** while this field still contains values. Once empty, this field is hidden. (Migration aide only — it is not rendered anywhere on the site.)
+              if:
+                clinical_conditions: 'not empty'
+              always_save: true
+              validate:
+                - prohibited
+          -
+            handle: schema_primary_prevention
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Medical Conditions for Which This is a Primary Prevention Medical Therapy'
+              instructions: 'Select any medical conditions for which this therapy is used to prevent the initial occurrence of the condition.'
+              if:
+                schema_type.selections: 'contains MedicalTherapy'
+              query_scopes:
+                - entries_by_schema_type_medical_condition
+          -
+            handle: schema_secondary_prevention
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Medical Conditions for Which This is a Secondary Prevention Medical Therapy'
+              instructions: 'Select any medical conditions for which this therapy is used to prevent reoccurrence after an initial episode of the condition.'
+              if:
+                schema_type.selections: 'contains MedicalTherapy'
+              query_scopes:
+                - entries_by_schema_type_medical_condition
+          -
+            handle: schema_treated_medical_condition
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Conditions Possibly Treated by This Medical Therapy'
+              instructions: 'Select any medical conditions that can possibly be addressed with this therapy.'
+              if:
+                schema_type.selections: 'contains MedicalTherapy'
+              query_scopes:
+                - entries_by_schema_type_medical_condition
+          -
+            handle: schema_sign_detected_physical_exam
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Medical Signs Identified or Detected by This Physical Exam'
+              instructions: 'Select any medical signs that this physical exam can be used to identify or detect.'
+              if:
+                schema_type.selections: 'contains PhysicalExam'
+              query_scopes:
+                - entries_by_schema_type_medical_sign
+          -
+            handle: schema_sign_detected_medical_test
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Medical Signs Identified or Detected by This Medical Test'
+              instructions: 'Select any medical signs that this medical test can be used to identify or detect.'
+              if:
+                schema_type.selections: 'contains_any BloodTest,ImagingTest,MedicalTestPanel,PathologyTest'
+              query_scopes:
+                - entries_by_schema_type_medical_sign
+          -
+            handle: schema_used_to_diagnose
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Conditions Diagnosed by This Test'
+              instructions: 'Select any medical conditions that this test can be used to diagnose.'
+              if:
+                schema_type.selections: 'contains_any BloodTest,ImagingTest,MedicalTestPanel,PathologyTest'
+              query_scopes:
+                - entries_by_schema_type_medical_condition
+      -
+        display: 'Clinical Services'
+        collapsible: true
+        fields:
+          -
+            handle: schema_duplicate_therapy
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Duplicate Medical Therapies'
+              instructions: |-
+                Select any other therapies that duplicate or overlap this one.
+
+                For information on the duplicateTherapy Schema.org property, visit <a href='https://schema.org/duplicateTherapy' target='_blank'>https://schema.org/duplicateTherapy</a>.
+              if:
+                schema_type.selections: 'contains MedicalTherapy'
+              query_scopes:
+                - exclude_self
+                - entries_by_schema_type_medical_therapy
+          -
+            handle: schema_subtest
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Component Tests of This Test Panel'
+              instructions: "For information on the subTest Schema.org property, visit <a href='https://schema.org/subTest' target='_blank'>https://schema.org/subTest</a>."
+              if:
+                schema_type.selections: 'contains MedicalTestPanel'
+              query_scopes:
+                - exclude_self
+                - entries_by_schema_type_medical_test
+      -
+        display: 'Clinical Areas of Expertise'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_expertise
+            field: uamsweb_common_fad.expertise
+            config:
+              instructions: ''
+      -
+        display: 'Clinical Resources'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_resources
+            field: uamsweb_common_fad.clinical_resources
+            config:
+              instructions: ''
+  deprecated_soon:
+    display: 'Deprecated Soon'
+    sections:
+      -
+        display: 'Direct Provider & Location Attachments (Deprecated — Inferred Transitively)'
+        instructions: 'These direct Provider/Location attachments are superseded by the D9 transitive inference over shared specialties (UAMS-Web/uams-statamic-archive#1063): a Provider or Location that shares a specialty with this service now implies the relationship automatically. The stored values are preserved for reference and audit, but no longer drive default rendering — author the specialty edges instead.'
+        fields:
+          -
+            handle: clinical_locations
+            field: uamsweb_common_fad.clinical_locations
+            config:
+              display: 'Clinical Locations (Deprecated — Inferred Transitively)'
+              instructions: 'Superseded by the transitive implied-locations set. Preserved for reference; no longer drives rendering.'
+          -
+            handle: clinical_providers
+            field: uamsweb_common_fad.providers
+            config:
+              display: 'Clinical Providers (Deprecated — Inferred Transitively)'
+              instructions: 'Superseded by the transitive implied-providers set. Preserved for reference; no longer drives rendering.'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+      -
+        display: 'Search'
+        collapsible: true
+        fields:
+          -
+            handle: searchable
+            field: uamsweb_entry_search.searchable
+            config:
+              instructions: "Leave on (the default) so this clinical service can surface related Areas of Expertise in the site's interactive search. Turn off to stop it surfacing Areas of Expertise through search, without unpublishing it."

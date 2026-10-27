@@ -1,0 +1,66 @@
+<!--
+  Synced from UAMS-Web/uams-claude-skills: shared/.claude/rules/measurement-parity.md
+  Edit it there, not here; the next sync overwrites this copy.
+  Delivered to this repository through the profile(s): core.
+-->
+# Rule — mirror the *job*, not the command, before comparing to a baseline
+
+Before you compare any measurement against a prior number (a suite time, a boot time, a bench figure quoted in an issue), **read the harness that produced the baseline and reproduce its whole job**, not just its headline command. A number measured under different setup is not a comparison, and nothing in the output will tell you so: both runs finish, both print a plausible duration, and the delta you report is an artifact of your own setup.
+
+History: [the introduction](../history/measurement-parity.md).
+
+## How to apply
+
+1. **Open the baseline's harness and read it.** If a number came from a script, that script is the specification: a scratch `*.sh`, the repository's local CI runner, a CI job in its workflow file. Reconstructing the command from memory or from an issue comment is how setup steps go missing; they live in the harness, not in the sentence describing it.
+
+2. **Enumerate the parity checklist explicitly, and log it in the run.** At minimum:
+   - The same worktree, the same commit base, and the same runner flags.
+   - The same setup steps. A baseline's harness often includes framework setup before the timed command (a route or config cache, a seeded snapshot, a warmed cache), and **omitting one silently changes the regime**. These are the steps most often missed, because they live in the harness rather than in the sentence describing the number.
+   - The same machine quiet-state, checked per [`long-running-commands`](long-running-commands.md) (`Get-CimInstance Win32_Process` on Windows, since MSYS `ps` undercounts, and `pgrep`/`lsof` on macOS).
+
+   Print each step's exit code into the run log. A parity step that silently failed is indistinguishable from one you never wrote.
+
+   For a Statamic application's suite bands the checklist adds:
+   - `php artisan route:cache` once up front (and `route:clear` after). **This is the step most often missed**, and omitting it roughly doubles the band and silently inverts the conclusion.
+   - A fresh `php artisan test:seed-stache` per band, with `APP_ENV=testing DB_DATABASE=:memory:`.
+   - The same pest flags, including `--no-tia` and `--passthru-php`.
+
+   **The seed step is single-flight per checkout, and that constrains how bands may overlap (#1978).** Both directories it works on are shared and both are deleted and rebuilt, so a second `test:seed-stache` in the same worktree now **refuses** rather than tearing the first one's snapshot: a clean `ERROR` and exit 1, not a `FilesystemIterator` trace naming neither command. Nothing has to be sequenced by hand *between seeds*; the command does it.
+
+   The wider case needs a second lock: **never run the seed while a band is running.** Its wipe is deliberately un-tokenized so it heals a hard-killed band (#1876), which means it takes every live worker's `data/<TEST_TOKEN>-<pid>` cache with it, verified by planting a `data/<token>` tree and watching a seed remove it. So "a fresh seed per band" means seed, band, *wait for it to finish*, seed, band. Two concurrent bands in one worktree cannot each have a fresh seed; give the second its own worktree, or run them back to back. Since #2762 the seed **enforces** this: every test process holds a shared lock on the content mirror for its lifetime, and `test:seed-stache` refuses while any test process in the checkout holds it, naming the mirror, before it wipes anything. A seed run alongside a band is therefore a clean refusal rather than a torn mirror, and a refused seed is your cue to wait for the band.
+
+   Since #1916 the seed also rebuilds `storage/framework/testing/content-mirror`, the disposable copy of `content/` that every content-backed Stache store and the asset-metadata dual-write are rooted at in the test environment. That sharpens the rule above rather than adding a new one: the mirror is shared and un-tokenized like the cache, and a rebuild *deletes* it before re-copying, so a seed run alongside a live band takes away the tree that band is reading, not merely its cache. It is skipped when the mirror already matches `content/` (a two-sided stat fingerprint, about 1s against about 4s to re-copy 3,233 files), so a redundant `test:seed-stache` between bands is nearly free. "Nearly free" is not "safe to run concurrently"; and the litter a band leaves in the mirror is precisely what makes the next seed rebuild rather than skip.
+
+   The reverse direction bites too, and more quietly: because that cache dir is shared and un-tokenized, **any** other app boot in the checkout writes into it. A bare `php artisan inspire` alongside a seed build adds an `entries_by_schema_type/<hash>` entry. The seed's copy verification checks only the files it copied, so that entry does not poison the check; keep the checkout quiet during the seed regardless.
+
+   **A suite's own `beforeEach` is part of the harness.** Before profiling any code path *through a test*, read what the suite switches off: a test that disables a cache to keep itself deterministic has changed the regime you are about to measure, and nothing in the run says so. **Name the regime the suite runs in alongside the number.**
+
+   This is not hypothetical: 19 of the 20 `SchemaJsonLd*` suites cleared `schema_templates.json_ld_cache.enabled` to stop page payloads leaking through a shared key, not knowing it was the **master switch** and took the cross-request fragment cache with it. #1797, #1800 and #1801 each profiled the schema compose path with production's largest optimization off, measured on one node at 12.5s per build instead of 1.6s, for byte-identical output. #1842 split the switches (`output_enabled` vs `fragments_enabled`) so the two can no longer be confused, but the general trap survives wherever a suite disables something.
+
+3. **State the parity basis wherever you publish the number.** "Same worktree, same commit base, byte-identical command, setup steps run" is part of the result. A speedup quoted without it cannot be audited or reproduced later.
+
+   **When the basis includes a dependency, name the revision: a version string does not identify code.** "Same commit base" covers what git tracks, and `vendor/` is git-ignored, so a measurement can be byte-identical in everything the basis names and still have run against different code. What gets published as clearance, `installed version == composer.lock version -> no vendor drift`, is not a check; `shasum -a 256 <the file you call into>` is. The parity step that corrects it is **`composer reinstall <package>`**, not `composer install`, which treats the version as satisfied and leaves the drifted files in place.
+
+   **This generalizes past dependencies to every arm of a comparison: hold the code constant, not its label.** Any pipeline that can produce two contents under one tag (a vendor install, a build step, a plugin cache, a container image) makes "same version" an assumption under test rather than a held variable. It fails in the reassuring direction: a matching label tells the reader to stop checking, which is the one thing a mismatched label would not have done.
+
+4. **Confirm the workload is genuinely identical.** Compare the *result line*, not just the duration: the **test count** is the invariant that must match exactly, and the **assertion count** corroborates it. Treat a *large* assertion delta as a different workload, but not a tiny one: a handful of guards assert conditionally on per-worker bootstrap state, so the total can legitimately drift by a few between otherwise identical bands. Chase a delta of tens; note a delta of ones. Also check the baseline commit has not drifted: `git log <base>..origin/main -- tests/` should be empty, or the comparison is measuring somebody else's change too.
+
+   In `uams-statamic`, [`tests/Feature/TestBootstrapCostTest.php`](../../tests/Feature/TestBootstrapCostTest.php) contributes two assertions or none depending on whether that worker found a usable Stache snapshot at boot, and `StacheSnapshotCopyVerificationTest` branches the same way.
+
+5. **Know which flags change the workload rather than observe it.** A profiler is not a stopwatch. A flag that makes the runner behave differently in order to measure it has changed the thing measured, so never quote its wall time as a band time.
+
+   Under Pest, `pest --update-shards` runs the suite **functionally**, one process per test, which inflated CPU roughly 4x in `uams-statamic` and failed to finish inside a 3600s bound that a plain band clears in about 806s. Never quote its wall time as a band time, and treat any "ideal N-way" derived from its per-class totals as inflated. The same caution applies to coverage drivers: where PCOV is loaded (a per-machine install, see [`pcov-setup`](../skills/pcov-setup/SKILL.md)), `--passthru-php` forwards only what you list, so a parent `-d pcov.enabled=0` does **not** reach the workers.
+
+6. **Distrust a harness's own verdict field; re-derive from the raw output.** Strip ANSI before parsing, and when a verdict disagrees with the raw log, believe the log.
+
+7. **Prefer more parity over more samples.** Repeat runs bound *variance*; they do nothing about *systematic* error, which is the failure this rule addresses. A verified parity checklist adds much more than another sample. Spend the time there first.
+
+   The `uams-statamic` suite band varies +/-1.2% across ten runs, so a third sample adds little.
+
+History: [How to apply](../history/measurement-parity.md#how-to-apply).
+
+## The DRY line
+
+This file is the standing statement on **making a measurement comparable**, which includes holding the code constant rather than its label. It composes with [`filing-defects-across-repos`](filing-defects-across-repos.md) (whose step 7 applies the revision-citing half to a report crossing a repository boundary, and points here for the evidence) and with [`long-running-commands`](long-running-commands.md) (which owns *bounding* a run and not trampling a concurrent one; this rule owns whether the number it produces means anything). Per-suite timing facts, such as what the band costs or what the serial tail costs, belong in the issues that measured them, not here.
+
+It also composes with the [`local-ci`](../skills/local-ci/SKILL.md) skill, which owns the gate's own job definition and is itself a parity reference worth reading before benchmarking against CI.

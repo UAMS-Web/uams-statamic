@@ -1,0 +1,131 @@
+title: Classified
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: Listing
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: Title
+          -
+            handle: classified_categories
+            field:
+              taxonomies:
+                - classified_categories
+              type: terms
+              mode: select
+              create: false
+              display: Categories
+              instructions: 'Choose the categories that describe what is being offered or wanted.'
+              localizable: false
+          -
+            handle: price
+            field:
+              type: float
+              display: Price
+              instructions: 'In dollars, as a number, such as <code>25</code> or <code>1250.50</code>. Leave blank, or enter <code>0</code>, when a price does not apply; neither is shown.'
+              localizable: false
+              validate:
+                - nullable
+                - numeric
+                - min:0
+          -
+            handle: description
+            field: uamsweb_common.article
+            config:
+              display: Description
+              instructions: 'Describe the item or what is wanted.'
+              localizable: false
+      -
+        display: Images
+        fields:
+          -
+            handle: featured_image
+            field: uamsweb_common_images.image
+            config:
+              display: 'Featured Image'
+              instructions: 'The main image, shown on the listing card and at the top of the listing.'
+              localizable: false
+          -
+            handle: gallery
+            field:
+              container: images
+              type: assets
+              display: Gallery
+              instructions: 'Further images, shown in the order they appear here.'
+              localizable: false
+      -
+        display: Contact
+        fields:
+          -
+            handle: contact_name
+            field:
+              type: text
+              display: 'Contact Name'
+              instructions: 'The name of the person to contact about this listing.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: contact_email
+            field:
+              type: text
+              input_type: email
+              display: 'Contact Email'
+              localizable: false
+              validate:
+                - required
+                - email
+          -
+            handle: contact_phone
+            field:
+              type: text
+              input_type: tel
+              display: 'Contact Phone'
+              localizable: false
+          -
+            handle: location
+            field:
+              type: text
+              display: Location
+              instructions: 'Where the item can be picked up or seen, when that matters.'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: expiration_date
+            field:
+              type: date
+              mode: single
+              time_enabled: false
+              display: 'Expiration Date'
+              instructions: 'The listing stays on the board through this date and leaves it the day after, by the calendar in Little Rock.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: account
+            field:
+              type: users
+              max_items: 1
+              mode: select
+              display: 'Posted By'
+              instructions: 'The account that owns this listing. Listings imported from WordPress have none, because WP Adverts never bound a listing to an account.'
+              localizable: false

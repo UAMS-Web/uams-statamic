@@ -1,0 +1,219 @@
+@use "sass:math";
+
+// People showcase overrides for UAMS 2020. Base layout/entry styles come from
+// uams_2020 uams-supporting/template-default.scss (body.page-template-default).
+body.page-template-default {
+	#uamspeople-single-wrap {
+		.uamspeople-vcard {
+			display: flex;
+			@include make-row();
+
+			&:after {
+				content: "";
+				display: block;
+				height: $hr-border-width;
+				width: 100%;
+				margin: $uams-module-padding-mobile math.div($grid-gutter-width, 2);
+				background-color: $hr-border-color;
+
+				@include media-breakpoint-up(sm) {
+					margin: $uams-module-padding math.div($grid-gutter-width, 2);
+				}
+			}
+
+			.uamspeople-vcard-left,
+			.uamspeople-vcard-right {
+				@include make-col-ready();
+			}
+
+			.uamspeople-vcard-left {
+				float: none;
+				margin-bottom: math.div($grid-gutter-width, 2);
+
+				@include media-breakpoint-up(xs) {
+					margin-bottom: 0;
+					@include make-col(4);
+				}
+
+				@include media-breakpoint-up(sm) {
+					@include make-col(5);
+				}
+
+				img {
+					display: block;
+					width: auto;
+					max-height: 171px;
+					margin: 0 auto;
+
+					@include media-breakpoint-up(xs) {
+						max-height: none;
+						margin: 0;
+					}
+				}
+			}
+
+			.uamspeople-vcard-right {
+				@include media-breakpoint-up(xs) {
+					@include make-col(8);
+				}
+
+				@include media-breakpoint-up(sm) {
+					@include make-col(6);
+					@include make-col-offset(1);
+				}
+
+				.uamspeople-single-position {
+					font-size: 1.5em;
+				}
+			}
+
+			.ps-clear-both {
+				display: none;
+			}
+		}
+	}
+
+	footer.entry-footer {
+		&:empty {
+			display: none;
+		}
+	}
+}
+
+body .uamspeople {
+	line-height: $line-height-base;
+	@include make-container();
+	padding: 0;
+	@include clearfix();
+
+	.ps-col_1,
+	.ps-col_2,
+	.ps-col_3,
+	.ps-col_3c,
+	.ps-col_4,
+	.ps-col_4c,
+	.ps-col_5,
+	.ps-col_5c,
+	.ps-col_6,
+	.ps-col_6c {
+		padding-bottom: $grid-gutter-width;
+	}
+
+	.ps-theme-white-card-style {
+		@include make-row();
+
+		.uamspeople-box {
+			// Wraps each member
+			@include make-col-ready();
+
+			&.ps-float-left.ps-col_1 {
+				width: auto;
+				float: none;
+				@include make-col-ready();
+				//@include make-col(12);
+
+				.ps-float-left {
+					float: none;
+				}
+
+				.uamspeople-inner-box {
+					display: flex;
+					width: auto;
+					margin: 0;
+					background-color: transparent;
+					border: none;
+					color: inherit;
+					@include make-row();
+
+					.uamspeople-box-photo,
+					.uamspeople-box-info {
+						@include make-col-ready();
+					}
+
+					.uamspeople-box-photo {
+						line-height: inherit;
+						margin-bottom: math.div($grid-gutter-width, 2);
+						@include media-breakpoint-up(xs) {
+							margin-bottom: 0;
+							// Fixed portrait column: a constant 128px portrait plus the grid
+							// gutter, instead of 25% of a variable content row. Removes the
+							// silent min(25%-of-row, 128px intrinsic) flip so the rendered
+							// portrait width is always 128px regardless of the content column
+							// or breakpoint (UAMS-Web/uams-statamic-archive#845).
+							flex: 0 0 auto;
+							width: calc(128px + #{$grid-gutter-width});
+							max-width: calc(128px + #{$grid-gutter-width});
+						}
+
+						&.ps-img-left {
+							float: none;
+						}
+
+						img,
+						svg {
+							// Pin to the Glide 1x output so the portrait fills the fixed box
+							// exactly and reserves its space (no CLS); the 2x srcset candidate
+							// sharpens HiDPI. `svg` covers the no-image placeholder fallback so
+							// it also fills the fixed box rather than the UA default 300x150.
+							display: block;
+							width: 128px;
+							height: 171px;
+							max-width: 128px;
+							max-height: none;
+						}
+					}
+					.uamspeople-box-info {
+						@include media-breakpoint-up(xs) {
+							// Fill the row remainder beside the now fixed-width portrait column
+							// (the photo is a constant 128px box, not 25%), so the info column
+							// takes whatever horizontal space is left — no gap, no wrap (UAMS-Web/uams-statamic-archive#845).
+							flex: 1 1 0;
+							max-width: 100%;
+						}
+						.uamspeople-box-title {
+							margin: 0 0 $headings-margin-bottom;
+							padding: 0;
+							color: inherit;
+							font-size: $h4-font-size;
+							font-weight: $headings-font-weight;
+							line-height: $headings-line-height;
+							text-transform: none;
+						}
+						.uamspeople-box-details {
+							padding: 0;
+
+							.uamspeople-single-position {
+								font-size: 1.25em;
+								margin-top: -$headings-margin-bottom;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+.uamspeople .ps-theme-white-card-style .uamspeople-box.ps-float-left.ps-col_1 .uamspeople-inner-box .uamspeople-box-info .uamspeople-box-details,
+body.page-template-default #uamspeople-single-wrap .uamspeople-vcard {
+	[class^="uamspeople-single-"],
+	.ps-fax {
+		margin-bottom: 0.5em;
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+
+		.label {
+			font-weight: $font-weight-bold;
+		}
+	}
+
+	.uamspeople-single-position {
+		margin-bottom: $headings-margin-bottom;
+		padding-top: 0.25em;
+		color: $body-color-lightest;
+		font-style: normal;
+		line-height: $headings-line-height;
+	}
+}

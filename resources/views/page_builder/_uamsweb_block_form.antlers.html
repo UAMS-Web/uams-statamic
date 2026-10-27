@@ -1,0 +1,45 @@
+{{#
+    @name Form Page Builder Block
+    @desc The form page builder block used on landing pages (resources\blueprints\collections\pages\landing_page.yaml)
+    @set page.page_builder.uamsweb_block_form
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Block Class #}}
+
+		{{# $content_class = 'section-block' #}}
+		{{ $content_class = 'content-block' }}
+
+	{{# Get form handle from page builder block context - extract handle from Form object #}}
+	{{ $form_handle = form:handle }}
+
+	{{# Set form description variable with conditional fallback #}}
+	{{ form_description = block_description_query && {form_data:description :handle="$form_handle"} ? {form_data:description :handle="$form_handle"} : '' }}
+
+	{{# Only render if required fields (and conditionals) have values #}}
+	{{ $block_valid = block_heading && block_description_query != null && ( block_description_query || block_description ) && background_color && form }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$content_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header :description="$form_description" }}
+			<div class="module-body">
+				{{# `alpine_csp` is the uams-web/statamic-alpine-csp-forms add-on's driver
+					(UAMS-Web/uams-statamic-archive#3073). Statamic's stock `alpine` driver emits a `Statamic.$conditions.showField(...)`
+					expression the @alpinejs/csp build refuses to evaluate (UAMS-Web/uams-statamic-archive#1859). #}}
+				{{ form:create :in="$form_handle" js="alpine_csp" }}
+					{{ partial:components/form }}
+				{{ /form:create }}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

@@ -1,0 +1,93 @@
+{{#
+	@name Classified
+	@desc A single `classifieds` listing: price, categories, dates, images, the
+	      description, and how to reach the person who posted it (UAMS-Web/uams-statamic-archive#2096).
+
+	      A listing past its `expiration_date` stays reachable at its url but says it
+	      has expired and withholds the contact details, so an old link does not keep
+	      publishing a poster's email and phone after the listing has left the board.
+	      Every text value is escaped, because listings are written by the people
+	      posting them.
+#}}
+
+{{# Whether the listing has expired comes from the `is_expired` computed field, which
+	shares one definition with the board index (`App\Support\Classifieds\ClassifiedExpiry`),
+	so a listing cannot be on the board while its own page calls it expired. The stored date
+	is read with `civil_date`: `format` would shift a date-only value into the previous day. #}}
+{{ $is_expired = is_expired }}
+{{ $expires_on = expiration_date | civil_date }}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		<div class="classified">
+			{{# The page header prints nothing for this collection, and would print the
+			    title unescaped if it did, so the listing names itself here. #}}
+			<h1 class="classified-title">{{ title | entities }}</h1>
+
+			{{ if $is_expired }}
+				<div class="alert alert-secondary classified-expired" role="status">This listing expired on {{ expiration_date | civil_date:F j, Y }} and is no longer on the board.</div>
+			{{ /if }}
+
+			<dl class="classified-details">
+				{{# A zero or empty price shows nothing, as WP Adverts does by default. #}}
+				{{ if price > 0 }}
+					<dt>Price</dt>
+					<dd class="classified-price">${{ price | format_number:2 }}</dd>
+				{{ /if }}
+				{{ if classified_categories | count }}
+					<dt>Categories</dt>
+					<dd class="classified-categories">{{ classified_categories }}{{ title | entities }}{{ unless last }}, {{ /unless }}{{ /classified_categories }}</dd>
+				{{ /if }}
+				{{ if location }}
+					<dt>Location</dt>
+					<dd class="classified-location">{{ location | entities }}</dd>
+				{{ /if }}
+				{{ if date }}
+					<dt>Posted</dt>
+					<dd><time datetime="{{ date | format('Y-m-d') }}">{{ date | format('F j, Y') }}</time></dd>
+				{{ /if }}
+				{{ if expiration_date && !$is_expired }}
+					<dt>Expires</dt>
+					<dd><time datetime="{{ $expires_on }}">{{ expiration_date | civil_date:F j, Y }}</time></dd>
+				{{ /if }}
+			</dl>
+
+			{{ featured_image }}
+				<figure class="classified-featured-image">
+					<img src="{{ url }}" alt="{{ alt | entities }}">
+				</figure>
+			{{ /featured_image }}
+
+			{{# `description` is a set-less Bard field, so it augments to HTML rather than
+			    blocks. It is deliberately not named `content`: the layout reads `content`
+			    as Bard blocks to collect set types, and a string there fails the render. #}}
+			{{ if description }}
+				<div class="classified-description">{{ description }}</div>
+			{{ /if }}
+
+			{{ if gallery }}
+				<div class="classified-gallery">
+					{{ gallery }}
+						<figure class="classified-gallery-item">
+							<img src="{{ url }}" alt="{{ alt | entities }}" loading="lazy">
+						</figure>
+					{{ /gallery }}
+				</div>
+			{{ /if }}
+
+			{{ unless $is_expired }}
+				<section class="classified-contact" aria-labelledby="classified-contact-heading">
+					<h2 id="classified-contact-heading" class="h4">Contact</h2>
+					<ul class="list-unstyled">
+						{{ if contact_name }}<li class="classified-contact-name">{{ contact_name | entities }}</li>{{ /if }}
+						{{ if contact_email }}<li class="classified-contact-email"><a href="mailto:{{ contact_email | entities }}">{{ contact_email | entities }}</a></li>{{ /if }}
+						{{ if contact_phone }}<li class="classified-contact-phone">{{ contact_phone | entities }}</li>{{ /if }}
+					</ul>
+				</section>
+			{{ /unless }}
+		</div>
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

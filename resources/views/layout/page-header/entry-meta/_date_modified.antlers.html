@@ -1,0 +1,14 @@
+{{#
+
+	@name Entry Meta Item: Date Modified
+	@desc Renders the date-modified entry-meta item: label (with icon) plus date_time component.
+	Expects: label (optional), value (date), icon (optional), itemprop from caller.
+
+#}}
+
+{{
+	partial:layout/page-header/entry-meta/components/label
+	:label="( label ?? 'Date Modified:')"
+	:icon="( icon ?? 'fas fa-calendar-alt fa-fw' )"
+}}
+{{ partial:layout/page-header/entry-meta/components/date_time }}

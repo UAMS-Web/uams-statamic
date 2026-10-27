@@ -1,0 +1,11 @@
+{{#
+	@name YouTube Video
+	@desc Bard YouTube segment set. Renders the embed by delegating to sets/video;
+	      a full-mode segment additionally renders transcript, creators, and
+	      VideoObject schema (UAMS-Web/uams-statamic-archive#835).
+	@set page.article.youtube
+#}}
+{{ partial:sets/video :video_url="url" }}
+{{ if embed_mode == 'full' }}
+	{{ partial:sets/video_segment_full }}
+{{ /if }}

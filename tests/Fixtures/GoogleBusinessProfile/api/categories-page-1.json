@@ -1,0 +1,13 @@
+{
+  "categories": [
+    {
+      "name": "gcid:acupuncturist",
+      "displayName": "Acupuncturist"
+    },
+    {
+      "name": "gcid:acupuncture_clinic",
+      "displayName": "Acupuncture Clinic"
+    }
+  ],
+  "nextPageToken": "fixture-page-2"
+}

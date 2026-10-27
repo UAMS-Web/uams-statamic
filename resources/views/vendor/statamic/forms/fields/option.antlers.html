@@ -1,0 +1,103 @@
+{{# Option fieldtype (App\Fieldtypes\Option) — Gravity Forms option-field
+    analog. Three modes, driven by the blueprint `input_type`:
+
+      select   → a <select> of priced option rows (single selection).
+      radio    → radio buttons of priced option rows (single selection).
+      checkbox → checkboxes of priced option rows (multiple selection).
+
+    Submitted shape (flat associative under the handle, mirroring product.antlers):
+      select / radio → `{handle}[key]`        (+ hidden `{handle}[line_total]`)
+      checkbox       → `{handle}[keys][]`      (+ hidden `{handle}[line_total]`)
+
+    `option-pricing-engine.js` reads the `data-option-*` hooks below, sums the
+    selected option price(s), writes the result to the hidden `[line_total]`
+    input and the visible subtotal, and dispatches `product:price-changed` on the
+    <form>. The hidden input also carries the shared `data-product-line-total-input`
+    hook, so a Total field (issue UAMS-Web/uams-statamic-archive#488) sums options and products uniformly.
+    Server-side `Option::process()` recomputes `line_total` authoritatively from
+    config — the hidden input is a client-side convenience, not a trust boundary.
+
+    `option_choices` (each with `key`, `label`, `price`, `formatted_price`) comes
+    from `Option::extraRenderableFieldData()`. #}}
+{{ option_mode = input_type ?? 'select' }}
+{{ selected_key = value.key ?? '' }}
+<div
+	data-option-field
+	data-option-handle="{{ handle }}"
+	data-option-mode="{{ option_mode }}"
+>
+	{{ if option_mode == 'select' }}
+		<select
+			id="{{ id }}"
+			class="{{
+				[
+					'form-control' => true,
+					'is-invalid' => error
+				] | classes | collapse_whitespace
+			}}"
+			name="{{ handle }}[key]"
+			data-option-select
+			{{ ( validate | contains:required ) | attribute:required }}
+			{{# `visibility: read_only` — see README.md in this directory. <select readonly> is
+				invalid HTML; selects use `disabled` (value omitted from submission). #}}
+			{{ ( visibility == 'read_only' ) | attribute:disabled }}
+		>
+			<option value="" data-price="0">{{ trans key="Please select..." }}</option>
+			{{ option_choices }}
+				<option
+					value="{{ key }}"
+					data-price="{{ price }}"
+					{{ if selected_key == key }}selected{{ /if }}
+				>{{ label }} ({{ formatted_price }})</option>
+			{{ /option_choices }}
+		</select>
+	{{ elseif option_mode == 'radio' }}
+		{{ option_choices }}
+			<label for="{{ id }}-{{ key }}" class="d-block">
+				<input
+					type="radio"
+					id="{{ id }}-{{ key }}"
+					name="{{ handle }}[key]"
+					value="{{ key }}"
+					data-price="{{ price }}"
+					data-option-input
+					{{ if selected_key == key }}checked{{ /if }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+				{{ label }} ({{ formatted_price }})
+			</label>
+		{{ /option_choices }}
+	{{ else }}
+		{{ option_choices }}
+			<label for="{{ id }}-{{ key }}" class="d-block">
+				<input
+					type="checkbox"
+					id="{{ id }}-{{ key }}"
+					name="{{ handle }}[keys][]"
+					value="{{ key }}"
+					data-price="{{ price }}"
+					data-option-input
+					{{ if value.keys && ( value.keys | contains:key ) }}checked{{ /if }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+				{{ label }} ({{ formatted_price }})
+			</label>
+		{{ /option_choices }}
+	{{ /if }}
+
+	{{# Hidden line total maintained by option-pricing-engine.js; server recomputes.
+		Also carries the shared product Total hook so a Total field (UAMS-Web/uams-statamic-archive#488) sums it. #}}
+	<input
+		type="hidden"
+		name="{{ handle }}[line_total]"
+		value="{{ (value.line_total ?? '0') | sanitize }}"
+		data-option-line-total-input
+		data-product-line-total-input
+	>
+
+	<p class="mt-2 small" data-option-line-total-display>
+		{{ trans key="Subtotal" }}: <span data-option-line-total-text>{{ (value.line_total ?? '0.00') | sanitize }}</span>
+	</p>
+</div>

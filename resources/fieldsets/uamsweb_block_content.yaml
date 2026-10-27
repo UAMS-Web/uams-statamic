@@ -1,0 +1,48 @@
+title: 'UAMSWeb Block, Content'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: body
+    field: uamsweb_common_block.body
+    config:
+      display: Body
+      buttons:
+        - h3
+        - h4
+        - h5
+        - h6
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - quote
+        - anchor
+        - image
+        - table
+        - strikethrough
+        - superscript
+        - subscript
+        - horizontalrule
+      validate:
+        - required
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required

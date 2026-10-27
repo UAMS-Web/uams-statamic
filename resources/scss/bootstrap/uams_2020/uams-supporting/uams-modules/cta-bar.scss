@@ -1,0 +1,199 @@
+.cta-bar {
+    // Variables: Will be used in building classes and dimensions in this partial
+    $cta-bar-font-size: $lead-font-size;
+    $cta-bar-heading-level: 2; // Make h2 emulate any heading level. Use integer 1-6.
+    $cta-bar-heading-font-size: $h2-font-size; // Used for calculations. Match with heading level. Can't combine variable interpolation inside variable names.
+    $cta-bar-phone-font-size: $cta-bar-heading-font-size;
+
+    .col-12 {
+        display: flex;
+        flex-grow: 0;
+        flex-shrink: 1;
+        flex-basis: auto;
+        justify-content: center;
+    }
+
+    .inner-container {
+        text-align: center;
+        max-width: 100%;
+    }
+
+    .cta-heading {
+        h2 {
+            width: $line-length-min + em;
+            max-width: 100%;
+        }
+    }
+
+    .cta-body {
+        display: flex;
+        flex-flow: column;
+        justify-content: center;
+        align-items: center;
+        @include font-size($cta-bar-font-size);
+
+        .text-container,
+        .btn-container {
+            width: $line-length-ideal + em;
+            max-width: 100%;
+        }
+
+        .text-container {
+            margin-bottom: 1em;
+
+            &:last-child,
+            > :last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .btn-container {
+            justify-content: center;
+
+            .btn {
+                font-size: inherit;
+            }
+
+            a[href^="tel:"] {
+                color: inherit;
+                @include font-size($cta-bar-phone-font-size);
+                font-weight: $font-weight-medium;
+                line-height: $headings-line-height;
+                text-decoration: none;
+                white-space: normal;
+
+                @include hover-focus() {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
+
+    &.cta-bar-weighted {
+        .inner-container {
+            @include media-breakpoint-up(md) {
+                text-align: left;
+                max-width: $cta-bar-font-size * $line-length-max;
+            }
+        }
+
+        .cta-heading {
+            h2 {
+                @include media-breakpoint-up(md) {
+                    width: auto;
+                    max-width: none;
+                }
+            }
+        }
+
+        .cta-body {
+            @include media-breakpoint-up(md) {
+                flex-flow: row nowrap;
+                align-items: flex-start;
+                justify-content: space-between;
+            }
+
+            .btn-container {
+                @include media-breakpoint-up(md) {
+                    padding-left: $uams-module-padding-mobile;
+                    flex-grow: 1;
+                    flex-shrink: 0;
+                    flex-basis: auto;
+                    max-width: ($h2-font-size * $line-length-min) - ($cta-bar-font-size * $line-length-min);
+                }
+
+                a[href^="tel:"] {
+                    text-align: center;
+                }
+            }
+        }
+    }
+
+    &.cta-bar-sm {
+        // Variables overrides: Will be used in building classes and dimensions in this rule-set
+        $cta-bar-font-size: $font-size-base;
+        $cta-bar-heading-level: 4; // Make h2 emulate any heading level. Use integer 1-6.
+        $cta-bar-heading-font-size: $h4-font-size; // Used for calculations. Match with heading level. Can't combine variable interpolation inside variable names.
+        $cta-bar-phone-font-size: $cta-bar-heading-font-size;
+
+        .cta-heading {
+            h2 {
+                @extend .h#{$cta-bar-heading-level};
+            }
+        }
+
+        .cta-body {
+            @include font-size($cta-bar-font-size);
+
+            .btn-container {
+                a[href^="tel:"] {
+                    @include font-size($cta-bar-phone-font-size);
+                }
+            }
+        }
+
+        &.cta-bar-weighted {
+            .inner-container {
+                @include media-breakpoint-up(md) {
+                    max-width: $cta-bar-font-size * $line-length-max;
+                }
+            }
+        }
+    }
+
+    &.cta-bar-lg {
+        // Variables overrides: Will be used in building classes and dimensions in this rule-set
+        $cta-bar-font-size: $lead-font-size;
+        $cta-bar-heading-level: 1; // Make h2 emulate any heading level. Use integer 1-6.
+        $cta-bar-heading-font-size: $h1-font-size; // Used for calculations. Match with heading level. Can't combine variable interpolation inside variable names.
+        $cta-bar-phone-font-size: $cta-bar-heading-font-size;
+
+        .cta-heading {
+            h2 {
+                @extend .h#{$cta-bar-heading-level};
+            }
+        }
+
+        .cta-body {
+            @include font-size($cta-bar-font-size);
+
+            .btn-container {
+                a[href^="tel:"] {
+                    @include font-size($cta-bar-phone-font-size);
+                }
+            }
+        }
+
+        &.cta-bar-weighted {
+            .inner-container {
+                @include media-breakpoint-up(md) {
+                    max-width: $cta-bar-heading-font-size * $line-length-min;
+                }
+            }
+
+            .cta-body {
+                .btn-container {
+                    a[href^="tel:"] {
+                        @include media-breakpoint-up(md) {
+                            $cta-bar-phone-font-size: $h2-font-size;
+
+                            @include font-size($cta-bar-phone-font-size);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    &.no-link {
+        &.cta-bar-weighted {
+            .inner-container {
+                .cta-body {
+                    .text-container {
+                        max-width: $line-length-max + em;
+                    }
+                }
+            }
+        }
+    }
+}

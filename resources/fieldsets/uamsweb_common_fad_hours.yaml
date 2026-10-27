@@ -1,0 +1,70 @@
+title: 'UAMSWeb Common Reusable Fields, Find-a-Doc, Hours of Operation'
+fields:
+  -
+    handle: closed
+    field:
+      options:
+        -
+          key: 'false'
+          value: "Open\_/ Available"
+        -
+          key: 'true'
+          value: "Closed\_/ Unavailable"
+      cast_booleans: true
+      clearable: true
+      type: radio
+      display: Status
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: hours_24_query
+    field: uamsweb_common.true_false
+    config:
+      display: "Is it open\_/ available 24 hours on this day?"
+      clearable: true
+      if:
+        closed: 'equals false'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: time_span
+    field:
+      type: replicator
+      display: 'Time Span'
+      instructions: 'Add a row for each time span during this day (e.g., 8-11:30 a.m., 12:30-4:30 p.m.).'
+      if:
+        closed: 'equals false'
+        hours_24_query: 'equals false'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Time Span Group'
+          sets:
+            new_set:
+              display: 'New Time Span'
+              fields:
+                -
+                  handle: open
+                  field: uamsweb_common_fad.open
+                  config:
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: close
+                  field: uamsweb_common_fad.close
+                  config:
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: comment
+                  field: uamsweb_common_fad.time_comment
+                  config:
+                    display: Comment

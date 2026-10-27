@@ -1,0 +1,82 @@
+//
+// Mobile primary navigation (UAMS-Web/uams-statamic-archive#53)
+//
+// Minimal functional styling for the framework-free mobile nav
+// (layout/navigation/main/mobile.antlers.html, wired by
+// resources/js/uams_2020/source/mobile-nav.js). The region is shown only below
+// the desktop breakpoint via Bootstrap's `d-sm-none`; the desktop SmartMenus
+// nav (`d-none d-sm-flex`) takes over above it. Visual polish beyond this
+// (spacing, brand colors, animation) is expected to be refined in-browser.
+//
+
+.site-nav-mobile {
+    width: 100%;
+
+    // The panel is toggled by the hamburger via the `hidden` attribute; ensure
+    // it collapses regardless of any inherited display rules.
+    .site-nav-mobile-panel[hidden] {
+        display: none;
+    }
+
+    .mobile-nav-list,
+    .mobile-nav-sublist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    // Nested submenus are indented and hidden until their toggle expands them.
+    .mobile-nav-sublist {
+        padding-left: 1rem;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .mobile-nav-item {
+        position: relative;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .mobile-nav-link {
+        display: block;
+        padding: 0.75rem 3rem 0.75rem 1rem;
+        text-decoration: none;
+
+        // Current / ancestor page in the active branch.
+        &.on {
+            font-weight: 700;
+        }
+    }
+
+    // A branch's expand/collapse control: a tappable caret on the right that
+    // rotates when its submenu is open.
+    .mobile-nav-submenu-toggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 3rem;
+        height: 3rem;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+
+        &::before {
+            content: "";
+            display: block;
+            width: 0.6rem;
+            height: 0.6rem;
+            margin: 0 auto;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(45deg);
+            transition: transform 0.15s ease-in-out;
+        }
+
+        &[aria-expanded="true"]::before {
+            transform: rotate(225deg);
+        }
+    }
+}

@@ -1,0 +1,79 @@
+title: 'UAMSWeb Audio Segment, Local File'
+fields:
+  -
+    handle: file
+    field:
+      max_files: 1
+      min_files: 1
+      container: audio
+      file_type_restrictions: mime_types
+      mime_types:
+        - audio/mp3
+      type: assets
+      display: 'Primary MP3 Audio File'
+      localizable: false
+      query_scopes:
+        - asset_validation_satisfied
+      validate:
+        - required
+        - asset_validation_satisfied
+      replicator_preview: true
+  -
+    handle: file_alternate
+    field:
+      max_files: 1
+      container: audio
+      file_type_restrictions: mime_types
+      mime_types:
+        - audio/ogg
+      type: assets
+      display: 'Alternate OGG File Source for Maximum HTML5 Playback'
+      query_scopes:
+        - asset_validation_satisfied
+      validate:
+        - asset_validation_satisfied
+      localizable: false
+      replicator_preview: false
+  -
+    handle: title_override
+    field:
+      type: text
+      display: 'Segment Title Override'
+      instructions: "Optionally override the primary MP3 audio file asset's title with a custom title."
+      localizable: false
+      replicator_preview: true
+  -
+    handle: excerpt_override
+    field: uamsweb_common.excerpt
+    config:
+      display: 'Segment Summary Override'
+      instructions: "Optionally override the primary MP3 audio file asset's summary with a custom summary."
+      localizable: false
+      replicator_preview: false
+  -
+    handle: preload
+    field:
+      options:
+        -
+          key: auto
+          value: Auto
+        -
+          key: metadata
+          value: Metadata
+        -
+          key: none
+          value: None
+      default: metadata
+      type: radio
+      display: Preload
+      localizable: false
+      replicator_preview: false
+      visibility: hidden
+  -
+    handle: loop
+    field:
+      type: toggle
+      display: Loop
+      localizable: false
+      replicator_preview: false
+      visibility: hidden

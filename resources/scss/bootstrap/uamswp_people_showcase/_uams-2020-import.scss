@@ -1,0 +1,16 @@
+// Bootstrap Core Variable Override (UAMS 2020 theme in Statamic)
+@import "../uams_2020/supporting/variables-bootstrap-core-override";
+
+// Bootstrap Genesis Theme Variables
+@import "../uams_2020/supporting/variables-bootstrap-genesis";
+
+// UAMS Bootstrap Variables Override
+@import "../uams_2020/uams-supporting/variables";
+
+// UAMS Bootstrap Mixins Override
+@import "../uams_2020/uams-supporting/mixins";
+
+// Import Bootstrap Core from Bootstrap NPM package
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";

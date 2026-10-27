@@ -1,0 +1,31 @@
+{{#
+	@name UAMS Button
+	@desc The UAMS Button page builder block (UAMS-Web/uams-statamic-archive#1168) — a single branded Bootstrap
+	      button rendered through the shared item_button component, replacing the
+	      legacy generic/ACF button blocks with a consistent branded control.
+	@set page.page_builder.uamsweb_block_button
+#}}
+
+{{# Only render when both a label and a link are configured (no broken anchor). #}}
+{{ $block_valid = button_text && button_url }}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{ $button_align_class = 'text-' + ( button_alignment ?? 'left' ) }}
+	{{ $block_item_button_outline = ( button_style == 'outline' ) }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		block_class="uamswp-button"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12 {{ $button_align_class }}">
+				{{
+					partial:page_builder/components/item_button
+					:block_item_button_outline="$block_item_button_outline"
+				}}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

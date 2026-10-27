@@ -1,0 +1,53 @@
+{{#
+	@name Video Segment (Full Mode)
+	@desc Full-segment metadata for a Bard video set saved with `embed_mode: full`
+	      (youtube / vimeo / box): summary, creator roles, an accessible transcript
+	      `<details>`, and VideoObject JSON-LD — mirroring the Video Post segment
+	      template. Rendered after the embed. Names use the author-entered `caption`,
+	      falling back to `title` only when blank. (UAMS-Web/uams-statamic-archive#835)
+#}}
+
+{{ $video_name = caption ? caption : title }}
+
+{{ if excerpt }}
+	<div class="entry-segment-summary">{{ excerpt }}</div>
+{{ /if }}
+
+{{ if hide_creator_query != true && creator }}
+	<div class="entry-meta entry-segment-meta">
+		{{
+			partial:layout/page-header/entry-meta/creator_roles
+			:hide_creator_query="hide_creator_query"
+			:creator="creator"
+		}}
+	</div>
+{{ /if }}
+
+{{ if transcript }}
+	<details class="entry-segment-transcript">
+		<summary class="entry-segment-transcript-trigger" aria-label="View Transcript for {{ $video_name | sanitize }}">View Transcript</summary>
+		<div class="entry-segment-transcript-content">{{ transcript }}</div>
+	</details>
+{{ /if }}
+
+{{# VideoObject JSON-LD. Every value is emitted through `to_json`, so quotes and
+	newlines in author content can never break the script or inject markup.
+
+	`embedUrl` is emitted only when `url` has a value, the same way `transcript`
+	already is. `to_json` cannot carry an absent value on its own: a modifier chain
+	short-circuits on a null rather than running, so `{{ url | to_json }}` renders
+	nothing at all and would leave `"embedUrl": ` — a syntax error that costs the
+	whole block, not one field. `url` is `required` in all three video sets, so this
+	is a guard against hand-edited or imported data rather than anything the CP can
+	save, and a VideoObject with no `embedUrl` is invalid structured data anyway —
+	better to omit the key than to assert an empty one. (UAMS-Web/uams-statamic-archive#1673) #}}
+<script type="application/ld+json">
+{
+	"@context": "https://schema.org",
+	"@type": "VideoObject",
+	"name": {{ $video_name | to_json }},
+	"description": {{ ( excerpt ? excerpt : $video_name ) | striptags | to_json }}{{ if url }},
+	"embedUrl": {{ url | to_json }}{{ /if }}{{ if transcript }},
+	"transcript": {{ transcript | striptags | to_json }}{{ /if }}
+}
+</script>

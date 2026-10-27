@@ -1,0 +1,34 @@
+{{#
+	@name Post categories browse-all index (UAMS-Web/uams-statamic-archive#1435)
+	@desc The `pages` entry at bare `/category`: a browse-all index of the current
+	      site's top-level `post_categories` entries, each linking into its
+	      hierarchical archive. Drill-down into subcategories continues via the
+	      archive's own child list (UAMS-Web/uams-statamic-archive#1434), so this lists roots only (the
+	      `top_level_post_categories` scope), not the whole tree. A `pages` entry
+	      at `/category` and the collection at `/category/{slug}` are distinct
+	      paths — no mount, no route collision.
+
+	      `site="*"` aggregates across the network: categories live on the
+	      microsites that surface them (e.g. `science_reports` / `accardv`), not
+	      necessarily the site hosting this index, so the default site-scoped query
+	      would render empty. Each category link resolves to its own site's archive.
+#}}
+{{ partial:layout/article title_options="none" }}
+	{{ partial:layout/entry-content content_width="false" }}
+		<header class="category-index-header">
+			{{# Titles are editor/importer input; Antlers is raw-by-default, so strip + entity-encode before output. #}}
+			<h1 class="page-title">{{ title | strip_tags | entities }}</h1>
+		</header>
+		{{ collection:post_categories query_scope="top_level_post_categories" site="*" sort="title:asc" as="categories" }}
+			{{ if no_results }}
+				<p class="category-index-empty">There are no categories yet. Please check back soon.</p>
+			{{ else }}
+				<ul class="category-index-list">
+					{{ categories }}
+						<li class="category-index-item"><a href="{{ url }}">{{ title | strip_tags | entities }}</a></li>
+					{{ /categories }}
+				</ul>
+			{{ /if }}
+		{{ /collection:post_categories }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

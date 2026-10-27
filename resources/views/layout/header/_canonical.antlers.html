@@ -1,0 +1,26 @@
+{{#
+
+	@name Canonical URL
+	@desc Emits the <link rel="canonical"> tag (UAMS-Web/uams-statamic-archive#189). A syndicated clinical
+	      resource (`syndication_query` on with a `syndication_url`) points the
+	      canonical at its external source — the content lives there, so that URL
+	      is authoritative regardless of localization (UAMS-Web/uams-statamic-archive#1099, mirroring the WP
+	      `seopress_titles_canonical` filter). Otherwise: a localization with
+	      `canonical_from_origin` enabled points at its origin entry; every other
+	      case is self-canonical. Self-canonical is the default because UAMS
+	      multisite localizations are usually customized for their audience, not
+	      verbatim duplicates — see docs/editorial/canonical-urls.md.
+	      `syndication_url` is editor-entered, so it is `entities`-escaped to
+	      prevent attribute breakout (system permalinks are trusted, so are not).
+
+#}}
+
+	{{ if syndication_query && syndication_url }}
+		<link rel="canonical" href="{{ syndication_url | entities }}">
+	{{ elseif origin && canonical_from_origin }}
+		<link rel="canonical" href="{{ origin:permalink }}">
+	{{ elseif permalink }}
+		<link rel="canonical" href="{{ permalink }}">
+	{{ elseif current_url }}
+		<link rel="canonical" href="{{ current_url }}">
+	{{ /if }}

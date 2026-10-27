@@ -1,0 +1,86 @@
+{{#
+	@name Account: Register
+	@desc The public registration page. Selected by a `pages` entry's `template:` override (#2113).
+#}}
+
+{{# WHICH FIELDS THIS FORM COLLECTS, and why it is not simply "every field on the user
+	blueprint". UAMS-Web/uams-statamic-archive#2235 established the blueprint against the three real source registration
+	forms; the split between what the RECORD carries and what this FORM asks for is its
+	recommendation rather than a fresh opinion:
+
+	  username    ON. Two of the three source forms collect it, and it cannot be derived
+	              from an email address. It does NOT authenticate — `statamic.users.login_type`
+	              is unset, so Statamic signs people in on email — which is why its help text
+	              says so rather than leaving a visitor to assume it is their login.
+	  user_site   OFF. Only the uamscaregiving.org/teacher form collected it, and its ten
+	              options are physical UAMS centers rather than sites. Asking every member to
+	              choose a center would be wrong for the two sites that never asked. It is a
+	              field the record carries, not one this form collects.
+
+	`member:register_form` emits the <form>, action, method and CSRF itself, so only the
+	fields belong here. #}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		<h1>Create an account</h1>
+
+		{{ member:register_form }}
+			{{ if success }}
+				<div class="alert alert-success" role="alert">
+					Your account has been created and you are now signed in.
+				</div>
+			{{ else }}
+				{{ if errors }}
+					<div class="alert alert-danger" role="alert">
+						<ul class="mb-0 list-unstyled">
+							{{ errors }}
+								<li>{{ value | entities }}</li>
+							{{ /errors }}
+						</ul>
+					</div>
+				{{ /if }}
+
+				<div class="mb-3">
+					<label class="form-label" for="register-name">Name</label>
+					<input class="form-control" id="register-name" type="text" name="name"
+						value="{{ old:name | entities }}" autocomplete="name" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="register-username">Username</label>
+					<input class="form-control" id="register-username" type="text" name="username"
+						value="{{ old:username | entities }}" autocomplete="username"
+						aria-describedby="register-username-help">
+					<div class="form-text" id="register-username-help">
+						A display name for your account. You sign in with your email address, not this.
+					</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="register-email">Email</label>
+					<input class="form-control" id="register-email" type="email" name="email"
+						value="{{ old:email | entities }}" autocomplete="email" required
+						aria-describedby="register-email-help">
+					<div class="form-text" id="register-email-help">You will sign in with this address.</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="register-password">Password</label>
+					<input class="form-control" id="register-password" type="password" name="password"
+						autocomplete="new-password" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="register-password-confirmation">Confirm password</label>
+					<input class="form-control" id="register-password-confirmation" type="password"
+						name="password_confirmation" autocomplete="new-password" required>
+				</div>
+
+				<button type="submit" class="btn btn-primary">Create account</button>
+			{{ /if }}
+		{{ /member:register_form }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

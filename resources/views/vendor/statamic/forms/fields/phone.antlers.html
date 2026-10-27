@@ -1,0 +1,6 @@
+{{# Phone fieldtype (App\Fieldtypes\Phone) — input_type defaults to "tel";
+    delegates to the default partial. The fieldtype's preset config (international /
+    national / sms-short-code) sets autocomplete/pattern/placeholder/minlength/maxlength
+    on the rendered field, all of which the default partial emits. Server-side
+    normalization to E.164 happens in Phone::normalizeValue(). #}}
+{{ partial:vendor/statamic/forms/fields/default }}

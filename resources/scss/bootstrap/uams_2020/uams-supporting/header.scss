@@ -1,0 +1,489 @@
+@use "sass:math";
+
+$logo-clear-space-multiplier: math.div(12.072, 50) * 2.5; // 2.5 dots relative to the height of the logo. Multiply the height of the logo by this variable.
+$header-logo-height-mobile: 40px;
+$header-logo-height: 50px;
+$header-logo-clear-space-mobile: $header-logo-height-mobile * $logo-clear-space-multiplier;
+$header-logo-clear-space: $header-logo-height * $logo-clear-space-multiplier;
+
+$health-logo-clear-space-multiplier: $logo-clear-space-multiplier; // 2.5 dots relative to the height of the logo. Multiply the height of the logo by this variable.
+$health-logo-clear-space-multiplier-xxs: math.div(8.751, 72.988) * 2.5; // 2.5 dots relative to the height of the logo. Multiply the height of the logo by this variable.
+$header-health-logo-height-xxs: 66px;
+$header-health-logo-height-xs: $header-health-logo-height-xxs * 0.4832; // Should result in the UAMS element appearing the same when transitioning between xxs and xs
+$header-health-logo-height-sm: 37px;
+$header-health-logo-height: $header-logo-height;
+$header-health-logo-clear-space-xxs: $header-health-logo-height-xxs * $health-logo-clear-space-multiplier-xxs;
+$header-health-logo-clear-space-xs: $header-health-logo-height-xs * $health-logo-clear-space-multiplier;
+$header-health-logo-clear-space-sm: $header-health-logo-height-sm * $health-logo-clear-space-multiplier;
+$header-health-logo-clear-space: $header-logo-clear-space;
+
+.site-header {
+    //@extend .navbar-expand-sm;
+    padding-top: $header-logo-clear-space-mobile;
+    padding-bottom: $header-logo-clear-space-mobile;
+    @extend .px-8;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    background-color: $white;
+    color: $black;
+
+    @include media-breakpoint-down(xs) {
+        box-shadow: $box-shadow-sm;
+    }
+    @include media-breakpoint-up(sm) {
+        z-index: 1;
+        padding-top: $header-logo-clear-space;
+        padding-bottom: $header-logo-clear-space;
+    }
+
+    a {
+        color: $body-color;
+    }
+
+    .global-title {
+        @extend .d-flex;
+        @extend .flex-column;
+        @extend .flex-lg-row;
+        @extend .align-items-start;
+        @extend .mr-auto;
+
+        .navbar-brand {
+            padding: 0;
+            margin: 0 0 $header-logo-clear-space-mobile 0;
+            flex-shrink: 0;
+
+            @include media-breakpoint-up(lg) {
+                padding: 0 $header-logo-clear-space 0 0;
+                margin: 0;
+                border-right: 2px solid $primary;
+            }
+
+            &.no-subbrand {
+                margin-bottom: 0;
+
+                @include media-breakpoint-up(lg) {
+                    padding-right: 0;
+                    border-right: 0;
+                }
+            }
+
+            img {
+                height: $header-logo-height-mobile;
+
+                @include media-breakpoint-up(sm) {
+                    height: $header-logo-height;
+                }
+            }
+        }
+        .navbar-subbrand {
+            margin: 0;
+
+            @include media-breakpoint-up(lg) {
+                padding: 0 0 0 $header-logo-clear-space;
+
+                border-left: 2px solid $primary;
+                margin: 0 0 0 -2px;
+            }
+
+            .parent,
+            .title,
+            .title-split {
+                @extend .text-reset;
+            }
+
+            .parent,
+            .title,
+            .title-descriptor,
+            .title-function {
+                @extend .d-block;
+            }
+            .parent,
+            .title-descriptor {
+                font-size: 16px;
+                line-height: 1.2;
+                margin: -3.5px 0 0;
+                padding: 3.5px 0;
+
+                @include media-breakpoint-up(sm) {
+                    font-size: 19px;
+                    padding: 2px 0;
+                    margin: -2px 0 0;
+                }
+
+                @include media-breakpoint-up(lg) {
+                    font-size: 16px;
+                    line-height: 1;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                ~ .title,
+                ~ .title-function {
+                    padding: 0;
+                }
+            }
+            .title,
+            .title-function {
+                font-size: 24px;
+                line-height: 1.2;
+
+                @include media-breakpoint-up(sm) {
+                    font-size: 35px;
+                    padding: 4px 0;
+                }
+
+                @include media-breakpoint-up(lg) {
+                    margin: 0 0 -8px;
+                }
+            }
+        }
+
+        @at-root body.uamshealth #{&} {
+            .navbar-brand {
+                margin: 0 0 $header-health-logo-clear-space-xxs 0;
+
+                @include media-breakpoint-up(xs) {
+                    margin-bottom: $header-health-logo-clear-space-xs;
+                }
+
+                @include media-breakpoint-up(sm) {
+                    margin-bottom: $header-health-logo-clear-space-sm;
+                }
+
+                @include media-breakpoint-up(lg) {
+                    padding-right: $header-health-logo-clear-space-sm;
+                    margin-bottom: 0;
+                }
+
+                &.no-subbrand {
+                    margin-bottom: 0;
+
+                    @include media-breakpoint-up(xs) {
+                        margin-bottom: 0;
+                    }
+
+                    @include media-breakpoint-up(sm) {
+                        margin-bottom: 0;
+                    }
+
+                    @include media-breakpoint-up(lg) {
+                        padding-right: 0;
+                    }
+                }
+
+                img {
+                    height: $header-health-logo-height-xxs;
+
+                    @media (max-width: 379px),
+                    (-ms-high-contrast: active) and (max-width: 575px),
+                    (-ms-high-contrast: none) and (max-width: 575px) { // fallback for when the viewport is smaller than 380px wide. The logo should proportionally shrink.
+                        height: auto;
+                        width: 35.2578947368421vw;
+                        max-width: calc(100vw - 32px - 32px - 32px - 134px);
+                    }
+
+                    @include media-breakpoint-up(xs) {
+                        height: $header-health-logo-height-xs;
+                        margin-top: -1px;
+                    }
+
+                    @include media-breakpoint-up(sm) {
+                        height: $header-health-logo-height-sm;
+                        margin-top: 0;
+                    }
+
+                    @include media-breakpoint-up(xl) {
+                        height: $header-health-logo-height;
+                    }
+                }
+            }
+            .navbar-subbrand {
+                @include media-breakpoint-up(lg) {
+                    padding-left: $header-health-logo-clear-space-sm;
+                }
+                @include media-breakpoint-up(xl) {
+                    padding-left: $header-health-logo-clear-space;
+                }
+                .parent,
+                .title-descriptor {
+                    font-size: 16px;
+                    margin: -3.5px 0 0;
+                    padding: 3.5px 0;
+
+                    @include media-breakpoint-up(sm) {
+                        font-size: 19px;
+                        padding: 2px 0;
+                        margin: -2px 0 0;
+                    }
+
+                    @include media-breakpoint-up(lg) {
+                        font-size: 16px;
+                    }
+                }
+                .title,
+                .title-function {
+                    font-size: $header-health-logo-height-xs * 0.6; // 19.13472px, relative to a 31.8912px tall logo
+                    padding: 2px 0; // getting touch target to 26px minimum size.
+                    margin: -2px 0; // offsetting for the padding.
+
+                    @include media-breakpoint-up(sm) {
+                        font-size: 37px * 0.7; // 25.9px, relative to a 37px tall logo
+                        padding: 0;
+                        margin: 0;
+                    }
+
+                    @include media-breakpoint-up(lg) {
+                        margin: 0 0 (-37px * 0.16);
+                        padding: (37px * 0.08) 0;
+                    }
+
+                    @include media-breakpoint-up(xl) {
+                        font-size: 50px * 0.7; // 35px, relative to a 50px tall logo
+                        padding: (50px * 0.08) 0;
+                        margin: 0 0 (-50px * 0.16);
+                    }
+                }
+            }
+        }
+    }
+
+    .header-nav {
+        @extend .d-flex;
+        @extend .flex-nowrap;
+        padding: 4px 0;
+
+        @include media-breakpoint-up(sm) {
+            padding: 7px 0 7px ($spacer * 2);
+        }
+
+        @include media-breakpoint-down(md) {
+            position: absolute;
+            right: $spacer * 2;
+        }
+
+        @at-root body.uamshealth #{&} {
+            padding: 0;
+
+            @include media-breakpoint-up(sm) {
+                padding: 1px 0 1px ($spacer * 2);
+            }
+
+            @include media-breakpoint-up(xl) {
+                padding: 7.5px 0 7.5px ($spacer * 2);
+            }
+        }
+
+        .nav {
+            @extend .flex-nowrap;
+        }
+
+        .nav-item {
+            @extend .d-flex;
+            &:not(:first-child) {
+                margin-left: $spacer-min;
+            }
+        }
+
+        .nav-link {
+            @extend .p-1;
+            @extend .text-reset;
+            white-space: nowrap;
+        }
+
+        .resource-nav {
+            @extend .d-flex;
+            @extend .flex-nowrap;
+
+            @include media-breakpoint-up(sm) {
+                margin-left: $spacer-min;
+            }
+
+            .nav-link {
+                @extend .d-flex;
+                @extend .align-items-center;
+                @include border-radius($navbar-toggler-border-radius);
+
+                &:focus {
+                    box-shadow: 0 0 0 $input-btn-focus-width rgba($black, .25);
+                }
+            }
+        }
+
+        .toggle-search {
+            .fa-search-minus {
+                opacity: 0;
+            }
+            &.active .fa-search-minus {
+                opacity: 1;
+                transition: opacity .3s linear;
+            }
+        }
+    }
+
+    .navbar-toggler, .quick-links-toggler {
+        margin-left: $spacer-min;
+        color: inherit;
+        border: 0;
+        @extend .p-1;
+
+        @include uams-focus-visible();
+
+        &.mobile-menu-toggler {
+            @include media-breakpoint-up(sm) {
+                display: none;
+            }
+        }
+    }
+
+    .quick-links-toggler,
+    .search-toggler {
+        @extend .navbar-toggler;
+
+        &:focus {
+            box-shadow: 0 0 0 $input-btn-focus-width rgba($black, .25);
+        }
+    }
+
+    .search-toggler {
+        margin-left: 0;
+
+        &:not(.active) {
+            .fa-times {
+                display: none;
+            }
+        }
+
+        &.active {
+            .fa-search {
+                display: none;
+            }
+        }
+    }
+
+    .quick-links-toggler {
+        display: none;
+
+        @include media-breakpoint-up(sm) {
+            display: block;
+        }
+
+        &:not(.active) {
+            .fa-times {
+                display: none;
+            }
+        }
+
+        &.active {
+            .fa-bars {
+                display: none;
+            }
+        }
+    }
+
+    #nav-secondary {
+        flex-grow: 0;
+    }
+}
+
+.site-nav {
+    padding: 0;
+
+    @include media-breakpoint-up(sm) {
+        padding: 0 1.5rem;
+        box-shadow: $box-shadow-sm;
+        @include font-size(1.25rem);
+        position: relative;
+        z-index: $zindex-dropdown;
+        border-top: 2px solid $body-bg-border;
+    }
+
+    // The mobile-collapsed presentation of this nav (its `media-breakpoint-down(xs)`
+    // rules) was removed with UAMS-Web/uams-statamic-archive#53: the primary nav is now desktop-only
+    // (`d-none d-sm-flex`) and a separate framework-free mobile nav
+    // (layout/navigation/main/mobile.antlers.html) handles small screens. Only
+    // the `media-breakpoint-up(sm)` / base rules — where this nav is shown —
+    // remain.
+    .inner-container {
+        @extend .w-100;
+
+        > .navbar-nav {
+            > .nav-item {
+                > .nav-link {
+                    @include media-breakpoint-up(sm) {
+                        white-space: nowrap;
+                        padding: 1.125rem 0.75rem;
+                    }
+
+                    &.has-submenu {
+                        > .sub-arrow {
+                            color: $gray-700;
+                        }
+                    }
+
+                }
+
+                > .dropdown-menu { // L2 nested ul
+                    font-weight: $font-weight-base;
+                    line-height: $nav-line-height;
+
+                    @include media-breakpoint-up(sm) {
+                        border-top-right-radius: 0;
+                        border-top-left-radius: 0;
+                    }
+
+                    a {
+                        color: $body-color;
+                    }
+
+                    .nav-link.has-submenu,
+                    .dropdown-item.has-submenu {
+                        @include media-breakpoint-up(sm) {
+                            padding-right: (1.25 + 0.6 + 0.75)+rem;
+                            position: relative;
+                        }
+                        > .sub-arrow {
+                            color: $link-color;
+
+                            @include media-breakpoint-up(sm) {
+                                @include caret-right;
+                                position: absolute;
+                                right: 0;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                margin-right: 1.25rem;
+                                margin-top: 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .navbar-nav {
+        line-height: 1;
+        @extend .font-weight-medium;
+        //@extend .bg-white;
+        background-color: $white;
+
+        .dropdown-menu { // L2+ nested ul
+            padding: 0.625rem 0;
+            margin: 0;
+
+            .nav-item {
+                .nav-link,
+                .dropdown-item {
+                    @include media-breakpoint-up(sm) {
+                        padding: 0.75rem 1.25rem;
+                        text-decoration: none;
+
+                        @include hover-focus {
+                            text-decoration: none;
+                        }
+                    }
+                    display: block;
+                }
+            }
+        }
+    }
+}

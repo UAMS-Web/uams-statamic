@@ -1,0 +1,309 @@
+@use "sass:math";
+
+.link-list {
+    // Subpages navigation (UAMS-Web/uams-statamic-archive#222): start on its own line. Without this, a floated
+    // element immediately before the menu shoves it sideways, because the menu
+    // does not clear preceding floats. `clear: both` drops the whole module below
+    // any preceding float; scoped to the subpages variant so page-builder link
+    // lists that intentionally sit beside a float are unaffected.
+    &.subpages-navigation {
+        clear: both;
+    }
+
+    &.link-list-layout-split {
+        .row {
+            @include media-breakpoint-up(md) {
+                justify-content: center;
+            }
+        }
+        .heading,
+        .list {
+            margin: 0 -0.5px;
+        }
+        .heading {
+            @include media-breakpoint-up(md) {
+                display: flex;
+                padding-right: $uams-module-padding-mobile;
+                flex:0 0 ($font-size-base * $line-length-min + $uams-module-padding-mobile + math.div($grid-gutter-width-rem, 2));
+            }
+
+            .text-container {
+                @include media-breakpoint-up(md) {
+                    width: 100%;
+                    max-width: $line-length-max + em;
+                    margin-left: auto;
+                }
+            }
+
+            .module-title {
+                @include media-breakpoint-up(md) {
+                    width: auto;
+                    text-align: left;
+                }
+
+                &:last-child {
+                    @include media-breakpoint-up(md) {
+                        margin-bottom: 0;
+                    }
+                }
+
+                .title {
+                    @include media-breakpoint-up(md) {
+                        width: auto;
+                    }
+                    &:after {
+                        @include media-breakpoint-up(md) {
+                            left: 0;
+                        }
+                    }
+                }
+
+                + .note {
+                    font-size: 1em;
+
+                    @include media-breakpoint-up(md) {
+                        width: auto;
+                        text-align: left;
+                        margin-bottom: 0;
+                    }
+                }
+            }
+        }
+
+        .list {
+            @include media-breakpoint-down(sm) {
+                text-align: center;
+            }
+            @include media-breakpoint-up(md) {
+                padding-top: 0.375em;
+                padding-bottom: 0.375em;
+                padding-left: $uams-module-padding-mobile;
+                border-left: 1px solid rgba(0,0,0,0.1);
+                flex:0 0 ($font-size-base * $line-length-ideal + $uams-module-padding-mobile + math.div($grid-gutter-width-rem, 2));
+            }
+
+            ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-flow: column;
+                width: $line-length-ideal + em;
+                max-width: 100%;
+
+                @include media-breakpoint-down(sm) {
+                    justify-content: center;
+                    margin: 0 auto;
+                }
+
+                @include media-breakpoint-up(md) {
+                    //width: $line-length-max + em;
+                    width: auto;
+                }
+            }
+
+            .item {
+                margin-bottom: $grid-gutter-width;
+                padding: 0;
+                flex-flow: row nowrap;
+
+                @include media-breakpoint-down(sm) {
+                    display: flex;
+                    justify-content: center;
+                }
+
+                @include media-breakpoint-up(md) {
+                    display: flex;
+                    margin: 0 auto $grid-gutter-width 0;
+                    position: relative;
+                }
+
+                &:last-child {
+                    margin-bottom: 0;
+                }
+
+                .text-container {
+                    @include media-breakpoint-down(sm) {
+                        position: relative;
+                    }
+                    h3, .h5 {
+                        margin-bottom: 0.25em;
+
+                        &:last-child {
+                            margin-bottom: 0;
+                        }
+                    }
+
+                    p {
+                        margin: 0;
+                    }
+                }
+            }
+
+            // .icon-container {
+            //     font-size: 0;
+            //     margin: 0 0.5em 0 0;
+
+            //     [class^="fa"] {
+            //         font-size: $h5-font-size * $headings-line-height / 2;
+            //     }
+
+            //     .fa-stack {
+            //         width: 2em;
+
+            //         &[class*=" fa-lg"] {
+            //             font-size: $font-size-base * 1.3333333333;
+            //         }
+
+            //         .svg-inline--fa.fa-stack-2x {
+            //             width: 2em;
+            //         }
+            //     }
+
+            //     + .text-container {
+            //         margin-left: 0.5em;
+            //     }
+            // }
+        }
+
+        &.bg-red,
+        &.bg-black,
+        &.bg-blue,
+        &.bg-green,
+        &.bg-teal,
+        &.bg-eggplant {
+            .list {
+                @include media-breakpoint-up(md) {
+                    border-left-color: $white;
+                }
+            }
+        }
+    }
+    &.link-list-layout-tiles {
+        .row {
+            margin-top: (-$grid-gutter-width * 0.75);
+            margin-bottom: (-$grid-gutter-width * 0.75);
+            justify-content: center;
+        }
+        .item {
+            padding-top: ($grid-gutter-width * 0.75);
+            padding-bottom: ($grid-gutter-width * 0.75);
+            flex-grow: 0;
+            flex-shrink: 0;
+            flex-basis: (0.4375em * 35); // 35 characters per line
+            max-width: 100%;
+        }
+
+        .inner-container {
+            position: relative;
+            text-align: center;
+        }
+
+        .fa-stack {
+            margin-left: -0.25em;
+            color: inherit;
+        }
+
+        h3 {
+            margin: 0.5em 0;
+        }
+
+        &.bg-white,
+        &.bg-gray {
+            .inner-container {
+                &:hover {
+                    .fa-stack {
+                        opacity: 0.75;
+                    }
+                }
+            }
+        }
+
+        &.bg-white {
+            .fa-stack {
+                color: $gray-500;
+
+                .fa-inverse {
+                    color: $bg-white;
+                }
+            }
+        }
+
+        &.bg-gray {
+            .fa-stack {
+                color: $body-color-lightest;
+
+                .fa-inverse {
+                    color: $bg-gray;
+                }
+            }
+        }
+
+        &.bg-red,
+        &.bg-black,
+        &.bg-blue,
+        &.bg-green,
+        &.bg-teal,
+        &.bg-eggplant {
+            .fa-stack {
+                color: inherit;
+                opacity: 0.66;
+            }
+            .inner-container {
+                &:hover {
+                    .fa-stack {
+                        opacity: 0.5;
+                    }
+                }
+            }
+        }
+
+        &.bg-red {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-red;
+                }
+            }
+        }
+
+        &.bg-black {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-black;
+                }
+            }
+        }
+
+        &.bg-blue {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-blue;
+                }
+            }
+        }
+
+        &.bg-green {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-green;
+                }
+            }
+        }
+
+        &.bg-teal {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-teal;
+                }
+            }
+        }
+
+        &.bg-eggplant {
+            .fa-stack {
+                .fa-inverse {
+                    color: $bg-eggplant;
+                }
+            }
+        }
+    }
+}

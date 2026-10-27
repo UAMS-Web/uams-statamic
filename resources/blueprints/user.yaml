@@ -1,0 +1,67 @@
+title: User
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: name
+            field:
+              type: text
+              display: Name
+              localizable: false
+          -
+            handle: email
+            field:
+              type: text
+              input_type: email
+              display: 'Email Address'
+              listable: true
+              input: email
+              localizable: false
+          -
+            handle: username
+            field:
+              type: text
+              display: Username
+              instructions: 'The account name the member chose at registration, distinct from the email address. Login is by email — this does not authenticate.'
+              listable: true
+              localizable: false
+          -
+            handle: user_site
+            field:
+              type: entries
+              collections:
+                - organizations
+              max_items: 1
+              mode: select
+              display: 'Center Affiliation'
+              instructions: 'The UAMS center the member registered under. Sourced from the teacher-site registration form, whose ten options are centers rather than sites.'
+              listable: true
+              localizable: false
+          -
+            handle: roles
+            field:
+              type: user_roles
+              mode: select
+              width: 50
+              listable: true
+              filterable: false
+              localizable: false
+          -
+            handle: groups
+            field:
+              type: user_groups
+              mode: select
+              width: 50
+              listable: true
+              filterable: false
+              localizable: false
+          -
+            handle: avatar
+            field:
+              type: assets
+              max_files: 1
+              container: images
+              localizable: false

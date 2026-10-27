@@ -1,0 +1,40 @@
+diff --git a/src/Playwright/Servers/PlaywrightNpmServer.php b/src/Playwright/Servers/PlaywrightNpmServer.php
+index cfa9f54..0f8f035 100644
+--- a/src/Playwright/Servers/PlaywrightNpmServer.php
++++ b/src/Playwright/Servers/PlaywrightNpmServer.php
+@@ -60,11 +60,33 @@ final class PlaywrightNpmServer implements PlaywrightServer
+             return;
+         }
+ 
+-        $this->systemProcess = SystemProcess::fromShellCommandline(sprintf(
++        // Temporary: drop this patch once pest-plugin-browser stops orphaning the
++        // server process. Upstream report: https://github.com/pestphp/pest/issues/1754
++        //
++        // `fromShellCommandline()` runs the server through a shell, and Symfony only
++        // prepends `exec` for ARRAY-form commands. On Debian/Ubuntu, where /bin/sh is
++        // dash, that produces php -> sh -c "playwright run-server" -> node, so the
++        // SIGTERM from stop() kills only the shell and the node server is reparented
++        // to PID 1 and survives. When output is piped - which a GitHub Actions runner
++        // always does, to collect logs - the orphan holds stdout open and the reader
++        // waits for an EOF that never comes, so the `browser` job hangs until its
++        // timeout. It works silently on macOS, where bash exec-replaces itself for a
++        // single -c command, so a developer there cannot reproduce what CI hits.
++        //
++        // Passing argv instead removes the shell layer entirely: on Unix, proc_open
++        // receives the array and execs the binary directly, so the server IS the
++        // child and the existing signal handling reaches it. On Windows, Symfony
++        // rebuilds an escaped command string exactly as before, so this is a no-op
++        // there. Splitting on whitespace is safe for this command: it is a relative
++        // path with no spaces, and every flag value (an IP, a port, a mode) is a
++        // single token.
++        $arguments = preg_split('/\s+/', trim(sprintf(
+             $this->command,
+             $this->host,
+             $this->port,
+-        ), $this->baseDirectory, [
++        )));
++
++        $this->systemProcess = new SystemProcess($arguments === false ? [] : $arguments, $this->baseDirectory, [
+             'APP_URL' => sprintf('http://%s:%d', $this->host, $this->port),
+         ]);
+ 

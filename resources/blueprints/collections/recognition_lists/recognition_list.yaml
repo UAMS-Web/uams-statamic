@@ -1,0 +1,93 @@
+title: 'Recognition List'
+order: 1
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              display: 'List Title'
+              instructions: 'Include the year of the recognition at the end of the title to distinguish it from other years.'
+              placeholder: 'e.g., Best Doctors in America 2024'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: series
+            field:
+              type: terms_search_index
+              display: Series
+              taxonomies:
+                - recognition_lists_series
+              mode: select
+              max_items: 1
+              search_index: recognition_lists_series
+              validate:
+                - required
+              localizable: false
+          -
+            handle: data_source
+            field:
+              type: terms_search_index
+              display: 'Data Source'
+              taxonomies:
+                - recognition_lists_data_sources
+                - recognition_lists_publications
+              mode: select
+              max_items: 1
+              search_index: recognition_lists_data_sources
+              validate:
+                - required
+              localizable: false
+          -
+            handle: list_date
+            field:
+              type: partial_date
+              display: 'Date List Was Published'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: url
+            field:
+              type: link
+              display: 'Landing Page About the Recognition'
+              collections:
+                - pages
+              max_items: 1
+              localizable: false
+          -
+            handle: members
+            field:
+              type: entries
+              display: Members
+              instructions: 'The people recognized on this list. Add members here to place them on the list in bulk; each member''s profile links back automatically. Members recognized within a specific category belong on that category entry instead.'
+              collections:
+                - people
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: active
+            field:
+              default: true
+              type: toggle
+              display: Active
+              localizable: false
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

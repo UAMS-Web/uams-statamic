@@ -1,0 +1,1408 @@
+{
+    "accounting": [
+        "business"
+    ],
+    "actuarial-science": [
+        "mathematics"
+    ],
+    "adult-education": [
+        "education"
+    ],
+    "advertising": [
+        "communication"
+    ],
+    "aerospace-engineering": [
+        "engineering"
+    ],
+    "african-american-studies": [
+        "area studies"
+    ],
+    "african-languages": [
+        "languages and literature"
+    ],
+    "african-linguistics": [
+        "languages and literature"
+    ],
+    "african-literatures": [
+        "languages and literature"
+    ],
+    "african-studies": [
+        "area studies"
+    ],
+    "agricultural-business": [
+        "agriculture",
+        "business"
+    ],
+    "agricultural-economics": [
+        "agriculture",
+        "social sciences"
+    ],
+    "agricultural-education": [
+        "agriculture",
+        "education"
+    ],
+    "agricultural-engineering": [
+        "agriculture",
+        "engineering"
+    ],
+    "agricultural-journalism": [
+        "agriculture",
+        "communication"
+    ],
+    "agricultural-management": [
+        "agriculture",
+        "business"
+    ],
+    "agricultural-mechanization": [
+        "agriculture",
+        "engineering"
+    ],
+    "agricultural-technology-management": [
+        "agriculture",
+        "business"
+    ],
+    "agriculture": [
+        "agriculture"
+    ],
+    "agronomy": [
+        "agriculture"
+    ],
+    "air-traffic-control": [
+        "applied science"
+    ],
+    "american-history": [
+        "humanities"
+    ],
+    "american-literature": [
+        "languages and literature"
+    ],
+    "american-sign-language": [
+        "languages and literature"
+    ],
+    "american-studies": [
+        "area studies"
+    ],
+    "anatomy": [
+        "biology"
+    ],
+    "ancient-studies": [
+        "area studies"
+    ],
+    "animal-behavior": [
+        "biology"
+    ],
+    "animal-science": [
+        "agriculture"
+    ],
+    "animation": [
+        "art"
+    ],
+    "anthropology": [
+        "social sciences"
+    ],
+    "application-development": [
+        "computing"
+    ],
+    "applied-mathematics": [
+        "mathematics"
+    ],
+    "aquaculture": [
+        "agriculture"
+    ],
+    "aquatic-biology": [
+        "biology"
+    ],
+    "arabic": [
+        "languages and literature"
+    ],
+    "archeology": [
+        "social sciences"
+    ],
+    "architectural-engineering": [
+        "engineering"
+    ],
+    "architectural-history": [
+        "architecture"
+    ],
+    "architecture": [
+        "architecture"
+    ],
+    "art": [
+        "art"
+    ],
+    "art-education": [
+        "art",
+        "education"
+    ],
+    "art-history": [
+        "art",
+        "humanities"
+    ],
+    "art-therapy": [
+        "art",
+        "221700000X"
+    ],
+    "artificial-intelligence": [
+        "computing"
+    ],
+    "asian-american-studies": [
+        "area studies"
+    ],
+    "astronomy": [
+        "natural science"
+    ],
+    "astrophysics": [
+        "natural science"
+    ],
+    "athletic-training": [
+        "2255A2300X"
+    ],
+    "atmospheric-science": [
+        "natural science"
+    ],
+    "audiology": [
+        "231H00000X"
+    ],
+    "automotive-engineering": [
+        "engineering"
+    ],
+    "aviation": [
+        "applied science"
+    ],
+    "bakery-science": [
+        "agriculture"
+    ],
+    "behavioral-sciences": [
+        "social sciences"
+    ],
+    "biblical-studies": [
+        "theology"
+    ],
+    "biochemistry": [
+        "biology"
+    ],
+    "bioengineering": [
+        "engineering",
+        "biology"
+    ],
+    "bioethics": [
+        "bioethics"
+    ],
+    "biological-engineering": [
+        "engineering",
+        "biology"
+    ],
+    "biological-sciences": [
+        "biology"
+    ],
+    "biology": [
+        "biology"
+    ],
+    "biomedical-engineering": [
+        "engineering",
+        "health sciences"
+    ],
+    "biomedical-science": [
+        "health sciences"
+    ],
+    "biopsychology": [
+        "psychology"
+    ],
+    "biostatistics": [
+        "mathematics",
+        "health sciences"
+    ],
+    "biotechnology": [
+        "applied science"
+    ],
+    "botany": [
+        "biology"
+    ],
+    "budgeting": [
+        "business"
+    ],
+    "business-administration": [
+        "business"
+    ],
+    "business-communications": [
+        "communication"
+    ],
+    "business-education": [
+        "business",
+        "education"
+    ],
+    "business-information-systems": [
+        "business"
+    ],
+    "business-management": [
+        "business"
+    ],
+    "buying-operations": [
+        "business"
+    ],
+    "canadian-studies": [
+        "area studies"
+    ],
+    "caribbean-studies": [
+        "area studies"
+    ],
+    "cell-biology": [
+        "biology"
+    ],
+    "ceramic-engineering": [
+        "engineering"
+    ],
+    "ceramics": [
+        "art"
+    ],
+    "chemical-engineering": [
+        "engineering"
+    ],
+    "chemical-physics": [
+        "natural science"
+    ],
+    "chemistry": [
+        "natural science"
+    ],
+    "chicano-studies": [
+        "area studies"
+    ],
+    "child-care": [
+        "child development"
+    ],
+    "child-development": [
+        "child development"
+    ],
+    "chinese-language": [
+        "languages and literature"
+    ],
+    "chinese-literature": [
+        "languages and literature"
+    ],
+    "chiropractic": [
+        "111N00000X"
+    ],
+    "christian-counseling": [
+        "theology",
+        "101Y00000X"
+    ],
+    "church-music": [
+        "music",
+        "theology"
+    ],
+    "cinematography": [
+        "art"
+    ],
+    "circulation-technology": [
+        "business"
+    ],
+    "civil-engineering": [
+        "engineering"
+    ],
+    "classics": [
+        "languages and literature"
+    ],
+    "clinical-psychology": [
+        "103TC0700X"
+    ],
+    "cognitive-psychology": [
+        "psychology"
+    ],
+    "cognitive-science": [
+        "psychology"
+    ],
+    "communication-sciences-and-disorders": [
+        "231H00000X",
+        "235Z00000X"
+    ],
+    "communications": [
+        "communication"
+    ],
+    "comparative-literature": [
+        "languages and literature"
+    ],
+    "computational-science": [
+        "computing"
+    ],
+    "computer-and-information-science": [
+        "computing"
+    ],
+    "computer-engineering": [
+        "engineering"
+    ],
+    "computer-graphics": [
+        "computing"
+    ],
+    "computer-networking": [
+        "computing"
+    ],
+    "computer-science": [
+        "computing"
+    ],
+    "computer-systems": [
+        "computing"
+    ],
+    "computer-systems-analysis": [
+        "computing"
+    ],
+    "conflict-and-peace-studies": [
+        "social sciences"
+    ],
+    "construction-management": [
+        "engineering",
+        "business"
+    ],
+    "counseling": [
+        "101Y00000X"
+    ],
+    "counseling-psychology": [
+        "103TC1900X"
+    ],
+    "crafts": [
+        "art"
+    ],
+    "creative-writing": [
+        "languages and literature"
+    ],
+    "criminal-justice": [
+        "criminal justice"
+    ],
+    "criminal-science": [
+        "criminal justice"
+    ],
+    "criminalistics": [
+        "applied science"
+    ],
+    "criminology": [
+        "social sciences"
+    ],
+    "culinary-arts": [
+        "art"
+    ],
+    "curriculum-and-instruction": [
+        "education"
+    ],
+    "cybersecurity": [
+        "computing"
+    ],
+    "dance": [
+        "art"
+    ],
+    "data-processing": [
+        "computing"
+    ],
+    "data-science-and-analytics": [
+        "computing"
+    ],
+    "database-management": [
+        "computing"
+    ],
+    "dental-hygiene": [
+        "124Q00000X"
+    ],
+    "developmental-psychology": [
+        "psychology"
+    ],
+    "diagnostic-medical-sonography": [
+        "2471S1302X"
+    ],
+    "dietetics": [
+        "133V00000X"
+    ],
+    "digital-communications": [
+        "communication"
+    ],
+    "digital-marketing": [
+        "business"
+    ],
+    "drawing": [
+        "art"
+    ],
+    "early-childhood-education": [
+        "education",
+        "child development"
+    ],
+    "earth-sciences": [
+        "natural science"
+    ],
+    "east-asian-studies": [
+        "area studies"
+    ],
+    "east-european-studies": [
+        "area studies"
+    ],
+    "ecology": [
+        "environmental science"
+    ],
+    "economics": [
+        "social sciences"
+    ],
+    "education": [
+        "education"
+    ],
+    "education-administration": [
+        "education"
+    ],
+    "education-leadership": [
+        "education"
+    ],
+    "education-of-the-deaf": [
+        "education"
+    ],
+    "education-technology": [
+        "education"
+    ],
+    "educational-psychology": [
+        "education"
+    ],
+    "electrical-engineering": [
+        "engineering"
+    ],
+    "elementary-education": [
+        "education"
+    ],
+    "emergency-management": [
+        "public administration"
+    ],
+    "engineering": [
+        "engineering"
+    ],
+    "engineering-management": [
+        "engineering"
+    ],
+    "engineering-mechanics": [
+        "engineering"
+    ],
+    "engineering-physics": [
+        "engineering"
+    ],
+    "english-composition": [
+        "languages and literature"
+    ],
+    "english-literature": [
+        "languages and literature"
+    ],
+    "entomology": [
+        "biology"
+    ],
+    "entrepreneurship": [
+        "business"
+    ],
+    "environmental-architecture": [
+        "architecture",
+        "environmental science"
+    ],
+    "environmental-design": [
+        "architecture",
+        "environmental science"
+    ],
+    "environmental-engineering": [
+        "engineering",
+        "environmental science"
+    ],
+    "environmental-health-engineering": [
+        "engineering",
+        "environmental science"
+    ],
+    "environmental-health-sciences": [
+        "health sciences",
+        "environmental science"
+    ],
+    "environmental-law": [
+        "law",
+        "environmental science"
+    ],
+    "environmental-management": [
+        "environmental science",
+        "business"
+    ],
+    "environmental-policy": [
+        "environmental science",
+        "public administration"
+    ],
+    "environmental-science": [
+        "environmental science"
+    ],
+    "epidemiology": [
+        "health sciences"
+    ],
+    "equine-studies": [
+        "agriculture"
+    ],
+    "ethics": [
+        "humanities"
+    ],
+    "ethnic-studies": [
+        "area studies"
+    ],
+    "ethology": [
+        "biology"
+    ],
+    "european-history": [
+        "humanities"
+    ],
+    "executive-mba": [
+        "business"
+    ],
+    "experimental-pathology": [
+        "biology"
+    ],
+    "experimental-psychology": [
+        "psychology"
+    ],
+    "fashion-design": [
+        "art"
+    ],
+    "fashion-merchandising": [
+        "business"
+    ],
+    "feed-science": [
+        "agriculture"
+    ],
+    "fiber-textiles-and-weaving-arts": [
+        "art"
+    ],
+    "film-and-media-studies": [
+        "communication"
+    ],
+    "film-and-video-production": [
+        "art"
+    ],
+    "finance": [
+        "business"
+    ],
+    "fine-arts": [
+        "art"
+    ],
+    "fitness": [
+        "health sciences"
+    ],
+    "floriculture": [
+        "agriculture"
+    ],
+    "food-science": [
+        "agriculture"
+    ],
+    "forensic-science": [
+        "applied science"
+    ],
+    "forestry": [
+        "agriculture"
+    ],
+    "french": [
+        "languages and literature"
+    ],
+    "furniture-design": [
+        "art"
+    ],
+    "game-design": [
+        "computing"
+    ],
+    "gay-and-lesbian-studies": [
+        "area studies"
+    ],
+    "genetics": [
+        "biology"
+    ],
+    "geographic-information-systems": [
+        "computing"
+    ],
+    "geography": [
+        "social sciences"
+    ],
+    "geological-engineering": [
+        "engineering"
+    ],
+    "geology": [
+        "natural science"
+    ],
+    "geophysics": [
+        "natural science"
+    ],
+    "german-language": [
+        "languages and literature"
+    ],
+    "german-literature": [
+        "languages and literature"
+    ],
+    "gerontology": [
+        "health sciences"
+    ],
+    "gifted-education": [
+        "education"
+    ],
+    "government": [
+        "social sciences"
+    ],
+    "graphic-design": [
+        "art"
+    ],
+    "health-administration": [
+        "health administration"
+    ],
+    "health-informatics": [
+        "computing",
+        "health sciences"
+    ],
+    "health-management": [
+        "health administration"
+    ],
+    "health-policy": [
+        "health administration"
+    ],
+    "health-sciences": [
+        "health sciences"
+    ],
+    "healthcare-management": [
+        "health administration"
+    ],
+    "hebrew-language": [
+        "languages and literature"
+    ],
+    "hebrew-literature": [
+        "languages and literature"
+    ],
+    "higher-education": [
+        "education"
+    ],
+    "higher-education-administration": [
+        "education"
+    ],
+    "hispanic-american-studies": [
+        "area studies"
+    ],
+    "historic-preservation": [
+        "architecture"
+    ],
+    "history": [
+        "humanities"
+    ],
+    "home-economics": [
+        "applied science"
+    ],
+    "homeland-security": [
+        "criminal justice"
+    ],
+    "horticulture": [
+        "agriculture"
+    ],
+    "hospitality": [
+        "business"
+    ],
+    "human-biology": [
+        "biology"
+    ],
+    "human-development": [
+        "social sciences"
+    ],
+    "human-resources": [
+        "business"
+    ],
+    "human-resources-management": [
+        "business"
+    ],
+    "human-services": [
+        "social sciences"
+    ],
+    "humanities": [
+        "humanities"
+    ],
+    "illustration": [
+        "art"
+    ],
+    "industrial-design": [
+        "art"
+    ],
+    "industrial-engineering": [
+        "engineering"
+    ],
+    "industrial-management": [
+        "business"
+    ],
+    "industrial-psychology": [
+        "psychology"
+    ],
+    "information-and-technology-management": [
+        "business"
+    ],
+    "information-assurance": [
+        "computing"
+    ],
+    "information-sciences": [
+        "computing"
+    ],
+    "information-technology": [
+        "computing"
+    ],
+    "intellectual-property-law": [
+        "law"
+    ],
+    "interior-architecture": [
+        "architecture"
+    ],
+    "interior-design": [
+        "art"
+    ],
+    "international-administration": [
+        "public administration"
+    ],
+    "international-agriculture": [
+        "agriculture",
+        "social sciences"
+    ],
+    "international-business": [
+        "business"
+    ],
+    "international-global-policy": [
+        "public administration"
+    ],
+    "international-relations": [
+        "social sciences"
+    ],
+    "international-studies": [
+        "social sciences"
+    ],
+    "investigation-methods": [
+        "criminal justice"
+    ],
+    "islamic-studies": [
+        "area studies"
+    ],
+    "italian": [
+        "languages and literature"
+    ],
+    "japanese": [
+        "languages and literature"
+    ],
+    "jazz-studies": [
+        "music"
+    ],
+    "jewelry-design": [
+        "art"
+    ],
+    "jewish-studies": [
+        "area studies"
+    ],
+    "journalism": [
+        "communication"
+    ],
+    "k-12-education": [
+        "education"
+    ],
+    "kinesiology": [
+        "health sciences"
+    ],
+    "korean-language": [
+        "languages and literature"
+    ],
+    "korean-literature": [
+        "languages and literature"
+    ],
+    "land-use-management": [
+        "environmental science"
+    ],
+    "land-use-planning": [
+        "architecture"
+    ],
+    "landscape-architecture": [
+        "architecture"
+    ],
+    "landscape-horticulture": [
+        "agriculture"
+    ],
+    "languages": [
+        "languages and literature"
+    ],
+    "latin-american-studies": [
+        "area studies"
+    ],
+    "law-enforcement": [
+        "criminal justice"
+    ],
+    "legal-studies": [
+        "law"
+    ],
+    "leisure-studies": [
+        "social sciences"
+    ],
+    "liberal-arts-and-sciences": [
+        "humanities"
+    ],
+    "library-and-information-studies": [
+        "library and information science"
+    ],
+    "library-science": [
+        "library and information science"
+    ],
+    "linguistics": [
+        "languages and literature"
+    ],
+    "literature": [
+        "languages and literature"
+    ],
+    "local-government-management": [
+        "public administration"
+    ],
+    "logistics-management": [
+        "business"
+    ],
+    "management-information-systems": [
+        "business"
+    ],
+    "management-services": [
+        "business"
+    ],
+    "managerial-economics": [
+        "social sciences"
+    ],
+    "marine-biology": [
+        "biology"
+    ],
+    "marine-science": [
+        "natural science"
+    ],
+    "marketing": [
+        "business"
+    ],
+    "mass-communication": [
+        "communication"
+    ],
+    "massage-therapy": [
+        "225700000X"
+    ],
+    "materials-science": [
+        "engineering"
+    ],
+    "mathematics": [
+        "mathematics"
+    ],
+    "mechanical-engineering": [
+        "engineering"
+    ],
+    "media-arts": [
+        "art"
+    ],
+    "media-studies": [
+        "communication"
+    ],
+    "medical-technology": [
+        "246QM0706X"
+    ],
+    "medieval-and-renaissance-studies": [
+        "area studies"
+    ],
+    "mental-health-services": [
+        "health sciences"
+    ],
+    "merchandising": [
+        "business"
+    ],
+    "metallurgical-engineering": [
+        "engineering"
+    ],
+    "metalsmithing": [
+        "art"
+    ],
+    "microbiology": [
+        "biology"
+    ],
+    "middle-eastern-studies": [
+        "area studies"
+    ],
+    "midwifery": [
+        "176B00000X"
+    ],
+    "military-science": [
+        "social sciences"
+    ],
+    "mineral-engineering": [
+        "engineering"
+    ],
+    "ministry": [
+        "theology"
+    ],
+    "missions": [
+        "theology"
+    ],
+    "modern-greek": [
+        "languages and literature"
+    ],
+    "molecular-biology": [
+        "biology"
+    ],
+    "molecular-genetics": [
+        "biology"
+    ],
+    "mortuary-science": [
+        "176P00000X"
+    ],
+    "multimedia": [
+        "art"
+    ],
+    "museum-studies": [
+        "library and information science"
+    ],
+    "music": [
+        "music"
+    ],
+    "music-education": [
+        "music",
+        "education"
+    ],
+    "music-history": [
+        "music",
+        "humanities"
+    ],
+    "music-management": [
+        "music",
+        "business"
+    ],
+    "music-therapy": [
+        "music",
+        "225A00000X"
+    ],
+    "musical-theater": [
+        "music",
+        "art"
+    ],
+    "native-american-studies": [
+        "area studies"
+    ],
+    "natural-resources-conservation": [
+        "environmental science"
+    ],
+    "naval-architecture": [
+        "engineering"
+    ],
+    "neurobiology": [
+        "biology"
+    ],
+    "neuroscience": [
+        "biology"
+    ],
+    "nonprofit-administration": [
+        "business"
+    ],
+    "nonprofit-management": [
+        "business"
+    ],
+    "nuclear-engineering": [
+        "engineering"
+    ],
+    "nursing": [
+        "163W00000X"
+    ],
+    "nursing-anesthesia": [
+        "367500000X"
+    ],
+    "nutrition": [
+        "133N00000X"
+    ],
+    "occupational-therapy": [
+        "225X00000X"
+    ],
+    "ocean-engineering": [
+        "engineering"
+    ],
+    "oceanography": [
+        "natural science"
+    ],
+    "operations-management": [
+        "business"
+    ],
+    "organizational-behavior-studies": [
+        "psychology"
+    ],
+    "organizational-leadership": [
+        "business"
+    ],
+    "painting": [
+        "art"
+    ],
+    "paleontology": [
+        "natural science"
+    ],
+    "paralegal-studies": [
+        "law"
+    ],
+    "pastoral-studies": [
+        "theology"
+    ],
+    "peace-studies": [
+        "social sciences"
+    ],
+    "petroleum-engineering": [
+        "engineering"
+    ],
+    "pharmacology": [
+        "biology"
+    ],
+    "pharmacy": [
+        "183500000X"
+    ],
+    "philosophy": [
+        "humanities"
+    ],
+    "photography": [
+        "art"
+    ],
+    "photojournalism": [
+        "communication"
+    ],
+    "physical-education": [
+        "education"
+    ],
+    "physical-therapy": [
+        "225100000X"
+    ],
+    "physician-assistant-studies": [
+        "363A00000X"
+    ],
+    "physics": [
+        "natural science"
+    ],
+    "physiological-psychology": [
+        "psychology"
+    ],
+    "physiology": [
+        "biology"
+    ],
+    "piano": [
+        "music"
+    ],
+    "planetary-science": [
+        "natural science"
+    ],
+    "plant-biology": [
+        "biology"
+    ],
+    "plant-pathology": [
+        "agriculture"
+    ],
+    "playwriting": [
+        "languages and literature"
+    ],
+    "police-science": [
+        "criminal justice"
+    ],
+    "political-communication": [
+        "communication"
+    ],
+    "political-science": [
+        "social sciences"
+    ],
+    "portuguese-language": [
+        "languages and literature"
+    ],
+    "portuguese-literature": [
+        "languages and literature"
+    ],
+    "pre-dentistry": [
+        "health sciences"
+    ],
+    "pre-law": [
+        "law"
+    ],
+    "pre-medicine": [
+        "health sciences"
+    ],
+    "pre-optometry": [
+        "health sciences"
+    ],
+    "pre-seminary": [
+        "theology"
+    ],
+    "pre-veterinary-medicine": [
+        "health sciences"
+    ],
+    "premedical-studies": [
+        "health sciences"
+    ],
+    "printmaking": [
+        "art"
+    ],
+    "project-management": [
+        "business"
+    ],
+    "psychology": [
+        "psychology"
+    ],
+    "public-administration": [
+        "public administration"
+    ],
+    "public-affairs": [
+        "social sciences"
+    ],
+    "public-finance": [
+        "public administration"
+    ],
+    "public-health": [
+        "health sciences"
+    ],
+    "public-leadership": [
+        "public administration"
+    ],
+    "public-management": [
+        "public administration"
+    ],
+    "public-policy": [
+        "public administration"
+    ],
+    "public-policy-analysis": [
+        "public administration"
+    ],
+    "public-relations": [
+        "communication"
+    ],
+    "puerto-rican-studies": [
+        "area studies"
+    ],
+    "radio": [
+        "communication"
+    ],
+    "radiologic-technology": [
+        "247100000X"
+    ],
+    "range-management": [
+        "agriculture"
+    ],
+    "range-science": [
+        "agriculture"
+    ],
+    "real-estate": [
+        "business"
+    ],
+    "recording-arts-technology": [
+        "music"
+    ],
+    "recreation-management": [
+        "business"
+    ],
+    "rehabilitation-counseling": [
+        "225C00000X"
+    ],
+    "rehabilitation-services": [
+        "225C00000X"
+    ],
+    "religious-studies": [
+        "theology"
+    ],
+    "respiratory-therapy": [
+        "227800000X",
+        "227900000X"
+    ],
+    "retail-merchandising": [
+        "business"
+    ],
+    "rhetoric": [
+        "languages and literature"
+    ],
+    "risk-management": [
+        "business"
+    ],
+    "robotics": [
+        "engineering"
+    ],
+    "rural-sociology": [
+        "social sciences"
+    ],
+    "russian-language": [
+        "languages and literature"
+    ],
+    "russian-literature": [
+        "languages and literature"
+    ],
+    "scandinavian-studies": [
+        "area studies"
+    ],
+    "school-psychology": [
+        "103TS0200X"
+    ],
+    "science": [
+        "science"
+    ],
+    "screenwriting": [
+        "languages and literature"
+    ],
+    "sculpture": [
+        "art"
+    ],
+    "secondary-education": [
+        "education"
+    ],
+    "slavic-languages": [
+        "languages and literature"
+    ],
+    "slavic-literatures": [
+        "languages and literature"
+    ],
+    "social-policy": [
+        "social sciences"
+    ],
+    "social-psychology": [
+        "psychology"
+    ],
+    "social-sciences": [
+        "social sciences"
+    ],
+    "social-work": [
+        "104100000X"
+    ],
+    "sociology": [
+        "social sciences"
+    ],
+    "software-development": [
+        "computing"
+    ],
+    "soil-science": [
+        "agriculture"
+    ],
+    "sound-engineering": [
+        "engineering"
+    ],
+    "south-asian-studies": [
+        "area studies"
+    ],
+    "southeast-asia-studies": [
+        "area studies"
+    ],
+    "spanish-language": [
+        "languages and literature"
+    ],
+    "spanish-literature": [
+        "languages and literature"
+    ],
+    "special-education": [
+        "education"
+    ],
+    "special-effects": [
+        "art"
+    ],
+    "speech-communication": [
+        "communication"
+    ],
+    "speech-language-pathology": [
+        "235Z00000X"
+    ],
+    "speech-pathology": [
+        "235Z00000X"
+    ],
+    "sport-studies": [
+        "social sciences"
+    ],
+    "sports-management": [
+        "business"
+    ],
+    "statistics": [
+        "mathematics"
+    ],
+    "surveying": [
+        "engineering"
+    ],
+    "sustainable-resource-management": [
+        "environmental science"
+    ],
+    "tax-law": [
+        "law",
+        "business"
+    ],
+    "teacher-education": [
+        "education"
+    ],
+    "teaching-english-as-a-second-language": [
+        "languages and literature"
+    ],
+    "technical-writing": [
+        "languages and literature"
+    ],
+    "technology-education": [
+        "education"
+    ],
+    "technology-management": [
+        "business"
+    ],
+    "telecommunications": [
+        "communication"
+    ],
+    "television": [
+        "communication"
+    ],
+    "textile-engineering": [
+        "engineering"
+    ],
+    "theatre": [
+        "art"
+    ],
+    "theology": [
+        "theology"
+    ],
+    "theoretical-computer-science": [
+        "computing"
+    ],
+    "theoretical-physics": [
+        "natural science"
+    ],
+    "tourism": [
+        "business"
+    ],
+    "toxicology": [
+        "biology"
+    ],
+    "trial-advocacy": [
+        "law"
+    ],
+    "turfgrass-science": [
+        "agriculture"
+    ],
+    "urban-affairs": [
+        "social sciences"
+    ],
+    "urban-planning": [
+        "architecture"
+    ],
+    "urban-policy": [
+        "public administration"
+    ],
+    "urban-studies": [
+        "social sciences"
+    ],
+    "veterinary": [
+        "174M00000X"
+    ],
+    "video-game-design": [
+        "computing"
+    ],
+    "visual-communication": [
+        "communication"
+    ],
+    "voice": [
+        "music"
+    ],
+    "web-design": [
+        "computing"
+    ],
+    "web-development": [
+        "computing"
+    ],
+    "web-management": [
+        "computing"
+    ],
+    "welding-engineering": [
+        "engineering"
+    ],
+    "wildlife-management": [
+        "agriculture"
+    ],
+    "womens-studies": [
+        "area studies"
+    ],
+    "writing": [
+        "languages and literature"
+    ],
+    "youth-ministries": [
+        "theology"
+    ],
+    "zoology": [
+        "biology"
+    ]
+}

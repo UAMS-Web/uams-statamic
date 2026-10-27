@@ -1,0 +1,42 @@
+title: 'UAMSWeb Computed Fields'
+fields:
+  -
+    handle: text_phonetic_pair
+    field:
+      type: group
+      display: 'Text and Phonetic Text'
+      localizable: false
+      visibility: computed
+      fields:
+        -
+          handle: text
+          field:
+            type: text
+            display: Text
+            localizable: false
+            width: 50
+        -
+          handle: phonetic_text
+          field:
+            type: text
+            display: 'Phonetic Text'
+            localizable: false
+            width: 50
+  -
+    handle: text_phonetic_pair_grid
+    field:
+      type: grid
+      display: 'Text Phonetic Pair Grid'
+      fields:
+        -
+          handle: text
+          field:
+            type: text
+            localizable: false
+        -
+          handle: phonetic_text
+          field:
+            type: text
+            localizable: false
+      localizable: false
+      visibility: computed

@@ -1,0 +1,42 @@
+title: 'UAMSWeb Clinical Aboutness (Conditions and Services)'
+fields:
+  -
+    handle: about_clinical_entries
+    field:
+      create: false
+      collections:
+        - clinical_conditions
+        - clinical_services
+      type: entries
+      select_across_sites: true
+      display: 'This Page Is About (Medical Conditions or Services)'
+      instructions: 'Declare the medical conditions or services this page is primarily about. These surface as the page''s `MedicalWebPage.about` in schema.org — the page is the destination, the condition or service is the subject. For general (non-condition/service) topics, use Subject Matter instead.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: mentions_clinical_entries
+    field:
+      create: false
+      collections:
+        - clinical_conditions
+        - clinical_services
+      type: entries
+      select_across_sites: true
+      display: 'Medical Conditions or Services Mentioned'
+      instructions: 'Medical conditions or services this page references but is not primarily about. These surface as `MedicalWebPage.mentions` in schema.org.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: main_entity_of_page_clinical_entry
+    field:
+      create: false
+      collections:
+        - clinical_conditions
+        - clinical_services
+      type: entries
+      max_items: 1
+      select_across_sites: true
+      display: 'Primary Medical Condition or Service (Main Entity)'
+      instructions: 'The single medical condition or service that is the main entity this page describes. Surfaces as `MedicalWebPage.mainEntity` in schema.org. Leave blank if the page has no single primary condition or service.'
+      replicator_preview: false
+      localizable: false

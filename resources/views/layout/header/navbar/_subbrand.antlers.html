@@ -1,0 +1,26 @@
+---
+parent_name: null
+parent_url: null
+---
+{{#
+
+	@name Header Navbar Sub-Brand
+	@desc The global site header navbar sub-brand text elements
+
+#}}
+
+{{ $parent_name_str = ( parent_name | is_array ) ? ( parent_name | join(' ') ) : parent_name }}
+
+<div class="navbar-subbrand">
+	{{ if parent_name }}
+		<a class="parent" title="{{ $parent_name_str }}" href="{{ parent_url }}">{{ $parent_name_str }}</a><span class="sr-only">: </span>
+		<a class="title" title="{{ subsection_name ?? site:name }}" href="{{ subsection_url ?? site:url }}">{{ subsection_name ?? site:name }}</a>
+
+	{{ elseif ( site:attributes:name_descriptor && site:attributes:name_function ) }}
+		<a class="title-split" title="{{ site:name }}" href="{{ site:url }}"><span class="title-descriptor">{{ site:attributes:name_descriptor }}</span> <span class="title-function">{{ site:attributes:name_function }}</span></a>
+
+	{{ else }}
+		<a class="title" title="{{ site:name }}" href="{{ self_url ?? site:url }}">{{ site:name }}</a>
+
+	{{ /if }}
+</div>

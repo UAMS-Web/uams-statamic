@@ -1,0 +1,58 @@
+.facetwp-blocks {
+    &.aligncenter,
+    &.alignwide {
+        padding: 0;
+    }
+    &.aligncenter {
+
+        .module-title {
+            text-align: left;
+            margin: $headings-margin-top 0 $headings-margin-bottom !important;
+        }
+    }
+    &.alignwide {
+        margin-top: $uams-module-padding-mobile;
+        margin-bottom: $uams-module-padding-mobile;
+
+        @include media-breakpoint-up(sm) {
+            margin-top: $uams-module-padding;
+            margin-bottom: $uams-module-padding;
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+    &.alignfull {
+        table {
+            @include media-breakpoint-up(md) {
+                @include alignwide($alignwide-ratio-md);
+            }
+            @include media-breakpoint-up(lg) {
+                @include alignwide($alignwide-ratio-lg);
+            }
+        }
+    }
+
+    .facetwp-template {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: center;
+    }
+
+    .pagination {
+        margin-top: $grid-gutter-width
+    }
+}
+
+:not([class*=" bg-"]),
+:not([class^=bg-]) {
+    + .uams-module.bg-white {
+        &.facetwp-blocks {
+            &.aligncenter,
+            &.alignwide {
+                border-top: 0;
+            }
+        }
+    }
+}

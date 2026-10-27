@@ -1,0 +1,42 @@
+title: 'Recognition List Category'
+order: 2
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              display: 'Category Title'
+              instructions: 'The category of recognition within the parent list (e.g., "Orthopaedic Surgery"). The parent list is the structural parent of this entry.'
+              placeholder: 'e.g., Orthopaedic Surgery'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: members
+            field:
+              type: entries
+              display: Members
+              instructions: 'The people recognized in this category. Adding a member here places them in this category (and, by extension, its parent list); each member''s profile links back automatically.'
+              collections:
+                - people
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

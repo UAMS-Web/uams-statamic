@@ -1,0 +1,104 @@
+{{# Begin Variable Definitions #}}
+
+	{{ $breadcrumbs_hide_query = hide_breadcrumbs ?? false }}
+	{{ $breadcrumbs_ancestor_sites = {global_origin handle="uams_multisite_settings" recursive="true"} }}
+	{{ $breadcrumbs_current_site_name = site:name }}
+	{{ $breadcrumbs_current_site_subject = uams_multisite_settings:subject }}
+	{{ $breadcrumbs_is_root_site = [ 'root' ] | in_array( $breadcrumbs_current_site_subject ) }}
+	{{ $breadcrumbs_is_root_homepage = is_homepage && $breadcrumbs_is_root_site }}{{# Current page is the homepage of the root site of the domain #}}
+	{{ $breadcrumbs_is_high_level_site = [ 'root', 'major_entity' ] | in_array( $breadcrumbs_current_site_subject ) }}
+	{{ $breadcrumbs_is_high_level_homepage = is_homepage && $breadcrumbs_is_high_level_site }}{{# Current page is the homepage of a root or major_entity site #}}
+	{{# Current page is one of the routeless error pages. `404` was the only one
+	    until UAMS-Web/uams-statamic-archive#1942 gave `403`, `410` and `451` their own views; all four are equally
+	    routeless — no entry, no nav-tree node — so `nav:breadcrumbs` below yields
+	    nothing for them and the trail would otherwise terminate on an ANCESTOR,
+	    asserting the visitor is standing on a page they are not, and emitting a
+	    BreadcrumbList that ends there too. Loose `==` throughout: the cascade
+	    carries an int from the exception and a string from some render paths. #}}
+	{{ $breadcrumbs_is_error = response_code == 404 || response_code == 403 || response_code == 410 || response_code == 451 }}
+
+	{{# The leaf label for that terminal crumb. Deliberately mirrors the `heading`
+	    each per-code view passes to `errors/_targetless_response` — keep the two in
+	    step if either changes. #}}
+	{{ $breadcrumbs_error_leaf = response_code == 403 ? 'Access restricted' : ( response_code == 410 ? 'This page is gone' : ( response_code == 451 ? 'Unavailable for legal reasons' : 'Page not found' ) ) }}
+
+{{# End Variable Definitions #}}
+
+{{ if !$breadcrumbs_hide_query && !$breadcrumbs_is_high_level_homepage }}
+
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb" itemprop="https://schema.org/breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+			{{# Ancestor Sites #}}
+				{{ if $breadcrumbs_ancestor_sites }}
+					{{ $breadcrumbs_ancestor_sites }}
+						{{ partial:layout/breadcrumbs/item breadcrumbs_ancestor="true" }}
+					{{ /$breadcrumbs_ancestor_sites }}
+				{{ /if }}
+			{{# End Ancestor Sites #}}
+
+			{{# Site Homepage (not global root) #}}
+				{{ if !is_homepage }}
+					{{ collection:pages where="is_homepage:true" site="{ site:handle }" limit="1" }}
+						{{ partial:layout/breadcrumbs/item url="{ url }" title="{ title }" is_homepage="true" }}
+					{{ /collection:pages }}
+				{{ /if }}
+			{{# End Site Homepage #}}
+
+			{{ if $breadcrumbs_is_error }}
+				{{# Existing ancestors of the requested (missing) URL #}}
+					{{ breadcrumb_ancestors }}
+						{{ partial:layout/breadcrumbs/item url="{ url }" title="{ title }" }}
+					{{ /breadcrumb_ancestors }}
+				{{# End Existing Ancestors #}}
+
+				{{# Non-link error leaf (excluded from BreadcrumbList schema) #}}
+					<li class="breadcrumb-item active" aria-current="page">
+						<span>{{ $breadcrumbs_error_leaf }}</span>
+					</li>
+				{{# End Error Leaf #}}
+			{{ else }}
+				{{# Primary-category crumb (UAMS-Web/uams-statamic-archive#1612 / UAMS-Web/uams-statamic-archive#1609): a post's chain carries the
+					FIRST-selected `post_categories` entry — the same primary category its
+					listing cards render — between the site home and the post itself. The
+					field exists only on `posts`, so this is inert on every other page, and
+					the shared item partial owns the url/title escaping (UAMS-Web/uams-statamic-archive#1485 / UAMS-Web/uams-statamic-archive#1500). #}}
+					{{ if post_categories }}
+						{{ post_categories }}
+							{{ if first }}
+								{{ partial:layout/breadcrumbs/item url="{ url }" title="{ title }" }}
+							{{ /if }}
+						{{ /post_categories }}
+					{{ /if }}
+				{{# End Primary Category #}}
+
+				{{# Current Site Page Hierarchy #}}
+					{{ nav:breadcrumbs include_home="false" }}
+						{{ partial:layout/breadcrumbs/item }}
+					{{ /nav:breadcrumbs }}
+				{{# End Current Site #}}
+
+				{{# Area-of-Expertise routed section (UAMS-Web/uams-statamic-archive#1058/UAMS-Web/uams-statamic-archive#1057): on a /{entry}/{section}
+					URL the AoE entry is the cascade content, so the ancestor chain above
+					ends at the AoE; append the active section as the final leaf. `section`
+					/ `section_label` are set only on section pages (the route data closure),
+					so this is inert on every other page. #}}
+				{{ if section && section_label }}
+					<li class="breadcrumb-item active" aria-current="page">
+						<span>{{ section_label }}</span>
+					</li>
+				{{ /if }}
+
+				{{# Routeless Statamic views (e.g. /search, UAMS-Web/uams-statamic-archive#815) have no entry in the
+					nav tree, so nav:breadcrumbs above yields nothing beyond Home. A route
+					that sets `breadcrumb_leaf` in its data appends it as the active final
+					crumb. Inert on every entry-backed page (the key is unset there). #}}
+				{{ if breadcrumb_leaf }}
+					<li class="breadcrumb-item active" aria-current="page">
+						<span>{{ breadcrumb_leaf }}</span>
+					</li>
+				{{ /if }}
+			{{ /if }}
+		</ol>
+	</nav>
+
+{{ /if }}

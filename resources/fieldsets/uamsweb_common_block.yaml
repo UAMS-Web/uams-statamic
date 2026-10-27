@@ -1,0 +1,216 @@
+title: 'UAMSWeb Common Reusable Fields, Blocks'
+fields:
+  -
+    handle: block_heading
+    field:
+      type: text
+      display: 'Block Heading'
+      localizable: false
+  -
+    handle: hide_block_heading
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the block heading?'
+      instructions: 'The heading is necessary for page hierarchy. But it can be hidden from all but screen readers and search engines. **This is strongly discouraged in most cases**, as the visible heading provides a jumping-in point for users as they scan your page.'
+      default: false
+      sortable: false
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: description_bard
+    field: uamsweb_common.article
+    config:
+      display: 'Block Description'
+      buttons:
+        - bold
+        - italic
+        - superscript
+        - subscript
+        - removeformat
+  -
+    handle: body
+    field: uamsweb_common.article_with_sets
+    config:
+      display: Body
+      buttons:
+        - h3
+        - h4
+        - h5
+        - h6
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - quote
+        - anchor
+        - image
+        - table
+        - strikethrough
+        - superscript
+        - subscript
+        - horizontalrule
+        - removeformat
+  -
+    handle: description_textarea_centered
+    field:
+      type: textarea
+      display: 'Block Body, Introduction, Centered Layout'
+      instructions: 'There is a 290-character limit.'
+      replicator_preview: false
+      character_limit: 290
+      localizable: false
+  -
+    handle: description_textarea_weighted
+    field:
+      type: textarea
+      display: 'Block Body, Introduction, Weighted Layout'
+      instructions: 'This has a 518-character limit, but the recommended number of characters is 317 or fewer.'
+      replicator_preview: false
+      character_limit: 518
+      localizable: false
+  -
+    handle: background_color_simple
+    field:
+      options:
+        -
+          key: bg-auto
+          value: Auto
+        -
+          key: bg-white
+          value: White
+        -
+          key: bg-gray
+          value: Gray
+      default: bg-auto
+      type: select
+      display: 'Block Background Color, Simple'
+      localizable: false
+  -
+    handle: background_color_vivid
+    field:
+      options:
+        -
+          key: bg-red
+          value: Red
+        -
+          key: bg-blue
+          value: Blue
+        -
+          key: bg-green
+          value: Green
+        -
+          key: bg-eggplant
+          value: Eggplant
+        -
+          key: bg-teal
+          value: Teal
+        -
+          key: bg-orange
+          value: Orange
+        -
+          key: bg-black
+          value: Black
+      default: bg-auto
+      type: select
+      display: 'Block Background Color, Vivid'
+      localizable: false
+  -
+    handle: background_color_vivid_auto
+    field:
+      options:
+        -
+          key: bg-auto
+          value: Auto
+        -
+          key: bg-red
+          value: Red
+        -
+          key: bg-blue
+          value: Blue
+        -
+          key: bg-green
+          value: Green
+        -
+          key: bg-eggplant
+          value: Eggplant
+        -
+          key: bg-teal
+          value: Teal
+        -
+          key: bg-orange
+          value: Orange
+        -
+          key: bg-black
+          value: Black
+      default: bg-auto
+      type: select
+      display: 'Block Background Color, Vivid and Auto'
+      localizable: false
+  -
+    handle: background_color_full
+    field:
+      options:
+        -
+          key: bg-auto
+          value: Auto
+        -
+          key: bg-white
+          value: White
+        -
+          key: bg-gray
+          value: Gray
+        -
+          key: bg-red
+          value: Red
+        -
+          key: bg-blue
+          value: Blue
+        -
+          key: bg-green
+          value: Green
+        -
+          key: bg-eggplant
+          value: Eggplant
+        -
+          key: bg-teal
+          value: Teal
+        -
+          key: bg-orange
+          value: Orange
+        -
+          key: bg-black
+          value: Black
+      default: bg-auto
+      type: select
+      display: 'Block Background Color, Full'
+      localizable: false
+  -
+    handle: background_image_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Use a background image?'
+      default: false
+      sortable: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: more_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include a link to something?'
+      default: false
+      sortable: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: link_list_body
+    field:
+      character_limit: 90
+      type: textarea
+      display: 'Link Caption'
+      instructions: 'This is the text displayed below the link title. This has a 90-character limit.'
+      replicator_preview: false
+      localizable: false

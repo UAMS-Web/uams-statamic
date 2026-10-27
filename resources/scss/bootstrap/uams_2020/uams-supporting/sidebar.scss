@@ -1,0 +1,106 @@
+
+@use "sass:math";
+
+.sidebar {
+    border-left: 2px solid $body-bg-border;
+    padding: 0;
+
+    .widget {
+        border: 0;
+        border-bottom: 2px solid $body-bg-border;
+        margin: 0;
+        border-radius: 0;
+
+        .inner-container {
+            width: 35em;
+            max-width: 100%;
+            margin: 0 auto;
+
+            .module-title {
+                @extend .h4;
+                width: auto;
+                text-align: center;
+                margin-bottom: $uams-module-padding-mobile;
+                color: inherit;
+
+                @include media-breakpoint-up(md) {
+                    text-align: left;
+                }
+
+                .title {
+                    padding-bottom: 0;
+                    &:after {
+                        content: none;
+                    }
+                }
+            }
+        }
+
+        .widget-title,
+        .widgettitle,
+        .widget-wrap {
+            width: $font-size-base * $line-length-max;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .widget-title,
+        .widgettitle {
+            padding: 0 0 math.div($uams-module-padding-mobile, 2);
+            margin-bottom: $uams-module-padding-mobile;
+            background-color: transparent;
+            border-bottom: 1px solid $primary;
+        }
+
+        .widget-wrap {
+            flex-grow: 0;
+            flex-shrink: 1;
+            flex-basis: auto;
+            padding: 0;
+        }
+
+        &#search-2 {
+            .uams-search {
+                @include line-length-em(max);
+
+                .form-group {
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        &.widget_archive,
+        &.widget_categories,
+        &.widget_meta,
+        &.widget_recent_comments,
+        &.widget_recent_entries {
+            ul {
+                li {
+                    //position: relative;
+                    //display: block;
+                    padding: 0;
+                    margin: math.div($uams-module-padding-mobile, 2) 0 0;
+                    background-color: transparent;
+                    border: 0;
+
+                    &:first-child {
+                        margin-top: 0;
+                    }
+
+                    a {
+                        color: $link-color;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.content-sidebar-wrap.row {
+    margin: 0;
+
+    > [class^="col-"],
+    > [class*=" col-"] {
+        padding: 0;
+    }
+}

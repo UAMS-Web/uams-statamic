@@ -1,0 +1,25 @@
+{{# Total fieldtype (App\Fieldtypes\Total) — a read-only running order total
+    (Gravity Forms `total` analog, UAMS-Web/uams-statamic-archive#488).
+
+    resources/js/total-pricing-engine.js sums every [data-product-line-total-input]
+    on the form (products UAMS-Web/uams-statamic-archive#300 + options UAMS-Web/uams-statamic-archive#311 both write that hook) whenever a
+    `product:price-changed` event fires, and writes the sum to the display text
+    and the hidden input below, so the total round-trips on submission.
+
+    Display-only by design: Product/Option::process() recompute the per-line
+    totals authoritatively server-side, so the hidden value here is advisory.
+    The `prefix` comes from Total::extraRenderableFieldData(). #}}
+<div data-total-field data-total-handle="{{ handle }}">
+	<p class="total-display mb-0 font-weight-bold">
+		{{ if prefix }}<span class="total-prefix">{{ prefix | sanitize }}</span> {{ /if }}
+		<span data-total-display-text>{{ (value ?? '0.00') | sanitize }}</span>
+	</p>
+	{{# Hidden input carries the computed total into the submission. Not
+		user-editable, so no `read_only` handling is required. #}}
+	<input
+		type="hidden"
+		name="{{ handle }}"
+		value="{{ (value ?? '') | sanitize }}"
+		data-total-input
+	>
+</div>

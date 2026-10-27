@@ -1,0 +1,480 @@
+title: 'UAMSWeb Common Reusable Fields, Find-a-Doc'
+fields:
+  -
+    handle: epic_dep_ids
+    field:
+      type: replicator
+      display: 'Department (DEP) IDs from UAMS Health Epic'
+      button_label: 'Add DEP ID'
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New DEP ID Group'
+          sets:
+            new_set:
+              display: 'New DEP ID'
+              fields:
+                -
+                  handle: dep
+                  field:
+                    type: identifier
+                    preset: epic_dep_id
+                    display: 'Department (DEP) ID'
+                    validate:
+                      - required
+                    localizable: false
+  -
+    handle: providers
+    field:
+      create: false
+      collections:
+        - people
+      query_scopes:
+        - clinical_provider_eligible_people
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Providers'
+      instructions: 'The clinical providers will be displayed in alphabetical order. If there is more than one row of clinical providers, the first row will display before prompting the user to load more.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: expertise
+    field:
+      create: false
+      collections:
+        - clinical_expertise
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Areas of Expertise'
+      instructions: 'The clinical areas of expertise will be displayed in alphabetical order.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: special_interest_clinical_conditions
+    field:
+      create: false
+      collections:
+        - clinical_conditions
+      type: entries
+      select_across_sites: true
+      display: 'Special Interest Conditions'
+      instructions: "Select the clinical conditions this entity has a special interest in. A selection must be associated with one of the entity's selected Areas of Expertise — an out-of-scope item is rejected when the entry is saved."
+      replicator_preview: false
+      localizable: false
+  -
+    handle: special_interest_clinical_services
+    field:
+      create: false
+      collections:
+        - clinical_services
+      type: entries
+      select_across_sites: true
+      display: 'Special Interest Services'
+      instructions: "Select the clinical services this entity has a special interest in. A selection must be associated with one of the entity's selected Areas of Expertise — an out-of-scope item is rejected when the entry is saved."
+      replicator_preview: false
+      localizable: false
+  -
+    handle: clinical_resources
+    field:
+      create: false
+      collections:
+        - clinical_resources
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Resources'
+      instructions: 'The clinical resources will be displayed in the order in which they were published, with the most recently published resources being displayed first.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: conditions
+    field:
+      create: false
+      collections:
+        - clinical_conditions
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Conditions'
+      instructions: 'The clinical conditions will be displayed in alphabetical order.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: treatments
+    field:
+      create: false
+      collections:
+        - clinical_services
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Services'
+      instructions: 'The clinical services will be displayed in alphabetical order.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: clinical_locations
+    field:
+      create: false
+      collections:
+        - clinical_locations
+      type: entries
+      select_across_sites: true
+      display: 'Related Clinical Locations'
+      instructions: 'The clinical locations will be displayed in alphabetical order.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: regions
+    field:
+      create: false
+      taxonomies:
+        - regions
+      type: terms_search_index
+      display: 'UAMS Health Regions'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: location_types
+    field:
+      create: false
+      taxonomies:
+        - location_types
+      type: terms_search_index
+      display: 'UAMS Health Location Types'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: portal
+    field:
+      max_items: 1
+      create: false
+      taxonomies:
+        - portals
+      type: terms
+      display: 'Patient Portal, Single'
+      replicator_preview: false
+      mode: select
+      localizable: false
+  -
+    handle: portal_multiple
+    field:
+      create: false
+      taxonomies:
+        - portals
+      type: terms_search_index
+      display: 'Patient Portal, Multiple'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: service_line
+    field:
+      type: entries
+      display: 'UAMS Health Service Line'
+      instructions: 'If the entity does not belong to a UAMS Health service line, select the relevant option that begins with "None."'
+      max_items: 1
+      create: false
+      collections:
+        - organizations
+      query_scopes:
+        - entries_by_organization_role_service_line
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: service_line_multiple
+    field:
+      type: entries
+      display: 'UAMS Health Service Line(s)'
+      instructions: 'If the entity does not belong to a UAMS Health service line, select the relevant option that begins with "None."'
+      create: false
+      collections:
+        - organizations
+      query_scopes:
+        - entries_by_organization_role_service_line
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: facility
+    field:
+      max_items: 1
+      create: false
+      type: entries
+      collections:
+        - facilities
+      query_scopes:
+        - entries_by_blueprint_building
+        - entries_by_blueprint_building_division
+      select_across_sites: true
+      display: Facility
+      instructions: 'Choose the most specific building or wing where this entity is situated.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: facility_level
+    field:
+      options:
+        -
+          key: 'false'
+          value: 'Single-Story Building / The Location Is the Facility'
+        -
+          key: B
+          value: 'Level B'
+        -
+          key: G
+          value: 'Ground Floor'
+        -
+          key: 1
+          value: 'First Floor'
+        -
+          key: 2
+          value: 'Second Floor'
+        -
+          key: 3
+          value: 'Third Floor'
+        -
+          key: 4
+          value: 'Fourth Floor'
+        -
+          key: 5
+          value: 'Fifth Floor'
+        -
+          key: 6
+          value: 'Sixth Floor'
+        -
+          key: 7
+          value: 'Seventh Floor'
+        -
+          key: 8
+          value: 'Eighth Floor'
+        -
+          key: 9
+          value: 'Ninth Floor'
+        -
+          key: 10
+          value: 'Tenth Floor'
+        -
+          key: 11
+          value: 'Eleventh Floor'
+        -
+          key: 12
+          value: 'Twelfth Floor'
+        -
+          key: 13
+          value: 'Thirteenth Floor'
+        -
+          key: 14
+          value: 'Fourteenth Floor'
+        -
+          key: 15
+          value: 'Fifteenth Floor'
+        -
+          key: 16
+          value: 'Sixteenth Floor'
+        -
+          key: 17
+          value: 'Seventeenth Floor'
+        -
+          key: 18
+          value: 'Eighteenth Floor'
+        -
+          key: 19
+          value: 'Nineteenth Floor'
+        -
+          key: 20
+          value: 'Twentieth Floor'
+      type: select
+      display: 'Facility Level'
+      sortable: false
+      replicator_preview: false
+      cast_booleans: true
+      localizable: false
+  -
+    handle: open
+    field:
+      type: time
+      display: "Opens\_/ Begins"
+      replicator_preview: false
+      localizable: false
+  -
+    handle: close
+    field:
+      type: time
+      display: "Closes\_/ Ends"
+      replicator_preview: false
+      localizable: false
+  -
+    handle: time_comment
+    field:
+      type: text
+      display: 'Time Span Comment'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: hours_day
+    field:
+      type: group
+      display: 'Hours for an Individual Day'
+      replicator_preview: false
+      localizable: false
+      fields:
+        -
+          import: uamsweb_common_fad_hours
+  -
+    handle: ontology_fpage_intro
+    field:
+      character_limit: 117
+      type: textarea
+      display: 'Override Intro Text for Related Ontology Item Section or Subpage'
+      instructions: |-
+        The default intro text is defined in Find-a-Doc Settings, written to be generic for all subpages of this type under any area of expertise. If you leave this field blank, the text from Find-a-Doc Settings will be used. If you add text here, that text will be used instead.
+
+        This will be displayed on the relevant section or subpage in a paragraph underneath the section title or page title.
+
+        The text will be limited to 117 characters. The preferred length is at least 110 characters.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: ontology_fpage_excerpt_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Use Intro Text as the Short Description for Related Ontology Item Section or Subpage?'
+      instructions: |-
+        Decide which text to use as the short description. The short description is what is included for the relevant subpage when it appears in search results and lists on our site.
+
+        Whichever text is used should be written in a way that generally informs and interests users with a short, relevant summary of what this page is about. Think of it like a pitch that convinces the user that this section or page is exactly what they're looking for.
+
+        If the intro text is not written in that way, the short description should be defined separately.
+      replicator_preview: false
+      default: false
+  -
+    handle: ontology_fpage_excerpt
+    field:
+      character_limit: 160
+      type: textarea
+      display: 'Short Description for Related Ontology Item Section or Subpage'
+      instructions: |-
+        This will be the description included for the relevant subpage when it appears in search results and lists on our site.
+
+        Write a short description that generally informs and interests users with a short, relevant summary of what this page is about. Think of it like a pitch that convinces the user that this section or page is exactly what they're looking for.
+
+        The text will be limited to 160 characters. The preferred length is at least 110 characters.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: ontology_fpage_featured_image
+    field: uamsweb_common_images.image_1280x720_16_9_recommended
+    config:
+      display: 'Override Featured Image for Related Ontology Item Section or Subpage'
+      instructions: |-
+        If you leave this blank, the default image will be used. The default image is defined in Find-a-Doc Settings.
+
+        Recommended dimensions: 2560x1920. Minimum dimensions: 1280x720. Recommended aspect ratio: 16:9.
+
+        When used on the site, the image will be automatically cropped to a 16:9 aspect ratio, and when shared on Facebook and Twitter, it will be a 1.91:1 aspect ratio.
+      replicator_preview: false
+  -
+    handle: clinical_specializations
+    field:
+      type: entries
+      display: 'Clinical Specialization'
+      instructions: |-
+        Select a provider classification or specialization from the Health Care Provider Taxonomy Code Set that matches / is relevant this entity. This will be used in the MedicalCode Schema.org type.
+
+        For information on the Health Care Provider Taxonomy Code Set, visit <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+
+        To easily select the proper item, copy the 10-character code for the desired taxonomy item, paste it into this input, and select the item that is returned.
+
+        For information on the MedicalCode Schema.org type, visit <a href='https://schema.org/MedicalCode' target='_blank'>https://schema.org/MedicalCode</a>.
+      replicator_preview: false
+      create: false
+      collections:
+        - clinical_specializations
+      localizable: false
+      search_index: clinical_specializations
+      select_across_sites: true
+  -
+    handle: clinical_specializations_multiple
+    field:
+      type: entries
+      display: 'Clinical Specialization'
+      instructions: |-
+        Select one or more provider classifications and/or specializations from the Health Care Provider Taxonomy Code Set that match / are relevant this entity. This will be used in the MedicalCode Schema.org type.
+
+        For information on the Health Care Provider Taxonomy Code Set, visit <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+
+        To easily select the proper item, copy the 10-character code for the desired taxonomy item, paste it into this input, and select the item that is returned.
+
+        For information on the MedicalCode Schema.org type, visit <a href='https://schema.org/MedicalCode' target='_blank'>https://schema.org/MedicalCode</a>.
+      replicator_preview: false
+      create: false
+      collections:
+        - clinical_specializations
+      localizable: false
+      search_index: clinical_specializations
+      select_across_sites: true
+  -
+    handle: page_builder
+    field: uamsweb_common.article
+    config:
+      display: 'Ontology Item Page Builder'
+      buttons:
+        - h2
+        - h3
+        - h4
+        - h5
+        - h6
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - quote
+        - anchor
+        - image
+        - table
+        - superscript
+        - subscript
+        - horizontalrule
+      localizable: false
+  -
+    handle: cta_bars
+    field:
+      max_sets: 2
+      type: replicator
+      display: 'Ontology Item Call-to-Action (CTA) Bar(s)'
+      instructions: 'Define up to two CTA Bar blocks.'
+      replicator_preview: false
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New CTA Bar Group'
+          sets:
+            new_set:
+              display: 'New CTA Bar'
+              fields:
+                -
+                  import: uamsweb_block_cta
+  -
+    handle: podcast_topic_name
+    field:
+      type: text
+      display: 'UAMS Health Talk Podcast Topic Name'
+      instructions: "Include a single topic name as listed in the \"Topics\" dropdown of the embedded player on <a href='https://uamshealth.com/podcast/' title='UAMS Health Talk Podcast' target='_blank'>https://uamshealth.com/podcast/</a>."
+      replicator_preview: false
+      localizable: false
+  -
+    handle: podcast_guest_name_uams_health_talk
+    field:
+      type: text
+      display: 'UAMS Health Talk Podcast Guest Name'
+      instructions: 'Include a single guest name as listed in the "Guests" dropdown of the embedded player on https://uamshealth.com/podcast/.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: syndication_embed_code
+    field:
+      mode_selectable: false
+      type: code
+      display: 'Syndication Embed Code'
+      instructions: 'Example: Syndication Code from the HHS Syndication Storefront'
+      replicator_preview: false
+      localizable: false

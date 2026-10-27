@@ -1,0 +1,13 @@
+{{#
+	@name Error: 403
+	@desc The 403 Forbidden error template.
+#}}
+
+{{# Overrides the framework's bundled `errors::403`, which the app path wins
+    against. That page did render the message, but on Laravel's unstyled minimal
+    layout with none of the site's branding or recovery aids (UAMS-Web/uams-statamic-archive#1942). #}}
+{{
+	partial:errors/targetless_response
+	heading="Access restricted"
+	fallback="You don&rsquo;t have permission to view this page. If you believe you should, try signing in or contact the page&rsquo;s owner."
+}}

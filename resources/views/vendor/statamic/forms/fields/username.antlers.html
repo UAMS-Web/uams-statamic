@@ -1,0 +1,7 @@
+{{# Username fieldtype (App\Fieldtypes\Username) — input_type defaults to "text"
+    with username semantics (autocomplete="username", spellcheck off) per the
+    fieldtype config; delegates to the default partial which honors input_type and
+    every other Input-trait attribute (autocomplete, spellcheck, validate:required,
+    js_attributes, aria-*). Override here only if username needs UI that diverges
+    from the shared input markup. #}}
+{{ partial:vendor/statamic/forms/fields/default }}

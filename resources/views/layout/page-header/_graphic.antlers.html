@@ -1,0 +1,48 @@
+<header
+	class="{{
+		[
+			'entry-header uams-module extra-padding graphic-title bg-red' => true,
+			'bg-image' => header_graphic:image,
+		] | classes | collapse_whitespace
+	}}"
+>
+	{{ if header_graphic:image }}
+	<style nonce="{{ csp_nonce }}">
+		.entry-header:before {
+			--bg-xxs:    url("{{ glide :src='header_graphic:image' w='566'  h='216'  fit='crop_focal' absolute='true' }}");
+			--bg-xxs-2x: url("{{ glide :src='header_graphic:image' w='1152' h='432'  fit='crop_focal' absolute='true' }}");
+			--bg-xs:     url("{{ glide :src='header_graphic:image' w='768'  h='288'  fit='crop_focal' absolute='true' }}");
+			--bg-xs-2x:  url("{{ glide :src='header_graphic:image' w='1536' h='576'  fit='crop_focal' absolute='true' }}");
+			--bg-sm:     url("{{ glide :src='header_graphic:image' w='992'  h='372'  fit='crop_focal' absolute='true' }}");
+			--bg-sm-2x:  url("{{ glide :src='header_graphic:image' w='1984' h='744'  fit='crop_focal' absolute='true' }}");
+			--bg-md:     url("{{ glide :src='header_graphic:image' w='1200' h='450'  fit='crop_focal' absolute='true' }}");
+			--bg-md-2x:  url("{{ glide :src='header_graphic:image' w='2400' h='900'  fit='crop_focal' absolute='true' }}");
+			--bg-lg:     url("{{ glide :src='header_graphic:image' w='1500' h='563'  fit='crop_focal' absolute='true' }}");
+			--bg-lg-2x:  url("{{ glide :src='header_graphic:image' w='3000' h='1125' fit='crop_focal' absolute='true' }}");
+			--bg-xl:     url("{{ glide :src='header_graphic:image' w='1921' h='720'  fit='crop_focal' absolute='true' }}");
+			--bg-xl-2x:  url("{{ glide :src='header_graphic:image' w='3842' h='1441' fit='crop_focal' absolute='true' }}");
+			--bg-xxl:    url("{{ glide :src='header_graphic:image' w='2560' h='960'  fit='crop_focal' absolute='true' }}");
+			--bg-xxl-2x: url("{{ glide :src='header_graphic:image' w='5120' h='1920' fit='crop_focal' absolute='true' }}");
+		}
+	</style>
+	{{ /if }}
+	<div class="text-container">
+		<div class="graphic-title-heading">
+			<h1>{{ title | widont }}</h1>
+		</div>
+		{{ if header_graphic:body }}
+		<div class="graphic-title-body">
+			<p>{{ header_graphic:body | widont }}</p>
+		</div>
+		{{ /if }}
+
+		{{ partial:layout/page-header/entry-meta }}
+	</div>
+	{{# Opt-in media credit over the graphic header image, emitted last so assistive tech reads it
+	    after the page title (WCAG 1.3.2). Anchored to the `.entry-header` (`position: relative`);
+	    the header is `bg-red`, so the scrim reads as a red variant. Off by default
+	    (`header_graphic:display_media_credit`). #}}
+	{{ if header_graphic:display_media_credit && header_graphic:image:creator }}
+		<p class="media-credit-overlay">{{ partial:typography/media_credit :creator="header_graphic:image:creator" :creator_organization="header_graphic:image:creator_organization" }}</p>
+	{{ /if }}
+</header>

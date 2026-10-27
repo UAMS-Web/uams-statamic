@@ -1,0 +1,80 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Alternative Text'
+        fields:
+          -
+            handle: exempt_from_alt
+            field: uamsweb_common_images.exempt_from_alt
+            config:
+              default: false
+              localizable: false
+          -
+            handle: alt
+            field: uamsweb_common_portraits.alt
+            config:
+              if:
+                exempt_from_alt: 'equals false'
+              validate:
+                - required
+                - sometimes
+      -
+        display: Caption
+        fields:
+          -
+            handle: caption
+            field: uamsweb_common_images.caption
+            config:
+              localizable: false
+      -
+        fields:
+          -
+            handle: date_taken
+            field: uamsweb_common_portraits.date_taken
+          -
+            handle: studio_query
+            field: uamsweb_common_portraits.studio_query
+          -
+            handle: background_query
+            field: uamsweb_common_portraits.background_query
+          -
+            handle: direction_query
+            field: uamsweb_common_portraits.direction_query
+      -
+        display: Creator
+        collapsible: true
+        fields:
+          -
+            handle: creator
+            field: uamsweb_common_portraits.creator
+          -
+            handle: creator_organization
+            field: uamsweb_common_portraits.creator_organization
+      -
+        display: Location
+        collapsible: true
+        fields:
+          -
+            handle: geographic_location
+            field: uamsweb_creativework_location.geographic_location
+            config:
+              instructions: 'e.g., where a photo was taken'
+              max_items: 1
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Portrait Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_portrait
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+              validate:
+                - required

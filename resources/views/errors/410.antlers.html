@@ -1,0 +1,14 @@
+{{#
+	@name Error: 410
+	@desc The 410 Gone error template.
+#}}
+
+{{# The migration redirect generator declares retired content with no surviving
+    ancestor permanently gone (UAMS-Web/uams-statamic-archive#1641), so crawlers drop it rather than chase a
+    soft-404. Before UAMS-Web/uams-statamic-archive#1942 a visitor got the generic Symfony page and the rule's
+    message reached no one. #}}
+{{
+	partial:errors/targetless_response
+	heading="This page is gone"
+	fallback="This page was permanently removed and has no replacement."
+}}

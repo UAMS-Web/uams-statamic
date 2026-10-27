@@ -1,0 +1,29 @@
+{{#
+
+	@name Header
+	@desc The global site header
+
+#}}
+{{# `$hide_primary_nav` / `$hide_resource_nav` are computed once in
+	layout.antlers.html (UAMS-Web/uams-statamic-archive#1173) and cascade into this partial. They are truthy
+	only on a marketing-landing entry whose editor opted in; every other page
+	renders the full chrome unchanged. #}}
+<header id="site-header" class="site-header navbar navbar-expand-sm" aria-label="Site Header">
+	{{ partial:layout/header/navbar/brand }}
+	{{# Render the resource-nav bar unless BOTH its content and the mobile hamburger
+		are hidden. The partial hides its own content on `hide_resource_nav` and its
+		hamburger on `hide_primary_nav`, so hiding only the resource content still
+		keeps the hamburger — the mobile primary nav's sole toggler — reachable (UAMS-Web/uams-statamic-archive#1173). #}}
+	{{ unless ( $hide_resource_nav && $hide_primary_nav ) }}
+		{{ partial:layout/header/navbar/resource-nav :hide_primary_nav="$hide_primary_nav" :hide_resource_nav="$hide_resource_nav" }}
+	{{ /unless }}
+	{{# The signed-in state and the way out (#2113 AC1). Rendered outside the
+		`$hide_primary_nav` guards deliberately: a marketing-landing entry hides its
+		navigation, and a member who lands on one must still be able to log out. #}}
+	{{ partial:layout/header/account }}
+</header>
+{{ unless $hide_primary_nav }}
+	{{ partial:layout/navigation/main/desktop }}
+	{{ partial:layout/navigation/main/mobile }}
+{{ /unless }}
+{{ partial:layout/breadcrumbs/breadcrumbs }}

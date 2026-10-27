@@ -1,0 +1,129 @@
+title: Infographic
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          -
+            import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_cover_image
+      -
+        display: Syndication
+        collapsible: true
+        fields:
+          -
+            handle: syndication_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this syndicated from another source?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+          -
+            handle: syndication_url
+            field: uamsweb_common.url
+            config:
+              display: 'Syndication Source URL'
+              localizable: false
+              if:
+                syndication_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content'
+        collapsible: true
+        fields:
+          -
+            handle: infographic_description
+            field: uamsweb_common.bard_simple
+            config:
+              display: 'Infographic Introduction'
+              instructions: |-
+                This will precede the infographic on the page.
+
+                Describe the purpose of the infographic and entice users to look at it.
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Image Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_image
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+      -
+        display: 'Infographic Content'
+        collapsible: true
+        fields:
+          -
+            handle: infographic
+            field:
+              container: images
+              type: assets
+              display: Infographic
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: infographic_transcript
+            field: uamsweb_common.bard_transcript
+            config:
+              display: 'Infographic Transcript'
+              instructions: 'Create a full-text version of the infographic to ensure its content is accessible to everyone, including people with disabilities who are unable to see images.'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        fields:
+          -
+            import: uamsweb_clinical_resource_related
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config:
+              localizable: false

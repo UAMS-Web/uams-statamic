@@ -1,0 +1,45 @@
+{{#
+	@name UAMS Link List Block
+	@desc Outer scaffolding for a split link list: page builder block wrapper, container row, heading column, and the list column's <ul>. Pass <li> markup via the slot — use components/block_link_list_item for each.
+	@set page.page_builder.uamsweb_block_*
+#}}
+
+{{# Auto block ID is opt-in; subpages navigation does not use one. #}}
+{{ $auto_block_id = auto_block_id ?? false }}
+
+{{# List column wraps slot content in <ul> by default; livewhale embeds a widget div instead. #}}
+{{ $wrap_in_ul = wrap_in_ul ?? true }}
+
+{{# Base classes always apply; `extra_class` lets callers add variants (e.g. `counter-list`, `livewhale`). #}}
+{{ $block_class = [
+	'link-list',
+	'link-list-layout-split',
+	extra_class
+] | classes | collapse_whitespace }}
+
+{{
+	partial:page_builder/uamsweb_block
+	:auto_block_id="$auto_block_id"
+	:block_class="$block_class"
+	:block_aria_label="block_heading"
+}}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12 col-md-6 heading">
+			<div class="text-container">
+				<h2 class="module-title"><span class="title">{{ block_heading }}</span></h2>
+				{{ if block_description }}
+					<p class="note">{{ block_description }}</p>
+				{{ /if }}
+			</div>
+		</div>
+		<div class="col-12 col-md-6 list">
+			{{ if $wrap_in_ul }}
+				<ul>
+					{{ slot }}
+				</ul>
+			{{ else }}
+				{{ slot }}
+			{{ /if }}
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /partial:page_builder/uamsweb_block }}

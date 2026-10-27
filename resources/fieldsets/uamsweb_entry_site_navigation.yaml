@@ -1,0 +1,53 @@
+title: 'UAMSWeb Entry Site Navigation Configuration'
+fields:
+  -
+    handle: subsection
+    field: uamsweb_common.true_false
+    config:
+      display: 'This Entry Starts a New Subsection'
+      default: false
+      validate:
+        - required
+  -
+    handle: hide_breadcrumbs
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Breadcrumbs on This Entry'
+      default: false
+      validate:
+        - required
+  -
+    handle: hide_from_menu
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide This Entry From Automatically Generated Navigation'
+      instructions: 'Breadcrumbs will not be impacted if this option is enabled.'
+      default: false
+      validate:
+        - required
+  -
+    handle: nav_alt_name
+    field:
+      type: text
+      display: 'Alternate Entry Title in Navigation'
+      instructions: 'Provide an alternate title to use for this entry in the automatically generated navigation. If this field is left blank, the entry title will be used.'
+      localizable: false
+      unless:
+        hide_from_menu: 'equals true'
+  -
+    handle: hide_child_menu
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Subpages Navigation'
+      default: false
+      validate:
+        - required
+  -
+    handle: subpages_alt_title
+    field:
+      type: text
+      display: 'Alternate Subpages Navigation Heading Text'
+      instructions: 'Provide an alternate heading to use for the subpages navigation on this entry''s page. If left blank, the default heading text will be used (i.e., "Subpages").'
+      localizable: false
+      unless:
+        hide_child_menu: 'equals true'

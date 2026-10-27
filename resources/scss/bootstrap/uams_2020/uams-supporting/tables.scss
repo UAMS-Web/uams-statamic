@@ -1,0 +1,183 @@
+@use 'sass:map';
+
+// "Last Row as Footer" toggle (`last_row_footers`) on the Table Bard set wraps the
+// final row in `<tfoot>` (see resources/views/sets/_table.antlers.html). Bootstrap 4
+// leaves `<tfoot>` unstyled, so give it a footer treatment that reads as distinct from
+// the body rows.
+//
+// Follow Bootstrap's own table convention (scss/_tables.scss + scss/mixins/_table-row.scss):
+// style the cells via the child combinator rather than the row/section, so the tint
+// overrides `.table-striped` and never bleeds into a table nested inside a footer cell.
+// The 2px top border mirrors the row-group separator Bootstrap gives `thead th`
+// (border-bottom) and `tbody + tbody` (border-top); the cells are bold because the
+// footer is built from `<td>`, which — unlike the `<th>` header — isn't bold by default.
+.table {
+    // White table background (UAMS-Web/uams-statamic-archive#231). Bootstrap leaves the table transparent, so
+    // a table over a tinted section inherits that colour. Set the background on
+    // the table itself (not the cells) so `.table-striped` (which tints the
+    // `<tr>`) and `.table-hover` still win over it.
+    background-color: $white;
+
+    tfoot {
+        > tr > th,
+        > tr > td {
+            font-weight: $font-weight-bold;
+            background-color: $table-head-bg;
+            border-top: (2 * $table-border-width) solid $table-border-color;
+        }
+    }
+}
+
+// Visitor-facing Table set features (UAMS-Web/uams-statamic-archive#231): the search box, page-length select,
+// information line and pager that `table-features-engine.js` builds around a
+// `[data-table-features]` table, plus the sortable-header affordance. The
+// controls reuse Bootstrap's `.form-control` / `.pagination` styles; these rules
+// only lay them out and dress the sort button.
+.table-features {
+    &__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: map.get($spacers, 2);
+
+        &--top {
+            margin-bottom: map.get($spacers, 2);
+        }
+
+        &--bottom {
+            margin-top: map.get($spacers, 2);
+        }
+    }
+
+    &__search {
+        flex: 1 1 12rem;
+        max-width: 20rem;
+    }
+
+    &__length {
+        margin-bottom: 0;
+
+        select {
+            display: inline-block;
+            width: auto;
+            margin: 0 map.get($spacers, 1);
+        }
+    }
+
+    &__info {
+        color: $text-muted;
+    }
+
+    &__pager .pagination {
+        margin-bottom: 0;
+    }
+
+    // The header text becomes a button; strip its native chrome so it reads as a
+    // header, and append a direction indicator driven by the cell's aria-sort.
+    &__sort-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25em;
+        padding: 0;
+        font: inherit;
+        color: inherit;
+        text-align: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+
+        &::after {
+            content: "\2195"; // up-down arrow (unsorted)
+            opacity: 0.4;
+        }
+
+        // Standalone trigger added beside a header that already holds a link
+        &--icon {
+            margin-left: map.get($spacers, 1);
+        }
+    }
+
+    [aria-sort="ascending"] .table-features__sort-btn::after {
+        content: "\2191"; // up arrow
+        opacity: 1;
+    }
+
+    [aria-sort="descending"] .table-features__sort-btn::after {
+        content: "\2193"; // down arrow
+        opacity: 1;
+    }
+
+    // A control bar with no controls (e.g. a table using only column filters or
+    // the stacked layout) should take up no space.
+    &__controls:empty {
+        display: none;
+    }
+
+    // Per-column filter dropdowns (UAMS-Web/uams-statamic-archive#243) sit in a row above the table.
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: map.get($spacers, 2);
+        margin-bottom: map.get($spacers, 2);
+    }
+
+    &__filter {
+        margin-bottom: 0;
+
+        select {
+            display: inline-block;
+            width: auto;
+            margin-left: map.get($spacers, 1);
+        }
+    }
+}
+
+// Responsive stacked-card layout (UAMS-Web/uams-statamic-archive#243). Below the configured breakpoint each row
+// becomes a card and every cell is prefixed with its column header (stamped as a
+// `data-label` by the table-features engine); above it the table renders normally.
+@mixin table-stacked {
+    thead {
+        // Visually hide the header row — its labels move into each cell.
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    tr {
+        display: block;
+        margin-bottom: map.get($spacers, 3);
+        border: 1px solid $table-border-color;
+    }
+
+    td,
+    th {
+        display: block;
+        text-align: left;
+    }
+
+    td[data-label]::before,
+    th[data-label]::before {
+        content: attr(data-label) ": ";
+        margin-right: 0.5em;
+        font-weight: 700;
+    }
+}
+
+.table--stack-phone {
+    @media (max-width: 767.98px) {
+        @include table-stacked;
+    }
+}
+
+.table--stack-tablet {
+    @media (max-width: 991.98px) {
+        @include table-stacked;
+    }
+}

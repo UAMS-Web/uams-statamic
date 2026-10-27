@@ -1,0 +1,28 @@
+{
+    "runMode": "replace",
+    "scripts": {
+        "setup": [
+            "php scripts/polyscope-provision.php",
+            "herd link",
+            "herd secure",
+            "php -r \"file_put_contents('.env', preg_replace('/^APP_URL=.*/m', 'APP_URL=https://{{folder}}.test', file_get_contents('.env')));\"",
+            "git submodule update --init --depth 1 content",
+            "php artisan optimize:clear",
+            "php artisan statamic:stache:clear"
+        ],
+        "archive": [
+            "herd unsecure",
+            "herd unlink"
+        ],
+        "run": [
+            { "label": "Vite (dev)", "command": "npm run dev" },
+            { "label": "Build assets", "command": "npm run build" },
+            { "label": "Logs", "command": "powershell Get-Content storage/logs/laravel.log -Wait -Tail 50" },
+            { "label": "Tests", "command": "php artisan test --compact" }
+        ]
+    },
+    "preview": {
+        "url": "https://{{folder}}.test"
+    },
+    "tasks": []
+}

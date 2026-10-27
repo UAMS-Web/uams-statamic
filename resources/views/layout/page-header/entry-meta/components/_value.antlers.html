@@ -1,0 +1,16 @@
+{{#
+
+	@name Entry Meta Component: Value
+	@desc Wrapper for entry-meta value content. Renders element with schema.org attributes and slot.
+	Expects: element (optional; default span), itemprop, itemscope, itemtype, content_attr; slot content.
+
+#}}
+
+<{{ element = element ?? 'span' }}{{ element }}
+	class="entry-meta-value"
+	{{ itemprop | attribute:itemprop}}
+	{{ itemscope | attribute:itemscope}}
+	{{ itemtype | attribute:itemtype}}
+	{{ datetime_attr | attribute:datetime}}
+	{{ content_attr | attribute:content}}
+>{{ slot }}</{{ element }}>

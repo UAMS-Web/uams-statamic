@@ -1,0 +1,14 @@
+{{#
+
+	@name Entry Meta Component: Duration
+	@desc Renders a duration value (e.g. reading time) with schema.org timeRequired (ISO 8601).
+	Expects: value (number, e.g. minutes), itemprop, unit_label_singular, unit_label_plural.
+
+#}}
+
+{{
+	partial:layout/page-header/entry-meta/components/value
+}}
+	{{ value | format_duration:human_long }}
+{{ /partial:layout/page-header/entry-meta/components/value }}
+

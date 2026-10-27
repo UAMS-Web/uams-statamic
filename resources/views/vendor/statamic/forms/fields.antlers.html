@@ -1,0 +1,132 @@
+{{#
+
+	================================================================================
+
+	Public-form field-conditions surface
+
+	================================================================================
+
+	Each field's `<template x-if="{{ show_field }}">` wrapper drives runtime
+	visibility. The `show_field` expression resolves to a call into Statamic's
+	frontend conditions API, reached through an Alpine magic:
+
+		$showField(<field config>, $data, '<handle>')
+
+	`show_field` is emitted by UAMSWeb\AlpineCspForms\JsDrivers\AlpineCsp::renderAlpineShowFieldJs
+	(the uams-web/statamic-alpine-csp-forms add-on, UAMS-Web/uams-statamic-archive#3073)
+	when the form is rendered with `js="alpine_csp"`, which both form entry
+	points do (page_builder/_uamsweb_block_form, sets/_form).
+
+	The `$showField` magic is registered by the add-on's front-end script, which
+	the layout loads ahead of the site bundle, and calls the add-on's evaluator
+	(moved there from `resources/js/conditions/` by UAMS-Web/uams-statamic-archive#3073; written for UAMS-Web/uams-statamic-archive#1956).
+	The indirection is required by the @alpinejs/csp build (UAMS-Web/uams-statamic-archive#1859): it evaluates
+	attribute expressions with an AST interpreter rather than `new Function()` —
+	which is what lets `script-src` drop `'unsafe-eval'` — and that interpreter
+	resolves identifiers only from the Alpine scope stack, so Statamic's stock
+	`alpine` driver's `Statamic.$conditions.showField(...)` throws
+	`Undefined variable: Statamic` on every field. Modules may import freely;
+	attributes may not reference globals at all.
+
+	Statamic's own `helpers.js` is no longer loaded on public pages — its
+	evaluator used `eval()`, which is the very thing `'unsafe-eval'` had to stay
+	for. So `Statamic.$conditions` does not exist here at all any more.
+
+	## What works
+
+	- **Condition keys**: `if`, `if_any`, `unless`, `unless_any`, `show_when`,
+	  `show_when_any`, `hide_when`, `hide_when_any` (`_any` variants are OR;
+	  others are AND; `unless`/`hide_when` invert).
+	- **Operators**: `is` / `equals` / `==`, `isnt` / `not` / `!=`, `contains` /
+	  `includes`, `contains_any` / `includes_any`, `>`, `>=`, `<`, `<=`, and the
+	  special RHS `'empty'`. See the add-on's `resources/js/conditions/validator.js`
+	  and its constants parity test, which pins the vocabulary against Statamic's
+	  bundle so an upstream change cannot drift past.
+	- **Nested visibility**: a conditional field can itself be the source of
+	  another field's condition; both update reactively as the user types.
+	- **Custom conditions**: `if: { x: 'custom funcName:params' }` works when the
+	  function is registered via `registerCustomCondition` in
+	  `resources/js/conditions/`, which writes it to `window.StatamicCustomConditions`
+	  — the registry the evaluator reads directly.
+
+	## Known limits
+
+	- **Composite-subfield sources are not reactive.** The composite templates
+	  (address, name, person_name, partial_date, text_phonetic_pair) intentionally
+	  drop `x-model` from their subfield inputs (see UAMS-Web/uams-statamic-archive#670, eb95eb186 for the
+	  rationale — Statamic's Alpine driver emits `x-model="form.<handle>"` which
+	  binds the *parent* composite, so the same wiring on each subfield would
+	  clobber the composite value). As a result, conditions like
+	  `if: { address.city: 'isnt empty' }` won't re-evaluate as the user types into
+	  the city subfield. Workaround: use the parent composite handle as the
+	  source (`if: { address: 'isnt empty' }`) or a non-composite mirror field.
+
+	- **`validate: required` + `if:` does not auto-skip on the server.** Statamic
+	  evaluates the full `validate` rule set on every submission regardless of
+	  client-side visibility, so a `required` field that's currently hidden via
+	  `if:` will still produce a "field is required" error on submit. Use the
+	  Laravel `required_if` / `required_unless` / `required_with` rules instead
+	  when the requirement should track visibility:
+
+		field:
+		  type: text
+		  if:
+			trigger: 'equals show'
+		  validate:
+			- 'required_if:trigger,show'
+
+	## Troubleshooting
+
+	- **Form renders with the heading and Submit button but no input fields.**
+	  The `<template x-if="...">` wrappers below never activate because
+	  `Alpine.start()` never ran — typically because Vite's optimize-dep cache
+	  went stale and the dev server is returning `504 Outdated Optimize Dep` for
+	  `@alpinejs/csp` (or another pre-bundled module that `site.js` imports). Fix
+	  and full diagnostic: `docs/runbooks/vite-stale-optimize-dep-cache.md`.
+
+	- **One field is missing, or a field that should be hidden is showing.**
+	  Under the CSP build a throwing `x-if` expression yields `undefined`, which
+	  renders nothing — so a single broken condition hides one field rather than
+	  the whole form. Check the browser console for `Alpine Expression Error`.
+
+	================================================================================
+
+#}}
+{{ fields }}
+	{{# Skip fields marked `visibility: hidden` in the blueprint. These are admin- or
+		system-only inputs (e.g., WordPress-imported GF fields with the
+		admin-only / system-populated role) that should never reach the public form. #}}
+	{{ unless visibility == 'hidden' }}
+		{{# Alpine.js conditional rendering — shows/hides fields based on Statamic's
+			show_field logic. Structural fieldtypes (hidden, section, html) bypass the
+			labeled form-group wrapper and render their own markup; spacer renders
+			nothing; everything else gets the standard label + input + error layout. #}}
+		{{ if type == 'hidden' }}
+			<template x-if="{{ show_field }}">
+				{{ field }}
+			</template>
+		{{ elseif type == 'section' || type == 'html' }}
+			<template x-if="{{ show_field }}">
+				<div>{{ field }}</div>
+			</template>
+		{{ elseif type != 'spacer' }}
+			<template x-if="{{ show_field }}">
+				<div class="form-group">
+					<label for="{{ id }}" class="font-weight-bold">
+						{{ display }}
+						{{ if validate | contains:required }}
+							<sup aria-label="{{ trans:Required }}" class="text-danger">*</sup>
+						{{ /if }}
+					</label>
+					{{ if instructions }}
+						<small class="form-text text-muted" id="{{ id }}-instructions">{{ instructions }}</small>
+					{{ /if }}
+					{{ field }}
+					{{ if error }}
+						<div class="invalid-feedback" id="{{ id }}-error">{{ error }}</div>
+					{{ /if }}
+				</div>
+			</template>
+		{{ /if }}
+	{{ /unless }}
+{{ /fields }}

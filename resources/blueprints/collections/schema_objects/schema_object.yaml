@@ -1,0 +1,912 @@
+title: 'Schema Object'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: false
+              display: Title
+              localizable: false
+              validate:
+                - required
+          -
+            handle: source_site
+            field:
+              max_items: 1
+              type: sites
+              display: 'Source Site'
+              instructions: 'If a site is selected, variables will be localized to the selected site by calling the `source_site` variable.'
+              localizable: false
+          -
+            handle: inherit_from
+            field:
+              type: entries
+              display: 'Also inherit from'
+              instructions: 'Additional schema objects from which to inherit properties. Unset properties are filled from these entries (after the parent). Order matters: earlier entries are overridden by later ones and by this entry''s own values.'
+              collections:
+                - schema_objects
+              localizable: false
+      -
+        display: 'Schema.org Data'
+        instructions: 'Select a Schema.org type (e.g., Thing, Person, Organization) and fill in the properties for that type.'
+        fields:
+          -
+            handle: schema
+            field:
+              type: schema_object
+              display: 'Schema.org Object'
+              hide_display: true
+              localizable: false
+              validate:
+                - required
+  classifications:
+    display: Classifications
+    sections:
+      -
+        display: Classifications
+        instructions: 'Define classifications for the entity described by this schema object. Values will be used to populate the appropriate schema.org properties (e.g. naics).'
+        fields:
+          -
+            handle: naics
+            field:
+              type: replicator
+              button_label: Add
+              display: 'North American Industry Classification System (NAICS) Code'
+              localizable: false
+              sets:
+                naics:
+                  display: 'NAICS Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: naics_code
+                        display: 'NAICS Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: cms_specialty_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Centers for Medicare & Medicaid Services (CMS) Specialty Codes'
+              localizable: false
+              sets:
+                cms_specialty_code:
+                  display: 'CMS Specialty Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: cms_specialty_code
+                        display: 'CMS Specialty Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: health_care_provider_taxonomy_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Health Care Provider Taxonomy Code'
+              localizable: false
+              sets:
+                health_care_provider_taxonomy_code:
+                  display: 'Provider Taxonomy Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: health_care_provider_taxonomy_code
+                        display: 'Provider Taxonomy Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: isic_rev_4_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'International Standard of Industrial Classification of All Economic Activities (ISIC), Revision 4 Code'
+              localizable: false
+              sets:
+                isic_rev_4_code:
+                  display: 'ISIC Rev. 4 Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: isic_rev_4_code
+                        display: 'ISIC Rev. 4 Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: isco_08_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'ISCO-08 Code'
+              localizable: false
+              sets:
+                isco_08_code:
+                  display: 'ISCO-08 Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: isco_08_code
+                        display: 'ISCO-08 Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: onet_soc_occupation_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'O*Net-SOC Occupation Code'
+              localizable: false
+              sets:
+                onet_soc_occupation_code:
+                  display: 'O*Net-SOC Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: onet_soc_occupation_code
+                        display: 'O*Net-SOC Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+  identifiers:
+    display: Identifiers
+    sections:
+      -
+        display: Identifiers
+        instructions: 'Define identifiers for the entity described by this schema object. Values will be used to populate the appropriate schema.org properties (e.g. duns, taxID, identifier as PropertyValue).'
+        fields:
+          -
+            handle: duns
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Dun & Bradstreet D-U-N-S Number'
+              localizable: false
+              sets:
+                duns:
+                  display: 'D-U-N-S Number'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: duns_number
+                        display: 'D-U-N-S Number'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: ein
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Employer Identification Number (EIN)'
+              localizable: false
+              sets:
+                ein:
+                  display: 'EIN'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: taxpayer_identification_number
+                        display: 'EIN'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: uei
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Federal/SAM.gov Unique Entity ID (UEI)'
+              localizable: false
+              sets:
+                uei:
+                  display: 'UEI'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: uei
+                        display: 'UEI'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: cage
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Commercial and Government Entity (CAGE) Code'
+              localizable: false
+              sets:
+                cage:
+                  display: 'CAGE Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: cage_code
+                        display: 'CAGE Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: ope_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Office of Postsecondary Education (OPE) ID Number'
+              localizable: false
+              sets:
+                ope_id:
+                  display: 'OPE ID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: ope_id
+                        display: 'OPE ID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: ipeds
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Integrated Postsecondary Education Data System (IPEDS) Number'
+              localizable: false
+              sets:
+                ipeds:
+                  display: 'IPEDS Number'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: ipeds_id
+                        display: 'IPEDS Number'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: gln
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Global Location Number (GLN)'
+              localizable: false
+              sets:
+                gln:
+                  display: 'GLN'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: global_location_number
+                        display: 'GLN'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: npi
+            field:
+              type: replicator
+              button_label: Add
+              display: 'National Provider Identifier (NPI)'
+              localizable: false
+              sets:
+                npi:
+                  display: 'NPI'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: npi
+                        display: 'NPI'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: ahaid
+            field:
+              type: replicator
+              button_label: Add
+              display: 'American Hospital Association Hospital Identifier (AHAID)'
+              localizable: false
+              sets:
+                ahaid:
+                  display: 'AHAID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: ahaid
+                        display: 'AHAID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: google_business_profile_cid
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Google CID (Customer ID) Number'
+              localizable: false
+              sets:
+                google_business_profile_cid:
+                  display: 'Google CID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: google_business_profile_cid
+                        display: 'Google CID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: google_scholar_author_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Google Scholar Author ID'
+              localizable: false
+              sets:
+                google_scholar_author_id:
+                  display: 'Google Scholar Author ID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: google_scholar_author_id
+                        display: 'Google Scholar Author ID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: google_tag_manager_container_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Google Tag Manager (GTM) Container ID'
+              localizable: false
+              sets:
+                google_tag_manager_container_id:
+                  display: 'GTM Container ID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: google_tag_manager_container_id
+                        display: 'GTM Container ID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: iso_6523_code
+            field:
+              type: replicator
+              button_label: Add
+              display: 'ISO 6523 Code'
+              localizable: false
+              sets:
+                iso_6523_code:
+                  display: 'ISO 6523 Code'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: iso_6523_code
+                        display: 'ISO 6523 Code'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: legal_entity_identifier
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Legal Entity Identifier (LEI)'
+              localizable: false
+              sets:
+                legal_entity_identifier:
+                  display: 'LEI'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: legal_entity_identifier
+                        display: 'LEI'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: orcid
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Open Researcher and Contributor ID (ORCID iD)'
+              localizable: false
+              sets:
+                orcid:
+                  display: 'ORCID iD'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: orcid
+                        display: 'ORCID iD'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: pmid
+            field:
+              type: replicator
+              button_label: Add
+              display: 'PubMed Identifier'
+              localizable: false
+              sets:
+                pmid:
+                  display: 'PMID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: pmid
+                        display: 'PMID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: pubmed_author_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'PubMed Author Identifier'
+              localizable: false
+              sets:
+                pubmed_author_id:
+                  display: 'PubMed Author ID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: pubmed_author_id
+                        display: 'PubMed Author ID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: researcherid
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Web of Science ResearcherID'
+              localizable: false
+              sets:
+                researcherid:
+                  display: 'ResearcherID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: researcherid
+                        display: 'ResearcherID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: rxcui
+            field:
+              type: replicator
+              button_label: Add
+              display: 'National Library of Medicine RxNorm Concept Unique Identifier (RxCUI)'
+              localizable: false
+              sets:
+                rxcui:
+                  display: 'RxCUI'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: rxcui
+                        display: 'RxCUI'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: scopus_author_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Scopus Author ID'
+              localizable: false
+              sets:
+                scopus_author_id:
+                  display: 'Scopus Author ID'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: scopus_author_id
+                        display: 'Scopus Author ID'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: ticker_symbol
+            field:
+              type: replicator
+              button_label: Add
+              display: 'Stock Ticker Symbol'
+              localizable: false
+              sets:
+                ticker_symbol:
+                  display: 'Ticker Symbol'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: ticker_symbol
+                        display: 'Ticker Symbol'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: va_station_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'U.S. Department of Veterans Affairs Station Identifier (STA3N)'
+              localizable: false
+              sets:
+                va_station_id:
+                  display: 'STA3N'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: va_station_id
+                        display: 'STA3N'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+          -
+            handle: va_substation_id
+            field:
+              type: replicator
+              button_label: Add
+              display: 'U.S. Department of Veterans Affairs Substation Identifier (STA6A)'
+              localizable: false
+              sets:
+                va_substation_id:
+                  display: 'STA6A'
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: identifier
+                        preset: va_substation_id
+                        display: 'STA6A'
+                        localizable: false
+                antlers:
+                  display: Antlers
+                  icon: fieldtype-code
+                  fields:
+                    -
+                      handle: value
+                      field:
+                        type: code
+                        display: Antlers
+                        mode: html
+                        mode_selectable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'

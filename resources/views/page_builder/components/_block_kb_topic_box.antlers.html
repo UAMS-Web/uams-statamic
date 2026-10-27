@@ -1,0 +1,78 @@
+{{#
+	@name UAMS Knowledge Base Topic Box
+	@desc The topic box element in UAMS Knowledge Base page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+
+{{# Query relevant knowledge base articles for the current topic #}}
+{{ collection:knowledge_bases
+	blueprint:is="article"
+	query_scope="{{ query_scope }}"
+	parent="{{ id }}"
+	status:is="published"
+	as="entries"
+}}
+
+	{{# Check if there are any results #}}
+	{{ if !no_results }}
+
+		{{# Topic Box Title #}}
+		{{ $kb_topic_box_title = switch(
+			( topic_source == 'dynamic' && topic_dynamic == 'recently_published' ) => 'Recently Published',
+			( topic_source == 'dynamic' && topic_dynamic == 'recently_updated' ) => 'Recently Updated',
+			( topic_source == 'dynamic' && topic_dynamic == 'top_views' ) => 'Most Viewed',
+			( topic_source == 'dynamic' && topic_dynamic == 'top_likes' ) => 'Most Liked',
+			() => title
+		) }}
+
+		{{# Define sort order. Most Viewed / Most Liked rank by the engagement
+			computeds surfaced from the sideband store (UAMS-Web/uams-statamic-archive#286, UAMS-Web/uams-statamic-archive#287): view_count and
+			the net like score like_count_net (likes − dislikes). #}}
+		{{ $sort_order = switch(
+			( topic_source == 'dynamic' && topic_dynamic == 'recently_published' ) => 'date:desc',
+			( topic_source == 'dynamic' && topic_dynamic == 'recently_updated' ) => 'updated_at:desc|date:desc',
+			( topic_source == 'dynamic' && topic_dynamic == 'top_views' ) => 'view_count:desc',
+			( topic_source == 'dynamic' && topic_dynamic == 'top_likes' ) => 'like_count_net:desc',
+			() => 'title:asc'
+		) }}
+
+		{{# Render the topic box #}}
+		<div
+			class="{{
+				[
+					'kb-topic' => true,
+					'topic-id-recent' => ( topic_source == 'dynamic' && topic_dynamic == 'recently_published' ),
+					'topic-id-updated' => ( topic_source == 'dynamic' && topic_dynamic == 'recently_updated' ),
+					'topic-id-top_views' => ( topic_source == 'dynamic' && topic_dynamic == 'top_views' ),
+					'topic-id-top_likes' => ( topic_source == 'dynamic' && topic_dynamic == 'top_likes' ),
+				] | classes | collapse_whitespace
+			}}"
+		>
+			<div class="kb-topic__inner">
+				<h3 class="kb-topic__title">
+					<span class="kb-topic__title-icon"><span class="fa fa-list-alt"></span></span>
+					{{ $kb_topic_box_title }}
+					{{ if topic_source != 'dynamic' }}<span class="kb-topic__count">{{ total_results }} {{ if total_results > 1 }}articles{{ else }}article{{ /if }}</span>{{ /if }}
+				</h3>
+				<div class="kb-topic__articles kb-topic__articles--with-icons">
+						<ul>
+							{{# Loop through articles, sorting the whole set BEFORE limiting so
+								Most Viewed / Most Liked take the true top-N, not a default-order
+								slice re-sorted among itself. `entries` is aliased array data, so
+								Antlers applies these params as modifiers left-to-right — sort must
+								precede limit. #}}
+							{{ entries sort="{sort_order}" limit="{topic_article_limit}" }}
+								<li>
+									<a href="{{ url }}">
+										<span class="kb-topic__list-article-icon"><span class="fa fa-book"></span></span>
+										<span class="kb-topic__list-article-title">{{ title }}</span>
+									</a>
+								</li>
+							{{ /entries }}
+						</ul>
+				</div>
+			</div>
+		</div>
+	{{ /if }}
+{{ /collection:knowledge_bases }}
+

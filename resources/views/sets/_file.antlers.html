@@ -1,0 +1,11 @@
+{{#
+@name File
+@set page.article.file
+#}}
+
+<div class="wp-block-file">
+	<a id="{{ id }}" href="{{ file:url }}" rel="noreferrer noopener"{{ new_window_query ?= ' target="_blank"' }}>{{ title ?? file:title ?? file:basename }}{{ if new_window_query }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+	{{ if download_button_query }}
+		<a aria-label="Download for {{ title ?? file:title ?? file:basename }}" href="{{ file:url }}" class="wp-block-file__button wp-element-button" download="" aria-describedby="{{ id }}">Download</a>
+	{{ /if }}
+</div>

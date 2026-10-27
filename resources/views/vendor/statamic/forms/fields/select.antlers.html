@@ -1,0 +1,55 @@
+<select
+	class="{{
+		[
+			'form-control' => true,
+			'is-invalid' => error
+		] | classes | collapse_whitespace
+	}}"
+	id="{{ id }}"
+	name="{{ handle }}{{ multiple ?= "[]" }}"
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+	{{ if calculation_query == true }}
+		{{# Dynamic Default Value (UAMS-Web/uams-statamic-archive#2886): calculation-engine.js writes the formula's
+			text result into this field's Alpine key, which the binding above turns
+			into the selected option. A multiple select is named `<handle>[]`, so
+			the engine writes a list, reading the result as comma-separated option
+			values (UAMS-Web/uams-statamic-archive#2924). No `readonly`: the visitor can still change the choice. #}}
+		data-calculation-type="text"
+		data-calculation-formula="{{ calculation_formula ?? '' }}"
+		data-calculation-decimals=""
+	{{ /if }}
+	{{ multiple | attribute:multiple }}
+	{{ ( validate| contains:required ) | attribute:required }}
+	{{# `visibility: read_only` — see README.md in this directory. <select readonly>
+		is not valid HTML, so read-only selects use `disabled` and the value is
+		omitted from the submission (the server is expected to default it). #}}
+	{{ ( visibility == 'read_only' ) | attribute:disabled }}
+	{{ if error }}
+		aria-invalid="true" aria-describedby="{{ id }}-error"
+	{{ elseif instructions }}
+		aria-describedby="{{ id }}-instructions"
+	{{ /if }}
+>
+	{{ unless multiple }}
+		<option value>
+			{{ if placeholder }}
+				{{ placeholder }}
+			{{ else }}
+				{{ trans key="Please select..." }}
+			{{ /if }}
+		</option>
+	{{ /unless }}
+	{{ foreach:options as="option|label" }}
+		{{ $is_selected = multiple ? ( value | in_array(option) ) : ( option == value ) }}
+		<option
+			class="font-weight-light"
+			value="{{ option }}"
+			{{ $is_selected | attribute:selected }}
+			{{# Per-choice submission limit (UAMS-Web/uams-statamic-archive#292): disable a choice at its cap.
+				`full_choices` is absent (so inert) for fields without limits. #}}
+			{{ ( full_choices | contains:option ) | attribute:disabled }}
+		>
+			{{ label !== null ? label : option }}{{ if full_choices | contains:option }} ({{ trans key="Full" }}){{ /if }}
+		</option>
+	{{ /foreach:options }}
+</select>

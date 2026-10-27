@@ -1,0 +1,177 @@
+title: 'Logo List Item'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Entry Title'
+          -
+            handle: logo_title
+            field:
+              type: text
+              localizable: false
+              validate:
+                - required
+              display: 'Name of Organization'
+              instructions: 'Use the full name of the organization. Avoid using acronyms unless that is the official name of the organization.'
+          -
+            handle: logo_image
+            field: uamsweb_common_images.logo
+            config:
+              container: logos_unrestricted
+              display: 'Logo of Organization'
+              instructions: |-
+                Upload an SVG or a PNG with a transparent background. Prefer SVG where you have it — it stays sharp at every size. Do not simply save a JPEG as a PNG. Crop the image to the bounds of the logo content before uploading.
+
+                PNG only: minimum dimensions 884x538. SVG scales, so no pixel minimum applies.
+              file_type_restrictions: mime_types
+              mime_types:
+                - image/png
+                - image/svg+xml
+          -
+            handle: logo_link
+            field:
+              type: link
+              display: 'URL for Organization'
+              instructions: "Include the URL for either the organization's website or a UAMS landing page related to that organization."
+              localizable: false
+          -
+            handle: logo_link_text
+            field:
+              placeholder: 'e.g., Visit Their Website'
+              default: 'Visit Their Website'
+              type: text
+              display: 'Link Text'
+              instructions: 'The default text for the link is <code>Visit Their Website</code>. Enter new text if the URL goes somewhere other than their website. For example, if the link went to a landing page about our partnership with this organization, you could say <code>Learn about our partnership</code>.'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                logo_link: 'custom isNotEmpty'
+          -
+            handle: logo_link_target
+            field:
+              options:
+                -
+                  key: inherit
+                  value: 'No Override'
+                -
+                  key: 'true'
+                  value: 'Always Open in New Window'
+                -
+                  key: 'false'
+                  value: 'Always Open in Same Window'
+              default: inherit
+              cast_booleans: true
+              type: radio
+              display: 'Link Target'
+              instructions: "The block on the page can define whether the links for all items within that block open in the same window or a new window. Or you can override that behavior by always doing one or the other for this specific item's link."
+              validate:
+                - required
+                - sometimes
+              if:
+                logo_link: 'custom isNotEmpty'
+              localizable: false
+          -
+            handle: logos_item_categories
+            field:
+              collections:
+                - logos_item_categories
+              type: entries
+              mode: select
+              display: Categories
+              instructions: 'Categories will be used to filter which items are displayed in a block. Multiple categories can be used to either expand or narrow the selection for what is displayed in a block.'
+              localizable: false
+          -
+            handle: logos_item_labels
+            field:
+              collections:
+                - logos_item_labels
+              type: entries
+              mode: select
+              display: 'Label for Organization'
+              instructions: 'The label can be used to distinguish between organizations within a category. Examples: industry, city, state.'
+              localizable: false
+          -
+            handle: logo_shortdescr
+            field:
+              character_limit: 235
+              type: textarea
+              display: 'Short Description'
+              instructions: |-
+                Briefly describe either the organization or the relationship with the organization. This can be displayed when the layout is set to <code>Grid</code>.
+
+                There is a 235-character limit.
+              localizable: false
+          -
+            handle: logo_longdescr
+            field: uamsweb_common.article
+            config:
+              display: 'Long Description'
+              instructions: 'Describe either the organization or the relationship with the organization. This will be displayed when the layout is set to <code>Vertical List</code>.'
+              buttons:
+                - bold
+                - italic
+                - removeformat
+                - anchor
+              localizable: false
+          -
+            handle: order_values
+            field:
+              type: array
+              display: 'Order Key and Value'
+              instructions: |-
+                Define a <code>key</code> to be used when determining the order of a list of logos. Use this same <code>key</code> in other relevant logo items.
+
+                Then set a numeric value for this item in that list's order.
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: 'Status and Visibility'
+        fields:
+          -
+            handle: status_and_visibility
+            field: uamsweb_common_status.status_and_visibility
+            config:
+              localizable: false
+          -
+            handle: password_protected
+            field: uamsweb_common_status.password_protected
+            config:
+              localizable: false
+          -
+            handle: visibility_password
+            field: uamsweb_common_status.visibility_password
+            config:
+              localizable: false
+          -
+            handle: is_password_hashed
+            field: uamsweb_common_status.is_password_hashed
+            config:
+              localizable: false
+          -
+            handle: date
+            field: uamsweb_common_status.date_scheduled
+            config:
+              localizable: false
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'

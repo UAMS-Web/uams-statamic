@@ -1,0 +1,259 @@
+subject: root
+schema_subject: 58185f50-22a4-48e7-9575-b86a1fdffef9
+schema_website: fba76c84-b260-4080-9077-c87093cda74a
+global_header_logo:
+  horizontal:
+    dark: uams/master-logo/uams-logo_main_horizontal_dark.svg
+    light: uams/master-logo/uams-logo_main_horizontal_light.svg
+    white: uams/master-logo/uams-logo_main_horizontal_white.svg
+    black: uams/master-logo/uams-logo_main_horizontal_black.svg
+  vertical:
+    dark: uams/master-logo/uams-logo_main_horizontal_dark.svg
+    light: uams/master-logo/uams-logo_main_horizontal_light.svg
+    white: uams/master-logo/uams-logo_main_horizontal_white.svg
+    black: uams/master-logo/uams-logo_main_horizontal_black.svg
+global_header_resource_navigation:
+  -
+    id: m85yg4za
+    link_group:
+      text: "UAMS\_Health"
+      url: 'https://uamshealth.com/'
+      new_window: true
+    type: new_text_link
+    enabled: true
+  -
+    id: m85ygebr
+    link_group:
+      text: Jobs
+      url: 'https://jobs.uams.edu/'
+      new_window: true
+    type: new_text_link
+    enabled: true
+  -
+    id: m85ygnu8
+    link_group:
+      text: Giving
+      url: 'https://giving.uams.edu/'
+      new_window: true
+    type: new_text_link
+    enabled: true
+global_footer_logo:
+  horizontal:
+    dark: uams/master-logo/academic-application/uams-logo_main-qualifier_horizontal_dark.svg
+    light: uams/master-logo/academic-application/uams-logo_main-qualifier_horizontal_light.svg
+    white: uams/master-logo/academic-application/uams-logo_main-qualifier_horizontal_white.svg
+    black: uams/master-logo/academic-application/uams-logo_main-qualifier_horizontal_black.svg
+global_footer_background_image: default/bruce-fountain_3840.jpg
+global_footer_resource_navigation:
+  -
+    id: m85yjda4
+    link_group:
+      text: Disclaimer
+      url: 'https://uamshealth.com/disclaimer/'
+      new_window: true
+    type: text_link
+    enabled: true
+  -
+    id: m85yjhnn
+    link_group:
+      text: 'Terms of Use'
+      url: 'entry::22757495-0a55-45c3-8eee-0bddc00280b8'
+      new_window: true
+    type: text_link
+    enabled: true
+  -
+    id: m85yjlbp
+    link_group:
+      text: 'Privacy Statement'
+      url: 'entry::397e85b1-9a74-4f45-a397-beb0f0be6da6'
+      new_window: true
+    type: text_link
+    enabled: true
+manual_primary_navigation: false
+founder:
+  - fccdef01-cefe-4d18-9303-ef6466880a60
+  - 44ce6192-18db-4492-8c03-da0b782d944f
+  - 35c4815f-2545-4f85-8d38-2d5d1971fdfa
+  - 5228741c-dba6-4b7a-adc6-c49ff95106a6
+  - 4361e692-6363-41c5-8a8d-ef680ce2bd61
+  - d3d15510-d380-4e8e-ba07-086f747d1843
+  - 2b74e600-c393-4bd0-8515-5cff2004bef1
+  - fbcb3a05-9a7b-4056-b729-d6e94cf911e5
+founding_date: '1879-09-26'
+founding_location:
+  city: 'Little Rock'
+  state_province_region: Arkansas
+  preset: american
+physical_address:
+  -
+    id: m85yk21r
+    title: 'Street Address'
+    address_group:
+      street_address_1: '4301 W. Markham St.'
+      city: 'Little Rock'
+      state: AR
+      zip: '72205'
+      country: US
+    type: physical_address
+    enabled: true
+direct_contact:
+  -
+    id: m85ykrj8
+    phone_group:
+      title: Phone
+      phone: '+15016867000'
+    type: phone_number
+    enabled: true
+media_contact:
+  - full
+copyright_holder: 'University of Arkansas for Medical Sciences'
+copyright_holder_schema_object: 58185f50-22a4-48e7-9575-b86a1fdffef9
+copyright_year: "{{ now | format('Y') }}"
+copyright_notice: "© {{ now | format('Y') }} {{ uams_multisite_settings:copyright_holder }}. All rights reserved."
+country_of_origin: 61df7918-3274-4979-81ca-549feb8afef2
+accountable_person:
+  - aaaa1111-0000-4000-8000-000000000001
+  - aaaa1111-0000-4000-8000-000000000002
+producer: 58185f50-22a4-48e7-9575-b86a1fdffef9
+publisher: 58185f50-22a4-48e7-9575-b86a1fdffef9
+source_organization: 58185f50-22a4-48e7-9575-b86a1fdffef9
+boilerplate_heading: 'About UAMS'
+boilerplate:
+  -
+    type: paragraph
+    content:
+      -
+        type: text
+        text: "UAMS is the state's only health sciences university, with colleges of Medicine, Nursing, Pharmacy, Health Professions and Public Health; a graduate school; a hospital; a main campus in Little Rock; a Northwest Arkansas regional campus in Fayetteville; a statewide network of regional campuses; and eight institutes: the Winthrop P. Rockefeller Cancer Institute, Jackson T. Stephens Spine & Neurosciences Institute, Harvey & Bernice Jones Eye Institute, Psychiatric Research Institute, Donald W. Reynolds Institute on Aging, Translational Research Institute, Institute for Digital Health & Innovation and the Institute for Community Health Innovation. UAMS includes UAMS\_Health, a statewide health system that encompasses all of UAMS' clinical enterprise. UAMS is the only adult Level 1 trauma center in the state. UAMS has 3,485 students, 915 medical residents and fellows, and seven dental residents. It is the state's largest public employer with more than 11,000 employees, including 1,200 physicians who provide care to patients at UAMS, its regional campuses, Arkansas Children's, the VA Medical Center and Baptist Health. Visit "
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://www.uams.edu/'
+              rel: null
+              target: null
+              title: null
+        text: www.uams.edu
+      -
+        type: text
+        text: ' or '
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://uamshealth.com/'
+              rel: null
+              target: null
+              title: null
+        text: uamshealth.com
+      -
+        type: text
+        text: '. Find us on '
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://www.facebook.com/UAMShealth'
+              rel: null
+              target: null
+              title: null
+        text: Facebook
+      -
+        type: text
+        text: ', '
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://twitter.com/uamshealth'
+              rel: null
+              target: null
+              title: null
+        text: 'X (formerly Twitter)'
+      -
+        type: text
+        text: ', '
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://www.youtube.com/user/UAMSHealth'
+              rel: null
+              target: null
+              title: null
+        text: YouTube
+      -
+        type: text
+        text: ' or '
+      -
+        type: text
+        marks:
+          -
+            type: link
+            attrs:
+              href: 'https://instagram.com/uamshealth/'
+              rel: null
+              target: null
+              title: null
+        text: Instagram
+      -
+        type: text
+        text: .
+social_facebook:
+  handle: UAMShealth
+  prefix: 'https://www.facebook.com/'
+  icon: 'fab fa-facebook'
+  name: Facebook
+social_x:
+  handle: uamshealth
+  prefix: 'https://x.com/'
+  icon: 'fab fa-square-x-twitter'
+  name: X
+social_instagram:
+  handle: uamshealth
+  prefix: 'https://www.instagram.com/'
+  icon: 'fab fa-instagram'
+  name: Instagram
+social_youtube:
+  handle: UAMSHealth
+  prefix: 'https://www.youtube.com/'
+  icon: 'fab fa-youtube'
+  name: YouTube
+social_linkedin:
+  handle: school/uams
+  prefix: 'https://www.linkedin.com/'
+  icon: 'fab fa-linkedin'
+  name: LinkedIn
+social_pinterest:
+  handle: uamshealth
+  prefix: 'https://www.pinterest.com/'
+  icon: 'fab fa-pinterest'
+  name: Pinterest
+social_bluesky:
+  prefix: 'https://bsky.app/profile/'
+  icon: 'fab fa-bluesky'
+  name: Bluesky
+social_vimeo:
+  prefix: 'https://www.vimeo.com/'
+  icon: 'fab fa-vimeo-v'
+  name: Vimeo
+social_mastodon:
+  prefix: 'https://mastodon.social/@'
+  icon: 'fab fa-mastodon'
+  name: Mastodon
+social_github:
+  prefix: 'https://github.com/'
+  icon: 'fab fa-github'
+  name: GitHub
+uamsweb_google_tag_manager_disable: false
+uamsweb_google_tag_manager_id: GTM-NGG4P7F

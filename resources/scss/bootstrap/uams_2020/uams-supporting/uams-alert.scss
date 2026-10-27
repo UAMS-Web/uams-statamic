@@ -1,0 +1,38 @@
+#uamsalert-alert-message {
+    &.uamsalert-red,
+    &.urgent-inside,
+    &.uamsalert-urgent {
+        background-color: $danger;
+        color: $white;
+
+        .text-container a {
+            color: $white;
+        }
+    }
+
+    &.uamsalert-orange,
+    &.alert-inside,
+    &.uamsalert-alert {
+        background-color: $warning;
+        color: $white;
+
+        .text-container a {
+            color: $white;
+        }
+    }
+
+    &.uamsalert-steel,
+    &.fyi-inside,
+    &.uamsalert-fyi  {
+        background-color: $info;
+        color: $white;
+
+        .text-container a {
+            color: $white;
+        }
+    }
+
+    h1 {
+        @extend .h4;
+    }
+}

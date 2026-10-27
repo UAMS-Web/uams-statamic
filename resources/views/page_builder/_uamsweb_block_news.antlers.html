@@ -1,0 +1,370 @@
+{{#
+	@name UAMS News
+	@desc The UAMS News page builder block. Renders posts syndicated from the
+	      selected source site(s) via the {{ uams_news }} tag, in one of six
+	      formats. Ports the WordPress UAMSWP-News-Syndication-2020 markup, but
+	      sourced from the native `posts` collection (UAMS-Web/uams-statamic-archive#76).
+	@set page.page_builder.uamsweb_block_news
+#}}
+
+{{# Only render with a chosen format (everything else has a sensible default). #}}
+
+	{{ $block_valid = format }}
+
+{{ if $block_valid }}
+
+	{{# Capture block-level toggles so the per-post loop scope cannot shadow them. #}}
+
+		{{ $hide_img = hide_img }}
+		{{# hide_meta (UAMS-Web/uams-statamic-archive#1175) is a single control that hides both the author and the date, overriding the individual toggles. #}}
+		{{ $hide_date = hide_date || hide_meta }}
+		{{ $hide_creator = hide_creator_query || hide_meta }}
+		{{ $include_link = include_link }}
+		{{ $position = position ? position : 'left' }}
+		{{ $date_format = 'F j, Y' }}
+		{{# count/offset need no cast here — the uams_news tag coerces both to non-negative ints (there is no Antlers `int` modifier). #}}
+		{{ $news_count = count }}
+		{{ $news_offset = offset }}
+
+	{{ uams_news
+		:format="format"
+		:source_sites="source_sites"
+		:category="category"
+		:count="$news_count"
+		:offset="$news_offset"
+		:article_id="article_id"
+		:require_featured_image="require_featured_image"
+		as="news_item"
+	}}
+
+		{{ if no_results }}
+
+			{{# No matching posts — degrade to an empty render (never a fatal). #}}
+
+		{{ else }}
+
+			{{ block_id = {page_builder_block_auto_id} }}
+
+			{{ if format == 'headlines' }}
+
+				{{ $fmt_class = 'uamswp-news-syndication-wrapper uamswp-news-syndication-headlines' }}
+				{{
+					partial:page_builder/uamsweb_block
+					auto_block_id="true"
+					:block_class="$fmt_class"
+					:block_aria_label="block_heading"
+				}}
+					{{ partial:page_builder/components/container_row }}
+						{{ partial:page_builder/components/block_header }}
+						<div class="col-12">
+							<div class="inner-container">
+								<ul class="uamswp-news-syndication-list">
+									{{ news_item }}
+										<li class="uamswp-news-syndication-item"><a href="{{ url }}">{{ title }}</a></li>
+									{{ /news_item }}
+								</ul>
+							</div>
+						</div>
+					{{ /partial:page_builder/components/container_row }}
+				{{ /partial:page_builder/uamsweb_block }}
+
+			{{ elseif format == 'excerpts' }}
+
+				{{ $fmt_class = 'uamswp-news-syndication-wrapper uamswp-news-syndication-excerpts' }}
+				{{
+					partial:page_builder/uamsweb_block
+					auto_block_id="true"
+					:block_class="$fmt_class"
+					:block_aria_label="block_heading"
+				}}
+					{{ partial:page_builder/components/container_row }}
+						{{ partial:page_builder/components/block_header }}
+						<div class="col-12">
+							<div class="item-container">
+								{{ news_item }}
+									<div class="item">
+										<div class="uamswp-news-syndication-item" itemscope itemtype="https://schema.org/NewsArticle">
+											<div class="row">
+												{{ if $hide_img != true }}
+													{{ if cover_image_query && featured_image_16_9 }}
+														{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+														{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+														{{ featured_image_16_9 }}
+															<div class="col-12 col-sm-4 image-container">
+																<img src="{{ url }}" alt="{{ cover_image_alt_text_override ? cover_image_alt_text_override : alt }}">
+																{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+															</div>
+														{{ /featured_image_16_9 }}
+													{{ else }}
+														{{# No cover image — a fallback fills the image slot so every excerpt stays uniform (UAMS-Web/uams-statamic-archive#1179). #}}
+														<div class="col-12 col-sm-4 image-container image-container-fallback">
+															{{ partial:page_builder/components/news_fallback_image }}
+														</div>
+													{{ /if }}
+													<div class="col-12 col-sm-8 text-container">
+												{{ else }}
+													<div class="col-12 col-sm-8 offset-sm-4 text-container">
+												{{ /if }}
+													<h3 class="h5 news-item-title" itemprop="headline">{{ title }}</h3>
+													{{ if $hide_date != true || $hide_creator != true }}
+														<div class="news-item-byline">
+															{{ if $hide_date != true && date }}
+																<span class="news-item-byline-date" itemprop="datePublished" content="{{ date | format('c') }}"><small>{{ date | format($date_format) }}</small></span>
+															{{ /if }}
+															{{ if $hide_creator != true }}
+																{{
+																	partial:layout/page-header/entry-meta/creator_roles
+																	:hide_creator_query="$hide_creator"
+																	:creator="creator"
+																}}
+															{{ /if }}
+														</div>
+													{{ /if }}
+													{{ if excerpt }}
+														<div class="news-item-excerpt" itemprop="description">{{ excerpt }}</div>
+													{{ /if }}
+													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+												</div>
+											</div>
+										</div>
+									</div>
+								{{ /news_item }}
+							</div>
+						</div>
+					{{ /partial:page_builder/components/container_row }}
+				{{ /partial:page_builder/uamsweb_block }}
+
+			{{ elseif format == 'cards' }}
+
+				{{
+					partial:page_builder/uamsweb_block
+					auto_block_id="true"
+					block_class="uamswp-news-syndication-wrapper"
+					:block_aria_label="block_heading"
+				}}
+					<div class="uamswp-news-syndication-cards">
+						{{ partial:page_builder/components/container_row }}
+							{{ partial:page_builder/components/block_header }}
+							<div class="col-12">
+								<div class="card-list card-list-left">
+									{{ news_item }}
+										<div class="item" itemscope itemtype="https://schema.org/NewsArticle">
+											<div class="card">
+												{{ if $hide_img != true }}
+													{{ if cover_image_query && featured_image_16_9 }}
+														{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+														{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+														{{ featured_image_16_9 }}
+															<div class="card-img-top">
+																<picture><img src="{{ url }}" alt="{{ cover_image_alt_text_override ? cover_image_alt_text_override : alt }}" itemprop="image"></picture>
+																{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+															</div>
+														{{ /featured_image_16_9 }}
+													{{ else }}
+														{{# No cover image — a 16:9 branded fallback keeps every card uniform (UAMS-Web/uams-statamic-archive#1178). #}}
+														<div class="card-img-top card-img-top-fallback">
+															{{ partial:page_builder/components/news_fallback_image }}
+														</div>
+													{{ /if }}
+												{{ /if }}
+												<div class="card-body">
+													{{# Per-item (sub)category label (UAMS-Web/uams-statamic-archive#1154). Rendered as a label, not a link — the card's stretched-link owns the click target. Category title is editor/importer input and Antlers is raw-by-default, so strip tags + entity-encode (UAMS-Web/uams-statamic-archive#1144). #}}
+												{{# The `| count` gate is load-bearing, not defensive: the same gate the
+												    shared post card (UAMS-Web/uams-statamic-archive#2026) and people/provider/_ontology_list carry, for the same reason.
+												    A real augmented entry never OMITS a blueprint handle (`AugmentedEntry::keys()` merges
+												    every one), so an empty `entries` relation arrives as a `Value` wrapping a truthy
+												    `StatusQueryBuilder`. A `{{ pair }}` over that emits its body ONCE against the parent
+												    scope — here the `news_item` scope, whose `title` is the post's own headline and whose
+												    `first` satisfies the inner guard — printing the story's own title as its category.
+												    `| count` counts the published entries the loop yields (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422).
+
+												    UAMS-Web/uams-statamic-archive#2031 investigated whether this block was exempt and concluded it was — WRONGLY. The
+												    evidence was a harness that parsed this template's SOURCE STRING via `Antlers::parse()`,
+												    which defaults to `$trusted = false` and so runs inside Antlers' user-content sandbox,
+												    where the relation is silently reduced and the fall-through cannot occur. Production
+												    renders through `Engine::get()` -> `RuntimeParser::parseView()`, which forces that flag
+												    off. NewsBlockRenderTest now renders via `{{ partial: }}` for exactly this reason: parse
+												    a template as a bare string and this entire class of defect is invisible. #}}
+													{{ if post_categories | count }}{{ post_categories }}{{ if first }}<span class="news-item-category card-subtitle">{{ title | strip_tags | entities }}</span>{{ /if }}{{ /post_categories }}{{ /if }}
+													<h3 class="card-title h5" itemprop="headline">{{ title }}</h3>
+													{{ if excerpt }}
+														<p class="card-text" itemprop="description">{{ excerpt }}</p>
+													{{ /if }}
+													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+												</div>
+											</div>
+										</div>
+									{{ /news_item }}
+								</div>
+							</div>
+							{{ if $include_link && category_url }}
+								{{
+									partial:page_builder/components/block_more
+									block_item_button_outline="true"
+									:more_query="$include_link"
+									more_heading="Want to read more stories like these?"
+									more_button_text="View the Full List"
+									:more_button_url="category_url"
+									:more_button_link_description="'View the full list of ' + category_name + ' stories'"
+								}}
+							{{ /if }}
+						{{ /partial:page_builder/components/container_row }}
+					</div>
+				{{ /partial:page_builder/uamsweb_block }}
+
+			{{ elseif format == 'grid' }}
+
+				{{ $fmt_class = 'uamswp-news-syndication-wrapper uamswp-news-syndication-grid' }}
+				{{
+					partial:page_builder/uamsweb_block
+					auto_block_id="true"
+					:block_class="$fmt_class"
+					:block_aria_label="block_heading"
+				}}
+					{{ partial:page_builder/components/container_row }}
+						{{ partial:page_builder/components/block_header }}
+						<div class="col-12">
+							<div class="inner-container">
+								<div class="row">
+									{{ news_item }}
+										{{ if first }}
+											<div class="col-12 col-sm-7 col-md-12 col-lg-7 featured">
+												<div class="item" itemscope itemtype="https://schema.org/NewsArticle">
+													{{ if $hide_img != true && cover_image_query && featured_image_16_9 }}
+														{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+														{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+														{{ featured_image_16_9 }}
+															<picture itemprop="image"><img src="{{ url }}" alt="{{ cover_image_alt_text_override ? cover_image_alt_text_override : alt }}"></picture>
+															{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+														{{ /featured_image_16_9 }}
+													{{ /if }}
+													<h3 class="h4" itemprop="headline">{{ title }}</h3>
+													{{ if excerpt }}<p itemprop="description">{{ excerpt }}</p>{{ /if }}
+													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+												</div>
+											</div>
+											<div class="col-12 col-sm-5 col-md-12 col-lg-5 secondary">
+										{{ else }}
+											<div class="item-container">
+												<div class="item" itemscope itemtype="https://schema.org/NewsArticle">
+													<h3 class="h5" itemprop="headline">{{ title }}</h3>
+													{{ if excerpt }}<p itemprop="description">{{ excerpt }}</p>{{ /if }}
+													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+												</div>
+											</div>
+										{{ /if }}
+										{{ if last }}</div>{{ /if }}
+									{{ /news_item }}
+								</div>
+							</div>
+						</div>
+						{{ if $include_link && category_url }}
+							{{
+								partial:page_builder/components/block_more
+								:more_query="$include_link"
+								more_heading="Want to read more stories like these?"
+								more_button_text="View the Full List"
+								:more_button_url="category_url"
+								:more_button_link_description="'View the full list of ' + category_name + ' stories'"
+							}}
+						{{ /if }}
+					{{ /partial:page_builder/components/container_row }}
+				{{ /partial:page_builder/uamsweb_block }}
+
+			{{ elseif format == 'side' }}
+
+				{{ news_item }}
+					{{ $side_class = 'uamswp-news-syndication-wrapper no-padding side-by-side image-on-' + $position + ' image-background-center' }}
+					{{
+						partial:page_builder/uamsweb_block
+						auto_block_id="true"
+						:block_class="$side_class"
+						:block_aria_label="title"
+					}}
+						<div class="uamswp-news-syndication-side">
+							<div class="container-fluid">
+								<div class="row">
+									{{# Prefer the 4:3 override where the editor supplied one (UAMS-Web/uams-statamic-archive#1154); fall back to the 16:9 featured image. #}}
+									{{ if $hide_img != true && cover_image_query && ( featured_image_4_3 || featured_image_16_9 ) }}
+										{{ if featured_image_4_3 }}
+											{{ featured_image_4_3 }}{{ $side_image_url = url }}{{ $side_image_alt = alt }}{{ /featured_image_4_3 }}{{ $side_creator = featured_image_4_3:creator }}{{ $side_creator_org = featured_image_4_3:creator_organization }}
+										{{ else }}
+											{{ featured_image_16_9 }}{{ $side_image_url = url }}{{ $side_image_alt = alt }}{{ /featured_image_16_9 }}{{ $side_creator = featured_image_16_9:creator }}{{ $side_creator_org = featured_image_16_9:creator_organization }}
+										{{ /if }}
+										<div class="col-12 col-md-6 image-container" style="background-image: url('{{ $side_image_url }}');" role="img" aria-label="{{ cover_image_alt_text_override ? cover_image_alt_text_override : ( $side_image_alt ? $side_image_alt : title | striptags ) }}">
+											<div class="image-inner-container"></div>
+											{{ if featured_image_credit_query && $side_creator }}{{ partial:typography/media_credit :creator="$side_creator" :creator_organization="$side_creator_org" }}{{ /if }}
+										</div>
+									{{ /if }}
+									<div class="col-12 col-md-6 text-container">
+										<div class="text-inner-container">
+											<h2 class="h3">
+												{{ if category_name && category_url }}<span class="category"><a href="{{ category_url }}" aria-label="See more {{ category_name }} stories">{{ category_name }}</a></span><span class="sr-only">: </span>{{ /if }}
+												<span class="title">{{ title }}</span>
+											</h2>
+											{{ if excerpt }}<p>{{ excerpt }}</p>{{ /if }}
+											<div class="cta-container">
+												<a class="btn btn-primary" href="{{ url }}" aria-label="Read {{ title | striptags }}">Read more</a>
+												{{ if $include_link && category_url }}
+													<a href="{{ category_url }}" class="btn btn-outline-primary" aria-label="View the full list of {{ category_name }} stories">View the {{ category_name }} Archive</a>
+												{{ /if }}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					{{ /partial:page_builder/uamsweb_block }}
+				{{ /news_item }}
+
+			{{ elseif format == 'full' }}
+
+				{{
+					partial:page_builder/uamsweb_block
+					auto_block_id="true"
+					block_class="uamswp-news-syndication-wrapper"
+					:block_aria_label="block_heading"
+				}}
+					<div class="uamswp-news-syndication-container">
+						{{ news_item }}
+							<div class="uamswp-news-syndication-full" itemscope itemtype="https://schema.org/NewsArticle">
+								{{ if $hide_img != true && cover_image_query && featured_image_16_9 }}
+									{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+									{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+									{{ featured_image_16_9 }}
+										<div class="news-item-thumbnail" itemprop="image">
+											<img src="{{ url }}" alt="{{ cover_image_alt_text_override ? cover_image_alt_text_override : alt }}">
+											{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+										</div>
+									{{ /featured_image_16_9 }}
+								{{ /if }}
+								<header class="news-item-title"><h2 itemprop="headline"><a href="{{ url }}" itemprop="url">{{ title }}</a></h2></header>
+								{{ if $hide_date != true || $hide_creator != true }}
+									<div class="news-item-byline">
+										{{ if $hide_creator != true }}
+											{{
+												partial:layout/page-header/entry-meta/creator_roles
+												:hide_creator_query="$hide_creator"
+												:creator="creator"
+											}}
+										{{ /if }}
+										{{ if $hide_date != true && date }}
+											<span class="news-item-byline-date" itemprop="datePublished" content="{{ date | format('c') }}">{{ date | format($date_format) }}</span>
+										{{ /if }}
+									</div>
+								{{ /if }}
+								<div class="news-item-content" itemprop="articleBody">
+									{{ if excerpt }}{{ excerpt }}{{ /if }}
+								</div>
+							</div>
+						{{ /news_item }}
+					</div>
+				{{ /partial:page_builder/uamsweb_block }}
+
+			{{ /if }}
+
+		{{ /if }}
+
+	{{ /uams_news }}
+
+{{ /if }}

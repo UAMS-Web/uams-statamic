@@ -1,0 +1,50 @@
+title: 'UAMSWeb Header Options, Marketing Landing Page'
+fields:
+  -
+    handle: heading
+    field:
+      type: text
+      display: Heading
+      instructions: 'Provide a custom page title specifically for this header. The default page title will still be used for the meta title, search results, and other contexts. This title has a 62-character limit. If your normal page title fits within this limit, you can reuse it here.'
+      character_limit: 62
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: body
+    field:
+      type: textarea
+      display: 'Lead Paragraph'
+      instructions: 'This text will appear below the page title. It should be a basic description of the page. There is a 117-character limit.'
+      character_limit: 117
+      localizable: false
+  -
+    handle: image
+    field: uamsweb_common_images.image_1920x600
+    config:
+      display: 'Desktop Cover Image'
+      instructions: 'Recommended dimensions: 5120x1600 or larger. Minimum dimensions: 1920x600. The image will be automatically cropped to a 16:5 aspect ratio.'
+      validate:
+        - required
+        - sometimes
+        - 'dimensions:min_width=1920,min_height=600'
+  -
+    handle: image_mobile
+    field: uamsweb_common_images.image_992x806
+    config:
+      display: 'Mobile Cover Image'
+      instructions: |-
+        Adding an image here is optional. If you don't want the mobile image to be automatically cropped from the desktop image, you can add a specific image for mobile use.
+
+        Recommended dimensions: 1984x1612 or larger. Minimum dimensions: 992x806. The image will be automatically cropped to a 16:13 aspect ratio.
+      validate:
+        - 'dimensions:min_width=992,min_height=806'
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Overlay the desktop cover image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the page title, so it is off by default."
+      default: false
+      localizable: false

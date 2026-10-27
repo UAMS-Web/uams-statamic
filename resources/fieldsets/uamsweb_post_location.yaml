@@ -1,0 +1,22 @@
+title: 'UAMSWeb Post Location'
+fields:
+  -
+    handle: geographic_location
+    field: uamsweb_creativework_location.geographic_location
+    config:
+      max_items: 1
+      instructions: 'e.g., where a post was written'
+      default:
+        - little-rock
+      validate:
+        - required
+      localizable: false
+  -
+    handle: geographic_location_content
+    field: uamsweb_creativework_location.geographic_location_content
+    config:
+      default:
+        - little-rock
+      validate:
+        - required
+      localizable: false

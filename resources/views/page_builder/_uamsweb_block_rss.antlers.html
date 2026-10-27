@@ -1,0 +1,80 @@
+{{#
+	@name UAMS RSS Feed
+	@desc The UAMS RSS Feed page builder block.
+	@set page.page_builder.uamsweb_block_rss
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Block Class #}}
+
+		{{ $rss_feed_class = 'rss-feed' }}
+
+	{{# Only render if required fields (and conditionals) have values #}}
+
+		{{ $block_valid = block_heading && feed_url && item_limit != null && background_color && more_query != null }}
+		{{ if $block_valid && more_query }}
+			{{ $block_valid = more_heading && more_button_text && more_button_url }}
+		{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ rss_feed :url="feed_url" :items_to_show="item_limit" :excerpt_char_limit="excerpt_limit" as="feed_item" }}
+		{{ if no_results }}
+			{{# No feed items available #}}
+		{{ else }}
+			{{ block_id = {page_builder_block_auto_id} }}
+			{{
+				partial:page_builder/uamsweb_block
+				auto_block_id="true"
+				:block_class="$rss_feed_class"
+				:block_aria_label="block_heading"
+			}}
+				{{ partial:page_builder/components/container_row }}
+					{{ partial:page_builder/components/block_header }}
+					<div class="col-12">
+						<div class="rss-feed">
+							<div class="rss-feed-items">
+								<ol class="feed-list" role="list">
+									{{ feed_item }}
+										<li class="feed-item" itemscope itemtype="https://schema.org/BlogPosting">
+											<article>
+												<header class="item-header">
+													<h3 class="item-title"><a href="{{ permalink }}" itemprop="https://schema.org/url https://schema.org/mainEntityOfPage" content="{{ permalink }}" target="_blank" rel="noopener noreferrer"><span itemprop="https://schema.org/name https://schema.org/headline">{{ title }}</span>{{ partial:components/new_window_indicator }}</a></h3>
+													{{ if (date_query && date) || (author_query && author) }}
+														<div class="item-meta">
+															{{ if date_query && date }}
+																Published <time datetime="{{ date | format('c') }}" itemprop="https://schema.org/datePublished">{{ date | ap_style_date }}</time>{{ if author_query && author }},{{ /if }}
+															{{ /if }}
+															{{ if author_query && author }}
+																<span class="byline">
+																	{{ if date_query && date }}by{{ else }}By{{ /if }}
+																	<span itemprop="https://schema.org/author" itemscope itemtype="https://schema.org/Person"><span itemprop="https://schema.org/name">{{ author }}</span></span>
+																</span>
+															{{ /if }}
+														</div>
+													{{ /if }}
+												</header>
+												{{ if excerpt_query && description }}
+													<div class="item-excerpt" itemprop="https://schema.org/abstract https://schema.org/description">
+														{{ if excerpt_limit }}
+															<p>{{ description | safe_truncate(excerpt_limit, '...') }}</p>
+														{{ else }}
+															<p>{{ description }}</p>
+														{{ /if }}
+													</div>
+												{{ /if }}
+											</article>
+										</li>
+									{{ /feed_item }}
+								</ol>
+							</div>
+						</div>
+					</div>
+					{{ partial:page_builder/components/block_more block_item_button_outline="true" }}
+				{{ /partial:page_builder/components/container_row }}
+			{{ /partial:page_builder/uamsweb_block }}
+		{{ /if }}
+	{{ /rss_feed }}
+{{ /if }}

@@ -1,0 +1,364 @@
+title: 'UAMSWeb Common Reusable Fields, Social Media'
+fields:
+  -
+    handle: bluesky
+    field:
+      type: group
+      display: Bluesky
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://bsky.app/profile/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://bsky.app/profile/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-bluesky'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Bluesky
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: facebook
+    field:
+      type: group
+      display: Facebook
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.facebook.com/'
+            display: Handle
+            localizable: false
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.facebook.com/'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-facebook'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Facebook
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: github
+    field:
+      type: group
+      display: GitHub
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://github.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://github.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-github'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: GitHub
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: instagram
+    field:
+      type: group
+      display: Instagram
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.instagram.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.instagram.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-instagram'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Instagram
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: linkedin
+    field:
+      type: group
+      display: LinkedIn
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.linkedin.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.linkedin.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-linkedin'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: LinkedIn
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: mastodon
+    field:
+      type: group
+      display: Mastodon
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://mastodon.social/@'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://mastodon.social/@'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-mastodon'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Mastodon
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: pinterest
+    field:
+      type: group
+      display: Pinterest
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.pinterest.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.pinterest.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-pinterest'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Pinterest
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: vimeo
+    field:
+      type: group
+      display: Vimeo
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.vimeo.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.vimeo.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-vimeo-v'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: Vimeo
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: x
+    field:
+      type: group
+      display: 'X (Twitter)'
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://x.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://x.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-square-x-twitter'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: X
+            localizable: false
+            if:
+              handle: 'not empty'
+  -
+    handle: youtube
+    field:
+      type: group
+      display: YouTube
+      localizable: false
+      fields:
+        -
+          handle: handle
+          field:
+            type: text
+            prepend: 'https://www.youtube.com/'
+            display: Handle
+        -
+          handle: prefix
+          field:
+            type: hidden
+            default: 'https://www.youtube.com/'
+            if:
+              handle: 'not empty'
+        -
+          handle: icon
+          field:
+            type: hidden
+            default: 'fab fa-youtube'
+            localizable: false
+            if:
+              handle: 'not empty'
+        -
+          handle: name
+          field:
+            type: hidden
+            default: YouTube
+            localizable: false
+            if:
+              handle: 'not empty'

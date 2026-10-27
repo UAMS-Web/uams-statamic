@@ -1,0 +1,7 @@
+{{#
+	@name Text
+	@desc The text component for regular styled text from Bard.
+#}}
+
+{{# `rel_noopener` (UAMS-Web/uams-statamic-archive#724) backstops Bard `target="_blank"` links that stored `rel: null`. #}}
+{{ text | rel_noopener | widont }}

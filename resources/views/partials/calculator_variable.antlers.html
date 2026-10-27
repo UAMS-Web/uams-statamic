@@ -1,0 +1,151 @@
+{{#
+    @name Calculator Variable
+    @desc Renders one variable from a calculator's parts replicator. Two
+          shapes:
+
+          (1) Scalar variable — `split` is empty. Renders a labelled
+              `.form-group` with a `<label>` and a `<input>` bound to
+              `x-model="<handle>"`. When the variable is computed
+              (`kind: output` or `bidirectional`), emits the `data-calculation-*`
+              attributes the public-form calculation engine picks up.
+
+          (2) Composite variable — `split` is non-empty. Renders one
+              `.form-group` per split entry, each with its own labelled input
+              bound to `x-model="<sub-handle>"`. A sibling hidden input carries
+              the composite handle + the calculation attributes so the
+              composite's formula flows through the same calculation engine as
+              a scalar. Each split input carries `data-split-of` /
+              `data-split-strategy` / `data-split-multiplier` /
+              `data-split-decimals` so `composite-split-engine.js` can wire the
+              forward (composite → splits) and reverse (sub-edit → recompose
+              composite) reactivity.
+
+          The composite's handle and kind are captured into local variables
+          (`composite_handle`, `composite_kind`) before the `{{ split }}` loop
+          shadows them with each split's own `handle` and `kind`.
+#}}
+
+{{# Cross-calculator sync opts the input into mirroring its value with
+    any other input on the page that has the same `handle` and also opts
+    in. Default-on for new and pre-toggle entries; the `??? true` fallback
+    makes entries saved before the toggle field existed sync by default
+    (matching the blueprint default) while still respecting an explicit
+    `sync_across_calculators: false`. The strict `???` is required —
+    plain `??` treats boolean `false` as null-ish and would flip an
+    explicit opt-out back to on. #}}
+{{ sync_across = sync_across_calculators ??? true }}
+
+{{ if split }}
+	{{ composite_handle = handle }}
+	{{ composite_kind = kind }}
+	{{# The code fieldtype stores `{ code, mode }` when the mode is selectable,
+	    but flattens to a bare string when `mode_selectable: false` (our
+	    setting). Accept both shapes — `formula:code` resolves the array form;
+	    the `?? formula` fallback handles the flat string form. #}}
+	{{ composite_formula = formula:code ?? formula }}
+	{{ composite_decimals = decimals }}
+	{{ composite_label = label }}
+
+	<div class="calculator-composite form-group" data-composite-handle="{{ composite_handle }}">
+		{{# `data-composite-label-for` advertises the composite's display label
+		    to `formula-caption-engine.js` so caption pretty-printing can
+		    substitute the composite handle with its label (the composite has
+		    no `<label for>` because the hidden input it backs isn't user-
+		    interactive). The visual styling is handled by the
+		    `.calculator-composite-label` class. #}}
+		<div
+			class="font-weight-bold calculator-composite-label"
+			data-composite-label-for="{{ composite_handle }}"
+		>{{ composite_label }}</div>
+		<div class="calculator-composite-splits">
+			{{ split }}
+				{{# Input renders before the label in DOM order so the label
+				    visually sits beneath the input. The `for=""` attribute
+				    keeps the programmatic association intact for screen
+				    readers and click-to-focus regardless of source order. #}}
+				<div class="form-group calculator-composite-split">
+					{{ if unit }}<div class="input-group">{{ /if }}
+						<input
+							id="{{ handle }}"
+							name="{{ handle }}"
+							class="form-control"
+							type="text"
+							x-model="{{ handle }}"
+							data-split-of="{{ composite_handle }}"
+							data-split-strategy="{{ strategy }}"
+							data-split-decimals="{{ decimals }}"
+							{{ if strategy == 'fractional_times' }}data-split-multiplier="{{ multiplier }}"{{ /if }}
+							{{ if composite_kind == 'output' }}readonly aria-readonly="true"{{ /if }}
+						>
+						{{ if unit }}
+							<div class="input-group-append">
+								<span class="input-group-text">{{ unit }}</span>
+							</div>
+						{{ /if }}
+					{{ if unit }}</div>{{ /if }}
+					<label for="{{ handle }}" class="calculator-composite-split-label">{{ label }}</label>
+				</div>
+			{{ /split }}
+		</div>
+		{{# Hidden input that carries the composite's own formula into the
+		    calculation engine. Bound to `x-model` so writes from the engine
+		    (composite's formula firing from upstream changes) and from the
+		    split engine (recompose on sub-edit) both flow through Alpine
+		    reactivity. #}}
+		{{ if composite_kind == 'output' || composite_kind == 'bidirectional' }}
+			<input
+				type="hidden"
+				name="{{ composite_handle }}"
+				x-model="{{ composite_handle }}"
+				data-calculation-type="math"
+				data-calculation-syntax="bare"
+				data-calculation-formula="{{ composite_formula }}"
+				data-calculation-decimals="{{ composite_decimals }}"
+				{{ if composite_handle == primary_handle }}data-calculation-primary{{ /if }}
+				{{ if sync_across }}data-sync-handle="{{ composite_handle }}"{{ /if }}
+			>
+		{{ elseif sync_across }}
+			{{# Pure-input composite (no formula). The sub-inputs are the only
+			    DOM the composite has, so anchor cross-calc sync on a hidden
+			    input bound to the composite handle — the sync engine watches
+			    a scope key, and the composite handle isn't otherwise written
+			    by the calculation engine in this case. #}}
+			<input
+				type="hidden"
+				name="{{ composite_handle }}"
+				x-model="{{ composite_handle }}"
+				data-sync-handle="{{ composite_handle }}"
+			>
+		{{ /if }}
+	</div>
+{{ else }}
+	<div class="form-group">
+		<label for="{{ handle }}" class="font-weight-bold">{{ label }}</label>
+		{{ if unit }}<div class="input-group">{{ /if }}
+			<input
+				id="{{ handle }}"
+				name="{{ handle }}"
+				class="form-control"
+				type="text"
+				x-model="{{ handle }}"
+				{{ if kind == 'output' }}readonly aria-readonly="true"{{ /if }}
+				{{ if kind == 'output' || kind == 'bidirectional' }}
+					data-calculation-type="math"
+					data-calculation-syntax="bare"
+					{{# `formula:code ?? formula` accepts both shapes the code
+					    fieldtype produces — see composite block above. #}}
+					data-calculation-formula="{{ formula:code ?? formula }}"
+					data-calculation-decimals="{{ decimals }}"
+					{{ if handle == primary_handle }}data-calculation-primary{{ /if }}
+					{{ if group }}data-calculation-group="{{ group }}"{{ /if }}
+				{{ /if }}
+				{{ if sync_across }}data-sync-handle="{{ handle }}"{{ /if }}
+			>
+			{{ if unit }}
+				<div class="input-group-append">
+					<span class="input-group-text">{{ unit }}</span>
+				</div>
+			{{ /if }}
+		{{ if unit }}</div>{{ /if }}
+	</div>
+{{ /if }}

@@ -1,0 +1,13 @@
+diff --git a/src/Stache/Stores/TaxonomyTermsStore.php b/src/Stache/Stores/TaxonomyTermsStore.php
+index c6c4039..dc3701c 100644
+--- a/src/Stache/Stores/TaxonomyTermsStore.php
++++ b/src/Stache/Stores/TaxonomyTermsStore.php
+@@ -246,6 +246,7 @@ class TaxonomyTermsStore extends ChildStore
+ 
+     protected function getItemFromModifiedPath($path)
+     {
+-        return parent::getItemFromModifiedPath($path)->localizations()->all();
++        // The parent skips a file that vanished before its read, and returns null for it
++        return parent::getItemFromModifiedPath($path)?->localizations()->all() ?? [];
+     }
+ }

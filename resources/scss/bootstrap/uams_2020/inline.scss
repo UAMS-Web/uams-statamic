@@ -1,0 +1,25 @@
+// Bootstrap Core Variable Override
+@import "supporting/variables-bootstrap-core-override";
+
+// Bootstrap Genesis Theme Variables
+@import "supporting/variables-bootstrap-genesis";
+
+// UAMS Bootstrap Variables Override
+@import "uams-supporting/variables";
+
+// UAMS Bootstrap Mixins Override
+@import "uams-supporting/mixins";
+
+// Import Bootstrap Core from Bootstrap NPM package
+//@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+//@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/grid"; // moved from below code partial
+@import "bootstrap/scss/type";
+
+// New UAMS Supporting Styles
+@import "uams-supporting/page";
+@import "uams-supporting/uams-alert";

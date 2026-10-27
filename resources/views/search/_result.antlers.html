@@ -1,0 +1,46 @@
+{{#
+	@name  Search Result Row
+	@desc  One search hit in the results list (UAMS-Web/uams-statamic-archive#815 / UAMS-Web/uams-statamic-archive#1510): a result-type label, then
+	       the hit's card. Each type named below gets its label in the same place, so
+	       the per-type cards read as one list whatever card each type renders. A type
+	       not named here (for example `classifieds` or `recognition_lists`, which the
+	       unified index can also return) renders its card with no label rather than a
+	       guessed one. The labels are fixed strings, never editor text, so they need no
+	       escaping.
+
+	       Dispatch: each type with a dedicated card renders its wrapper under
+	       `search/cards/`; anything else renders the generic compact card. The
+	       synthetic Area-of-Expertise section subpages (UAMS-Web/uams-statamic-archive#1527) are not entries and carry
+	       no `collection`, so they dispatch by `result_type` first. Expects one search
+	       hit in scope.
+#}}
+
+{{ $result_type_label = '' }}
+{{ if result_type == 'clinical_expertise_section' || collection == 'clinical_expertise' }}
+	{{ $result_type_label = 'Area of Expertise' }}
+{{ elseif collection == 'people' }}
+	{{ $result_type_label = 'Person' }}
+{{ elseif collection == 'posts' }}
+	{{ $result_type_label = 'News' }}
+{{ elseif collection == 'clinical_locations' }}
+	{{ $result_type_label = 'Clinical Location' }}
+{{ elseif collection == 'clinical_resources' }}
+	{{ $result_type_label = 'Clinical Resource' }}
+{{ elseif collection == 'knowledge_bases' }}
+	{{ $result_type_label = 'Knowledge Base' }}
+{{ elseif collection == 'pages' }}
+	{{ $result_type_label = 'Page' }}
+{{ /if }}
+
+<div class="search-result mb-4">
+	{{ if $result_type_label }}
+		<p class="search-result-type text-uppercase text-muted small mb-1">{{ $result_type_label }}</p>
+	{{ /if }}
+	{{ if result_type == 'clinical_expertise_section' }}
+		{{ partial:search/cards/clinical_expertise_section }}
+	{{ elseif collection == 'people' || collection == 'posts' || collection == 'clinical_locations' || collection == 'clinical_resources' || collection == 'clinical_expertise' }}
+		{{ partial src="search/cards/{collection}" }}
+	{{ else }}
+		{{ partial:search/cards/default }}
+	{{ /if }}
+</div>

@@ -1,0 +1,257 @@
+title: 'UAMSWeb Bard Set, Table'
+fields:
+  -
+    handle: create_query
+    field:
+      options:
+        -
+          key: manual
+          value: 'Manually define table in this Bard set'
+        -
+          key: collection
+          value: 'Select a Table entry from the Tables collection'
+      default: manual
+      type: radio
+      display: 'How Will You Define the Table?'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: table_entry
+    field:
+      max_items: 1
+      collections:
+        - tables
+      type: entries
+      display: 'Table Entry'
+      validate:
+        - required
+        - sometimes
+      if:
+        create_query: 'equals collection'
+      localizable: false
+  -
+    handle: heading_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include the Heading From the Table Entry?'
+      default: false
+      validate:
+        - required
+        - sometimes
+      if:
+        create_query: 'equals collection'
+  -
+    handle: heading_level
+    field: uamsweb_common.heading_level
+    config:
+      localizable: false
+      validate:
+        - required
+        - sometimes
+      if:
+        create_query: 'equals collection'
+        heading_query: 'equals true'
+  -
+    handle: description_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include the Description From the Table Entry?'
+      default: false
+      validate:
+        - required
+        - sometimes
+      if:
+        create_query: 'equals collection'
+  -
+    handle: align
+    field: uamsweb_common.align_other
+    config:
+      display: 'Table Size and Alignment'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: section_table_content
+    field:
+      type: subsection
+      display: 'Table Content'
+      localizable: false
+      sortable: false
+      replicator_preview: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: table_data
+    field: uamsweb_common_table.table_data
+    config:
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: caption
+    field: uamsweb_common_table.caption
+    config:
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: section_table_structure
+    field:
+      type: subsection
+      display: 'Table Structure'
+      localizable: false
+      sortable: false
+      replicator_preview: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: first_row_headers
+    field: uamsweb_common_table.first_row_headers
+    config:
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: first_column_headers
+    field: uamsweb_common_table.first_column_headers
+    config:
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: last_row_footers
+    field: uamsweb_common_table.last_row_footers
+    config:
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: section_table_style
+    field:
+      type: subsection
+      display: 'Table Style'
+      localizable: false
+      sortable: false
+      replicator_preview: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: striped
+    field: uamsweb_common_table_style.striped
+    config:
+      localizable: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: fixed_width_table_cells
+    field: uamsweb_common_table_style.fixed_width_table_cells
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: row_hover_highlighting
+    field: uamsweb_common_table_style.row_hover_highlighting
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: section_table_features
+    field:
+      type: subsection
+      display: 'Table Features'
+      localizable: false
+      sortable: false
+      replicator_preview: false
+      if:
+        create_query: 'equals manual'
+  -
+    handle: sorting_enable
+    field: uamsweb_common_table_features.sorting_enable
+    config:
+      if:
+        create_query: 'equals manual'
+        first_row_headers: 'equals true'
+      localizable: false
+  -
+    handle: search_enable
+    field: uamsweb_common_table_features.search_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: pagination_enable
+    field: uamsweb_common_table_features.pagination_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: pagination_count
+    field: uamsweb_common_table_features.pagination_count
+    config:
+      if:
+        create_query: 'equals manual'
+        pagination_enable: 'equals true'
+      localizable: false
+  -
+    handle: pagination_change_enable
+    field: uamsweb_common_table_features.pagination_change_enable
+    config:
+      if:
+        create_query: 'equals manual'
+        pagination_enable: 'equals true'
+      localizable: false
+  -
+    handle: info_enable
+    field: uamsweb_common_table_features.info_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: horizontal_scroll_enable
+    field: uamsweb_common_table_features.horizontal_scroll_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: column_filter_enable
+    field: uamsweb_common_table_features.column_filter_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: column_filter_columns
+    field: uamsweb_common_table_features.column_filter_columns
+    config:
+      if:
+        create_query: 'equals manual'
+        column_filter_enable: 'equals true'
+      localizable: false
+  -
+    handle: responsive_stack_enable
+    field: uamsweb_common_table_features.responsive_stack_enable
+    config:
+      if:
+        create_query: 'equals manual'
+      localizable: false
+  -
+    handle: responsive_stack_breakpoint
+    field: uamsweb_common_table_features.responsive_stack_breakpoint
+    config:
+      if:
+        create_query: 'equals manual'
+        responsive_stack_enable: 'equals true'
+      localizable: false

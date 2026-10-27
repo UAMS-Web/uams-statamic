@@ -1,0 +1,37 @@
+{{#
+
+	@name Global Footer
+	@desc The site's footer rendered on each page.
+
+#}}
+<footer id="site-footer" class="site-footer">
+	{{# Fetch the footer background image #}}
+	{{ uams_multisite_settings:global_footer_background_image }}
+		{{# Set the footer background image URL #}}
+		{{ $footer_bg = url }}
+	{{ /uams_multisite_settings:global_footer_background_image }}
+	{{# If the footer background image URL is set, define the CSS property for the footer background image #}}
+	{{ if $footer_bg }}
+		<style nonce="{{ csp_nonce }}">
+			.site-footer:before {
+				--bg-xxs:    url("{{ glide :src='$footer_bg' w='670'  h='670'  fit='crop_focal' absolute='true' }}");
+				--bg-xxs-2x: url("{{ glide :src='$footer_bg' w='1340' h='1340' fit='crop_focal' absolute='true' }}");
+				--bg-xs:     url("{{ glide :src='$footer_bg' w='767'  h='650'  fit='crop_focal' absolute='true' }}");
+				--bg-xs-2x:  url("{{ glide :src='$footer_bg' w='1534' h='1300' fit='crop_focal' absolute='true' }}");
+				--bg-sm:     url("{{ glide :src='$footer_bg' w='992'  h='372'  fit='crop_focal' absolute='true' }}");
+				--bg-sm-2x:  url("{{ glide :src='$footer_bg' w='1984' h='744'  fit='crop_focal' absolute='true' }}");
+				--bg-md:     url("{{ glide :src='$footer_bg' w='1200' h='450'  fit='crop_focal' absolute='true' }}");
+				--bg-md-2x:  url("{{ glide :src='$footer_bg' w='2400' h='900'  fit='crop_focal' absolute='true' }}");
+				--bg-lg:     url("{{ glide :src='$footer_bg' w='1500' h='563'  fit='crop_focal' absolute='true' }}");
+				--bg-lg-2x:  url("{{ glide :src='$footer_bg' w='3000' h='1125' fit='crop_focal' absolute='true' }}");
+				--bg-xl:     url("{{ glide :src='$footer_bg' w='1921' h='720'  fit='crop_focal' absolute='true' }}");
+				--bg-xl-2x:  url("{{ glide :src='$footer_bg' w='3842' h='1441' fit='crop_focal' absolute='true' }}");
+				--bg-xxl:    url("{{ glide :src='$footer_bg' w='2560' h='960'  fit='crop_focal' absolute='true' }}");
+				--bg-xxl-2x: url("{{ glide :src='$footer_bg' w='5120' h='1920' fit='crop_focal' absolute='true' }}");
+			}
+		</style>
+	{{ /if }}
+	{{ partial:layout/footer/contact/contact }}
+	{{ partial:layout/footer/navigation/navigation }}
+	{{ if uams_multisite_settings:copyright_notice }}<p class="copyright">{{ uams_multisite_settings:copyright_notice }}</p>{{ /if }}
+</footer>

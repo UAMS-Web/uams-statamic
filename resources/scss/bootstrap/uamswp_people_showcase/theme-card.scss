@@ -1,0 +1,136 @@
+// Import UAMS 2020 theme variables, mixins and functions
+@import "uams-2020-import";
+
+// Filter Style
+.ps-filter-nav,
+.ps-enhance-filter-nav,
+.ps-isotope-filter-nav {
+	> ul {
+		li {
+			&.ps-current-li {
+				/* background-image: url(../img/gray.png);
+				background-repeat: repeat; */
+				background-color: $gray-300;
+				color: $body-color;
+			}
+		}
+	}
+}
+
+#ps-filter-nav,
+#ps-enhance-filter-nav {
+	li {
+		display: inline-block;
+		padding: 5px 10px;
+		cursor: pointer;
+		margin: 0px;
+	}
+}
+
+.ps-theme-card-style {
+	.uamspeople-inner-box {
+		display: inline-block;
+		margin: 0 auto;
+		transition: 0.6s;
+		-webkit-transition: 0.6s;
+		-moz-transition: 0.6s;
+		-o-transition: 0.6s;
+		-ms-transition: 0.6s;
+		border: 1px solid #ffffff;
+		/* background-image: url(../img/gray.png);
+		background-repeat: repeat; */
+		background-color: #dcdadb;
+
+		&:hover {
+			-webkit-transform: scale(1.1);
+			-moz-transform: scale(1.1);
+			-ms-transform: scale(1.1);
+			transform: scale(1.1);
+			position: relative;
+			z-index: 5;
+			transition: 0.6s;
+			-webkit-transition: 0.6s;
+			-moz-transition: 0.6s;
+			-o-transition: 0.6s;
+			-ms-transition: 0.6s;
+		}
+	}
+
+	.uamspeople-box-photo {
+		line-height: 0;
+		padding: 0;
+		margin: 0;
+
+		&.ps-img-left {
+			margin-right: 10px;
+		}
+
+		img {
+			padding: 0;
+			margin: 0;
+		}
+	}
+
+	.uamspeople-box-title {
+		font-size: 1.2em;
+		padding: 3px 5px;
+		color: #000;
+		text-decoration: none;
+		font-weight: bold;
+		text-transform: uppercase;
+	}
+
+	.uamspeople-box-details {
+		padding: 5px;
+	}
+
+	.uamspeople-box-social {
+		padding: 4px;
+	}
+
+	.uamspeople-single-position {
+		font-style: italic;
+	}
+}
+
+.ps-theme-white-card-style {
+	.uamspeople-inner-box {
+		display: inline-block;
+		margin: 0 auto;
+		border: 1px solid #ffffff;
+		background: #fff;
+		color: #111;
+	}
+
+	.uamspeople-box-photo {
+		line-height: 0;
+		padding: 0;
+		margin: 0;
+
+		img {
+			padding: 0;
+			margin: 0;
+		}
+	}
+
+	.uamspeople-box-title {
+		font-size: 1.2em;
+		padding: 3px 5px;
+		color: #000;
+		text-decoration: none;
+		font-weight: bold;
+		text-transform: uppercase;
+	}
+
+	.uamspeople-box-details {
+		padding: 5px;
+	}
+
+	.uamspeople-box-social {
+		padding: 4px;
+	}
+
+	.uamspeople-single-position {
+		font-style: italic;
+	}
+}

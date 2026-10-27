@@ -1,0 +1,298 @@
+title: 'UAMSWeb Block, Call-to-Action Bar'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: body
+    field: uamsweb_common_block.body
+    config:
+      display: Body
+      instructions: |-
+        Keep this brief and focused on a single action — two at most. The CTA Bar is designed to drive one clear call to action, not to hold paragraphs of body copy or a list of links.
+
+        For layouts that need several links, use the Link List block or the Side-by-Side Image & Text block instead.
+      buttons:
+        - bold
+        - italic
+        - unorderedlist
+        - orderedlist
+        - removeformat
+        - anchor
+      validate:
+        - required
+  -
+    handle: action
+    field:
+      type: subsection
+      display: 'Action Settings'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: action_type
+    field:
+      options:
+        -
+          key: url
+          value: URL
+        -
+          key: phone
+          value: 'Phone Number'
+        -
+          key: sms
+          value: 'Text Message'
+        -
+          key: email
+          value: 'Email Address'
+        -
+          key: none
+          value: None
+      default: url
+      type: radio
+      display: 'Action Type'
+      instructions: 'Only choose "None" if your action is contained within your body text.'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: button_text
+    field: uamsweb_common_link.link_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        action_type: 'equals url'
+  -
+    handle: button_url
+    field: uamsweb_common_link.link_url
+    config:
+      replicator_preview: false
+      validate:
+        - required
+        - sometimes
+      if:
+        action_type: 'equals url'
+  -
+    handle: button_target
+    field: uamsweb_common_link.new_window_query
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        action_type: 'equals url'
+  -
+    handle: button_link_description
+    field: uamsweb_common_link.link_description
+    config:
+      replicator_preview: false
+      if:
+        action_type: 'equals url'
+  -
+    handle: phone_prepend
+    field:
+      placeholder: 'e.g., Call'
+      default: Call
+      type: text
+      display: 'Text Before Phone Number'
+      instructions: |-
+        This, combined with the phone number will generate a short action phrase.
+
+        Keep this text very short.
+
+        Do not include the phone number here.
+
+        Examples: "Call", "Fax Referrals to"
+      validate:
+        - required
+        - sometimes
+      replicator_preview: false
+      if:
+        action_type: 'equals phone'
+      localizable: false
+  -
+    handle: phone
+    field: uamsweb_common_contact.phone
+    config:
+      validate:
+        - required
+        - sometimes
+      replicator_preview: false
+      if:
+        action_type: 'equals phone'
+  -
+    handle: sms_prepend
+    field:
+      placeholder: 'e.g., Text'
+      default: Text
+      type: text
+      display: 'Action Word Before the Phone Number'
+      instructions: |-
+        This, combined with the message and the phone number will generate a short action phrase.
+
+        Keep this text very short. Do not include the pre-defined message or the phone number here.
+
+        Examples: "Text", "Send"
+      validate:
+        - required
+        - sometimes
+      replicator_preview: false
+      if:
+        action_type: 'equals sms'
+      localizable: false
+  -
+    handle: sms_message
+    field:
+      type: text
+      display: 'Pre-Defined Text to Send to the Phone Number'
+      instructions: |-
+        This, combined with the action word and the phone number will generate a short action phrase.
+
+        Do not include action word or the phone number here.
+
+        Do not include any quotation marks unless they are meant to be a part of the text message.
+      replicator_preview: false
+      if:
+        action_type: 'equals sms'
+      localizable: false
+  -
+    handle: sms_phone_type_group
+    field: uamsweb_common_contact.sms_phone_type_group_required
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        action_type: 'equals sms'
+      replicator_preview: false
+  -
+    handle: email_prepend
+    field:
+      placeholder: 'e.g., Email'
+      default: Email
+      type: text
+      display: 'Action Word Before the Email Address'
+      instructions: |-
+        This, combined with the email address will generate a short action phrase.
+
+        Keep this text very short. Do not include the email address here.
+
+        Examples: "Email", "Contact Us at"
+      validate:
+        - required
+        - sometimes
+      replicator_preview: false
+      if:
+        action_type: 'equals email'
+      localizable: false
+  -
+    handle: email_address
+    field: uamsweb_common_contact.email_address
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        action_type: 'equals email'
+      replicator_preview: false
+  -
+    handle: email_subject
+    field:
+      type: text
+      display: 'Pre-Defined Subject Line'
+      replicator_preview: false
+      if:
+        action_type: 'equals email'
+      localizable: false
+  -
+    handle: layout_settings
+    field:
+      type: subsection
+      display: 'Layout Settings'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: layout
+    field:
+      options:
+        -
+          key: cta-bar-centered
+          value: Centered
+        -
+          key: cta-bar-weighted
+          value: Weighted
+      default: cta-bar-centered
+      type: radio
+      display: Layout
+      validate:
+        - required
+      replicator_preview: false
+      localizable: false
+  -
+    handle: size
+    field:
+      options:
+        -
+          key: small
+          value: Small
+        -
+          key: normal
+          value: Normal
+        -
+          key: large
+          value: Large
+      default: normal
+      type: radio
+      display: Size
+      validate:
+        - required
+      replicator_preview: false
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+      replicator_preview: true
+  -
+    handle: background_image_query
+    field: uamsweb_common_block.background_image_query
+    config:
+      replicator_preview: false
+      validate:
+        - required
+  -
+    handle: background_image
+    field: uamsweb_common_images.image_1920x960
+    config:
+      display: 'Background Image'
+      instructions: 'Recommended image dimensions: 5120x2560. Minimum image dimensions: 1920x960. The image will be automatically cropped to a 2:1 aspect ratio.'
+      validate:
+        - required
+        - sometimes
+        - 'dimensions:min_width=1920,min_height=960'
+      if:
+        background_image_query: 'equals true'
+      replicator_preview: false
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Overlay the background image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the block's content, so it is off by default."
+      default: false
+      localizable: false

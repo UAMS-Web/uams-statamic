@@ -1,0 +1,13 @@
+.custom-select {
+    font-size: inherit;
+
+    &[multiple] {
+        height: calc((1.625em * 4.5) + $input-padding-y + $input-height-border); // shooting for 124px
+    }
+    option {
+        font-size: 1em;
+        font-weight: inherit;
+        padding: 0.25em 0;
+        min-height: 1.625em;
+    }
+}

@@ -1,0 +1,39 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Name(s)'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Patient Type'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Patient Type'

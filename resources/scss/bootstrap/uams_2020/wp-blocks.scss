@@ -1,0 +1,52 @@
+// WordPress block-library remnant — File & Embed blocks (UAMS-Web/uams-statamic-archive#1341)
+//
+// The vendored WordPress `block-library` stylesheet (~53 KB, loaded sitewide) was
+// ~90% dead: it styled dozens of `wp-block-*` families no template or content emits
+// (social-links, cover, navigation, gallery, media-text, latest-posts, …). Only the
+// `wp-block-file` rules the File Bard set renders and the `wp-block-embed` spacing the
+// Audio / Video sets render were live. Those are extracted verbatim below and loaded
+// in the SAME cascade slot the original stylesheet occupied — before the `uams_2020`
+// theme bundle (`app.scss`) — so the theme's `buttons.scss` outline-button restyle of
+// the download button (and its `:focus` ring) still wins exactly as before.
+//
+// Dropped as unreachable given the set markup: the `.aligncenter` / `.alignright`
+// variants (never emitted), `.wp-block-embed figcaption` (the caption is a sibling of
+// the embed, not a descendant), and every `.wp-embed-responsive … wp-embed-aspect-* …
+// .wp-block-embed__wrapper` rule (the sets use Bootstrap's `embed-responsive` for the
+// aspect box, not WordPress's embed wrapper).
+
+// --- wp-block-file (File set: resources/views/sets/_file.antlers.html) ---
+.wp-block-file {
+	margin-bottom: 1.5em;
+}
+
+.wp-block-file .wp-block-file__button {
+	background: #32373c;
+	border-radius: 2em;
+	color: #fff;
+	font-size: 13px;
+	padding: 0.5em 1em;
+}
+
+.wp-block-file a.wp-block-file__button {
+	text-decoration: none;
+}
+
+.wp-block-file a.wp-block-file__button:active,
+.wp-block-file a.wp-block-file__button:focus,
+.wp-block-file a.wp-block-file__button:hover,
+.wp-block-file a.wp-block-file__button:visited {
+	box-shadow: none;
+	color: #fff;
+	opacity: 0.85;
+	text-decoration: none;
+}
+
+.wp-block-file * + .wp-block-file__button {
+	margin-left: 0.75em;
+}
+
+// --- wp-block-embed (Audio / Video sets: _audio.antlers.html, _video.antlers.html) ---
+.wp-block-embed {
+	margin-bottom: 1em;
+}

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="{{ site:short_locale }}">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		{{# Google Tag Manager (UAMS-Web/uams-statamic-archive#83) — placed high in the head per Google's install;
+			per-site container ID from uams_multisite_settings. #}}
+		{{ partial:layout/header/google_tag_manager }}
+		{{# Taxonomy term-archive pages — and the migrated `post_categories` category
+			and `post_tags` tag *collection* archives (UAMS-Web/uams-statamic-archive#1434, UAMS-Web/uams-statamic-archive#2532) — get a descriptive, term-named title
+			(UAMS-Web/uams-statamic-archive#1171/UAMS-Web/uams-statamic-archive#1172); provider/location profiles get the computed `document_title`
+			formula (UAMS-Web/uams-statamic-archive#1329/UAMS-Web/uams-statamic-archive#1330); every other page falls back to its entry title, then
+			the site name. `taxonomy` is only in scope on a term page, so it cleanly
+			distinguishes the term-archive case. #}}
+		{{ if taxonomy }}
+			{{ $term_heading = {partial:taxonomies/term_heading} /}}
+			<title>{{ $term_heading | trim }} | {{ site:name }}</title>
+		{{ elseif collection:handle == 'post_categories' }}
+			{{# The migrated category archive is a collection entry (no `taxonomy`
+				cascade var, so it misses the branch above), but UAMS-Web/uams-statamic-archive#1434 reuses UAMS-Web/uams-statamic-archive#1171's
+				descriptive term-archive title. Render the same shared heading —
+				"Posts in Category X" — with `taxonomy` passed explicitly; the partial
+				strip_tags + entity-encodes the editor/importer title itself. #}}
+			{{ $category_heading = {partial:taxonomies/term_heading taxonomy="post_categories"} /}}
+			<title>{{ $category_heading | trim }} | {{ site:name }}</title>
+		{{ elseif collection:handle == 'post_tags' }}
+			{{# The tag archive became a collection entry too (UAMS-Web/uams-statamic-archive#2532), so it gets the same
+				treatment: "Posts Tagged with X", with `taxonomy` passed explicitly. #}}
+			{{ $tag_heading = {partial:taxonomies/term_heading taxonomy="post_tags"} /}}
+			<title>{{ $tag_heading | trim }} | {{ site:name }}</title>
+		{{ else }}
+			{{# Antlers is raw-by-default and `title` is editor/importer input, so strip +
+				entity-encode the resolved title before it lands in <title>. `document_title`
+				(a computed formula) and `site:name` are trusted, but escaping them too is
+				inert and harmless. #}}
+			<title>{{ ( document_title ?? title ?? site:name ) | strip_tags | entities }}</title>
+		{{ /if }}
+		{{# Per-site "discourage search engine indexing" toggle (UAMS-Web/uams-statamic-archive#187): emit a
+			site-wide robots noindex/nofollow when an editor opts this site out of
+			indexing. Default off, so public production sites emit nothing. #}}
+		{{ if uams_multisite_settings:discourage_indexing }}
+			<meta name="robots" content="noindex, nofollow">
+		{{ /if }}
+		{{# Bespoke meta description + Open Graph / Twitter card tags (UAMS-Web/uams-statamic-archive#628). #}}
+		{{ partial:layout/header/seo_meta }}
+		{{# Canonical URL — origin-or-self per the entry's canonical_from_origin (UAMS-Web/uams-statamic-archive#189). #}}
+		{{ partial:layout/header/canonical }}
+		{{# Preload critical font weights so they fetch in parallel with the CSS bundle, eliminating the font-swap flash on first paint #}}
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-Light.woff2" }}" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-Medium.woff2" }}" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-ExtraBold.woff2" }}" as="font" type="font/woff2" crossorigin>
+		{{ partial:layout/header/favicon }}
+		{{# Determine which feature-specific assets to load based on template and blocks #}}
+
+			{{# Build an array of the current page's page builder block types #}}
+			{{ $page_builder_types = [] }}
+			{{ if page_builder }}
+				{{ page_builder scope="block" }}
+					{{ $page_builder_types = $page_builder_types | merge_array([type]) }}
+				{{ /page_builder }}
+			{{ /if }}
+
+			{{# Build an array of the current page's Bard set types #}}
+			{{ $content_types = [] }}
+			{{ if content }}
+				{{ content scope="block" }}
+					{{ $content_types = $content_types | merge_array([type]) }}
+				{{ /content }}
+			{{ /if }}
+
+			{{# Build layout assets in order (conditionally include feature SCSS at designated positions) #}}
+
+				{{# Initialize the Vite layout assets array #}}
+				{{ $vite_layout_assets = [] }}
+
+				{{# Base Statamic site JavaScript asset #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/site.js']) }}
+
+				{{# Base Statamic Tailwind site CSS asset (currently disabled) #}}
+				{{# $vite_layout_assets = $vite_layout_assets | merge_array(['resources/css/tailwind/site.css']) #}}
+
+				{{# UAMSWP People Showcase SCSS #}}
+				{{ if
+					($page_builder_types | contains('uamsweb_block_people')) {{# The current page's page builder blocks contain the People block type #}}
+					|| ($content_types | contains('people')) {{# The current page's Bard sets contain the People set type #}}
+					|| (
+						template {{# The current page's template is set #}}
+						&& (
+							[
+								'people/show'
+							] | in_array(template)
+						) {{# The current page's template is a People template #}}
+					)
+				}}
+					{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uamswp_people_showcase/global.scss', 'resources/scss/bootstrap/uamswp_people_showcase/theme-card.scss']) }}
+				{{ /if }}
+
+				{{# Live wp-block-file/embed remnant (UAMS-Web/uams-statamic-archive#1341) — loads before the uams_2020 theme bundle #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/wp-blocks.scss']) }}
+
+				{{# UAMSWP Logo List SCSS #}}
+				{{ if
+					($page_builder_types | contains('uamsweb_block_logo_list'))
+				}}
+					{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uamswp_logo_list/app.scss']) }}
+				{{ /if }}
+
+				{{# UAMSWP Find-a-Doc and People SCSS #}}
+				{{ if
+					(
+						$page_builder_types | contains(
+							'uamsweb_block_fad',
+							'uamsweb_block_fad_clinical_resources',
+							'uamsweb_block_fad_expertise',
+							'uamsweb_block_fad_locations',
+							'uamsweb_block_fad_providers',
+							'uamsweb_block_people'
+						)
+					)
+					|| (
+						template
+						&& (
+							[
+								'clinical_resources/index',
+								'clinical_resources/show',
+								'clinical_expertise/index',
+								'clinical_expertise/show',
+								'clinical_locations/index',
+								'clinical_locations/show',
+								'clinical_providers/index',
+								'clinical_providers/show',
+								'people/provider/index',
+								'people/provider/show',
+								'people/show'
+							] | in_array(template)
+						)
+					)
+					|| (
+						blueprint
+						&& (
+							[
+								'provider',
+								'location',
+								'expertise',
+								'person'
+							] | in_array(blueprint)
+						)
+					)
+				}}
+					{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uamswp_find_a_doc/app.scss']) }}
+				{{ /if }}
+
+				{{# UAMS 2020 theme SCSS #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/app.scss']) }}
+
+				{{# UAMS 2020 theme UAMS Alert SCSS #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/uamsalert.scss']) }}
+
+				{{# UAMS 2020 theme JS (jQuery + Migrate, skip-links, npm libs, `source/` — Gulp order) #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-theme-entry.js']) }}
+
+				{{# Font Awesome Free 7 (`@fortawesome/fontawesome-free` `all.js` + `v4-shims.js`) #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-fontawesome-entry.js']) }}
+
+				{{# UAMS 2020 theme UAMS Alert JavaScript #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uamsalert.js']) }}
+
+		{{# Load the layout assets #}}
+		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073): the uams-web/statamic-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init`. As a classic deferred script ahead of the module bundle it runs first, in document order. #}}
+		<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script>
+		{{ vite :src="( $vite_layout_assets | join('|') )"}}
+	</head>
+	{{
+		$landing_page_templates = [
+			'clinical_resources/show',
+			'clinical_expertise/show',
+			'knowledge_bases/default',
+			'knowledge_bases/knowledge-base',
+			'knowledge_bases/topic',
+			'clinical_locations/show',
+			'pages/page_landing',
+			'clinical_providers/show',
+		]
+	}}
+
+	{{# Default body itemid to webpage schema @id so microdata matches JSON-LD; callers may override by passing body_itemid. #}}
+	{{ $schema_webpage_id = {get_schema_slot slot="webpage" full_id="true"} /}}
+	{{ $resolved_body_itemid = body_itemid ?? $schema_webpage_id }}
+
+	{{# Body classes mirror WordPress body_class(): keep the load-bearing
+		page-template-* classes (the theme SCSS keys off them) and add context hooks
+		for the template, the collection/taxonomy, and singular vs listing. #}}
+	{{ $is_landing = ( $landing_page_templates | in_array(template) ) }}
+	{{ $body_template_class = template ? ( 'template-' + ( template | replace('/', '-') ) ) : null }}
+	{{ $body_type_class = collection ? ( 'collection-' + collection ) : ( taxonomy ? ( 'taxonomy-' + taxonomy ) : null ) }}
+	{{ $is_listing = ( template && ( template | ends_with('/index') ) ) }}
+	{{ $is_singular = ( ( collection || taxonomy ) && !$is_listing ) }}
+
+	{{# Marketing-landing nav suppression (UAMS-Web/uams-statamic-archive#1173). On a marketing-landing entry,
+		editors can opt in to hiding the primary and/or resource navigation for a
+		distraction-free campaign layout. Both toggles default off, so every other
+		page type — and an untouched marketing-landing page — renders the full
+		chrome unchanged. `title_options` and the toggle fields (nested in the
+		`header_marketing_landing_page` group) ride the entry cascade, so they read
+		here and in the header partial below. Computed once here as the single
+		source of truth so the skip link (below) and the header partial stay in
+		lockstep. #}}
+	{{ $is_marketing_landing = ( title_options == 'marketing-landing-page' ) }}
+	{{ $hide_primary_nav = ( $is_marketing_landing && header_marketing_landing_page:hide_primary_nav ) }}
+	{{ $hide_resource_nav = ( $is_marketing_landing && header_marketing_landing_page:hide_resource_nav ) }}
+
+	<body
+		class="{{
+			[
+				'page-template-default' => !$is_landing,
+				'page-template-page_landing' => $is_landing,
+				$body_template_class,
+				$body_type_class,
+				'listing' => $is_listing,
+				'singular' => $is_singular
+			] | classes | collapse_whitespace
+		}}"
+		itemscope
+		{{ ( $resolved_body_itemid ?? null ) | attribute:itemid }}
+		{{# UAMS Alert site bucket (UAMS-Web/uams-statamic-archive#299): read by uamsalert.js to pick which
+			alert category (alert-<key>/urgent-<key>/fyi-<key>) to display. #}}
+		data-uams-alert-site="{{ uams_alert_site_key }}"
+	>
+		{{# Google Tag Manager <noscript> (UAMS-Web/uams-statamic-archive#83) — immediately after <body>. #}}
+		{{ partial:layout/google_tag_manager_noscript }}
+		{{ admin_bar }}
+		<div id="site-container-outer">
+			<div class="site-container">
+				<nav aria-label="Skip links">
+					<ul class="statamic-skip-link">
+						{{# Suppress the primary-nav skip link when the primary nav is hidden
+							(UAMS-Web/uams-statamic-archive#1173), so the skip target (`#site-nav-primary`) never dangles. #}}
+						{{ unless $hide_primary_nav }}
+						<li><a href="#site-nav-primary" class="screen-reader-shortcut btn btn-outline-primary">Skip to primary navigation</a></li>
+						{{ /unless }}
+						<li><a href="#main-content" class="screen-reader-shortcut btn btn-outline-primary">Skip to main content</a></li>
+					</ul>
+				</nav>
+				{{ partial:layout/header/header }}
+				<div class="content-sidebar-wrap row">
+					<main class="content col-sm-12" id="main-content">
+						{{ template_content }}
+					</main>
+				</div>
+				{{ partial:layout/footer/footer }}
+
+			</div>
+		</div>
+
+		{{#
+			Statamic's `helpers.js` loaded here until UAMS-Web/uams-statamic-archive#1956, to supply
+			`Statamic.$conditions.showField()` for conditional form fields. It is gone
+			because its evaluator decided every comparison with `eval()` — the last
+			`'unsafe-eval'` consumer on a public page, and so the blocker on #667's
+			flip of CSP out of Report-Only. It also shipped 98 KB on every request to
+			provide that one function plus a `$passkeys` client nothing here uses.
+
+			The evaluator now lives in `resources/js/conditions/` and reaches the page
+			through the site bundle, so nothing needs loading here. Do NOT restore this
+			tag without removing the owned evaluator in the same change: two
+			definitions of `showField` would disagree silently.
+		#}}
+		<!-- Start schema_ld_json -->
+		{{ schema_ld_json }}
+		<!-- End schema_ld_json -->
+	</body>
+</html>

@@ -1,0 +1,23 @@
+// =============================================================================
+// Bio block (UAMS-Web/uams-statamic-archive#1169)
+// =============================================================================
+// A clone of the Content block that floats an image to the right of constrained
+// body text at roughly half the text width, with spacing between the two. The
+// float only engages from the `md` breakpoint up; on small screens the image
+// stacks above the text full width.
+
+.bio-block {
+	.bio-image {
+		margin-bottom: 1.5rem;
+
+		img {
+			display: block;
+			width: 100%;
+			height: auto;
+		}
+
+		@include media-breakpoint-up(md) {
+			max-width: 50%;
+		}
+	}
+}

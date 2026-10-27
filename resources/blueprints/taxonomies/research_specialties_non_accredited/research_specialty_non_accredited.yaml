@@ -1,0 +1,84 @@
+title: 'Research Specialty/Subspecialty, Non-Accredited'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              localizable: false
+          -
+            handle: specialty_subspecialty_type
+            field:
+              options:
+                -
+                  key: specialty
+                  value: Specialty
+                -
+                  key: subspecialty
+                  value: Subspecialty
+              type: radio
+              display: Type
+              localizable: false
+              validate:
+                - required
+          -
+            handle: medical_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this research specialty/subspecialty considered a medical research specialty/subspecialty?'
+              validate:
+                - required
+          -
+            handle: description
+            field:
+              type: textarea
+              display: 'Definition of This Specialty/Subspecialty'
+              localizable: false
+          -
+            handle: disambiguating_description
+            field:
+              type: textarea
+              display: 'Disambiguating Description for This Specialty/Subspecialty'
+              instructions: 'A short description of the item used to disambiguate from other, similar items.'
+              localizable: false
+          -
+            handle: subject_matter
+            field:
+              collections:
+                - subject_matter
+                - clinical_specializations
+              type: entries
+              select_across_sites: true
+              search_index: subject_concepts
+              display: 'Subject Matter / Concept'
+              instructions: 'Select the subject matter or clinical specialization this research specialty/subspecialty is related to. A clinical concept is chosen from Clinical Specializations (the NUCC Health Care Provider Taxonomy code set and its UAMS extensions), never from Subject Matter.'
+              localizable: false
+              validate:
+                - required
+              create: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

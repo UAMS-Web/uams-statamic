@@ -1,0 +1,59 @@
+{{#
+	@name News Archive
+	@desc The Departmental News Hub's org × type × source filterable, paginated
+	      news archive (UAMS-Web/uams-statamic-archive#1599) — the single listing every hub "More" / CTA link
+	      resolves to. Backed by the {{ news_archive }} tag
+	      (`App\Tags\NewsArchive` → `NewsSyndicationQueryService::paginateArchive`).
+	      The organization is invariant (the site's `department_organization`, UAMS-Web/uams-statamic-archive#1556);
+	      `?type=` narrows by blueprint (`post`/`audio`/`video`/`news_release`),
+	      `?source=` selects `newsroom` / `local` / `both` (default), and `?page=`
+	      pages. Sorted sticky-first then newest. A non-hub site degrades to an
+	      unscoped newsroom listing rather than an empty page.
+	@param per_page  Optional. Posts per page. Default 10.
+#}}
+
+{{ news_archive :per_page="per_page" as="posts" }}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12">
+
+			{{# Active-filter notice: shown when a type is selected or the source
+			    is narrowed away from the default. `current_url` (path only) clears
+			    the filters back to the unfiltered archive. #}}
+			{{ if active_type || (active_source && active_source != "both") }}
+				<p class="posts-filter-notice">
+					Showing
+					{{ if active_type }}<strong>{{ active_type }}</strong>{{ else }}all{{ /if }}
+					news{{ if active_source && active_source != "both" }} from {{ active_source }}{{ /if }}.
+					<a href="{{ current_url }}">Clear filters</a>
+				</p>
+			{{ /if }}
+
+			{{ if no_results }}
+				<p class="posts-empty">No news found{{ if active_type || (active_source && active_source != "both") }} for this filter{{ /if }}.</p>
+			{{ else }}
+				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+					{{ posts }}
+						{{ partial:posts/card }}
+					{{ /posts }}
+				</div>
+
+				{{ if paginate:total_pages > 1 }}
+					<nav class="posts-pagination" aria-label="News archive pagination">
+						<ul class="pagination">
+							{{ if paginate:prev_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+							{{ /if }}
+							<li class="page-item active" aria-current="page">
+								<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+							</li>
+							{{ if paginate:next_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+							{{ /if }}
+						</ul>
+					</nav>
+				{{ /if }}
+			{{ /if }}
+
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /news_archive }}

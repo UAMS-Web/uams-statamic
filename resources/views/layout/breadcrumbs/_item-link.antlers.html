@@ -1,0 +1,6 @@
+{{# Editor/importer-controlled title injected into the title="" attribute — strip markup + entity-encode (ENT_QUOTES) so it cannot break out of the attribute (UAMS-Web/uams-statamic-archive#1485). #}}
+{{ $breadcrumbs_item_title_value = title | strip_tags | entities }}
+{{ $breadcrumbs_item_title_attr = ( breadcrumbs_ancestor && $breadcrumbs_count == 1 ) ? ( ' title="' + $breadcrumbs_item_title_value + '"' ) : '' }}
+{{# Editor/importer-controlled url injected into the href/itemid attributes — sanitize_url neutralizes a dangerous scheme (javascript:/data:) AND HTML-encodes for the attribute (do not add | entities — it owns the encoding); defense-in-depth (UAMS-Web/uams-statamic-archive#1500). #}}
+{{ $breadcrumbs_item_url = url | sanitize_url }}
+<a href="{{ $breadcrumbs_item_url }}" itemid="{{ $breadcrumbs_item_url }}" itemprop="https://schema.org/item" itemscope itemtype="https://schema.org/WebPage"{{ $breadcrumbs_item_title_attr }}>{{ partial:layout/breadcrumbs/item-name }}</a>

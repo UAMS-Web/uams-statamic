@@ -1,0 +1,112 @@
+title: 'UAMSWeb Common Reusable Fields, Find-a-Doc, Hours Rule'
+fields:
+  -
+    handle: days
+    field:
+      type: checkboxes
+      display: Days
+      instructions: 'Select every day of the week this rule applies to.'
+      options:
+        -
+          key: monday
+          value: Monday
+        -
+          key: tuesday
+          value: Tuesday
+        -
+          key: wednesday
+          value: Wednesday
+        -
+          key: thursday
+          value: Thursday
+        -
+          key: friday
+          value: Friday
+        -
+          key: saturday
+          value: Saturday
+        -
+          key: sunday
+          value: Sunday
+      validate:
+        - required
+      localizable: false
+  -
+    handle: service_mode
+    field:
+      type: button_group
+      display: 'Service Mode'
+      instructions: 'The service mode this rule applies to. Add a telemedicine rule only when telemedicine hours differ from the in-person hours.'
+      options:
+        -
+          key: in_person
+          value: 'In-Person'
+        -
+          key: telemedicine
+          value: Telemedicine
+      default: in_person
+      validate:
+        - required
+      localizable: false
+  -
+    handle: status
+    field:
+      type: button_group
+      display: Status
+      instructions: 'Whether the location is open during specific hours, closed, or open 24 hours for this rule.'
+      options:
+        -
+          key: open
+          value: 'Open During Specific Hours'
+        -
+          key: open_24h
+          value: 'Open 24 Hours'
+        -
+          key: closed
+          value: Closed
+      default: open
+      validate:
+        - required
+      localizable: false
+  -
+    handle: time_span
+    field:
+      type: replicator
+      display: 'Time Spans'
+      instructions: 'Add a row for each time span (e.g., 8-11:30 a.m., 12:30-4:30 p.m.).'
+      button_label: 'Add Time Span'
+      if:
+        status: 'equals open'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Time Span Group'
+          sets:
+            new_set:
+              display: 'New Time Span'
+              fields:
+                -
+                  handle: open
+                  field: uamsweb_common_fad.open
+                  config:
+                    replicator_preview: true
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: close
+                  field: uamsweb_common_fad.close
+                  config:
+                    replicator_preview: true
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: comment
+                  field: uamsweb_common_fad.time_comment
+                  config:
+                    display: Comment
+                    replicator_preview: true

@@ -1,0 +1,75 @@
+{{#
+	@name Clinical Resource Card
+	@desc Renders a single `clinical_resources` entry as a listing card — square
+	      / featured image, resource type (article / audio / video / infographic /
+	      document), title, and a short description — linking to its show page.
+	      Expects one clinical resource entry in scope. (UAMS-Web/uams-statamic-archive#576)
+#}}
+
+{{# Capture the entry's own url first: the featured-image asset pair rebinds `url`. #}}
+{{ $resource_url = url }}
+
+{{# Human label for the resource type (the entry's blueprint). #}}
+{{ $type_label = null }}
+{{ if blueprint == 'article' }}{{ $type_label = 'Article' }}{{ /if }}
+{{ if blueprint == 'audio' }}{{ $type_label = 'Audio' }}{{ /if }}
+{{ if blueprint == 'video' }}{{ $type_label = 'Video' }}{{ /if }}
+{{ if blueprint == 'infographic' }}{{ $type_label = 'Infographic' }}{{ /if }}
+{{ if blueprint == 'document' }}{{ $type_label = 'Document' }}{{ /if }}
+{{ if blueprint == 'provider_spotlight' }}{{ $type_label = 'Provider Spotlight' }}{{ /if }}
+
+{{# The card/list title consumes the Short title override when set (all types);
+	the show-page `h1` keeps the full title. #}}
+{{ $card_title = title_short ? title_short : title }}
+
+{{# A short description varies by type: articles/videos carry `intro`; documents
+	and infographics carry their own description field; spotlights fall back to
+	the auto summary derived from the featured provider. #}}
+{{ $card_excerpt = intro ? intro : ( documents_description ? documents_description : ( infographic_description ? infographic_description : ( spotlight_auto_excerpt ? spotlight_auto_excerpt : null ) ) ) }}
+
+{{# The card CTA label: spotlights invite the reader into the Q&A. #}}
+{{ $card_cta = blueprint == 'provider_spotlight' ? 'Read the Q&A' : 'View resource' }}
+
+<div class="item" itemscope itemtype="https://schema.org/CreativeWork"{{ if fad_facet }} data-fad-card data-type="{{ blueprint }}"{{ /if }}>
+	<div class="card h-100">
+		{{# Spotlight cards resolve their image by precedence: the 16:9 override,
+			then the featured provider's wide portrait, then the 3:4 portrait —
+			mirroring the `spotlight_featured_image` computed (the tested contract),
+			rendered here from the asset fields so it augments cleanly in a listing. #}}
+		{{ if blueprint == 'provider_spotlight' }}
+			{{ if spotlight_image_wide }}
+				{{ spotlight_image_wide }}<div class="card-img-top"><picture><img src="{{ url }}" alt="{{ spotlight_provider_name | sanitize }}" itemprop="https://schema.org/image" loading="lazy"></picture></div>{{ /spotlight_image_wide }}
+			{{ else }}
+				{{ featured_provider }}
+					{{ if portrait_wide }}
+						{{ portrait_wide }}<div class="card-img-top"><picture><img src="{{ url }}" alt="{{ spotlight_provider_name | sanitize }}" itemprop="https://schema.org/image" loading="lazy"></picture></div>{{ /portrait_wide }}
+					{{ elseif portrait }}
+						{{ portrait }}<div class="card-img-top"><picture><img src="{{ url }}" alt="{{ spotlight_provider_name | sanitize }}" itemprop="https://schema.org/image" loading="lazy"></picture></div>{{ /portrait }}
+					{{ /if }}
+				{{ /featured_provider }}
+			{{ /if }}
+		{{ elseif cover_image_query && featured_image_16_9 }}
+			{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+			{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+			{{ featured_image_16_9 }}
+				{{ $card_alt = cover_image_alt_text_override ? cover_image_alt_text_override : alt }}
+				<div class="card-img-top">
+					<picture><img src="{{ url }}" alt="{{ $card_alt | sanitize }}" itemprop="https://schema.org/image" loading="lazy"></picture>
+					{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+				</div>
+			{{ /featured_image_16_9 }}
+		{{ /if }}
+		<div class="card-body">
+			{{ if $type_label }}
+				<p class="resource-card-type text-uppercase mb-1"><small>{{ $type_label }}</small></p>
+			{{ /if }}
+			{{# Title/short-title are editor/import free-text → escape (Antlers is raw by
+			    default). `$card_excerpt` is a Bard field (intended HTML) and stays raw. #}}
+			<h2 class="card-title h5" itemprop="https://schema.org/name">{{ $card_title | sanitize }}</h2>
+			{{ if $card_excerpt }}
+				<div class="card-text" itemprop="https://schema.org/description">{{ $card_excerpt }}</div>
+			{{ /if }}
+			<a href="{{ $resource_url }}" class="btn btn-primary stretched-link" itemprop="https://schema.org/url" aria-label="{{ $card_cta }}: {{ $card_title | striptags | sanitize }}">{{ $card_cta }}</a>
+		</div>
+	</div>
+</div>

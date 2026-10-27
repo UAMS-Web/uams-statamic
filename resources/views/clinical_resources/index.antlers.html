@@ -1,0 +1,17 @@
+{{#
+	@name Clinical Resources Index
+	@desc The `clinical_resources` collection index (listing) page. Renders the
+	      shared type-filterable, paginated resources listing in the standard
+	      article shell. (UAMS-Web/uams-statamic-archive#576)
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{# Patient-safety 911 disclaimer above the directory listing (UAMS-Web/uams-statamic-archive#1466). #}}
+		{{ partial:components/emergency_disclaimer_911 }}
+		{{ partial:clinical_resources/listing }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

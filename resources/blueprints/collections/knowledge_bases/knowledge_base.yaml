@@ -1,0 +1,654 @@
+title: 'Knowledge Base'
+tabs:
+  knowledge_base_settings:
+    display: 'Knowledge Base Settings'
+    sections:
+      -
+        display: 'Knowledge Base Details'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Knowledge Base Title'
+          -
+            handle: title_options
+            field: uamsweb_header_selector_basic.title_options
+            config:
+              default: graphic
+              validate:
+                - required
+              visibility: hidden
+          -
+            handle: header_graphic
+            field:
+              type: group
+              display: 'Graphic Header Options'
+              localizable: false
+              border: false
+              hide_display: true
+              fullscreen: false
+              if:
+                title_options: 'equals graphic'
+              fields:
+                -
+                  handle: body
+                  field: uamsweb_header_graphic.body
+                  config:
+                    character_limit: 179
+                    display: 'Knowledge Base Summary'
+                    instructions: 'This text will appear below the knowledge base title. It should be a basic description of the knowledge base. There is a 179-character limit.'
+                    localizable: false
+                -
+                  handle: image
+                  field: uamsweb_header_graphic.image
+          -
+            handle: article_rating_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Enable Article Ratings'
+              default: false
+              validate:
+                - required
+      -
+        display: 'Search Bar on Knowledge Base Page'
+        fields:
+          -
+            handle: knowledge_base_search_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Search Bar on Knowledge Base Page'
+              default: true
+          -
+            handle: knowledge_base_search_title
+            field:
+              placeholder: 'e.g., Search the Knowledge Base'
+              default: 'Search the Knowledge Base'
+              type: text
+              display: 'Knowledge Base Search Bar Title'
+              localizable: false
+              if:
+                knowledge_base_search_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: knowledge_base_search_placeholder
+            field:
+              placeholder: 'e.g., "e.g., Guidelines"'
+              default: 'e.g., Guidelines'
+              type: text
+              display: 'Knowledge Base Search Bar Placeholder Text'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                knowledge_base_search_query: 'equals true'
+      -
+        display: 'Topics List on Knowledge Base Page'
+        fields:
+          -
+            handle: topic_label
+            field:
+              placeholder: 'e.g., Topics'
+              default: Topics
+              type: text
+              display: 'Topics Label (Plural)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: topic_label_singular
+            field:
+              placeholder: 'e.g., Topic'
+              default: Topic
+              type: text
+              display: 'Topic Label (Singular)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: topic_limit
+            field:
+              default: '-1'
+              type: integer
+              display: 'Number of Topics to Display'
+              instructions: 'You can use `-1` to display all topics.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: show_all_topics_label
+            field:
+              placeholder: 'e.g., Show All'
+              default: 'Show All'
+              type: text
+              display: 'Show All Topics Link Label'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: topic_description_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Topic Descriptions'
+              default: true
+              validate:
+                - required
+          -
+            handle: topic_image_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Topic Featured Images'
+              default: true
+              validate:
+                - required
+      -
+        display: 'Sharing Details'
+        fields:
+          -
+            handle: title_short
+            field: uamsweb_common.title_short
+            config:
+              localizable: false
+          -
+            handle: excerpt
+            field: uamsweb_entry_meta.excerpt
+            config:
+              validate:
+                - required
+                - 'max:160'
+          -
+            handle: featured_image_16_9
+            field: uamsweb_post_cover_image.featured_image_16_9
+            config:
+              validate:
+                - 'dimensions:min_width=1200,min_height=675'
+          -
+            handle: featured_image_4_3
+            field: uamsweb_post_cover_image.featured_image_4_3
+          -
+            handle: featured_image_1_1
+            field: uamsweb_post_cover_image.featured_image_1_1
+          -
+            handle: featured_image_credit_query
+            field: uamsweb_post_cover_image.featured_image_credit_query
+      -
+        display: 'Restrict Access'
+        fields:
+          -
+            handle: restriction_enabled
+            field: uamsweb_common.true_false
+            config:
+              display: 'Enable Content Restriction for This Knowledge Base'
+              default: false
+              validate:
+                - required
+          -
+            handle: restriction_global_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Apply Global Content Restriction for This Knowledge Base'
+              localizable: false
+              default: false
+              if:
+                restriction_enabled: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_message
+            field:
+              placeholder: 'e.g., "The content you are trying to access is for certain users only. Please log in to view it."'
+              default: 'The content you are trying to access is for certain users only. Please log in to view it.'
+              type: textarea
+              display: 'Restricted Content Message'
+              localizable: false
+              if:
+                restriction_enabled: 'equals true'
+                restriction_global_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_category
+            field:
+              options:
+                -
+                  key: users
+                  value: 'Specific Users'
+                -
+                  key: user_roles
+                  value: 'Specific User Roles'
+                -
+                  key: user_groups
+                  value: 'Specific User Groups'
+              type: checkboxes
+              display: 'Restriction Categories'
+              localizable: false
+              if:
+                restriction_enabled: 'equals true'
+                restriction_global_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_users
+            field:
+              type: users
+              display: 'Restricted to Users'
+              localizable: false
+              if:
+                restriction_enabled: 'equals true'
+                restriction_global_query: 'equals true'
+                restriction_category: 'contains users'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: restriction_user_roles
+            field:
+              type: user_roles
+              display: 'Restricted to User Roles'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                restriction_enabled: 'equals true'
+                restriction_global_query: 'equals true'
+                restriction_category: 'contains user_roles'
+          -
+            handle: restriction_user_groups
+            field:
+              type: user_groups
+              display: 'Restricted to User Groups'
+              localizable: false
+              if:
+                restriction_enabled: 'equals true'
+                restriction_global_query: 'equals true'
+                restriction_category: 'contains user_groups'
+              validate:
+                - required
+                - sometimes
+  topic_settings:
+    display: 'Topic Settings'
+    sections:
+      -
+        display: 'Search Bar on Topic Pages'
+        fields:
+          -
+            handle: topic_search_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Search Bar on Topic Pages'
+              default: false
+          -
+            handle: topic_search_bar_title
+            field:
+              placeholder: 'e.g., Search This Topic'
+              default: 'Search This Topic'
+              type: text
+              display: 'Topic Search Bar Title'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                topic_search_query: 'equals true'
+          -
+            handle: topic_search_placeholder
+            field:
+              placeholder: 'e.g., "e.g., Guidelines"'
+              default: 'e.g., Guidelines'
+              type: text
+              display: 'Topic Search Bar Placeholder Text'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                topic_search_query: 'equals true'
+      -
+        display: 'Subtopics List on Topic Pages'
+        fields:
+          -
+            handle: subtopic_label
+            field:
+              placeholder: 'e.g., Subtopics'
+              default: Subtopics
+              type: text
+              display: 'Subtopics Label (Plural)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: subtopic_label_singular
+            field:
+              placeholder: 'e.g., Subtopic'
+              default: Subtopic
+              type: text
+              display: 'Subtopics Label (Singular)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: subtopic_limit
+            field:
+              default: '-1'
+              type: integer
+              display: 'Number of Subtopics to Display'
+              instructions: 'You can use `-1` to display all subtopics.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: subtopic_description_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Subtopic Descriptions'
+              default: true
+              validate:
+                - required
+          -
+            handle: subtopic_image_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Subtopic Featured Images'
+              default: true
+              validate:
+                - required
+          -
+            handle: show_all_subtopics_label
+            field:
+              placeholder: 'e.g., Show All'
+              default: 'Show All'
+              type: text
+              display: 'Show All Subtopics Link Label'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Article List on Topic Pages'
+        fields:
+          -
+            handle: topic_article_label
+            field:
+              placeholder: 'e.g., Articles'
+              default: Articles
+              type: text
+              display: 'Articles Label (Plural)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: topic_article_label_singular
+            field:
+              placeholder: 'e.g., Article'
+              default: Article
+              type: text
+              display: 'Articles Label (Singular)'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: topic_article_count
+            field:
+              default: '-1'
+              type: integer
+              display: 'Number of Articles to Display'
+              instructions: 'You can use `-1` to display all articles.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: topic_article_show_all_label
+            field:
+              placeholder: 'e.g., Show All'
+              default: 'Show All'
+              type: text
+              display: 'Show All Articles Link Label'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: topic_article_last_modified_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Last Modified Date'
+              default: false
+              validate:
+                - required
+          -
+            handle: topic_article_description_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Excerpts'
+              default: true
+              validate:
+                - required
+          -
+            handle: topic_article_image_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Featured Images'
+              default: true
+              validate:
+                - required
+          -
+            handle: topic_article_view_count_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article View Count'
+              default: false
+              validate:
+                - required
+          -
+            handle: topic_article_like_count_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Like Count'
+              default: false
+              if:
+                article_rating_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: topic_article_dislike_count_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Dislike Count'
+              default: false
+              if:
+                article_rating_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+  article_settings:
+    display: 'Article Settings'
+    sections:
+      -
+        display: 'Article Information'
+        fields:
+          -
+            handle: article_last_modified_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Last Modified Date'
+              default: true
+              validate:
+                - required
+          -
+            handle: article_last_modified_label
+            field:
+              placeholder: 'e.g, Last Modified:'
+              default: 'Last Modified:'
+              type: text
+              display: 'Last Modified Date Label'
+              localizable: false
+              if_any:
+                article_last_modified_query: 'equals true'
+                topic_article_last_modified_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: article_creator_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Article Author'
+              default: false
+              validate:
+                - required
+          -
+            handle: article_estimated_reading_time_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Estimated Reading Time'
+              default: false
+              validate:
+                - required
+      -
+        display: 'Dynamic Table of Contents'
+        fields:
+          -
+            handle: toc_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Enable Dynamic Table of Contents'
+              default: false
+              validate:
+                - required
+          -
+            handle: toc_heading_exclude
+            field:
+              options:
+                -
+                  key: h2
+                  value: 'Heading 2'
+                -
+                  key: h3
+                  value: 'Heading 3'
+                -
+                  key: h4
+                  value: 'Heading 4'
+                -
+                  key: h5
+                  value: 'Heading 5'
+                -
+                  key: h6
+                  value: 'Heading 6'
+              type: checkboxes
+              display: 'Exclude Specific Heading Levels from Table of Contents'
+              localizable: false
+              if:
+                toc_query: 'equals true'
+          -
+            handle: toc_label
+            field:
+              placeholder: 'e.g., In This Article'
+              default: 'In This Article'
+              type: text
+              display: 'Table of Contents Label'
+              localizable: false
+              if:
+                toc_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+      -
+        display: Attachments
+        fields:
+          -
+            handle: attachments_label
+            field:
+              placeholder: 'e.g., Attachments'
+              default: Attachments
+              type: text
+              display: 'Attachments Label'
+              localizable: false
+              validate:
+                - required
+      -
+        display: 'Related Articles'
+        fields:
+          -
+            handle: related_articles_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show Related Articles'
+              default: true
+              validate:
+                - required
+          -
+            handle: related_articles_label
+            field:
+              placeholder: 'e.g., Related Articles'
+              default: 'Related Articles'
+              type: text
+              display: 'Related Articles Label'
+              localizable: false
+              if:
+                related_articles_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {  }
+          -
+            handle: template
+            field:
+              default: knowledge_bases/knowledge-base
+              type: hidden
+              display: Template
+              localizable: false
+      -
+        display: 'Sitemap'
+        fields:
+          -
+            import: uamsweb_entry_sitemap
+      -
+        display: 'Mount Point'
+        fields:
+          -
+            handle: mount_parent
+            field:
+              type: entries
+              display: 'Mount Under Page'
+              instructions: "Optionally mount this knowledge base beneath a page. The knowledge base, and its topics and articles, will resolve at the chosen page's URL followed by this knowledge base's slug. Leave empty to keep the default URL."
+              collections:
+                - pages
+              max_items: 1
+              mode: default
+              localizable: true
+      -
+        display: 'Site Navigation'
+        fields:
+          -
+            handle: hide_from_menu
+            field: uamsweb_entry_site_navigation.hide_from_menu
+          -
+            handle: nav_alt_name
+            field: uamsweb_entry_site_navigation.nav_alt_name

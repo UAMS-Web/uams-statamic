@@ -1,0 +1,11 @@
+{{ if $breadcrumbs_count_current_site == 1 }}
+	{{ $breadcrumbs_item_name = $breadcrumbs_current_site_name }}
+{{ else }}
+	{{# Editor/importer-controlled title — strip markup + entity-encode like the sibling <h1>/<title>/term-heading sinks (UAMS-Web/uams-statamic-archive#1485). #}}
+	{{ $breadcrumbs_item_name = ( nav_alt_name ?? title ) | strip_tags | entities }}
+{{ /if }}
+{{ if $breadcrumbs_count == 1 }}
+	<span itemprop="https://schema.org/name"><span class="fas fa-home"></span><span class="sr-only">{{ $breadcrumbs_item_name }}</span></span>
+{{ else }}
+	<span itemprop="https://schema.org/name">{{ $breadcrumbs_item_name }}</span>
+{{ /if }}

@@ -1,0 +1,94 @@
+.intranet-col-primary {
+    padding: 0;
+
+    .uams-module {
+        .container-fluid {
+            margin: 0;
+        }
+        &.intranet-news {
+            .inner-container {
+                max-width: 35em;
+                margin: 0 auto;
+                @include media-breakpoint-up(sm) {
+                    max-width: 1160px;
+                }
+            }
+            .featured {
+                @include media-breakpoint-only(sm) {
+                    padding-right: 33px;
+                }
+                @include media-breakpoint-up(lg) {
+                    padding-right: 33px;
+                }
+
+                img {
+                    width: 100%;
+                }
+            }
+
+            .secondary {
+                @include media-breakpoint-only(sm) {
+                    font-size: 1rem;
+                }
+
+                h3 {
+                    padding-top: $spacer * 2;
+                    margin-top: $spacer * 2;
+                    border-top: 1px solid $body-bg-border;
+
+                    @include media-breakpoint-up(sm) {
+                        padding-top: $spacer * 3;
+                        margin-top: $spacer * 3;
+                    }
+
+                    &:first-child {
+                        @include media-breakpoint-only(sm) {
+                            padding-top: 0;
+                            margin-top: 0;
+                            border-top: 0;
+                        }
+                        @include media-breakpoint-up(lg) {
+                            padding-top: 0;
+                            margin-top: 0;
+                            border-top: 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+.intranet-col-secondary {
+    //background-color: $gray-200;
+    border-left: 2px solid $body-bg-border;
+    padding: 0;
+
+    .uams-module {
+        border-bottom: 2px solid $body-bg-border;
+
+        .inner-container {
+            width: 35em;
+            max-width: 100%;
+            margin: 0 auto;
+
+            .module-title {
+                @extend .h4;
+                width: auto;
+                text-align: center;
+                margin-bottom: $uams-module-padding-mobile;
+                color: inherit;
+
+                @include media-breakpoint-up(md) {
+                    text-align: left;
+                }
+
+                .title {
+                    padding-bottom: 0;
+                    &:after {
+                        content: none;
+                    }
+                }
+            }
+        }
+    }
+}

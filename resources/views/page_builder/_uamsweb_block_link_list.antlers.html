@@ -1,0 +1,73 @@
+{{#
+	@name UAMS List List
+	@desc The UAMS List List page builder block.
+	@set page.page_builder.uamsweb_block_link_list
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Check if the required top-level block fields have values #}}
+	{{ $block_valid = block_heading && background_color }}
+
+	{{# Count the number of items #}}
+	{{ if $block_valid }}
+		{{ $item_count = ( items | safe_count ) }}
+	{{ /if }}
+
+	{{# Check if there is at least one item #}}
+	{{ if $block_valid }}
+		{{ $block_valid = $item_count >= 1 }}
+	{{ /if }}
+
+	{{# Check if each item has the required field values for its type #}}
+	{{ if $block_valid }}
+		{{ items }}
+			{{ if type == 'url' && ( !heading || !url ) }}
+				{{ $block_valid = false }}
+			{{ /if }}
+			{{ if type == 'asset_file' && ( !heading || !url || ( url | safe_count != 1 ) ) }}
+				{{ $block_valid = false }}
+			{{ /if }}
+		{{ /items }}
+	{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{
+		partial:page_builder/components/block_link_list
+		auto_block_id="true"
+		:block_heading="block_heading"
+		:block_description="block_description"
+	}}
+		{{ items }}
+
+			{{# Define the Variables #}}
+
+				{{# Handle different field types for url #}}
+				{{ if type == 'asset_file' }}
+					{{# Asset file - use first element directly #}}
+					{{ $item_url = url[0] }}
+				{{ else }}
+					{{# External URL - use directly #}}
+					{{ $item_url = url }}
+				{{ /if }}
+				{{ $item_text = heading | widont }}
+				{{ $item_body = body | widont }}
+				{{ $item_aria_label = ( link_description ?? ( [ heading, block:block_heading ] | filter_empty | join(', ') ) ) }}
+
+			{{# Render the Item #}}
+
+				{{
+					partial:page_builder/components/block_link_list_item
+					:url="$item_url"
+					:text="$item_text"
+					:body="$item_body"
+					:target="target"
+					:aria_label="$item_aria_label"
+					:data_moduletitle="block:block_heading"
+				}}
+
+		{{ /items }}
+	{{ /partial:page_builder/components/block_link_list }}
+{{ /if }}

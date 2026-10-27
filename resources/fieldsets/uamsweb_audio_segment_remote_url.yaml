@@ -1,0 +1,23 @@
+title: 'UAMSWeb Audio Segment, Remote URL'
+fields:
+  -
+    handle: url
+    field:
+      type: text
+      input_type: url
+      display: 'Audio URL'
+      instructions: 'The MP3 the podcast host publishes for this episode. Nothing is copied into the media library; listeners stream it from the host. Set by the UAMS Health Talk sync.'
+      validate:
+        - required
+        - url
+        - 'starts_with:https://'
+      localizable: false
+      replicator_preview: true
+  -
+    handle: title_override
+    field:
+      type: text
+      display: 'Title Override'
+      instructions: "Optional. Shown instead of the episode's title above this segment's player."
+      localizable: false
+      replicator_preview: false

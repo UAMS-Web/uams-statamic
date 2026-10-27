@@ -1,0 +1,182 @@
+{{# Knowledge base article entry date #}}
+{{ $date_modified_enabled = false }}
+{{ $date_published_enabled = false }}
+{{ if article_last_modified_query }}
+	{{# Use the date modified if it is different from the published date #}}
+	{{ if date && updated_at}}
+		{{ if updated_at == date }}
+			{{ $date_published_enabled = true }}
+		{{ else }}
+			{{ $date_modified_enabled = true }}
+		{{ /if }}
+	{{ elseif date && !updated_at }}
+		{{ $date_published_enabled = true }}
+	{{ elseif !date && updated_at}}
+		{{ $date_modified_enabled = true }}
+	{{ /if }}
+{{ /if }}
+
+{{#
+	Match behavior of the posts collection: when article-level creator display is
+	disabled for the knowledge base, treat credits as hidden for entry-meta via
+	`hide_creator_query`.
+#}}
+{{ if !article_creator_query }}
+	{{ hide_creator_query = true }}
+{{ /if }}
+
+{{# Article semantic element; pass through entry-meta params to layout/article #}}
+{{
+	partial:layout/article
+	:date_modified_enabled="$date_modified_enabled"
+	:date_modified_label="article_last_modified_label"
+	:date_modified_value="updated_at"
+	:date_published_enabled="$date_published_enabled"
+	date_published_label="Published:"
+	:date_published_value="date"
+	:reading_time_enabled="article_estimated_reading_time_query"
+	reading_time_label="Estimated Reading Time:"
+	:reading_time_value="(content | raw | bard_text | read_time_uams)"
+	:itemref="( article_rating_query ? 'article-reactions-like article-reactions-dislike' : null )"
+	:data_article_id="id"
+	:data_article_title="title | sanitize"
+}}
+
+	{{# Article meta is rendered by the page-header partial when entry-meta params are passed. #}}
+
+	{{# Article content #}}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+		itemprop="https://schema.org/articleBody https://schema.org/text"
+	}}
+		{{ content }}
+			{{ partial src="sets/{type}" }}
+		{{ /content }}
+	{{ /partial:layout/entry-content }}
+
+	{{# Article attachments #}}
+	{{# @TODO: Resolve schema issues with attachments ItemList and contentUrl #}}
+	{{ if attachment | length > 0 }}
+		{{ partial:page_builder/uamsweb_block block_id="attachments" background_color="{{ switch between="bg-gray|bg-white" for="uamsweb_block" }}" }}
+			{{ partial:page_builder/components/container_row }}
+				{{ partial:page_builder/components/block_header heading="Attachments" block_id="attachments" }}
+				{{
+					partial:page_builder/components/card_list
+					itemprop=""
+					itemscope="false"
+					itemtype=""
+				}}
+					{{ attachment }}
+
+						{{# Attachment variables (external_file uses remote_file_meta for URL-derived metadata) #}}
+						{{ $asset = (( type == 'external_file' ) ? ( url | remote_file_meta ) : asset ) }}
+						{{ $asset_url = ( $asset:url ?? null ) }}
+						{{ $asset_title = ( label ?? ( $asset:title ?? null )) }}
+						{{ $asset_alternate_name = label ? ( $asset:title ?? null ) : null }}
+						{{ $asset_id = ( $asset:id ?? null ) }}
+						{{ $asset_created_at = ( $asset:created_at ?? null ) }}
+						{{ $asset_updated_at = ( $asset:updated_at ?? null ) }}
+						{{ $asset_height = ( $asset:height ?? null ) }}
+						{{ $asset_width = ( $asset:width ?? null ) }}
+						{{ $asset_duration = ( $asset:duration ?? null ) }}
+						{{ $asset_description = ( $asset:description ?? null ) }}
+						{{ $asset_extension = ( $asset:extension ?? null ) }}
+						{{ $asset_content_size = ( $asset:size ?? null ) }}
+						{{ $asset_mime_type = ( $asset:mime_type ?? null ) }}
+						{{# @TODO: Move these icon class definitions to a Global within the Control Panel #}}
+						{{
+							$attachment_icon_class = ( [
+								'fas fa-file-archive' => ($asset_extension | contains_any('zip', 'rar', '7z', 'bz', 'bz2')),
+								'fas fa-file-pdf' => ($asset_extension | contains_any('pdf')),
+								'fas fa-file-text' => ($asset_extension | contains_any('txt', 'md')),
+								'fas fa-file-image' => ($asset_extension | contains_any('jpg', 'jpeg', 'jpe', 'png', 'tif', 'tiff', 'gif', 'bmp', 'svg')),
+								'fas fa-file-excel' => ($asset_extension | contains_any('xls', 'xlsx', 'xlt', 'xla', 'xltx', 'xlsm', 'xltm', 'xlam', 'xlsb', 'csv', 'ods', 'ots')),
+								'fas fa-file-word' => ($asset_extension | contains_any('doc', 'docx', 'dot', 'dotx', 'docm', 'dotm', 'rtf', 'odt', 'ott')),
+								'fas fa-file-video' => ($asset_extension | contains_any('mpeg', 'mov', 'avi', 'ogv', 'webm', '3gp', '3g2', 'wmv')),
+								'fas fa-file-audio' => ($asset_extension | contains_any('mp3', 'mp4', 'aif', 'aifc', 'aac', 'mid', 'midi', 'oga', 'wav', 'weba', '3gp', '3g2')),
+							] | classes | collapse_whitespace ) ?? 'fas fa-file-alt'
+						}}
+
+						{{# Attachment card item #}}
+						{{
+							partial:page_builder/components/card_item
+							item_itemprop=""
+							item_itemscope="false"
+							item_itemtype=""
+							card_itemprop="https://schema.org/associatedMedia"
+							card_itemscope="true"
+							card_itemtype="https://schema.org/MediaObject"
+						}}
+							{{# Attachment card body #}}
+							{{ partial:page_builder/components/card_body }}
+								{{
+									partial:page_builder/components/card_title
+									itemprop="https://schema.org/name https://schema.org/headline"
+									:heading="$asset_title"
+									:url="$asset_url"
+									:aria_label="$asset_title | sanitize, Download Attachment"
+									url_itemprop="https://schema.org/url https://schema.org/contentUrl"
+									has_link="true"
+									stretched_link="true"
+									:mb_0="($asset_description ? false : true)"
+								}}
+								{{ if $asset_description }}<p class="card-text">{{ $asset_description | strip_tags | widont }}</p>{{ /if }}
+							{{ /partial:page_builder/components/card_body }}
+
+							{{# Attachment card footer #}}
+							{{ partial:page_builder/components/card_footer }}
+								<span
+									class="{{
+										[
+											$attachment_icon_class,
+											'text-muted mr-3' => true
+										] | classes | collapse_whitespace
+									}}"
+									aria-hidden="true"
+								></span>
+								<small>{{ [ ($asset_extension | upper), $asset_content_size, $asset_duration ] | filter_empty | join(' | ') }}</small>
+							{{ /partial:page_builder/components/card_footer }}
+
+							{{# Attachment meta #}}
+							{{ if $asset_alternate_name }}<meta itemprop="https://schema.org/alternateName" content="{{ $asset_alternate_name | sanitize }}">{{ /if }}
+							{{ if $asset_content_size }}<meta itemprop="https://schema.org/size https://schema.org/contentSize" content="{{ $asset_content_size }}" />{{ /if }}
+							{{ if $asset_mime_type }}<meta itemprop="https://schema.org/encodingFormat" content="{{ $asset_mime_type }}" />{{ /if }}
+							{{ if $asset_created_at }}<meta itemprop="https://schema.org/uploadDate https://schema.org/datePublished https://schema.org/dateCreated" content="{{ $asset_created_at | format('c') }}">{{ /if }}
+							{{ if $asset_updated_at }}<meta itemprop="https://schema.org/dateModified" content="{{ $asset_updated_at | format('c') }}">{{ /if }}
+							{{ if $asset_height }}<meta itemprop="https://schema.org/height" content="{{ $asset_height }}">{{ /if }}
+							{{ if $asset_width }}<meta itemprop="https://schema.org/width" content="{{ $asset_width }}">{{ /if }}
+							{{ if $asset_duration }}<meta itemprop="https://schema.org/timeRequired https://schema.org/duration" content="PT{{ $asset_duration }}M">{{ /if }}
+							{{ if $asset_description }}<meta itemprop="https://schema.org/description https://schema.org/abstract" content="{{ $asset_description | sanitize }}">{{ /if }}
+						{{ /partial:page_builder/components/card_item }}
+					{{ /attachment }}
+				{{ /partial:page_builder/components/card_list }}
+			{{ /partial:page_builder/components/container_row }}
+		{{ /partial:page_builder/uamsweb_block }}
+	{{ /if }}
+
+{{ /partial:layout/article }}
+
+{{# Related Articles #}}
+{{ if related_articles_query }}
+	{{
+		partial:knowledge_bases/article_list_field
+		:articles="related_articles"
+		:heading="related_articles_label"
+		background_color="{{ switch between="bg-gray|bg-white" for="uamsweb_block" }}"
+		html_tag="aside"
+		block_id="related-articles"
+		itemprop="https://schema.org/hasPart"
+		itemscope="true"
+		itemtype="https://www.schema.org/SiteNavigationElement"
+		card_list_itemprop="https://schema.org/mainEntity"
+	}}
+{{ /if }}
+
+{{# Article reactions #}}
+{{ if article_rating_query }}
+	{{
+		partial:knowledge_bases/article_reactions
+		background_color="{{ switch between="bg-gray|bg-white" for="uamsweb_block" }}"
+	}}
+{{ /if }}

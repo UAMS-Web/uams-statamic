@@ -1,0 +1,240 @@
+title: Calculator
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: note
+            field: uamsweb_common.bard_simple_lists
+            config:
+              display: Note
+              localizable: false
+          -
+            handle: parts
+            field:
+              type: replicator
+              display: Parts
+              localizable: false
+              button_label: 'Add Part'
+              min_sets: 1
+              validate:
+                - required
+              sets:
+                variable:
+                  display: Variable
+                  fields:
+                    -
+                      handle: kind
+                      field:
+                        options:
+                          -
+                            key: input
+                            value: Input
+                          -
+                            key: output
+                            value: Output
+                          -
+                            key: bidirectional
+                            value: 'Bidirectional (editable and computed)'
+                        type: select
+                        display: Kind
+                        instructions: |-
+                          - **Input**: user-editable, no formula.
+                          - **Output**: read-only, computed from a formula.
+                          - **Bidirectional**: editable *and* computed. Use when several variables in the same calculator should derive from each other (e.g. kg ↔ lb/oz). Each bidirectional variable must define its own formula that expresses *its* value in terms of the others.
+                        localizable: false
+                        validate:
+                          - required
+                    -
+                      handle: handle
+                      field:
+                        type: text
+                        display: Handle
+                        instructions: "Can only contain letters (A–Z), numbers, and underscores (_), and must start with a letter or an underscore. For example, 'weight_kg' is valid but 'weight-kg' and '1weight' are not. Formulas in this calculator reference each variable by this name. The handle also acts as the cross-calculator sync key: when **Sync across calculators** is on here and on a matching variable in another calculator on the same page, edits to one mirror into the other. Use the same handle (e.g. `weight_kg`) consistently across calculators that should share values."
+                        localizable: false
+                        validate:
+                          - required
+                          - ascii_identifier
+                    -
+                      handle: primary
+                      field:
+                        type: toggle
+                        display: 'Primary (LHS of displayed equation)'
+                        instructions: |-
+                          Marks this variable as the **left side** of the displayed equation. Its formula is the one shown as the caption above the inputs, and the inputs are laid out as `<primary> = <referenced variables>`. **Leave off when the calculator has exactly one computed (output) variable** — the system implies primary automatically in that case. **Turn on for exactly one variable** when the calculator has multiple computed (bidirectional) variables, since the display direction would otherwise be ambiguous (e.g. weight conversion: kg = lb + oz, or imperial = kg).
+                        default: false
+                        localizable: false
+                    -
+                      handle: label
+                      field:
+                        type: text
+                        display: Label
+                        localizable: false
+                        validate:
+                          - required
+                    -
+                      handle: sync_across_calculators
+                      field:
+                        type: toggle
+                        display: 'Sync across calculators'
+                        instructions: |-
+                          When on, this variable's value is mirrored across every other variable on the same page whose handle matches *and* that also has this toggle on. Use for variables that conventionally represent the same quantity in multiple calculators (e.g. `weight_kg`, `gestational_age`, `feeds_per_d`) — entering it once populates it everywhere. Both sides must opt in: a calculator with this off won't read from or write to the shared value, even if its handle matches.
+                        default: true
+                        localizable: false
+                    -
+                      handle: unit
+                      field:
+                        type: text
+                        display: Unit
+                        instructions: 'Optional. Appended to the input as a Bootstrap input-group suffix (e.g. `kg`, `ml`, `%`). Leave blank when the variable is unitless or when the unit is already conveyed in the label.'
+                        localizable: false
+                    -
+                      handle: formula
+                      field:
+                        type: code
+                        display: Formula
+                        mode: javascript
+                        mode_selectable: false
+                        line_numbers: false
+                        localizable: false
+                        if:
+                          kind: 'contains_any output,bidirectional'
+                        validate:
+                          - sometimes
+                          - required
+                    -
+                      handle: decimals
+                      field:
+                        default: 3
+                        min: 0
+                        step: 1
+                        type: integer
+                        display: Decimals
+                        localizable: false
+                        validate:
+                          - sometimes
+                          - required
+                        if:
+                          kind: 'contains_any output,bidirectional'
+                    -
+                      handle: group
+                      field:
+                        type: text
+                        display: Group
+                        instructions: 'Optional. Variables sharing the same group are treated as paired — when one is edited, the others in the same group do not recompute themselves. For example, mark both `weight_lb` and `weight_oz` as group `imperial` so editing lb does not cascade a rounded value back into oz. Leave blank when the variable is independent. Not needed when using `split` below — splits handle pairing implicitly.'
+                        localizable: false
+                        validate:
+                          - sometimes
+                          - ascii_identifier
+                        if:
+                          kind: 'equals bidirectional'
+                    -
+                      handle: split
+                      field:
+                        type: replicator
+                        display: Split
+                        instructions: |-
+                          Optional. Splits this variable into multiple sub-inputs that share one underlying value. Use when a single quantity is conventionally entered or displayed as two adjacent fields (e.g. decimal pounds shown as integer lb + fractional ounces). The composite variable's formula is authored once; each split entry declares how to project the composite into its sub-input and (in reverse) how that sub-input contributes back to the composite. Sub-handles are display-only and may not be referenced from other formulas.
+                        localizable: false
+                        button_label: 'Add Split'
+                        validate:
+                          - sometimes
+                        sets:
+                          split_part:
+                            display: 'Split Part'
+                            fields:
+                              -
+                                handle: handle
+                                field:
+                                  type: text
+                                  display: Handle
+                                  instructions: "Identifier for the sub-input. Same rules as a variable handle (letters, numbers, and underscores; must start with a letter or underscore)."
+                                  localizable: false
+                                  validate:
+                                    - required
+                                    - ascii_identifier
+                              -
+                                handle: label
+                                field:
+                                  type: text
+                                  display: Label
+                                  localizable: false
+                                  validate:
+                                    - required
+                              -
+                                handle: unit
+                                field:
+                                  type: text
+                                  display: Unit
+                                  instructions: 'Optional. Appended to the sub-input as a Bootstrap input-group suffix (e.g. `lb`, `oz`, `min`).'
+                                  localizable: false
+                              -
+                                handle: strategy
+                                field:
+                                  type: select
+                                  display: Strategy
+                                  instructions: |-
+                                    - **Integer part**: takes the whole-number portion of the composite (e.g. 3 from 3.5). Use for the larger unit (pounds, hours, dollars).
+                                    - **Fractional × multiplier**: takes the fractional portion of the composite and multiplies it (e.g. 0.5 × 16 = 8 ounces). Use for the smaller unit (ounces, minutes, cents) with the appropriate multiplier.
+                                  options:
+                                    integer: 'Integer part'
+                                    fractional_times: 'Fractional × multiplier'
+                                  default: integer
+                                  localizable: false
+                                  validate:
+                                    - required
+                              -
+                                handle: multiplier
+                                field:
+                                  type: integer
+                                  display: Multiplier
+                                  instructions: "Used by the fractional strategy. 16 for ounces from decimal pounds, 60 for minutes from decimal hours, 100 for cents from decimal dollars."
+                                  default: 16
+                                  min: 2
+                                  step: 1
+                                  localizable: false
+                                  if:
+                                    strategy: 'equals fractional_times'
+                                  validate:
+                                    - sometimes
+                                    - required
+                              -
+                                handle: decimals
+                                field:
+                                  type: integer
+                                  display: Decimals
+                                  instructions: "Display precision for this sub-input. 0 for whole-unit integer parts (lb, hours); 3 or so for fractional parts that still benefit from precision (oz)."
+                                  default: 0
+                                  min: 0
+                                  step: 1
+                                  localizable: false
+                                  validate:
+                                    - required
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_computed_content_usage

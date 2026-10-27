@@ -1,0 +1,57 @@
+title: 'UAMSWeb Block, Call-Out'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: body
+    field:
+      type: textarea
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: background_image_query
+    field: uamsweb_common_block.background_image_query
+    config:
+      validate:
+        - required
+  -
+    handle: background_image
+    field: uamsweb_common_images.image_1920x720
+    config:
+      display: 'Background Image'
+      instructions: 'Recommended image dimensions: 5120x1920. Minimum image dimensions: 1920x720. The image will be automatically cropped to a 8:3 aspect ratio.'
+      validate:
+        - required
+        - sometimes
+        - 'dimensions:min_width=1920,min_height=720'
+      if:
+        background_image_query: 'equals true'
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Overlay the background image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the block's content, so it is off by default."
+      default: false
+      localizable: false

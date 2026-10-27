@@ -1,0 +1,68 @@
+{
+    "name": "uams-statamic",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "npm": ">=11.10.0"
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "dev:with-cp": "concurrently -k -n site,cp -c blue,magenta \"npm run dev\" \"npm run cp:dev\"",
+        "watch": "vite",
+        "production": "vite build",
+        "cp:dev": "vite --config vite-cp.config.js",
+        "cp:build": "vite build --config vite-cp.config.js",
+        "test:js": "vitest run",
+        "spell": "node scripts/spell.mjs",
+        "ci:local": "node scripts/local-ci.mjs"
+    },
+    "overrides": {
+        "shell-quote": "^1.8.4",
+        "postcss-selector-parser": "^7.1.6",
+        "popper.js": "npm:@popperjs/core@^2.11.8"
+    },
+    "devDependencies": {
+        "@statamic/cms": "file:./vendor/statamic/cms/resources/dist-package",
+        "@tailwindcss/forms": "^0.5.10",
+        "@tailwindcss/typography": "^0.5.16",
+        "@tailwindcss/vite": "^4.2.0",
+        "@types/mime-db": "^1.43.6",
+        "concurrently": "^9.0.1",
+        "cspell": "^10.0.1",
+        "esbuild": "^0.28.0",
+        "jsdom": "^29.1.1",
+        "laravel-vite-plugin": "^3.0.0",
+        "mime-db": "^1.54.0",
+        "playwright": "^1.54.1",
+        "sass": "^1.97.3",
+        "tailwindcss": "^4.0.6",
+        "vite": "^8.0.0",
+        "vitest": "^4.1.8"
+    },
+    "dependencies": {
+        "@alpinejs/csp": "^3.15.12",
+        "@alpinejs/morph": "^3.15.12",
+        "@fortawesome/fontawesome-free": "^7.3.1",
+        "@internationalized/date": "^3.7.0",
+        "@shopify/draggable": "^1.1.4",
+        "@statamic/cms": "file:./vendor/statamic/cms/resources/dist-package",
+        "bootstrap": "^4.6.2",
+        "cva": "^1.0.0-beta.3",
+        "dompurify": "^3.4.11",
+        "laravel-precognition-alpine": "^0.6.1",
+        "leaflet": "^1.9.4",
+        "libphonenumber-js": "^1.12.10",
+        "marked": "^16.1.2",
+        "mathjs": "^15.2.0",
+        "nanoid": "^3.3.7",
+        "pdfobject": "^2.3.1",
+        "puppeteer": "^25.14.0",
+        "reka-ui": "^2.2.0",
+        "signature_pad": "^5.1.3",
+        "tailwind-merge": "^3.0.2",
+        "underscore": "^1.13.7",
+        "upload": "^1.3.2",
+        "vue-imask": "^7.6.1"
+    }
+}

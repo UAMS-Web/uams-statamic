@@ -1,0 +1,12 @@
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{ content scope="block" }}
+			{{ partial src="sets/{type}" }}
+		{{ /content }}
+		{{ partial:layout/navigation/subpages/subpages background_color="bg-gray" }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}
+

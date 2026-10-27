@@ -1,0 +1,33 @@
+{{#
+
+	@name Footer Social Media Navigation
+	@desc The social media navigation menu in the global footer.
+
+#}}
+{{ if
+	uams_multisite_settings:social_facebook:handle
+	|| uams_multisite_settings:social_x:handle
+	|| uams_multisite_settings:social_instagram:handle
+	|| uams_multisite_settings:social_youtube:handle
+	|| uams_multisite_settings:social_linkedin:handle
+	|| uams_multisite_settings:social_pinterest:handle
+	|| uams_multisite_settings:social_bluesky:handle
+	|| uams_multisite_settings:social_vimeo:handle
+	|| uams_multisite_settings:social_mastodon:handle
+	|| uams_multisite_settings:social_github:handle
+}}
+<div role="navigation" aria-label="Social media">
+	<ul class="nav social">
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_facebook" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_x" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_instagram" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_youtube" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_linkedin" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_pinterest" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_bluesky" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_vimeo" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_mastodon" }}
+		{{ partial:layout/footer/navigation/social/link-item :platform="uams_multisite_settings:social_github" }}
+	</ul>
+</div>
+{{ /if }}

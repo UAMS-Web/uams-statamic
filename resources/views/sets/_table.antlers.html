@@ -1,0 +1,160 @@
+{{#
+	@name Table
+	@desc The table component for sizeable content tables.
+	@set page.article.table
+#}}
+
+{{# Determine the source of table data based on create_query #}}
+{{ if create_query == 'collection' }}
+	{{# Fetch the table entry if create_query is 'collection' #}}
+	{{ table_entry }}
+		{{# Check if the entry exists and is published #}}
+		{{ if !id || !published }}
+			{{# Do not render anything if the entry is invalid or unpublished #}}
+			{{ return }}
+		{{ /if }}
+		{{# Check if the entry has table_data #}}
+		{{ if !table_data }}
+			{{# Do not render anything if table_data is missing #}}
+			{{ return }}
+		{{ /if }}
+		{{# Use data from the table entry #}}
+		{{ $table_caption = caption }}
+		{{ $table_first_row_headers = first_row_headers }}
+		{{ $table_first_column_headers = first_column_headers }}
+		{{ $table_last_row_footers = last_row_footers }}
+		{{ $table_data = table_data }}
+		{{ $table_title = title }}
+		{{ $table_description = description }}
+		{{# Style + feature settings from the table entry #}}
+		{{ $table_striped = striped }}
+		{{ $table_fixed_width = fixed_width_table_cells }}
+		{{ $table_row_hover = row_hover_highlighting }}
+		{{ $table_sorting = sorting_enable }}
+		{{ $table_search = search_enable }}
+		{{ $table_paginate = pagination_enable }}
+		{{ $table_page_length = pagination_count }}
+		{{ $table_page_length_adjustable = pagination_change_enable }}
+		{{ $table_info = info_enable }}
+		{{ $table_horizontal_scroll = horizontal_scroll_enable }}
+		{{ $table_column_filter = column_filter_enable }}
+		{{ $table_column_filter_columns = column_filter_columns }}
+		{{ $table_responsive_stack = responsive_stack_enable }}
+		{{ $table_responsive_breakpoint = responsive_stack_breakpoint }}
+	{{ /table_entry }}
+{{ else }}
+	{{# Use Bard set data for manual or null create_query #}}
+	{{ $table_caption = caption }}
+	{{ $table_first_row_headers = first_row_headers }}
+	{{ $table_first_column_headers = first_column_headers }}
+	{{ $table_last_row_footers = last_row_footers }}
+	{{ $table_data = table_data }}
+	{{ $table_title = null }}
+	{{ $table_description = null }}
+	{{# Style + feature settings from the Bard set #}}
+	{{ $table_striped = striped }}
+	{{ $table_fixed_width = fixed_width_table_cells }}
+	{{ $table_row_hover = row_hover_highlighting }}
+	{{ $table_sorting = sorting_enable }}
+	{{ $table_search = search_enable }}
+	{{ $table_paginate = pagination_enable }}
+	{{ $table_page_length = pagination_count }}
+	{{ $table_page_length_adjustable = pagination_change_enable }}
+	{{ $table_info = info_enable }}
+	{{ $table_horizontal_scroll = horizontal_scroll_enable }}
+	{{ $table_column_filter = column_filter_enable }}
+	{{ $table_column_filter_columns = column_filter_columns }}
+	{{ $table_responsive_stack = responsive_stack_enable }}
+	{{ $table_responsive_breakpoint = responsive_stack_breakpoint }}
+{{ /if }}
+
+{{# Only render if table_data exists #}}
+{{ if $table_data }}
+	{{# Render heading if create_query is 'collection' and heading_query is true #}}
+	{{ if create_query == 'collection' && heading_query && $table_title }}
+		<{{ heading_level ?? 'h2' }}>{{ $table_title | widont }}</{{ heading_level ?? 'h2' }}>
+	{{ /if }}
+
+	{{# Render description if create_query is 'collection' and description_query is true #}}
+	{{ if create_query == 'collection' && description_query && $table_description }}
+		<div class="table-description">
+			{{ $table_description }}
+		</div>
+	{{ /if }}
+
+
+	{{# Any visitor-facing feature that needs the JS enhancement #}}
+	{{ $table_interactive = $table_sorting || $table_search || $table_paginate || $table_info || $table_column_filter || $table_responsive_stack }}
+
+	<div
+		class="{{
+			[
+				'table-responsive' => ($table_horizontal_scroll !== false),
+				align
+			] | classes | collapse_whitespace }}"
+	>
+		<table
+			class="{{
+				[
+					'table' => true,
+					'table-striped' => $table_striped,
+					'table-hover' => $table_row_hover,
+					'table-fixed' => $table_fixed_width
+				] | classes | collapse_whitespace
+			}}"
+			{{ ( $table_fixed_width ?= 'table-layout: fixed;' ) | attribute:style }}
+			{{ if $table_interactive }}
+				data-table-features
+				{{ if $table_sorting && $table_first_row_headers }}data-table-sort{{ /if }}
+				{{ if $table_search }}data-table-search{{ /if }}
+				{{ if $table_paginate }}data-table-paginate data-table-page-length="{{ $table_page_length ?? 10 }}"{{ /if }}
+				{{ if $table_paginate && $table_page_length_adjustable }}data-table-page-length-adjustable{{ /if }}
+				{{ if $table_info }}data-table-info{{ /if }}
+				{{ if $table_column_filter }}data-table-filter{{ if $table_column_filter_columns }} data-table-filter-columns="{{ $table_column_filter_columns | entities }}"{{ /if }}{{ /if }}
+				{{ if $table_responsive_stack }}data-table-responsive-stack data-table-responsive-breakpoint="{{ ( $table_responsive_breakpoint ?? 'phone' ) | entities }}"{{ /if }}
+			{{ /if }}
+		>
+			{{ partial:typography/caption as="caption" :caption="$table_caption" }}
+			{{ $table_data }}
+				{{ if first && $table_first_row_headers }}
+					<thead>
+						<tr>
+							{{ cells }}
+								<th scope="col">{{ value | sanitize_table_cell }}</th>
+							{{ /cells }}
+						</tr>
+					</thead>
+				{{ /if }}
+
+				{{ if !$table_first_row_headers || !first }}
+					{{ if first || ($table_first_row_headers && index == 1) }}
+						<tbody>
+					{{ /if }}
+					{{ if $table_last_row_footers && last }}
+						{{ !$table_first_row_headers && index == 0 ? '</tbody>' : '' }}
+						<tfoot>
+							<tr>
+								{{ cells }}
+									<td>{{ value | sanitize_table_cell }}</td>
+								{{ /cells }}
+							</tr>
+						</tfoot>
+					{{ else }}
+						<tr>
+							{{ cells }}
+								{{ if first && $table_first_column_headers }}
+									<th scope="row">{{ value | sanitize_table_cell }}</th>
+								{{ else }}
+									<td>{{ value | sanitize_table_cell }}</td>
+								{{ /if }}
+							{{ /cells }}
+						</tr>
+					{{ /if }}
+					{{ if !$table_last_row_footers && last || ($table_last_row_footers && index == count - 2) }}
+						</tbody>
+					{{ /if }}
+				{{ /if }}
+			{{ /$table_data }}
+		</table>
+	</div>
+{{ /if }}

@@ -1,0 +1,36 @@
+title: 'Schema Templates'
+fields:
+  -
+    handle: schema_templates
+    field:
+      type: group
+      display: 'Schema Templates'
+      instructions: 'Override schema output and template for this entry. Leave as inherit to use Blueprint Defaults.'
+      fields:
+        -
+          handle: enabled
+          field:
+            type: button_group
+            display: 'Schema output'
+            options:
+              - { value: 'true', label: 'Enabled' }
+              - { value: 'false', label: 'Disabled' }
+              - { value: 'inherit', label: 'Inherit from Blueprint Defaults' }
+            default: 'inherit'
+        -
+          handle: inherit_template
+          field:
+            type: button_group
+            display: 'Schema template'
+            options:
+              - { value: 'true', label: 'Inherit' }
+              - { value: 'false', label: 'Use Custom Parameter' }
+            default: 'true'
+        -
+          handle: parameter
+          field:
+            type: text
+            display: 'Schema parameter'
+            instructions: 'Schema parameter for JSON-LD output (e.g., topic, article). Shown when not inheriting.'
+            if:
+              inherit_template: 'equals false'

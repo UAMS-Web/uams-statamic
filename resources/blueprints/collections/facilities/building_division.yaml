@@ -1,0 +1,194 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the building division. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_place
+              type: entries
+              display: 'Schema Object for the Building Division'
+              instructions: 'Select a schema object for the building division, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Place'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Building Division Name'
+              instructions: |-
+                Name the facility using only its full official name (e.g., "Harry P. and Betty Jo Ward Tower").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the facility with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Name(s) for the Building Division'
+              if:
+                schema_object: 'equals empty'
+      -
+        display: 'Building Division Type'
+        fields:
+          -
+            handle: subtype_division
+            field:
+              options:
+                -
+                  key: Wikidata_BuildingDivision_Q56052926
+                  value: 'None — No available option is relevant to this building division'
+                -
+                  key: Wikidata_Wing_Q1125776
+                  value: Wing
+              type: radio
+              display: 'Specific Type of Building Division'
+              instructions: 'Select the specific type of place that most closely matches this building division. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Additional Details'
+        fields:
+          -
+            handle: additional_type
+            field: uamsweb_brand_organization.additional_type
+            config:
+              display: 'More Specific Type(s) for This Building Division From External Vocabularies in Microdata Syntax'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Building Division'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Main Facility Entrance'
+              validate:
+                - required
+                - lat_lng
+          -
+            handle: parking_facility_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the parking facility from the parent building?'
+              instructions: 'Leave this on to use the parent building''s parking. Turn it off to choose a different parking facility for this building division.'
+              default: true
+              localizable: false
+          -
+            handle: parking_facility
+            field:
+              type: entries
+              display: 'Main Parking Area for the Facility'
+              collections:
+                - facilities
+              query_scopes:
+                - entries_by_blueprint_parking_facility
+                - entries_by_blueprint_parking_division
+              if:
+                parking_facility_inherit_query: 'equals false'
+              select_across_sites: true
+              max_items: 1
+              create: false
+              localizable: false
+          -
+            handle: parking_instructions_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the parking instructions from the parent building?'
+              default: true
+              localizable: false
+          -
+            handle: parking_instructions
+            field: uamsweb_common.article
+            config:
+              display: 'General Instructions for Parking'
+              if:
+                parking_instructions_inherit_query: 'equals false'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              localizable: false
+          -
+            handle: directions_from_parking_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the directions from parking from the parent building?'
+              default: true
+              localizable: false
+          -
+            handle: directions_from_parking
+            field: uamsweb_common.article
+            config:
+              display: 'Directions From Parking'
+              if:
+                directions_from_parking_inherit_query: 'equals false'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            handle: contained_locations
+            field:
+              type: entries
+              display: 'Locations Contained in This Facility'
+              instructions: 'Read-only. The clinical locations whose containing facility is this building division.'
+              visibility: computed
+              localizable: false
+title: 'Building Division'

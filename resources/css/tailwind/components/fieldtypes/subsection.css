@@ -1,0 +1,49 @@
+/* ==========================================================================
+   SUBSECTION FIELDTYPE
+   ========================================================================== */
+
+/*
+ * Subsection header: lower hierarchy than PanelHeader, higher than Card body.
+ *
+ * Styled to sit inside a Panel Card and separate logical blocks of content.
+ * Structure: [data-ui-field-text] wraps label + description (from Publish/Field).
+ *
+ * .subsection-fieldtype.grid is when the fieldtype is used in a grid layout
+ * (e.g., blueprint field configuration).
+ *
+ * .subsection-fieldtype:not(.grid) is when the fieldtype is used in a publish
+ * context (e.g., entry editor).
+ */
+
+/* Subsection block wrapper */
+.subsection-fieldtype:not(.grid) [data-ui-field-text],
+.subsection-fieldtype.grid {
+    @apply mb-0 pt-4 pb-4; /* top border, bottom padding */
+    @apply border-t border-b border-gray-200 dark:border-gray-700; /* top and bottom borders */
+    @apply bg-gray-50 dark:bg-gray-800; /* Background color approximately halfway between Panel (gray-150 / gray-950/35) and Card (white / gray-850). */
+}
+.subsection-fieldtype:not(.grid) [data-ui-field-text] {
+    @apply -mx-4.5 px-4.5; /* extends the border through parent padding (Card uses px-4.5) */
+}
+.subsection-fieldtype.grid {
+    @apply md:grid-cols-1;
+    @apply gap-y-0;
+}
+
+/* Subsection block wrapper when it is the first child of its container (e.g., Card) */
+.subsection-fieldtype:not(.grid):first-child [data-ui-field-text] {
+    @apply border-t-0; /* no top border */
+    @apply -mt-5; /* move up to the top of the Card */
+    @apply rounded-t-xl; /* match the top shape of the Card */
+}
+
+/* Subsection title */
+.subsection-fieldtype [data-ui-field-text] [data-ui-label] {
+    @apply mb-0; /* reset bottom margin */
+    @apply [&:has(+[data-ui-description])]:mb-0.5; /* add margin between title and description */
+}
+
+/* Subsection description */
+.subsection-fieldtype [data-ui-field-text] [data-ui-description] {
+    @apply mb-0;
+}

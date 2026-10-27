@@ -1,0 +1,55 @@
+{{#
+	@name UAMS Card Title
+	@desc Renders card title (h3.card-title.h5), optionally wrapping content in a link.
+	@param heading        Heading text (e.g. heading or title_short ?? title).
+	@param has_link      Boolean; if true, wrap in <a> with optional attributes.
+	@param stretched_link   Optional. Boolean; default true. Add stretched-link class to anchor.
+	@param title         Optional. String; title attribute on anchor. Default empty.
+	@param aria_label    Optional. String; aria-label on anchor. Default empty.
+	@param url           Optional. String; href on anchor. Default empty.
+	@param data_moduletitle  Optional. String; data-moduletitle on anchor. Default empty.
+	@param data_itemtitle    Optional. String; data-itemtitle on anchor. Default empty.
+	@param mb_0              Optional. Boolean; if true, add mb-0 to h3 classes. Default false.
+#}}
+
+{{# Resolve link parameters with defaults #}}
+{{ stretched_link = ( stretched_link == 'false' || stretched_link === false || stretched_link === '' ) ? null : ( stretched_link ?? true ) }}
+{{ $stretched_class = stretched_link ? 'stretched-link' : null }}
+{{ title = ( title === '' ) ? null : ( title ?? null ) }}
+{{ aria_label = ( aria_label === '' ) ? null : ( aria_label ?? null ) }}
+{{ url = ( url === '' ) ? null : ( url ?? null ) }}
+{{ data_moduletitle = ( data_moduletitle === '' ) ? null : ( data_moduletitle ?? null ) }}
+{{ data_itemtitle = ( data_itemtitle === '' ) ? null : ( data_itemtitle ?? null ) }}
+{{ itemprop = ( itemprop === '' ) ? null : ( itemprop ?? null ) }}
+{{ title_itemprop = ( title_itemprop === '' ) ? null : ( title_itemprop ?? 'https://schema.org/name' ) }}
+{{ url_itemprop = ( url_itemprop === '' ) ? null : ( url_itemprop ?? 'https://schema.org/url' ) }}
+
+<{{ element = element ?? 'h3' }}{{ element }}
+	class="{{
+		[
+			'card-title h5' => true,
+			'mb-0' => mb_0
+		] | classes | collapse_whitespace
+	}}"
+	{{ itemprop | attribute:itemprop }}
+>
+	{{ if has_link }}
+		<a
+			{{ $stretched_class | attribute:class }}
+			{{ title | attribute:title }}
+			{{ aria_label | attribute:aria-label }}
+			{{ url | attribute:href }}
+			{{ url_itemprop | attribute:itemprop }}
+			{{ ( url_itemprop ? url : null ) | attribute:content }}
+			{{ data_moduletitle | attribute:data-moduletitle }}
+			{{ data_itemtitle | attribute:data-itemtitle }}
+		>
+			<span {{ title_itemprop | attribute:itemprop }} {{ ( heading | strip_tags | trim | sanitize) | attribute:content }}>{{ heading | strip_tags | trim | widont }}</span>
+		</a>
+	{{ else }}
+		<span {{ title_itemprop | attribute:itemprop }} {{ ( heading | strip_tags | trim | sanitize) | attribute:content }}>{{ heading | strip_tags | trim | widont }}</span>
+	{{ /if }}
+</{{ element }}>
+{{ if subtitle }}
+	<{{ subtitle_element = subtitle_element ?? 'p' }}{{ subtitle_element }} class="subtitle h5-subtitle">{{ subtitle | strip_tags | trim | widont }}</{{ subtitle_element }}>
+{{ /if }}

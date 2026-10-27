@@ -1,0 +1,12 @@
+.ajaxsearchpro {
+    &[id^="ajaxsearchpro"] {
+        &:focus-within {
+          // Visible focus on the search container (WCAG 2.4.7). Input containers
+          // legitimately reveal focus on click, so :focus-within is appropriate;
+          // the brand ring joins the existing button focus glow.
+          outline: 2px solid var(--uams-focus-ring, #{$uams-focus-ring});
+          outline-offset: 2px;
+          box-shadow: $btn-focus-box-shadow !important;
+        }
+    }
+}

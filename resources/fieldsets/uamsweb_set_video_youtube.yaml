@@ -1,0 +1,54 @@
+title: 'UAMSWeb Bard Set, Video, YouTube'
+fields:
+  -
+    handle: embed_mode
+    field:
+      type: button_group
+      display: 'Embed Type'
+      instructions: 'Choose a **Simple Embed** for a quick video, or a **Full Segment** to record transcript, creators, and transparency metadata (matches Video Post segments).'
+      options:
+        simple: 'Simple Embed'
+        full: 'Full Segment'
+      default: simple
+      localizable: false
+      validate:
+        - required
+  -
+    handle: url
+    field: uamsweb_common_video.youtube_video_url
+    config:
+      display: 'YouTube Video URL'
+      instructions: 'Choose a video from the UAMS YouTube account. Make sure to include the full URL, starting with <code>https://</code>.'
+      validate:
+        - required
+        - youtube_url
+  -
+    handle: caption
+    field: uamsweb_common_images.caption
+  -
+    handle: aspect_ratio
+    field: uamsweb_common_video.aspect_ratio
+    config:
+      width: 50
+      validate:
+        - required
+  -
+    handle: align
+    field: uamsweb_common.align_other
+    config:
+      width: 50
+      validate:
+        - required
+        - sometimes
+  -
+    import: uamsweb_post_video_segment
+    config:
+      localizable: false
+      if:
+        embed_mode: 'equals full'
+  -
+    import: uamsweb_post_creator_video
+    config:
+      localizable: false
+      if:
+        embed_mode: 'equals full'

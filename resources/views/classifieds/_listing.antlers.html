@@ -1,0 +1,48 @@
+{{#
+	@name Classifieds Listing
+	@desc Paginated card listing of the current site's live `classifieds` listings,
+	      newest first. "Live" is the `live_classifieds` scope: published (the
+	      `collection` tag's own default) and not past its `expiration_date` (UAMS-Web/uams-statamic-archive#2096).
+	@param listings_per_page  Optional. Listings per page. Default 20.
+#}}
+
+{{# Resolve the per-page count: a positive override wins, else default to 20. #}}
+{{ $per_page = ( listings_per_page && listings_per_page > 0 ) ? listings_per_page : 20 }}
+
+{{
+	collection:classifieds
+	query_scope="live_classifieds"
+	sort="date:desc"
+	:paginate="$per_page"
+	as="listings"
+}}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12">
+			{{ if no_results }}
+				<p class="classifieds-empty">There are no listings on the board right now.</p>
+			{{ else }}
+				<div class="card-list card-list-left classifieds-list">
+					{{ listings }}
+						{{ partial:classifieds/card }}
+					{{ /listings }}
+				</div>
+
+				{{ if paginate:total_pages > 1 }}
+					<nav class="classifieds-pagination" aria-label="Listings pagination">
+						<ul class="pagination">
+							{{ if paginate:prev_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+							{{ /if }}
+							<li class="page-item active" aria-current="page">
+								<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+							</li>
+							{{ if paginate:next_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+							{{ /if }}
+						</ul>
+					</nav>
+				{{ /if }}
+			{{ /if }}
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /collection:classifieds }}

@@ -1,0 +1,21 @@
+@mixin bottom-separator() {
+    border-bottom: $border-width solid $border-color;
+    margin-bottom: $uams-module-padding-mobile;
+    padding-bottom: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(sm) {
+        margin-bottom: $uams-module-padding;
+        padding-bottom: $uams-module-padding;
+    }
+}
+
+@mixin top-separator() {
+    border-top: $border-width solid $border-color;
+    margin-top: $uams-module-padding-mobile;
+    padding-top: $uams-module-padding-mobile;
+
+    @include media-breakpoint-up(sm) {
+        margin-top: $uams-module-padding;
+        padding-top: $uams-module-padding;
+    }
+}

@@ -1,0 +1,54 @@
+{{#
+	@name Logo category archive (structured collection)
+	@desc Renders a `logos_item_categories` *collection* entry as a category
+	      archive (UAMS-Web/uams-statamic-archive#1863), on the same pattern as `people_groups/show` and the
+	      `post_categories/show` treatment it derives from (UAMS-Web/uams-statamic-archive#1434).
+
+	      `logos_item_categories` was a flat taxonomy until UAMS-Web/uams-statamic-archive#1863 converted it to
+	      a structured collection so the WordPress importer can create parented
+	      categories (`UAMS-Web/wordpress-importer#13`); the route the collection
+	      gained needs a template.
+
+	      Lists this category's immediate child categories (structure children via
+	      `:parent:is="id"`) and the logo items filed under it, sourced from the
+	      item's `logos_item_categories` entries reference via the
+	      `logo_items_in_categories` scope. Item labels (`logos_item_labels`)
+	      are not surfaced here.
+#}}
+<article class="logo-category">
+	{{# Category title is editor/importer input and Antlers is raw-by-default, so
+		strip tags and entity-encode it. #}}
+	<h1 class="logo-category__heading">{{ title | strip_tags | entities }}</h1>
+
+	{{# Child categories — only rendered when this category has structure children. #}}
+	{{ collection:logos_item_categories :parent:is="id" sort="title:asc" as="child_categories" }}
+		{{ unless no_results }}
+			<nav class="logo-category__children" aria-label="Subcategories">
+				<h2 class="logo-category__children-heading">Subcategories</h2>
+				<ul class="logo-category__children-list">
+					{{ child_categories }}
+						<li class="logo-category__children-item"><a href="{{ url }}">{{ title | strip_tags | entities }}</a></li>
+					{{ /child_categories }}
+				</ul>
+			</nav>
+		{{ /unless }}
+	{{ /collection:logos_item_categories }}
+
+	{{# The logo items in this category, via the entries reference. #}}
+	{{ collection:logo_list_items query_scope="logo_items_in_categories" :categories="id" logic="any" sort="title:asc" as="items" }}
+		{{ if no_results }}
+			<p class="logo-category__empty">No items are listed in this category yet.</p>
+		{{ else }}
+			<ul class="logo-category__items">
+				{{ items }}
+					{{# A group/category archive is public, so it must not disclose an
+						entry the visitor cannot open. Mirrors the navigation partials'
+						guard — the scopes constrain membership, not visibility. #}}
+					{{ unless status_and_visibility == "private" || password_protected }}
+						<li class="logo-category__item">{{ title | strip_tags | entities }}</li>
+					{{ /unless }}
+				{{ /items }}
+			</ul>
+		{{ /if }}
+	{{ /collection:logo_list_items }}
+</article>

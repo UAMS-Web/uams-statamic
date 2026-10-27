@@ -1,0 +1,1042 @@
+default:
+  name: 'University of Arkansas for Medical Sciences'
+  url: /
+  locale: en_US
+  lang: en_US
+health:
+  name: 'UAMS Health'
+  url: '{{ config:app:url }}/health/'
+  locale: en_US
+health_ar_impact:
+  name: AR-IMPACT
+  url: '{{ config:app:url }}/health/ar-impact/'
+  locale: en_us
+health_clinical_laboratory:
+  name: 'Clinical Laboratory'
+  url: '{{ config:app:url }}/health/clinical-laboratory/'
+  locale: en_us
+health_coronavirus:
+  name: Coronavirus
+  url: '{{ config:app:url }}/health/coronavirus/'
+  locale: en_us
+health_dennis_developmental_center:
+  name: 'James L. Dennis Developmental Center'
+  url: '{{ config:app:url }}/health/dennis-developmental-center/'
+  locale: en_us
+  attributes:
+    name_descriptor: 'James L. Dennis'
+    name_function: 'Developmental Center'
+health_on_12th:
+  name: '12th Street Health and Wellness Center'
+  url: '{{ config:app:url }}/health/health-on-12th/'
+  locale: en_us
+health_interpreter_program:
+  name: 'Interpreter Program'
+  url: '{{ config:app:url }}/health/interpreter-program/'
+  locale: en_us
+health_kids_first:
+  name: 'Kids First'
+  url: '{{ config:app:url }}/health/kids-first/'
+  locale: en_us
+living_in_little_rock:
+  name: 'Living in Little Rock'
+  url: '{{ config:app:url }}/health/little-rock/'
+  locale: en_us
+health_love_lives:
+  name: 'Love Lives'
+  url: '{{ config:app:url }}/health/love-lives/'
+  locale: en_us
+health_moca_simulation_course:
+  name: 'Maintenance of Certification in Anesthesiology Simulation Course'
+  url: '{{ config:app:url }}/health/moca-simulation-course/'
+  locale: en_us
+health_mychart_forms:
+  name: 'MyChart Forms'
+  url: '{{ config:app:url }}/health/mychart-forms/'
+  locale: en_us
+health_nicu:
+  name: 'Neonatal Intensive Care Unit'
+  url: '{{ config:app:url }}/health/nicu/'
+  locale: en_us
+health_nurses:
+  name: 'Nurses (UAMS Health)'
+  url: '{{ config:app:url }}/health/nurses/'
+  locale: en_us
+health_our_story:
+  name: 'Our Story (UAMS Health)'
+  url: '{{ config:app:url }}/health/our-story/'
+  locale: en_us
+health_pastoral_care:
+  name: 'Pastoral Care (UAMS Health)'
+  url: '{{ config:app:url }}/health/pastoral-care/'
+  locale: en_us
+health_patients_and_guests:
+  name: 'Patients and Guests (UAMS Health)'
+  url: '{{ config:app:url }}/health/patients-and-guests/'
+  locale: en_us
+health_pharmacy_services:
+  name: 'Pharmacy Services (UAMS Health)'
+  url: '{{ config:app:url }}/health/pharmacy-services/'
+  locale: en_us
+health_quality_management:
+  name: 'Quality Management (UAMS Health)'
+  url: '{{ config:app:url }}/health/quality-management/'
+  locale: en_us
+health_referring_physicians:
+  name: 'Referring Physicians (UAMS Health)'
+  url: '{{ config:app:url }}/health/referring-physicians/'
+  locale: en_us
+health_schmieding_developmental_center:
+  name: 'Schmieding Developmental Center (UAMS Health)'
+  url: '{{ config:app:url }}/health/schmieding-developmental-center/'
+  locale: en_us
+health_sickle_cell:
+  name: 'Adult Sickle Cell Clinical Program (UAMS Health)'
+  url: '{{ config:app:url }}/health/sickle-cell/'
+  locale: en_us
+health_simulation_education:
+  name: 'Centers for Simulation Education (UAMS Health)'
+  url: '{{ config:app:url }}/health/simulation-education/'
+  locale: en_us
+health_stroke_program:
+  name: 'Stroke Program (UAMS Health)'
+  url: '{{ config:app:url }}/health/stroke-program/'
+  locale: en_us
+health_milk_bank:
+  name: 'Milk Bank (UAMS Health)'
+  url: '{{ config:app:url }}/health/milk-bank/'
+  locale: en_us
+health_university_healthcare:
+  name: 'University Healthcare (UAMS Health)'
+  url: '{{ config:app:url }}/health/university-healthcare/'
+  locale: en_us
+health_patients_learn:
+  name: 'Patients Learn (UAMS Health)'
+  url: '{{ config:app:url }}/health/patients-learn/'
+  locale: en_us
+health_employee_assistance_program:
+  name: 'Arkansas Employee Assistance Program (UAMS Health)'
+  url: '{{ config:app:url }}/health/employee-assistance-program/'
+  locale: en_us
+academic_affairs:
+  name: 'Academic Affairs'
+  url: '{{ config:app:url }}/academic-affairs/'
+  locale: en_us
+academic_services:
+  name: 'Office of Academic Services'
+  url: '{{ config:app:url }}/academic-affairs/academic-services/'
+  locale: en_us
+commencement:
+  name: Commencement
+  url: '{{ config:app:url }}/academic-affairs/commencement/'
+  locale: en_us
+continuing_education:
+  name: 'Office of Continuing Education'
+  url: '{{ config:app:url }}/academic-affairs/continuing-education/'
+  locale: en_us
+educational_development:
+  name: 'Office of Educational Development'
+  url: '{{ config:app:url }}/academic-affairs/educational-development/'
+  locale: en_us
+faculty_excellence:
+  name: 'Center for Faculty Excellence'
+  url: '{{ config:app:url }}/academic-affairs/faculty-excellence/'
+  locale: en_us
+health_literacy:
+  name: 'Center for Health Literacy'
+  url: '{{ config:app:url }}/academic-affairs/health-literacy/'
+  locale: en_us
+higher_learning_commission_accreditation:
+  name: 'Higher Learning Commission Accreditation'
+  url: '{{ config:app:url }}/academic-affairs/higher-learning-commission/'
+  locale: en_us
+interprofessional_education:
+  name: 'Office of Interprofessional Education'
+  url: '{{ config:app:url }}/academic-affairs/interprofessional-education/'
+  locale: en_us
+library:
+  name: Library
+  url: '{{ config:app:url }}/academic-affairs/library/'
+  locale: en_us
+registrar:
+  name: 'Office of the University Registrar'
+  url: '{{ config:app:url }}/academic-affairs/registrar/'
+  locale: en_us
+research:
+  name: 'Research and Innovation'
+  url: '{{ config:app:url }}/academic-affairs/research/'
+  locale: en_US
+research_addiction_research_training:
+  name: 'Addiction Research Training Program (Research)'
+  url: '{{ config:app:url }}/academic-affairs/research/addiction-research-training/'
+  locale: en_us
+research_institutional_review_board:
+  name: 'Institutional Review Board (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/institutional-review-board/'
+  locale: en_us
+research_office_of_research_and_sponsored_programs:
+  name: 'Office of Research and Sponsored Programs (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/research-and-sponsored-programs/'
+  locale: en_us
+research_research_compliance:
+  name: 'Office of Research Compliance (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/research-compliance/'
+  locale: en_us
+research_research_information_systems:
+  name: 'Office of Research Information Systems (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/research-information-systems/'
+  locale: en_us
+research_regulatory_affairs:
+  name: 'Office of Research Regulatory Affairs (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/regulatory-affairs/'
+  locale: en_us
+research_science_communication_group:
+  name: 'Science Communication Group (Research and Innovation)'
+  url: '{{ config:app:url }}/academic-affairs/research/science-communication-group/'
+  locale: en_us
+students:
+  name: Students
+  url: '{{ config:app:url }}/academic-affairs/students/'
+  locale: en_US
+students_campus_life:
+  name: 'Campus Life and Student Support Services'
+  url: '{{ config:app:url }}/academic-affairs/students/campus-life/'
+  locale: en_us
+students_financial_services:
+  name: 'Student Financial Services'
+  url: '{{ config:app:url }}/academic-affairs/students/financial-services/'
+  locale: en_us
+students_success:
+  name: 'Educational and Student Success Center'
+  url: '{{ config:app:url }}/academic-affairs/students/success/'
+  locale: en_us
+students_wellness:
+  name: 'Student Wellness Program'
+  url: '{{ config:app:url }}/academic-affairs/students/wellness/'
+  locale: en_us
+medicine:
+  name: 'College of Medicine'
+  url: '{{ config:app:url }}/medicine/'
+  locale: en_US
+medicine_anesthesiology:
+  name: 'Department of Anesthesiology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/anesthesiology/'
+  locale: en_us
+medicine_biochemistry:
+  name: 'Department of Biochemistry (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/biochemistry/'
+  locale: en_us
+medicine_biomedical_informatics:
+  name: 'Department of Biomedical Informatics (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/biomedical-informatics/'
+  locale: en_us
+medicine_dermatology:
+  name: 'Department of Dermatology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/dermatology/'
+  locale: en_us
+medicine_emergency_medicine:
+  name: 'Department of Emergency Medicine (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/emergency-medicine/'
+  locale: en_us
+medicine_family_medicine:
+  name: 'Department of Family and Preventive Medicine (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/family-medicine/'
+  locale: en_us
+medicine_geriatrics:
+  name: 'Department of Geriatrics (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/geriatrics/'
+  locale: en_us
+medicine_internal_medicine:
+  name: 'Department of Internal Medicine (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/internal-medicine/'
+  locale: en_us
+medicine_humanities:
+  name: 'Department of Medical Humanities and Bioethics (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/humanities/'
+  locale: en_us
+medicine_microbiology_and_immunology:
+  name: 'Department of Microbiology and Immunology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/microbiology-and-immunology/'
+  locale: en_us
+medicine_neurology:
+  name: 'Department of Neurology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/neurology/'
+  locale: en_us
+medicine_neuroscience:
+  name: 'Department of Neuroscience (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/neuroscience/'
+  locale: en_us
+medicine_neurosurgery:
+  name: 'Department of Neurosurgery (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/neurosurgery/'
+  locale: en_us
+medicine_obstetrics_and_gynecology:
+  name: 'Department of Obstetrics and Gynecology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/obstetrics-and-gynecology/'
+  locale: en_us
+medicine_ophthalmology:
+  name: 'Department of Ophthalmology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/ophthalmology/'
+  locale: en_us
+medicine_otolaryngology:
+  name: 'Department of Otolaryngology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/otolaryngology/'
+  locale: en_us
+medicine_orthopaedic_surgery:
+  name: 'Department of Orthopaedic Surgery (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/orthopaedic-surgery/'
+  locale: en_us
+medicine_pathology:
+  name: 'Department of Pathology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/pathology/'
+  locale: en_us
+medicine_pediatrics:
+  name: 'Department of Pediatrics (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/pediatrics/'
+  locale: en_us
+head_start:
+  name: 'Head Start'
+  url: '{{ config:app:url }}/medicine/pediatrics/head-start/'
+  locale: en_us
+medicine_pharmacology_and_toxicology:
+  name: 'Department of Pharmacology and Toxicology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/pharmacology-and-toxicology/'
+  locale: en_us
+medicine_physiology:
+  name: 'Department of Physiology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/physiology/'
+  locale: en_us
+medicine_physical_medicine_and_rehabilitation:
+  name: 'Department of Physical Medicine and Rehabilitation (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/physical-medicine-and-rehabilitation/'
+  locale: en_us
+medicine_psychiatry:
+  name: 'Department of Psychiatry (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/psychiatry/'
+  locale: en_us
+medicine_radiology:
+  name: 'Department of Radiology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/radiology/'
+  locale: en_us
+medicine_radiation_oncology:
+  name: 'Department of Radiation Oncology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/radiation-oncology/'
+  locale: en_us
+medicine_surgery:
+  name: 'Department of Surgery (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/surgery/'
+  locale: en_us
+medicine_urology:
+  name: 'Department of Urology (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/urology/'
+  locale: en_us
+medicine_interventional_pain_medicine:
+  name: 'Division of Interventional Pain Medicine (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/interventional-pain-medicine/'
+  locale: en_us
+medicine_academic_houses:
+  name: 'Academic Houses (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/academic-houses/'
+  locale: en_us
+medicine_hearing_health_access:
+  name: 'Center for Hearing Health Access (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/hearing-health-access/'
+  locale: en_us
+medicine_molecular_interactions_in_cancer:
+  name: 'Center for Molecular Interactions in Cancer (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/molecular-interactions-in-cancer/'
+  locale: en_us
+medicine_gme:
+  name: 'Graduate Medical Education (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/gme/'
+  locale: en_us
+medicine_research:
+  name: 'Research (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/research/'
+  locale: en_us
+medicine_research_musculoskeletal_disease:
+  name: 'Center for Musculoskeletal Disease Research (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/research/musculoskeletal-disease/'
+  locale: en_us
+medicine_resident_wellness:
+  name: 'Resident Wellness (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/resident-wellness/'
+  locale: en_us
+medicine_transitional_year:
+  name: 'Transitional Year (College of Medicine)'
+  url: '{{ config:app:url }}/medicine/transitional-year/'
+  locale: en_us
+public_health:
+  name: 'Fay W. Boozman College of Public Health'
+  url: '{{ config:app:url }}/public-health/'
+  locale: en_US
+  attributes:
+    name_descriptor: 'Fay W. Boozman'
+    name_function: 'College of Public Health'
+health_professions:
+  name: 'College of Health Professions'
+  url: '{{ config:app:url }}/health-professions/'
+  locale: en_US
+health_professions_audiology_and_speech_pathology:
+  name: 'Department of Audiology and Speech Pathology (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/audiology-and-speech-pathology/'
+  locale: en_us
+health_professions_current_students:
+  name: 'Current Students (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/current-students/'
+  locale: en_us
+health_professions_dental_hygiene:
+  name: 'Department of Dental Hygiene (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/dental-hygiene/'
+  locale: en_us
+health_professions_dietetics_and_nutrition:
+  name: 'Department of Dietetics and Nutrition (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/dietetics-and-nutrition/'
+  locale: en_us
+health_professions_faculty:
+  name: 'Faculty (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/faculty/'
+  locale: en_us
+health_professions_financial_assistance:
+  name: 'Financial Assistance (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/financial-assistance/'
+  locale: en_us
+health_professions_future_students:
+  name: 'Future Students (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/future-students/'
+  locale: en_us
+health_professions_genetic_counseling:
+  name: 'Department of Genetic Counseling (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/genetic-counseling/'
+  locale: en_us
+health_professions_imaging_and_radiation_sciences:
+  name: 'Department of Imaging and Radiation Sciences (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/imaging-and-radiation-sciences/'
+  locale: en_us
+health_professions_laboratory_sciences:
+  name: 'Department of Laboratory Sciences (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/laboratory-sciences/'
+  locale: en_us
+health_professions_physical_therapy:
+  name: 'Department of Physical Therapy (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/physical-therapy/'
+  locale: en_us
+health_professions_physician_assistant:
+  name: 'Department of Physician Assistant Studies (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/physician-assistant/'
+  locale: en_us
+health_professions_respiratory_care:
+  name: 'Department of Respiratory Care (College of Health Professions)'
+  url: '{{ config:app:url }}/health-professions/respiratory-care/'
+  locale: en_us
+nursing:
+  name: 'College of Nursing'
+  url: '{{ config:app:url }}/nursing/'
+  locale: en_US
+pharmacy:
+  name: 'College of Pharmacy'
+  url: '{{ config:app:url }}/pharmacy/'
+  locale: en_US
+pharmacy_nuclear_education_online:
+  name: 'Nuclear Education Online (College of Pharmacy)'
+  url: '{{ config:app:url }}/pharmacy/nuclear-education-online/'
+  locale: en_us
+pharmacy_nuclear_pharmacy:
+  name: 'Nuclear Pharmacy Program (College of Pharmacy)'
+  url: '{{ config:app:url }}/pharmacy/nuclear-pharmacy/'
+  locale: en_us
+graduate_school:
+  name: 'Graduate School'
+  url: '{{ config:app:url }}/graduate-school/'
+  locale: en_US
+idhi:
+  name: 'Institute for Digital Health and Innovation'
+  url: '{{ config:app:url }}/idhi/'
+  locale: en_US
+idhi_brain_injury_program:
+  name: 'Brain Injury Program (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/brain-injury-program/'
+  locale: en_us
+idhi_e_link:
+  name: 'e-Link (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/e-link/'
+  locale: en_us
+idhi_high_risk_pregnancy_program:
+  name: 'High-Risk Pregnancy Program (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/high-risk-pregnancy-program/'
+  locale: en_us
+idhi_public_schools_program:
+  name: 'Public Schools Program (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/psp/'
+  locale: en_us
+idhi_rural_telehealth_evaluation_center:
+  name: 'Rural Telehealth Evaluation Center (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/rtec/'
+  locale: en_us
+idhi_stroke_program:
+  name: 'Stroke Program (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/stroke-program/'
+  locale: en_us
+idhi_telesane:
+  name: 'TeleSANE (Institute for Digital Health and Innovation)'
+  url: '{{ config:app:url }}/idhi/telesane/'
+  locale: en_us
+eye:
+  name: 'Harvey and Bernice Jones Eye Institute'
+  url: '{{ config:app:url }}/eye/'
+  locale: en_US
+  attributes:
+    name_descriptor: 'Harvey and Bernice Jones'
+    name_function: 'Eye Institute'
+pri:
+  name: 'Psychiatric Research Institute'
+  url: '{{ config:app:url }}/pri/'
+  locale: en_US
+pri_arbest:
+  name: 'Arkansas Building Effective Services for Trauma (Psychiatric Research Institute)'
+  url: '{{ config:app:url }}/pri/arbest/'
+  locale: en_us
+pri_birc:
+  name: 'Helen L. Porter and James T. Dyke Brain Imaging Research Center (Psychiatric Research Institute)'
+  url: '{{ config:app:url }}/pri/birc/'
+  locale: en_us
+  attributes:
+    name_descriptor: 'Helen L. Porter and James T. Dyke'
+    name_function: 'Brain Imaging Research Center'
+aging:
+  name: 'Donald W. Reynolds Institute on Aging'
+  url: '{{ config:app:url }}/aging/'
+  locale: en_US
+  attributes:
+    name_descriptor: 'Donald W. Reynolds'
+    name_function: 'Institute on Aging'
+centers_on_aging:
+  name: 'Centers on Aging'
+  url: '{{ config:app:url }}/aging/centers-on-aging/'
+  locale: en_us
+caregiving:
+  name: 'UAMS Schmieding Caregiver Training Program'
+  url: '{{ config:app:url }}/aging/caregiving/'
+  locale: en_us
+caregiving_el_dorado:
+  name: 'UAMS Schmieding Caregiver Training Program — El Dorado'
+  url: '{{ config:app:url }}/aging/caregiving/el-dorado/'
+  locale: en_us
+caregiving_fort_smith:
+  name: 'UAMS Schmieding Caregiver Training Program — Fort Smith'
+  url: '{{ config:app:url }}/aging/caregiving/fort-smith/'
+  locale: en_us
+caregiving_jonesboro:
+  name: 'UAMS Schmieding Caregiver Training Program — Jonesboro'
+  url: '{{ config:app:url }}/aging/caregiving/jonesboro/'
+  locale: en_us
+caregiving_little_rock:
+  name: 'UAMS Schmieding Caregiver Training Program — Little Rock'
+  url: '{{ config:app:url }}/aging/caregiving/little-rock/'
+  locale: en_us
+caregiving_pine_bluff:
+  name: 'UAMS Schmieding Caregiver Training Program — Pine Bluff'
+  url: '{{ config:app:url }}/aging/caregiving/pine-bluff/'
+  locale: en_us
+caregiving_springdale:
+  name: 'UAMS Schmieding Caregiver Training Program — Springdale'
+  url: '{{ config:app:url }}/aging/caregiving/springdale/'
+  locale: en_us
+caregiving_texarkana:
+  name: 'UAMS Schmieding Caregiver Training Program — Texarkana'
+  url: '{{ config:app:url }}/aging/caregiving/texarkana/'
+  locale: en_us
+caregiving_teacher:
+  name: "UAMS Schmieding Caregiver Training Program — Teacher's Section"
+  url: '{{ config:app:url }}/aging/caregiving/teacher/'
+  locale: en_us
+cancer:
+  name: 'Winthrop P. Rockefeller Cancer Institute'
+  url: '{{ config:app:url }}/cancer/'
+  locale: en_US
+  attributes:
+    name_descriptor: 'Winthrop P. Rockefeller'
+    name_function: 'Cancer Institute'
+cancer_community_outreach_and_engagement:
+  name: 'Community Outreach and Engagement (Winthrop P. Rockefeller Cancer Institute)'
+  url: '{{ config:app:url }}/cancer/community-outreach-and-engagement/'
+  locale: en_us
+cancer_cure:
+  name: 'Be a Part of the Cure Walk'
+  url: '{{ config:app:url }}/cancer/cure/'
+  locale: en_us
+cancer_education:
+  name: 'Cancer Research Training and Education'
+  url: '{{ config:app:url }}/cancer/education/'
+  locale: en_us
+cancer_get_involved:
+  name: 'Get Involved (Winthrop P. Rockefeller Cancer Institute)'
+  url: '{{ config:app:url }}/cancer/get-involved/'
+  locale: en_us
+cancer_myeloma:
+  name: 'Myeloma Center'
+  url: '{{ config:app:url }}/cancer/myeloma/'
+  locale: en_us
+cancer_partners_card:
+  name: 'Partners Card'
+  url: '{{ config:app:url }}/cancer/partners-card/'
+  locale: en_us
+cancer_patients_and_family:
+  name: 'Patients and Family (Winthrop P. Rockefeller Cancer Institute)'
+  url: '{{ config:app:url }}/cancer/patients-family/'
+  locale: en_us
+cancer_research:
+  name: 'Research (Winthrop P. Rockefeller Cancer Institute)'
+  url: '{{ config:app:url }}/cancer/research/'
+  locale: en_us
+cancer_stem_cell_transplantation_program:
+  name: 'Stem Cell Transplantation and Cellular Therapy Program'
+  url: '{{ config:app:url }}/cancer/stem-cell-transplant/'
+  locale: en_us
+cancer_gala_for_life:
+  name: 'The Gala for Life'
+  url: '{{ config:app:url }}/cancer/the-gala-for-life/'
+  locale: en_us
+spine:
+  name: 'Jackson T. Stephens Spine and Neurosciences Institute'
+  url: '{{ config:app:url }}/spine/'
+  locale: en_US
+  attributes:
+    name_descriptor: 'Jackson T. Stephens'
+    name_function: 'Spine and Neurosciences Institute'
+tri:
+  name: 'Translational Research Institute'
+  url: '{{ config:app:url }}/tri/'
+  locale: en_US
+know_your_kidney_number:
+  name: 'Know Your Kidney Number'
+  url: '{{ config:app:url }}/tri/know-your-kidney-number/'
+  locale: en_us
+community_health:
+  name: 'Institute for Community Health Innovation'
+  url: '{{ config:app:url }}/community-health/'
+  locale: en_US
+regional_campuses:
+  name: 'UAMS Regional Campuses'
+  url: '{{ config:app:url }}/regional-campuses/'
+  locale: en_US
+regional_campuses_east:
+  name: 'UAMS East Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/east/'
+  locale: en_US
+regional_campuses_north_central:
+  name: 'UAMS North Central Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/north-central/'
+  locale: en_US
+regional_campuses_northeast:
+  name: 'UAMS Northeast Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/northeast/'
+  locale: en_US
+regional_campuses_northwest:
+  name: 'UAMS Northwest Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/northwest/'
+  locale: en_US
+regional_campuses_south:
+  name: 'UAMS South Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/south/'
+  locale: en_US
+regional_campuses_south_central:
+  name: 'UAMS South Central Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/south-central/'
+  locale: en_US
+regional_campuses_southwest:
+  name: 'UAMS Southwest Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/southwest/'
+  locale: en_US
+regional_campuses_west:
+  name: 'UAMS West Regional Campus'
+  url: '{{ config:app:url }}/regional-campuses/west/'
+  locale: en_US
+regional_campuses_gme:
+  name: 'Graduate Medical Education (UAMS Regional Campuses)'
+  url: '{{ config:app:url }}/regional-campuses/gme/'
+  locale: en_US
+regional_campuses_healthcare_herald:
+  name: 'The Healthcare Herald (UAMS Regional Campuses)'
+  url: '{{ config:app:url }}/regional-campuses/healthcare-herald/'
+  locale: en_US
+human_resources:
+  name: 'Human Resources'
+  url: '{{ config:app:url }}/human-resources/'
+  locale: en_US
+human_resources_benefits:
+  name: 'Benefits (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/benefits/'
+  locale: en_us
+human_resources_business_partners:
+  name: 'Business Partners (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/business-partners/'
+  locale: en_us
+human_resources_employee_relations:
+  name: 'Employee Relations (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/employee-relations/'
+  locale: en_us
+human_resources_immigration_services:
+  name: 'Immigration Services (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/immigration-services/'
+  locale: en_us
+human_resources_managers_toolkit:
+  name: 'Managers Toolkit (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/managers-toolkit/'
+  locale: en_us
+human_resources_organizational_development:
+  name: 'Organizational Development (Human Resources)'
+  url: '{{ config:app:url }}/human-resources/organizational-development/'
+  locale: en_us
+communications_and_marketing:
+  name: 'Communications and Marketing'
+  url: '{{ config:app:url }}/communications-and-marketing/'
+  locale: en_US
+brand_guide:
+  name: 'Brand Guide (Communications and Marketing)'
+  url: '{{ config:app:url }}/communications-and-marketing/brand-guide/'
+  locale: en_us
+creative_services:
+  name: 'Creative Services (Communications and Marketing)'
+  url: '{{ config:app:url }}/communications-and-marketing/creative-services/'
+  locale: en_us
+news:
+  name: 'News (Communications and Marketing)'
+  url: '{{ config:app:url }}/communications-and-marketing/news/'
+  locale: en_us
+web_services:
+  name: 'Web Services (Communications and Marketing)'
+  url: '{{ config:app:url }}/communications-and-marketing/web/'
+  locale: en_us
+web_services_theme_demo:
+  name: 'Theme Demo (Web Services)'
+  url: '{{ config:app:url }}/communications-and-marketing/web/theme-demo/'
+  locale: en_us
+giving:
+  name: 'Institutional Advancement'
+  url: '{{ config:app:url }}/giving/'
+  locale: en_us
+dental_residency:
+  name: 'General Practice Dental Residency'
+  url: '{{ config:app:url }}/dental-residency/'
+  locale: en_us
+innovation:
+  name: Innovation
+  url: '{{ config:app:url }}/innovation/'
+  locale: en_us
+project_search:
+  name: 'Project SEARCH®'
+  url: '{{ config:app:url }}/project-search/'
+  locale: en_us
+science_reports:
+  name: 'Science Reports'
+  url: '{{ config:app:url }}/science-reports/'
+  locale: en_us
+postdoctoral_society:
+  name: 'Postdoctoral Society'
+  url: '{{ config:app:url }}/postdoc-society/'
+  locale: en_us
+institutional_relations:
+  name: 'Institutional Relations'
+  url: '{{ config:app:url }}/institutional-relations/'
+  locale: en_us
+accardv:
+  name: 'Arkansas Commission on Child Abuse, Rape and Domestic Violence'
+  url: '{{ config:app:url }}/accardv/'
+  locale: en_us
+biostatistics:
+  name: 'Department of Biostatistics'
+  url: '{{ config:app:url }}/biostatistics/'
+  locale: en_us
+institutional_compliance:
+  name: 'Institutional Compliance'
+  url: '{{ config:app:url }}/compliance/'
+  locale: en_us
+conflict_of_interest_office:
+  name: 'Conflict of Interest Office'
+  url: '{{ config:app:url }}/compliance/conflict-of-interest/'
+  locale: en_us
+hipaa_office:
+  name: 'HIPAA Office'
+  url: '{{ config:app:url }}/compliance/hipaa/'
+  locale: en_us
+international_compliance:
+  name: 'International Compliance'
+  url: '{{ config:app:url }}/compliance/international-compliance/'
+  locale: en_us
+institutional_support_services:
+  name: 'Institutional Support Services'
+  url: '{{ config:app:url }}/institutional-support/'
+  locale: en_us
+finance_and_administration:
+  name: 'Finance and Administration'
+  url: '{{ config:app:url }}/institutional-support/administration/'
+  locale: en_us
+clinical_engineering:
+  name: 'Clinical Engineering'
+  url: '{{ config:app:url }}/institutional-support/administration/clinical-engineering/'
+  locale: en_us
+finance:
+  name: 'Division of Finance'
+  url: '{{ config:app:url }}/institutional-support/administration/finance/'
+  locale: en_us
+information_services_and_campus_operations:
+  name: 'Information Services and Campus Operations'
+  url: '{{ config:app:url }}/institutional-support/administration/information-services-and-campus-operations/'
+  locale: en_us
+mail_processing_center:
+  name: 'Mail Processing Center'
+  url: '{{ config:app:url }}/institutional-support/administration/mail-processing-center/'
+  locale: en_us
+police:
+  name: Police
+  url: '{{ config:app:url }}/institutional-support/administration/police/'
+  locale: en_us
+supply_chain:
+  name: 'Supply Chain'
+  url: '{{ config:app:url }}/institutional-support/administration/supply-chain/'
+  locale: en_us
+academic_senate:
+  name: 'Academic Senate'
+  url: '{{ config:app:url }}/academic-senate/'
+  locale: en_us
+arkansas_geriatric_education_collaborative:
+  name: 'Arkansas Geriatric Education Collaborative'
+  url: '{{ config:app:url }}/agec/'
+  locale: en_us
+culinary_medicine:
+  name: 'Culinary Medicine Program'
+  url: '{{ config:app:url }}/culinary-medicine/'
+  locale: en_us
+get_healthy:
+  name: 'Get Healthy'
+  url: '{{ config:app:url }}/get-healthy/'
+  locale: en_us
+house_of_delegates:
+  name: 'House of Delegates'
+  url: '{{ config:app:url }}/house-of-delegates/'
+  locale: en_us
+medicine_and_meaning:
+  name: 'Medicine and Meaning'
+  url: '{{ config:app:url }}/medicine-and-meaning/'
+  locale: en_us
+mindfulness:
+  name: 'Mindfulness Program'
+  url: '{{ config:app:url }}/mindfulness/'
+  locale: en_us
+student_information_system:
+  name: 'Student Information System'
+  url: '{{ config:app:url }}/student-information-system/'
+  locale: en_us
+inside:
+  name: 'Inside UAMS'
+  url: '{{ config:app:url }}/inside/'
+  locale: en_us
+inside_advanced_heart_failure_program:
+  name: 'Advanced Heart Failure Program (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/advanced-heart-failure/'
+  locale: en_us
+inside_cancer:
+  name: 'Winthrop P. Rockefeller Cancer Institute (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/cancer-institute/'
+  locale: en_us
+inside_cancer_service_line:
+  name: 'Cancer Service Line (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/cancer-service-line/'
+  locale: en_us
+inside_caregiving:
+  name: 'UAMS Schmieding Caregiver Training Program (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/caregiving/'
+  locale: en_us
+inside_clinical_computer_training_dev:
+  name: 'Clinical Computer Training Center Development Website (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/clinical-computer-training-dev/'
+  locale: en_us
+inside_clinical_documentation_integrity_committee:
+  name: 'Clinical Documentation Integrity Committee (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/clinical-documentation-integrity/'
+  locale: en_us
+inside_employee_blog:
+  name: 'Employee Blog (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/employee-blog/'
+  locale: en_us
+inside_executive_blog:
+  name: 'Executive Blog (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/executive-blog/'
+  locale: en_us
+inside_nursing_excellence:
+  name: 'Center for Nursing Excellence (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/nursing-excellence/'
+  locale: en_us
+inside_performance_excellence:
+  name: 'Performance Excellence (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/performance-excellence/'
+  locale: en_us
+inside_team_uams:
+  name: 'Team UAMS (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/team-uams/'
+  locale: en_us
+inside_classifieds:
+  name: 'Classified Ads (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/classifieds/'
+  locale: en_us
+inside_clinical_education:
+  name: 'Clinical Education (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/clinical-education/'
+  locale: en_us
+inside_clinical_transformation:
+  name: 'Clinical Transformation (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/clinical-transformation/'
+  locale: en_us
+inside_compliance:
+  name: 'Institutional Compliance (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/compliance/'
+  locale: en_us
+inside_coronavirus:
+  name: 'COVID-19 (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/coronavirus/'
+  locale: en_us
+inside_medicine:
+  name: 'College of Medicine (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/medicine/'
+  locale: en_us
+inside_medicine_biomedical_informatics:
+  name: 'Department of Biomedical Informatics (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/medicine/biomedical-informatics/'
+  locale: en_us
+inside_medicine_family_medicine:
+  name: 'Department of Family and Preventive Medicine (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/medicine/family-medicine/'
+  locale: en_us
+inside_medicine_orthopaedic_surgery:
+  name: 'Department of Orthopaedic Surgery (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/medicine/orthopaedic-surgery/'
+  locale: en_us
+inside_medicine_research:
+  name: 'Office of Research (College of Medicine; Inside UAMS)'
+  url: '{{ config:app:url }}/inside/medicine/research/'
+  locale: en_us
+inside_laboratory_animal_medicine:
+  name: 'Division of Laboratory Animal Medicine (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/laboratory-animal-medicine/'
+  locale: en_us
+inside_faculty_excellence:
+  name: 'Center for Faculty Excellence (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/faculty-excellence/'
+  locale: en_us
+inside_fitness_center:
+  name: 'Fitness Center (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/fitness-center/'
+  locale: en_us
+inside_forms:
+  name: 'Forms (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/forms/'
+  locale: en_us
+inside_human_resources:
+  name: 'Human Resources (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/human-resources/'
+  locale: en_us
+inside_animal_care_and_use:
+  name: 'Institutional Animal Care and Use Committee (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/animal-care-and-use/'
+  locale: en_us
+inside_in_memoriam:
+  name: 'In Memoriam (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/in-memoriam/'
+  locale: en_us
+inside_information_technology:
+  name: 'Information Technology Services (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/information-technology/'
+  locale: en_us
+inside_regional_campuses_northeast:
+  name: 'UAMS Northeast Regional Campus (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/northeast/'
+  locale: en_us
+inside_northwest:
+  name: 'UAMS Northwest Regional Campus (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/northwest/'
+  locale: en_us
+inside_news_archive:
+  name: 'News Archive (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/news-archive/'
+  locale: en_us
+inside_nicu_guidebook:
+  name: 'NICU Guidebook (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/nicu-guidebook/'
+  locale: en_us
+inside_nursing_administration:
+  name: 'Nursing Administration (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/nursing-administration/'
+  locale: en_us
+inside_patient_access_support_systems:
+  name: 'Patient Access Support Systems (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/patient-access-support-systems/'
+  locale: en_us
+inside_patient_experience:
+  name: 'Patient Experience (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/patient-experience/'
+  locale: en_us
+inside_patient_safety:
+  name: 'Patient Safety (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/patient-safety/'
+  locale: en_us
+inside_perioperative_care_services_service_line:
+  name: 'Perioperative Care Services Service Line (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/perioperative-care/'
+  locale: en_us
+inside_pharmacy_and_therapeutics_service_line:
+  name: 'Pharmacy and Therapeutics Service Line (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/pharmacy-services/'
+  locale: en_us
+inside_professional_billing:
+  name: 'Professional Billing (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/professional-billing/'
+  locale: en_us
+inside_psychiatric_research_institute:
+  name: 'Psychiatric Research Institute (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/psychiatric-research-institute/'
+  locale: en_us
+inside_quality_initiative:
+  name: 'Quality Initiative (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/quality-initiative/'
+  locale: en_us
+inside_quality_management:
+  name: 'Quality Management (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/quality-management/'
+  locale: en_us
+inside_recognition_toolkit:
+  name: 'Recognition Toolkit (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/recognition-toolkit/'
+  locale: en_us
+inside_research:
+  name: 'Research and Innovation (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/research-and-innovation/'
+  locale: en_us
+inside_security_and_support_services:
+  name: 'Security and Support Services (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/security-and-support-services/'
+  locale: en_us
+inside_special_events:
+  name: 'Special Events (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/special-events/'
+  locale: en_us
+inside_strategy_management:
+  name: 'Office of Strategy Management (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/strategy-management/'
+  locale: en_us
+inside_translation_and_interpreting_services:
+  name: 'Translation and Interpreting Services (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/translation/'
+  locale: en_us
+inside_tri:
+  name: 'Translational Research Institute (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/tri/'
+  locale: en_us
+inside_web_services:
+  name: 'Web Services (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/web-services/'
+  locale: en_us
+inside_workday:
+  name: 'Workday (Inside UAMS)'
+  url: '{{ config:app:url }}/inside/workday/'
+  locale: en_us

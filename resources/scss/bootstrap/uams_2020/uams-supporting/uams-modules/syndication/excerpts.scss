@@ -1,0 +1,107 @@
+@use "sass:math";
+
+.uamswp-news-syndication-excerpts {
+    //width: 35em;
+    //max-width: 100%;
+    //margin: 0 auto;
+
+    small {
+        font-weight: inherit;
+    }
+
+    p {
+        padding: 0;
+        position: static;
+        margin: 0 0 1em;
+
+        &:after {
+            content: none;
+        }
+    }
+
+    img {
+        border-radius: 0;
+        background-clip: border-box;
+        overflow: visible;
+        display: inline-block;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 0;
+        max-height: none;
+        width: auto;
+        height: auto;
+        margin: 0;
+        float: none;
+    }
+
+    .item-container {
+        display: flex;
+        flex-flow: column;
+        justify-content: center;
+        width: $line-length-ideal+rem;
+        max-width: 100%;
+        margin: 0 auto;
+
+        @include media-breakpoint-up(sm) {
+            width: ($font-size-base * 35 + $grid-gutter-width-rem) * math.div((4 + 8), 8) - $grid-gutter-width-rem;
+        }
+
+        .item {
+            padding-bottom: $grid-gutter-width;
+
+            @include media-breakpoint-up(sm) {
+                padding-top: $grid-gutter-width;
+            }
+
+            .image-container {
+                @include media-breakpoint-down(xs) {
+                    margin-bottom: 1em;
+                }
+
+                img {
+                    width: 100%;
+                }
+            }
+            .text-container {
+                position: static;
+
+                @include media-breakpoint-down(xs) {
+                    font-size: 1rem;
+                }
+            }
+
+            &:first-child {
+                padding-top: 0;
+            }
+
+            &:last-child {
+                padding-bottom: 0;
+            }
+
+            &:nth-child(n+2) {
+                @include media-breakpoint-up(sm) {
+                    border-top: 1px solid $body-bg-border;
+                }
+            }
+        }
+    }
+
+    .uamswp-news-syndication-item {
+        position: relative;
+
+        .news-item-title {
+            margin-bottom: 0.25em;
+        }
+
+        .news-item-byline {
+            color: $secondary;
+            font-size: 1rem;
+            margin-bottom: 1.125rem;
+            font-weight: inherit;
+
+            .more, small, span {
+                font-weight: inherit;
+            }
+        }
+    }
+}

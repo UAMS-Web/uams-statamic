@@ -1,0 +1,99 @@
+title: 'UAMSWeb Bard Set, Image Gallery'
+fields:
+  -
+    handle: heading
+    field: uamsweb_common_block.block_heading
+    config:
+      title: Heading
+      validate:
+        - required
+  -
+    handle: description
+    field: uamsweb_common_block.description_bard
+    config:
+      title: Description
+  -
+    handle: images
+    field:
+      type: assets
+      display: Images
+      min_files: '1'
+      mode: grid
+      container: images
+      file_type_restrictions: mime_categories
+      mime_categories:
+        - image
+      validate:
+        - required
+      localizable: false
+  -
+    handle: columns
+    field:
+      type: select
+      display: Columns
+      instructions: 'Images per row on large screens (the grid steps down to fewer columns on smaller screens). Defaults to 3.'
+      options:
+        -
+          key: '2'
+          value: '2'
+        -
+          key: '3'
+          value: '3'
+        -
+          key: '4'
+          value: '4'
+      default: '3'
+      cast_booleans: false
+      clearable: false
+      width: 50
+      localizable: false
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      replicator_preview: false
+      validate:
+        - required
+      instructions: 'This could be used to link to more images.'
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

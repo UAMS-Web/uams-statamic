@@ -1,0 +1,33 @@
+{{#
+	@name UAMS LiveWhale Calendar
+	@desc The UAMS LiveWhale Calendar page builder block.
+	@set page.page_builder.uamsweb_block_livewhale
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Only render if block_heading, background_color, and livewhale_id have values #}}
+	{{ $block_valid = block_heading && background_color && livewhale_id }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+
+	{{# LiveWhale renders heading and description with widont; pre-filter so the shared partial stays caller-agnostic. #}}
+	{{ $livewhale_heading = block_heading | widont }}
+	{{ $livewhale_description = block_description | widont }}
+
+	{{
+		partial:page_builder/components/block_link_list
+		auto_block_id="true"
+		extra_class="livewhale"
+		:wrap_in_ul="false"
+		:block_heading="$livewhale_heading"
+		:block_description="$livewhale_description"
+	}}
+		{{# Livewhale Calendar Widget #}}
+		<div class="lwcw" data-options="id={{ livewhale_id }}&format=html"></div>
+		<script type="text/javascript" id="lw_lwcw" src="https://calendar.uams.edu/livewhale/theme/core/scripts/lwcw.js"></script>
+	{{ /partial:page_builder/components/block_link_list }}
+{{ /if }}

@@ -1,0 +1,28 @@
+* text=auto eol=lf
+
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+# Concurrent decision tickets both append to the tail of the log, so git sees
+# two edits to one line and conflicts every time (UAMS-Web/uams-statamic-archive#2445). `union` resolves that
+# by keeping both appends -- WHERE THE ATTRIBUTE IS ALREADY IN EFFECT on both
+# sides of the merge. That is the ordinary case and it is why the line is here.
+#
+# It does NOT order the result -- it appends ours-then-theirs -- which is what
+# `scripts/check-decision-log-order.mjs` is for, and why the driver alone is not
+# sufficient. This half is unconditional and is the load-bearing one.
+#
+# SYNCING A BRANCH THAT PREDATES THIS LINE can still conflict, because an
+# attribute arriving IN a merge does not govern that merge. A conflict there is
+# NOT a missing or broken driver and not a defect in your tree: resolve it, and
+# let the order guard gate the result. Whether the merge refuses is not a signal
+# to build on -- the order guard is the gate. Measured on two platforms and
+# four git binaries; the table is in `docs/DECISIONS.md` (UAMS-Web/uams-statamic-archive#2471).
+docs/DECISIONS.md merge=union
+
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore

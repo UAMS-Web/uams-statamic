@@ -1,0 +1,36 @@
+{{# Normalize the content_width parameter to a boolean value. #}}
+{{ if
+	content_width === true
+	|| content_width === 'true'
+	|| content_width === 1
+	|| content_width === '1'
+}}
+	{{ $content_width = true }}
+{{ elseif
+	content_width === false
+	|| content_width === 'false'
+	|| content_width === 0
+	|| content_width === '0'
+	|| content_width === null
+	|| content_width === 'null'
+}}
+	{{ $content_width = false }}
+{{ else }}
+	{{ $content_width = true }}
+{{ /if }}
+
+<div
+	class="{{
+		[
+			'entry-content clearfix' => true,
+			'content-width' => $content_width,
+			entry_content_class
+		] | classes | collapse_whitespace
+	}}"
+	{{ ( itemprop ?? null ) | attribute:itemprop }}
+	{{ ( itemscope ?? null ) | attribute:itemscope }}
+	{{ ( itemtype ?? null ) | attribute:itemtype }}
+	{{ ( entry_content_id ?? 'entry-content' ) | attribute:id }}
+>
+	{{ slot }}
+</div>

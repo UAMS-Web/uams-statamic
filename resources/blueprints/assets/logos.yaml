@@ -1,0 +1,182 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: alt
+            field:
+              type: hidden
+              visibility: computed
+              localizable: false
+          -
+            handle: orientation
+            field:
+              options:
+                -
+                  key: horizontal
+                  value: Horizontal
+                -
+                  key: vertical
+                  value: Vertical
+                -
+                  key: both
+                  value: Both
+              type: radio
+              display: Orientation
+              localizable: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: color_scheme
+            field:
+              options:
+                -
+                  key: dark
+                  value: Dark
+                -
+                  key: light
+                  value: Light
+                -
+                  key: black
+                  value: 'All Black'
+                -
+                  key: red
+                  value: 'All Red'
+                -
+                  key: white
+                  value: 'All White'
+              type: radio
+              display: 'Color Scheme'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+          -
+            handle: uams_logo_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'UAMS Logo?'
+              localizable: false
+          -
+            handle: base_logo
+            field:
+              options:
+                -
+                  key: master
+                  value: 'Master Logo'
+                -
+                  key: master-clinical
+                  value: 'Master Clinical Logo'
+              type: radio
+              display: 'Base Logo'
+              localizable: false
+              if:
+                uams_logo_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: application_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Special Application?'
+              localizable: false
+              if:
+                uams_logo_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: application
+            field:
+              type: text
+              display: 'Text of the Special Application'
+              instructions: 'For example, <code>University of Arkansas for Medical Sciences</code> or <code>For a Better State of Health</code>.'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals true'
+                application_query: 'equals true'
+          -
+            handle: major_entity_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Major Entity?'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals true'
+                application_query: 'equals false'
+          -
+            handle: major_entity
+            field:
+              type: text
+              display: 'Major Entity'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals true'
+                application_query: 'equals false'
+                major_entity_query: 'equals true'
+          -
+            handle: sub_entity_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Sub-Entity?'
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals true'
+                application_query: 'equals false'
+          -
+            handle: sub_entity
+            field:
+              type: text
+              display: Sub-Entity
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals true'
+                application_query: 'equals false'
+                sub_entity_query: 'equals true'
+          -
+            handle: external_organization_name
+            field:
+              type: text
+              display: 'Organization Name'
+              instructions: 'Name of the organization this logo represents'
+              validate:
+                - required
+                - sometimes
+              if:
+                uams_logo_query: 'equals false'
+              localizable: false
+      -
+        display: 'Logo Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_image
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+              default:
+                preset: humanEdits_image_graphic_manual
+              validate:
+                - required
+

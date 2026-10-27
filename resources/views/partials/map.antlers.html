@@ -1,0 +1,78 @@
+{{#
+    Map viewer — renders a stored `gps` coordinate ({ lat, lng, zoom }) as an
+    interactive Leaflet map with a marker at the coordinate, framed at the
+    stored zoom.
+
+    Reusable and purpose-neutral: it renders a map of a point and nothing about
+    *why* you're looking at it. Any purpose-specific affordance (a "Get
+    Directions" button on a location page, a "view larger" link, etc.) is the
+    consumer's responsibility, because only the consumer knows the map's intent.
+    Consumers: the location entry page (UAMS-Web/uams-statamic-archive#575) and the page-builder / Bard map
+    sets (UAMS-Web/uams-statamic-archive#987 / UAMS-Web/uams-statamic-archive#988).
+
+    The tile provider, attribution, max zoom, and default zoom come from the
+    `viewer` section of config/maps.php (env-swappable: OpenStreetMap by
+    default, or any keyed / self-hosted provider). When no provider tile URL is
+    configured, the partial renders nothing. A null / empty coordinate also
+    renders nothing.
+
+    Accessibility & fallbacks — two distinct concerns:
+      - Not perceivable (AT / non-visual): covered here by the `aria-label` on
+        the <figure>, which names the map regardless of JS or tile state.
+      - Not rendered (sighted, no JS): a no-JS static-image fallback (a
+        <noscript><img></noscript> driven by a config-built static map URL)
+        belongs where the marked slot is below, and is tracked in UAMS-Web/uams-statamic-archive#993. There
+        is intentionally NO baked-in external link.
+
+    Parameters:
+      coordinate  array    (required)  The augmented `gps` value, e.g. the
+                                       `map` field. A null / empty value renders
+                                       nothing.
+      label       string   (optional)  Names what the map is *of*, e.g. the
+                                       location title. Becomes "Map of {label}".
+                                       Omit it and the map is named just "Map" —
+                                       no placeholder is invented.
+      height      integer  (optional)  Map height in pixels. Default 320.
+      zoom        integer  (optional)  Overrides the coordinate's stored zoom
+                                       and the configured viewer default.
+
+    Example (location entry page, UAMS-Web/uams-statamic-archive#575):
+      {{ partial:map :coordinate="map" :label="title" height="360" }}
+#}}
+{{ if coordinate }}
+    {{ $map_zoom = zoom or coordinate:zoom or config:maps:viewer:default_zoom or 16 }}
+    {{ $map_height = height or 320 }}
+    {{ $tile_url = config:maps:viewer:tile_url }}
+    {{ $provider = config:maps:viewer:provider or 'xyz' }}
+    {{ $attribution = config:maps:viewer:tile_attribution }}
+    {{ $max_zoom = config:maps:viewer:tile_max_zoom or 19 }}
+    {{ $subdomains = config:maps:viewer:tile_subdomains }}
+    {{ if $tile_url }}
+        <figure class="map-viewer" aria-label="{{ if label }}Map of {{ label | sanitize }}{{ else }}Map{{ /if }}">
+            <div
+                class="map-viewer__canvas"
+                style="height: {{ $map_height }}px;"
+                data-map-viewer
+                data-lat="{{ coordinate:lat }}"
+                data-lng="{{ coordinate:lng }}"
+                data-zoom="{{ $map_zoom }}"
+                data-provider="{{ $provider | sanitize }}"
+                data-tile-url="{{ $tile_url | sanitize }}"
+                data-attribution="{{ $attribution | sanitize }}"
+                data-max-zoom="{{ $max_zoom }}"
+                data-subdomains="{{ $subdomains | sanitize }}"
+                data-label="{{ label | sanitize }}"
+            ></div>
+            {{# No-JS static-image fallback (sighted, no JS), UAMS-Web/uams-statamic-archive#993. The
+                `static_map_url` tag substitutes this coordinate into the
+                `maps.viewer.static_url` template (off by default → empty → nothing
+                renders, no key leaks). The <img> is decorative (alt="") because the
+                <figure>'s aria-label is already the single accessible name, so it is
+                not double-announced; JS users get Leaflet and never fetch it. #}}
+            {{ static_map_src = {static_map_url :lat="coordinate:lat" :lng="coordinate:lng" :zoom="$map_zoom"} }}
+            {{ if static_map_src }}
+                <noscript><img class="map-viewer__static" src="{{ static_map_src | sanitize }}" alt=""></noscript>
+            {{ /if }}
+        </figure>
+    {{ /if }}
+{{ /if }}

@@ -1,0 +1,53 @@
+{{#
+	@name UAMS Web Page builder block
+	@desc The UAMS Web page builder block wrapper
+#}}
+
+{{# Define the Variables #}}
+
+	{{ $html_tag = html_tag ?? 'section' }}
+	{{ auto_block_id = auto_block_id ?? false }}
+
+	{{#
+		Block ID:
+		Assign in caller scope with the `page_builder_block_auto_id` tag before
+		`partial:page_builder/uamsweb_block` so slot markup can use `block_id`. Always
+		overwrite when `auto_block_id` — a leftover `block_id` from a prior block would
+		make `block_id ?? ...` fall back to the prior value.
+	#}}
+	{{ if auto_block_id }}
+		{{ block_id = {page_builder_block_auto_id} }}
+	{{ else }}
+		{{ block_id = block_id ?? null }}
+	{{ /if }}
+
+	{{# Block Class #}}
+
+		{{ $entry_block_class = $entry_block_class ?? null }}{{# @TODO: Get class from the entry block that is defined in the entry editor #}}
+
+	{{# Block ARIA Label #}}
+
+		{{ $entry_block_aria_label = $entry_block_aria_label ?? null }}{{# @TODO: Get class from the entry block that is defined in the entry editor #}}
+
+{{# Render the HTML Element #}}
+<{{ $html_tag }}
+	{{ ( itemprop ?? null ) | attribute:itemprop }}
+	{{ ( itemtype ?? null ) | attribute:itemtype }}
+	{{ ( itemscope ?? null ) | attribute:itemscope }}
+	class="{{
+		[
+			'uams-module alignfull' => true,
+			'no-padding' => block_no_padding,
+			'extra-padding' => block_extra_padding,
+			background_color,
+			'bg-auto' => !background_color,
+			'bg-image' => ( background_image_query && background_image ),
+			$entry_block_class,
+			block_class
+		] | classes | collapse_whitespace
+	}}"
+	{{ block_id | attribute:id }}
+	{{ ( block_id ? ( block_id + '-title' ) : null) | attribute:aria-labelledby }}
+>
+	{{ slot }}
+</{{ $html_tag }}>

@@ -1,0 +1,451 @@
+title: 'UAMSWeb Common Reusable Fields, Identifiers'
+fields:
+  -
+    handle: cms_specialty_code
+    field:
+      type: identifier
+      preset: cms_specialty_code
+      display: 'Centers for Medicare & Medicaid Services Specialty Code'
+      instructions: |-
+        Centers for Medicare & Medicaid Services specialty codes are alphanumeric codes that categorize healthcare providers based on their area of expertise. These codes are used by CMS for various purposes, including claims processing, data analysis and payment calculations.
+
+        The value must be two characters in length, beginning with one uppercase alphanumeric character followed by one digit (e.g., `A1` or `12`).
+      localizable: false
+  -
+    handle: npi
+    field:
+      type: identifier
+      preset: npi
+      display: 'National Provider Identifier (NPI)'
+      instructions: |-
+        The National Provider Identifier is a unique identification number issued to healthcare providers in the United States by the Centers for Medicare and Medicaid Services.
+
+        The official NPI registry can be found at <a href='https://npiregistry.cms.hhs.gov/' target='_blank'>https://npiregistry.cms.hhs.gov/</a>
+
+        The value must be 10 digits (e.g., `1234567890`).
+
+        An NPI must not be used by any other entry in the same collection. Values are compared ignoring capitalization and surrounding spaces.
+      localizable: false
+  -
+    handle: onet_soc_occupation_code
+    field:
+      type: identifier
+      preset: onet_soc_occupation_code
+      display: 'O*Net-SOC Occupation Code'
+      instructions: |-
+        The O*Net-SOC Occupation Code is a is a specific code used within the Occupational Information Network system to categorize and classify occupations. These codes are based on the Standard Occupational Classification system and add a layer of detail, creating a more granular breakdown of the world of work.
+
+        The value must begin with two digits, followed by a hyphen, four digits, a period and two digits (e.g., `11-1011.00` or `13-2011.01`).
+      localizable: false
+  -
+    handle: pubmed_author_id
+    field:
+      type: identifier
+      preset: pubmed_author_id
+      display: 'PubMed Author Identifier'
+      instructions: |-
+        The PubMed author identifier is used in PubMed to distinguish authors and link them to their publications in biomedical and life sciences literature.
+
+        This is not a persistent unique identifier. PubMed primarily uses author names, which can lead to ambiguity (e.g., common names or variations). While there's an optional link to ORCID iDs, PubMed itself doesn't assign a unique numeric identifier.
+
+        Use one of the following formats to enter the author's name:
+
+        - **Last Name Plus Initials:** Retrieves citations from before 2002 and from 2002 onward. Enter the author's last name followed by a space and the initials without punctuation (e.g., `o'brien ja`, `o'brien j`, `de vries j` or `de vries ja`).
+        - **Full Name:** Retrieves citations from 2002 onward, as full author names were not included in PubMed citations prior to 2002. Enter the name in natural order (e.g., `john a o'brien` or `john a de vries`) or inverted order (e.g., `o'brien john a`, `o'brien, john a`, `de vries john a` or `de vries, john a`) without punctuation other than an optional comma after the last name.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: pubmed_author_id_replicator
+    field:
+      type: replicator
+      display: 'PubMed Author Identifiers'
+      instructions: |-
+        The PubMed author identifier is used in PubMed to distinguish authors and link them to their publications in biomedical and life sciences literature.
+
+        This is not a persistent unique identifier. PubMed primarily uses author names, which can lead to ambiguity (e.g., common names or variations). While there's an optional link to ORCID iDs, PubMed itself doesn't assign a unique numeric identifier.
+
+        This value is typically the last name followed by the first and middle initial (e.g., <code>mccoy lh</code>). More information can be found at <a href='https://www.ncbi.nlm.nih.gov/pubmed/advanced' target='_blank'>https://www.ncbi.nlm.nih.gov/pubmed/advanced</a>."
+
+        This is used to generate a list of publications from PubMed on the provider profile.
+      localizable: false
+      collapse: true
+      button_label: 'Add PubMed Author Identifier'
+      sets:
+        pubmed_author_identifiers:
+          display: 'PubMed Author Identifiers'
+          sets:
+            pubmed_author_identifier:
+              display: 'PubMed Author Identifier'
+              fields:
+                -
+                  handle: pubmed_author_id
+                  field: uamsweb_common_identifiers.pubmed_author_id
+                  config:
+                    instructions: null
+                    localizable: false
+                    validate:
+                      - required
+  -
+    handle: orcid_id
+    field:
+      type: identifier
+      preset: orcid
+      display: 'ORCID iD'
+      instructions: |-
+        The Open Researcher and Contributor ID (ORCID) ID is a persistent unique identifier that connects researchers to their work, ensuring accurate attribution across publications and institutions.
+
+        The value must be four groups of exactly four characters, separated by hyphens, where the first three groups have four digits and the last group has three digits followed by a digit or `X` (e.g., `1234-5678-9012-3456` or `1234-5678-9012-345X`).
+      replicator_preview: false
+      localizable: false
+  -
+    handle: researcherid
+    field:
+      type: identifier
+      preset: researcherid
+      display: 'Web of Science ResearcherID'
+      instructions: |-
+        The ResearcherID is a persistent unique identifier provided by Web of Science to track an author's publications and citation metrics within their database.
+
+        The value must begin with one to three uppercase letters, followed by a hyphen, exactly four digits, another hyphen, and a four-digit year beginning with `19` or `20` (e.g., `ABC-1234-2023` or `Z-5678-1990`).
+      replicator_preview: false
+      localizable: false
+  -
+    handle: scopus_author_id
+    field:
+      type: identifier
+      preset: scopus_author_id
+      display: 'Scopus Author ID'
+      instructions: |-
+        The Scopus Author ID is an automatically assigned persistent unique identifiers in Scopus to identify authors and group their publications, even with name variations.
+
+        The value must begin with a digit from `1` to `9` (not `0`), followed by nine to 11 additional digits, with a total length of 10 to 12 digits (e.g., `123456789012` or `567890123456`).
+      replicator_preview: false
+      localizable: false
+  -
+    handle: google_scholar_author_id
+    field:
+      type: identifier
+      preset: google_scholar_author_id
+      display: 'Google Scholar Author ID'
+      instructions: |-
+        The Google Scholar Author ID is a user-created profile ID in Google Scholar linking an author to their publications and citation statistics across a broad range of sources.
+
+        The value must be exactly 12 characters, using only hyphens, underscores, digits or letters (e.g., `ABC123-def45` or `xyz_789-0123`).
+      replicator_preview: false
+      localizable: false
+  -
+    handle: ahaid
+    field:
+      type: identifier
+      preset: ahaid
+      display: 'American Hospital Association Hospital Identifier (AHAID) for the Hospital'
+      instructions: |-
+        This information can be found in the hospital profile at <a href='https://www.aha.org/aha-hospital-lookup' target='_blank'>https://www.aha.org/aha-hospital-lookup</a>.
+
+        The value must be seven digits (e.g., `1234567`).
+      localizable: false
+  -
+    handle: va_station_id
+    field:
+      type: identifier
+      preset: va_station_id
+      display: 'United States Department of Veterans Affairs Station Identifier (a.k.a. STA3N)'
+      instructions: |-
+        The three-digit VA station identifier (a.k.a. STA3N) that identifies the facility.
+
+        The value must be three digits (e.g., `123`).
+      localizable: false
+  -
+    handle: va_substation_id
+    field:
+      type: identifier
+      preset: va_substation_id
+      display: 'United States Department of Veterans Affairs Substation Identifier (a.k.a. STA6A)'
+      instructions: |-
+        The three-digit parent VA station identifier (a.k.a. STA3N) followed by three uppercase alphanumeric characters that identify the substation or operational unit within the facility.
+
+        The value must be three digits followed by three uppercase alphanumeric characters (e.g., `123ABC` or `123456`).
+      localizable: false
+  -
+    handle: va_station_substation_id
+    field:
+      type: identifier
+      preset: va_station_substation_id
+      display: 'United States Department of Veterans Affairs Station Identifier (a.k.a. STA3N) or Substation Identifier (a.k.a. STA6A)'
+      instructions: |-
+        The three-digit VA station identifier (a.k.a. STA3N) optionally followed by three uppercase alphanumeric characters (A-Z, 0-9) that identify the substation or operational unit within the facility.
+
+        The value must be three digits optionally followed by three uppercase alphanumeric characters (e.g., `123`, `123ABC`, or `123456`).
+      localizable: false
+  -
+    handle: gtm_id
+    field:
+      type: identifier
+      preset: google_tag_manager_container_id
+      display: 'Google Tag Manager Container ID'
+      instructions: |-
+        The Google Tag Manager Container ID is a unique identifier for a Google Tag Manager container.
+
+        The value begin with `GTM-` followed by six to eight uppercase alphanumeric characters (e.g., `GTM-ABC123`, `GTM-1234ABC` or `GTM-ABCDEFGH`).
+      localizable: false
+  -
+    handle: rxcui
+    field:
+      type: identifier
+      preset: rxcui
+      display: 'RxCUI Drug Identifier From RxNorm'
+      instructions: |-
+        Search for concept unique identifiers on the National Library of Medicine RxNorm website at <a href='https://mor.nlm.nih.gov/RxNav/' target='_blank'>https://mor.nlm.nih.gov/RxNav/</a>.
+
+        The value must be one or more digits (e.g., `1`, `123`, `123456789`).
+      localizable: false
+  -
+    handle: duns
+    field:
+      type: identifier
+      preset: duns_number
+      display: 'Dun & Bradstreet Data Universal Numbering System (D-U-N-S) Number'
+      instructions: |-
+        The Dun & Bradstreet D-U-N-S number for identifying an organization or business person.
+
+        The value must be nine digits (e.g., `123456789`).
+      localizable: false
+  -
+    handle: globallocationnumber
+    field:
+      type: identifier
+      preset: global_location_number
+      display: 'Global Location Number'
+      instructions: |-
+        The Global Location Number — a.k.a. GLN, International Location Number or ILN — of the respective organization, person, or place. The GLN is a 13-digit number used to identify parties and physical locations.
+
+        The value must be 13 digits (e.g., `1234567890123`).
+      localizable: false
+  -
+    handle: google_business_profile_cid
+    field:
+      type: identifier
+      preset: google_business_profile_cid
+      display: 'Google Business Profile CID Number'
+      instructions: |-
+        A Google customer ID (CID) is a unique number used to identify an entity in Google Business Profiles. Follow these steps to locate the CID for each of this entity's Google Business Profiles listings.
+
+        1. Find the listing on <a href='https://www.google.com/maps' target='_blank'>Google Maps</a>.
+        2. Click 'Share' and copy the link.
+        3. Go to the link in the browser.
+        4. Copy the resulting full URL.
+        5. Go to <a href='https://pleper.com/index.php?do=tools&sdo=cid_converter' target='_blank'>https://pleper.com/index.php?do=tools&sdo=cid_converter</a>.
+        6. Paste the full URL into the 'CID or Link to maps' field.
+        7. Click 'Convert and generate.'
+        8. Copy the value from the 'CID decimal' field.
+
+        Once you've done that, paste the value into this field.
+
+        The value must be 14 to 20 digits (e.g., `12345678901234` or `12345678901234567890`).
+      localizable: false
+  -
+    handle: google_business_profile_cid_multiple
+    field:
+      type: replicator
+      display: 'Google Business Profile CID Numbers'
+      instructions: |-
+        A Google customer ID (CID) is a unique number used to identify an entity in Google Business Profiles. Follow these steps to locate the CID for each of this entity's Google Business Profiles listings.
+
+        1. Find the listing on <a href='https://www.google.com/maps' target='_blank'>Google Maps</a>.
+        2. Click 'Share' and copy the link.
+        3. Go to the link in the browser.
+        4. Copy the resulting full URL.
+        5. Go to <a href='https://pleper.com/index.php?do=tools&sdo=cid_converter' target='_blank'>https://pleper.com/index.php?do=tools&sdo=cid_converter</a>.
+        6. Paste the full URL into the 'CID or Link to maps' field.
+        7. Click 'Convert and generate.'
+        8. Copy the value from the 'CID decimal' field.
+
+        Once you've done that, paste the value into this field.
+
+        Each value must be 14 to 20 digits (e.g., `12345678901234` or `12345678901234567890`).
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New CID Number Group'
+          sets:
+            new_set:
+              display: 'New CID Number'
+              fields:
+                -
+                  handle: text
+                  field:
+                    type: identifier
+                    preset: google_business_profile_cid
+                    display: 'Individual Google CID Number'
+                    validate:
+                      - required
+                      - sometimes
+                    localizable: false
+  -
+    handle: health_care_provider_taxonomy_code
+    field:
+      type: identifier
+      preset: health_care_provider_taxonomy_code
+      display: 'Health Care Provider Taxonomy Code'
+      instructions: |-
+        The Health Care Provider Taxonomy code is a unique alphanumeric code used to define area of specialty. It is used in transactions specified in HIPAA and the National Provider Identifier application for enumeration.
+
+        The code set is structured into three distinct levels including "Provider Grouping," "Classification," and "Area of Specialization."
+
+        The value must be 10 characters in length, beginning with three digits, followed by two alphanumeric characters, four digits, and ending with `X` (e.g., `123AB4567X`).
+      localizable: false
+  -
+    handle: isicv4
+    field:
+      type: identifier
+      preset: isic_rev_4_code
+      display: 'International Standard of Industrial Classification of All Economic Activities, Revision 4 Code'
+      instructions: |-
+        The ISIC Rev. 4 code for a particular organization, business person, or place.
+
+        The value must be either a single uppercase letter from `A` to `U` or two to four digits (e.g., `A` or `1234`).
+      localizable: false
+  -
+    handle: iso6523code
+    field:
+      type: identifier
+      preset: iso_6523_code
+      display: 'International Organization for Standardization 6523 Code (iso6523Code > Text)'
+      instructions: |-
+        An organization identifier as defined in ISO 6523(-1).
+
+        Note that many existing organization identifiers such as leiCode, duns and vatID can be expressed as an ISO 6523 identifier by setting the ICD part of the ISO 6523 identifier accordingly.
+
+        The value must begin with four digits (the International Code Designator), followed by a colon and one to 35 uppercase alphanumeric characters (the Organization Identifier), optionally followed by another colon and one to 35 uppercase alphanumeric characters (the Organization Part Identifier) (e.g., `1234:ABC123` or `5678:XYZ789:DEF456`).
+      localizable: false
+  -
+    handle: isco_08_code
+    field:
+      type: identifier
+      preset: isco_08_code
+      display: 'International Standard Classification of Occupations (ISCO-08) Code'
+      instructions: |-
+        The International Standard Classification of Occupations is a framework developed by the International Labour Organization to categorize jobs based on the tasks and duties they involve.
+
+        It divides jobs into 10 major groups, further subdivided into 43 sub-major groups, 130 minor groups, and 436 unit groups. These groupings are based on skill levels and skill specialization.
+
+        The value must be one to four digits (e.g., `1234`).
+      localizable: false
+  -
+    handle: leicode
+    field:
+      type: identifier
+      preset: legal_entity_identifier
+      display: 'Legal Entity Identifier'
+      instructions: |-
+        An organization identifier that uniquely identifies a legal entity as defined in ISO 17442.
+
+        The value must begin with 18 uppercase alphanumeric characters followed by exactly two digits (e.g., `123456789ABCDEFGHI12`).
+      localizable: false
+  -
+    handle: naics
+    field:
+      type: identifier
+      preset: naics_code
+      display: 'North American Industry Classification System Code'
+      instructions: |-
+        The NAICS code for a particular organization or business person.
+
+        The value must be two to six digits (e.g., `12` or `123456`).
+      localizable: false
+  -
+    handle: taxid
+    field:
+      type: identifier
+      preset: taxpayer_identification_number
+      display: 'Taxpayer Identification Number (taxID > Text)'
+      instructions: |-
+        A U.S. Employer Identification Number (EIN) is a nine-digit number assigned to businesses and organizations for tax purposes.
+
+        Do not enter other U.S. Taxpayer Identification Numbers, such as Social Security Number (SSN), Individual Taxpayer Identification Number (ITIN), Taxpayer Identification Number for Pending U.S. Adoptions (ATIN), or Preparer Taxpayer Identification Number (PTIN). These identify individuals and are considered personally identifiable information (PII), not business entities.
+
+        The value must begin with two digits, followed by a hyphen and seven digits (e.g., `12-3456789`).
+      localizable: false
+  -
+    handle: tickersymbol
+    field:
+      type: identifier
+      preset: ticker_symbol
+      display: 'Stock Ticker Symbol (tickerSymbol > Text)'
+      instructions: |-
+        A ticker symbol or stock symbol is an abbreviation used to uniquely identify publicly traded shares of a particular stock or security on NASDAQ or NYSE.
+
+        The value must begin with one to five uppercase letters (`A`-`Z`), optionally followed by a dot and a suffix that is either a single uppercase letter (e.g., `A`) or a recognized code (`PK`, `SC`, `NM`) (e.g., `AAPL`, `BRK.A` or `XYZ.PK`).
+      localizable: false
+  -
+    handle: vatid
+    field:
+      type: text
+      display: 'Value-Added Tax Identification Number (vatID > Text)'
+      instructions: |-
+        A value-added tax identification number is an identifier used in many countries for value-added tax purposes.
+
+        This is not an American identifier. It is primarily a European identifier, standardized across the European Union for VAT-registered entities, and also exists in various forms in other international jurisdictions with VAT or similar systems (e.g., UK, Canada, India, Australia). The U.S. does not use VAT or VATINs, relying instead on sales taxes and identifiers like the EIN for different purposes.
+      localizable: false
+  -
+    handle: pmid
+    field:
+      type: identifier
+      preset: pmid
+      display: 'PubMed Identifier (PMID)'
+      instructions: |-
+        A PubMed Identifier is a unique integer value assigned to each PubMed record.
+
+        A PMID is not the same as a PubMed Central identifier (or PMCID) which is the identifier for all works published in the free-to-access PubMed Central.
+
+        The value must begin with a non-zero digit, followed by up to seven additional digits (e.g., `1`, `123`, `12345678`).
+      localizable: false
+  -
+    handle: epic_ser_id
+    field:
+      type: text
+      display: 'UAMS Health Epic SER ID'
+      instructions: 'A SER ID must not be used by any other person. Values are compared ignoring capitalization and surrounding spaces.'
+      validate:
+        - 'regex:/^\d+$/D'
+      localizable: false
+  -
+    handle: workday_universal_id
+    field:
+      type: text
+      display: 'Workday Universal ID'
+      instructions: |-
+        A Workday Universal ID is a unique, immutable 32-character GUID (globally unique identifier) assigned to every object in Workday — including workers — at the time of creation. Unlike employee IDs, which may change during conversions, Workday Universal IDs remain consistent.
+
+        A Workday ID must not be used by any other entry in the same collection, or in another of this person's Workday ID fields. Values are compared ignoring capitalization and surrounding spaces.
+      localizable: false
+  -
+    handle: workday_employee_id
+    field:
+      type: text
+      display: 'Workday Employee ID'
+      instructions: |-
+        The Workday Employee ID for this person. Assigned to employees; a person hired through a contingent arrangement has a Workday Contingent Worker ID instead.
+
+        A Workday ID must not be used by any other entry in the same collection, or in another of this person's Workday ID fields. Values are compared ignoring capitalization and surrounding spaces.
+      localizable: false
+  -
+    handle: workday_contingent_worker_id
+    field:
+      type: text
+      display: 'Workday Contingent Worker ID'
+      instructions: |-
+        The Workday Contingent Worker ID for this person. Assigned to contractors and other non-employee workers rather than to employees.
+
+        A Workday ID must not be used by any other entry in the same collection, or in another of this person's Workday ID fields. Values are compared ignoring capitalization and surrounding spaces.
+      localizable: false
+  -
+    handle: workday_student_id
+    field:
+      type: text
+      display: 'Workday Student ID'
+      instructions: |-
+        The Workday Student ID for this person. Assigned to students.
+
+        A Workday ID must not be used by any other entry in the same collection, or in another of this person's Workday ID fields. Values are compared ignoring capitalization and surrounding spaces.
+      localizable: false

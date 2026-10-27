@@ -1,0 +1,12 @@
+{
+  "categories": [
+    {
+      "name": "gcid:addiction_treatment_center",
+      "displayName": "Addiction treatment center"
+    },
+    {
+      "name": "acupuncturist",
+      "displayName": "A record without the gcid: prefix"
+    }
+  ]
+}

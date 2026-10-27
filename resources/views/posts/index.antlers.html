@@ -1,0 +1,16 @@
+{{#
+	@name Posts Index
+	@desc The `posts` collection index (listing) page. Renders the shared posts
+	      listing partial inside the standard article shell. Used when the
+	      collection is served as an index (mount); the same listing partial is
+	      reused by a `pages` "Posts page" entry (UAMS-Web/uams-statamic-archive#179). (UAMS-Web/uams-statamic-archive#569)
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{ partial:posts/listing :posts_per_page="posts_per_page" }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

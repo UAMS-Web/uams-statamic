@@ -1,0 +1,469 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              instructions: |-
+                Name the taxonomy term using the name of the certifying body followed by the name of the certification (e.g., "American Board of Pediatrics — Adolescent Medicine").
+
+                This value is only used for display in the control panel.
+              localizable: false
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Official Name of the Certification'
+              instructions: |-
+                Do not include the name of the certifying body.
+
+                For subspecialty certifications, do not include the name of a related primary specialty certification.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: credential_kind
+            field:
+              options:
+                -
+                  key: certification
+                  value: Certification
+                -
+                  key: focused_practice_designation
+                  value: 'Focused Practice Designation'
+                -
+                  key: assessment_based_certificate
+                  value: 'Assessment-Based Certificate'
+              type: select
+              max_items: 1
+              multiple: false
+              clearable: false
+              display: 'Kind of Credential'
+              instructions: |-
+                Choose "Certification" for a certification, including a board certification.
+
+                Choose "Focused Practice Designation" for a designation a certifying board grants to a certified physician for a focused area of practice.
+
+                Choose "Assessment-Based Certificate" for a certificate awarded on completing a course of training and passing its assessment.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for the Certification'
+          -
+            handle: organization
+            field:
+              max_items: 1
+              taxonomies:
+                - certification_organizations
+              type: terms_search_index
+              search_index: certification_organizations
+              display: 'Certifying Body for the Certification'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: official_website_query
+            field: uamsweb_common.true_false
+            config:
+              display: "Does this certification have a webpage on the certifying body's official website?"
+              validate:
+                - required
+          -
+            handle: official_website
+            field: uamsweb_schema.url
+            config:
+              display: 'Certification Webpage URL'
+              if:
+                official_website_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: description
+            field:
+              type: textarea
+              display: 'Description of the Certification'
+              instructions: 'Provide a concise summary of the skills, requirements, and professional scope covered by this certification.'
+              localizable: false
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages for the Certification'
+          -
+            handle: credentials_term
+            field:
+              max_items: 1
+              create: false
+              taxonomies:
+                - credentials
+              type: terms_search_index
+              search_index: credentials
+              display: 'Related Credentials Taxonomy Term'
+              instructions: 'Select the credentials term that represents this certification.'
+              query_scopes:
+                - credential_type_certification_or_certificate
+              validate:
+                - 'credential_type_certification:credential_kind'
+              localizable: false
+      -
+        display: 'Certification Classification'
+        collapsible: true
+        fields:
+          -
+            handle: statutory_credential_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this a statutory credential?'
+              instructions: 'Is this certification required by law or regulation to perform a specific job, task, or activity?'
+              validate:
+                - required
+          -
+            handle: medical_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this certification considered a medical certification?'
+              instructions: 'e.g., specialty certification by the American Board of Pediatrics, Advanced Cardiovascular Life Support'
+              validate:
+                - required
+          -
+            handle: research_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this certification considered a research certification?'
+              validate:
+                - required
+          -
+            handle: specialty_subspecialty_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this certification a specialty/subspecialty certification?'
+              validate:
+                - required
+          -
+            handle: specialty_subspecialty_type
+            field:
+              options:
+                -
+                  key: specialty
+                  value: 'Specialty Certification'
+                -
+                  key: subspecialty
+                  value: 'Subspecialty Certification'
+              type: radio
+              display: 'Certification Type'
+              if:
+                specialty_subspecialty_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: medical_specialty
+            field:
+              type: terms_search_index
+              display: 'Medical Specialty'
+              instructions: 'Select the specialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - specialties_aoa
+                - specialties_acgme
+                - specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: medical_specialties_all
+              query_scopes:
+                - specialty
+              if:
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals specialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:specialty'
+              localizable: false
+          -
+            handle: medical_subspecialty
+            field:
+              type: terms_search_index
+              display: 'Medical Subspecialty'
+              instructions: 'Select the subspecialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - specialties_aoa
+                - specialties_acgme
+                - specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: medical_specialties_all
+              query_scopes:
+                - subspecialty
+              if:
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals subspecialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:subspecialty'
+              localizable: false
+          -
+            handle: non_medical_research_specialty
+            field:
+              type: terms_search_index
+              display: 'Research Specialty (Non-Medical)'
+              instructions: 'Select the specialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - research_specialties_acgme
+                - research_specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: research_specialties_all
+              query_scopes:
+                - non_medical_research_specialty
+              if:
+                medical_query: 'equals false'
+                research_query: 'equals true'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals specialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:specialty,non_medical'
+              localizable: false
+          -
+            handle: non_medical_research_subspecialty
+            field:
+              type: terms_search_index
+              display: 'Research Subspecialty (Non-Medical)'
+              instructions: 'Select the subspecialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - research_specialties_acgme
+                - research_specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: research_specialties_all
+              query_scopes:
+                - non_medical_research_subspecialty
+              if:
+                medical_query: 'equals false'
+                research_query: 'equals true'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals subspecialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:subspecialty,non_medical'
+              localizable: false
+          -
+            handle: medical_research_specialty
+            field:
+              type: terms_search_index
+              display: 'Medical Research Specialty'
+              instructions: 'Select the specialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - research_specialties_acgme
+                - research_specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: research_specialties_all
+              query_scopes:
+                - medical_research_specialty
+              if:
+                medical_query: 'equals true'
+                research_query: 'equals true'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals specialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:specialty,medical'
+              localizable: false
+          -
+            handle: medical_research_subspecialty
+            field:
+              type: terms_search_index
+              display: 'Medical Research Subspecialty'
+              instructions: 'Select the subspecialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - research_specialties_acgme
+                - research_specialties_non_accredited
+              max_items: 1
+              create: false
+              search_index: research_specialties_all
+              query_scopes:
+                - medical_research_subspecialty
+              if:
+                medical_query: 'equals true'
+                research_query: 'equals true'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals subspecialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:subspecialty,medical'
+              localizable: false
+          -
+            handle: other_specialty
+            field:
+              type: terms_search_index
+              display: 'Specialty'
+              instructions: 'Select the specialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - other_specialties
+              max_items: 1
+              create: false
+              search_index: other_specialties_all
+              query_scopes:
+                - specialty_type_only
+              if:
+                medical_query: 'equals false'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals specialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:specialty_type_only'
+          -
+            handle: other_subspecialty
+            field:
+              type: terms_search_index
+              display: 'Subspecialty'
+              instructions: 'Select the subspecialty with the appropriate accrediting organization/status.'
+              taxonomies:
+                - other_specialties
+              max_items: 1
+              create: false
+              search_index: other_specialties_all
+              query_scopes:
+                - subspecialty_type_only
+              if:
+                medical_query: 'equals false'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'equals subspecialty'
+              validate:
+                - required
+                - sometimes
+                - 'specialty_taxonomy_term_type:subspecialty_type_only'
+      -
+        display: 'Board Certification'
+        collapsible: true
+        fields:
+          -
+            handle: board_certification_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this specialty/subspecialty certification considered a board certification?'
+              instructions: |-
+                The practitioner being certified must be a physician (M.D. or D.O.).
+
+                The specialty medical board must specialize in one particular area of medicine and must require examinations that are in addition to the requirements of the Arkansas State Medical Board for basic licensure.
+              validate:
+                - required
+                - sometimes
+              if:
+                credential_kind: 'equals certification'
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'not empty'
+          -
+            handle: specialty_medical_board_physician_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is the practitioner being certified a physician (M.D. or D.O.)?'
+              localizable: false
+              instructions: 'The answer must be "Yes" if this certification is to be considered a specialty medical board certification.'
+              if:
+                credential_kind: 'equals certification'
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'not empty'
+                board_certification_query: 'equals true'
+              validate:
+                - required
+                - accepted
+                - sometimes
+          -
+            handle: specialty_medical_board_specialize_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does the specialty medical board specialize in one particular area of medicine?'
+              localizable: false
+              instructions: 'The answer must be "Yes" if this certification is to be considered a specialty medical board certification.'
+              if:
+                credential_kind: 'equals certification'
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'not empty'
+                board_certification_query: 'equals true'
+                specialty_medical_board_physician_query: 'equals true'
+              validate:
+                - required
+                - accepted
+                - sometimes
+          -
+            handle: specialty_medical_board_examination_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does the specialty medical board require examinations that are in addition to the requirements of the Arkansas State Medical Board for basic licensure?'
+              localizable: false
+              instructions: 'The answer must be "Yes" if this certification is to be considered a specialty medical board certification.'
+              if:
+                credential_kind: 'equals certification'
+                medical_query: 'equals true'
+                research_query: 'equals false'
+                specialty_subspecialty_query: 'equals true'
+                specialty_subspecialty_type: 'not empty'
+                board_certification_query: 'equals true'
+                specialty_medical_board_physician_query: 'equals true'
+                specialty_medical_board_specialize_query: 'equals true'
+              validate:
+                - required
+                - accepted
+                - sometimes
+      -
+        display: 'Certification Audience'
+        collapsible: true
+        fields:
+          -
+            handle: audience
+            field:
+              type: terms_search_index
+              display: 'Certification Audience'
+              instructions: 'The people becoming certified.'
+              taxonomies:
+                - audiences
+              search_index: audiences
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: Certification

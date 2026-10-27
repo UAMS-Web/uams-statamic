@@ -1,0 +1,63 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: 'Term Title'
+              instructions: 'This value is only used for display in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              type: entries
+              display: 'Schema Object for the Organization'
+              instructions: 'Select a schema object for the organization, if available.'
+              collections:
+                - schema_objects
+              create: false
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+              validate:
+                - 'entry_schema_type_in:Organization'
+              localizable: true
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Data Source Name'
+              instructions: |-
+                Name the taxonomy item using only the full official name of the data source (e.g., "Data Joe").
+
+                Do not follow the full name of the data source with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            import: uamsweb_schema_basic
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Recognition Lists, Data Source'

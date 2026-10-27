@@ -1,0 +1,18 @@
+title: 'UAMSWeb Bard Set, Reusable Basic Page Content'
+fields:
+  -
+    handle: content
+    field:
+      type: entries
+      display: 'Reusable Basic Page Content'
+      instructions: 'Select a reusable basic page content block.'
+      collections:
+        - reusable_content
+      query_scopes:
+        - reusable_content_basic_page_only
+      blueprints:
+        - reusable_content_basic_page
+      max_items: 1
+      localizable: false
+      validate:
+        - required

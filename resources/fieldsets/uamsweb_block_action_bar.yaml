@@ -1,0 +1,97 @@
+title: 'UAMSWeb Block, Action Bar'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'This heading is here for accessibility purposes only and will not be visible.'
+      default: 'Important Links'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: items
+    field:
+      min_sets: 3
+      max_sets: 4
+      type: replicator
+      display: Items
+      instructions: 'You may have either 3 or 4 sections.'
+      validate:
+        - required
+      button_label: 'Add section'
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Section Group'
+          sets:
+            section:
+              display: 'New Section'
+              fields:
+                -
+                  handle: heading
+                  field:
+                    character_limit: 46
+                    type: text
+                    display: Heading
+                    instructions: 'There is a 46-character limit.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: body
+                  field:
+                    character_limit: 67
+                    type: textarea
+                    display: Body
+                    instructions: 'There is a 67-character limit.'
+                    validate:
+                      - required
+                      - sometimes
+                    replicator_preview: false
+                -
+                  handle: button_text
+                  field:
+                    type: text
+                    display: 'Button Text'
+                    instructions: |-
+                      When the browser window is resized to a smaller size, this button will be the only visible element from this section. Ensure that the button text is clear and meaningful on its own.
+
+                      There is a 31-character limit.
+                    validate:
+                      - required
+                      - sometimes
+                    replicator_preview: false
+                    character_limit: 31
+                -
+                  handle: button_url
+                  field: uamsweb_common_link.link_url
+                  config:
+                    replicator_preview: false
+                    validate:
+                      - required
+                -
+                  handle: button_target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: button_link_description
+                  field: uamsweb_common_link.link_description
+                  config:
+                    replicator_preview: false

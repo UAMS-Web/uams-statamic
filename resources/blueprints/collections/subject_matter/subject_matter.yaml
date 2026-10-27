@@ -1,0 +1,78 @@
+title: 'Subject Matter'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Term Name'
+              instructions: |-
+                Enter the clear, unique name for this concept. Use the name most commonly used by our audience. Keep it concise.
+
+                Before creating a new term, please search the taxonomy to ensure a similar or identical concept doesn't already exist.
+
+                Subject Matter is for concepts the Health Care Provider Taxonomy code set cannot express: academic disciplines, recognition and workforce categories. A clinical concept (a provider type, specialty or service) belongs in Clinical Specializations instead, and a test fails when a subject repeats one there.
+              input_mask_autofix: false
+              input_mask_eager: false
+              input_mask_overwrite: false
+          -
+            handle: notes
+            field:
+              type: textarea
+              display: 'Term Scope Notes'
+              instructions: 'Provide a brief description of what this term means in the context of our content. This helps other editors know exactly when to use it and avoids overlap with similar terms.'
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternative Labels (Synonyms)'
+              instructions: 'List other ways people might refer to this concept (e.g., if the term is "AI," include "Artificial Intelligence").'
+              localizable: false
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              if:
+                selectable: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            import: uamsweb_schema_descriptions
+          -
+            handle: keywords
+            field: uamsweb_schema.keywords
+            config:
+              if:
+                selectable: 'equals true'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: selectable
+            field:
+              type: toggle
+              default: true
+              localizable: false
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

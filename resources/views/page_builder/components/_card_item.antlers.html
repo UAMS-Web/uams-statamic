@@ -1,0 +1,48 @@
+{{#
+	@name UAMS Card Item
+	@desc Wraps content in item and card divs; use inside card list partials.
+	@param card_item_position_increment  Optional. Unique id for this list so position (schema.org) counters are per-list. Default
+	                                      'default'. Callers must declare a value in their scope and pass it in so the
+	                                      slot can use it. Example: declare
+	                                      {{ $card_item_position_increment = 'card_list_' + {increment:card_list} }} then pass
+	                                      :card_item_position_increment="$card_item_position_increment" through to this partial. The
+	                                      variable name is arbitrary; only the value and the partial parameter name
+	                                      matter.
+#}}
+
+{{ item_itemprop = ( item_itemprop === '' ) ? null : ( item_itemprop ?? 'https://schema.org/itemListElement' ) }}
+{{ item_itemscope = ( item_itemscope == 'false' || item_itemscope === false || item_itemscope === '' ) ? null : ( item_itemscope ?? true ) }}
+{{ item_itemtype = ( item_itemtype === '' ) ? null : ( item_itemtype ?? 'https://schema.org/ListItem' ) }}
+
+{{ card_itemprop = ( card_itemprop === '' ) ? null : ( card_itemprop ?? 'https://schema.org/item' ) }}
+{{ card_itemscope = ( card_itemscope == 'false' || card_itemscope === false || card_itemscope === '' ) ? null : ( card_itemscope ?? true ) }}
+{{ url = ( url === '' ) ? null : ( url ?? null ) }}
+{{ card_itemscope = !card_itemscope ? ( url ? true : false ) : card_itemscope }}
+{{ card_itemtype = ( card_itemtype === '' ) ? null : ( card_itemtype ?? 'https://schema.org/WebPage' ) }}
+{{ card_url_itemprop = ( card_url_itemprop === '' ) ? null : ( card_url_itemprop ?? 'https://schema.org/url' ) }}
+{{ card_title_itemprop = ( card_title_itemprop === '' ) ? null : ( card_title_itemprop ?? 'https://schema.org/name https://schema.org/headline' ) }}
+{{ card_short_title_itemprop = ( card_short_title_itemprop === '' ) ? null : ( card_short_title_itemprop ?? 'https://schema.org/alternateName' ) }}
+{{ card_item_position_increment = ( card_item_position_increment === '' ) ? null : ( card_item_position_increment ?? 'card_item_position_default' ) }}
+{{ card_id = ( card_id === '' ) ? null : ( card_id ?? null ) }}
+
+<div
+	class="item"
+	{{ item_itemprop | attribute:itemprop }}
+	{{ item_itemscope | attribute:itemscope }}
+	{{ item_itemtype | attribute:itemtype }}
+>
+	<meta
+		itemprop="http://schema.org/position"
+		{{ {increment:{card_item_position_increment} from="1"} | attribute:content }}
+	/>
+
+	<div
+		class="card"
+		{{ card_itemprop | attribute:itemprop }}
+		{{ card_itemscope | attribute:itemscope }}
+		{{ card_itemtype | attribute:itemtype }}
+		{{ card_id | attribute:id }}
+	>
+		{{ slot }}
+	</div>
+</div>

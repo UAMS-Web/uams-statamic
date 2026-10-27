@@ -1,0 +1,15 @@
+{{#
+	@name Classifieds Index
+	@desc The classifieds board: a paginated card listing of the current site's live
+	      `classifieds` listings. Selected by the `pages` entry that serves the board,
+	      in the same way a "Posts page" selects `posts/index` (UAMS-Web/uams-statamic-archive#2096).
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{ partial:classifieds/listing :listings_per_page="listings_per_page" }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

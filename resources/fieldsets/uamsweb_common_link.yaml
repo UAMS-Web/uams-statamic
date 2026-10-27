@@ -1,0 +1,128 @@
+title: 'UAMSWeb Common Reusable Fields, Links'
+fields:
+  -
+    handle: link_text
+    field:
+      type: text
+      display: 'Link Text'
+      localizable: false
+      replicator_preview: false
+  -
+    handle: link_url
+    field:
+      type: link
+      display: 'Link URL'
+      instructions: 'Enter a URL, or pick an entry, a first-child page, or a downloadable file from the Files container.'
+      container: files
+      replicator_preview: false
+      localizable: false
+  -
+    handle: new_window_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Open link in new window?'
+      replicator_preview: false
+      default: false
+      validate:
+        - required
+  -
+    handle: link_description
+    field:
+      type: text
+      display: 'Link Accessibility Description'
+      instructions: 'This is needed for accessibility. It helps differentiate between multiple links that use the same text like "Learn more". Describe the intent of the link, like "Learn more about the ABC Department".'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: link_class
+    field:
+      type: text
+      display: 'Link Class'
+      instructions: 'The class to apply to the link element.'
+      localizable: false
+  -
+    handle: text_link_group
+    field:
+      type: group
+      display: 'Text Link Group'
+      localizable: false
+      fields:
+        -
+          handle: text
+          field: uamsweb_common_link.link_text
+          config:
+            validate:
+              - required
+        -
+          handle: url
+          field: uamsweb_common_link.link_url
+          config:
+            validate:
+              - required
+        -
+          handle: new_window
+          field: uamsweb_common_link.new_window_query
+          config:
+            validate:
+              - required
+            replicator_preview: false
+  -
+    handle: optional_text_link_group
+    field:
+      type: group
+      display: 'Optional Text Link Group'
+      instructions: 'A text link that may be left empty.'
+      localizable: false
+      fields:
+        -
+          handle: text
+          field: uamsweb_common_link.link_text
+        -
+          handle: url
+          field: uamsweb_common_link.link_url
+        -
+          handle: new_window
+          field: uamsweb_common_link.new_window_query
+          config:
+            validate: {  }
+            replicator_preview: false
+  -
+    handle: icon_link_group
+    field:
+      type: group
+      display: 'Icon Link Group'
+      localizable: false
+      fields:
+        -
+          handle: link_text
+          field: uamsweb_common_link.link_text
+          config:
+            display: 'Accessible Link Label'
+            validate:
+              - required
+        -
+          handle: link
+          field: uamsweb_common_link.link_url
+          config:
+            validate:
+              - required
+        -
+          handle: icon
+          field: uamsweb_common.icon_class
+          config:
+            display: 'Icon Class'
+            validate:
+              - required
+            replicator_preview: false
+        -
+          handle: new_window
+          field: uamsweb_common_link.new_window_query
+          config:
+            validate:
+              - required
+            replicator_preview: false
+        -
+          handle: link_class
+          field: uamsweb_common_link.link_class
+          config:
+            replicator_preview: false

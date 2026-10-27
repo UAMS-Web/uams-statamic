@@ -1,0 +1,25 @@
+diff --git a/src/Stache/Stores/TaxonomyTermsStore.php b/src/Stache/Stores/TaxonomyTermsStore.php
+index a93196b..dc3701c 100644
+--- a/src/Stache/Stores/TaxonomyTermsStore.php
++++ b/src/Stache/Stores/TaxonomyTermsStore.php
+@@ -166,7 +166,19 @@ class TaxonomyTermsStore extends ChildStore
+         $files = Traverser::filter([$this, 'getItemFilter'])->traverse($this);
+ 
+         $paths = $files->mapWithKeys(function ($timestamp, $path) {
+-            $term = $this->makeItemFromFile($path, File::get($path));
++            $contents = File::get($path);
++
++            // A file a fresh listing shows was removed after its path was recorded is
++            // treated as gone, rather than rebuilt from no contents as a new, empty item
++            if ($contents === null) {
++                $listing = @scandir(dirname($path));
++
++                if ($listing !== false && ! in_array(basename($path), $listing, true)) {
++                    return [];
++                }
++            }
++
++            $term = $this->makeItemFromFile($path, $contents);
+ 
+             return $term->localizations()->flatMap(function ($localization, $locale) use ($path) {
+                 $this->cacheItem($localization);

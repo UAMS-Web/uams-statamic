@@ -1,0 +1,156 @@
+{{#
+
+	@name Header Navbar Brand
+	@desc The global site header navbar brand elements
+
+#}}
+
+{{# Begin Defining Variables #}}
+
+	{{# Logo #}}
+
+		{{# Fetch the top-level ancestor (first root-level brand) using global_origin #}}
+		{{ $ancestors = {global_origin handle="uams_multisite_settings" recursive="true"} }}
+		{{# If there are ancestors, use the first one (outermost root); otherwise, use the
+			current site #}}
+		{{ if $ancestors }}
+			{{ $top_ancestor = $ancestors | first }}
+			{{ $logo_link = $top_ancestor:url }}
+			{{ $logo_text = $top_ancestor:title }}
+
+		{{ else }}
+			{{ $logo_link = site:url }}
+			{{ $logo_text = site:name }}
+
+		{{ /if }}
+
+		{{ $logo_asset_group = uams_multisite_settings:global_header_logo }}
+
+		{{# Logo accessible name from the asset meta (issue UAMS-Web/uams-statamic-archive#49): computed `alt`,
+			else the site-name label. The img is decorative (empty alt) because the
+			adjacent sr-only span carries the link's single accessible name. #}}
+		{{ $logo_link_text = {partial:layout/logo_alt_text :alt="$logo_asset_group:horizontal:dark:alt" :fallback="$logo_text"} | trim }}
+
+	{{# Navbar Sub-Brand #}}
+
+		{{# Navbar Sub-Brand Text #}}
+
+			{{# Display the site name? #}}
+
+				{{# Editor-controlled per site via the `global_header_site_name` toggle
+						(uams_multisite_settings), default on — show unless explicitly disabled. #}}
+					{{ $site_name_query = uams_multisite_settings:global_header_site_name != false }}
+
+			{{# Parent Site Information #}}
+
+				{{# If there are ancestors, use the last one (immediate parent); otherwise, set to
+					null #}}
+				{{ if $ancestors }}
+					{{ $immediate_parent = $ancestors | last }}
+
+					{{# Suppress the parent when it's the root-level brand — the apex brand is already
+						represented by the logo #}}
+					{{ if [ 'root' ] | in_array( $immediate_parent:subject ) }}
+						{{ $site_url_parent = null }}
+						{{ $site_name_parent = null }}
+					{{ else }}
+						{{ $site_url_parent = $immediate_parent:url }}
+						{{ $site_name_parent = $immediate_parent:title }}
+					{{ /if }}
+				{{ else }}
+					{{ $site_url_parent = null }}
+					{{ $site_name_parent = null }}
+				{{ /if }}
+
+			{{# Current Site Information #}}
+
+				{{ $site_url_self = site:url }}
+				{{ $site_name_self = site:name }}
+
+			{{# Subsection Information — resolve the nearest self-or-ancestor page
+				flagged "This Entry Starts a New Subsection" (the `subsection`
+				marker on uamsweb_entry_site_navigation). See App\Tags\Subsection
+				and UAMS-Web/uams-statamic-archive#52. #}}
+
+				{{# Resolved via the {{ subsection }} tag PAIR — the embedded-assignment
+					form `{{ $x = {subsection} }}` does not capture the tag's array, so
+					the subsection would silently never activate. The variables set
+					inside the pair leak to this scope. #}}
+				{{ $subsection_query = false }}
+				{{ $subsection_resolved_url = null }}
+				{{ $subsection_resolved_title = null }}
+				{{ subsection }}
+					{{ if active }}
+						{{ $subsection_query = true }}
+						{{ $subsection_resolved_url = url }}
+						{{ $subsection_resolved_title = title }}
+					{{ /if }}
+				{{ /subsection }}
+
+				{{# Assign the Values for the Subsection Sub-Brand Text  #}}
+
+					{{ if $subsection_query }}
+
+						{{# Parent #}}
+
+							{{ if $site_name_query && ( [ 'main', 'department' ] | in_array( uams_multisite_settings:subject ) ) }}
+								{{ $subsection_site_url_parent = site:url }}
+								{{ $subsection_site_name_parent = site:name }}
+
+							{{ elseif $site_name_query }}
+								{{ $subsection_site_url_parent = $site_url_parent }}
+								{{ $subsection_site_name_parent = $site_name_parent }}
+
+							{{ /if}}
+
+						{{# Self (Subsection) — the subsection root's URL and title #}}
+							{{ $subsection_site_url_self = $subsection_resolved_url }}
+							{{ $subsection_site_name_self = $subsection_resolved_title }}
+
+					{{ else }}
+						{{ $subsection_site_url_parent = null }}
+						{{ $subsection_site_name_parent = null }}
+						{{ $subsection_site_url_self = null }}
+						{{ $subsection_site_name_self = null }}
+
+					{{ /if }}
+
+			{{# Navbar Sub-Brand Query #}}
+
+				{{# Render the sub-brand whenever a site name or subsection is shown #}}
+				{{ $subbrand_query = $site_name_query || $subsection_query }}
+
+{{# End Defining Variables #}}
+
+	<div class="global-title">
+		<a
+			href="{{ $logo_link }}"
+			class="{{
+				[
+					'navbar-brand' => true,
+					'no-subbrand' => ( !$site_name_query && !$subsection_query ),
+				] | classes | collapse_whitespace
+			}}"
+		>
+			<picture>
+				<source srcset="{{ $logo_asset_group:horizontal:dark }}" media="(min-width: 576px)">
+				<source srcset="{{ $logo_asset_group:vertical:dark }}" media="(min-width: 1px)">
+				{{# SVG-capable browsers get the SVG via the <source>s above; the <img>
+						fallback is an auto-generated 50px-tall PNG rasterized from the SVG
+						(or the asset's own URL when it is already raster) — see UAMS-Web/uams-statamic-archive#50,
+						App\Tags\LogoRasterFallback. #}}
+				<img src="{{ logo_raster_fallback :asset="$logo_asset_group:horizontal:dark" height="50" }}" alt="">
+			</picture>
+			<span class="sr-only">{{ $logo_link_text }}</span>
+		</a>
+		{{ if $subbrand_query }}
+			{{ if $subsection_query }}
+				{{ partial:layout/header/navbar/subbrand :parent_name="site:name" :parent_url="site:url" :subsection_name="$subsection_site_name_self" :subsection_url="$subsection_site_url_self" }}
+
+			{{ else }}
+				{{ partial:layout/header/navbar/subbrand :parent_name="$site_name_parent" :parent_url="$site_url_parent" }}
+
+			{{ /if }}
+
+		{{ /if }}
+	</div>

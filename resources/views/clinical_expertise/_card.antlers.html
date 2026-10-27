@@ -1,0 +1,49 @@
+{{#
+	@name Area of Expertise Card
+	@desc Renders a single `clinical_expertise` entry as an index card — an
+	      image-forward 16:9 featured image (or the shared 16:9 "no image
+	      available" fallback), a "Part of {parent}" subtitle for a child Area of
+	      Expertise (from the structure-tree computeds), the title, a short
+	      description, and a "View Area of Expertise" CTA link. Expects one Area of
+	      Expertise entry in scope, inside the listing's schema.org ItemList.
+
+	      Like the clinical_locations directory card (UAMS-Web/uams-statamic-archive#1465), the card carries more
+	      than one link (the parent Area and the CTA), so it uses a plain CTA button
+	      rather than a whole-card `stretched-link` overlay — which would make the
+	      "Part of {parent}" link unclickable. (UAMS-Web/uams-statamic-archive#1467)
+#}}
+
+{{# Capture the entry's own url first: the featured-image asset pair rebinds `url`. #}}
+{{ $expertise_url = url }}
+
+<article class="card expertise-card h-100" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+	{{# Image-forward card: the entry's 16:9 featured image when one is set, else the
+	    shared 16:9 "no image available" fallback. Gated on `featured_image_16_9` alone
+	    (image-forward, no opt-in toggle) — unlike the clinical_resources card, the
+	    clinical_expertise blueprint imports the featured_image_* fields WITHOUT the
+	    `cover_image_query` toggle, so gating on that toggle would hide every image. The
+	    asset `alt` (or the editor override) is escaped: Antlers output is raw by default. #}}
+	{{ if featured_image_16_9 }}
+		{{ featured_image_16_9 }}
+			{{ $card_alt = cover_image_alt_text_override ? cover_image_alt_text_override : alt }}
+			<div class="card-img-top">
+				<picture><img src="{{ url }}" alt="{{ $card_alt | sanitize }}" itemprop="image" loading="lazy"></picture>
+			</div>
+		{{ /featured_image_16_9 }}
+	{{ else }}
+		<div class="card-img-top">{{ partial:components/no-image-available_16-9 }}</div>
+	{{ /if }}
+	<div class="card-body">
+		{{# Editor/import-controlled text is escaped with `sanitize` (htmlspecialchars,
+		    ENT_QUOTES) because Antlers output is raw by default — the parent name, the
+		    title, and the `excerpt` textarea are all stored verbatim. #}}
+		{{ if parent_expertise_name }}
+			<p class="card-parent"><small>Part of {{ if parent_expertise_url }}<a href="{{ parent_expertise_url }}">{{ parent_expertise_name | sanitize }}</a>{{ else }}{{ parent_expertise_name | sanitize }}{{ /if }}</small></p>
+		{{ /if }}
+		<h2 class="card-title h5"><span itemprop="name">{{ title | sanitize }}</span></h2>
+		{{ if excerpt }}
+			<div class="card-excerpt" itemprop="description">{{ excerpt | sanitize }}</div>
+		{{ /if }}
+		<a href="{{ $expertise_url }}" class="btn btn-primary" itemprop="url" aria-label="View Area of Expertise: {{ title | striptags | sanitize }}">View Area of Expertise</a>
+	</div>
+</article>

@@ -1,0 +1,11 @@
+{{#
+	@name External Link
+	@desc A text link that opens in a new window, carrying the WCAG 3.2.5 "opens
+	      in new window" indicator and `rel="noopener noreferrer"`. For a link
+	      whose visible content is only an icon, do NOT use this — instead give the
+	      existing anchor an `aria-label` ending in "opens in new window". (UAMS-Web/uams-statamic-archive#702)
+	@param url    The href.
+	@param text   The visible link text.
+	@param class  Optional anchor class(es).
+#}}
+<a href="{{ url }}" target="_blank" rel="noopener noreferrer"{{ if class }} class="{{ class }}"{{ /if }}>{{ text }}{{ partial:components/new_window_indicator }}</a>

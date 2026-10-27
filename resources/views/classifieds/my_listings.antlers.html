@@ -1,0 +1,42 @@
+{{#
+	@name My Classified Listings
+	@desc The signed-in user's own classifieds listings, with links to post a new one
+	      and to edit or remove each (UAMS-Web/uams-statamic-archive#2519). Rendered by `ClassifiedListingController`
+	      with `listings`, `create_url` and `success`.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		<div class="classified-my-listings">
+			<h1>{{ title | entities }}</h1>
+
+			{{ if success }}
+				<div class="alert alert-success" role="status">{{ success | entities }}</div>
+			{{ /if }}
+
+			<p><a class="btn btn-primary" href="{{ create_url }}">Post a listing</a></p>
+
+			{{ if listings }}
+				<ul class="list-unstyled classified-my-listings-list">
+					{{ listings }}
+						<li class="classified-my-listing mb-3">
+							<a href="{{ url }}">{{ title | entities }}</a>
+							{{ if expiration_date }}<small class="text-muted">Expires {{ expiration_date | civil_date:F j, Y }}</small>{{ /if }}
+							<a href="{{ edit_url }}">Edit</a>
+							<form method="POST" action="{{ delete_url }}" class="d-inline">
+								{{ csrf_field }}
+								<input type="hidden" name="_method" value="DELETE">
+								<button class="btn btn-link p-0" type="submit">Remove</button>
+							</form>
+						</li>
+					{{ /listings }}
+				</ul>
+			{{ else }}
+				<p class="classified-my-listings-empty">You have no listings on the board.</p>
+			{{ /if }}
+		</div>
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

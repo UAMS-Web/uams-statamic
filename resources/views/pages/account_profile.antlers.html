@@ -1,0 +1,101 @@
+{{#
+	@name Account: Profile
+	@desc Update your details and change your password. Selected by a `pages` entry's `template:` override (#2113).
+#}}
+
+{{# Two forms on one page, which is what AC2 asks for: `member:profile_form` writes the
+	blueprint fields, `member:password_form` changes the password. They are separate tags
+	with separate actions, so they are separate <form> elements — not one form with two
+	submit buttons.
+
+	`logged_in` comes from the cascade (Statamic\View\Cascade), so the signed-out case is
+	handled here rather than by a route middleware. A visitor who reaches this URL without
+	a session gets a sign-in prompt instead of an empty page or a framework error.
+
+	`user_site` is deliberately absent, matching the register form: it is a field the record
+	carries from the teacher-site source form, not one a member maintains here (UAMS-Web/uams-statamic-archive#2235). #}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{ if logged_out }}
+			<h1>Your account</h1>
+			<p class="lead">You need to be signed in to view this page.</p>
+			<a class="btn btn-primary" href="/login">Log in</a>
+		{{ else }}
+			<h1>Your account</h1>
+
+			<h2 class="h4 mt-4">Your details</h2>
+			{{ member:profile_form }}
+				{{ if success }}
+					<div class="alert alert-success" role="alert">Your details have been saved.</div>
+				{{ /if }}
+				{{ if errors }}
+					<div class="alert alert-danger" role="alert">
+						<ul class="mb-0 list-unstyled">
+							{{ errors }}
+								<li>{{ value | entities }}</li>
+							{{ /errors }}
+						</ul>
+					</div>
+				{{ /if }}
+
+				<div class="mb-3">
+					<label class="form-label" for="profile-name">Name</label>
+					<input class="form-control" id="profile-name" type="text" name="name"
+						value="{{ old:name ?? name | entities }}" autocomplete="name" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="profile-username">Username</label>
+					<input class="form-control" id="profile-username" type="text" name="username"
+						value="{{ old:username ?? username | entities }}" autocomplete="username"
+						aria-describedby="profile-username-help">
+					<div class="form-text" id="profile-username-help">
+						A display name for your account. You sign in with your email address, not this.
+					</div>
+				</div>
+
+				<button type="submit" class="btn btn-primary">Save details</button>
+			{{ /member:profile_form }}
+
+			<h2 class="h4 mt-5">Change your password</h2>
+			{{ member:password_form }}
+				{{ if success }}
+					<div class="alert alert-success" role="alert">Your password has been changed.</div>
+				{{ /if }}
+				{{ if errors }}
+					<div class="alert alert-danger" role="alert">
+						<ul class="mb-0 list-unstyled">
+							{{ errors }}
+								<li>{{ value | entities }}</li>
+							{{ /errors }}
+						</ul>
+					</div>
+				{{ /if }}
+
+				<div class="mb-3">
+					<label class="form-label" for="password-current">Current password</label>
+					<input class="form-control" id="password-current" type="password"
+						name="current_password" autocomplete="current-password" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="password-new">New password</label>
+					<input class="form-control" id="password-new" type="password"
+						name="password" autocomplete="new-password" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="password-new-confirmation">Confirm new password</label>
+					<input class="form-control" id="password-new-confirmation" type="password"
+						name="password_confirmation" autocomplete="new-password" required>
+				</div>
+
+				<button type="submit" class="btn btn-primary">Change password</button>
+			{{ /member:password_form }}
+		{{ /if }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

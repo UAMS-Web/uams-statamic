@@ -1,0 +1,63 @@
+diff --git a/src/Playwright/Client.php b/src/Playwright/Client.php
+index 876e7af..fca7768 100644
+--- a/src/Playwright/Client.php
++++ b/src/Playwright/Client.php
+@@ -5,9 +5,11 @@ declare(strict_types=1);
+ namespace Pest\Browser\Playwright;
+ 
+ use Amp\Websocket\Client\WebsocketConnection;
++use Amp\Websocket\WebsocketMessage;
+ use Generator;
+ use Pest\Browser\Exceptions\PlaywrightOutdatedException;
+ use PHPUnit\Framework\ExpectationFailedException;
++use RuntimeException;
+ 
+ use function Amp\Websocket\Client\connect;
+ 
+@@ -81,7 +83,9 @@ final class Client
+             'guid' => $guid,
+             'method' => $method,
+             'params' => ['timeout' => $this->timeout, ...$params],
+-            'metadata' => $meta,
++            // Playwright reads the timeout from the metadata since 1.62.0, where an
++            // absent value means no timeout at all. Older servers read it from params.
++            'metadata' => ['timeout' => $this->timeout, ...$meta],
+         ]);
+ 
+         $this->websocketConnection->sendText($requestJson);
+@@ -130,9 +134,34 @@ final class Client
+ 
+     /**
+      * Fetches the response from the Playwright server.
++     *
++     * Temporary: a partial port of the open upstream PR
++     * https://github.com/pestphp/pest-plugin-browser/pull/241, closing
++     * pestphp/pest#1801. Drop the patch once that ships.
++     *
++     * The PR's other half — a per-request TimeoutCancellation and wall-clock
++     * deadline, closing pestphp/pest#1781 — is deliberately NOT ported. This
++     * repo's CP smokes run the browser, the in-process Laravel HTTP server, and
++     * the test on ONE shared Amp event loop, so a burst of server work starves
++     * response handling and a wall-clock deadline fires with nothing actually
++     * wrong. Measured: CpGpsFieldtypeSmokeTest passes in 102.6s without the
++     * deadline and fails at 144.3s with it, on `did not answer
++     * [evaluateExpression] within 60.0 seconds`. The deadline also bought nothing
++     * observable here — on the pinned Playwright 1.61.1 a zero-match locator
++     * action already fails bounded (65.8s unpatched vs 63.3s patched).
+      */
+     private function fetch(WebsocketConnection $client): string
+     {
+-        return (string) $client->receive()?->read();
++        $message = $client->receive();
++
++        // Without this, the null returned once the connection closes casts to an empty
++        // string and leaves the caller waiting on a response that can never arrive —
++        // a 100% CPU busy-loop, because an empty response has neither an `error` nor
++        // an `id` key to trigger error handling or a loop exit.
++        if (! $message instanceof WebsocketMessage) {
++            throw new RuntimeException('The Playwright server closed the connection unexpectedly.');
++        }
++
++        return (string) $message->read();
+     }
+ }

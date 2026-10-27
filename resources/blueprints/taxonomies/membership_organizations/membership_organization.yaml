@@ -1,0 +1,80 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: 'Term Title'
+              instructions: 'This value is only used for display in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+              type: entries
+              display: 'Schema Object for the Organization'
+              instructions: 'Select a schema object for the organization, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Organization'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Professional Membership Organization Name'
+              instructions: |-
+                Name the taxonomy item using only the full official name of the membership organization (e.g., "American Medical Association").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the membership organization with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: clinical_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this a clinical membership organization?'
+              instructions: |-
+                Is this a clinical membership organization?
+
+                Answer "Yes" if this is a membership organization for a clinical professional (e.g., American Medical Association, National Alliance on Mental Illness).
+
+                Answer "No" if this is a membership organization for a non-clinical professional (e.g., American Bar Association, American Association of University Women).
+              validate:
+                - required
+          -
+            import: uamsweb_schema_basic
+          -
+            import: uamsweb_schema_descriptions
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Professional Membership Organization'

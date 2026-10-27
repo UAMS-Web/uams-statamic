@@ -1,0 +1,25 @@
+{{#
+	@name  Pagination
+	@desc  Shared pagination control for paginated listings (UAMS-Web/uams-statamic-archive#815). Renders the theme's
+	       Bootstrap `.pagination` markup (Previous / "Page X of Y" / Next), suppressed
+	       when everything fits on one page, and styled by the uams_2020 pagination.scss.
+	       Reused by site search now and knowledge-base search (UAMS-Web/uams-statamic-archive#506).
+	@param paginate    Required. A paginate data array from a `paginate="…"` tag (e.g.
+	                   `{{ collection }}` or `{{ search:results }}`).
+	@param aria_label  Optional. Accessible label for the <nav>. Default "Pagination".
+#}}
+{{ if paginate:total_pages > 1 }}
+	<nav class="search-pagination mt-4" aria-label="{{ aria_label ? aria_label : 'Pagination' }}">
+		<ul class="pagination">
+			{{ if paginate:prev_page }}
+				<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+			{{ /if }}
+			<li class="page-item active" aria-current="page">
+				<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+			</li>
+			{{ if paginate:next_page }}
+				<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+			{{ /if }}
+		</ul>
+	</nav>
+{{ /if }}

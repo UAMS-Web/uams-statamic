@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+        <exclude>
+            <!-- Large machine-generated reference-data enums (kept in sync with the
+                 excludePaths list in phpstan.neon.dist, for the same reason). Each case
+                 carries a big constant data attribute; ZipCode.php alone is ~6 MB / ~40k
+                 cases. php-code-coverage's static analyser exhausts memory parsing files
+                 this size, and the generated case lists have no hand-written control flow
+                 worth covering or mutating — so coverage/mutation buys no value here. -->
+            <file>app/Enums/CanadianProvince.php</file>
+            <file>app/Enums/Country.php</file>
+            <file>app/Enums/County.php</file>
+            <file>app/Enums/CredentialRegistry.php</file>
+            <file>app/Enums/Currency.php</file>
+            <file>app/Enums/InternationalCodeDesignator.php</file>
+            <file>app/Enums/IscedA2011.php</file>
+            <file>app/Enums/IscedF2013.php</file>
+            <file>app/Enums/IscedP2011.php</file>
+            <file>app/Enums/Isco08.php</file>
+            <file>app/Enums/Language.php</file>
+            <file>app/Enums/LanguageBCP47.php</file>
+            <file>app/Enums/MimeType.php</file>
+            <file>app/Enums/SchemaDataType.php</file>
+            <file>app/Enums/SchemaEnumerationMember.php</file>
+            <file>app/Enums/SchemaProperty.php</file>
+            <file>app/Enums/SchemaType.php</file>
+            <file>app/Enums/State.php</file>
+            <file>app/Enums/ZipCode.php</file>
+        </exclude>
+    </source>
+    <php>
+        <!-- Every pin below is bound twice, so a variable the shell already
+             exports cannot override it (UAMS-Web/uams-statamic-archive#2981, UAMS-Web/uams-statamic-archive#3031). The server entry is
+             what binds: Laravel's env() reads $_SERVER first, and PHPUnit
+             always writes server entries. The env entry needs force="true"
+             to replace an exported value, and it is what a spawned child
+             process inherits. A new pin needs both entries;
+             tests/Feature/Config/PhpunitEnvironmentPinsTest.php fails on a
+             pin that has only one. -->
+        <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_ENV" value="testing"/>
+        <env name="APP_TIMEZONE" value="UTC" force="true"/>
+        <server name="APP_TIMEZONE" value="UTC"/>
+        <env name="STATAMIC_DISPLAY_TIMEZONE" value="America/Chicago" force="true"/>
+        <server name="STATAMIC_DISPLAY_TIMEZONE" value="America/Chicago"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <server name="BCRYPT_ROUNDS" value="4"/>
+        <!-- Pin the test cache store under the name config/cache.php reads
+             (UAMS-Web/uams-statamic-archive#2981); the suite relies on a file-backed cache shared between
+             processes. -->
+        <env name="CACHE_STORE" value="file" force="true"/>
+        <server name="CACHE_STORE" value="file"/>
+        <!-- Force the NullCacher in tests. The static-cache middleware
+             (Statamic\StaticCaching\Middleware\Cache) acquires a per-URL lock on
+             every front-end request and returns 503 on a LockTimeoutException; a
+             real cacher contends across paratest workers and flakes the parallel
+             suite, while the NullCacher's lock is a no-op. The Cacher is a boot-time
+             singleton, so this must be set before the app boots (a per-test rebind
+             is too late) — hence here rather than in TestCase::setUp. -->
+        <env name="STATAMIC_STATIC_CACHING_STRATEGY" value="null" force="true"/>
+        <server name="STATAMIC_STATIC_CACHING_STRATEGY" value="null"/>
+        <!-- Disable the Stache warming lock in tests — the sibling of the line
+             above, and the other half of the same 503. Statamic's Stache lock is a
+             FlockStore over the single, NON-tokenized `storage/statamic/stache-locks`
+             directory, so it is shared by every paratest worker. `Stache::warm()`
+             holds it for the whole warm while `Statamic\Http\Middleware\StacheLock`
+             makes every other worker's front-end request wait 30s for it and then
+             return 503 — the UAMS-Web/uams-statamic-archive#1689 `Error404PageTest` flake, and the `GET /` 503
+             that put `ExampleTest` in the serial tail. Each worker has its own
+             cache store and warms independently, so the lock deduplicates nothing
+             here. Read at boot by config/statamic/stache.php. -->
+        <env name="STATAMIC_STACHE_LOCK_ENABLED" value="false" force="true"/>
+        <server name="STATAMIC_STACHE_LOCK_ENABLED" value="false"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <env name="ASSET_METADATA_DATABASE" value=":memory:" force="true"/>
+        <server name="ASSET_METADATA_DATABASE" value=":memory:"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <server name="MAIL_MAILER" value="array"/>
+        <!-- Disable the on-publish link scan (UAMS-Web/uams-statamic-archive#1772) by default in tests. The
+             listener is registered for every EntrySaved and the queue here is
+             `sync`, so with it on, every test that saves a published entry runs
+             link-health:scan inline and issues real outbound requests to every
+             host that entry links to. Its own suite re-enables it (config())
+             alongside Queue::fake. The recurring scan is left on: it only
+             registers a schedule entry, which nothing in a test executes. -->
+        <env name="LINK_HEALTH_SCAN_ON_PUBLISH" value="false" force="true"/>
+        <server name="LINK_HEALTH_SCAN_ON_PUBLISH" value="false"/>
+        <!-- Disable coordinate-derived location regions (UAMS-Web/uams-statamic-archive#962) by default in
+             tests so saving a clinical_locations entry never makes a real Census
+             reverse-geocode HTTP call. The geocoder's own test re-enables it
+             (config()->set) alongside Http::fake. -->
+        <env name="MAP_CENSUS_GEOCODER_ENABLED" value="false" force="true"/>
+        <server name="MAP_CENSUS_GEOCODER_ENABLED" value="false"/>
+        <!-- PubMed lookups refuse without a contact email (UAMS-Web/uams-statamic-archive#2409). The suite runs
+             as a configured client would; the refusal itself is asserted by a test
+             that clears this value explicitly. -->
+        <env name="PUBMED_CONTACT_EMAIL" value="testing@example.com" force="true"/>
+        <server name="PUBMED_CONTACT_EMAIL" value="testing@example.com"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <server name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <server name="SESSION_DRIVER" value="array"/>
+    </php>
+</phpunit>

@@ -1,0 +1,39 @@
+{{#
+	@name Error: 404
+	@desc The 404 error template.
+	@source Inspired by Statamic Peak's "Error: 404" template: https://github.com/studio1902/statamic-peak/blob/main/export/resources/views/errors/404.antlers.html
+#}}
+
+{{# Redirect if current_url is in the Redirects global. #}}
+{{ partial:errors/redirects }}
+
+{{# Redirect a knowledge base's old un-mounted URL to its current mounted URL. #}}
+{{ partial:errors/knowledge_base_mount_redirect }}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{# The 404 sets no `title_options`, so the shared page-header renders nothing
+		    and this is the page's only heading (UAMS-Web/uams-statamic-archive#629). #}}
+		<h1>Page not found</h1>
+
+		{{# A redirect rule authored with `response: 404` carries an optional message
+		    explaining why this particular URL is gone (UAMS-Web/uams-statamic-archive#1934). It is rendered HERE,
+		    in the body, rather than aborted from `errors/redirects` — see that
+		    partial's `404` branch for why aborting re-enters this page and loses the
+		    message. The rule is re-resolved rather than passed down because a partial
+		    cannot hand a value back to the view that included it, and the tag only
+		    re-reads the redirects global. #}}
+		{{ partial:errors/redirect_message }}
+
+		<p class="lead">Sorry, we couldn&rsquo;t find that page. It may have moved, or the address may be mistyped. Try a search or one of the links below.</p>
+
+		{{# The search box and popular-links list, shared with the targetless error
+		    pages (UAMS-Web/uams-statamic-archive#1942). #}}
+		{{ partial:errors/recovery_aids }}
+
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}
+

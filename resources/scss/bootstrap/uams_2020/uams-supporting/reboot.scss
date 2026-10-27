@@ -1,0 +1,25 @@
+//
+// Links
+//
+
+a {
+    @include hover-focus() {
+      color: $link-hover-color;
+      text-decoration: $link-hover-decoration;
+    }
+}
+
+
+//
+// Figures
+//
+
+figure {
+    &:first-child {
+        margin-top: 0;
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}

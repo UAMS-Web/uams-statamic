@@ -1,0 +1,12 @@
+a {
+  cursor: pointer;
+
+  &:not([href]):not([tabindex]) {
+    cursor: default;
+  }
+
+  &[href^="tel:"],
+  &[href^="mailto:"] {
+    white-space: nowrap;
+  }
+}

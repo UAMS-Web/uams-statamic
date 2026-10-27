@@ -1,0 +1,50 @@
+title: 'UAMSWeb Schema, Basic'
+fields:
+  -
+    handle: alternate_name
+    field: uamsweb_schema.alternate_name
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      localizable: false
+  -
+    handle: official_website_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Does this entity have a website?'
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: official_website
+    field: uamsweb_schema.url
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+        official_website_query: 'equals true'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: same_as
+    field: uamsweb_schema.same_as
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      localizable: false
+  -
+    handle: additional_type
+    field: uamsweb_schema.additional_type
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      localizable: false

@@ -1,0 +1,41 @@
+@use "sass:map";
+
+@mixin cite() {
+    margin: $font-size-base 0;
+    padding: 0 0 0 $font-size-base;
+    border-left: $blockquote-border-width solid $cite-border-color;
+    @include font-size($blockquote-small-font-size);
+    color: $blockquote-small-color;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@function line-length-value($name, $lengths: $line-lengths) {
+    $line-length-value: map.get($lengths, $name);
+    @if $line-length-value != 0 {
+        @return $line-length-value;
+    }
+    @return null;
+}
+@mixin line-length-em($name, $lengths: $line-lengths) {
+    $line-length-value: line-length-value($name, $lengths);
+    @if $line-length-value {
+        width: $line-length-value+em;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+  }
+
+  @mixin anchor-default() {
+    color: $link-color;
+    text-decoration: $link-decoration;
+    background-color: transparent; // Remove the gray background on active links in IE 10.
+
+    @include hover-focus() {
+      color: $link-hover-color;
+      text-decoration: $link-hover-decoration;
+    }
+  }

@@ -1,0 +1,24 @@
+title: 'Schema Objects'
+icon: programming-script-code
+sites:
+  - default
+propagate: true
+template: default
+layout: layout
+revisions: false
+title_format: '{{ disambiguate_title }}{{ title }}{{ /disambiguate_title }}'
+sort_dir: asc
+date_behavior:
+  past: null
+  future: null
+preview_targets:
+  -
+    label: Entry
+    url: '{permalink}'
+    refresh: true
+inject:
+  schema_templates:
+    section_defaults:
+      enabled: false
+structure:
+  root: false

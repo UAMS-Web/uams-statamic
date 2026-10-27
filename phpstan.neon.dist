@@ -1,0 +1,241 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/phpstan/phpstan-mockery/extension.neon
+    # Teaches PHPStan Pest's functional API — most importantly the `$this`
+    # binding inside it()/test()/beforeEach() closures, which no extension
+    # resolved when tests/ came under analysis in UAMS-Web/uams-statamic-archive#1344. Retires both of that
+    # PR's blanket ignoreErrors entries: TestClosureThisTypeExtension binds
+    # `$this` to the file's uses() test case, and PestInternalClassAccessIgnore-
+    # Extension whitelists Pest's own @internal classes at their intended call
+    # sites. It also registers ~13 Pest-specific rules (duplicate test
+    # descriptions, empty/static test closures, impossible or redundant
+    # expectations, invalid group names). Ships in Pest 5 (UAMS-Web/uams-statamic-archive#1719).
+    - vendor/pestphp/pest-plugin-phpstan/extension.neon
+    # PHPStan's opt-in preview channel — turns on rules and stricter analysis
+    # that become default in the next major, so the eventual 2.x → 3.x upgrade
+    # carries no accumulated analysis debt. Ships inside phpstan/phpstan, so it
+    # adds no dependency (UAMS-Web/uams-statamic-archive#1028).
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    # Checkout-scoped cache (UAMS-Web/uams-statamic-archive#1879). PHPStan's default tmpDir is
+    # `sys_get_temp_dir()/phpstan` — machine-global, so the primary checkout, the
+    # local-CI runner's worktree, and every `.claude/worktrees/*` share one
+    # directory. The cache stores ABSOLUTE phar paths, so deleting the worktree
+    # that populated it leaves every stored path dangling, and the next run in a
+    # LIVE checkout dies with ~30 internal errors of the form `"phar://…/
+    # .claude/worktrees/1759/vendor/phpstan/phpstan.phar/…" is not a file` —
+    # while blaming whichever source file happened to be under analysis. Hit
+    # while validating UAMS-Web/uams-statamic-archive#1848 against a worktree deleted days earlier, on a test
+    # that PR never touched: indistinguishable from a real defect in the diff.
+    #
+    # Neither obvious remedy works. `clear-result-cache` drops resultCache.php
+    # and reports success for a directory it has substantially not cleared —
+    # measured 2026-07-31, 6,883 files / 1.3 GB left under `cache/PHPStan/**`,
+    # every one naming the dead worktree. `--fresh` rebuilds the worktree and
+    # vendor/; the cache lives outside both. And `rm -rf` on the shared directory
+    # races whatever concurrent session is mid-analysis in it.
+    #
+    # A RELATIVE path here resolves against THIS file's directory, so each
+    # checkout gets its own cache and a deleted one takes only its own with it.
+    # There is no `--tmp-dir` CLI flag, so the config key is the only lever.
+    # Git-ignored via `/storage/phpstan` — which also keeps it out of the
+    # reused-worktree drift check in scripts/local-ci.mjs (UAMS-Web/uams-statamic-archive#1889).
+    # Pinned by tests/Feature/PhpstanTmpDirTest.php so an edit cannot silently
+    # restore the shared default.
+    tmpDir: storage/phpstan
+    # Climbing one level per commit toward `max` (issue UAMS-Web/uams-statamic-archive#914). Raise this by one
+    # only once the current level is clean and committed.
+    level: 10
+    paths:
+        - app
+        # First-party test code is analyzed at the same level as app/ (UAMS-Web/uams-statamic-archive#1344).
+        # Test bugs — broken mocks, wrong-typed fixtures, dead assertions calling
+        # methods that no longer exist — are real bugs, and level-10 parity keeps
+        # future test files honest in CI. Once tests/ is in `paths`, the
+        # tests/Support helpers are analyzed directly, so the former
+        # `scanDirectories: tests/Support` (symbol discovery only) is both
+        # redundant and rejected by PHPStan as a duplicated directory.
+        - tests
+    scanFiles:
+        # Declaration-only helper shared by scripts/check-tia-safe.php and its test
+        # (UAMS-Web/uams-statamic-archive#1996). `scripts/` is deliberately outside `paths`, but the test requires this
+        # file, so PHPStan needs the symbols to avoid reporting the function and constant
+        # as undefined. Symbol discovery only — the file itself is not analyzed.
+        - scripts/tia-blindness.php
+    excludePaths:
+        # Large machine-generated reference-data enums (ISO 639 languages, ISO
+        # 3166 countries, US ZIP codes/counties, ISCO/ISCED classifications,
+        # currencies, MIME types, schema.org + CTDL vocabularies). Each case
+        # carries a big constant data attribute; ZipCode.php alone is 6 MB /
+        # ~40k cases. PHPStan's scope analyzer exhausts >6 GB on a single file
+        # this size, and there is no hand-written control flow in the case lists
+        # to check — so the cost buys no bug-catching value. Listed under
+        # `analyse` (not `analyseAndScan`) so they stay in the symbol table and
+        # call sites elsewhere in app/ remain fully type-checked. The
+        # hand-written attribute classes (Enums/Attributes/*) and the small
+        # logic enum (ApStyleGregorianMonth) are analyzed normally.
+        #
+        # This same list is mirrored in phpunit.xml's coverage <source><exclude>
+        # block — php-code-coverage's static analyser hits the identical
+        # memory blowup on these files for the same non-reason. Keep the two
+        # lists in sync when adding or removing a generated enum.
+        analyse:
+            - app/Enums/CanadianProvince.php
+            - app/Enums/Country.php
+            - app/Enums/County.php
+            - app/Enums/CredentialRegistry.php
+            - app/Enums/Currency.php
+            - app/Enums/InternationalCodeDesignator.php
+            - app/Enums/IscedA2011.php
+            - app/Enums/IscedF2013.php
+            - app/Enums/IscedP2011.php
+            - app/Enums/Isco08.php
+            - app/Enums/Language.php
+            - app/Enums/LanguageBCP47.php
+            - app/Enums/MimeType.php
+            - app/Enums/SchemaDataType.php
+            - app/Enums/SchemaEnumerationMember.php
+            - app/Enums/SchemaProperty.php
+            - app/Enums/SchemaType.php
+            - app/Enums/State.php
+            - app/Enums/ZipCode.php
+    # Both of UAMS-Web/uams-statamic-archive#1344's message-scoped ignoreErrors entries are retired by
+    # pest-plugin-phpstan (included above) — see UAMS-Web/uams-statamic-archive#1719. Neither is replaced in
+    # kind: the plugin resolves the underlying mis-inferences rather than hiding
+    # them, so an undefined *method* on a real test case, and internal-class
+    # misuse of any *other* vendor, both fail again. What remains below is scoped
+    # by `identifier` (and `path` where it is a single site) rather than by a
+    # namespace-wide message.
+    #
+    # ACCEPTED GAP — `property.notFound` on test cases. The plugin's own
+    # extension.neon declares `universalObjectCratesClasses: PHPUnit\Framework\
+    # TestCase`, which makes PHPStan treat every TestCase subclass as accepting
+    # any property: an undeclared read yields `mixed` instead of
+    # `property.notFound`, and a write is allowed. Verified — typo a *declared*
+    # property in tests/Support/StacheIsolatedTestCase.php and this config reports
+    # only a downstream `argument.type`, where pre-#1719 reported `Access to an
+    # undefined property`. That is a real loss on class-based bodies under tests/
+    # (there is none inside Pest closures — the retired TestCall ignore already
+    # hid property errors there). It is accepted rather than fixed because the
+    # crate is load-bearing: it is what lets Pest's ad-hoc `$this->foo = …`
+    # per-test state analyse at all, and no other mechanism in the plugin supplies
+    # it. Declared properties still type-check normally, which bounds the exposure.
+    ignoreErrors:
+        # Pest mixes the extra classes passed to `uses()` in as traits on the
+        # generated test class, but the plugin's TestClosureThisTypeExtension
+        # deliberately skips them — toClassObjectTypes() does
+        # `if ($reflection->isTrait()) continue;` — so `$this` binds to
+        # Tests\TestCase alone and every method reached through a `uses()` trait
+        # reads as undefined. This repo mixes in Tests\Concerns\RequiresContent-
+        # Submodule that way across ~11 files. Pinned to that trait's own three
+        # method names so any *other* undefined method on a test case still
+        # fails (UAMS-Web/uams-statamic-archive#1719); skipWithoutQualifyingContentEntry joined them in UAMS-Web/uams-statamic-archive#1738.
+        #
+        # The class alternation exists for the same reason as the method one: `$this`
+        # binds to whichever base the file's `uses()` names FIRST, so a content-
+        # dependent file that sits on a narrower base reports the identical error
+        # against that base instead. CollectionTreeIsolatedTestCase joined in UAMS-Web/uams-statamic-archive#1873.
+        # Both halves stay enumerated rather than wildcarded — a new base or a new
+        # helper should have to be added here deliberately.
+        -
+            identifier: method.notFound
+            message: '#Call to an undefined method Tests\\(TestCase|Support\\CollectionTreeIsolatedTestCase)::(requireContentCollection|requireContentEntry|skipWithoutQualifyingContentEntry)\(\)#'
+        # The plugin's PestInternalClassAccessIgnoreExtension whitelists Pest's
+        # own @internal classes at their intended call sites, which retires the
+        # whole `#internal class Pest\\#` family from UAMS-Web/uams-statamic-archive#1344 except one: the
+        # browser plugin's Playwright::setTimeout() in the Pest bootstrap, which
+        # its extension does not cover. Pinned by path (UAMS-Web/uams-statamic-archive#1719).
+        -
+            identifier: staticMethod.internalClass
+            path: tests/Pest.php
+        # Same uncovered API, two more call sites (UAMS-Web/uams-statamic-archive#1854). waitToSee() scopes
+        # Playwright::setTimeout() to its declared timeout so the plugin's own
+        # retry window BECOMES the bound, and restores the previous value in a
+        # finally; the guard then drives timeout() to prove the restore happens on
+        # both the hit and the miss path. There is no non-internal symbol for
+        # either — the read and the write are the whole mechanism, so a bound that
+        # cannot be set cannot be proven to fire, and avoiding the API would mean
+        # deleting the behaviour rather than the error.
+        #
+        # Pinned by path, matching the tests/Pest.php entry above, so an
+        # internal-class call from any other vendor still fails. These retire when
+        # pest-plugin-browser drops the @internal annotation on Playwright, not
+        # when any patch retires — unlike the two guard files further down.
+        -
+            identifier: staticMethod.internalClass
+            path: tests/Support/CpSmoke.php
+        -
+            identifier: staticMethod.internalClass
+            path: tests/Browser/WaitToSeeBoundTest.php
+        # PHPUnit annotates its exception hierarchy @internal ("not covered by
+        # the backward compatibility promise"), which catches the two
+        # control-flow exceptions a test has to name to tell a skip from a
+        # failure. NOT the whole PHPUnit\Framework namespace, though — Assert and
+        # TestCase carry no class-level @internal, which is why the guards in
+        # tests/Support/ContentSubmodule.php can call Assert::fail() and
+        # Assert::markTestSkipped() unignored. Do not widen this pin to the
+        # namespace on the strength of the first sentence.
+        #
+        # SkippedWithMessageException *extends* AssertionFailedError, so only an
+        # exact-class comparison separates them and `instanceof` proves nothing —
+        # which is precisely what the content-guard tests assert (UAMS-Web/uams-statamic-archive#1738). There
+        # is no non-internal symbol to assert against: the SkippedTest interface
+        # carries the same annotation. Pinned to those two class names so an
+        # internal class constant from any other vendor — or any other PHPUnit
+        # internal, verified against IncompleteTestError — still fails.
+        -
+            identifier: classConstant.internalClass
+            message: '#Access to constant on internal class PHPUnit\\Framework\\(AssertionFailedError|SkippedWithMessageException)\.#'
+        # The Composer patches on `pestphp/pest-plugin-browser` are guarded by
+        # BEHAVIORAL tests rather than source-string matches — they drive the
+        # patched classes directly, which is the only way to prove a bound
+        # actually fires rather than that a line of code is present. Every class
+        # involved (Client, Playwright, Execution) is annotated @internal by the
+        # plugin, and pest-plugin-phpstan's PestInternalClassAccessIgnoreExtension
+        # whitelists only Pest's OWN internals at their intended call sites, not
+        # the browser plugin's — the same gap already pinned for
+        # `Playwright::setTimeout()` in tests/Pest.php above.
+        #
+        # Pinned by path to the two guard files, so internal-class misuse anywhere
+        # else still fails. Both files are deleted when their patch retires; see
+        # the two `pest-plugin-browser` sections in patches/README.md, whose
+        # removal lists name these entries.
+        -
+            identifier: new.internalClass
+            path: tests/Unit/PestBrowserClientPatchTest.php
+        -
+            identifier: classConstant.internalClass
+            path: tests/Unit/PestBrowserClientPatchTest.php
+        -
+            identifier: staticMethod.internalClass
+            path: tests/Unit/PestBrowserRetryPatchTest.php
+        # The `larastan/larastan` console-kernel-commands patch (UAMS-Web/uams-statamic-archive#3156) is guarded
+        # the same way: the test builds Larastan's @internal ConsoleApplicationResolver
+        # and calls the patched lookup in the booted application. Pinned by path, and
+        # removed with the patch.
+        -
+            identifier: new.internalClass
+            path: tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php
+        -
+            identifier: classConstant.internalClass
+            path: tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php
+        # Same uncovered-API shape, but guarding OUR OWN configuration rather than a
+        # patch: `pest()->tia()->directory('tests/.pest/tia')` in tests/Pest.php is the
+        # single line keeping each checkout's Tia impact graph separate, and deleting it
+        # fails silently (UAMS-Web/uams-statamic-archive#1991). `Pest\Plugins\Tia\Storage` is annotated @internal and
+        # has no public equivalent — `tempDir()` IS the resolution being asserted, so a
+        # behavioral guard cannot avoid it, and a source match on tests/Pest.php would
+        # only prove the line is present rather than that it takes effect.
+        #
+        # Pinned by path, and NOT a patch guard — it outlives every patch in this repo.
+        # Two independent retirement triggers, kept apart because conflating them invites
+        # deleting the guard when only these four lines are obsolete:
+        #   - upstream drops @internal from Storage -> this ENTRY goes (and says so:
+        #     reportUnmatchedIgnoredErrors defaults to true, so it reds rather than rots).
+        #     The behavioral guard is untouched and still worth running.
+        #   - the directory pin itself is removed -> the GUARD FILE goes, and this entry
+        #     with it. That is the decision the guard exists to make deliberate.
+        -
+            identifier: staticMethod.internalClass
+            path: tests/Unit/PestTiaCacheDirectoryTest.php

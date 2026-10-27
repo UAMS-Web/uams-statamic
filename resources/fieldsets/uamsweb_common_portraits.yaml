@@ -1,0 +1,59 @@
+title: 'UAMSWeb Common Reusable Fields, Portraits'
+fields:
+  -
+    handle: alt
+    field:
+      type: text
+      display: 'Alt Text'
+      instructions: 'Name of the person in the portrait'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: date_taken
+    field:
+      type: date
+      display: 'When was this portrait originally taken?'
+      format: Y-m-d
+      validate:
+        - required
+      localizable: false
+  -
+    handle: studio_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Was this portrait taken in a studio?'
+      validate:
+        - required
+  -
+    handle: background_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Does this portrait have a white background?'
+      validate:
+        - required
+        - sometimes
+      if:
+        studio_query: 'equals true'
+  -
+    handle: direction_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Is the subject of the portrait facing either to the right or directly at the center of the image?'
+      validate:
+        - required
+  -
+    handle: creator
+    field:
+      type: text
+      display: Photographer
+      placeholder: 'e.g., John Smith'
+      localizable: false
+  -
+    handle: creator_organization
+    field:
+      type: text
+      display: 'Organization for Which the Portrait Was Taken'
+      placeholder: 'e.g., UAMS'
+      default: UAMS
+      localizable: false

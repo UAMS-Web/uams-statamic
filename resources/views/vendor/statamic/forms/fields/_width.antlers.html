@@ -1,0 +1,17 @@
+{{# Width partial for responsive Bootstrap classes #}}
+{{# Usage: {{ partial:vendor/statamic/forms/fields/_width :width="field_width" }} #}}
+{{# Converts percentage widths to responsive Bootstrap classes #}}
+
+{{ if width == 25 }}
+	col-12 col-md-3
+{{ elseif width == 33 }}
+	col-12 col-md-4
+{{ elseif width == 50 }}
+	col-12 col-md-6
+{{ elseif width == 66 }}
+	col-12 col-md-8
+{{ elseif width == 75 }}
+	col-12 col-md-9
+{{ else }}
+	col-12
+{{ /if }}

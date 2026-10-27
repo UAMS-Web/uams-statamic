@@ -1,0 +1,65 @@
+{{#
+	@name Error: Recovery aids
+	@desc The search box and popular-links list shared by every error page.
+#}}
+
+{{# Extracted from `errors/404.antlers.html` so the targetless error pages
+    (`403`, `410`, `451`) carry the same wayfinding rather than duplicating ~50
+    lines of it three more times (UAMS-Web/uams-statamic-archive#1942). The markup is unchanged from the 404,
+    including the deliberate omission of AoE/subsection nav scoping — see the
+    `nav` comment below for why that omission is load-bearing on any routeless
+    error page, not just the 404. #}}
+
+{{# Recovery aid 1: a prominent inline search box posting to the shared /search
+    page (the single most useful wayfinding on a failure page). `autofocus`
+    lands the caret here for keyboard/screen-reader users. #}}
+<section class="error-search mb-4" aria-labelledby="error-search-heading">
+	<h2 id="error-search-heading" class="h4">Search the site</h2>
+	<form action="/search" method="get" role="search" aria-label="Search the site" style="max-width: 40rem;">
+		<label class="sr-only" for="error-search-q">Search</label>
+		<div class="form-row">
+			<div class="col-12 col-sm mb-2 mb-sm-0">
+				<input
+					type="search"
+					class="form-control form-control-lg"
+					id="error-search-q"
+					name="q"
+					placeholder="Search the site&hellip;"
+					aria-label="Search"
+					autofocus
+				>
+			</div>
+			<div class="col-12 col-sm-auto">
+				<button type="submit" class="btn btn-primary btn-lg btn-block">Search</button>
+			</div>
+		</div>
+	</form>
+</section>
+
+{{# Recovery aid 2: a short popular-links list sourced from the primary
+    navigation (top level only) so it never drifts from a hand-maintained
+    list. Mirrors the header's global nav-handle resolution — the manual
+    `primary_navigation` when the multisite setting is on, else the pages tree —
+    but deliberately omits the AoE/subsection scoping, which is meaningless on
+    a routeless 404 (no entry, no tree node) and fatals TreeBuilder. #}}
+{{ $manual_primary_navigation = uams_multisite_settings:manual_primary_navigation ? 'primary_navigation' : void }}
+{{ $navigation_main_handle = {nav :handle="$manual_primary_navigation"} ? $manual_primary_navigation : void }}
+<section class="error-popular-links" aria-labelledby="error-links-heading">
+	<h2 id="error-links-heading" class="h4">Popular pages</h2>
+	<ul class="list-inline">
+		{{ nav :handle="$navigation_main_handle" hide_from_menu:isnt="true" password_protected:isnt="true" }}
+			{{# Re-apply the exclusion on any nav source (the query params are inert
+			    on a manual nav); private entries stay hidden from an anonymous
+			    visitor, matching the primary nav (UAMS-Web/uams-statamic-archive#1151 / UAMS-Web/uams-statamic-archive#1152). #}}
+			{{ unless hide_from_menu || password_protected || ( status_and_visibility == "private" && !{can_view_private_entry :id="entry_id"} ) }}
+				{{# A child_site_link item links to its child site (UAMS-Web/uams-statamic-archive#219); a
+				    posts_category_link item links to its category archive (UAMS-Web/uams-statamic-archive#220);
+				    every other item uses its own URL. #}}
+				{{ $child_site_href = {child_site_url} }}
+				{{ $category_href = {posts_category_link_url} }}
+				{{ $nav_item_href = $child_site_href ? $child_site_href : ( $category_href ? $category_href : url ) }}
+				<li class="list-inline-item"><a href="{{ $nav_item_href }}">{{ nav_alt_name ?? title }}</a></li>
+			{{ /unless }}
+		{{ /nav }}
+	</ul>
+</section>

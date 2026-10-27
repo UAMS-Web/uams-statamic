@@ -1,0 +1,17 @@
+{{#
+	@name UAMS Reusable Content Landing Page
+	@desc The UAMS Reusable Content Landing Page page builder block.
+	@set page.page_builder.uamsweb_block_reusable_content_landing_page
+#}}
+
+{{# Only render if content entry has 1 item #}}
+{{ if content }}
+	{{# Get the reusable content entry from the content field #}}
+	{{ content }}
+		{{# Render the page_builder blocks from the reusable content entry inline #}}
+		{{ page_builder scope="block" }}
+			{{ partial src="page_builder/{type}" }}
+		{{ /page_builder }}
+	{{ /content }}
+{{ /if }}
+

@@ -1,0 +1,70 @@
+{{#
+	@name Area of Expertise related entities
+	@desc Related-entity blocks on the AoE overview (UAMS-Web/uams-statamic-archive#573): related clinical
+	      providers, locations, conditions, treatments/services, and clinical
+	      resources. Rendered from the augmented `clinical_expertise` entry — each
+	      block appears only when its relationship is populated, and each item links
+	      to its own page. The full, standalone per-section pages live at the routed
+	      `/{entry}/{section}` URLs (UAMS-Web/uams-statamic-archive#1058); the AoE primary nav links to them.
+#}}
+
+{{# UAMS-Web/uams-statamic-archive#919: narrow the provider relationship to clinical-provider-eligible, searchable people before it drives the gate and the list. #}}
+{{ eligible_providers = clinical_providers | clinical_provider_eligible }}
+{{ if eligible_providers || clinical_locations || clinical_conditions || clinical_services || clinical_resources }}
+	<div class="aoe-related">
+		{{ if eligible_providers }}
+			<section class="aoe-related-section aoe-related-providers">
+				<h2 class="aoe-related-title">Related Clinical Providers</h2>
+				<ul class="aoe-related-list">
+					{{ eligible_providers }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /eligible_providers }}
+				</ul>
+			</section>
+		{{ /if }}
+
+		{{ if clinical_locations }}
+			<section class="aoe-related-section aoe-related-locations">
+				<h2 class="aoe-related-title">Related Clinical Locations</h2>
+				<ul class="aoe-related-list">
+					{{ clinical_locations }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /clinical_locations }}
+				</ul>
+			</section>
+		{{ /if }}
+
+		{{ if clinical_conditions }}
+			<section class="aoe-related-section aoe-related-conditions">
+				<h2 class="aoe-related-title">Related Clinical Conditions</h2>
+				<ul class="aoe-related-list">
+					{{ clinical_conditions }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /clinical_conditions }}
+				</ul>
+			</section>
+		{{ /if }}
+
+		{{ if clinical_services }}
+			<section class="aoe-related-section aoe-related-services">
+				<h2 class="aoe-related-title">Related Treatments and Procedures</h2>
+				<ul class="aoe-related-list">
+					{{ clinical_services }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /clinical_services }}
+				</ul>
+			</section>
+		{{ /if }}
+
+		{{ if clinical_resources }}
+			<section class="aoe-related-section aoe-related-resources">
+				<h2 class="aoe-related-title">Related Clinical Resources</h2>
+				<ul class="aoe-related-list">
+					{{ clinical_resources }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /clinical_resources }}
+				</ul>
+			</section>
+		{{ /if }}
+	</div>
+{{ /if }}

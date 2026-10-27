@@ -1,0 +1,9 @@
+body.page-template-default {
+    article.type-advert {
+        .entry-header {
+            .entry-meta {
+                @extend .sr-only;
+            }
+        }
+    }
+}

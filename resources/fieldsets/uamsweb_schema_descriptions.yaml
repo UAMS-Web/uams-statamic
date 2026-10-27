@@ -1,0 +1,18 @@
+title: 'UAMSWeb Schema, Descriptions'
+fields:
+  -
+    handle: description
+    field: uamsweb_schema.description
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      localizable: false
+  -
+    handle: disambiguating_description
+    field: uamsweb_schema.disambiguating_description
+    config:
+      if:
+        associated_location_profile: 'equals empty'
+        schema_object: 'equals empty'
+      localizable: false

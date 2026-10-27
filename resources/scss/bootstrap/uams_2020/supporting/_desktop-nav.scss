@@ -1,0 +1,18 @@
+/* Desktop primary-nav dropdown caret
+-------------------------------------------------------------------------------
+ Vendored from the removed `smartmenus-bootstrap-4` CSS (UAMS-Web/uams-statamic-archive#1343). That package's
+ stylesheet supplied the expanded-mode `.sub-arrow` caret; the framework-free
+ desktop nav (resources/js/uams_2020/source/desktop-nav.js) injects the same
+ `.has-submenu` / `.sub-arrow` markup, so the caret rule is kept here. The
+ theme's header.scss styles the nested (flyout) carets via `caret-right`; this
+ only restores the top-level down-caret that lived in the vendor CSS. */
+.navbar-nav .nav-link.has-submenu > .sub-arrow {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 0.255em;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-left: 0.3em solid transparent;
+}

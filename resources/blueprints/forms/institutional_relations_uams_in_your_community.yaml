@@ -1,0 +1,139 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: first_name
+            field:
+              type: text
+              display: 'First Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: last_name
+            field:
+              type: text
+              display: 'Last Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: phone
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Mobile Phone Number'
+              validate:
+                - required
+          -
+            handle: email_address
+            field: uamsweb_common_contact.email_address
+            config:
+              validate:
+                - required
+          -
+            handle: event_title
+            field:
+              type: text
+              display: 'Event Title'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: event_details
+            field:
+              type: textarea
+              display: 'Event Details'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: date_of_event
+            field:
+              input_type: date
+              type: text
+              display: 'Date of Event'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: time_of_event
+            field:
+              input_type: time
+              type: text
+              display: 'Time of Event'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: street_address_of_event
+            field:
+              type: text
+              display: 'Street Address of Event'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: city_of_event
+            field:
+              type: text
+              display: 'City of Event'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: state
+            field: uamsweb_common_address.state
+            config:
+              display: 'State of Event'
+              validate:
+                - required
+          -
+            handle: zip
+            field: uamsweb_common_address.zip
+            config:
+              display: 'ZIP Code of Event'
+              validate:
+                - required
+          -
+            handle: county_of_event
+            field:
+              type: text
+              display: 'County of Event'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: number_of_attendees
+            field:
+              type: text
+              display: 'Number of Attendees'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: is_this_event_open_to_the_public
+            field:
+              options:
+                -
+                  key: 'Yes'
+                  value: null
+                -
+                  key: 'No'
+                  value: null
+              type: radio
+              display: 'Is this event open to the public?'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: attach_a_file_if_needed
+            field:
+              type: files
+              display: 'Attach a file if needed'
+              max_files: 1
+              localizable: false
+              validate:
+                - 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg'

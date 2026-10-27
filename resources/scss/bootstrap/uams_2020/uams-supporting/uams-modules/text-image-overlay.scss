@@ -1,0 +1,38 @@
+@use "sass:math";
+
+.text-image-overlay {
+
+    .item {
+        padding: $uams-module-padding-mobile;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #9d2235;
+        color: white;
+        min-height: 441px;
+        height: math.div(100vw, 4) * 3;
+        max-height: 100vh;
+
+        @include media-breakpoint-up(sm) {
+            min-height: 496px;
+            height: math.div(100vw, 8) * 3;
+            max-height: 100vh;
+        }
+
+        @include media-breakpoint-up(sm) {
+            padding: $uams-module-padding;
+        }
+
+        .text-container {
+            width: 35em;
+            max-width: 100%;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .btn {
+            color: #9d2235;
+            background-color: white;
+        }
+    }
+}

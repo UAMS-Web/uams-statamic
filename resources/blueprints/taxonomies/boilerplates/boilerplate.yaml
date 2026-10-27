@@ -1,0 +1,46 @@
+title: Boilerplate
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: 'Boilerplate Name'
+              instructions: 'An editor-facing name for this reusable boilerplate (e.g. "About UAMS", "About Northwest Arkansas").'
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: heading
+            field:
+              type: text
+              display: 'Boilerplate Heading'
+              instructions: 'The heading rendered above the boilerplate content. Leave blank to fall back to "More Information".'
+              localizable: false
+          -
+            handle: boilerplate
+            field: uamsweb_common.bard_boilerplate
+            config:
+              display: 'Boilerplate Content'
+              localizable: false
+              validate:
+                - required
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

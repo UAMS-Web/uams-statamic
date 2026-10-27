@@ -1,0 +1,31 @@
+title: 'UAMSWeb Posts, Behavior'
+fields:
+  -
+    handle: boilerplate_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include General Boilerplate'
+      validate:
+        - required
+      default: false
+  -
+    handle: boilerplate
+    field:
+      type: terms_search_index
+      display: 'General Boilerplate'
+      instructions: "Choose which boilerplate to append below this story. Leave empty to use this site's default boilerplate."
+      taxonomies:
+        - boilerplates
+      max_items: 1
+      create: false
+      localizable: false
+      if:
+        boilerplate_query: 'equals true'
+  -
+    handle: sticky_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Stick This Post to the Front Page'
+      validate:
+        - required
+      default: false

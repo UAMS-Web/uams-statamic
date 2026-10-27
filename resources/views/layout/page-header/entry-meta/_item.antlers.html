@@ -1,0 +1,26 @@
+{{#
+
+	@name Entry Meta Item: Dispatcher
+	@desc Wraps a single entry-meta item and delegates to the type-specific partial (date_modified,
+	date_published, author, reading_time, download, or text). Expects: type, label, value, icon,
+	itemprop; optional link_text, rel, target, use_download, download_filename for link types.
+
+	Always treat `icon` as an input parameter; callers should pass it explicitly.
+
+#}}
+
+{{ type = type ?? 'text' }}
+{{ icon = icon ?? null }}
+<div class="entry-meta-item">
+	{{ partial src="layout/page-header/entry-meta/{type}"
+		:label="label"
+		:value="value"
+		:itemprop="itemprop"
+		:link_text="link_text"
+		:rel="rel"
+		:target="target"
+		:use_download="use_download"
+		:download_filename="download_filename"
+		:icon="icon"
+	}}
+</div>

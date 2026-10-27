@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		{{# Fixed width ≈ Letter minus 1in L/R @page margins (6.5in @ 96px/in). #}}
+		<meta name="viewport" content="width=624, initial-scale=1">
+		<title>{{ title }}</title>
+		{{# Preload critical font weights so they fetch in parallel with the CSS bundle for the headless render #}}
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-Light.woff2" }}" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-Medium.woff2" }}" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="{{ vite_asset src="resources/fonts/firago/FiraGO-ExtraBold.woff2" }}" as="font" type="font/woff2" crossorigin>
+		{{# Determine which feature-specific assets to load based on template and blocks #}}
+
+			{{# Build an array of the current page's page builder block types #}}
+			{{ $page_builder_types = [] }}
+			{{ if page_builder }}
+				{{ page_builder scope="block" }}
+					{{ $page_builder_types = $page_builder_types | merge_array([type]) }}
+				{{ /page_builder }}
+			{{ /if }}
+
+			{{# Build an array of the current page's Bard set types #}}
+			{{ $content_types = [] }}
+			{{ if content }}
+				{{ content scope="block" }}
+					{{ $content_types = $content_types | merge_array([type]) }}
+				{{ /content }}
+			{{ /if }}
+
+			{{# Build layout assets in order (conditionally include feature SCSS at designated positions) #}}
+
+				{{# Initialize the Vite layout assets array #}}
+				{{ $vite_layout_assets = [] }}
+
+				{{# Base Statamic site JavaScript asset #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/site.js']) }}
+
+				{{# Live wp-block-file/embed remnant (UAMS-Web/uams-statamic-archive#1341) — loads before the uams_2020 theme bundle #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/wp-blocks.scss']) }}
+
+				{{# UAMS 2020 theme SCSS #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/app.scss']) }}
+
+				{{# UAMS 2020 theme + Font Awesome (same Vite entries as main layout) #}}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-theme-entry.js']) }}
+				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-fontawesome-entry.js']) }}
+
+		{{# Load the layout assets #}}
+		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073): the uams-web/statamic-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init`. As a classic deferred script ahead of the module bundle it runs first, in document order. #}}
+		<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script>
+		{{ vite :src="( $vite_layout_assets | join('|') )"}}
+	</head>
+	<body class="pdf-generator-body pdf-generator-news-release-body">
+		<main>
+			<article>
+				<header>
+					{{ if uams_multisite_settings:global_header_logo.horizontal.dark }}
+						<img
+							class="pdf-generator-logo"
+							src="{{ uams_multisite_settings:global_header_logo:horizontal:dark }}"
+							alt="{{ uams_multisite_settings:global_header_logo:horizontal:dark:alt }}"
+						/>
+					{{ /if }}
+					<hr aria-hidden="true">
+					<p class="pdf-generator-release-line">
+						<strong>FOR IMMEDIATE RELEASE:</strong>
+						<time datetime="{{ date | format('c') }}">{{ date | ap_style_date }}</time>
+					</p>
+					<hr aria-hidden="true">
+					<h1 class="pdf-generator-title">{{ title }}</h1>
+					{{ if excerpt }}
+						<p class="pdf-generator-excerpt" role="doc-subtitle">{{ excerpt }}</p>
+					{{ /if }}
+				</header>
+				<hr aria-hidden="true">
+				<div class="pdf-generator-entry-content">
+					{{ content = content | ensure_left_bard({{ dateline:separator }}) }}
+					{{ content scope="block" }}
+						{{ partial src="sets/{type}" }}
+					{{ /content }}
+					{{ if ( boilerplate ? boilerplate:boilerplate : uams_multisite_settings:boilerplate:boilerplate ) }}
+						{{
+							partial:posts/components/boilerplate_text
+							:boilerplate_enabled="( boilerplate_query | raw | bool_string )"
+							:boilerplate_heading="boilerplate ? boilerplate:heading : uams_multisite_settings:boilerplate:heading"
+							:boilerplate_content="( ( boilerplate ? boilerplate:boilerplate : uams_multisite_settings:boilerplate:boilerplate ) | strip_tags('a') )"
+						}}
+					{{ /if }}
+				</div>
+				<hr aria-hidden="true">
+				<footer class="pdf-generator-entry-footer">
+					{{
+						partial:posts/components/media_contacts
+						display_enabled="true"
+						include_links="false"
+					}}
+					<p class="end-marker" aria-hidden="true">###</p>
+				</footer>
+			</article>
+		</main>
+
+	</body>
+</html>

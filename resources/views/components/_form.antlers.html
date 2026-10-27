@@ -1,0 +1,40 @@
+{{# First let's check if this is after a submission, and if so, if it was successful. #}}
+{{# If it was, just show the success message. After all, we don't want them submitting again once they've gotten in touch! #}}
+{{ if success }}
+	<div class="alert alert-success" role="alert">
+		{{ success }}
+	</div>
+
+{{ else }}
+	{{# If we weren't successful, show any errors. If a fresh page load, there's no errors, so do nothing. #}}
+	{{ if errors }}
+		<div class="alert alert-danger" role="alert">
+			{{ errors }}
+				{{ value }}<br>
+			{{ /errors }}
+		</div>
+	{{ /if }}
+
+	{{# Loop through and render the form inputs with Alpine.js driver #}}
+	{{ partial:vendor/statamic/forms/fields }}
+
+	{{# Add the honeypot field. It must stay reachable by spam bots but hidden from
+		genuine users: tabindex="-1" drops it from keyboard tab order, autocomplete="off"
+		stops browser autofill, and aria-hidden="true" removes it from the accessibility
+		tree (so it is never announced — hence no aria-label). sr-only keeps it visually
+		hidden. A real user can no longer focus, autofill, or hear it, so they cannot
+		trip the trap and get silently spam-rejected. #}}
+	{{ $honeypot_name = honeypot ?? 'honeypot' }}
+	<input
+		type="text"
+		class="sr-only"
+		tabindex="-1"
+		autocomplete="off"
+		aria-hidden="true"
+		{{ $honeypot_name | attribute:name }}
+	>
+
+	{{# This is just a submit button. #}}
+	<button type="submit" class="btn btn-primary">Submit</button>
+
+{{ /if }}

@@ -1,0 +1,83 @@
+{{# Lists fieldtype (App\Fieldtypes\Lists, extends Statamic\Fieldtypes\Lists,
+    registered handle "list") — renders a dynamic list of text inputs the user
+    can add/remove. The submitted value is a 0-indexed array under the field
+    handle. `min_items` and `max_items` config (validated server-side by
+    Lists::rules()) gate the add/remove buttons client-side; server-side
+    validation is authoritative.
+
+    Initial items come from the field value (existing submission, blueprint
+    default) or default to a single empty row. The if/else split avoids an
+    Antlers inline-ternary edge case where an empty-array value emitted nothing.
+
+    Note: on a validation-failure re-render `value` is the raw resubmitted array
+    (from old()), so the emitted JSON must be escaped — `| to_json` escapes double
+    quotes but NOT single quotes, and the x-data attribute is single-quoted, so an
+    item like `it's` or `x' onmouseover='…` would otherwise break out of the
+    attribute (reflected XSS, UAMS-Web/uams-statamic-archive#881). `| sanitize` HTML-entity-encodes the JSON; the
+    browser decodes the entities back to valid JSON before Alpine parses x-data.
+
+    The single quoting is load-bearing in a second way (UAMS-Web/uams-statamic-archive#2060), though not for the reason
+    once recorded here (UAMS-Web/uams-statamic-archive#2131). `| sanitize` is `htmlspecialchars(…, ENT_QUOTES)` and DOES
+    encode double quotes, so the value branch below is already immune. The literal `"`
+    comes from the ELSE branch, which never passes through `sanitize`: in a double-quoted
+    attribute that truncates at the JSON's first `"` and the CSP parser reports
+    `Expected "]" but got EOF`. The state itself moved
+    into the registered `listField` component, because an inline object literal with
+    method shorthand is a CSP parse error that left this field rendering no inputs.
+    The composite inputs intentionally omit `x-model` / js_attributes — Alpine's
+    auto-bound `form.{{ handle }}` would clobber the array shape; the standard
+    `name="handle[idx]"` submission carries the data. #}}
+{{ if value && ( value | length ) > 0 }}
+	{{ initial_items_json = value | to_json | sanitize }}
+{{ else }}
+	{{ initial_items_json = '[""]' }}
+{{ /if }}
+<div
+	x-data='listField({{ initial_items_json }}, {{ max_items ?? 999 }}, {{ min_items ?? 1 }}, "{{ handle }}")'
+>
+	<template x-for="(item, idx) in items" :key="idx">
+		<div class="input-group mb-2">
+			<input
+				type="text"
+				class="{{
+					[
+						'form-control' => true,
+						'is-invalid' => error
+					] | classes | collapse_whitespace
+				}}"
+				:name="'{{ handle }}[' + idx + ']'"
+				x-model="items[idx]"
+				{{# `visibility: read_only` — see README.md in this directory.
+					The add/remove controls below are also suppressed so the user
+					can see the existing rows but can't change the list shape. #}}
+				{{ if visibility == 'read_only' }}
+					readonly
+					aria-readonly="true"
+				{{ /if }}
+			>
+			{{ unless visibility == 'read_only' }}
+				<div class="input-group-append">
+					<button
+						type="button"
+						class="btn btn-outline-secondary"
+						@click="remove(idx)"
+						:disabled="! canRemove()"
+						:aria-label="'{{ trans:Remove }} ' + (idx + 1)"
+					>
+						{{ trans key="Remove" }}
+					</button>
+				</div>
+			{{ /unless }}
+		</div>
+	</template>
+	{{ unless visibility == 'read_only' }}
+		<button
+			type="button"
+			class="btn btn-outline-primary btn-sm"
+			@click="add()"
+			x-show="canAdd()"
+		>
+			{{ trans key="Add" }}
+		</button>
+	{{ /unless }}
+</div>

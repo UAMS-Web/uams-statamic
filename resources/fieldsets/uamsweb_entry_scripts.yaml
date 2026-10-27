@@ -1,0 +1,29 @@
+title: 'UAMSWeb Entry Scripts Configuration'
+fields:
+  -
+    handle: scripts_head
+    field:
+      type: code
+      display: 'Header Scripts'
+      instructions: 'Output before the closing `head` tag, after sitewide header scripts.'
+      localizable: false
+  -
+    handle: scripts_body
+    field:
+      type: code
+      display: 'Body Scripts'
+      localizable: false
+  -
+    handle: scripts_body_position
+    field:
+      options:
+        -
+          key: bottom
+          value: 'Bottom: before closing body tag'
+        -
+          key: top
+          value: 'Top: after opening body tag'
+      default: bottom
+      type: select
+      display: 'Body Scripts Position'
+      localizable: false

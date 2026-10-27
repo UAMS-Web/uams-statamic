@@ -1,0 +1,90 @@
+{{#
+	@name Classified Posting Form
+	@desc The form a signed-in user posts or edits a classifieds listing with (UAMS-Web/uams-statamic-archive#2519).
+	      Rendered by `ClassifiedListingController` with `form_action`, `form_method`
+	      (null for a new listing, `PUT` for an edit), `values`, `categories`,
+	      `form_errors` and `max_images`. Every value is escaped: it is what a visitor
+	      typed, sent back after a failed submission.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		<div class="classified-form">
+			<h1>{{ title | entities }}</h1>
+
+			<p><a href="{{ my_listings_url }}">Back to my listings</a></p>
+
+			{{ if form_errors }}
+				<div class="alert alert-danger" role="alert">
+					<ul class="mb-0 list-unstyled">
+						{{ form_errors }}
+							<li>{{ value | entities }}</li>
+						{{ /form_errors }}
+					</ul>
+				</div>
+			{{ /if }}
+
+			<form method="POST" action="{{ form_action }}" enctype="multipart/form-data">
+				{{ csrf_field }}
+				{{ if form_method }}<input type="hidden" name="_method" value="{{ form_method }}">{{ /if }}
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-title">Title</label>
+					<input class="form-control" id="classified-title" type="text" name="title" value="{{ values:title | entities }}" maxlength="200" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-description">Description</label>
+					<textarea class="form-control" id="classified-description" name="description" rows="8" maxlength="10000">{{ values:description | entities }}</textarea>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-price">Price in dollars</label>
+					<input class="form-control" id="classified-price" type="number" name="price" min="0" step="0.01" value="{{ values:price | entities }}">
+					<div class="form-text">Leave blank, or enter 0, when a price does not apply. Neither is shown.</div>
+				</div>
+
+				<fieldset class="mb-3">
+					<legend class="form-label">Categories</legend>
+					{{ categories }}
+						<div class="form-check">
+							<input class="form-check-input" id="classified-category-{{ slug | entities }}" type="checkbox" name="classified_categories[]" value="{{ slug | entities }}"{{ if selected }} checked{{ /if }}>
+							<label class="form-check-label" for="classified-category-{{ slug | entities }}">{{ title | entities }}</label>
+						</div>
+					{{ /categories }}
+				</fieldset>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-images">Images</label>
+					<input class="form-control" id="classified-images" type="file" name="images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+					<div class="form-text">Up to {{ max_images }} images. The first is shown on the listing card.{{ if form_method }} Uploading new images replaces the current ones.{{ /if }}</div>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-contact-name">Contact name</label>
+					<input class="form-control" id="classified-contact-name" type="text" name="contact_name" value="{{ values:contact_name | entities }}" maxlength="200" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-contact-email">Contact email</label>
+					<input class="form-control" id="classified-contact-email" type="email" name="contact_email" value="{{ values:contact_email | entities }}" maxlength="200" required>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-contact-phone">Contact phone</label>
+					<input class="form-control" id="classified-contact-phone" type="tel" name="contact_phone" value="{{ values:contact_phone | entities }}" maxlength="50">
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label" for="classified-location">Location</label>
+					<input class="form-control" id="classified-location" type="text" name="location" value="{{ values:location | entities }}" maxlength="200">
+				</div>
+
+				<button class="btn btn-primary" type="submit">{{ if form_method }}Save changes{{ else }}Post listing{{ /if }}</button>
+			</form>
+		</div>
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

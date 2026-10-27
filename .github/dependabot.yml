@@ -1,0 +1,50 @@
+# cspell:ignore gitsubmodule
+# Weekly version updates (UAMS-Web/uams-statamic-archive#2852). Dependabot alerts and security updates are
+# enabled at the organization level and do not depend on this file; this file
+# adds the routine updates, which run only where a repository commits it. Each
+# pull request it opens goes through the same pre-merge check as any other
+# change.
+#
+# One entry per package ecosystem. Minor and patch updates are grouped per
+# entry, so a week produces a few pull requests rather than one per package; a
+# major update stays in a pull request of its own.
+#
+# The five submodules (content, users, public/assets, app/private/assets and
+# resources/forms) are content, assets and form definitions, not dependencies,
+# so gitsubmodule gets no entry. composer resolves the private
+# uams-web/wordpress-importer through the organization-level Dependabot access
+# grant, so no registry is declared here.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+    groups:
+      composer-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+    groups:
+      github-actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch

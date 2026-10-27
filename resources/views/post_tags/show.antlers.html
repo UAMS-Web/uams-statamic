@@ -1,0 +1,23 @@
+{{#
+	@name Post tag archive (structured collection)
+	@desc Renders a `post_tags` *collection* entry as a tag archive (UAMS-Web/uams-statamic-archive#2532): a
+	      descriptive, entry-named title + <h1> — "Posts Tagged with X" — via the
+	      shared UAMS-Web/uams-statamic-archive#1145 term-archive shell (keyed off `taxonomy`), then the tag's posts
+	      newest-first, sourced from the post's `post_tags` entries reference via the
+	      `posts_in_post_tag` scope, with an empty state (UAMS-Web/uams-statamic-archive#1171/UAMS-Web/uams-statamic-archive#1172).
+	      `post_tags` was a flat taxonomy whose terms existed on every site it was
+	      enabled for, so the importer had to prefix each title with its site name to
+	      tell them apart, and that prefix reached this heading. As a site-scoped
+	      collection each entry lives only on its own site and carries its plain name.
+	      Tags are flat in practice, so there is no child list here, unlike
+	      `post_categories/show`. The structure is deliberately NOT capped at depth 1:
+	      a depth-1 collection is "orderable", and Statamic's UpdateStructuredEntryUris
+	      skips orderable collections on a tree save, so a newly added tag would never
+	      get a URI and its archive would 404. `post_categories` and `people_groups`
+	      (UAMS-Web/uams-statamic-archive#1863) set no cap either.
+#}}
+{{ partial:taxonomies/term_archive taxonomy="post_tags" }}
+	{{ collection:posts query_scope="posts_in_post_tag" tag="{{ id }}" sort="date:desc" paginate="10" as="posts" }}
+		{{ partial:taxonomies/term_archive_posts }}
+	{{ /collection:posts }}
+{{ /partial:taxonomies/term_archive }}

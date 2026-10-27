@@ -1,0 +1,15 @@
+title: 'UAMSWeb Bard Set, Calculator'
+fields:
+  -
+    handle: calculator_entry
+    field:
+      type: entries
+      display: 'Calculator Entry'
+      collections:
+        - calculators
+      max_items: 1
+      mode: stack
+      localizable: false
+      validate:
+        - required
+      search_index: calculators

@@ -1,0 +1,87 @@
+title: 'UAMSWeb Common Reusable Fields, Status and Visibility'
+fields:
+  -
+    handle: status_and_visibility
+    field:
+      options:
+        -
+          key: draft
+          value: "Draft\_— Not ready to publish"
+        -
+          key: pending
+          value: "Pending\_— Waiting for review before publishing"
+        -
+          key: private
+          value: "Private\_— Only visible to site admins and editors"
+        -
+          key: scheduled
+          value: "Scheduled\_— Publish automatically on a chosen date"
+        -
+          key: published
+          value: "Published\_— Visible to everyone"
+      default: draft
+      type: select
+      display: 'Status and Visibility'
+      localizable: false
+      validate:
+        - required
+      hide_display: true
+  -
+    handle: date
+    field:
+      type: date
+      display: 'Publish Date'
+      time_enabled: true
+      default: now
+      required: true
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: date_scheduled
+    field:
+      type: date
+      display: 'Publish Date'
+      time_enabled: true
+      default: now
+      if:
+        status_and_visibility: 'equals scheduled'
+      required: true
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: password_protected
+    field:
+      type: toggle
+      display: 'Password Protected'
+      instructions: 'Only visible to those who know the password'
+      localizable: false
+      if:
+        status_and_visibility: 'contains_any draft,pending,scheduled,published'
+  -
+    handle: visibility_password
+    field:
+      type: text
+      display: 'Visibility Password'
+      instructions: |-
+        Enter a secure password.
+
+        For security, the password is hashed when the entry is saved. It cannot be read back afterward — the field then holds the hash, so it shows as a long run of dots that does not match the length of the password you typed.
+
+        To update the password, re-enter a new one.
+      input_type: password
+      localizable: false
+      if:
+        status_and_visibility: 'contains_any draft,pending,scheduled,published'
+        password_protected: 'equals true'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: is_password_hashed
+    field: uamsweb_common.is_password_hashed
+    config:
+      localizable: false

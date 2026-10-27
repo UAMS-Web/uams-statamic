@@ -1,0 +1,56 @@
+title: 'Geographic Location'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: dateline
+            field:
+              placeholder: 'e.g., LITTLE ROCK, Ark.'
+              input_mask_autofix: false
+              input_mask_eager: false
+              input_mask_overwrite: false
+              type: text
+              display: 'Dateline Text'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_administrative_area
+              type: entries
+              display: 'Schema Object for the Geographic Location'
+              instructions: 'Select a schema object for the geographic location, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:AdministrativeArea'
+          -
+            import: uamsweb_schema_basic
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

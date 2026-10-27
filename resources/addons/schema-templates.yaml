@@ -1,0 +1,6 @@
+site_defaults:
+  default:
+    enabled: true
+    subject_entry: 58185f50-22a4-48e7-9575-b86a1fdffef9
+    website_entry: fba76c84-b260-4080-9077-c87093cda74a
+    webpage_entry: 8c6025f0-3ff5-4724-ae79-41855dab2ff8

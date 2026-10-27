@@ -1,0 +1,27 @@
+{
+    "_comment": [
+        "Expected skipped-test counts per band (#1744).",
+        "",
+        "The gate treats 'zero failures' as success, so a run that silently skips tests",
+        "reports PASS having tested less than it should have. Skips are how this suite",
+        "degrades when content or Stache state is unavailable (#1738, #1740), which is",
+        "deliberate — but it makes coverage loss invisible. These counts make an",
+        "unexpected skip a failure instead of silence.",
+        "",
+        "Raising a number here is a deliberate, reviewable act. If a band exceeds its",
+        "baseline, the default assumption is a real regression — a starved worker, a",
+        "missing content submodule, a guard firing on a lookup that should have",
+        "resolved. Update the baseline only once you know why the new skip is correct,",
+        "and say so in the PR."
+    ],
+    "bands": {
+        "parallel": {
+            "expected": 3,
+            "why": "Two SchemaThingFromRelationship cases skip on a missing subject_matter::cellulitis term. One StoredSvgHazardScanTest case skips because CI checks out only the content/ and users/ submodules, not the binary-heavy public/assets one it scans (#1739) — the scanner's own detection logic is covered unconditionally by tests/Unit/Support/Imaging/SvgHazardScannerTest.php, so only the corpus sweep depends on that submodule. The three RegistrantRecordsAreGitIgnoredTest cases are deliberately NOT in this count: both gates check out the users/ submodule since #2477, so they run, and a gate that stops checking it out shows up here as three unexpected skips rather than as a silent pass."
+        },
+        "serial": {
+            "expected": 0,
+            "why": "The serial tail runs with content present and skips nothing."
+        }
+    }
+}

@@ -1,0 +1,36 @@
+{{#
+	@name Clinical Locations List Body
+	@desc The shared card-list body for the clinical_locations directory — empty
+	      state, the card grid, and pagination. Rendered inside a
+	      `collection:clinical_locations` tag (which provides `locations`,
+	      `no_results`, and `paginate`), by both the collection index listing (UAMS-Web/uams-statamic-archive#574)
+	      and the Find-a-Doc locations page-builder block (UAMS-Web/uams-statamic-archive#63). Pass
+	      `fad_facet="true"` to have each card emit the region / location-type facet
+	      data-* the shared AJAX engine (UAMS-Web/uams-statamic-archive#1242) consumes.
+#}}
+
+{{ if no_results }}
+	<p class="locations-empty">No locations found.</p>
+{{ else }}
+	<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+		{{ locations }}
+			{{ partial:clinical_locations/card :fad_facet="fad_facet" }}
+		{{ /locations }}
+	</div>
+
+	{{ if paginate:total_pages > 1 }}
+		<nav class="locations-pagination" aria-label="Locations pagination">
+			<ul class="pagination">
+				{{ if paginate:prev_page }}
+					<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+				{{ /if }}
+				<li class="page-item active" aria-current="page">
+					<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+				</li>
+				{{ if paginate:next_page }}
+					<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+				{{ /if }}
+			</ul>
+		</nav>
+	{{ /if }}
+{{ /if }}

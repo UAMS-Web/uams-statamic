@@ -1,0 +1,11 @@
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+		{{ page_builder scope="block" }}
+			{{ partial src="page_builder/{type}" }}
+		{{ /page_builder }}
+		{{ partial:layout/navigation/subpages/subpages background_color="bg-auto" }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

@@ -1,0 +1,31 @@
+// -----------------------------------------------------------------------------
+// Keyboard focus visibility — WCAG 2.4.7 Focus Visible
+// -----------------------------------------------------------------------------
+//
+// `uams-focus-visible()` restores an accessible focus indicator on interactive
+// elements that would otherwise suppress the browser default `outline`.
+// `:focus-visible` scopes the ring to keyboard / assistive-tech navigation, so
+// pointer clicks stay ring-free while every Tab stop is clearly shown.
+//
+// The ring colour flows through the `--uams-focus-ring` CSS custom property so a
+// component can override it, with the UAMS brand blue compiled in as the
+// fallback — a 2px solid ring at 2px offset clears the ≥ 3:1 non-text contrast
+// bar (WCAG 1.4.11) against the light backgrounds these controls sit on.
+//
+// Reach for this mixin instead of a bare `outline: none` on any new interactive
+// element. `border-radius` is deliberately left untouched so focus never causes
+// a shape jump — the outline follows the element's own corner radius.
+
+$uams-focus-ring: $blue !default; // #22739d — UAMS brand blue
+
+@mixin uams-focus-visible($offset: 2px) {
+    // Suppress the pointer-driven ring; :focus-visible restores it for keyboard.
+    &:focus {
+        outline: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--uams-focus-ring, #{$uams-focus-ring});
+        outline-offset: $offset;
+    }
+}

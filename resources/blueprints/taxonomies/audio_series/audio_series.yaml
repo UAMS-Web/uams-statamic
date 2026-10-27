@@ -1,0 +1,71 @@
+title: 'Audio Series'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: subtype
+            field:
+              type: select
+              display: Subtype
+              instructions: 'What kind(s) of audio series is this? A podcast episode model turns on when `podcast` is selected. A series may be more than one kind (e.g. a show distributed both as a podcast and on radio).'
+              multiple: true
+              clearable: true
+              options:
+                podcast: Podcast
+                radio: Radio
+              localizable: false
+          -
+            handle: description
+            field:
+              type: textarea
+              display: Description
+              instructions: 'A short description of the podcast series, used for its schema.org (`PodcastSeries`) output.'
+              localizable: false
+              if:
+                subtype: 'contains podcast'
+          -
+            handle: boilerplate
+            field: uamsweb_common.bard_boilerplate
+            config:
+              display: 'Audio Series Boilerplate'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: genre
+            field: uamsweb_common.genre
+            config:
+              validate:
+                - required
+          -
+            handle: about
+            field: uamsweb_common.subject_matter
+            config:
+              display: 'Primary Subject Matter'
+              instructions: 'One or more concepts common to every segment in the series.'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

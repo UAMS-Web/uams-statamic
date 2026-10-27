@@ -1,0 +1,136 @@
+<template>
+	<div class="text-phonetic-pair-fieldtype min-w-0">
+		<GroupFieldtypeShell
+			:border="shellBorder"
+			:body-class="shellBodyClass"
+		>
+			<template v-if="includePhoneticInstructions">
+				<PhoneticTextInstructions />
+			</template>
+
+			<TextPhoneticPairInput
+				:pair="current"
+				:text-label="resolvedTextLabel"
+				:phonetic-label="resolvedPhoneticLabel"
+				:text-id="'field_'+handle+'_tp_text'"
+				:pho-id="'field_'+handle+'_tp_pho'"
+				:text-name="handle+'[text]'"
+				:pho-name="handle+'[phonetic_text]'"
+				:quote-straight-on-text="quoteStraightOnText"
+				:read-only="isReadOnly"
+				:text-errors="errs('text')"
+				:phonetic-errors="errs('phonetic_text')"
+				:text-required="mustRequireText"
+				:phonetic-required="mustRequirePhonetic"
+				:split-inputs="splitInputs"
+				@update:pair="onPairUpdate"
+			/>
+		</GroupFieldtypeShell>
+	</div>
+</template>
+
+<script>
+import { inject } from 'vue';
+import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
+import { publishContextKey } from '@statamic/cms/ui';
+import PhoneticTextInstructions from './partials/PhoneticTextInstructions.vue';
+import TextPhoneticPairInput from './partials/TextPhoneticPair.vue';
+import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+
+function emptyPair() {
+	return { text: '', phonetic_text: '' };
+}
+
+export default {
+	name: 'TextPhoneticPairFieldtype',
+	components: {
+		GroupFieldtypeShell,
+		PhoneticTextInstructions,
+		TextPhoneticPairInput
+	},
+	mixins: [Fieldtype],
+	setup() {
+		const publishContext = inject(publishContextKey, null);
+		return { publishContext };
+	},
+	computed: {
+		fieldValidateHasRequired() {
+			const v = this.config?.validate;
+			return Array.isArray(v) && v.includes('required');
+		},
+		fieldMarkedRequired() {
+			return !!(this.config?.required || this.fieldValidateHasRequired);
+		},
+		mustRequireText() {
+			return this.fieldMarkedRequired || !!this.config?.require_text;
+		},
+		mustRequirePhonetic() {
+			return !!this.config?.require_phonetic;
+		},
+		shellBorder() {
+			return this.config?.border !== false;
+		},
+		shellBodyClass() {
+			const c = this.config?.body_class;
+			return typeof c === 'string' && c.trim() !== '' ? c.trim() : 'space-y-6';
+		},
+		quoteStraightOnText() {
+			return !!this.config?.quote_straight_on_text;
+		},
+		splitInputs() {
+			return this.config?.split_inputs !== false;
+		},
+		/**
+		 * Blueprint `include_phonetic_instructions` (default true): hide IPA help
+		 * Alert when false (matches PersonName fieldtype).
+		 */
+		includePhoneticInstructions() {
+			return this.config?.include_phonetic_instructions !== false;
+		},
+		resolvedTextLabel() {
+			const raw = this.config?.text_label;
+			if (typeof raw === 'string' && raw.trim() !== '') {
+				return raw.trim();
+			}
+			return this.__('statamic::fieldtypes.text_phonetic_pair.field.default_text_label');
+		},
+		resolvedPhoneticLabel() {
+			const raw = this.config?.phonetic_label;
+			if (typeof raw === 'string' && raw.trim() !== '') {
+				return raw.trim();
+			}
+			return this.__('statamic::fieldtypes.text_phonetic_pair.field.default_phonetic_label');
+		},
+		current() {
+			const v = this.value;
+			const base = emptyPair();
+			if (!v || typeof v !== 'object' || Array.isArray(v)) {
+				return base;
+			}
+			return {
+				...base,
+				...v,
+				text: typeof v.text === 'string' ? v.text : '',
+				phonetic_text:
+					typeof v.phonetic_text === 'string' ? v.phonetic_text : ''
+			};
+		}
+	},
+	methods: {
+		errs(subPath) {
+			const errs =
+				this.publishContext?.errors &&
+				typeof this.publishContext.errors === 'object' &&
+				'value' in this.publishContext.errors
+					? this.publishContext.errors.value
+					: this.publishContext?.errors;
+			if (!errs) return [];
+			const key = `${this.handle}.${subPath}`;
+			return errs[key] || [];
+		},
+		onPairUpdate(pair) {
+			this.update(pair);
+		}
+	}
+};
+</script>

@@ -1,0 +1,72 @@
+// Article reactions block: "Was This Article Helpful?" like/dislike.
+#article-reactions {
+    .card-deck {
+        justify-content: center;
+
+        .card {
+            transition:
+                border-color 0.15s ease-in-out,
+                background-color 0.15s ease-in-out,
+                box-shadow 0.15s ease-in-out;
+
+            .card-img-top {
+                padding: $card-spacer-x $card-spacer-x 0 $card-spacer-x;
+                text-align: center;
+                font-size: $h3-font-size;
+                color: $text-muted;
+                transition: color 0.15s ease-in-out;
+            }
+
+            .card-body {
+                text-align: center;
+            }
+
+            .card-footer {
+                font-size: $font-size-sm;
+                text-align: center;
+            }
+        }
+
+        // Active vote state (UAMS-Web/uams-statamic-archive#1518). `resources/js/kb-article-engagement.js` sets
+        // `aria-pressed="true"` on the trigger the visitor has selected (from the
+        // engagement snapshot on load and after every vote). A sighted returning
+        // reader needs a visual cue *beyond* `aria-pressed` that their vote is
+        // recorded, so a second click reads as "retract my vote", not "vote again".
+        //
+        // Three channels carry the state so it is never conveyed by color alone
+        // (WCAG 1.4.1): a bold label (typographic), a 2px inset ring (structural),
+        // and a tinted card fill — with the brand color reinforcing. The fill is an
+        // OPAQUE 7% tint (`mix`, not a translucent `rgba`) so the label's contrast
+        // holds on any section band: the block renders on `bg-white` OR `bg-gray`
+        // (`knowledge_bases/default.antlers.html`), and a translucent fill lets the
+        // gray band show through, dropping the like label to 4.46:1. On the opaque
+        // tint the label clears AA (green `#1b7d3d` 4.72:1, red `#c61029` 5.30:1);
+        // the ring clears the 3:1 non-text bar (WCAG 1.4.11).
+        $reaction-active-colors: (
+            'like': $success,
+            'dislike': $danger,
+        );
+
+        @each $reaction, $color in $reaction-active-colors {
+            // `:has()` lifts the trigger's pressed state to the whole card so the
+            // icon, label, and frame agree.
+            .card:has([data-reaction='#{$reaction}'][aria-pressed='true']) {
+                border-color: $color;
+                background-color: mix($color, #fff, 7%);
+                box-shadow: inset 0 0 0 2px $color;
+
+                .card-img-top {
+                    color: $color;
+                }
+            }
+
+            // The typographic cue on the trigger's own label — the guaranteed
+            // baseline where `:has()` is unsupported (progressive enhancement over
+            // a JS-only feature), and the primary non-color signal everywhere.
+            [data-reaction='#{$reaction}'][aria-pressed='true'] {
+                color: $color;
+                font-weight: $font-weight-bold;
+            }
+        }
+    }
+}

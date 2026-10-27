@@ -1,0 +1,27 @@
+{{#
+	@name UAMS Block Item Button Link
+	@desc The button link element in items in UAMS page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+{{ if email_address }}
+
+{{# Define the Link Attribute Variables #}}
+
+	{{# href #}}
+
+		{{ $block_item_email_href_value = 'mailto:' + email_address }}
+		{{ $block_item_email_href_value += email_subject ? ( '?subject=' + ( email_subject | rawurlencode ) ) : '' }}
+
+{{# Construct the Link Text #}}
+
+	{{ email_prepend = ( email_prepend === '' ) ? null : ( email_prepend ?? 'Email' ) }}
+	{{ $block_item_email_text_prepend = email_prepend }}
+
+{{# Render the Structure #}}
+
+						<a
+							href="{{ $block_item_email_href_value }}"
+							{{ block:block_heading | attribute:data-moduletitle }}
+						>{{ $block_item_email_text_prepend }} <span class="no-break">{{ email_address }}</span></a>
+
+{{ /if }}

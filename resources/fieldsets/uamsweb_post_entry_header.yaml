@@ -1,0 +1,28 @@
+title: 'UAMSWeb Posts, Entry Header'
+fields:
+  -
+    handle: title_short
+    field: uamsweb_common.title_short
+    config:
+      instructions: |-
+        The short title is used in place of the full headline in all references other than the entry webpage header.
+
+        The text will be limited to 43 characters.
+      localizable: false
+  -
+    handle: excerpt
+    field: uamsweb_post_settings.excerpt
+    config:
+      localizable: false
+  -
+    handle: excerpt_display_query
+    field: uamsweb_post_settings.excerpt_display_query
+    config:
+      localizable: false
+  -
+    handle: title_options
+    field: uamsweb_header_selector_basic.title_options
+    config:
+      validate:
+        - required
+      visibility: hidden

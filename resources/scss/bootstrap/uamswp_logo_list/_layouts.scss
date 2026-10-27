@@ -1,0 +1,22 @@
+.logo-list {
+    .item-img-desaturate {
+        img {
+            -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+            filter: grayscale(100%);
+        }
+    }
+    .item-list {
+        .item {
+            .item-body {
+                .item-label {
+                    color: $body-color-lightest;
+                    font-style: italic;
+                    line-height: $headings-line-height;
+                }
+            }
+        }
+    }
+}
+
+@import "layouts/grid";
+@import "layouts/vertical";

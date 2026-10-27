@@ -1,0 +1,121 @@
+title: 'UAMSWeb Header Options, Hero'
+fields:
+  -
+    handle: hero
+    field:
+      max_sets: 4
+      type: replicator
+      display: 'Hero Slides'
+      instructions: 'The hero does not auto-rotate. When multiple slides are added, visitors see the first slide on page load and can browse the rest via the indicator dots or arrow controls. Order slides so the most important one is first.'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Slide Group'
+          sets:
+            new_set:
+              display: 'New Slide'
+              fields:
+                -
+                  handle: text_info_section
+                  field:
+                    type: subsection
+                    display: 'Text Info'
+                    localizable: false
+                -
+                  handle: heading
+                  field:
+                    type: text
+                    display: Heading
+                    instructions: 'There is a 49-character limit.'
+                    character_limit: 49
+                    validate:
+                      - required
+                    localizable: false
+                -
+                  handle: body
+                  field:
+                    type: textarea
+                    display: Body
+                    instructions: 'There is a 177-character limit.'
+                    character_limit: 177
+                    validate:
+                      - required
+                    localizable: false
+                -
+                  handle: button_text
+                  field: uamsweb_common_link.link_text
+                  config:
+                    validate:
+                      - required
+                    instructions: 'There is a 29-character limit.'
+                    character_limit: 29
+                -
+                  handle: button_url
+                  field: uamsweb_common_link.link_url
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: button_target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: button_link_description
+                  field: uamsweb_common_link.link_description
+                -
+                  handle: image_info_section
+                  field:
+                    type: subsection
+                    display: 'Image Info'
+                    instructions: 'If a tablet or mobile image is not provided, the desktop image will automatically be cropped to fit these formats. This automatic cropping could lead to undesirable results.'
+                    localizable: false
+                -
+                  handle: image_desktop
+                  field: uamsweb_common_images.image_1435x768
+                  config:
+                    display: 'Desktop Image'
+                    instructions: 'Recommended dimensions: 2870x1536 or larger. Minimum dimensions: 1435x768. The image will be automatically cropped to a 1.8685:1 aspect ratio.'
+                    validate:
+                      - required
+                      - 'dimensions:min_width=1435,min_height=768'
+                -
+                  handle: image_tablet
+                  field: uamsweb_common_images.image_578x409
+                  config:
+                    display: 'Tablet Image'
+                    instructions: 'Recommended dimensions: 1156x818 or larger. Minimum dimensions: 578x409. The image will be automatically cropped to a 1.4132:1 aspect ratio.'
+                -
+                  handle: image_mobile
+                  field: uamsweb_common_images.image_768x432
+                  config:
+                    display: 'Mobile Image'
+                    instructions: 'Recommended dimensions: 1536x864 or larger. Minimum dimensions: 768x432. The image will be automatically cropped to a 16:9 aspect ratio.'
+                -
+                  handle: image_alt_text
+                  field: uamsweb_common_images.image_alt_text_override
+                -
+                  handle: color_option_section
+                  field:
+                    type: subsection
+                    display: 'Color Option'
+                    localizable: false
+                -
+                  handle: background_color
+                  field: uamsweb_common_block.background_color_vivid_auto
+                  config:
+                    display: 'Background Color'
+                    validate:
+                      - required
+                -
+                  handle: display_media_credit
+                  field: uamsweb_common.true_false
+                  config:
+                    display: 'Display Media Credit'
+                    instructions: "Overlay this slide's desktop image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the slide's headline, so it is off by default."
+                    default: false
+                    localizable: false

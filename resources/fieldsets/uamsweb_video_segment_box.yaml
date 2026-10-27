@@ -1,0 +1,27 @@
+title: 'UAMSWeb Video Segment, Box'
+fields:
+  -
+    handle: url
+    field: uamsweb_common_video.video_url
+    config:
+      display: 'Box.com Video URL'
+      instructions: |-
+        Use a **Box.com** HTTPS **Direct link** under `/shared/static/` with a video file extension (for example `.mp4`).
+
+        **Box (summary):** In Box, turn on the shared link (people with the link, can view and download), open **Link Settings**, turn **off** link expiration, turn **on** allow download, then copy the **Direct link** value and paste it here. The URL must start with `https://app.box.com/shared/static/`.
+      placeholder: 'e.g., https://app.box.com/shared/static/yourfile.mp4'
+      validate:
+        - required
+        - box_shared_static_video_url
+  -
+    handle: aspect_ratio
+    field: uamsweb_common_video.aspect_ratio
+    config:
+      validate:
+        - required
+  -
+    import: uamsweb_video_caption
+  -
+    import: uamsweb_post_video_segment
+  -
+    import: uamsweb_post_creator_video

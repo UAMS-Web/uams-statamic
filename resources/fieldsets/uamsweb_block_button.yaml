@@ -1,0 +1,86 @@
+title: 'UAMSWeb Block, Button'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'This heading is for accessibility only and is not visible.'
+      default: 'Button'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: button_text
+    field: uamsweb_common_link.link_text
+    config:
+      display: 'Button Label'
+      instructions: 'There is a 40-character limit.'
+      character_limit: 40
+      replicator_preview: true
+      validate:
+        - required
+  -
+    handle: button_url
+    field: uamsweb_common_link.link_url
+    config:
+      display: 'Button Link'
+      validate:
+        - required
+  -
+    handle: button_target
+    field: uamsweb_common_link.new_window_query
+  -
+    handle: button_link_description
+    field: uamsweb_common_link.link_description
+    config:
+      replicator_preview: false
+  -
+    handle: button_style
+    field:
+      options:
+        -
+          key: solid
+          value: 'Solid'
+        -
+          key: outline
+          value: 'Outline'
+      default: solid
+      type: radio
+      display: 'Button Style'
+      instructions: 'Solid renders a filled UAMS button; Outline renders an outlined button.'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: button_alignment
+    field:
+      options:
+        -
+          key: left
+          value: 'Left'
+        -
+          key: center
+          value: 'Center'
+        -
+          key: right
+          value: 'Right'
+      default: left
+      type: radio
+      display: 'Button Alignment'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required

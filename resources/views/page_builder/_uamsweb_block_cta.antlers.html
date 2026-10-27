@@ -1,0 +1,111 @@
+{{#
+	@name UAMS Call-to-Action Bar
+	@desc The UAMS Call-to-Action Bar page builder block.
+	@set page.page_builder.uamsweb_block_cta
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Block Class #}}
+
+		{{ $cta_bar_class = 'cta-bar' }}
+		{{ $cta_bar_class += layout ? ( ' ' + layout ) : '' }}
+		{{ if size == 'small' }}
+			{{ $cta_bar_class += ' cta-bar-sm' }}
+		{{ elseif size == 'large' }}
+			{{ $cta_bar_class += ' extra-padding cta-bar-lg' }}
+		{{ /if }}
+		{{ $cta_bar_class += ( action_type == 'none' ) ? ' no-link' : '' }}
+
+	{{# Only render if all required fields (and conditionals) have values #}}
+
+		{{ $block_valid = block_heading && body && action_type && layout && size && background_color && background_image_query }}
+		{{ if $block_valid && action_type == 'url' }}
+			{{ $block_valid = button_text && button_url }}
+		{{ /if }}
+		{{ if $block_valid && action_type == 'phone' }}
+			{{ $block_valid = phone_prepend && phone }}
+		{{ /if }}
+		{{ if $block_valid && action_type == 'sms' }}
+			{{ $block_valid = sms_prepend && sms_short_code && sms_phone_type_group }}
+		{{ /if }}
+		{{ if $block_valid && action_type == 'email' }}
+			{{ $block_valid = email_prepend && email_address }}
+		{{ /if }}
+		{{ if $block_valid && background_image_query }}
+			{{ $block_valid = background_image }}
+		{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$cta_bar_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ if background_image_query && background_image }}
+			<style nonce="{{ csp_nonce }}">
+				#{{ block_id }}:before {
+					--bg-xxs:    url("{{ glide :src='background_image:url' w='576'  h='288'  fit='crop_focal' absolute='true' }}");
+					--bg-xxs-2x: url("{{ glide :src='background_image:url' w='1152' h='576'  fit='crop_focal' absolute='true' }}");
+					--bg-xs:     url("{{ glide :src='background_image:url' w='768'  h='384'  fit='crop_focal' absolute='true' }}");
+					--bg-xs-2x:  url("{{ glide :src='background_image:url' w='1536' h='768'  fit='crop_focal' absolute='true' }}");
+					--bg-sm:     url("{{ glide :src='background_image:url' w='992'  h='496'  fit='crop_focal' absolute='true' }}");
+					--bg-sm-2x:  url("{{ glide :src='background_image:url' w='1984' h='992'  fit='crop_focal' absolute='true' }}");
+					--bg-md:     url("{{ glide :src='background_image:url' w='1200' h='600'  fit='crop_focal' absolute='true' }}");
+					--bg-md-2x:  url("{{ glide :src='background_image:url' w='2400' h='1200' fit='crop_focal' absolute='true' }}");
+					--bg-lg:     url("{{ glide :src='background_image:url' w='1500' h='750'  fit='crop_focal' absolute='true' }}");
+					--bg-lg-2x:  url("{{ glide :src='background_image:url' w='3000' h='1500' fit='crop_focal' absolute='true' }}");
+					--bg-xl:     url("{{ glide :src='background_image:url' w='1921' h='961'  fit='crop_focal' absolute='true' }}");
+					--bg-xl-2x:  url("{{ glide :src='background_image:url' w='3842' h='1921' fit='crop_focal' absolute='true' }}");
+					--bg-xxl:    url("{{ glide :src='background_image:url' w='2560' h='1280' fit='crop_focal' absolute='true' }}");
+					--bg-xxl-2x: url("{{ glide :src='background_image:url' w='5120' h='2560' fit='crop_focal' absolute='true' }}");
+				}
+			</style>
+		{{ /if }}
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12">
+				<div class="inner-container">
+					<div class="cta-heading">
+						<h2>{{ block_heading | widont }}</h2>
+					</div>
+					<div class="cta-body">
+						<div class="text-container">
+							{{ body }}
+								{{ partial src="sets/{type}" }}
+							{{ /body }}
+						</div>
+						{{ if action_type == 'url' }}
+							<div class="btn-container">
+								{{ $block_item_button_class = ( size == 'large' ) ? 'btn-lg' : '' }}
+								{{ partial:page_builder/components/item_button :block_item_button_class="$block_item_button_class" }}
+							</div>
+						{{ elseif action_type == 'phone' }}
+							<div class="btn-container">
+							{{ partial:page_builder/components/item_tel }}
+							</div>
+						{{ elseif action_type == 'sms' }}
+							<div class="btn-container">
+							{{ partial:page_builder/components/item_sms }}
+							</div>
+						{{ elseif action_type == 'email' }}
+						<div class="btn-container">
+						{{ partial:page_builder/components/item_email }}
+						</div>
+						{{ /if }}
+					</div>
+				</div>
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+		{{# Opt-in media credit over the background image, emitted last so assistive tech reads it
+		    after the block content (WCAG 1.3.2). Absolutely positioned inside the `#{block_id}`
+		    module (`position: relative`); the scrim tint follows the block's `background_color`
+		    class. Off by default (`display_media_credit`). #}}
+		{{ if background_image_query && display_media_credit && background_image:creator }}
+			<p class="media-credit-overlay">{{ partial:typography/media_credit :creator="background_image:creator" :creator_organization="background_image:creator_organization" }}</p>
+		{{ /if }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

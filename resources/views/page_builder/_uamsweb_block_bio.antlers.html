@@ -1,0 +1,77 @@
+{{#
+	@name UAMS Bio
+	@desc The UAMS Bio page builder block (UAMS-Web/uams-statamic-archive#1169) — a clone of the UAMS Content
+	      block with a right-aligned image and no inline "add media" control on the
+	      text field. The image floats right at roughly half the text width; a Bio
+	      with no image renders the text with no empty image slot.
+
+	      Optionally connect a Person entry (UAMS-Web/uams-statamic-archive#1418): when `bio_person` is set the
+	      manual Image/Body fields are hidden and the block sources the portrait
+	      (with a `portrait_wide` fallback) and the selected `bio*` field from that
+	      person — keeping the bio DRY. An empty selected bio renders nothing.
+	@set page.page_builder.uamsweb_block_bio
+#}}
+
+{{# Render if the heading has a value and there is a bio source: a connected person
+    or the manual body (the manual body is hidden when a person is connected). #}}
+	{{ $bio_class = 'content-block bio-block' }}
+	{{ $block_valid = block_heading && ( bio_person || body ) }}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$bio_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header }}
+			<div class="module-body">
+				{{ if bio_person }}
+					{{# Single source of truth (UAMS-Web/uams-statamic-archive#1418): portrait + selected biography from
+					    the connected person. `bio_field` (from the block scope) names which
+					    of the 12 bio variants to render. #}}
+					{{ bio_person }}
+						{{ $person_bio = switch(
+							( bio_field == 'bio' ) => bio,
+							( bio_field == 'bio_short' ) => bio_short,
+							( bio_field == 'bio_institutional' ) => bio_institutional,
+							( bio_field == 'bio_institutional_short' ) => bio_institutional_short,
+							( bio_field == 'bio_clinical' ) => bio_clinical,
+							( bio_field == 'bio_clinical_short' ) => bio_clinical_short,
+							( bio_field == 'bio_academic' ) => bio_academic,
+							( bio_field == 'bio_academic_short' ) => bio_academic_short,
+							( bio_field == 'bio_research' ) => bio_research,
+							( bio_field == 'bio_research_short' ) => bio_research_short,
+							( bio_field == 'bio_creator' ) => bio_creator,
+							( bio_field == 'bio_creator_short' ) => bio_creator_short
+						) }}
+						{{ if portrait || portrait_wide }}
+							<figure class="bio-image float-md-right ml-md-4 mb-3">
+								{{ if portrait }}
+									{{ portrait }}<img src="{{ url }}" alt="{{ alt }}">{{ /portrait }}
+								{{ else }}
+									{{ portrait_wide }}<img src="{{ url }}" alt="{{ alt }}">{{ /portrait_wide }}
+								{{ /if }}
+							</figure>
+						{{ /if }}
+						{{ if $person_bio }}{{ $person_bio }}{{ /if }}
+					{{ /bio_person }}
+				{{ else }}
+					{{# Manual portrait + text (UAMS-Web/uams-statamic-archive#1169). #}}
+					{{ if image }}
+						<figure class="bio-image float-md-right ml-md-4 mb-3">
+							{{ image }}
+								<img src="{{ url }}" alt="{{ alt }}">
+							{{ /image }}
+						</figure>
+					{{ /if }}
+					{{ body }}
+						{{ partial src="sets/{type}" }}
+					{{ /body }}
+				{{ /if }}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

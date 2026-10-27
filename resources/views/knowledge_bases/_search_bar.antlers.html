@@ -1,0 +1,65 @@
+{{#
+
+    @name  Knowledge Base: Search Bar
+    @desc  Search form for the knowledge base (topic or root). Resolves title,
+           placeholder, and query config from current_blueprint (topic vs knowledge_base).
+           Submits to the shared /search page (UAMS-Web/uams-statamic-archive#506) scoped to this entry's subtree via
+           a hidden `index` + `kb_scope`: whole-KB from a knowledge_base root, current
+           topic + descendants from a topic. Renders schema.org SearchAction and
+           EntryPoint microdata. Expects: current_blueprint (optional; defaults to
+           'topic') and the current entry `id`.
+
+#}}
+
+{{# Define the variables#}}
+{{ $resolved_current_blueprint = current_blueprint ?? 'topic' }}
+{{ $resolved_search_query = ($resolved_current_blueprint == 'topic') ? topic_search_query : knowledge_base_search_query }}
+{{ $resolved_search_title = ($resolved_current_blueprint == 'topic') ? topic_search_bar_title : knowledge_base_search_title }}
+{{ $resolved_search_placeholder = ($resolved_current_blueprint == 'topic') ? topic_search_placeholder : knowledge_base_search_placeholder }}
+
+{{# Render the search bar #}}
+{{ if $resolved_search_query }}
+	{{ partial:page_builder/uamsweb_block block_class="mt-0" }}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header :heading="$resolved_search_title" }}
+			<div class="col-12">
+				<div class="module-body">
+					<form
+						class="form-inline d-flex flex-nowrap w-100"
+						action="/search"
+						method="get"
+						itemprop="https://schema.org/potentialAction"
+						itemscope
+						itemtype="https://schema.org/SearchAction"
+					>
+						{{# Target EntryPoint: urlTemplate with {q} replaced by the input value. #}}
+						<span itemprop="https://schema.org/target" itemscope itemtype="https://schema.org/EntryPoint">
+							<meta itemprop="https://schema.org/urlTemplate" content="/search?q={q}">
+						</span>
+						<meta itemprop="https://schema.org/query" content="required name=q">
+						<meta itemprop="https://schema.org/name" content="{{ $resolved_search_title }}">
+						{{# Scope the shared /search page to this knowledge base's subtree:
+						    the KB index plus this entry's id (a knowledge_base root spans
+						    the whole KB; a topic spans that topic and its descendants). #}}
+						<input type="hidden" name="index" value="knowledge_bases">
+						<input type="hidden" name="kb_scope" value="{{ id }}">
+						<label class="sr-only" for="kb-search-query">Search</label>
+						<input
+							type="search"
+							class="form-control form-control-lg flex-grow-1 mr-2"
+							id="kb-search-query"
+							name="q"
+							placeholder="{{ $resolved_search_placeholder }}"
+							aria-label="Search"
+							style="min-width: 0;"
+						>
+						<button type="submit" class="btn btn-primary btn-lg" aria-label="Search">
+							<span class="sr-only">Search</span>
+							<span class="fas fa-search fa-fw" aria-hidden="true"></span>
+						</button>
+					</form>
+				</div>
+			</div>
+			{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

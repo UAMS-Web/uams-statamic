@@ -1,0 +1,43 @@
+{{# Article reactions (Was This Article Helpful? like/dislike). The like / dislike
+	triggers post to the reaction endpoint (UAMS-Web/uams-statamic-archive#286) via resources/js/kb-article-engagement.js;
+	the counts render from the view_count / like_count / dislike_count computeds and are
+	re-hydrated client-side so they stay correct under page static-caching. #}}
+{{ $article_reactions_block_id = block_id ?? 'article-reactions' }}
+{{
+	partial:page_builder/uamsweb_block
+	:background_color="background_color"
+	html_tag="aside"
+	block_id="article-reactions"
+}}
+	{{ partial:page_builder/components/container_row }}
+		{{ partial:page_builder/components/block_header heading="Was This Article Helpful?" }}
+		<div class="col-12">
+			<div class="card-deck">
+				{{
+					partial:knowledge_bases/interaction_statistic
+					reaction="like"
+					interaction_type="https://schema.org/LikeAction"
+					icon_class="fa fa-thumbs-up"
+					action_label="Like This Article"
+					count_label="Like"
+					:count="like_count"
+					:article_id="id"
+					:article_title="title"
+					item_id="{{ $article_reactions_block_id }}-like"
+				}}
+				{{
+					partial:knowledge_bases/interaction_statistic
+					reaction="dislike"
+					interaction_type="https://schema.org/DislikeAction"
+					icon_class="fa fa-thumbs-down"
+					action_label="Dislike This Article"
+					count_label="Dislike"
+					:count="dislike_count"
+					:article_id="id"
+					:article_title="title"
+					item_id="{{ $article_reactions_block_id }}-dislike"
+				}}
+			</div>
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /partial:page_builder/uamsweb_block }}

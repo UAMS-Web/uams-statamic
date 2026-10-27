@@ -1,0 +1,94 @@
+{{#
+
+	@name Main desktop navigation (UAMS Web)
+	@desc The site's main desktop navigation rendered on each page.
+
+#}}
+<nav class="site-nav navbar navbar-expand-sm d-none d-sm-flex" aria-label="Primary">
+	<div class="collapse navbar-collapse inner-container" id="site-nav-primary">
+		<ul id="menu-dropdowns" class="nav navbar-nav align-self-end mr-auto">
+			{{# Within an Area-of-Expertise subsite, replace the global primary nav with
+				the AoE section nav: an Overview link plus one link per populated
+				relationship section, from the `aoe_section_nav` computed (UAMS-Web/uams-statamic-archive#1057). Gated
+				on `is_within_aoe` (not the nav list length) so an AoE page never falls
+				through to the global nav's `collection::pages` subsection scoping —
+				an AoE URI is not a node in the pages tree and fatals TreeBuilder. A
+				page outside an AoE subsite has no such computed, so the global nav
+				below renders unchanged. #}}
+			{{ if is_within_aoe }}
+				{{ aoe_section_nav }}
+					<li
+						itemscope="itemscope"
+						itemtype="https://www.schema.org/SiteNavigationElement"
+						class="nav-item"
+					>
+						<a class="nav-link" title="{{ label }}" href="{{ url }}">{{ label }}</a>
+					</li>
+				{{ /aoe_section_nav }}
+			{{ else }}
+			{{# Default to the site's primary navigation. #}}
+			{{ $manual_primary_navigation = uams_multisite_settings:manual_primary_navigation ? 'primary_navigation' : void }}
+			{{ $navigation_main_handle = {nav :handle="$manual_primary_navigation"} ? $manual_primary_navigation : void }}
+			{{ $navigation_main_from = void }}
+			{{# When the current page is within a subsection, scope the primary nav to
+				the subsection's page-tree branch. The {{ subsection }} tag MUST be
+				used as a PAIR — the embedded-assignment form `{{ $x = {subsection} }}`
+				does not capture the tag's array return, so the subsection would
+				silently never activate (the variables it sets here leak to this
+				scope). See App\Tags\Subsection and UAMS-Web/uams-statamic-archive#52. #}}
+			{{ subsection }}
+				{{ if active }}
+					{{ $navigation_main_handle = 'collection::pages' }}
+					{{ $navigation_main_from = uri }}
+				{{ /if }}
+			{{ /subsection }}
+			{{# Exclude non-public entries from the primary nav. `private` and
+				`password_protected` entries stay `published`, so they need an explicit
+				filter (draft/pending/not-yet-live scheduled fall out via the published
+				mapping — UAMS-Web/uams-statamic-archive#223). The `hide_from_menu` / `password_protected` `:isnt`
+				params filter the default `collection::pages` path at the query, but
+				Statamic's queryForNav ignores tag conditions on a manual
+				`primary_navigation` nav, so the `{{ unless }}` guard below re-applies
+				the exclusion on EVERY nav source (UAMS-Web/uams-statamic-archive#1151). `private` is guarded only in
+				the template — not at the query — so a super user, or a user who can
+				publish the collection, still sees it (UAMS-Web/uams-statamic-archive#1152), matching
+				App\Http\Middleware\ProtectEntry's front-end access rule. #}}
+			{{ nav :handle="$navigation_main_handle" :from="$navigation_main_from" hide_from_menu:isnt="true" password_protected:isnt="true" }}
+				{{# Re-apply the exclusion on any nav source (the query params are inert
+					on a manual nav). `private` is still shown to a user who may view it. #}}
+				{{ unless hide_from_menu || password_protected || ( status_and_visibility == "private" && !{can_view_private_entry :id="entry_id"} ) }}
+				{{# A child_site_link item links to its selected child site (UAMS-Web/uams-statamic-archive#219); a
+					posts_category_link item links to its selected post category's archive
+					(UAMS-Web/uams-statamic-archive#220); every other item uses its own URL. #}}
+				{{ $child_site_href = {child_site_url} }}
+				{{ $category_href = {posts_category_link_url} }}
+				{{ $nav_item_href = $child_site_href ? $child_site_href : ( $category_href ? $category_href : url ) }}
+				<li
+					itemscope="itemscope"
+					itemtype="https://www.schema.org/SiteNavigationElement"
+					id="menu-item-{{ id }}"
+					class="{{ [
+						'nav-item' => true,
+						'dropdown' => children ?? false
+					] | classes | collapse_whitespace }}"
+				>
+					<a
+						title="{{ nav_alt_name ?? title }}"
+						href="{{ $nav_item_href }}"
+						class="{{ [
+							'nav-link' => true,
+							'on' => ( is_current || is_parent ) ?? false
+						] | classes | collapse_whitespace }}"
+					>{{ nav_alt_name ?? title }}</a>
+					{{ if children }}
+						<ul class="dropdown-menu" aria-labelledby="menu-item-{{ id }}">
+							{{ *recursive children* }}
+						</ul>
+					{{ /if }}
+				</li>
+				{{ /unless }}
+			{{ /nav }}
+			{{ /if }}
+		</ul>
+	</div>
+</nav>

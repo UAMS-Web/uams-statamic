@@ -1,0 +1,6 @@
+{{# Email fieldtype (App\Fieldtypes\Email) — input_type defaults to "email" per the
+    fieldtype config; delegates to the default partial which honors input_type and
+    every other Input-trait attribute (autocomplete, inputmode, validate:required,
+    js_attributes, aria-*). Override here only if email needs UI that diverges
+    from the shared input markup. #}}
+{{ partial:vendor/statamic/forms/fields/default }}

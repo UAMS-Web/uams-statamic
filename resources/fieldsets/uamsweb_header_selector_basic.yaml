@@ -1,0 +1,29 @@
+title: 'UAMSWeb Header Selector, Basic Page'
+fields:
+  -
+    handle: title_options
+    field:
+      options:
+        -
+          key: normal
+          value: Normal
+        -
+          key: graphic
+          value: Graphic
+      type: radio
+      display: 'Page Header Options'
+      default: normal
+      localizable: false
+      validate:
+        - required
+  -
+    handle: header_graphic
+    field:
+      type: group
+      display: 'Graphic Header Options'
+      if:
+        title_options: 'equals graphic'
+      localizable: false
+      fields:
+        -
+          import: uamsweb_header_graphic

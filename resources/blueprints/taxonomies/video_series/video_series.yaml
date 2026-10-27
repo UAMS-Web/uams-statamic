@@ -1,0 +1,50 @@
+title: 'Video Series'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: boilerplate
+            field: uamsweb_common.bard_boilerplate
+            config:
+              display: 'Video Series Boilerplate'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: genre
+            field: uamsweb_common.genre
+            config:
+              validate:
+                - required
+          -
+            handle: about
+            field: uamsweb_common.subject_matter
+            config:
+              display: 'Primary Subject Matter'
+              instructions: 'One or more concepts common to every segment in the series.'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

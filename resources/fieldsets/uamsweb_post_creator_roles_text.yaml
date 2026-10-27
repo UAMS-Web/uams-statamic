@@ -1,0 +1,20 @@
+title: 'UAMSWeb Post Creator Roles (text)'
+fields:
+  -
+    handle: writer
+    field: uamsweb_post_creator_roles_all.writer
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: editor
+    field: uamsweb_post_creator_roles_all.editor
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: generic_creator
+    field: uamsweb_post_creator_roles_all.generic_creator
+    config:
+      width: 50
+      localizable: false

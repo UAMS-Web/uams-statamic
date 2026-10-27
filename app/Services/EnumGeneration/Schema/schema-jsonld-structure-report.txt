@@ -1,0 +1,1128 @@
+# Schema.org JSON-LD structure analysis
+# Key → value types (recursive), with counts and examples
+
+# --- Gaps addressed ---
+
+## @id prefix distribution (node count per prefix)
+  bibo: => 9
+  cmns-cls: => 3
+  cmns-col: => 2
+  cmns-dt: => 6
+  cmns-ge: => 2
+  cmns-id: => 1
+  cmns-loc: => 8
+  cmns-q: => 4
+  cmns-txt: => 1
+  dcat: => 3
+  dct: => 5
+  dctype: => 4
+  eli: => 19
+  fibo-be-corp-corp: => 1
+  fibo-be-le-cb: => 1
+  fibo-be-le-lp: => 1
+  fibo-be-nfp-nfp: => 1
+  fibo-be-oac-cctl: => 1
+  fibo-fbc-dae-dbt: => 1
+  fibo-fbc-pas-fpas: => 3
+  fibo-fnd-acc-cur: => 3
+  fibo-fnd-agr-ctr: => 1
+  fibo-fnd-arr-doc: => 5
+  fibo-fnd-dt-oc: => 1
+  fibo-fnd-org-org: => 4
+  fibo-fnd-pas-pas: => 10
+  fibo-fnd-plc-adr: => 5
+  fibo-fnd-plc-loc: => 1
+  fibo-fnd-pty-pty: => 1
+  fibo-fnd-rel-rel: => 2
+  fibo-pay-ps-ps: => 1
+  foaf: => 1
+  gleif-L1: => 1
+  gs1: => 20
+  https: => 1
+  hydra: => 1
+  lcc-cr: => 2
+  lrmoo: => 1
+  mo: => 1
+  prov: => 2
+  rdf: => 2
+  rdfs: => 2
+  sarif: => 1
+  schema: => 2970
+  skos: => 1
+  snomed: => 8
+  unece: => 61
+  vcard: => 1
+  void: => 1
+
+## Distinct @type values
+  rdf:Property, rdfs:Class, schema:ActionStatusType, schema:AdultOrientedEnumeration, schema:BoardingPolicyType, schema:BodyMeasurementTypeEnumeration, schema:BookFormatType, schema:Boolean, schema:CarUsageType, schema:CertificationStatusEnumeration, schema:ContactPointOption, schema:DataType, schema:DayOfWeek, schema:DeliveryMethod, schema:DigitalDocumentPermissionType, schema:DigitalPlatformEnumeration, schema:DriveWheelConfigurationValue, schema:DrugCostCategory, schema:DrugPregnancyCategory, schema:DrugPrescriptionStatus, schema:EUEnergyEfficiencyEnumeration, schema:EnergyStarEnergyEfficiencyEnumeration, schema:EventAttendanceModeEnumeration, schema:EventStatusType, schema:FulfillmentTypeEnumeration, schema:GameAvailabilityEnumeration, schema:GamePlayMode, schema:GameServerStatus, schema:GenderType, schema:GovernmentBenefitsType, schema:HealthAspectEnumeration, schema:IPTCDigitalSourceEnumeration, schema:IncentiveQualifiedExpenseType, schema:IncentiveStatus, schema:IncentiveType, schema:InfectiousAgentClass, schema:ItemAvailability, schema:ItemListOrderType, schema:LegalForceStatus, schema:LegalValueLevel, schema:MapCategoryType, schema:MeasurementMethodEnum, schema:MediaManipulationRatingEnumeration, schema:MedicalAudienceType, schema:MedicalDevicePurpose, schema:MedicalEvidenceLevel, schema:MedicalImagingTechnique, schema:MedicalObservationalStudyDesign, schema:MedicalProcedureType, schema:MedicalSpecialty, schema:MedicalStudyStatus, schema:MedicalTrialDesign, schema:MedicineSystem, schema:MerchantReturnEnumeration, schema:MusicAlbumProductionType, schema:MusicAlbumReleaseType, schema:MusicReleaseFormatType, schema:NLNonprofitType, schema:OfferItemCondition, schema:OrderStatus, schema:PaymentMethodType, schema:PaymentStatusType, schema:PhysicalActivityCategory, schema:PhysicalExam, schema:PriceComponentTypeEnumeration, schema:PriceTypeEnumeration, schema:PurchaseType, schema:RefundTypeEnumeration, schema:ReservationStatusType, schema:RestrictedDiet, schema:ReturnFeesEnumeration, schema:ReturnLabelSourceEnumeration, schema:ReturnMethodEnumeration, schema:RsvpResponseType, schema:SizeSystemEnumeration, schema:SteeringPositionValue, schema:TierBenefitEnumeration, schema:UKNonprofitType, schema:USNonprofitType, schema:WearableMeasurementTypeEnumeration, schema:WearableSizeGroupEnumeration, schema:WearableSizeSystemEnumeration
+
+## Keys per node type (key => occurrence count on that type)
+### rdf:Property
+  @id => 1658
+  @type => 1658
+  owl:equivalentClass => 2
+  owl:equivalentProperty => 106
+  rdfs:comment => 1520
+  rdfs:label => 1520
+  rdfs:seeAlso => 1
+  rdfs:subPropertyOf => 195
+  schema:contributor => 233
+  schema:domainIncludes => 1519
+  schema:inverseOf => 58
+  schema:isPartOf => 586
+  schema:rangeIncludes => 1519
+  schema:source => 471
+  schema:supersededBy => 67
+  skos:closeMatch => 1
+  skos:exactMatch => 19
+
+### rdfs:Class
+  @id => 1009
+  @type => 1009
+  owl:disjointWith => 1
+  owl:equivalentClass => 53
+  rdfs:comment => 930
+  rdfs:label => 930
+  rdfs:seeAlso => 1
+  rdfs:subClassOf => 923
+  schema:contributor => 109
+  schema:isPartOf => 294
+  schema:source => 207
+  schema:supersededBy => 14
+  skos:closeMatch => 4
+  skos:exactMatch => 1
+
+### schema:MedicalSpecialty
+  @id => 42
+  @type => 42
+  rdfs:comment => 42
+  rdfs:label => 42
+  rdfs:subClassOf => 20
+  schema:isPartOf => 42
+  schema:supersededBy => 1
+
+### schema:BookFormatType
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 1
+
+### schema:ReturnMethodEnumeration
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:USNonprofitType
+  @id => 36
+  @type => 36
+  rdfs:comment => 36
+  rdfs:label => 36
+  schema:isPartOf => 36
+  schema:source => 36
+
+### schema:ItemListOrderType
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+
+### schema:EUEnergyEfficiencyEnumeration
+  @id => 10
+  @type => 10
+  rdfs:comment => 10
+  rdfs:label => 10
+  schema:isPartOf => 10
+  schema:source => 10
+
+### schema:PriceTypeEnumeration
+  @id => 8
+  @type => 8
+  rdfs:comment => 8
+  rdfs:label => 8
+  schema:isPartOf => 8
+  schema:source => 8
+
+### schema:FulfillmentTypeEnumeration
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+  schema:isPartOf => 5
+  schema:source => 5
+
+### schema:WearableSizeSystemEnumeration
+  @id => 14
+  @type => 14
+  rdfs:comment => 14
+  rdfs:label => 14
+  schema:isPartOf => 14
+  schema:source => 14
+
+### schema:ReturnFeesEnumeration
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+  schema:isPartOf => 5
+  schema:source => 5
+
+### schema:MusicReleaseFormatType
+  @id => 7
+  @type => 7
+  rdfs:comment => 7
+  rdfs:label => 7
+  schema:contributor => 7
+
+### schema:LegalForceStatus
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:contributor => 3
+  schema:isPartOf => 3
+  schema:source => 3
+  skos:exactMatch => 3
+
+### schema:MedicalObservationalStudyDesign
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+
+### schema:MedicalImagingTechnique
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+
+### schema:MedicalStudyStatus
+  @id => 10
+  @type => 10
+  rdfs:comment => 10
+  rdfs:label => 10
+  schema:isPartOf => 10
+
+### schema:DrugCostCategory
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:isPartOf => 3
+
+### schema:BodyMeasurementTypeEnumeration
+  @id => 13
+  @type => 13
+  rdfs:comment => 13
+  rdfs:label => 13
+  schema:isPartOf => 13
+  schema:source => 13
+
+### schema:PaymentStatusType
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+
+### schema:AdultOrientedEnumeration
+  @id => 10
+  @type => 10
+  rdfs:comment => 10
+  rdfs:label => 10
+  schema:isPartOf => 10
+  schema:source => 10
+
+### schema:DataType
+  @id => 6
+  @type => 6
+  owl:equivalentClass => 2
+  rdfs:comment => 6
+  rdfs:label => 6
+
+### schema:RestrictedDiet
+  @id => 11
+  @type => 11
+  rdfs:comment => 11
+  rdfs:label => 11
+
+### schema:PhysicalActivityCategory
+  @id => 7
+  @type => 7
+  rdfs:comment => 7
+  rdfs:label => 7
+  schema:isPartOf => 7
+
+### schema:MusicAlbumReleaseType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:contributor => 4
+
+### schema:TierBenefitEnumeration
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:MediaManipulationRatingEnumeration
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+  schema:source => 6
+
+### schema:RefundTypeEnumeration
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:isPartOf => 3
+  schema:source => 3
+
+### schema:IncentiveType
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+  schema:isPartOf => 5
+  schema:source => 5
+
+### schema:PriceComponentTypeEnumeration
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+  schema:source => 6
+
+### schema:IncentiveStatus
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:PurchaseType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:OrderStatus
+  @id => 8
+  @type => 8
+  rdfs:comment => 8
+  rdfs:label => 8
+
+### schema:HealthAspectEnumeration
+  @id => 29
+  @type => 29
+  rdfs:comment => 29
+  rdfs:label => 29
+  schema:isPartOf => 29
+  schema:source => 29
+
+### schema:LegalValueLevel
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:contributor => 4
+  schema:isPartOf => 4
+  schema:source => 4
+  skos:exactMatch => 4
+
+### schema:DigitalDocumentPermissionType
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+
+### schema:GameServerStatus
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+
+### schema:ReservationStatusType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+
+### schema:EventAttendanceModeEnumeration
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:isPartOf => 3
+  schema:source => 3
+
+### schema:IPTCDigitalSourceEnumeration
+  @id => 17
+  @type => 17
+  rdfs:comment => 17
+  rdfs:label => 17
+  schema:isPartOf => 17
+  schema:source => 17
+  skos:exactMatch => 17
+
+### schema:WearableMeasurementTypeEnumeration
+  @id => 12
+  @type => 12
+  rdfs:comment => 12
+  rdfs:label => 12
+  schema:isPartOf => 12
+  schema:source => 12
+
+### schema:DigitalPlatformEnumeration
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+  schema:isPartOf => 5
+  schema:source => 5
+
+### schema:NLNonprofitType
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+  schema:source => 2
+
+### schema:WearableSizeGroupEnumeration
+  @id => 17
+  @type => 17
+  rdfs:comment => 17
+  rdfs:label => 17
+  schema:isPartOf => 17
+  schema:source => 17
+
+### schema:GameAvailabilityEnumeration
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+  schema:source => 2
+
+### schema:PhysicalExam
+  @id => 14
+  @type => 14
+  rdfs:comment => 14
+  rdfs:label => 14
+  schema:isPartOf => 14
+
+### schema:ItemAvailability
+  @id => 12
+  @type => 12
+  rdfs:comment => 12
+  rdfs:label => 12
+
+### schema:GenderType
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+
+### schema:MerchantReturnEnumeration
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:OfferItemCondition
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+
+### schema:DrugPregnancyCategory
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+
+### schema:MusicAlbumProductionType
+  @id => 9
+  @type => 9
+  rdfs:comment => 9
+  rdfs:label => 9
+  schema:contributor => 9
+
+### schema:GamePlayMode
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+
+### schema:InfectiousAgentClass
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+
+### schema:MedicalEvidenceLevel
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:isPartOf => 3
+
+### schema:MedicalTrialDesign
+  @id => 9
+  @type => 9
+  rdfs:comment => 9
+  rdfs:label => 9
+  schema:isPartOf => 9
+
+### schema:PaymentMethodType
+  @id => 8
+  @type => 8
+  rdfs:comment => 8
+  rdfs:label => 8
+
+### schema:MedicalAudienceType
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+
+### schema:GovernmentBenefitsType
+  @id => 8
+  @type => 8
+  rdfs:comment => 8
+  rdfs:label => 8
+  schema:isPartOf => 8
+  schema:source => 8
+
+### schema:EventStatusType
+  @id => 5
+  @type => 5
+  rdfs:comment => 5
+  rdfs:label => 5
+
+### schema:Boolean
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+
+### schema:DayOfWeek
+  @id => 8
+  @type => 8
+  rdfs:comment => 8
+  rdfs:label => 8
+  schema:contributor => 1
+  schema:sameAs => 7
+
+### schema:RsvpResponseType
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+
+### schema:IncentiveQualifiedExpenseType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:SizeSystemEnumeration
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+  schema:source => 2
+
+### schema:MeasurementMethodEnum
+  @id => 1
+  @type => 1
+  rdfs:comment => 1
+  rdfs:label => 1
+  schema:isPartOf => 1
+  schema:source => 1
+
+### schema:UKNonprofitType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:isPartOf => 4
+  schema:source => 4
+
+### schema:MedicineSystem
+  @id => 6
+  @type => 6
+  rdfs:comment => 6
+  rdfs:label => 6
+  schema:isPartOf => 6
+
+### schema:EnergyStarEnergyEfficiencyEnumeration
+  @id => 1
+  @type => 1
+  rdfs:comment => 1
+  rdfs:label => 1
+  schema:isPartOf => 1
+  schema:source => 1
+
+### schema:ActionStatusType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+
+### schema:MedicalProcedureType
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+
+### schema:DriveWheelConfigurationValue
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+  schema:contributor => 4
+
+### schema:ReturnLabelSourceEnumeration
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:isPartOf => 3
+  schema:source => 3
+
+### schema:ContactPointOption
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+
+### schema:DeliveryMethod
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:contributor => 1
+
+### schema:SteeringPositionValue
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:contributor => 2
+
+### schema:CertificationStatusEnumeration
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+  schema:source => 2
+
+### schema:MedicalDevicePurpose
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+
+### schema:BoardingPolicyType
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+
+### schema:MapCategoryType
+  @id => 4
+  @type => 4
+  rdfs:comment => 4
+  rdfs:label => 4
+
+### schema:DrugPrescriptionStatus
+  @id => 2
+  @type => 2
+  rdfs:comment => 2
+  rdfs:label => 2
+  schema:isPartOf => 2
+
+### schema:CarUsageType
+  @id => 3
+  @type => 3
+  rdfs:comment => 3
+  rdfs:label => 3
+  schema:contributor => 3
+  schema:isPartOf => 3
+
+## Language tags seen (in value objects)
+  en
+
+## Ordering
+  Array order is preserved as in source; schema.org does not define ordering for these predicates.
+
+## All @id values
+  Total: 3187 (full list written to schema-jsonld-all-ids.txt)
+
+# --- Per-key structure ---
+
+## (root)
+  count: 1
+  value_types: array (indexed)
+  array_element_types: array (associative)
+  array_length: 3187 .. 3187
+  examples: {"0":{"@id":"bibo:issue","@type":"rdf:Property"},"1":{"@id":"schema:legislati...
+
+## (root)[]
+  count: 3187
+  value_types: array (associative)
+  object_shapes: reference_with_type(@id,@type), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source,skos:exactMatch), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:inverseOf,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:isPartOf), object(@id,@type,rdfs:comment,rdfs:label), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:isPartOf,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor), object(@id,@type,rdfs:comment,rdfs:label,schema:isPartOf,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:isPartOf,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source,skos:closeMatch), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:isPartOf), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:isPartOf,schema:source,skos:exactMatch), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:isPartOf,schema:source), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:source), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source,skos:exactMatch), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:supersededBy), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes,schema:supersededBy), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:isPartOf), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:isPartOf), object(@id,@type,rdfs:comment,rdfs:label,schema:isPartOf,schema:source,skos:exactMatch), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes,schema:supersededBy), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes,schema:supersededBy), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:isPartOf,schema:source,skos:closeMatch), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:isPartOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:supersededBy), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:isPartOf,schema:source,skos:exactMatch), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,skos:closeMatch), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:sameAs), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:supersededBy), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes,schema:source), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:seeAlso,rdfs:subClassOf,schema:isPartOf,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:supersededBy), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor,schema:source), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,owl:disjointWith,owl:equivalentClass,rdfs:comment,rdfs:label,rdfs:subClassOf,schema:contributor), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,schema:domainIncludes,schema:isPartOf,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:domainIncludes,schema:rangeIncludes,schema:supersededBy), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:contributor,schema:domainIncludes,schema:rangeIncludes,schema:source), object(@id,@type,rdfs:comment,rdfs:label,schema:contributor,schema:isPartOf), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:subPropertyOf,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes), object(@id,@type,owl:equivalentClass,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,rdfs:seeAlso,schema:domainIncludes,schema:rangeIncludes), object(@id,@type,rdfs:comment,rdfs:label,schema:isPartOf,schema:supersededBy), object(@id,@type,owl:equivalentProperty,rdfs:comment,rdfs:label,schema:contributor,schema:domainIncludes,schema:inverseOf,schema:rangeIncludes,schema:source)
+  array_length: 1 .. 1
+  examples: {"@id":"bibo:issue","@type":"rdf:Property"} | {"@id":"schema:legislationPassedBy","@type":"rdf:Property","owl:equivalentPro... | {"@id":"schema:Conversation","@type":"rdfs:Class","rdfs:comment":"One or more...
+  nested_keys: @id, @type, owl:equivalentProperty, rdfs:comment, rdfs:label, rdfs:subPropertyOf, schema:contributor, schema:domainIncludes, schema:isPartOf, schema:rangeIncludes, schema:source, skos:exactMatch, rdfs:subClassOf, schema:inverseOf, skos:closeMatch, owl:equivalentClass, schema:supersededBy, schema:sameAs, rdfs:seeAlso, owl:disjointWith
+
+## (root)[].@id
+  count: 3187
+  value_types: string
+  max_string_length: 97
+  examples: bibo:issue | schema:legislationPassedBy | schema:Conversation
+
+## (root)[].@type
+  count: 3187
+  value_types: string, array (indexed)
+  array_element_types: string
+  array_length: 2 .. 2
+  max_string_length: 44
+  examples: rdf:Property | rdf:Property | rdfs:Class
+
+## (root)[].@type[]
+  count: 14
+  value_types: string
+  max_string_length: 30
+  examples: rdfs:Class | schema:DataType | schema:MedicalSpecialty
+
+## (root)[].owl:disjointWith
+  count: 1
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:ProductModel"}
+  nested_keys: @id
+
+## (root)[].owl:disjointWith.@id
+  count: 1
+  value_types: string
+  max_string_length: 19
+  examples: schema:ProductModel
+
+## (root)[].owl:equivalentClass
+  count: 55
+  value_types: array (indexed), array (associative)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 4
+  examples: [{"@id":"gs1:CertificationDetails"},{"@id":"unece:SpecifiedCertificate"}] | {"@id":"lcc-cr:Continent"} | {"@id":"cmns-dt:DateTime"}
+  nested_keys: @id
+
+## (root)[].owl:equivalentClass.@id
+  count: 44
+  value_types: string
+  max_string_length: 43
+  examples: lcc-cr:Continent | cmns-dt:DateTime | unece:FinancialCard
+
+## (root)[].owl:equivalentClass[]
+  count: 27
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"gs1:CertificationDetails"} | {"@id":"unece:SpecifiedCertificate"} | {"@id":"dctype:Event"}
+  nested_keys: @id
+
+## (root)[].owl:equivalentClass[].@id
+  count: 27
+  value_types: string
+  max_string_length: 34
+  examples: gs1:CertificationDetails | unece:SpecifiedCertificate | dctype:Event
+
+## (root)[].owl:equivalentProperty
+  count: 106
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 2
+  examples: {"@id":"eli:passed_by"} | {"@id":"unece:ServiceProvider"} | {"@id":"unece:LineItemIdentifier"}
+  nested_keys: @id
+
+## (root)[].owl:equivalentProperty.@id
+  count: 96
+  value_types: string
+  max_string_length: 38
+  examples: eli:passed_by | unece:ServiceProvider | unece:LineItemIdentifier
+
+## (root)[].owl:equivalentProperty[]
+  count: 20
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"dct:title"} | {"@id":"cmns-txt:hasName"} | {"@id":"gs1:gtin"}
+  nested_keys: @id
+
+## (root)[].owl:equivalentProperty[].@id
+  count: 20
+  value_types: string
+  max_string_length: 38
+  examples: dct:title | cmns-txt:hasName | gs1:gtin
+
+## (root)[].rdfs:comment
+  count: 2970
+  value_types: string, array (associative)
+  object_shapes: value(@value, optional @type)
+  array_length: 2 .. 2
+  max_string_length: 4224
+  string_contains_double_quote: true
+  string_contains_newline: true
+  examples: The person or organization that originally passed or made the law: typically ... | One or more messages between organizations or people on a particular topic. I... | Event type: Theater performance.
+  nested_keys: @language, @value
+
+## (root)[].rdfs:comment.@language
+  count: 7
+  value_types: string
+  max_string_length: 2
+  examples: en | en | en
+
+## (root)[].rdfs:comment.@value
+  count: 7
+  value_types: string
+  max_string_length: 148
+  examples: [[ArchiveOrganization]] that holds, keeps or maintains the [[ArchiveComponent]]. | The quantity of the materials being described or an expression of the physica... | Collection, [fonds](https://en.wikipedia.org/wiki/Fonds), or item held, kept ...
+
+## (root)[].rdfs:label
+  count: 2970
+  value_types: string, array (associative)
+  object_shapes: value(@value, optional @type)
+  array_length: 2 .. 2
+  max_string_length: 49
+  examples: legislationPassedBy | Conversation | TheaterEvent
+  nested_keys: @language, @value
+
+## (root)[].rdfs:label.@language
+  count: 7
+  value_types: string
+  max_string_length: 2
+  examples: en | en | en
+
+## (root)[].rdfs:label.@value
+  count: 7
+  value_types: string
+  max_string_length: 19
+  examples: holdingArchive | materialExtent | archiveHeld
+
+## (root)[].rdfs:seeAlso
+  count: 2
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"https://cidoc-crm.org//extensions/lrmoo/html/LRMoo_v1.0.html#F31"} | {"@id":"hydra:statusCode"}
+  nested_keys: @id
+
+## (root)[].rdfs:seeAlso.@id
+  count: 2
+  value_types: string
+  max_string_length: 64
+  examples: https://cidoc-crm.org//extensions/lrmoo/html/LRMoo_v1.0.html#F31 | hydra:statusCode
+
+## (root)[].rdfs:subClassOf
+  count: 943
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 3
+  examples: {"@id":"schema:CreativeWork"} | {"@id":"schema:Event"} | {"@id":"schema:ConsumeAction"}
+  nested_keys: @id
+
+## (root)[].rdfs:subClassOf.@id
+  count: 886
+  value_types: string
+  max_string_length: 37
+  examples: schema:CreativeWork | schema:Event | schema:ConsumeAction
+
+## (root)[].rdfs:subClassOf[]
+  count: 119
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:CreativeWork"} | {"@id":"schema:LifestyleModification"} | {"@id":"fibo-fnd-arr-doc:Certificate"}
+  nested_keys: @id
+
+## (root)[].rdfs:subClassOf[].@id
+  count: 119
+  value_types: string
+  max_string_length: 43
+  examples: schema:CreativeWork | schema:LifestyleModification | fibo-fnd-arr-doc:Certificate
+
+## (root)[].rdfs:subPropertyOf
+  count: 195
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 2
+  examples: {"@id":"schema:creator"} | {"@id":"schema:publishingPrinciples"} | {"@id":"schema:identifier"}
+  nested_keys: @id
+
+## (root)[].rdfs:subPropertyOf.@id
+  count: 180
+  value_types: string
+  max_string_length: 97
+  examples: schema:creator | schema:publishingPrinciples | schema:identifier
+
+## (root)[].rdfs:subPropertyOf[]
+  count: 30
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"fibo-fnd-arr-doc:isReferencedIn"} | {"@id":"cmns-col:isPartOf"} | {"@id":"schema:gtin"}
+  nested_keys: @id
+
+## (root)[].rdfs:subPropertyOf[].@id
+  count: 30
+  value_types: string
+  max_string_length: 34
+  examples: fibo-fnd-arr-doc:isReferencedIn | cmns-col:isPartOf | schema:gtin
+
+## (root)[].schema:contributor
+  count: 380
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 2
+  examples: {"@id":"https://schema.org/docs/collab/ELI"} | {"@id":"https://schema.org/docs/collab/TP"} | {"@id":"https://schema.org/docs/collab/TP"}
+  nested_keys: @id
+
+## (root)[].schema:contributor.@id
+  count: 372
+  value_types: string
+  max_string_length: 65
+  examples: https://schema.org/docs/collab/ELI | https://schema.org/docs/collab/TP | https://schema.org/docs/collab/TP
+
+## (root)[].schema:contributor[]
+  count: 16
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"https://schema.org/docs/collab/Tourism"} | {"@id":"https://schema.org/docs/collab/IIT-CNR.it"} | {"@id":"https://schema.org/docs/collab/FIBO"}
+  nested_keys: @id
+
+## (root)[].schema:contributor[].@id
+  count: 16
+  value_types: string
+  max_string_length: 65
+  examples: https://schema.org/docs/collab/Tourism | https://schema.org/docs/collab/IIT-CNR.it | https://schema.org/docs/collab/FIBO
+
+## (root)[].schema:domainIncludes
+  count: 1519
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 12
+  examples: {"@id":"schema:Legislation"} | {"0":{"@id":"schema:MedicalEntity"},"1":{"@id":"schema:BioChemEntity"},"2":{"... | {"@id":"schema:PropertyValueSpecification"}
+  nested_keys: @id
+
+## (root)[].schema:domainIncludes.@id
+  count: 1128
+  value_types: string
+  max_string_length: 41
+  examples: schema:Legislation | schema:PropertyValueSpecification | schema:Person
+
+## (root)[].schema:domainIncludes[]
+  count: 1181
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:MedicalEntity"} | {"@id":"schema:BioChemEntity"} | {"@id":"schema:CreativeWork"}
+  nested_keys: @id
+
+## (root)[].schema:domainIncludes[].@id
+  count: 1181
+  value_types: string
+  max_string_length: 43
+  examples: schema:MedicalEntity | schema:BioChemEntity | schema:CreativeWork
+
+## (root)[].schema:inverseOf
+  count: 58
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:fundedItem"} | {"@id":"schema:recordingOf"} | {"@id":"schema:isPartOf"}
+  nested_keys: @id
+
+## (root)[].schema:inverseOf.@id
+  count: 58
+  value_types: string
+  max_string_length: 31
+  examples: schema:fundedItem | schema:recordingOf | schema:isPartOf
+
+## (root)[].schema:isPartOf
+  count: 1269
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"https://pending.schema.org"} | {"@id":"https://pending.schema.org"} | {"@id":"https://pending.schema.org"}
+  nested_keys: @id
+
+## (root)[].schema:isPartOf.@id
+  count: 1269
+  value_types: string
+  max_string_length: 33
+  examples: https://pending.schema.org | https://pending.schema.org | https://pending.schema.org
+
+## (root)[].schema:rangeIncludes
+  count: 1519
+  value_types: array (indexed), array (associative)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 8
+  examples: [{"@id":"schema:Organization"},{"@id":"schema:Person"}] | {"@id":"schema:Grant"} | {"@id":"schema:Text"}
+  nested_keys: @id
+
+## (root)[].schema:rangeIncludes.@id
+  count: 1054
+  value_types: string
+  max_string_length: 43
+  examples: schema:Grant | schema:Text | schema:Text
+
+## (root)[].schema:rangeIncludes[]
+  count: 1066
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:Organization"} | {"@id":"schema:Person"} | {"@id":"schema:Person"}
+  nested_keys: @id
+
+## (root)[].schema:rangeIncludes[].@id
+  count: 1066
+  value_types: string
+  max_string_length: 41
+  examples: schema:Organization | schema:Person | schema:Person
+
+## (root)[].schema:sameAs
+  count: 7
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"http://www.wikidata.org/entity/Q130"} | {"@id":"http://www.wikidata.org/entity/Q131"} | {"@id":"http://www.wikidata.org/entity/Q128"}
+  nested_keys: @id
+
+## (root)[].schema:sameAs.@id
+  count: 7
+  value_types: string
+  max_string_length: 35
+  examples: http://www.wikidata.org/entity/Q130 | http://www.wikidata.org/entity/Q131 | http://www.wikidata.org/entity/Q128
+
+## (root)[].schema:source
+  count: 938
+  value_types: array (indexed), array (associative)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 5
+  examples: [{"@id":"https://op.europa.eu/en/web/eu-vocabularies/model/-/resource/dataset... | {"@id":"https://github.com/schemaorg/schemaorg/issues/383"} | [{"@id":"https://github.com/schemaorg/schemaorg/issues/2927"},{"@id":"https:/...
+  nested_keys: @id
+
+## (root)[].schema:source.@id
+  count: 879
+  value_types: string
+  max_string_length: 50
+  examples: https://github.com/schemaorg/schemaorg/issues/383 | https://github.com/schemaorg/schemaorg/issues/2419 | https://github.com/schemaorg/schemaorg/issues/1525
+
+## (root)[].schema:source[]
+  count: 122
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"https://op.europa.eu/en/web/eu-vocabularies/model/-/resource/dataset/... | {"@id":"https://github.com/schemaorg/schemaorg/issues/1156"} | {"@id":"https://github.com/schemaorg/schemaorg/issues/2927"}
+  nested_keys: @id
+
+## (root)[].schema:source[].@id
+  count: 122
+  value_types: string
+  max_string_length: 72
+  examples: https://op.europa.eu/en/web/eu-vocabularies/model/-/resource/dataset/eli | https://github.com/schemaorg/schemaorg/issues/1156 | https://github.com/schemaorg/schemaorg/issues/2927
+
+## (root)[].schema:supersededBy
+  count: 82
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"schema:InteractionCounter"} | {"@id":"schema:runtimePlatform"} | {"@id":"schema:audience"}
+  nested_keys: @id
+
+## (root)[].schema:supersededBy.@id
+  count: 82
+  value_types: string
+  max_string_length: 28
+  examples: schema:InteractionCounter | schema:runtimePlatform | schema:audience
+
+## (root)[].skos:closeMatch
+  count: 5
+  value_types: array (associative), array (indexed)
+  array_element_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 2
+  examples: {"@id":"eli:id_local"} | {"@id":"eli:LegalValue"} | {"@id":"http://www.w3.org/ns/regorg#RegisteredOrganization"}
+  nested_keys: @id
+
+## (root)[].skos:closeMatch.@id
+  count: 4
+  value_types: string
+  max_string_length: 50
+  examples: eli:id_local | eli:LegalValue | http://www.w3.org/ns/regorg#RegisteredOrganization
+
+## (root)[].skos:closeMatch[]
+  count: 2
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"eli:LegalExpression"} | {"@id":"eli:LegalRecontributor"}
+  nested_keys: @id
+
+## (root)[].skos:closeMatch[].@id
+  count: 2
+  value_types: string
+  max_string_length: 22
+  examples: eli:LegalExpression | eli:LegalRecontributor
+
+## (root)[].skos:exactMatch
+  count: 44
+  value_types: array (associative)
+  object_shapes: reference(@id only)
+  array_length: 1 .. 1
+  examples: {"@id":"eli:passed_by"} | {"@id":"eli:InForce-notInForce"} | {"@id":"eli:commences"}
+  nested_keys: @id
+
+## (root)[].skos:exactMatch.@id
+  count: 44
+  value_types: string
+  max_string_length: 83
+  examples: eli:passed_by | eli:InForce-notInForce | eli:commences

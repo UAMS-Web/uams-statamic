@@ -1,0 +1,26 @@
+title: 'UAMSWeb Common Reusable Fields, Tables, Style'
+fields:
+  -
+    handle: striped
+    field:
+      type: toggle
+      display: 'Zebra-Striping'
+      instructions: 'Apply alternating row colors to the table body for improved readability.'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: fixed_width_table_cells
+    field:
+      display: 'Fixed Width Table Cells'
+      type: toggle
+      instructions: 'Set table cells to a fixed width for consistent column sizing.'
+      instructions_position: below
+      localizable: false
+  -
+    handle: row_hover_highlighting
+    field:
+      type: toggle
+      display: 'Row Hover Highlighting'
+      instructions: 'Highlight a row while the mouse cursor hovers above it by changing its background color.'
+      localizable: false

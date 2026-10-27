@@ -1,0 +1,50 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: Title
+              localizable: false
+          -
+            handle: excerpt
+            field: uamsweb_common.excerpt
+            config:
+              display: Description
+              localizable: false
+          -
+            handle: news_release_entry
+            field:
+              type: entries
+              display: 'News release entry'
+              instructions: 'System-managed link to the `posts` entry to which this PDF belongs. Set by the PDF generator or WordPress import; used to remove superseded PDFs on save.'
+              collections:
+                - posts
+              max_items: 1
+              create: false
+              localizable: false
+              listable: false
+              visibility: read_only
+          -
+            handle: in_use
+            field:
+              type: toggle
+              display: 'In Use'
+              instructions: 'Read-only. Whether this PDF is still attached to an existing, published post.'
+              visibility: computed
+              localizable: false
+          -
+            handle: used_by
+            field:
+              type: entries
+              display: 'Used By'
+              instructions: 'Read-only. The post this PDF belongs to, if it still exists.'
+              collections:
+                - posts
+              max_items: 1
+              visibility: computed
+              localizable: false

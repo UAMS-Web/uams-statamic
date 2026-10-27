@@ -1,0 +1,40 @@
+{{#
+
+	@name Header: Account
+	@desc The signed-in state in the site chrome — a log-in link, or the member's name and a way out.
+
+#}}
+{{# AC1 of #2113 asks for "a signed-in state in the site chrome — at minimum a way to log
+	out". This is that, and it is deliberately the smallest thing that satisfies it: this
+	partial renders on EVERY page, so anything richer here is blast radius for no benefit.
+
+	`logged_in` / `logged_out` come from the cascade (Statamic\View\Cascade), so no route
+	middleware or controller is involved and the partial is safe on cached pages that were
+	rendered for a guest — Statamic does not cache authenticated responses.
+
+	Log out uses `{{ member:logout_url }}` because Statamic owns that URL. The two
+	entry-backed targets are hardcoded because their final URLs are #2305's to choose —
+	`/login` against `/account/login` is an open decision on that ticket. They are kept
+	together here so that when it lands there are two hrefs to update in one file, rather
+	than the same guess scattered across templates.
+
+	The member's name comes from `current_user:`, NOT from a bare `{{ name }}`. The cascade
+	publishes the signed-in member as `current_user` (Statamic\View\Cascade), while a bare
+	`name` resolves against the ENTRY — and 21 blueprints in this site carry a `name` field,
+	so on any organizations or facilities page the chrome would have shown that entry's name
+	where the member's belongs. Reproduced before fixing: rendering this partial with
+	`name => 'Schmieding Center'` in context printed the center. Found by adversarial review
+	rather than by a test, and locked by one now.
+
+	It is escaped because it is member-supplied through the register and profile forms, and
+	Antlers is raw-by-default. #}}
+{{ if logged_in }}
+	<div class="site-header__account d-flex align-items-center gap-2 ms-auto">
+		<a class="nav-link" href="/profile">{{ current_user:name | entities }}</a>
+		<a class="nav-link" href="{{ member:logout_url }}">Log out</a>
+	</div>
+{{ else }}
+	<div class="site-header__account ms-auto">
+		<a class="nav-link" href="/login">Log in</a>
+	</div>
+{{ /if }}

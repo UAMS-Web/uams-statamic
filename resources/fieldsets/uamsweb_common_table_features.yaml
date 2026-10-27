@@ -1,0 +1,116 @@
+title: 'UAMSWeb Common Reusable Fields, Tables, Features'
+fields:
+  -
+    handle: sorting_enable
+    field:
+      type: toggle
+      display: 'Enable Sorting'
+      instructions: 'Allow sorting of table rows by clicking on column headers.'
+      default: false
+      instructions_position: below
+      localizable: false
+      if:
+        first_row_headers: 'equals true'
+  -
+    handle: search_enable
+    field:
+      type: toggle
+      display: 'Enable Searching'
+      instructions: 'Filter table rows to display only those containing the search term.'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: pagination_enable
+    field:
+      type: toggle
+      display: 'Enable Pagination'
+      instructions: 'Split table rows into pages to display a limited number at a time.'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: pagination_count
+    field:
+      type: integer
+      display: 'Table Rows Per Page'
+      instructions: 'Set the number of table rows to display per page when pagination is enabled.'
+      default: 10
+      if:
+        pagination_enable: 'equals true'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: pagination_change_enable
+    field:
+      type: toggle
+      display: 'Adjustable Row Count'
+      instructions: 'Permit users to adjust the number of rows shown per page.'
+      if:
+        pagination_enable: 'equals true'
+      localizable: false
+  -
+    handle: info_enable
+    field:
+      type: toggle
+      display: 'Enable Table Information'
+      instructions: 'Display metadata about the table, such as the total number of rows and current page.'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: horizontal_scroll_enable
+    field:
+      type: toggle
+      display: 'Enable Horizontal Scrolling'
+      instructions: 'Allow horizontal scrolling for tables with many columns to improve visibility.'
+      default: true
+      instructions_position: below
+      localizable: false
+  -
+    handle: column_filter_enable
+    field:
+      type: toggle
+      display: 'Enable Column Filter Dropdowns'
+      instructions: 'Show a per-column dropdown above the table so visitors can filter rows to a single value in that column (the TablePress "Column Filter Widgets" feature).'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: column_filter_columns
+    field:
+      type: text
+      display: 'Filter Columns'
+      instructions: "Which columns get a filter dropdown, as comma-separated spreadsheet letters — e.g. `A,C,D`. Leave blank to offer a dropdown for every column."
+      placeholder: 'A,C,D'
+      default: ''
+      instructions_position: below
+      localizable: false
+      if:
+        column_filter_enable: 'equals true'
+  -
+    handle: responsive_stack_enable
+    field:
+      type: toggle
+      display: 'Stack On Small Screens'
+      instructions: 'Below the chosen breakpoint, collapse each row into a stacked card that labels every value with its column header, instead of a wide table (the TablePress responsive "collapse" behavior).'
+      default: false
+      instructions_position: below
+      localizable: false
+  -
+    handle: responsive_stack_breakpoint
+    field:
+      type: select
+      display: 'Stack Breakpoint'
+      instructions: 'The screen width below which the table stacks.'
+      default: phone
+      options:
+        phone: 'Phone (below 768px)'
+        tablet: 'Tablet (below 992px)'
+      clearable: false
+      instructions_position: below
+      localizable: false
+      if:
+        responsive_stack_enable: 'equals true'

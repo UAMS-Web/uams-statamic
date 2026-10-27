@@ -1,0 +1,52 @@
+@mixin pagetitle() {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    width: $content-width * 1.618;
+    margin-bottom: $page-title-margin-bottom-mobile;
+    padding-bottom: $page-title-margin-bottom-mobile;
+    position: relative;
+    color: $page-title-color;
+    text-align: center;
+
+    @include media-breakpoint-up(sm) {
+        margin-bottom: $page-title-margin-bottom;
+        padding-bottom: $page-title-margin-bottom;
+    }
+
+    &:after {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 0.0625em;
+        @include font-size($page-title-font-size);
+        background-color: $page-title-border-color;
+        max-width: $content-width;
+        position: absolute;
+        margin: 0 auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    h1 {
+        font-family: $page-title-font-family;
+        @include font-size($page-title-font-size);
+        font-weight: $page-title-font-weight;
+        line-height: $page-title-line-height;
+        margin-bottom: 0;
+
+        &:not(:last-child) {
+            margin-bottom: 0.25em;
+        }
+    }
+
+    .entry-summary {
+        @include font-size($page-title-font-size * 0.5);
+        font-weight: $font-weight-medium;
+        line-height: $headings-line-height;
+        max-width: $content-width;
+        margin: 0 auto;
+        color: $bg-gray-color-lightest;
+    }
+}

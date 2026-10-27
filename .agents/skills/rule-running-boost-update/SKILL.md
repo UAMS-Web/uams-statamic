@@ -1,0 +1,49 @@
+---
+name: rule-running-boost-update
+description: "Run `boost:update` only as `--ignore-skills`, deliberately, never mid-ticket."
+disable-model-invocation: true
+---
+<!--
+  Synced from UAMS-Web/uams-claude-skills: shared/.claude/rules/running-boost-update.md
+  Edit it there, not here; the next sync overwrites this copy.
+  Delivered to this repository through the profile(s): laravel.
+-->
+# Rule — run `boost:update` only as `--ignore-skills`, deliberately, never mid-ticket
+
+`php artisan boost:update` refreshes the Laravel Boost guidelines **and rewrites the harness skill trees** in one command. The skill half is the problem: run bare, it rewrites `laravel-best-practices` in both `.claude/skills/` and `.cursor/skills/`, replaces any single-sourced custom skill under `.ai/skills/` with a **symlink** into it, and adds a Boost core skill (`infer-conventions`) nobody asked for, all as a side effect of a guideline refresh, and all landing in whatever diff happens to be open.
+
+**So `boost:update` is only ever run as `boost:update --ignore-skills`, as its own reviewed change, and never as a refresh reached for in the middle of another ticket.** The one documented flag skips every skill write while leaving the guideline update (`AGENTS.md`) flowing.
+
+## Why this is a standing order
+
+**The churn is silent in the direction that matters.** A contributor who runs bare `boost:update` mid-ticket, commits with `git add -A`, and pushes has widened their change, rewriting a guidelines file every session loads and configuration (`boost.json`), with no warning. Shared skills such as `laravel-best-practices` are written by the sync from `UAMS-Web/uams-claude-skills`, so a bare run also overwrites them in place with Boost's own copy and puts the next sync in conflict with the working tree.
+
+**The symlink writes are worse than untidy.** Where a custom skill is single-sourced under `.ai/skills/` and holds only Markdown, Boost discovers it as a custom user skill and **symlinks** the harness copies:
+
+```
+.claude/skills/<skill> -> ../../.ai/skills/<skill>
+```
+
+A tracked `120000` entry is checked out as a **plain text file** wherever `core.symlinks=false`, which git sets automatically on a default Windows clone, so the harness finds a file where it expects a directory and the skill vanishes from that session's listing, silently, on one platform. `--ignore-skills`, run on the same tree, touches only the guidelines file(s): no skill directory, no symlink, no `infer-conventions`.
+
+This was characterized in `uams-statamic` from a run on current `main` (#2319, 2026-09-15): bare `boost:update` symlinked `pest-testing` and `tailwindcss-development`, which is the regression [`tests/Feature/Config/SkillMirrorsTest.php`](../../../tests/Feature/Config/SkillMirrorsTest.php) exists to gate (#2169, #2170). `--ignore-skills` on the same tree touched only `CLAUDE.md` and `AGENTS.md`. Since #2539 Boost writes only `AGENTS.md` (`config/boost.php` points Claude Code's `guidelines_path` there), and `CLAUDE.md` merely imports it.
+
+History: [Why this is a standing order](../../../.claude/history/running-boost-update.md#why-this-is-a-standing-order).
+
+## How to apply
+
+- **Always `--ignore-skills`.** `php artisan boost:update --ignore-skills`. Never the bare form.
+- **On its own branch, reviewed as a change to shared guidance**, because it edits `AGENTS.md`, which every session loads. Not folded into an unrelated ticket.
+- **Not a mid-ticket refresh.** If you find yourself running it to "get current" while building something else, stop: that is the failure above.
+- **`boost.skills.exclude` is not the control.** It is undocumented (absent from Boost's own config stub), and its `reject()` runs before the user-skills merge, so it structurally cannot suppress anything under `.ai/skills/`. `--ignore-skills` is the only instrument that holds.
+- **`infer-conventions` is declined.** It records findings into `.ai/rules` through an MCP tool, opening a second authoring route beside the repository's hand-written `.claude/rules/` corpus, where each rule carries its own measured evidence. `--ignore-skills` declines it by default.
+
+- In `uams-statamic`, the absence of `infer-conventions` and of any skill symlink is gated by `SkillMirrorsTest`, and `boost.skills.exclude` is additionally the instrument #2320 removes.
+
+## The DRY line
+
+This file owns **how `boost:update` is run**. It composes with [`closing-a-ticket`](../rule-closing-a-ticket/SKILL.md) (keep a diff scoped to its ticket).
+
+The skill-mirror invariant it protects (real directories, never symlinks, byte-identical to `.ai/skills/`) is owned and enforced by `SkillMirrorsTest` and `scripts/sync-skills.mjs`; the decision record is in [`docs/DECISIONS.md`](../../../docs/DECISIONS.md).
+
+_Refs: #2319 (this rule and its characterizing run), #2168 (the churn, reverted twice), #2169 / #2170 (the symlink regression), #2320 (the move that makes `--ignore-skills` the only remaining control)._

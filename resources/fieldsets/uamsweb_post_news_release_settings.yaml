@@ -1,0 +1,34 @@
+title: 'UAMSWeb Posts, News Release Settings'
+fields:
+  -
+    handle: news_release_pdf
+    field:
+      container: news_releases
+      type: assets
+      display: 'News Release PDF'
+      instructions: 'On save, a PDF is generated from the news release template and stored in the `news_releases` container. The file name is `{Y-m-d}_{slug}.pdf` (publish date in the Statamic display timezone, then the slug). Each save regenerates the PDF; older generated files for this entry are removed when that path changes.'
+      localizable: false
+      max_files: '1'
+  -
+    handle: media_contact
+    field:
+      type: terms_search_index
+      display: 'Media Contact'
+      taxonomies:
+        - media_contact_groups
+      create: false
+      mode: select
+      max_items: '1'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: media_contact_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Contacts?'
+      instructions: 'If enabled, the media contacts will be displayed on the news release post. Even if disabled, the media contacts will be displayed in the news release PDF.'
+      validate:
+        - required
+      default: false
+      localizable: false

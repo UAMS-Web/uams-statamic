@@ -1,0 +1,76 @@
+title: 'News Springboard'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Page Title'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: true
+              display: 'Page Title'
+              validate:
+                - required
+      -
+        display: 'News Sections'
+        instructions: 'Each section lists a category’s latest posts. Sections render top-to-bottom; a post surfaced in an earlier section is never repeated in a later one (page-wide, earlier-section-wins deduplication).'
+        fields:
+          -
+            handle: sections
+            field:
+              type: grid
+              display: 'News Sections'
+              mode: stacked
+              reorderable: true
+              add_row: 'Add Section'
+              localizable: true
+              fields:
+                -
+                  handle: section_heading
+                  field:
+                    type: text
+                    display: 'Section Heading'
+                    localizable: true
+                -
+                  handle: category
+                  field:
+                    type: entries
+                    display: Category
+                    instructions: 'The post category this section lists. Leave empty for a “latest news” catch-all section.'
+                    collections:
+                      - post_categories
+                    max_items: 1
+                    create: false
+                    localizable: false
+                -
+                  handle: count
+                  field:
+                    type: integer
+                    display: 'Number of Posts'
+                    default: 4
+                    validate:
+                      - 'min:1'
+                    localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: pages/news_springboard
+              localizable: false

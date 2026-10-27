@@ -1,0 +1,25 @@
+diff --git a/src/Stache/Stores/Store.php b/src/Stache/Stores/Store.php
+index 078670c..2f4f8d5 100644
+--- a/src/Stache/Stores/Store.php
++++ b/src/Stache/Stores/Store.php
+@@ -291,7 +291,19 @@ abstract class Store
+ 
+     protected function getItemFromModifiedPath($path)
+     {
+-        return $this->makeItemFromFile($path, File::get($path));
++        $contents = File::get($path);
++
++        // A file a fresh listing shows was removed after the traversal stat'ed it is
++        // skipped, rather than rebuilt from no contents as a new, empty item
++        if ($contents === null) {
++            $listing = @scandir(dirname($path));
++
++            if ($listing !== false && ! in_array(basename($path), $listing, true)) {
++                return null;
++            }
++        }
++
++        return $this->makeItemFromFile($path, $contents);
+     }
+ 
+     public function paths()

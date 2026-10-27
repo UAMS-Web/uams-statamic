@@ -1,0 +1,178 @@
+{{# Name fieldtype (App\Fieldtypes\Name, uses HasSubfields trait) — structured
+    name input with five toggleable subfields (prefix, first_name, middle_name,
+    last_name, suffix). Inclusion / required / label / placeholder / default
+    config per subfield comes from the blueprint via the HasSubfields trait.
+
+    Defaults match getSubfieldDefinitions() in Name.php:
+      - prefix:      include=false, required=false
+      - first_name:  include=true,  required=true
+      - middle_name: include=false, required=false
+      - last_name:   include=true,  required=true
+      - suffix:      include=false, required=false
+
+    Submitted as `{handle}[prefix]`, `{handle}[first_name]`, etc.; server-side
+    validation lives on HasSubfields::extraRules() driven by the parent
+    `validate` array and each subfield's `*_required` toggle.
+
+    Subfield width config (50 / 100 etc.) flows through _width.antlers.html. #}}
+<div class="row">
+	{{ if prefix_include ?? false }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="prefix_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-prefix" class="small text-muted mb-1">
+					{{ prefix_label ?? 'Prefix' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-prefix"
+					class="form-control"
+					name="{{ handle }}[prefix]"
+					value="{{ (value.prefix ?? prefix_default ?? '') | sanitize }}"
+					placeholder="{{ prefix_placeholder ?? 'e.g. Dr., Mr., Ms.' }}"
+					autocomplete="honorific-prefix"
+					{{# js_attributes intentionally omitted: it would emit
+						x-model="{{ handle }}" on every subfield, binding them all to
+						the parent composite value and clobbering each other. The
+						standard name="{{ handle }}[subfield]" attribute carries the
+						submission. #}}
+					{{ ( ( validate | contains:required ) && ( prefix_required ?? false ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if first_name_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="first_name_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-first_name" class="small text-muted mb-1">
+					{{ first_name_label ?? 'First Name' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-first_name"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[first_name]"
+					value="{{ (value.first_name ?? first_name_default ?? '') | sanitize }}"
+					placeholder="{{ first_name_placeholder ?? 'Enter first name' }}"
+					autocomplete="given-name"
+					{{# js_attributes intentionally omitted: it would emit
+						x-model="{{ handle }}" on every subfield, binding them all to
+						the parent composite value and clobbering each other. The
+						standard name="{{ handle }}[subfield]" attribute carries the
+						submission. #}}
+					{{ ( ( validate | contains:required ) && ( first_name_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if middle_name_include ?? false }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="middle_name_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-middle_name" class="small text-muted mb-1">
+					{{ middle_name_label ?? 'Middle Name' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-middle_name"
+					class="form-control"
+					name="{{ handle }}[middle_name]"
+					value="{{ (value.middle_name ?? middle_name_default ?? '') | sanitize }}"
+					placeholder="{{ middle_name_placeholder ?? 'Enter middle name' }}"
+					autocomplete="additional-name"
+					{{# js_attributes intentionally omitted: it would emit
+						x-model="{{ handle }}" on every subfield, binding them all to
+						the parent composite value and clobbering each other. The
+						standard name="{{ handle }}[subfield]" attribute carries the
+						submission. #}}
+					{{ ( ( validate | contains:required ) && ( middle_name_required ?? false ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if last_name_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="last_name_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-last_name" class="small text-muted mb-1">
+					{{ last_name_label ?? 'Last Name' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-last_name"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[last_name]"
+					value="{{ (value.last_name ?? last_name_default ?? '') | sanitize }}"
+					placeholder="{{ last_name_placeholder ?? 'Enter last name' }}"
+					autocomplete="family-name"
+					{{# js_attributes intentionally omitted: it would emit
+						x-model="{{ handle }}" on every subfield, binding them all to
+						the parent composite value and clobbering each other. The
+						standard name="{{ handle }}[subfield]" attribute carries the
+						submission. #}}
+					{{ ( ( validate | contains:required ) && ( last_name_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if suffix_include ?? false }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="suffix_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-suffix" class="small text-muted mb-1">
+					{{ suffix_label ?? 'Suffix' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-suffix"
+					class="form-control"
+					name="{{ handle }}[suffix]"
+					value="{{ (value.suffix ?? suffix_default ?? '') | sanitize }}"
+					placeholder="{{ suffix_placeholder ?? 'e.g. Jr., Sr., III' }}"
+					autocomplete="honorific-suffix"
+					{{# js_attributes intentionally omitted: it would emit
+						x-model="{{ handle }}" on every subfield, binding them all to
+						the parent composite value and clobbering each other. The
+						standard name="{{ handle }}[subfield]" attribute carries the
+						submission. #}}
+					{{ ( ( validate | contains:required ) && ( suffix_required ?? false ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+</div>

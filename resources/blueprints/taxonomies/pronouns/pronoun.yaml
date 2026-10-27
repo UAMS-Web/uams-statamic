@@ -1,0 +1,98 @@
+title: 'Personal Pronoun'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: description
+            field:
+              type: textarea
+              display: 'Description'
+              instructions: 'Provide a brief description of the pronoun.'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: nominative
+            field:
+              type: text
+              display: 'Nominative (Subject)'
+              instructions: |-
+                The subject form used for the person or thing performing the action.
+
+                Example: **They** went to the store.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: accusative
+            field:
+              type: text
+              display: 'Accusative or Objective (Object)'
+              instructions: |-
+                The object form used when the person or thing receives the action.
+
+                Example: The manager called **them**.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: dependent_possessive
+            field:
+              type: text
+              display: 'Dependent Possessive (Possessive Determiner)'
+              instructions: |-
+                The form used before a noun to show ownership or relationship.
+
+                Example: This is **their** desk.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: independent_possessive
+            field:
+              type: text
+              display: 'Independent Possessive (Possessive Pronoun)'
+              instructions: |-
+                The form used to replace a noun phrase while showing ownership.
+
+                Example: The choice is **theirs**.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: reflexive
+            field:
+              type: text
+              display: 'Reflexive'
+              instructions: |-
+                The form used when the object of the sentence is the same as the subject.
+
+                Example: They taught **themselves**.
+              validate:
+                - required
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

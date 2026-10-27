@@ -1,0 +1,67 @@
+{{#
+
+	@name Entry Meta: Person
+	@desc Renders one or more persons (e.g., creators) with optional links and schema.org markup.
+	Expects: label (optional), value (array of { name, url }), fallback_name (e.g. "Staff Writer").
+	Multiple persons are joined with `adaptive_sentence_list` (comma / semicolon / "and" rules).
+
+#}}
+
+{{ partial:layout/page-header/entry-meta/components/value itemprop="" }}
+	{{# Initialize the person chunks array #}}
+	{{ $person_chunks = [] }}
+
+	{{# Set the schema itemprop for each person chunk #}}
+	{{ $person_itemprop = itemprop ?? null }}
+	{{ $person_itemprop_html = $person_itemprop ? ( ' itemprop="' + $person_itemprop + '"' ) : '' }}
+
+	{{# Check if the value array has at least one item. `value` arrives as a plain,
+		already-resolved array from `creator_role_row` (via `normalize_list`), so
+		`| count` counts what renders. #}}
+	{{ if value && (value | count) > 0 }}
+		{{# Loop through the value array #}}
+		{{ value }}
+			{{# Set the person name (sanitized: concatenated into raw HTML below) #}}
+			{{ $person_name = (title ?? '') | sanitize }}
+
+			{{# Wrap the person chunk in a schema.org name span #}}
+			{{ $person_chunk = '<span itemprop="https://schema.org/name">' + $person_name + '</span>' }}
+
+			{{# Set the person URL (sanitized for the href/content attribute context) #}}
+			{{ $person_url = (permalink ?? '') | sanitize }}
+
+			{{# Check if the person has a URL #}}
+			{{ if $person_url }}
+				{{# Wrap the person chunk in a schema.org name span #}}
+				{{ $person_chunk = '<a href="' + $person_url + '" itemprop="https://schema.org/url" content="' + $person_url + '">' + $person_chunk + '</a>' }}
+			{{ /if }}
+
+			{{# Wrap the person chunk in a schema.org itemprop, itemscope, itemtype span #}}
+			{{ $person_chunk = '<span' + $person_itemprop_html + ' itemscope itemtype="https://schema.org/Person">' + $person_chunk + '</span>' }}
+
+			{{# Append the person chunk to the person chunks array #}}
+			{{ $person_chunks += $person_chunk }}
+		{{ /value }}
+
+	{{ else }}
+		{{# If the value array has no items, use the fallback name #}}
+
+		{{# Set the person name (sanitized: concatenated into raw HTML below) #}}
+		{{ $person_name = (fallback_name ?? 'Staff Writer') | sanitize }}
+
+		{{# Add the name to the person chunk #}}
+		{{ $person_chunk = $person_name }}
+
+		{{# Wrap the person chunk in a schema.org name span #}}
+		{{ $person_chunk = '<span itemprop="https://schema.org/name">' + $person_name + '</span>' }}
+
+		{{# Wrap the person chunk in a schema.org itemprop, itemscope, itemtype span #}}
+		{{ $person_chunk = '<span' + $person_itemprop_html + ' itemscope itemtype="https://schema.org/Person">' + $person_chunk + '</span>' }}
+
+		{{# Append the fallback person chunk #}}
+		{{ $person_chunks += $person_chunk }}
+
+	{{ /if }}
+
+	{{ ($person_chunks | adaptive_sentence_list) | raw }}
+{{ /partial:layout/page-header/entry-meta/components/value }}

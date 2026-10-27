@@ -1,0 +1,9 @@
+.navbar {
+    a {
+        text-decoration: none;
+
+        @include hover-focus {
+            text-decoration: underline;
+        }
+    }
+}

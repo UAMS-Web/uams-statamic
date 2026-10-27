@@ -1,0 +1,309 @@
+{{#
+	@name UAMS Logo List
+	@desc The UAMS Logo List page builder block.
+	@set page.page_builder.uamsweb_block_logo_list
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Check if the required top-level block fields have values.
+
+		`logo_list_labels` is deliberately NOT required here (UAMS-Web/uams-statamic-archive#1858): it is a display
+		toggle whose default is `false`, so a truthiness test gated the whole block on
+		an author's display choice.
+
+		Presence checks are strict (`!== null`). PHP's loose `!= null` is false for a
+		bool `false` — `null == false` — so every `true_false` toggle that is
+		legitimately OFF failed its own presence test. `!== null` passes for `false`
+		and rejects an actual `null`; Antlers resolves an absent key to `null` too, so
+		the check still means "the field is present". #}}
+	{{ $block_valid = block_heading && background_color && logo_list_layout && logo_list_links !== null && more_query !== null }}
+
+	{{# If the more query is present, check if the required fields have values #}}
+	{{ if $block_valid && more_query }}
+		{{ $block_valid = more_heading && more_button_text && more_button_url && more_button_target !== null }}
+	{{ /if }}
+
+	{{# If the filter categories are present, check if the category logic field has a
+		value. The category and label filters are independent (UAMS-Web/uams-statamic-archive#1858) — requiring the
+		label filter's logic here rejected every category-only block, which is the
+		shape the importer produces. #}}
+	{{ if $block_valid && logo_list_filter_category }}
+		{{ $block_valid = logo_list_filter_category_logic !== null }}
+	{{ /if }}
+
+	{{# If the filter labels are present, check if the label logic field has a value #}}
+	{{ if $block_valid && logo_list_filter_label }}
+		{{ $block_valid = logo_list_filter_label_logic !== null }}
+	{{ /if }}
+
+	{{# If the layout is grid, check if the required fields have values #}}
+	{{ if $block_valid && block:logo_list_layout == 'grid' }}
+		{{ $block_valid = logo_list_width !== null && logo_list_titles !== null && logo_list_shortdescr !== null }}
+	{{ /if }}
+
+	{{# If links are enabled, check if the link target field has a value #}}
+	{{ if $block_valid && logo_list_links }}
+		{{ $block_valid = logo_list_links_target !== null }}
+	{{ /if }}
+
+	{{# Count the number of items #}}
+	{{ if $block_valid }}
+		{{ $item_count = ( block:logo_list_sort | safe_count ) }}
+
+		{{# Check if there is at least one item #}}
+		{{ $block_valid = $item_count >= 1 }}
+	{{ /if }}
+
+	{{# Check if the sort options have values #}}
+	{{ if $block_valid }}
+		{{ block:logo_list_sort }}
+
+			{{# Check if the sort by field has a value #}}
+			{{ if !sort_by }}
+				{{ $block_valid = false }}
+			{{ /if }}
+
+			{{# If the sort by field is order_values, check if the sort key field has a value #}}
+			{{ if sort_by == 'order_values' && !sort_key }}
+				{{ $block_valid = false }}
+			{{ /if }}
+
+			{{# If the sort by field is logo_title, title, or order_values, check if the sort order field has a value #}}
+			{{ if ( sort_by == 'logo_title' || sort_by == 'title' || sort_by == 'order_values' ) && !sort_order }}
+				{{ $block_valid = false }}
+			{{ /if }}
+		{{ /block:logo_list_sort }}
+	{{ /if }}
+
+	{{# Block Class #}}
+	{{ if $block_valid }}
+		{{ $logo_list_class = 'logo-list logo-list-layout-' + block:logo_list_layout }}
+	{{ /if }}
+
+	{{# Image Dimensions #}}
+	{{ if $block_valid }}
+		{{# Aspect Ratio #}}
+
+			{{ $logo_list_image_ratio = switch(
+				( block:logo_list_layout == 'grid' ) => 16/9,
+				( block:logo_list_layout == 'vertical' ) => 4/3,
+			) }}
+
+		{{# XXS Breakpoint #}}
+
+			{{ $logo_list_image_width_xxs = switch(
+				( block:logo_list_layout == 'grid' && !block:logo_list_featured ) => 177,
+				( block:logo_list_layout == 'grid' && block:logo_list_featured ) => 221,
+				( block:logo_list_layout == 'vertical' ) => 236
+			) }}
+			{{ $logo_list_image_height_xxs = $logo_list_image_width_xxs / $logo_list_image_ratio }}
+
+		{{# XS Breakpoint #}}
+
+			{{ $logo_list_image_width_xs = switch(
+				( block:logo_list_layout == 'grid' ) => $logo_list_image_width_xxs,
+				( block:logo_list_layout == 'vertical' ) => 172
+			) }}
+			{{ $logo_list_image_height_xs = $logo_list_image_width_xs / $logo_list_image_ratio }}
+
+		{{# SM Breakpoint #}}
+
+			{{ $logo_list_image_width_sm = switch(
+				( block:logo_list_layout == 'grid' ) => $logo_list_image_width_xxs,
+				( block:logo_list_layout == 'vertical' && !block:logo_list_featured ) => $logo_list_image_width_xs,
+				( block:logo_list_layout == 'vertical' && block:logo_list_featured ) => 224
+			) }}
+			{{ $logo_list_image_height_sm = $logo_list_image_width_sm / $logo_list_image_ratio }}
+
+		{{# MD Breakpoint #}}
+
+			{{ $logo_list_image_width_md = switch(
+				( block:logo_list_layout == 'grid' ) => $logo_list_image_width_xxs,
+				( block:logo_list_layout == 'vertical' && !block:logo_list_featured ) => $logo_list_image_width_xs,
+				( block:logo_list_layout == 'vertical' && block:logo_list_featured ) => 275
+			) }}
+			{{ $logo_list_image_height_md = $logo_list_image_width_md / $logo_list_image_ratio }}
+
+		{{# LG Breakpoint #}}
+
+			{{ $logo_list_image_width_lg = switch(
+				( block:logo_list_layout == 'grid' && !block:logo_list_featured ) => 354,
+				( block:logo_list_layout == 'grid' && block:logo_list_featured ) => 442,
+				( block:logo_list_layout == 'vertical' && !block:logo_list_featured ) => $logo_list_image_width_xs,
+				( block:logo_list_layout == 'vertical' && block:logo_list_featured ) => 350
+			) }}
+			{{ $logo_list_image_height_lg = $logo_list_image_width_lg / $logo_list_image_ratio }}
+
+		{{# XL Breakpoint #}}
+
+			{{ $logo_list_image_width_xl = switch(
+				( block:logo_list_layout == 'grid' ) => $logo_list_image_width_lg,
+				( block:logo_list_layout == 'vertical' && !block:logo_list_featured ) => $logo_list_image_width_xs,
+				( block:logo_list_layout == 'vertical' && block:logo_list_featured ) => 359
+			) }}
+			{{ $logo_list_image_height_xl = $logo_list_image_width_xl / $logo_list_image_ratio }}
+
+		{{# XXL Breakpoint #}}
+
+			{{ $logo_list_image_width_xxl = switch(
+				( block:logo_list_layout == 'grid' ) => $logo_list_image_width_lg,
+				( block:logo_list_layout == 'vertical' && !block:logo_list_featured ) => $logo_list_image_width_xs,
+				( block:logo_list_layout == 'vertical' && block:logo_list_featured ) => $logo_list_image_width_xl
+			) }}
+			{{ $logo_list_image_height_xxl = $logo_list_image_width_xxl / $logo_list_image_ratio }}
+	{{ /if }}
+
+	{{# Category filter ids #}}
+	{{ if $block_valid }}
+		{{# `logos_item_categories` is a structured collection now (UAMS-Web/uams-statamic-archive#1863), so the
+			filter is an entries reference. Take the RAW value: an augmented
+			`entries` field is a `Statamic\Query\StatusQueryBuilder`, not a list of
+			ids, and handing that to the query scope yields no ids and therefore no
+			items — the block would render its shell around an empty list. The
+			People block takes the same `| raw` precaution for the same reason. #}}
+		{{ $logo_list_categories = logo_list_filter_category | raw }}
+	{{ /if }}
+
+	{{# Label filter ids #}}
+	{{ if $block_valid }}
+		{{# `logos_item_labels` became a site-scoped structured collection (UAMS-Web/uams-statamic-archive#2533), so
+			the label filter is an entries reference too, taken RAW for the same
+			reason as the category ids above. The name must not be `logo_list_labels`:
+			Antlers drops the `$`, and that is the block's own "Display Organization
+			Labels?" toggle. #}}
+		{{ $logo_list_label_ids = logo_list_filter_label | raw }}
+	{{ /if }}
+
+	{{# Sort Value #}}
+	{{ if $block_valid }}
+		{{# Base Variable#}}
+		{{ $logo_list_sort = '' }}
+
+		{{# Loop through the sort options and add the sort configurations to the base sort variable #}}
+		{{ block:logo_list_sort }}
+
+			{{# Sorting by an order key/value pair uses the flattened top-level
+				`order_value__<key>` field that FlattenLogoOrderValues mirrors on save
+				(UAMS-Web/uams-statamic-archive#73) — the `collection` tag cannot sort by the nested `order_values`. #}}
+			{{ if sort_by == 'order_values' }}
+				{{ $sort_by = 'order_value__' + sort_key }}
+			{{ else }}
+				{{ $sort_by = sort_by }}
+			{{ /if }}
+
+			{{# Combine the `sort by` and `sort order` values #}}
+			{{ $logo_list_sort_value = ( [
+				$sort_by,
+				( sort_by != 'random' ? sort_order : null )
+			] | filter_empty | join(':') ) }}
+
+			{{# Add the sort configuration to the base sort variable #}}
+			{{ $logo_list_sort = ( [ $logo_list_sort, $logo_list_sort_value ] | filter_empty | join('|') ) }}
+
+		{{ /block:logo_list_sort }}
+
+		{{# Check the sort value #}}
+		{{ $logo_list_sort = $logo_list_sort ?? void }}
+	{{ /if }}
+
+{{# Render the Block #}}
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$logo_list_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12">
+				<div
+					class="{{
+						[
+							'item-list-container' => true,
+							logo_list_width
+						] | classes | collapse_whitespace
+					}}"
+				>
+					<div class="item-list">
+						{{ collection
+
+							from="logo_list_items"
+
+							:sort="$logo_list_sort"
+
+							{{# `logos_item_categories` (UAMS-Web/uams-statamic-archive#1863) and `logos_item_labels` (UAMS-Web/uams-statamic-archive#2533) are
+								structured collections, not taxonomies, so each filter is an
+								entries-reference lookup through its own scope. Each scope carries the
+								same three-way any/not/all logic the three `:taxonomy:` parameters used
+								to express, so the selected logic is passed through rather than
+								switched on here. The two scopes read separate parameters, so they
+								chain on one tag and an item must satisfy both filters. #}}
+							query_scope="logo_items_in_categories|logo_items_with_labels"
+							:categories="$logo_list_categories"
+							:logic="logo_list_filter_category_logic"
+							:labels="$logo_list_label_ids"
+							:label_logic="logo_list_filter_label_logic"
+						}}
+							{{ partial:page_builder/uamsweb_block_logo_list_item }}
+						{{ /collection }}
+					</div>
+				</div>
+			</div>
+			{{ partial:page_builder/components/block_more block_item_button_outline="true" }}
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}
+
+{{#
+
+	================================================================================
+
+	To-Do List
+
+	================================================================================
+
+	# Sort Order for Order Key/Value Option
+
+	The Order Key / Value pair values for a Logo List item are currently being
+	stored using the `array` fieldtype with the handle `order_values`. This stores
+	the values as an array (i.e.,  as nested field values).
+
+	Example:
+
+		```md
+		order_values:
+		  foo: '1'
+		```
+
+	It does not appear as though Statamic currently allows for sorting a
+	`collection` tag by nested fields.
+
+	We need another method of querying the key/value pairs for Logo List items.
+
+	We might be able to write some custom code to reach in and grab the nested
+	values from the `order_values` field and store them in the markdown file as
+	shallow / top-level field values. There would be a risk of the custom `key`
+	value colliding with other field handles from that blueprint. To mitigate that,
+	we could append a specific string to the key (perhaps an underscore?) when
+	storing it in the markdown file while also appending that same string to the
+	specified key in the block configuration.
+
+	Potential result in markdown file:
+
+		```md
+		order_values:
+		  foo: '1'
+		_foo: '1'
+		```
+
+	Potential result in collection tag's sort parameter:
+
+		```html
+		sort="_foo:asc"
+		```
+
+	================================================================================
+
+#}}

@@ -1,0 +1,5 @@
+.dataTables_wrapper {
+    .paginate_button.disabled {
+        color: $body-color-lightest !important; // overriding plugin styles for proper contrast ratio
+    }
+}

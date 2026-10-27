@@ -1,0 +1,206 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: prefix
+            field:
+              type: text
+              display: Prefix
+              localizable: false
+              validate:
+                - required
+          -
+            handle: first_name
+            field:
+              type: text
+              display: 'First Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: last_name
+            field:
+              type: text
+              display: 'Last Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: address
+            field:
+              type: text
+              display: Address
+              localizable: false
+              validate:
+                - required
+          -
+            handle: city
+            field:
+              type: text
+              display: City
+              localizable: false
+              validate:
+                - required
+          -
+            handle: zip
+            field: uamsweb_common_address.zip
+            config:
+              validate:
+                - required
+          -
+            handle: county
+            field:
+              type: text
+              display: County
+              localizable: false
+              validate:
+                - required
+          -
+            handle: email_address
+            field: uamsweb_common_contact.email_address
+            config:
+              validate:
+                - required
+          -
+            handle: phone
+            field: uamsweb_common_contact.phone
+            config:
+              validate:
+                - required
+          -
+            handle: proclamation_title
+            field:
+              type: text
+              display: 'Proclamation Title'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: please_describe_the_proclamation_you_are_requesting
+            field:
+              type: textarea
+              display: 'Please describe the proclamation you are requesting.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: how_is_the_proclamation_to_be_used_and_how_is_it_to_be_presented
+            field:
+              type: textarea
+              display: 'How is the proclamation to be used and how is it to be presented?'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: please_provide_sample_wording_for_your_requested_proclamation
+            field:
+              type: textarea
+              display: 'Please provide sample wording for your requested proclamation.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: proclamation_deadline
+            field:
+              input_type: date
+              type: text
+              display: 'Proclamation Deadline'
+              instructions: 'Please allow at least 30 days for processing.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: have_you_requested_a_proclamation_from_our_office_before
+            field:
+              options:
+                -
+                  key: 'Yes'
+                  value: null
+                -
+                  key: 'No'
+                  value: null
+              type: radio
+              display: 'Have you requested a proclamation from our office before?'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: if_yes_what_was_the_name_of_that_proclamation
+            field:
+              type: text
+              display: 'If yes, what was the name of that proclamation?'
+              localizable: false
+              if:
+                have_you_requested_a_proclamation_from_our_office_before: 'equals Yes'
+          -
+            handle: date_of_previous_proclamation
+            field:
+              input_type: date
+              type: text
+              display: 'Date of previous proclamation'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: would_you_like_to_request_a_photo_op_with_the_governor
+            field:
+              options:
+                -
+                  key: 'Yes'
+                  value: null
+                -
+                  key: 'No'
+                  value: null
+              type: radio
+              display: 'Would you like to request a photo-op with the Governor?'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: state_of_event
+            field:
+              type: text
+              display: 'State of Event'
+              localizable: false
+              visibility: hidden
+          -
+            handle: additional_notes
+            field:
+              type: textarea
+              display: 'Additional Notes'
+              localizable: false
+              visibility: hidden
+          -
+            handle: number_of_attendees
+            field:
+              type: text
+              display: 'Number of Attendees'
+              localizable: false
+              visibility: hidden
+          -
+            handle: attach_a_file_if_needed
+            field:
+              type: files
+              display: 'Attach a file if needed'
+              max_files: 1
+              localizable: false
+              validate:
+                - 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg'
+          -
+            handle: post_excerpt
+            field:
+              type: textarea
+              display: 'Post Excerpt'
+              localizable: false
+              visibility: hidden
+          -
+            handle: post_body
+            field:
+              type: textarea
+              display: 'Post Body'
+              instructions: 'Your request will go through an approval process, and the Governor has the discretion to decline or approve any proclamation.'
+              localizable: false
+              visibility: hidden

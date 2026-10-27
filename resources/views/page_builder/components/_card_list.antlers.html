@@ -1,0 +1,43 @@
+{{#
+	@name UAMS Card List
+	@desc Wraps content in col-12 and card-list; use with page_builder blocks.
+	@param card_list_position  Optional. 'left' (default) adds card-list-left; otherwise no card-list-* class.
+#}}
+
+{{# Resolve schema params #}}
+{{ itemprop = ( itemprop === '' ) ? null : ( itemprop ?? null ) }}
+{{ itemscope = ( itemscope == 'false' || itemscope === false || itemscope === '' ) ? null : ( itemscope ?? true ) }}
+{{ itemtype = ( itemtype === '' ) ? null : ( itemtype ?? 'https://schema.org/ItemList' ) }}
+
+{{ link_element_enabled = ( link_element_enabled == 'false' || link_element_enabled === false || link_element_enabled === '' ) ? null : ( link_element_enabled ?? true ) }}
+{{ link_element_itemprop = ( link_element_itemprop === '' ) ? null : ( link_element_itemprop ?? 'https://schema.org/itemListOrder' ) }}
+{{ link_element_href = ( link_element_href === '' ) ? null : ( link_element_href ?? 'https://schema.org/ItemListOrderAscending' ) }}
+
+{{# Apply default and build card-list position class (only when left) #}}
+{{ card_list_position = ( card_list_position === '' ) ? null : ( card_list_position ?? 'left' ) }}
+
+<div class="col-12">
+	<div
+		class="{{
+			[
+				'card-list' => true,
+				'card-list-left' => ( card_list_position == 'left' ),
+			] | classes | collapse_whitespace
+		}}"
+		{{ itemprop | attribute:itemprop }}
+		{{ itemscope | attribute:itemscope }}
+		{{ itemtype | attribute:itemtype }}
+	>
+		{{ if itemscope }}
+			{{ if name }}<meta itemprop="https://schema.org/name" content="{{ name }}">{{ /if }}
+			{{ if description }}<meta itemprop="https://schema.org/description" content="{{ description }}">{{ /if }}
+			{{ if link_element_enabled }}
+				<link
+					{{ link_element_itemprop | attribute:itemprop }}
+					{{ link_element_href | attribute:href }}
+				/>
+			{{ /if }}
+		{{ /if }}
+		{{ slot }}
+	</div>
+</div>

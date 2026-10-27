@@ -1,0 +1,167 @@
+.action-bar {
+    $action-bar-vertical-padding: 0;
+    $action-bar-vertical-padding-mobile: 1em;
+    $action-bar-horizontal-padding: 1em;
+
+    @mixin action-bar-border-left() {
+        position: absolute;
+        background-color: $white;
+        opacity: 0.25;
+        width: 1.25px; // 1.25 instead of 1 to overcome jitter
+        top: $action-bar-vertical-padding;
+        bottom: $action-bar-vertical-padding;
+        left: 0px;
+    }
+
+    @mixin action-bar-inner-container() {
+        padding: $action-bar-vertical-padding $action-bar-horizontal-padding;
+        //width: 350px;
+        width: 28.4375 + em;
+        max-width: 100%;
+        position: relative;
+
+        display: flex;
+        flex-flow: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &.count-3,
+    &.count-4 {
+        &.bg-white {
+            .item {
+                &:nth-child(n+2) {
+                    border-left-color: $body-bg-border;
+                }
+            }
+        }
+
+        &.bg-gray {
+            .item {
+                &:nth-child(n+2) {
+                    border-left-color: rgba(0,0,0,0.1);
+                }
+            }
+        }
+    }
+
+    &.count-3 {
+        .row {
+            @include media-breakpoint-up(sm) {
+                margin: (-$action-bar-vertical-padding) (-$action-bar-horizontal-padding);
+                justify-content: center;
+            }
+        }
+
+        .item {
+            @include media-breakpoint-up(sm) {
+                padding: 0 0.5px;
+                margin: 0 -0.5px;
+                display: flex;
+                justify-content: center;
+                flex-grow: 0;
+                flex-shrink: 1;
+                flex-basis: auto;
+                width: auto;
+            }
+
+            &:nth-child(n + 2) {
+                @include media-breakpoint-down(xs) {
+                    padding-top: $action-bar-vertical-padding-mobile;
+                }
+                @include media-breakpoint-up(sm) {
+                    padding-left: 0;
+                    border-left: 1px solid $white;
+                }
+            }
+
+            .text-container {
+                @include media-breakpoint-down(xs) {
+                    @include sr-only;
+                }
+            }
+        }
+
+        .inner-container {
+            @include media-breakpoint-up(sm) {
+                @include action-bar-inner-container;
+            }
+        }
+
+        .btn {
+            @include media-breakpoint-down(xs) {
+                display:block;
+                width: $line-length-ideal + em;
+                max-width: 100%;
+                margin: 0 auto;
+            }
+        }
+    }
+
+    &.count-4 {
+        .row {
+            @include media-breakpoint-up(md) {
+                margin: (-$action-bar-vertical-padding) (-$action-bar-horizontal-padding);
+                justify-content: center;
+            }
+        }
+
+        .item {
+            @include media-breakpoint-up(md) {
+                padding: 0 0.5px;
+                margin: 0 -0.5px;
+                display: flex;
+                justify-content: center;
+                flex-grow: 0;
+                flex-shrink: 1;
+                flex-basis: auto;
+                width: auto;
+            }
+
+            &:nth-child(n + 2) {
+                @include media-breakpoint-down(sm) {
+                    padding-top: $action-bar-vertical-padding-mobile;
+                }
+
+                @include media-breakpoint-up(md) {
+                    padding-left: 0;
+                    border-left: 1px solid $white;
+                }
+            }
+
+            .text-container {
+                @include media-breakpoint-down(sm) {
+                    @include sr-only;
+                }
+            }
+        }
+
+        .inner-container {
+            @include media-breakpoint-up(md) {
+                @include action-bar-inner-container;
+            }
+        }
+
+        .btn {
+            @include media-breakpoint-down(sm) {
+                display:block;
+                width: $line-length-ideal + em;
+                max-width: 100%;
+                margin: 0 auto;
+            }
+        }
+    }
+
+    .inner-container {
+        text-align: center;
+    }
+
+    .text-container {
+        width: $line-length-min + em;
+        max-width: 100%;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+}

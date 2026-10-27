@@ -1,0 +1,25 @@
+diff --git a/src/Stache/Stores/TaxonomyTermsStore.php b/src/Stache/Stores/TaxonomyTermsStore.php
+index dc3701c..dd61474 100644
+--- a/src/Stache/Stores/TaxonomyTermsStore.php
++++ b/src/Stache/Stores/TaxonomyTermsStore.php
+@@ -85,7 +85,19 @@ class TaxonomyTermsStore extends ChildStore
+         [$site, $slug] = explode('::', $key);
+ 
+         if ($path = $this->getPath($key)) {
+-            $term = $this->makeItemFromFile($path, File::get($path));
++            $contents = File::get($path);
++
++            // A file a fresh listing shows was removed after its path was recorded is
++            // treated as gone, rather than rebuilt from no contents as a new, empty item
++            if ($contents === null) {
++                $listing = @scandir(dirname($path));
++
++                if ($listing !== false && ! in_array(basename($path), $listing, true)) {
++                    return null;
++                }
++            }
++
++            $term = $this->makeItemFromFile($path, $contents);
+         } else {
+             $term = Term::make($slug)
+                 ->taxonomy($this->childKey())

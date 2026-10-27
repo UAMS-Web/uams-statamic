@@ -1,0 +1,203 @@
+title: 'Provider Spotlight'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              localizable: false
+              visibility: hidden
+              instructions: 'Generated automatically from the featured provider for spotlights.'
+          -
+            handle: title_short
+            field: uamsweb_common.title_short
+            config:
+              localizable: false
+              visibility: hidden
+              instructions: 'Not used for spotlights — the full title is used in cards and lists.'
+          -
+            handle: excerpt
+            field: uamsweb_post_settings.excerpt
+            config:
+              localizable: false
+              visibility: hidden
+              instructions: 'Generated automatically from the featured provider for spotlights.'
+          -
+            handle: title_options
+            field: uamsweb_header_selector_basic.title_options
+            config:
+              validate:
+                - required
+              visibility: hidden
+      -
+        display: 'Featured Provider'
+        collapsible: true
+        fields:
+          -
+            handle: featured_provider
+            field:
+              type: entries
+              display: 'Featured Provider'
+              instructions: 'The provider this spotlight is about. Their name, clinical title, portrait, profile link, and appointment eligibility drive the rendered page.'
+              collections:
+                - people
+              query_scopes:
+                - clinical_provider_eligible_people
+              max_items: 1
+              create: false
+              select_across_sites: true
+              localizable: false
+              validate:
+                - required
+      -
+        display: 'Featured Image'
+        collapsible: true
+        fields:
+          -
+            handle: spotlight_image_wide
+            field: uamsweb_common_images.image_1200x675_16_9_recommended
+            config:
+              display: 'Featured Image Override, 16:9'
+              instructions: "Optional. Overrides the provider's wide portrait for the featured, card, and social-share image. Leave empty to use the provider's portrait."
+              localizable: false
+      -
+        display: 'Questions and Answers'
+        collapsible: true
+        fields:
+          -
+            handle: spotlight_qa
+            field:
+              type: replicator
+              display: 'Questions and Answers'
+              instructions: 'The provider Q&A. At least one question is required; the six default questions are a starting point — edit, remove, or add your own.'
+              localizable: false
+              collapse: false
+              validate:
+                - required
+              sets:
+                new_set_group:
+                  display: 'Question and Answer'
+                  sets:
+                    qa:
+                      display: 'Question and Answer'
+                      fields:
+                        -
+                          handle: spotlight_qa_question
+                          field:
+                            type: text
+                            display: Question
+                            localizable: false
+                            validate:
+                              - required
+                        -
+                          handle: spotlight_qa_answer
+                          field: uamsweb_common.bard_simple
+                          config:
+                            display: Answer
+                            localizable: false
+                            validate:
+                              - required
+              default:
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'What inspired you to work in healthcare?'
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'What is the best part of your job?'
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'What do you like about working at UAMS?'
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'Who has had the biggest influence on your life, and why?'
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'What book, podcast, TV show, or activity are you enjoying right now, and why?'
+                -
+                  type: qa
+                  enabled: true
+                  spotlight_qa_question: 'What is one thing on your bucket list?'
+      -
+        display: Appointments
+        collapsible: true
+        fields:
+          -
+            handle: spotlight_phone
+            field:
+              type: text
+              input_type: tel
+              display: 'Appointment Phone'
+              instructions: 'Optional. Shown in the appointment call-to-action only when the provider is currently accepting new patients.'
+              localizable: false
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        instructions: 'The featured provider and their ontology (locations, areas of expertise, conditions, treatments) are mirrored onto this spotlight automatically and hidden here.'
+        fields:
+          -
+            handle: clinical_providers
+            field: uamsweb_common_fad.providers
+            config:
+              collections:
+                - people
+              visibility: hidden
+          -
+            handle: clinical_locations
+            field: uamsweb_common_fad.clinical_locations
+            config:
+              visibility: hidden
+          -
+            handle: clinical_expertise
+            field: uamsweb_common_fad.expertise
+            config:
+              visibility: hidden
+          -
+            handle: clinical_conditions
+            field: uamsweb_common_fad.conditions
+            config:
+              visibility: hidden
+          -
+            handle: clinical_services
+            field: uamsweb_common_fad.treatments
+            config:
+              visibility: hidden
+          -
+            handle: clinical_resources
+            field: uamsweb_common_fad.clinical_resources
+            config:
+              query_scopes:
+                - exclude_self
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config:
+              localizable: false

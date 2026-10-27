@@ -1,0 +1,55 @@
+{{#
+	@name Form Bard Set
+	@desc The form Bard set used on basic pages
+	      (resources\blueprints\collections\pages\basic_page.yaml)
+	      and in Bard fields within page builder blocks on landing pages
+	      (resources\blueprints\collections\pages\landing_page.yaml)
+	@set page.article.form
+#}}
+
+{{# Get form handle from Bard set context - extract handle from Form object #}}
+{{ $form_handle = form:handle }}
+
+{{# Check if form handle is provided and form exists #}}
+{{ if $form_handle && {form:exists :handle="$form_handle"} }}
+
+	{{# Check if heading should be displayed based on Bard set configuration #}}
+	{{ if heading_query }}
+		{{# Get heading from form YAML file using custom form_data tag #}}
+		{{ $heading = {form_data:heading :handle="$form_handle"} }}
+
+		{{# Check if heading was successfully retrieved from form data #}}
+		{{ if $heading }}
+			<{{ heading_level ?? 'h2' }}>{{ $heading | widont }}</{{ heading_level ?? 'h2' }}>
+
+		{{ /if }}
+
+	{{ /if }}
+
+	{{# Check if description should be displayed based on Bard set configuration #}}
+	{{ if description_query }}
+		{{# Get description from form YAML file using custom form_data tag #}}
+		{{ $description = {form_data:description :handle="$form_handle"} }}
+
+		{{# Check if description was successfully retrieved from form data #}}
+		{{ if $description }}
+			<p>{{ $description | widont }}</p>
+
+		{{ /if }}
+
+	{{ /if }}
+
+	{{# Render the actual form using Statamic's form:create tag.
+
+		`alpine_csp` is the uams-web/statamic-alpine-csp-forms add-on's driver (UAMS-Web/uams-statamic-archive#3073).
+		Statamic's stock `alpine` driver emits a `Statamic.$conditions.showField(...)` expression the
+		@alpinejs/csp build refuses to evaluate (UAMS-Web/uams-statamic-archive#1859). #}}
+	{{ form:create :in="$form_handle" js="alpine_csp" }}
+		{{ partial:components/form }}
+	{{ /form:create }}
+
+{{# Display error message if form doesn't exist #}}
+{{ else }}
+	<p>Sorry, the form for this page isn't available right now. Please try again later or contact us directly.</p>
+
+{{ /if }}

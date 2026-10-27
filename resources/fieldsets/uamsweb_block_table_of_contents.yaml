@@ -1,0 +1,24 @@
+title: 'UAMSWeb Block, Table of Contents'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'The heading shown above the list of links. Defaults to "On this page". Even if this heading is hidden, it is necessary for accessibility.'
+      default: 'On this page'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required

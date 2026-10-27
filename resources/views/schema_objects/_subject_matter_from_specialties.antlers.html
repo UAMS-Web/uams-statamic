@@ -1,0 +1,115 @@
+{{#
+	Required partial param: `emit` must be `about` or `keywords` (otherwise
+	this partial renders nothing).
+
+	Primary term: optional `certification_term` override, else
+	`schema_primary_related_taxonomy_term`.
+
+	Specialty resolution (all `*specialty` inputs are max_items: 1; no
+	specialty-list dedupe):
+	- Credential with `certifications_term`: first non-empty list among the
+	  linked certification term’s eight classification fields.
+	- Else credential with `specialty` only: normalize `specialty` to a list.
+	- Else certification (or fallback): first non-empty list on `$primary`’s
+	  eight classification fields.
+#}}
+
+{{# Check whether emit is a supported value before doing any work #}}
+{{ if emit == "about" || emit == "keywords" }}
+
+	{{# Resolve the taxonomy term that carries specialty-related fields #}}
+	{{ $primary = certification_term ?? schema_primary_related_taxonomy_term ?? null }}
+
+	{{# Initialize specialty term list for downstream loops #}}
+	{{ $specialty_terms = [] }}
+
+	{{# Build `$specialty_terms` from certification/credential rules #}}
+	{{ if $primary }}
+		{{# Credential linked to a certification: read eight fields from the linked certification term #}}
+		{{ if $primary.certifications_term }}
+			{{ $primary.certifications_term }}
+				{{ $specialty_terms = [] | first_non_empty_list(
+					medical_specialty,
+					medical_subspecialty,
+					non_medical_research_specialty,
+					non_medical_research_subspecialty,
+					medical_research_specialty,
+					medical_research_subspecialty,
+					other_specialty,
+					other_subspecialty
+				) }}
+			{{ /$primary.certifications_term }}
+		{{ elseif $primary.specialty }}
+			{{# Credential without `certifications_term`: use `specialty` only #}}
+			{{ $specialty_terms = [] | merge_array($primary.specialty) }}
+		{{ else }}
+			{{# Certification primary (or term without credential-only fields): eight classification fields #}}
+			{{ $specialty_terms = [] | first_non_empty_list(
+				$primary.medical_specialty,
+				$primary.medical_subspecialty,
+				$primary.non_medical_research_specialty,
+				$primary.non_medical_research_subspecialty,
+				$primary.medical_research_specialty,
+				$primary.medical_research_subspecialty,
+				$primary.other_specialty,
+				$primary.other_subspecialty
+			) }}
+		{{ /if }}
+	{{ /if }}
+
+	{{# Accumulate subject_matter terms from each specialty term #}}
+	{{ $subject_matter_merged = [] }}
+
+	{{# Iterate over each specialty term and accumulate subject_matter terms #}}
+	{{ $specialty_terms }}
+		{{ $subject_matter_merged = $subject_matter_merged | merge_array(subject_matter) }}
+	{{ /$specialty_terms }}
+
+	{{# Deduplicate subject_matter terms #}}
+	{{ $subject_matter_merged = $subject_matter_merged | unique_terms }}
+
+	{{# Check if emit is "about" #}}
+	{{ if emit == "about" }}
+		{{# Check if subject_matter terms are present #}}
+		{{ if $subject_matter_merged && ( $subject_matter_merged | is_iterable ) }}
+			{{# Begin JSON array #}}
+			[{{ $subject_matter_merged }}
+				{{# Add comma between array elements after the first fragment #}}
+				{{ if index > 0 }},{{ /if }}
+
+				{{# A clinical concept is a clinical_specializations entry since UAMS-Web/uams-statamic-archive#2823: emit it
+				   as the code-set node, as the Person base does, and a subject as before #}}
+				{{ if collection:handle == 'clinical_specializations' }}
+				    {{ if extension_query === true }}
+				        {{# Clinical Specialization Term Base (DefinedTerm), UAMS-Web/uams-statamic-archive#2823 #}}
+				        {{ schema_template_node id="ab9c43d8-6cd9-4e2c-a752-633ea2747649" :instance_index="index" }}
+				    {{ else }}
+				        {{# Clinical Specialization Term Canonical to Health Care Provider Taxonomy Code Set (DefinedTerm), UAMS-Web/uams-statamic-archive#2823 #}}
+				        {{ schema_template_node id="1cd75e43-3e72-4568-938b-0efd85059474" :instance_index="index" }}
+				    {{ /if }}
+				{{ else }}
+					{{
+						schema_template_node
+						id="f15f2efa-258e-4b16-aa4e-9010bce7514c"
+						:instance_index="index"
+					}}
+				{{ /if }}
+			{{ /$subject_matter_merged}}]
+		{{ /if }}
+
+	{{# Check if emit is "keywords" #}}
+	{{ elseif emit == "keywords" }}
+		{{# Initialize array to accumulate keywords #}}
+		{{ $keywords_merged = [] }}
+
+		{{# Iterate over each subject_matter term and accumulate keywords #}}
+		{{ $subject_matter_merged }}
+			{{# Merge keywords from each subject_matter term into the keywords array #}}
+			{{ $keywords_merged = $keywords_merged | merge_array(keywords) }}
+		{{ /$subject_matter_merged }}
+
+		{{# Deduplicate keywords and emit as JSON #}}
+		{{ $keywords_merged | unique_values | to_json }}
+	{{ /if }}
+
+{{ /if }}

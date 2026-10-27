@@ -1,0 +1,92 @@
+title: 'UAMSWeb Common Reusable Fields, Video'
+fields:
+  -
+    handle: video_url
+    field:
+      type: video
+      display: 'Video URL'
+      instructions: |-
+        Use a UAMS **YouTube** or **Vimeo** watch URL, or a **Box.com** HTTPS **Direct link** under `/shared/static/` with a video file extension (for example `.mp4`).
+
+        **Box (summary):** In Box, turn on the shared link (people with the link, can view and download), open **Link Settings**, turn **off** link expiration, turn **on** allow download, then copy the **Direct link** value and paste it here. The URL must start with `https://app.box.com/shared/static/`.
+      placeholder: 'e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ or https://app.box.com/shared/static/yourfile.mp4'
+      validate:
+        - uams_video_url
+      localizable: false
+  -
+    handle: youtube_video_url
+    field:
+      type: video
+      display: 'YouTube Video URL'
+      instructions: 'Choose a video from the UAMS YouTube account that showcases this entity and supports the page content. Make sure to include the full URL, starting with <code>https://</code>.'
+      placeholder: 'e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+      validate:
+        - youtube_url
+      localizable: false
+  -
+    handle: vimeo_video_url
+    field:
+      type: video
+      display: 'Vimeo Video URL'
+      instructions: 'Choose a video from the UAMS Vimeo account that showcases this entity and supports the page content. Make sure to include the full URL, starting with <code>https://</code>.'
+      placeholder: 'e.g., https://vimeo.com/676247342'
+      validate:
+        - vimeo_url
+      localizable: false
+  -
+    handle: aspect_ratio
+    field:
+      type: select
+      display: 'Aspect Ratio'
+      replicator_preview: false
+      options:
+        -
+          key: 16by9
+          value: 16:9
+        -
+          key: 4by3
+          value: 4:3
+        -
+          key: 1by1
+          value: 1:1
+        -
+          key: 21by9
+          value: 21:9 ("ultrawide")
+        -
+          key: 1920by714
+          value: 2.69:1 (1920x714)
+      default: 16by9
+      localizable: false
+  -
+    handle: caption_track
+    field:
+      type: assets
+      display: 'Caption Track (WebVTT upload)'
+      instructions: |-
+        **Preferred.** Upload or choose a WebVTT (`.vtt`) caption file for a **self-hosted Box.com** video. It renders as a selectable `<track kind="captions">` and is what satisfies WCAG 1.2.2 for the Box player — the transcript disclosure is supplementary, not a substitute. Served from this site (same origin), so it always loads.
+
+        **YouTube / Vimeo:** a caption `<track>` cannot be injected into a third-party embed, so make sure the source video already carries captions on YouTube/Vimeo before embedding it.
+      container: captions
+      max_files: 1
+      allow_uploads: true
+      localizable: false
+  -
+    handle: caption_track_url
+    field:
+      type: text
+      display: 'Caption Track URL (Box / external)'
+      instructions: |-
+        Paste a direct URL to a WebVTT (`.vtt`) caption file — e.g. a **Box.com** `/shared/static/` direct link kept next to the Box video.
+
+        The player is marked `crossorigin` for this path (which also makes the video itself CORS-checked). Box does allow cross-origin reads, **but serves `.vtt` as `application/octet-stream`, not `text/vtt`**, so captions from a Box URL may not display in stricter browsers. **For reliable captions, choose "Upload WebVTT file" instead** (served same-origin as `text/vtt`).
+      localizable: false
+  -
+    handle: series
+    field:
+      max_items: 1
+      mode: select
+      taxonomies:
+        - video_series
+      type: terms
+      display: 'Video Series'
+      localizable: false

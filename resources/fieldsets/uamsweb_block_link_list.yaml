@@ -1,0 +1,116 @@
+title: 'UAMSWeb Block, Link List'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_weighted
+    config:
+      display: 'List Description'
+      replicator_preview: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: items
+    field:
+      type: replicator
+      display: Items
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Section Group'
+          sets:
+            url:
+              display: 'Entry or External URL'
+              icon: link-external
+              fields:
+                -
+                  handle: heading
+                  field:
+                    type: text
+                    display: 'Link Title'
+                    validate:
+                      - required
+                    localizable: false
+                -
+                  handle: body
+                  field: uamsweb_common_block.link_list_body
+                  config:
+                    localizable: false
+                -
+                  handle: url
+                  field: uamsweb_common_link.link_url
+                  config:
+                    display: 'Link URL'
+                    validate:
+                      - required
+                -
+                  handle: target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: link_description
+                  field: uamsweb_common_link.link_description
+                  config:
+                    display: 'Link Accessibility Description'
+            asset_file:
+              display: 'File Asset'
+              icon: file-content-list
+              fields:
+                -
+                  handle: heading
+                  field:
+                    type: text
+                    display: 'Link Title'
+                    validate:
+                      - required
+                    localizable: false
+                -
+                  handle: body
+                  field: uamsweb_common_block.link_list_body
+                  config:
+                    localizable: false
+                -
+                  handle: url
+                  field:
+                    max_files: '1'
+                    min_files: '1'
+                    container: files
+                    type: assets
+                    display: 'File Asset'
+                    localizable: false
+                    validate:
+                      - required
+                -
+                  handle: target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    validate:
+                      - required
+                -
+                  handle: link_description
+                  field: uamsweb_common_link.link_description
+                  config:
+                    display: 'Link Accessibility Description'

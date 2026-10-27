@@ -1,0 +1,1308 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Lets the workflow — including the expensive `browser` job — be run on demand
+  # against a branch, rather than only on a pull request or a push to main.
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# RUN_REMOTE_CI — budget kill-switch (UAMS-Web/uams-statamic-archive#980).
+# GitHub Actions minutes are billed at the *organization* level (a single pool
+# shared by every UAMS-Web repo), not per repo. When that budget is exhausted,
+# every job here fails instantly on a billing error. To stop burning the queue
+# until the monthly reset, set an Actions variable `RUN_REMOTE_CI` to `false`;
+# every job below except the manual-run-only `submodule-access` is gated on
+# `if: vars.RUN_REMOTE_CI != 'false'`, so they report `skipped` and consume zero
+# runner minutes. Unset (or any value other
+# than `false`) = CI runs exactly as before — the default is always-on.
+#
+#   - Define it as an ORG variable to flip all gated repos at once (matches the
+#     org-wide budget); a REPO variable overrides the org value for this repo.
+#   - `vars` cannot gate the `on:` triggers, only `if:` — the workflow still
+#     evaluates per event, but skipped jobs are never dispatched to a runner.
+#   - Skipped jobs do not block merges because no ruleset on `main` requires a
+#     status check, NOT because `main` is unprotected. Since 2026-10-05 two
+#     organization rulesets govern it, with no bypass list: one refuses
+#     deletion and force-pushes, the other requires a pull request, so a
+#     direct push is refused as well (docs/runbooks/branch-protection.md,
+#     UAMS-Web/uams-statamic-archive#2016). Revisit before adding a required status check: a job skipped
+#     by its `if:` reports SUCCESS to a required check, so requiring one of
+#     these jobs while `RUN_REMOTE_CI` is `false` lets every merge through with
+#     nothing run. A check stays pending only when its whole workflow never
+#     runs (a path filter, `[skip ci]`). Decide what the check must mean with
+#     the kill switch off before adding it; see UAMS-Web/uams-statamic-archive#980, UAMS-Web/uams-statamic-archive#2016 and UAMS-Web/uams-statamic-archive#3166.
+#   - While off, validate branches with `scripts/local-ci.mjs` (no Actions
+#     minutes). Flip in Settings -> Secrets and variables -> Actions -> Variables.
+#
+# PARITY: `scripts/local-ci.mjs` reproduces every chained job below (all but the
+# REMOTE-ONLY `submodule-access` and `synced-files`, noted further down) for local runs (no
+# Docker, no act, no Actions minutes) — used when GitHub Actions budget is out.
+# The two are kept in lockstep BY HAND: when you add, remove, or change a job's
+# command here, mirror it in the script (and vice versa). The parity-critical
+# surface is each job's final run step, flagged inline with `# PARITY:` below:
+#   pest        -> "Run Pest (parallel, excluding the serial group)"
+#                     + "Run Pest (serial tail for the serial group)"
+#   pint           -> "Determine changed PHP files" + "Run Pint on changed files"
+#   rector         -> "Run Rector (gating profile, dry-run)"
+#   mutate         -> "Run the mutation-tooling smoke"
+#   phpstan       -> "Run Larastan"
+#   build          -> "Build site assets" + "Build CP assets"
+#   js             -> "Run JS unit tests"
+#   spell          -> "Run cspell"
+#   no-emoji-guard -> "Run no-emoji guard"
+#   content-pointer-guard -> "Run content pointer guard"
+#   encoding-guard -> "Run encoding guard"
+#   test-isolation-guard -> "Run test isolation guard" + "Run global test symbol check"
+#   composer-validate -> "Run composer validate"
+#   browser        -> "Run CP browser smokes + accessibility gate" (mirrored as
+#                     `--jobs browser`, and part of local-ci's default `all` set
+#                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
+#                     the same change). Runs the CP smokes and the §504/WCAG
+#                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
+# JOB CHAIN (cost-ordered): the jobs run as a strict sequential chain via `needs:`,
+# ordered shortest -> longest —
+#   isolation -> composer-validate -> no-emoji -> content-pointer -> encoding ->
+#   spell -> js -> build -> pint -> rector -> mutate -> phpstan -> pest -> browser
+# so a failure at any step SKIPS (and never bills Actions minutes for) every more-
+# expensive step after it. The deliberate trade: successful runs no longer run in
+# parallel, so wall-clock is the sum of the jobs, not the max. `local-ci.mjs` mirrors
+# the chain, stopping at the first failed job. Supersedes the UAMS-Web/uams-statamic-archive#1543 spell-only gate.
+# LOCAL-ONLY (intentionally no job here): `local-ci.mjs` resets a REUSED worktree's
+# runtime state (storage/framework, bootstrap caches, Stache) before the framework
+# jobs. There is no counterpart here on purpose — every CI run starts from a fresh
+# checkout, so there is never stale runtime state to clear. See UAMS-Web/uams-statamic-archive#1164.
+# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also re-applies Composer
+# patches when a REUSED worktree's patch set is stale. On reuse `composer install`
+# reports "Nothing to install", so no package-install event fires and a newly added
+# patch is never applied — the band would validate the OLD patch set and report
+# green. Again no counterpart here: the `composer install` below always runs cold
+# against a fresh checkout, so patches are applied every time. See UAMS-Web/uams-statamic-archive#1743.
+# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also reconciles the branch
+# it is about to validate with `origin/<branch>` and prints the commit under test.
+# `git worktree add`/`git checkout` resolve the LOCAL ref, which neither `--fetch`
+# nor `--fresh` moves, so a local runner can validate a commit the PR has moved past
+# (UAMS-Web/uams-statamic-archive#1710). No counterpart here because `actions/checkout` always lands the requested
+# ref — this is a local-runner-only gap. See UAMS-Web/uams-statamic-archive#1746.
+# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also hands the run over to
+# the BRANCH's own copy of itself when the two differ, so a PR that adds or removes a
+# chain job has that job list executed rather than the base branch's. Observed on
+# UAMS-Web/uams-statamic-archive#1878: the `mutate` job it added never ran, and the chain still reported green. The
+# child is marked pinned through the LOCAL_CI_RUNNER_PINNED environment variable
+# rather than a flag, so a runner predating the change ignores it instead of dying on
+# an unknown option. No counterpart here because `actions/checkout` lands the PR's own
+# workflow file, so this file IS always the branch's. Locally the runner is loaded
+# before the branch is checked out, wherever it is invoked from, which is the gap the
+# handoff closes. See UAMS-Web/uams-statamic-archive#1882 and UAMS-Web/uams-statamic-archive#2856.
+# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also verifies that a REUSED
+# worktree matches the commit under test before setting any job up, and refuses the
+# run when it does not. `git checkout` updates tracked files and removes nothing that
+# has become untracked, so a file the validated commit DELETES survives on disk —
+# two tests deleted by UAMS-Web/uams-statamic-archive#1847 ran and passed in a reusing run that was validating
+# their absence. No counterpart here because every CI run is a fresh checkout, which
+# cannot carry residue from a previous one. See UAMS-Web/uams-statamic-archive#1889.
+# REMOTE-ONLY (no job in local-ci.mjs until #2837): `synced-files` runs the shared
+# check that a synced rule or skill was not edited by hand. It sits outside the chain:
+# nothing `needs:` it and it `needs:` nothing. See UAMS-Web/uams-statamic-archive#3084.
+# REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
+# a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
+# the private submodules. That secret exists only on GitHub, and the local runner
+# clones them with the developer's own credentials instead. It sits outside the chain:
+# nothing `needs:` it and it `needs:` nothing. See UAMS-Web/uams-statamic-archive#2497.
+# Toolchain pins that must also match: PHP 8.4 (setup-php), Node 22 (setup-node),
+# and npm >= 11.10.0 (the `engines.npm` floor `.npmrc`'s engine-strict enforces; UAMS-Web/uams-statamic-archive#1826).
+# A pre-commit hook (`.githooks/pre-commit`, auto-wired by composer) blocks a
+# commit that stages only one of these two files; bypass with `--no-verify`.
+# See `.claude/skills/local-ci/SKILL.md` for the job<->command mapping table.
+
+# `secrets.COMPOSER_AUTH_TOKEN` must be a Personal Access Token (or GitHub App
+# installation token) with read access to UAMS-Web/wordpress-importer,
+# UAMS-Web/uams-statamic-content, UAMS-Web/uams-statamic-users *and*
+# UAMS-Web/uams-statamic-forms. Without the
+# first, `composer install` fails on the private `uams-web/wordpress-importer`
+# package; without the second, the content submodule clone fails with HTTP 403
+# and `statamic:stache:warm` runs against an empty content directory; without
+# the third, the users submodule clone fails the same way and the pest job
+# stops before it runs (UAMS-Web/uams-statamic-archive#2477); without the fourth, the forms submodule clone
+# fails the same way (UAMS-Web/uams-statamic-archive#2818). The default `GITHUB_TOKEN` cannot reach private
+# repos in other repositories within the same org.
+
+jobs:
+  submodule-access:
+    name: Submodule access (manual runs only)
+    runs-on: ubuntu-latest
+    # Proves that `secrets.COMPOSER_AUTH_TOKEN` can still clone every private
+    # submodule the gates read, without switching remote CI back on (UAMS-Web/uams-statamic-archive#2497).
+    # Every other job is gated on RUN_REMOTE_CI, so while that is `false` a manual
+    # run does nothing; this job is the exception, on purpose.
+    #
+    # - Runs ONLY when the workflow is started by hand (`workflow_dispatch`), so a
+    #   pull request or a push never runs it.
+    # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
+    #   manual run reaches this step at once instead of after phpstan.
+    # - Outside the cost-ordered chain: nothing `needs:` it, so it cannot skip or
+    #   hold up any gate job.
+    # - Re-run it by hand whenever a private submodule is added. The token is
+    #   fine-grained, so a new repository must be added on its settings page
+    #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
+    #
+    # REMOTE-ONLY (intentionally no counterpart in scripts/local-ci.mjs): it
+    # checks a secret that exists only on GitHub. The local runner clones the
+    # same submodules with the developer's own credentials (the Composer
+    # `github-oauth` token, or git's credential helper) whenever a job needs them.
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v7
+
+      # Must stay identical to the pest job's step of the same name, so a green
+      # run here proves the step the pest job will run.
+      # tests/Feature/GatesInitializeUsersSubmoduleTest.php pins that.
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
+
+  synced-files:
+    name: Synced files (no hand-edited rules or skills)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Adopted from the shared code-quality skill's templates/ci.yml (UAMS-Web/uams-statamic-archive#3084,
+    # UAMS-Web/uams-claude-skills#155); the job id and name match the template.
+    # Fails, naming the file, when a rule or skill the sync manages was edited
+    # by hand rather than in UAMS-Web/uams-claude-skills.
+    #
+    # Outside the cost-ordered chain: it needs nothing and nothing needs it, so
+    # it cannot skip or hold up a gate job, and it reports beside them.
+    #
+    # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
+    # own synced-files job arrives with the shared runner in #2837. Until then
+    # run `node .claude/skills/synced-files/scripts/check-synced-files.mjs` by
+    # hand before a pull request that touches .claude/, .agents/ or .cursor/.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Check synced files
+        run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
+
+  pest:
+    name: Pest (full suite)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after Larastan passes — the longest job of the PHP
+    # chain, with only the browser smoke after it.
+    needs: phpstan
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      # Asset containers, taxonomies, entries, and globals live in the private
+      # `content/` submodule. Without it, `statamic:stache:warm` discovers
+      # nothing and content-dependent tests fail with null lookups (e.g.
+      # `Asset::container()` returning null in the augmented hook).
+      #
+      # `users/` is checked out too (UAMS-Web/uams-statamic-archive#2477). Since UAMS-Web/uams-statamic-archive#2454 it holds only the two
+      # seed accounts and the `.gitignore` allowlist that keeps registrant
+      # records out of git -- a 2 KB pack and no user data -- and checking it
+      # out is what lets tests/Feature/Users/RegistrantRecordsAreGitIgnoredTest.php
+      # run here rather than skip, so a reverted allowlist reds this job instead
+      # of passing it.
+      #
+      # `resources/forms` is checked out too (UAMS-Web/uams-statamic-archive#2818): the form configurations live
+      # in the private forms repository, and the tests that read the real forms
+      # skip without it.
+      #
+      # The other two submodules (public/assets, app/private/assets)
+      # hold binary assets and user data the PHPUnit suite does not need, so they
+      # stay un-initialized to keep checkout cheap. The token reuse works because
+      # these submodules live in the same UAMS-Web org as the private composer
+      # package COMPOSER_AUTH_TOKEN is already scoped for.
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
+
+      # `shivammathur/setup-php` disables OPcache for the CLI by default. For a
+      # framework-booted test suite this is the single biggest perf lever — every
+      # `Tests\TestCase`-derived class re-bootstraps Laravel + Statamic, and the
+      # bulk of that cost is parsing vendor sources. OPcache + JIT bring CI
+      # within range of local PHP-with-OPcache wall-clock times.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # imagick: SvgRasterizerTest self-skips without it, and the app runs
+          # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
+          # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Composer post-autoload-dump scripts
+        run: composer run-script post-autoload-dump --no-interaction
+
+      # Run the Unit+Feature suite in parallel (paratest), turning a ~3h
+      # single-process run into ~5 min by using every core. Two pieces keep the
+      # split correct:
+      #   - config/cache.php gives each worker an isolated per-TEST_TOKEN file
+      #     cache, so a concurrent cache clear in one worker can't corrupt another;
+      #     the existing per-process stache warm in tests/CreatesApplication.php
+      #     then populates each worker's own cache, so no separate
+      #     `statamic:stache:warm` step is needed.
+      #   - phpunit.xml forces Statamic's NullCacher, whose lock is a no-op, so the
+      #     static-cache middleware's per-URL lock can't 503 under cross-worker
+      #     contention. It disables the Stache warming lock for the same reason:
+      #     that one is a flock over the single, non-tokenized
+      #     storage/statamic/stache-locks, held for the duration of a warm or a
+      #     Duplicates::find(), so whoever holds it 503s every other worker's
+      #     front-end request (UAMS-Web/uams-statamic-archive#1689). The seed step below makes a warm the
+      #     fallback rather than the norm here, which narrows that window without
+      #     closing it.
+      # A few tests are parallel-fragile (an unpinnable race, or a hardcoded shared
+      # path); they are tagged `->group('serial')` and run in the serial tail step
+      # below rather than the parallel pass — see tests/README.md for the
+      # convention. `-d pcov.enabled=0` keeps the gate coverage-free (a no-op here —
+      # setup-php installs no coverage driver — but mirrors the local runner, where
+      # PCOV is present). paratest auto-detects the runner's (stable) core count;
+      # CI's CLI memory_limit is the -1 (unlimited) default, so workers need no
+      # tuning.
+      # Build the Stache seed once, in the testing env, before the parallel
+      # suite. Each of the ~12 paratest workers otherwise runs
+      # statamic:stache:warm at startup, and because all warm concurrently they
+      # saturate the disk (~168s each vs 21s alone) — the dominant parallel cost
+      # (UAMS-Web/uams-statamic-archive#1537). test:seed-stache warms once and snapshots; each worker then
+      # copies the snapshot into its own per-worker cache (CreatesApplication)
+      # instead of re-warming. Built as APP_ENV=testing so the snapshot matches
+      # the env the workers read. DB_DATABASE=:memory: mirrors phpunit.xml: the
+      # warm builds computed-field indexes that probe the DB (e.g. Schema::hasTable
+      # in the article-engagement computed), so it needs a connectable database —
+      # the tests use in-memory SQLite, and a fresh checkout has no sqlite file.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Build Stache seed (testing env)
+        run: 'DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache'
+
+      # Build the route cache in the testing env before the suite so the URL
+      # generator uses the compiled O(1) RouteCollection instead of scanning the
+      # full table. mitydigital/sitemapamic registers one sitemap route per site
+      # (255 on this multisite), and uncached URL generation scales with route
+      # count, ~2x slower on the render-heavy suite (UAMS-Web/uams-statamic-archive#1537). Built as
+      # APP_ENV=testing so an env-conditional route (e.g. the local-only dev
+      # preview route) is baked exactly as the tests expect; a failure here also
+      # surfaces a route the prod deploy's route:cache could not serialize.
+      # Built AFTER the Stache seed (UAMS-Web/uams-statamic-archive#3106): routes/web.php registers each site's
+      # feed.xml only when `Collection::findByHandle('posts')` resolves as the
+      # route file loads, and against a cold Stache it does not, so the compiled
+      # table would omit every feed route and PostsFeedRouteTest would 404.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Build route cache (testing env)
+        run: APP_ENV=testing php artisan route:cache
+
+      # NO --tia HERE, DELIBERATELY (UAMS-Web/uams-statamic-archive#1717). Pest 5's test-impact-analysis engine
+      # replays cached results instead of executing tests it believes a change
+      # cannot reach. It is excluded from BOTH bands below for three independent
+      # reasons, any one of which is disqualifying:
+      #
+      #   1. No coverage driver. Tia builds its graph from coverage, and this job
+      #      pins `coverage: none` above (local-ci.mjs passes `-d pcov.enabled=0`).
+      #      With no driver it records zero edges, and a graph with no edges marks
+      #      nothing affected -- so every run replays and reports a green suite
+      #      having executed nothing. Pest 5.0.1 does not warn about this.
+      #   2. No persistent cache. Tia's graph lives at tests/.pest/tia/, which #1992
+      #      pins via `pest()->tia()->directory()` instead of the default
+      #      ~/.pest/tia/<key>/. Either way every Actions job is a fresh checkout on
+      #      a fresh runner, so the graph never survives; Tia here would need the
+      #      --baselined artifact-fetch pipeline to do anything at all.
+      #   3. The content/ blind spot. `.gitmodules` sets `ignore = dirty` on the
+      #      content submodule, so `git status --porcelain` -- Tia's exact change
+      #      detection -- reports nothing when content changes, and a submodule
+      #      path is a directory, which Tia's watch-pattern fallback drops anyway.
+      #      Reproduced: with one content entry added, --tia returned `2 passed,
+      #      2 replayed` (exit 0) where --no-tia returned `1 failed` (exit 1).
+      #
+      # Tia IS available locally, opt-in, behind a guard that refuses to run under
+      # conditions 1 and 3: `composer test:tia` (scripts/check-tia-safe.php). The
+      # gate deliberately does not use it -- an exhaustive run is the whole point.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # --log-junit feeds the skip-baseline check below; it changes nothing about
+      # what runs.
+      - name: Run Pest (parallel, excluding the serial group)
+        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --display-all-issues --log-junit junit-parallel.xml
+
+      # The serial tail runs the parallel-fragile `->group('serial')` tests in a
+      # single process (no --parallel), where they are reliable.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Run Pest (serial tail for the serial group)
+        run: php -d pcov.enabled=0 vendor/bin/pest --group=serial --display-all-issues --log-junit junit-serial.xml
+
+      # A band that silently skips tests reports PASS having tested less than it
+      # should have. Skips are how this suite degrades when content or Stache state
+      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
+      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
+      # passed, caught only because the count had been predicted by hand. The
+      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
+      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # tolerates the guard being absent, since it validates older branches too; CI
+      # only ever runs a branch's own workflow, so no counterpart is needed here.)
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check skip baseline (parallel band)
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check skip baseline (serial band)
+        run: php scripts/check-skip-baseline.php --report=junit-serial.xml --band=serial
+
+      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
+      # passed in silence — the gate reports PASS on any duration. It has happened
+      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
+      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
+      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
+      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
+      #
+      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
+      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
+      # class seconds inflate with runner load exactly as band wall time does
+      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
+      # bounds the band, since paratest distributes by class. Reads the reports
+      # the two steps above already produced, so it costs no extra run. PHP, not
+      # Node, for the same reason as the skip guard: this job sets up PHP only.
+      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # validates older branches too.)
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check slowest class (parallel band)
+        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
+
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check slowest class (serial band)
+        run: php scripts/check-slowest-class.php --report=junit-serial.xml --band=serial
+
+      # Every test process holds the content mirror band lock shared, and a child a
+      # test spawns inherits that descriptor, so the lock can outlive both bands and
+      # refuse every later `test:seed-stache` with nothing naming a lock or a
+      # process (UAMS-Web/uams-statamic-archive#3018). Probed only here, after the serial tail: a live band
+      # legitimately holds the lock. `if: always()` because a failed band can leave
+      # a child behind as easily as a passing one. PHP, not Node, as above.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check the content mirror band lock was released
+        if: always()
+        run: php scripts/check-band-lock-released.php
+
+      # Clear the cached table so it can't leak into a warm-runner rerun.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Clear route cache
+        if: always()
+        run: php artisan route:clear
+
+      # A test that persists a fixture into the live content/ submodule strands the
+      # file whenever the process does not reach its cleanup — a band killed at its
+      # bound, or one that fatals (UAMS-Web/uams-statamic-archive#1873). Locally that dirties the checkout for every
+      # later run, and the stray is boot-visible input: `statamic:stache:warm` indexes
+      # it and memoizes a collection-structure entry against the real collection, which
+      # is the state that produced UAMS-Web/uams-statamic-archive#1845.
+      #
+      # `if: always()` deliberately: a band that FAILED is exactly the case where
+      # cleanup did not run, so skipping the check on failure would hide the litter in
+      # the run most likely to have produced it.
+      #
+      # No before/after diff here, unlike local-ci.mjs — this runner checks out fresh,
+      # so anything dirty was written by this run. The runner reuses its worktree and
+      # therefore has to tell the two apart.
+      #
+      # users/ is checked the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the file user
+      # driver writes there, and what this catches is not a test-created account
+      # (the allowlist ignores those, and --untracked-files=all lists untracked, not
+      # ignored) but a tracked seed account a test deleted or rewrote.
+      # resources/forms/ is checked since UAMS-Web/uams-statamic-archive#2818 made it a submodule: a test that saves
+      # a form without re-rooting statamic.forms.forms writes its YAML there.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # Nothing is held aside any more. `models/assets/` used to be, mirroring
+      # KNOWN_CONTENT_LITTER in scripts/local-ci.mjs, because app/Models/Asset.php
+      # rewrote content/models/assets/{id}.yml through base_path() on model save,
+      # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
+      # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
+      # so the exemption came out and this gate now fails on any write at all.
+      - name: Check the suite left content/, users/ and resources/forms/ clean
+        if: always()
+        run: |
+          code=0
+          for sub in content users resources/forms; do
+            dirty=$(git -C "$sub" status --porcelain --untracked-files=all)
+            if [ -n "$dirty" ]; then
+              echo "::error::The suite wrote into the $sub/ submodule:"
+              echo "$dirty"
+              if [ "$sub" = resources/forms ]; then
+                echo "A test saved a form into the live forms submodule. Point statamic.forms.forms"
+                echo "at a throwaway directory for the test, the way the Feature/Forms tests do."
+              elif [ "$sub" = content ]; then
+                echo "Put the test on Tests\\Support\\CollectionTreeIsolatedTestCase, which re-roots the"
+                echo "collection-trees store at a throwaway directory so its writes land in"
+                echo "storage/framework/testing/ instead of the live submodule."
+              else
+                echo "A test deleted or rewrote a tracked seed account. Delete only what the test created,"
+                echo "by the email it chose, and never User::all() in bulk; or re-root the users store"
+                echo "the way Tests\\Support\\BrowserWriteIsolation does."
+              fi
+              code=1
+            else
+              echo "$sub/ litter: none — the suite left the submodule as it found it."
+            fi
+          done
+          exit "$code"
+
+  pint:
+    name: Pint (changed files)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after the Vite build passes.
+    needs: build
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so
+          # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
+          # README_Imagick.md for the manual developer install.
+          extensions: imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      # A bare `pint --test` is NOT a substitute for the diff below, and its
+      # `0 dirty` is not evidence the tree is clean (UAMS-Web/uams-statamic-archive#2341). Pint's own finder
+      # does not descend into dot-directories; the git pathspec here does.
+      # Measured with both arms at one moment, two tracked files dirty on disk:
+      #   vendor/bin/pint --test               "result":"passed"  exit 0
+      #   vendor/bin/pint --test <those paths> "result":"fail"    exit 1
+      # The explicit arm failing at the same instant is what makes the bare run's
+      # `passed` readable as blindness rather than cleanliness. A whole-tree sweep,
+      # if one is ever wanted, must enumerate with `git ls-files -- '*.php'`.
+      - name: Determine changed PHP files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="origin/${{ github.base_ref }}"
+          else
+            base="HEAD~1"
+          fi
+          files=$(git diff --name-only --diff-filter=ACMR "$base"...HEAD -- '*.php' | tr '\n' ' ')
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+          echo "Changed PHP files: ${files:-<none>}"
+
+      # PARITY: mirrored by the pint job in scripts/local-ci.mjs (same
+      # diff-filter=ACMR, origin/<base>...HEAD, *.php scope). This step passes
+      # the whole changed-file list as one argv because the Ubuntu runner allows
+      # a ~2 MB command line; local-ci.mjs additionally chunks the list so a
+      # large diff can't overflow Windows' ~32 KB cap (UAMS-Web/uams-statamic-archive#1079).
+      - name: Run Pint on changed files
+        if: steps.changed.outputs.files != ''
+        run: vendor/bin/pint --test ${{ steps.changed.outputs.files }}
+
+      - name: Skip notice
+        if: steps.changed.outputs.files == ''
+        run: echo "No PHP files changed in this PR/push; skipping Pint."
+
+  rector:
+    name: Rector (gating profile)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after Pint passes. Pint MUST come first — the two tools
+    # rewrite the same files, and rector.php sets `removeUnusedImports: false`
+    # because Rector's remover is not `{@see}`-aware, leaving Pint the sole owner
+    # of that operation (UAMS-Web/uams-statamic-archive#1131).
+    needs: pint
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Rector is a static analyzer: it reads source and resolves classes through
+    # the Composer autoloader, so it needs vendor/ but NOT an .env, an app key,
+    # a database, Node, or the content/ submodule. `withComposerBased(laravel:,
+    # pest:)` in rector.php reads the *installed* package versions to pick its
+    # version-gated Laravel/PHPUnit sets, which is why the install must run first.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      # PARITY: mirrored by the rector job in scripts/local-ci.mjs (same gating
+      # profile, same --dry-run, same private TMPDIR).
+      #
+      # The private temp dir is load-bearing, not hygiene. Rector's file cache
+      # (sys_get_temp_dir()/rector_cached_files) does NOT key on the active rule
+      # set, so a warm cache written by a different profile makes a later run
+      # silently UNDER-report — measured while building UAMS-Web/uams-statamic-archive#1720: 124 files cold
+      # versus 92 warm. Under-reporting is a false GREEN, so a gate reusing a
+      # warm cache can pass on a backlog it never re-analyzed. A fresh dir starts
+      # empty, so no `--clear-cache` (which would race a concurrent Rector) is
+      # needed. PHP reads TMPDIR on Linux; TMP/TEMP are set too so the one
+      # command is portable, matching tests/Feature/RectorProfileSplitTest.php.
+      - name: Run Rector (gating profile, dry-run)
+        run: |
+          RECTOR_TMP="$(mktemp -d)"
+          TMPDIR="$RECTOR_TMP" TMP="$RECTOR_TMP" TEMP="$RECTOR_TMP" \
+            vendor/bin/rector --dry-run --no-progress-bar
+
+  mutate:
+    name: Mutation tooling smoke
+    runs-on: ubuntu-latest
+    # CI chain: runs only after Rector passes. Cheap (~9s of work) so it sits
+    # ahead of the two 2-min+ jobs.
+    needs: rector
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # This gates the mutation TOOLING, not the mutants. UAMS-Web/uams-statamic-archive#1728 was not a mutant
+    # escaping a weak test — it was `pest-plugin-mutate` silently reporting
+    # `0 Mutations for 0 Files created` after a `php-code-coverage` bump, which
+    # Pest exits 0 on, so nothing anywhere went red. The adversarial-review rule
+    # leans on this tool, and until now no gate exercised it at all.
+    #
+    # Runs one narrowly-scoped mutation pass over a pure, fully-covered class:
+    # vendor/ but no .env, no app key, no database, no Node, no content/
+    # submodule. Real, diff-scoped mutation runs stay AUTHOR-SIDE by design —
+    # see tests/README.md and .claude/rules/adversarial-review.md.
+    steps:
+      - uses: actions/checkout@v7
+
+      # `coverage: pcov` is the one line that separates this job from rector's
+      # setup, and it is not optional: --mutate needs a coverage driver, and
+      # without one the plugin reports 0 mutations — the exact false green this
+      # job exists to catch. PCOV over Xdebug for speed (coverage-only driver).
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      # PARITY: mirrored by the mutate job in scripts/local-ci.mjs (same test,
+      # same --path/--class scoping, same coverage-driver probe ahead of the run,
+      # same two assertions).
+      #
+      # The exit code alone is NOT sufficient. Pest exits 0 on
+      # `0 Mutations for 0 Files created`, so the count and the score are both
+      # parsed out of the plugin's own summary. ANSI is stripped before matching
+      # because those lines are color-wrapped and an escape-anchored grep reads
+      # as a clean miss rather than a parse failure.
+      #
+      # WHY THIS CLASS: AlertSiteKeyResolver is small, pure, fully covered, and
+      # has a mutable surface (8 mutants across ternaries, a foreach, boolean
+      # operators and an early return) that a refactor is unlikely to drain to
+      # zero — and if one ever does, the count assertion turns this red instead
+      # of letting it pass as a silent no-op. It is also the class UAMS-Web/uams-statamic-archive#1730 used to
+      # verify the fix for UAMS-Web/uams-statamic-archive#1728, so these numbers are comparable to that ticket.
+      - name: Run the mutation-tooling smoke
+        run: |
+          set -o pipefail
+
+          # Refuse before Pest when no coverage driver is active (UAMS-Web/uams-statamic-archive#3213), with a
+          # message that names it rather than the generic no-summary line. The
+          # probe mirrors COVERAGE_DRIVER_PROBE in scripts/local-ci.mjs.
+          DRIVER="$(php -r 'echo extension_loaded("pcov") && filter_var(ini_get("pcov.enabled"), FILTER_VALIDATE_BOOLEAN) ? "pcov" : (extension_loaded("xdebug") && str_contains((string) ini_get("xdebug.mode"), "coverage") ? "xdebug" : "none");')"
+          if [ "$DRIVER" = none ]; then
+            echo "::error::No coverage driver is active in this PHP (PCOV, or Xdebug with xdebug.mode including coverage), so the mutation run cannot start. This is a workstation condition, not a branch defect, and it is not a pass. See .claude/skills/pcov-setup/SKILL.md."
+            exit 1
+          fi
+
+          vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php \
+            --mutate --path=app/Support/UamsAlert \
+            --class="App\Support\UamsAlert\AlertSiteKeyResolver" \
+            --covered-only 2>&1 | tee mutate.log
+          PLAIN="$(sed -r 's/\x1b\[[0-9;]*m//g' mutate.log)"
+
+          if ! grep -qiE '[1-9][0-9]* Mutations? for [1-9][0-9]* Files? created' <<<"$PLAIN"; then
+            echo "::error::The mutation tooling found nothing to mutate. This is the UAMS-Web/uams-statamic-archive#1728 false green, not a pass."
+            grep -iE 'Mutations? for .* Files? created' <<<"$PLAIN" || echo "No mutation summary line was printed at all."
+            exit 1
+          fi
+
+          if ! grep -qE 'Score:[[:space:]]+100\.00%' <<<"$PLAIN"; then
+            echo "::error::Mutation score is below 100% on the smoke's subject."
+            grep -E 'Score:' <<<"$PLAIN" || true
+            exit 1
+          fi
+
+  phpstan:
+    name: Larastan (PHPStan)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after the mutation smoke passes — the two 2-min+ jobs come last.
+    needs: mutate
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Larastan boots the Laravel app — vendor/larastan/larastan/bootstrap.php
+    # runs the console kernel — to resolve container bindings and facade/model
+    # types, so this job needs the same .env + app key + post-autoload-dump
+    # framework prep as the pest job. It does NOT need the content/ submodule,
+    # Node, or a warmed stache: PHPStan reads source, not content, and analyzes
+    # app/ and tests/ (see phpstan.neon.dist). composer stan pins --memory-limit=2G.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Composer post-autoload-dump scripts
+        run: composer run-script post-autoload-dump --no-interaction
+
+      # PARITY: mirrored by the phpstan job in scripts/local-ci.mjs
+      - name: Run Larastan
+        run: composer stan
+
+  build:
+    name: Vite build
+    runs-on: ubuntu-latest
+    # CI chain: runs only after the JS unit tests pass.
+    needs: js
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      # `vite.config.js` imports `@statamic/cms/vite-plugin`, which is provided
+      # by the Statamic vendor (under vendor/statamic/cms/packages/cms after
+      # `composer install`). The build job therefore needs PHP + composer too.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so
+          # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
+          # README_Imagick.md for the manual developer install.
+          extensions: imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Node 22 bundles npm 10.9.x, below the `engines.npm` floor, and `.npmrc` sets
+      # `engine-strict=true` — so `npm ci` refuses to run without this pin. Note the
+      # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
+      # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
+      # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
+      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      - name: Pin npm to the min-release-age floor
+        run: npm install -g npm@^11.10.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # PARITY: mirrored by the build job in scripts/local-ci.mjs
+      - name: Build site assets
+        run: npm run build
+
+      - name: Build CP assets
+        run: npm run cp:build
+
+  js:
+    name: JS unit tests (Vitest)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after spell passes.
+    needs: spell
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
+    # standalone vitest.config.js, so it needs Node + `npm ci` but no PHP,
+    # Composer, or content submodule.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Node 22 bundles npm 10.9.x, below the `engines.npm` floor, and `.npmrc` sets
+      # `engine-strict=true` — so `npm ci` refuses to run without this pin. Note the
+      # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
+      # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
+      # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
+      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      - name: Pin npm to the min-release-age floor
+        run: npm install -g npm@^11.10.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # PARITY: mirrored by the js job in scripts/local-ci.mjs
+      - name: Run JS unit tests
+        run: npm run test:js
+
+  spell:
+    name: Spell check (cspell)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after the encoding guard passes.
+    needs: encoding-guard
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Blocking gate (UAMS-Web/uams-statamic-archive#1541): the dictionary is clean (0 hits), so a spelling issue
+    # fails the job — and because every more-expensive job runs downstream of it in
+    # the cost-ordered chain, a typo skips (and never bills) js, build, pint,
+    # phpstan, Pest, and the browser smoke. Framework-free and cheap: Node + the
+    # cspell CLI, no PHP, Composer, or content submodule. It supersedes the earlier
+    # advisory (`continue-on-error`) phase from UAMS-Web/uams-statamic-archive#1018.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Node 22 bundles npm 10.9.x, below the `engines.npm` floor, and `.npmrc` sets
+      # `engine-strict=true` — so `npm ci` refuses to run without this pin. Note the
+      # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
+      # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
+      # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
+      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      - name: Pin npm to the min-release-age floor
+        run: npm install -g npm@^11.10.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # PARITY: mirrored by the spell job in scripts/local-ci.mjs (advisory).
+      - name: Run cspell
+        run: npm run spell
+
+  browser:
+    name: CP browser smoke (Pest + Playwright)
+    runs-on: ubuntu-latest
+    # CI chain: runs LAST, only after Pest passes.
+    needs: pest
+    # Runs on every PR, like every other job here. The `browser-tests` label gate
+    # this job used to carry was REMOVED in UAMS-Web/uams-statamic-archive#1727, along with the opt-in framing
+    # in the local-ci mirror.
+    #
+    # WHY: four CP smokes sat red on `main` for eleven days (2026-07-17 ->
+    # 07-28) and no gate reported it. The cause was not cost — the opt-in worked
+    # exactly as designed; it just needed a human to remember, and for eleven
+    # days nobody did. A label is the same bet on memory, so keeping it here
+    # would leave the remote path able to reproduce the identical gap the moment
+    # RUN_REMOTE_CI is switched back on. Budget is already handled by the
+    # kill-switch below, which is the right lever for cost — a per-suite label
+    # is not.
+    #
+    # `workflow_dispatch` is kept (see the `on:` block) so the job can still be
+    # run on demand against a branch; it is no longer the only way in.
+    if: vars.RUN_REMOTE_CI != 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      # The browser smoke seeds its own throwaway collection, so it needs no
+      # `content/` submodule. It does need the framework booted: `.env` + app
+      # key, plus `statamic:install` (run by post-autoload-dump) to publish the
+      # Statamic core CP assets the served Control Panel loads.
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Composer post-autoload-dump scripts
+        run: composer run-script post-autoload-dump --no-interaction
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Node 22 bundles npm 10.9.x, below the `engines.npm` floor, and `.npmrc` sets
+      # `engine-strict=true` — so `npm ci` refuses to run without this pin. Note the
+      # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
+      # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
+      # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
+      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      - name: Pin npm to the min-release-age floor
+        run: npm install -g npm@^11.10.0
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # `--with-deps` also installs the Linux system libraries Chromium needs on
+      # the runner. (local-ci.mjs omits `--with-deps` — it is a no-op off Linux.)
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # tests/Browser also holds front-end theme smokes (the KB rating
+      # active-state, the uams_2020 runtime-JS smoke) that load the compiled
+      # `public/build` bundle from its Vite manifest. Each CI job is a fresh
+      # runner — the `build` job's `public/build` is not shared here — so this
+      # job builds the front-end bundle itself, not only the CP bundle below.
+      - name: Build front-end assets
+        run: npm run build
+
+      # Our custom CP fieldtype components live in this bundle; without it the
+      # smoked fieldtype would be unregistered and error in the Control Panel.
+      - name: Build CP assets
+        run: npm run cp:build
+
+      # PARITY: mirrored by the browser job in scripts/local-ci.mjs.
+      # tests/Browser holds the CP smokes and the axe-core accessibility gate
+      # (UAMS-Web/uams-statamic-archive#1046), which fails on serious/critical WCAG violations.
+      - name: Run CP browser smokes + accessibility gate
+        run: vendor/bin/pest tests/Browser
+
+  composer-validate:
+    name: Composer validate (composer.lock freshness)
+    runs-on: ubuntu-latest
+    # CI chain: second link — runs only after the isolation guard passes, and
+    # gates every job after it. Measured locally at ~1.5s against the isolation
+    # guard's ~0.8s, so shortest -> longest puts it here rather than at the head
+    # of the chain; either way it precedes the first job that costs real time
+    # (encoding-guard runs `composer install`), which is the saving that matters.
+    needs: test-isolation-guard
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Fails the build when `composer.lock` no longer matches `composer.json` —
+    # the content-hash drift a `composer.json` edit leaves behind when the lock
+    # is not refreshed (UAMS-Web/uams-statamic-archive#1726 renamed the root package, UAMS-Web/uams-statamic-archive#1728 added an
+    # `extra.patches` entry; both shipped a lock keyed to the pre-change file).
+    # Nothing breaks outright, but every `composer install` on every machine then
+    # warns "The lock file is not up to date with the latest changes in
+    # composer.json" forever, and warning noise is how real warnings get ignored.
+    # Dependency-free: composer reads the two files directly, so this needs no
+    # `composer install`, no content submodule, and no framework boot.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      # `--no-check-publish --no-check-all` scopes this to the checks that apply
+      # to an application rather than a published package. They do NOT change
+      # pass/fail: bare `composer validate` also exits 0 here and 2 on a stale
+      # lock, because warnings only fail under `--strict`. What they change is the
+      # OUTPUT — `--no-check-all` drops the "exact version constraints should be
+      # avoided" advice against the `statamic/cms`, `statamic/eloquent-driver`,
+      # and `studio1902/statamic-peak-tools` pins the dependency-update chore sets
+      # deliberately, and `--no-check-publish` declares this a project rather than
+      # a package so publish-readiness can never start failing it. Warning noise
+      # against deliberate choices is what trains people to ignore gate output,
+      # which is the failure this job exists to prevent.
+      # Deliberately NOT `--strict`: it exits 1 on a clean checkout even with both
+      # flags, because "No license specified" is a general warning that
+      # `--no-check-publish` does not suppress. Exit codes verified here: 0 on a
+      # clean checkout, 2 once the lock hash goes stale.
+      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      - name: Run composer validate
+        run: composer validate --no-check-publish --no-check-all
+
+  no-emoji-guard:
+    name: No-emoji guard (durable records)
+    runs-on: ubuntu-latest
+    # CI chain: runs after the composer.lock validation and BEFORE the encoding
+    # guard, which is the first job that costs real time (it runs `composer
+    # install`). This one is a pure file scan needing only Node, so a glyph
+    # fails the build without ever billing an install.
+    needs: composer-validate
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Fails the build when a durable record carries an emoji code point, per
+    # .claude/rules/no-emoji-in-durable-records.md (UAMS-Web/uams-statamic-archive#2234). The rule was
+    # documented and unenforced: no job looked for a glyph, so the corpus could
+    # drift with nothing reporting it. Scope is the paths the rule names --
+    # .claude/, docs/ and README.md -- and deliberately not app/, tests/ or
+    # resources/, which the rule does not reach in this repository.
+    #
+    # The scanner is Node rather than a shell one-liner on purpose: a `perl -ne`
+    # range scan matches NOTHING without `-CSD` -- no error, exit 0, an accurate
+    # file count -- which is how the local-CI glyph probe read zero on every pull
+    # request for a night. Node decodes UTF-8 natively, so that class cannot arise.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # PARITY: mirrored by the no-emoji job in scripts/local-ci.mjs
+      - name: Run no-emoji guard
+        run: node scripts/check-no-emoji.mjs
+
+  content-pointer-guard:
+    name: Submodule pointer guard (each on its main)
+    runs-on: ubuntu-latest
+    # CI chain: runs after the no-emoji guard and BEFORE the encoding guard, the
+    # first job that runs `composer install`. It needs only git and Node.
+    needs: no-emoji-guard
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Fails the build when any submodule gitlink of the validated commit names a
+    # commit that is not on that submodule's `main` (UAMS-Web/uams-statamic-archive#2965; every declared
+    # submodule since UAMS-Web/uams-statamic-archive#3115, the asset ones included). Such a pointer resolves for
+    # whoever has the companion branch fetched and fails for everyone else, a
+    # fresh clone and this workflow's pest job included, and it silently undoes
+    # itself when the branch is deleted. UAMS-Web/uams-statamic-archive#2863 merged that way. An unchanged
+    # pointer passes without a fetch; a moved one costs a bare clone of its
+    # repository.
+    # Exit 1 is "not on main", 3 is "not present at all", 2 is "could not run",
+    # and every one of them fails the step.
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      # The base the pointer is compared with: the pull request's base branch, the
+      # previous commit on a push to main (a squash merge is one commit), and main
+      # on a manual run, which can be on a branch several commits past its bump.
+      # HEAD~1 there would read an earlier bump as unchanged; local-ci compares
+      # with origin/main, so the two agree.
+      - name: Determine the base ref
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "+refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}"
+            echo "ref=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "ref=HEAD~1" >> "$GITHUB_OUTPUT"
+          else
+            git fetch --no-tags --depth=1 origin "+refs/heads/main:refs/remotes/origin/main"
+            echo "ref=origin/main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Each moved submodule's clone authenticates through an insteadOf rewrite, as
+      # the pest job's submodule checkout does; `gh` uses the same token to name the
+      # submodule pull request to land first.
+      # PARITY: mirrored by the content-pointer job in scripts/local-ci.mjs
+      - name: Run content pointer guard
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+          GH_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git config --global "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf" https://github.com/
+          node scripts/check-content-pointer.mjs --base "${{ steps.base.outputs.ref }}"
+
+  encoding-guard:
+    name: Encoding guard (Windows-1252 double-encoding)
+    runs-on: ubuntu-latest
+    # CI chain: runs only after the content pointer guard passes.
+    needs: content-pointer-guard
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
+    # byte sequences that produced PRs UAMS-Web/uams-statamic-archive#739, UAMS-Web/uams-statamic-archive#740, UAMS-Web/uams-statamic-archive#741, UAMS-Web/uams-statamic-archive#742 (see
+    # joshdaugherty/ipa-unicode-inventory#1 for the full pattern). The script
+    # ships with the inventory composer package as of v1.6.2 (see
+    # joshdaugherty/ipa-unicode-inventory#4) — we invoke the vendored copy
+    # so its detection logic stays in lockstep with the package version we
+    # pin. content/ is not initialized — git ls-files does not descend into
+    # submodules, so this job naturally scopes to the umbrella repo.
+    # Despite the name, the job also runs the other sub-second guards below, ending
+    # with the release-notes generator suite (UAMS-Web/uams-statamic-archive#2850), so read the failing step's name.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so
+          # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
+          # README_Imagick.md for the manual developer install.
+          extensions: imagick
+          coverage: none
+          tools: composer:v2
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs
+      - name: Run encoding guard
+        run: node vendor/joshdaugherty/ipa-unicode-inventory/scripts/check-double-encoding.mjs
+
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # Added here rather than as a thirteenth job (UAMS-Web/uams-statamic-archive#2236): it reads one tracked
+      # file, needs no install, and belongs beside the other file-content guard.
+      - name: Run decision-log order guard
+        run: node scripts/check-decision-log-order.mjs
+
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # Reports `@pest-mutate-ignore` annotations that suppress nothing (UAMS-Web/uams-statamic-archive#2316).
+      # An inert one is invisible by construction: the mutant simply keeps
+      # surviving, which reads as a wrong reason rather than as an annotation
+      # that never applied, so nothing is ever red to point at it.
+      #
+      # Here rather than in a fourteenth job, extending UAMS-Web/uams-statamic-archive#2236's reasoning rather
+      # than contradicting it. That note declined a job for a guard needing no
+      # install; this one DOES read `vendor/pestphp/pest-plugin-mutate` for the
+      # mutator names it validates against — and this job has already installed,
+      # so folding it in costs nothing while a separate job would duplicate the
+      # whole setup-php-cache-auth-install preamble to run a sub-second script.
+      # Third of thirteen in a chain that is explicitly cost-ordered, so it still
+      # fails before spell, js, build, pint, rector, mutate, phpstan and pest.
+      #
+      # Non-zero of ANY kind fails the step, which is the point rather than an
+      # incidental: the auditor exits 2 when it cannot run at all (the plugin
+      # missing), and treating that as a pass would restore exactly the silent
+      # false-clean this guard exists to close.
+      #
+      # It tokenizes every file under app and tests, which needs more than 128M.
+      # This CLI's memory_limit is the -1 (unlimited) default, so the step passes
+      # no limit; the local runner gives this and every other PHP process it
+      # starts LOCAL_CI_PHP_MEMORY_LIMIT, because a local PHP may cap lower (UAMS-Web/uams-statamic-archive#3212).
+      - name: Run mutate-ignore auditor
+        run: php scripts/check-mutate-ignore.php app tests
+
+      # Counts how many mutants each `@pest-mutate-ignore` annotation removes (UAMS-Web/uams-statamic-archive#3160),
+      # which the auditor above cannot see: breadth is a property of the AST, not of the
+      # line. Fails on an annotation that removes more than one mutant of a named mutator
+      # or none at all, unless the committed baseline lists it, and on a baseline entry
+      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. About
+      # a minute over app and tests, measured on macOS; it reuses this job's install.
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      - name: Run mutate-ignore breadth check
+        run: php scripts/check-mutate-ignore-breadth.php --baseline=scripts/check-mutate-ignore-breadth.baseline.json app tests
+
+      # Rejects a raw 0x0D that is not part of a CRLF pair (UAMS-Web/uams-statamic-archive#2495). `eol=lf` normalizes
+      # CRLF and never sees a lone CR, and Pint passes it through untouched, so the class
+      # reaches `main` past both. Beside the other file-content guards by UAMS-Web/uams-statamic-archive#2236's
+      # reasoning: tracked files only, no install, sub-second.
+      - name: Run lone-CR guard
+        run: node scripts/check-lone-cr.mjs
+
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # Runs the unittest suite the shared `writing-release-notes` skill ships beside
+      # `gen_release_notes.py` (UAMS-Web/uams-statamic-archive#2850). Nothing ran it, so release-notes coverage rested
+      # on repo-local Pest guards written against an interface the shared script no
+      # longer has. Beside the other guards by UAMS-Web/uams-statamic-archive#2236's reasoning: offline, no install,
+      # no content, about a second. `python3` comes with the runner image, so no setup
+      # step. unittest exits 1 on any failure or error, which fails the step.
+      - name: Run release-notes generator suite
+        run: python3 .claude/skills/writing-release-notes/gen_release_notes.test.py
+
+  test-isolation-guard:
+    name: Test isolation guard (parallel-safety)
+    runs-on: ubuntu-latest
+    # First (fastest) link in the cost-ordered CI chain: every other job runs
+    # downstream via `needs:`, so a failure here skips — and never bills — the
+    # entire rest of the pipeline.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    # Fails the build when a test uses a parallel-unsafe, shared-state pattern
+    # (a `Storage::persistentFake` disk, or a hardcoded `framework/testing` path with no
+    # per-worker uniqueness token) without quarantining it into the `serial`
+    # group — the flake class that keeps surfacing under `pest --parallel`
+    # (UAMS-Web/uams-statamic-archive#1136, UAMS-Web/uams-statamic-archive#1149). A pure static scan of tests/, dependency-free: it needs
+    # only PHP — no composer install, no content submodule, no framework boot.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      # PARITY: mirrored by the isolation job in scripts/local-ci.mjs
+      - name: Run test isolation guard
+        run: php scripts/check-parallel-safe-tests.php
+
+      # Global-scope test symbols (UAMS-Web/uams-statamic-archive#3112): a `const` or `function` declared in more
+      # than one namespace-less file, and a single-segment `use X;` with no named
+      # namespace. The shared pest-testing script; formerly Rules C and D above.
+      # PARITY: mirrored by the isolation job in scripts/local-ci.mjs
+      - name: Run global test symbol check
+        run: php .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests

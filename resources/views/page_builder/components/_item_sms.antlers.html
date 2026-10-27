@@ -1,0 +1,28 @@
+{{#
+	@name UAMS Block Item Button Link
+	@desc The button link element in items in UAMS page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+{{ if ( sms_phone_type_group:sms_phone_type && ( sms_phone_type_group:phone || sms_phone_type_group:sms_short_code ) ) }}
+
+	{{# Define the Link Attribute Variables #}}
+
+		{{# href #}}
+
+			{{ $block_item_sms_href_value = 'sms:' + ( ( sms_phone_type_group:sms_phone_type == 'phone' ) ? sms_phone_type_group:phone : sms_phone_type_group:sms_short_code ) }}
+			{{ $block_item_sms_href_value += sms_message ? ( '?body=' + ( sms_message | rawurlencode ) ) : '' }}
+
+	{{# Construct the Link Text #}}
+
+		{{ sms_prepend = ( sms_prepend === '' ) ? null : ( sms_prepend ?? 'Text' ) }}
+		{{ $block_item_sms_text = sms_prepend }}
+		{{ $block_item_sms_text += sms_message ? ( ' "' + sms_message + '" to' ) : '' }}
+
+	{{# Render the Structure #}}
+
+							<a
+								href="{{ $block_item_sms_href_value }}"
+								{{ block:block_heading | attribute:data-moduletitle }}
+							>{{ $block_item_sms_text }} <span class="no-break">{{ sms_phone }}</span></a>
+
+{{ /if }}

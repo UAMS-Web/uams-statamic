@@ -1,0 +1,108 @@
+// Media of at least the minimum breakpoint width on high pixel density displays.
+// Pixel density query only for the smallest breakpoint.
+// Makes the @content apply to the given breakpoint and wider.
+@mixin media-breakpoint-up-retina($name, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) and (-webkit-min-device-pixel-ratio: 2),
+            (min-width: $min) and (min-resolution: 192dpi) {
+            @content;
+        }
+    } @else {
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            @content;
+        }
+    }
+}
+
+// Media of at most the maximum breakpoint width on high pixel density displays.
+// Pixel density query only for the smallest breakpoint.
+// Makes the @content apply to the given breakpoint and narrower.
+@mixin media-breakpoint-down-retina($name, $breakpoints: $grid-breakpoints) {
+    $max: breakpoint-max($name, $breakpoints);
+    @if $max {
+        @media (max-width: $max) and (-webkit-min-device-pixel-ratio: 2),
+            (max-width: $max) and (min-resolution: 192dpi) {
+            @content;
+        }
+    } @else {
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            @content;
+        }
+    }
+}
+
+// Media that spans multiple breakpoint widths on high pixel density displays.
+// Makes the @content apply between the min and max breakpoints
+@mixin media-breakpoint-between-retina($lower, $upper, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($lower, $breakpoints);
+    $max: breakpoint-max($upper, $breakpoints);
+
+    @if $min != null and $max != null {
+        @media (min-width: $min) and (max-width: $max) and (-webkit-min-device-pixel-ratio: 2),
+            (min-width: $min) and (max-width: $max) and (min-resolution: 192dpi) {
+            @content;
+        }
+    } @else if $max == null {
+        @include media-breakpoint-up-retina($lower, $breakpoints) {
+            @content;
+        }
+    } @else if $min == null {
+        @include media-breakpoint-down-retina($upper, $breakpoints) {
+            @content;
+        }
+    }
+}
+
+// Media between the breakpoint's minimum and maximum widths on high pixel density displays.
+// No minimum for the smallest breakpoint, and no maximum for the largest one.
+// Makes the @content apply only to the given breakpoint, not viewports any wider or narrower.
+@mixin media-breakpoint-only($name, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($name, $breakpoints);
+    $max: breakpoint-max($name, $breakpoints);
+
+    @if $min != null and $max != null {
+        @media (min-width: $min) and (max-width: $max) and (-webkit-min-device-pixel-ratio: 2),
+            (min-width: $min) and (max-width: $max) and (min-resolution: 192dpi) {
+            @content;
+        }
+    } @else if $max == null {
+        @include media-breakpoint-up-retina($name, $breakpoints) {
+            @content;
+        }
+    } @else if $min == null {
+        @include media-breakpoint-down-retina($name, $breakpoints) {
+            @content;
+        }
+    }
+}
+
+// Media of at least the minimum custom width.
+@mixin media-custom-up($value) {
+    @media (min-width: $value) {
+        @content;
+    }
+}
+
+// Media of at least the minimum custom width on high pixel density displays.
+@mixin media-custom-up-retina($value) {
+    @media (min-width: $value) and (-webkit-min-device-pixel-ratio: 2),
+    (min-width: $value) and (min-resolution: 192dpi) {
+        @content;
+    }
+}
+
+// Media of at most the maximum custom width.
+@mixin media-custom-down-retina($value) {
+    @media (max-width: $value) {
+        @content;
+    }
+}
+
+// Media of at most the maximum custom width on high pixel density displays.
+@mixin media-custom-down-retina($value) {
+    @media (max-width: $value) and (-webkit-min-device-pixel-ratio: 2),
+    (max-width: $value) and (min-resolution: 192dpi) {
+        @content;
+    }
+}

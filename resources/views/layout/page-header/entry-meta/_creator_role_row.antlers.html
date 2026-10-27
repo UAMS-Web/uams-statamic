@@ -1,0 +1,31 @@
+{{#
+
+	@name Entry Meta: Creator Role Row
+	@desc Renders one creator entry-meta row when `entries` resolves to at least one person.
+	Expects: label (e.g., "Host:"), entries (people field value; single entry or list).
+
+#}}
+
+{{# Check if the entries are set #}}
+{{ if entries }}
+	{{# Normalize entries collections or single values to a list array #}}
+	{{ $entries_normalized = entries | normalize_list }}
+
+	{{# Remove empty items from the entries normalized array #}}
+	{{ $entries_normalized = $entries_normalized | filter_empty }}
+
+	{{# Check if the entries normalized count is greater than 0. `normalize_list`
+		has already called `->get()` on the augmented `entries` builder, which is
+		where `StatusQueryBuilder` applies the published filter — so this counts
+		resolved entries (UAMS-Web/uams-statamic-archive#1693). #}}
+	{{ if ( $entries_normalized | count ) > 0 }}
+		{{# Render the creator item #}}
+		{{ partial:layout/page-header/entry-meta/item
+			type="creator"
+			:label="label"
+			:value="$entries_normalized"
+			:icon="icon"
+			:itemprop="( itemprop_replacement ?? ( [ 'https://schema.org/author https://schema.org/creator', ( itemprop_append | trim ) ] | join(' ') | collapse_whitespace ) )"
+		}}
+	{{ /if }}
+{{ /if }}

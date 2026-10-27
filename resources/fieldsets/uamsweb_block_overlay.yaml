@@ -1,0 +1,78 @@
+title: 'UAMSWeb Block, Text and Image Overlay'
+fields:
+  -
+    handle: items
+    field:
+      max_sets: 2
+      type: replicator
+      display: Items
+      instructions: "The block may have one or two sections. If the block only has one section, that section will be displayed full width. If the block has two sections, they will be shown beside each other at half the viewport's width."
+      validate:
+        - required
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Section Group'
+          sets:
+            new_set:
+              display: 'New Section'
+              fields:
+                -
+                  handle: heading
+                  field: uamsweb_common_block.block_heading
+                  config:
+                    display: Heading
+                    instructions: 'There is a 32-character limit.'
+                    character_limit: 32
+                    validate:
+                      - required
+                -
+                  handle: body
+                  field: uamsweb_common_block.description_textarea_centered
+                  config:
+                    display: Body
+                    instructions: 'There is a 280-character limit.'
+                    character_limit: 280
+                    validate:
+                      - required
+                -
+                  handle: button_text
+                  field: uamsweb_common_link.link_text
+                  config:
+                    instructions: 'Optional. There is a 27-character limit.'
+                    character_limit: 27
+                -
+                  handle: button_url
+                  field: uamsweb_common_link.link_url
+                -
+                  handle: button_target
+                  field: uamsweb_common_link.new_window_query
+                -
+                  handle: button_link_description
+                  field: uamsweb_common_link.link_description
+                -
+                  handle: background_color
+                  field: uamsweb_common_block.background_color_vivid
+                  config:
+                    display: 'Background Color'
+                    instructions: "Each section should have a unique background color. If this block is next to another block with a background color, ensure that all adjacent blocks or sections use different background colors. If this block is adjacent to the footer, avoid using the color red for the background, as the footer's background is red."
+                    default: null
+                    validate:
+                      - required
+                -
+                  handle: background_image
+                  field: uamsweb_common_images.image_1920x720
+                  config:
+                    display: 'Background Image'
+                    instructions: 'Recommended image dimensions for single section: 5120x2560. Recommended image dimensions for two sections: 2560x1920. Minimum image dimensions: 1920x720. If there are two sections, the image will be automatically cropped to a 4:3 aspect ratio. If there is one section, the image will be automatically cropped to a 8:3 aspect ratio.'
+                    validate:
+                      - required
+                      - 'dimensions:min_width=1920,min_height=720'
+                -
+                  handle: display_media_credit
+                  field: uamsweb_common.true_false
+                  config:
+                    display: 'Display Media Credit'
+                    instructions: "Overlay this section's background image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the section's content, so it is off by default."
+                    default: false
+                    localizable: false

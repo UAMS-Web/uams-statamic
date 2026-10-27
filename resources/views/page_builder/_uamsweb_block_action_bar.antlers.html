@@ -1,0 +1,122 @@
+{{#
+	@name UAMS Action Bar
+	@desc The UAMS Action Bar page builder block.
+	@set page.page_builder.uamsweb_block_action_bar
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Check if the block heading is present #}}
+	{{ $block_valid = block_heading }}
+
+	{{# Limit to first 4 items (items max_sets in resources/fieldsets/uamsweb_block_action_bar.yaml) #}}
+	{{ if $block_valid }}
+		{{ $action_bar_items = items | limit(4) }}
+	{{ /if }}
+
+	{{# Count Action Bar Items (3–4 required) #}}
+	{{# items max_sets in resources/fieldsets/uamsweb_block_action_bar.yaml #}}
+	{{# items min_sets in resources/fieldsets/uamsweb_block_action_bar.yaml (min_sets not currently enforced by Statamic) #}}
+	{{ if $block_valid }}
+		{{ $action_bar_items_count = ( $action_bar_items | safe_count ) }}
+		{{ $block_valid = $action_bar_items_count >= 3 && $action_bar_items_count <= 4 }}
+	{{ /if }}
+
+	{{# Check every set has required fields #}}
+	{{ if $block_valid }}
+		{{ $action_bar_items }}
+			{{ if ( !heading || !body || !button_text || !button_url ) }}
+				{{ $block_valid = false }}
+			{{ /if }}
+		{{ /$action_bar_items }}
+	{{ /if }}
+
+	{{# Block Class #}}
+	{{ if $block_valid }}
+		{{ $action_bar_class = 'action-bar count-' + $action_bar_items_count }}
+	{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$action_bar_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/block_header }}
+		{{ partial:page_builder/components/container_row }}
+			{{ $action_bar_items }}
+
+				{{# Define the Variables #}}
+
+					{{# Button Color #}}
+
+						{{ $is_light_bg = [ 'bg-white', 'bg-gray', 'bg-auto' ] | contains(background_color) }}
+
+					{{# Target #}}
+
+						{{ $button_target = button_target ? '_blank' : null }}
+						{{ $button_rel = button_target ? 'noopener noreferrer' : null }}
+
+					{{# ARIA Label #}}
+
+						{{ $action_bar_aria_label = button_link_description ?? ( [ button_text, heading, block:block_heading ] | join(', ') ) }}
+
+				{{# Render the Item #}}
+
+				<div
+					class="{{
+						[
+							'col-12' => true,
+							'col-sm-4' => $action_bar_items_count < 4,
+							'col-md-3' => $action_bar_items_count >= 4,
+							'item' => true
+						] | classes | collapse_whitespace
+					}}"
+				>
+					<div class="inner-container">
+						<div class="text-container">
+							<h3 class="h5" data-moduletitle="{{ block:block_heading }}">{{ heading | widont }}</h3>
+							<p>{{ body | widont }}</p>
+						</div>
+						<a
+							class="{{ [
+								'btn' => true,
+								'btn-primary' => $is_light_bg,
+								'btn-white' => !$is_light_bg
+							] | classes | collapse_whitespace }}"
+							href="{{ button_url }}"
+							aria-label="{{ $action_bar_aria_label }}"
+							{{ $button_target | attribute:target }}
+							{{ $button_rel | attribute:rel }}
+							data-moduletitle="{{ block:block_heading }}"
+							data-itemtitle="{{ heading }}"
+						>{{ button_text }}</a>
+					</div>
+				</div>
+			{{ /$action_bar_items }}
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}
+
+{{#
+
+	================================================================================
+
+	To-Do List
+
+	================================================================================
+
+	# Minimum Sets
+
+	The template enforces at least 3 items via `$block_valid`; `min_sets` on the
+	replicator fieldtype is not yet supported. See
+	https://github.com/UAMS-Web/uams-statamic-archive/issues/57
+	and https://github.com/statamic/ideas/issues/1260
+
+	================================================================================
+
+#}}

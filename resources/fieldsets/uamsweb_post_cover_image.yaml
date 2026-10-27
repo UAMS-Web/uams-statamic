@@ -1,0 +1,60 @@
+title: 'UAMSWeb Posts, Featured Image and Cover Image'
+fields:
+  -
+    handle: featured_image_16_9
+    field: uamsweb_common_images.image_1200x675_16_9_recommended
+    config:
+      display: 'Featured Image, 16:9'
+      validate:
+        - required
+        - 'dimensions:min_width=1200,min_height=675'
+      localizable: false
+  -
+    handle: featured_image_4_3
+    field: uamsweb_common_images.image_1600x1200_4_3
+    config:
+      display: 'Featured Image, 4:3'
+      localizable: false
+      width: 50
+  -
+    handle: featured_image_1_1
+    field: uamsweb_common_images.image_675x675_1_1
+    config:
+      display: 'Featured Image, 1:1'
+      localizable: false
+      width: 50
+  -
+    handle: cover_image_query
+    field: uamsweb_common.true_false
+    config:
+      display: "Display the Featured Image as the Entry's Cover Image"
+      localizable: false
+      validate:
+        - required
+      default: false
+  -
+    handle: cover_image_alt_text_override
+    field: uamsweb_common_images.image_alt_text_override
+    config:
+      display: 'Cover Image Alt Text Override'
+      localizable: false
+      if:
+        cover_image_query: 'equals true'
+  -
+    handle: cover_image_caption_override
+    field: uamsweb_common_images.image_caption_override
+    config:
+      display: 'Cover Image Caption Override'
+      localizable: false
+      if:
+        cover_image_query: 'equals true'
+  -
+    handle: featured_image_credit_query
+    field: uamsweb_common.true_false
+    config:
+      display: "Display the Featured Image's Photo Credit on Other Pages"
+      instructions: "When this entry's Featured Image appears on another page (news listings, related-content cards, and other blocks that surface it), show the image's photo credit. Turn this on when the asset's license requires attribution wherever the image appears. Has no effect when the image carries no credit."
+      localizable: false
+      validate:
+        - required
+      default: false

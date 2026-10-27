@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Synthetic WordPress WXR export for WordPressImportScriptStrippingTest (#1742).
+
+    One published post whose <content:encoded> carries the injection vectors a
+    compromised WordPress property would hand us — a <script> block, an <iframe>,
+    an inline event handler, and a `javascript:` anchor — interleaved with benign
+    editorial copy. The benign copy is load-bearing: the test asserts it survives
+    the import, so a parser that silently dropped *everything* could not pass by
+    stripping the payloads as a side effect of producing nothing at all.
+
+    Structurally faithful to a real WXR export (namespaces, wp:post_type,
+    wp:status) but carries no real content and references no real host.
+-->
+<rss version="2.0"
+     xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:wp="http://wordpress.org/export/1.2/"
+>
+    <channel>
+        <title>UAMS Health</title>
+        <link>https://wordpress.test</link>
+        <wp:wxr_version>1.2</wp:wxr_version>
+        <wp:base_site_url>https://wordpress.test</wp:base_site_url>
+        <wp:base_blog_url>https://wordpress.test</wp:base_blog_url>
+
+        <item>
+            <title>Sickle Cell Clinic Hours</title>
+            <link>https://wordpress.test/sickle-cell-clinic-hours/</link>
+            <dc:creator><![CDATA[editor]]></dc:creator>
+            <guid isPermaLink="false">https://wordpress.test/?p=4211</guid>
+            <description></description>
+            <content:encoded><![CDATA[<p>The Sickle Cell Clinic sees patients weekday mornings.</p>
+<script>alert(1)</script>
+<p onclick="alert(1)">Walk-ins are accepted before 10 a.m.</p>
+<iframe src="https://evil.test/pwn"></iframe>
+<p>Call <a href="javascript:alert(1)">the clinic</a> to confirm.</p>
+<svg><script>alert(1)</script></svg>
+<p>Parking is validated in <a href="https://uams.edu/parking">Lot 3</a>.</p>]]></content:encoded>
+            <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+            <wp:post_id>4211</wp:post_id>
+            <wp:post_date><![CDATA[2025-08-15 09:00:00]]></wp:post_date>
+            <wp:post_name><![CDATA[sickle-cell-clinic-hours]]></wp:post_name>
+            <wp:status><![CDATA[publish]]></wp:status>
+            <wp:post_parent>0</wp:post_parent>
+            <wp:menu_order>0</wp:menu_order>
+            <wp:post_type><![CDATA[post]]></wp:post_type>
+            <wp:post_password><![CDATA[]]></wp:post_password>
+            <wp:is_sticky>0</wp:is_sticky>
+        </item>
+    </channel>
+</rss>

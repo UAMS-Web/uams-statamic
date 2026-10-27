@@ -1,0 +1,11 @@
+{{# Section fieldtype (App\Fieldtypes\Section, extends Statamic\Fieldtypes\Section)
+    — renders a heading + optional instructions to visually group subsequent
+    form fields. No input element, no submitted value. The wrapper at
+    vendor/statamic/forms/fields.antlers.html bypasses the form-group label for
+    this type. #}}
+<div class="form-section my-4">
+	<h3 class="h5 font-weight-bold mb-1">{{ display }}</h3>
+	{{ if instructions }}
+		<p class="text-muted small mb-0">{{ instructions }}</p>
+	{{ /if }}
+</div>

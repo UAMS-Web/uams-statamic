@@ -1,0 +1,6 @@
+// Font Awesome 7 gives every icon a fixed 1.25em width unless it opts out with
+// `fa-width-auto`. Font Awesome 5 sized an icon to its own glyph, so restore that
+// default site-wide. `fa-fw` still sets 1.25em on its own element (UAMS-Web/uams-statamic-archive#3398).
+:root {
+	--fa-width: auto;
+}

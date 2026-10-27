@@ -1,0 +1,33 @@
+title: 'UAMSWeb Posts, Subject Matter'
+fields:
+  -
+    handle: about
+    field: uamsweb_common.subject_matter
+    config:
+      display: 'Primary Subject Matter'
+      localizable: false
+  -
+    handle: mentions
+    field: uamsweb_common.subject_matter
+    config:
+      display: 'Concepts Mentioned'
+      instructions: 'Indicates that the news release contains a reference to, but is not necessarily about a concept.'
+      localizable: false
+  -
+    handle: post_categories
+    field:
+      type: entries
+      collections:
+        - post_categories
+      display: 'Post Categories'
+      mode: select
+      localizable: false
+  -
+    handle: post_tags
+    field:
+      type: entries
+      collections:
+        - post_tags
+      display: 'Post Tags'
+      mode: select
+      localizable: false

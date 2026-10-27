@@ -1,0 +1,18 @@
+title: SEO
+tabs:
+  main:
+    display: SEO
+    sections:
+      -
+        display: Robots
+        instructions: 'Crawler directives served at `/robots.txt`.'
+        fields:
+          -
+            handle: robots
+            field:
+              type: textarea
+              display: 'robots.txt rules'
+              instructions: "The crawler directives served verbatim at `/robots.txt`. A `Sitemap:` line pointing at the multisite sitemap index (`/sitemaps.xml`) is appended automatically — don't add one here."
+              rows: 18
+              localizable: true
+              listable: hidden

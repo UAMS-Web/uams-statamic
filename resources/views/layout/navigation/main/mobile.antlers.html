@@ -1,0 +1,87 @@
+{{#
+
+	@name Main mobile navigation (UAMS Web)
+	@desc The site's mobile primary navigation, shown below the desktop nav's
+	      breakpoint. Framework-free accessible collapsible menu (see
+	      resources/js/uams_2020/source/mobile-nav.js / UAMS-Web/uams-statamic-archive#53). Driven by the same
+	      navigation data and UAMS-Web/uams-statamic-archive#52 subsection scoping as desktop.antlers.html; the
+	      two are breakpoint-gated so only one is interactive at a time.
+
+#}}
+<nav class="site-nav-mobile d-sm-none" aria-label="Primary (mobile)" data-mobile-nav>
+	<div class="site-nav-mobile-panel" id="mobile-nav-primary" data-mobile-nav-panel hidden>
+		<ul class="mobile-nav-list">
+			{{# Within an Area-of-Expertise subsite, replace the global primary nav with
+				the AoE section nav (kept in sync with desktop.antlers.html, UAMS-Web/uams-statamic-archive#1057).
+				Gated on `is_within_aoe` so an AoE page never reaches the global nav's
+				`collection::pages` subsection scoping below — an AoE URI is not a node
+				in the pages structure tree and fatals TreeBuilder (would 500 the page). #}}
+			{{ if is_within_aoe }}
+				{{ aoe_section_nav }}
+					<li class="mobile-nav-item">
+						<a class="mobile-nav-link" href="{{ url }}">{{ label }}</a>
+					</li>
+				{{ /aoe_section_nav }}
+			{{ else }}
+			{{# Same source resolution as desktop.antlers.html (kept in sync). The
+				{{ subsection }} tag MUST be a PAIR — the embedded-assignment form
+				does not capture its array, so scoping would silently never activate. #}}
+			{{ $manual_primary_navigation = uams_multisite_settings:manual_primary_navigation ? 'primary_navigation' : void }}
+			{{ $navigation_main_handle = {nav :handle="$manual_primary_navigation"} ? $manual_primary_navigation : void }}
+			{{ $navigation_main_from = void }}
+			{{ subsection }}
+				{{ if active }}
+					{{ $navigation_main_handle = 'collection::pages' }}
+					{{ $navigation_main_from = uri }}
+				{{ /if }}
+			{{ /subsection }}
+			{{# Same non-public exclusion as desktop.antlers.html (kept in sync, UAMS-Web/uams-statamic-archive#223,
+				UAMS-Web/uams-statamic-archive#1151, UAMS-Web/uams-statamic-archive#1152). The `hide_from_menu` / `password_protected` `:isnt` params
+				filter the default `collection::pages` path at the query; the `{{ unless }}`
+				guard re-applies the exclusion on EVERY nav source (a manual
+				`primary_navigation` nav ignores tag conditions — UAMS-Web/uams-statamic-archive#1151). `private` is
+				guarded only in the template — not at the query — so a super user, or a
+				user who can publish the collection, still sees it (UAMS-Web/uams-statamic-archive#1152), matching
+				App\Http\Middleware\ProtectEntry. #}}
+			{{ nav :handle="$navigation_main_handle" :from="$navigation_main_from" hide_from_menu:isnt="true" password_protected:isnt="true" }}
+				{{# Re-apply the exclusion on any nav source; `private` is still shown to
+					a user who may view it. #}}
+				{{ unless hide_from_menu || password_protected || ( status_and_visibility == "private" && !{can_view_private_entry :id="entry_id"} ) }}
+				{{# A child_site_link item links to its selected child site (UAMS-Web/uams-statamic-archive#219); a
+					posts_category_link item links to its selected post category's archive
+					(UAMS-Web/uams-statamic-archive#220); every other item uses its own URL. #}}
+				{{ $child_site_href = {child_site_url} }}
+				{{ $category_href = {posts_category_link_url} }}
+				{{ $nav_item_href = $child_site_href ? $child_site_href : ( $category_href ? $category_href : url ) }}
+				<li
+					class="{{ [
+						'mobile-nav-item' => true,
+						'has-children' => children ?? false
+					] | classes | collapse_whitespace }}"
+				>
+					<a
+						href="{{ $nav_item_href }}"
+						class="{{ [
+							'mobile-nav-link' => true,
+							'on' => ( is_current || is_parent ) ?? false
+						] | classes | collapse_whitespace }}"
+					>{{ nav_alt_name ?? title }}</a>
+					{{ if children }}
+						<button
+							type="button"
+							class="mobile-nav-submenu-toggle"
+							aria-expanded="false"
+							aria-controls="mobile-submenu-{{ id }}"
+							data-mobile-nav-submenu-toggle
+						><span class="sr-only">Toggle submenu for {{ nav_alt_name ?? title }}</span></button>
+						<ul id="mobile-submenu-{{ id }}" class="mobile-nav-sublist" hidden>
+							{{ *recursive children* }}
+						</ul>
+					{{ /if }}
+				</li>
+				{{ /unless }}
+			{{ /nav }}
+			{{ /if }}
+		</ul>
+	</div>
+</nav>

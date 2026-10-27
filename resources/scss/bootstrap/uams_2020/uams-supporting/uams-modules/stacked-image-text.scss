@@ -1,0 +1,85 @@
+@use "sass:math";
+
+.stacked-image-text,
+.uamswp-news-syndication-cards {
+    $stacked-tile-min-width: 1rem * $line-length-min;
+    $stacked-tile-ideal-width: 1rem * $line-length-ideal;
+    $stacked-tile-max-width: 1rem * $line-length-max;
+
+    .item {
+        width: 100%;
+        padding: $card-list-gap;
+        display: flex;
+        justify-content: center;
+
+        @include media-breakpoint-up(sm) {
+            @include make-col(6);
+        }
+
+        @include media-breakpoint-up(xl) {
+            flex: 0 1 auto;
+            max-width: math.percentage(math.div(3, $grid-columns));
+            width: auto;
+        }
+
+        &:nth-child(odd):not(:last-child) {
+            @include media-breakpoint-up(sm) {
+                justify-content: flex-end;
+            }
+        }
+
+        &:nth-child(even) {
+            @include media-breakpoint-up(sm) {
+                justify-content: flex-start;
+            }
+        }
+
+        &:nth-child(odd),
+        &:nth-child(even) {
+            @include media-breakpoint-up(xl) {
+                justify-content: center;
+            }
+        }
+    }
+
+    .card {
+        border: none;
+        border-radius: 0;
+        background-color: transparent;
+        width: $stacked-tile-ideal-width;
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .card-img-top {
+        border-radius: 0;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+        }
+    }
+
+    .card-body {
+        font-size: 1rem;
+        padding: 0;
+    }
+
+    .card-img-top + .card-body {
+        padding-top: 1.25rem;
+    }
+}
+
+// body.page-template-default {
+//     .stacked-image-text:not(.alignfull),
+//     .uamswp-news-syndication-wrapper:not(.alignfull) .uamswp-news-syndication-cards {
+//         .item {
+//             @extend .col-sm-12;
+//             @extend .col-xs-12;
+
+//             &:nth-child(-n+4) {
+//                 padding-bottom: $grid-gutter-width;
+//             }
+//         }
+//     }
+// }

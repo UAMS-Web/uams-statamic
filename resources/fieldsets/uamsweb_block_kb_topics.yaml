@@ -1,0 +1,461 @@
+title: 'UAMSWeb Block, Knowledge Base Topics'
+fields:
+  -
+    handle: knowledge_base
+    field:
+      max_items: 1
+      mode: select
+      create: false
+      collections:
+        - knowledge_bases
+      query_scopes:
+        - knowledge_base_only
+      type: entries
+      display: 'Knowledge Base'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      display: 'Include a link to the knowledge base page?'
+      default: true
+      validate:
+        - required
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      default: 'View the Full List of Topics'
+      placeholder: 'e.g., "View the Full List of Topics"'
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      default: 'Visit the Knowledge Base'
+      placeholder: 'e.g., "Visit the Knowledge Base"'
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: title_size
+    field:
+      mode: keyed
+      keys:
+        -
+          key: size
+          value: Size
+        -
+          key: unit
+          value: Unit
+      type: array
+      display: 'Title Size'
+      localizable: false
+      visibility: hidden
+  -
+    handle: title_color
+    field:
+      type: color
+      display: 'Title Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: section_topic
+    field:
+      type: subsection
+      display: 'Topic List Settings'
+      localizable: false
+  -
+    handle: topic_source
+    field:
+      options:
+        -
+          key: all
+          value: 'All Topics'
+        -
+          key: list
+          value: 'Specific Topics'
+        -
+          key: dynamic
+          value: 'Dynamic Topics'
+      default: all
+      type: radio
+      display: 'Topics Source'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: topic_list
+    field:
+      type: entries
+      display: 'Specific Topics'
+      localizable: false
+      validate:
+        - sometimes
+        - required
+      if:
+        topic_source: 'equals list'
+      collections:
+        - knowledge_bases
+      create: false
+      query_scopes:
+        - knowledge_base_topic_only
+  -
+    handle: topic_dynamic
+    field:
+      type: select
+      display: 'Dynamic Topics'
+      options:
+        -
+          key: recently_published
+          value: 'Recent Topics'
+        -
+          key: recently_updated
+          value: 'Recently Updated Topics'
+        -
+          key: top_views
+          value: 'Most Viewed Topics'
+        -
+          key: top_likes
+          value: 'Most Liked Topics'
+      multiple: true
+      clearable: true
+      localizable: false
+      if:
+        topic_source: 'equals dynamic'
+      validate:
+        - sometimes
+        - required
+  -
+    handle: hide_children_query
+    field:
+      type: toggle
+      display: 'Show Only Top-Level Topics'
+      localizable: false
+      if:
+        topic_source: 'contains_any all,dynamic'
+  -
+    handle: topic_limit
+    field:
+      default: 4
+      min: 1
+      input_mask_lazy: 1
+      input_mask_skipInvalid: 1
+      type: integer
+      display: 'Number of Topics to Display'
+      localizable: false
+      validate:
+        - sometimes
+        - required
+      if:
+        topic_source: 'equals dynamic'
+  -
+    handle: topic_show_all_link_query
+    field:
+      default: true
+      type: toggle
+      display: 'Enable "Show All Topics" Link'
+      localizable: false
+      if:
+        topic_source: 'not all'
+  -
+    handle: topic_show_all_link_text
+    field:
+      default: 'Show All Topics'
+      placeholder: 'e.g., "Show All Topics"'
+      input_mask_autofix: false
+      input_mask_eager: false
+      input_mask_overwrite: false
+      autocomplete_query: 'off'
+      inputmode: text
+      type: text
+      display: 'Label Text for the "Show All Topics" Link'
+      localizable: false
+      if:
+        topic_show_all_link_query: 'equals true'
+        topic_source: 'not all'
+  -
+    handle: topic_display_style
+    field:
+      options:
+        -
+          key: list
+          value: 'List View'
+        -
+          key: box
+          value: 'Box View'
+      type: radio
+      display: 'Topic Display Style'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_columns
+    field:
+      options:
+        -
+          key: 1
+          value: 'One Column'
+        -
+          key: 2
+          value: 'Two Columns'
+        -
+          key: 3
+          value: 'Three Columns'
+        -
+          key: 4
+          value: 'Four Columns'
+      type: radio
+      display: Columns
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_description_query
+    field:
+      default: true
+      type: toggle
+      display: 'Show Topic Descriptions'
+      localizable: false
+      if:
+        topic_source: 'contains_any all,list'
+  -
+    handle: topic_article_count_query
+    field:
+      default: true
+      type: toggle
+      display: 'Show the Number of Articles in Each Topic'
+      localizable: false
+      if:
+        topic_source: 'contains_any all,list'
+  -
+    handle: topic_article_query
+    field:
+      default: true
+      type: toggle
+      display: 'List Articles in Each Topic'
+      localizable: false
+      if:
+        topic_source: 'contains_any all,list'
+  -
+    handle: topic_article_all_query
+    field:
+      type: toggle
+      display: 'List All Articles in Each Topic'
+      localizable: false
+      if:
+        topic_article_query: 'equals true'
+        topic_source: 'contains_any all,list'
+  -
+    handle: topic_article_limit
+    field:
+      default: 4
+      input_mask_lazy: 1
+      input_mask_skipInvalid: 1
+      type: integer
+      display: 'Number of Articles to List'
+      localizable: false
+      min: 1
+      visibility: hidden
+  -
+    handle: topic_color
+    field:
+      type: color
+      display: 'Topic Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_color_force_query
+    field:
+      type: toggle
+      display: 'Force Topic Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_box_item_bg_color
+    field:
+      type: color
+      display: 'Topic Box View Item Background Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_box_item_bg_color_hover
+    field:
+      type: color
+      display: 'Topic Box View Item Hover Background Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_article_count_bg_color
+    field:
+      type: color
+      display: 'Articles Count Background Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_article_count_text_color
+    field:
+      type: color
+      display: 'Article Count Text Color'
+      localizable: false
+      visibility: hidden
+  -
+    handle: section_graphic
+    field:
+      type: subsection
+      display: 'Topic Graphic Settings'
+      localizable: false
+  -
+    handle: topic_graphic
+    field:
+      options:
+        -
+          key: icon
+          value: Icon
+        -
+          key: featured_image
+          value: 'Featured Image'
+        -
+          key: none
+          value: None
+      default: icon
+      type: radio
+      display: 'Topic Graphic'
+      localizable: false
+      validate:
+        - required
+  -
+    handle: topic_icon_class
+    field:
+      default: fa-list-alt
+      placeholder: 'e.g., "fa-list-alt"'
+      input_mask_autofix: false
+      input_mask_eager: false
+      input_mask_overwrite: false
+      inputmode: text
+      transform_case: lowercase
+      type: text
+      display: 'Default Topic Icon Class'
+      instructions: 'Font Awesome icon class'
+      visibility: hidden
+      localizable: false
+      if:
+        topic_graphic: 'equals icon'
+  -
+    handle: topic_icon_force_query
+    field:
+      type: toggle
+      display: 'Force Topic Icon (Override Topic Custom Icons)'
+      instructions: 'By default, icons from topic settings have higher priority. This setting overrides that behavior.'
+      visibility: hidden
+      localizable: false
+      if:
+        topic_graphic: 'equals icon'
+  -
+    handle: topic_image_size
+    field:
+      mode: keyed
+      keys:
+        -
+          key: size
+          value: Size
+        -
+          key: unit
+          value: Unit
+      type: array
+      display: 'Topic Image Size'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_icon_padding_top
+    field:
+      mode: keyed
+      keys:
+        -
+          key: size
+          value: Size
+        -
+          key: unit
+          value: Unit
+      type: array
+      display: 'Topic Icon Top Padding'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_icon_padding_bottom
+    field:
+      mode: keyed
+      keys:
+        -
+          key: size
+          value: Size
+        -
+          key: unit
+          value: Unit
+      type: array
+      display: 'Topic Icon Bottom Padding'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_article_icon_query
+    field:
+      default: true
+      type: toggle
+      display: 'Show Article Icons'
+      localizable: false
+      visibility: hidden
+  -
+    handle: topic_article_icon_class
+    field:
+      default: fa-book
+      placeholder: 'e.g., "fa-book"'
+      input_mask_autofix: false
+      input_mask_eager: false
+      input_mask_overwrite: false
+      inputmode: text
+      type: text
+      display: 'Article Icon Class'
+      instructions: 'Font Awesome icon class'
+      localizable: false
+      visibility: hidden

@@ -1,0 +1,154 @@
+title: 'UAMSWeb Block, Counter List'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_weighted
+    config:
+      display: 'Counter List Description'
+  -
+    handle: start
+    field:
+      options:
+        -
+          key: day
+          value: 'Beginning of Today'
+        -
+          key: week
+          value: 'Beginning of This Week (Sunday)'
+        -
+          key: month
+          value: 'Beginning of This Month'
+        -
+          key: year
+          value: 'Beginning of This Year'
+        -
+          key: custom
+          value: 'Custom Date and Time'
+      default: day
+      type: radio
+      display: 'Starting Date and Time'
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: start_custom
+    field:
+      time_enabled: true
+      time_seconds_enabled: true
+      type: date
+      display: 'Custom Starting Date and Time'
+      replicator_preview: false
+      if:
+        start: 'equals custom'
+      validate:
+        - required
+        - sometimes
+      format: 'Y-m-d H:i:s'
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: items
+    field:
+      type: replicator
+      display: 'Counter Items'
+      validate:
+        - required
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Item Group'
+          sets:
+            new_set:
+              display: 'New Item'
+              fields:
+                -
+                  handle: heading
+                  field:
+                    type: text
+                    display: 'Counter Item Title'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: unit
+                  field:
+                    character_limit: 90
+                    type: text
+                    display: 'Counter Item Unit Singular'
+                    instructions: 'This is the text displayed after the number, if the number is 1.'
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: units
+                  field:
+                    character_limit: 90
+                    type: text
+                    display: 'Counter Item Unit Plural'
+                    instructions: 'This is the text displayed after the number if the number is not 1.'
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: rate
+                  field:
+                    type: float
+                    display: 'Rate of Increase'
+                    instructions: 'Enter the amount the counter should increase in one second.'
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: start_inherit
+                  field: uamsweb_common.true_false
+                  config:
+                    default: true
+                    display: 'Inherit date and time?'
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: start_override
+                  field: uamsweb_block_counter.start
+                  config:
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                    if:
+                      start_inherit: 'equals false'
+                -
+                  handle: start_override_custom
+                  field: uamsweb_block_counter.start_custom
+                  config:
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - sometimes
+                    if:
+                      start_override: 'equals custom'

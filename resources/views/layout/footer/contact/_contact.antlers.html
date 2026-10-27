@@ -1,0 +1,86 @@
+{{#
+
+	@name Footer Contact Information
+	@desc The contact information in the global footer.
+
+#}}
+<div class="schema">
+	{{ partial:layout/footer/contact/logo }}
+
+	{{ uams_multisite_settings:physical_address scope="footer_physical_address"}}
+		<div class="schema-address">
+			{{ if uams_multisite_settings:physical_address|count > 1 }}
+				<strong>{{ footer_physical_address:title }}:</strong>
+			{{ else }}
+				<strong class="sr-only">{{ footer_physical_address:title }}:</strong>
+			{{ /if }}
+			<span>{{ footer_physical_address:address_group:street_address_1 }}{{ if footer_physical_address:address_group:street_address_2 }}, {{ footer_physical_address:address_group:street_address_2 }}{{ /if }}</span>,
+			<span>{{ footer_physical_address:address_group:city }}</span>,
+			{{ footer_physical_address:address_group:state:label }} <span>{{ footer_physical_address:address_group:zip }}</span>{{ if footer_physical_address:address_group:country == 'US' }}<span class="sr-only">, {{ footer_physical_address:address_group:country:label }}</span>{{ else }}, {{ footer_physical_address:address_group:country:label }}{{ /if }}
+			<meta content="{{ footer_physical_address:address_group:state }}" />
+			<meta content="{{ footer_physical_address:address_group:country }}" />
+		</div>
+	{{ /uams_multisite_settings:physical_address }}
+
+	{{ uams_multisite_settings:direct_contact scope="footer_direct_contact" }}
+		{{ $footer_direct_contact_label_id = 'footer-direct-contact-label-' + footer_direct_contact:id }}
+		<div class="schema-phone">
+
+			{{ if type == 'phone_number' }}
+				<span>
+					<strong><span id="{{ $footer_direct_contact_label_id }}"><span>{{ phone_group:title }}</span>{{ if phone_group:phone_contactpointoption }} ({{ ( phone_group:phone_contactpointoption | pluck('key') | join(', ') ) | replace('TollFree', 'Toll-Free') | replace('HearingImpairedSupported', 'TTY') }}){{ /if }}</span>:</strong>
+					<a href="tel:{{ phone_group:phone }}" aria-labelledby="{{ $footer_direct_contact_label_id }}">{{ phone_group:phone | format_phone }}</a>
+				</span>
+				<meta content="{{ phone_group:phone }}" />
+				{{ if phone_group:phone_contactpointoption }}
+					{{ phone_group:phone_contactpointoption }}
+						<meta content="{{ key }}" />
+					{{ /phone_group:phone_contactpointoption }}
+
+				{{ /if }}
+
+			{{ elseif type == 'fax_number' }}
+				<span>
+					<strong><span id="{{ $footer_direct_contact_label_id }}">{{ fax_group:title }}</span>:</strong>
+					<span aria-labelledby="{{ $footer_direct_contact_label_id }}">{{ fax_group:fax }}</span>
+				</span>
+				<meta content="{{ fax_group:fax }}" />
+
+			{{ elseif type == 'email_address' }}
+				<span>
+					<strong><span id="{{ $footer_direct_contact_label_id }}">{{ email_address_group:title }}</span>:</strong>
+					<a href="mailto:{{ email_address_group:email_address }}" aria-labelledby="{{ $footer_direct_contact_label_id }}">{{ email_address_group:email_address }}</a>
+				</span>
+				<meta content="{{ email_address_group:email_address }}" />
+
+			{{ elseif type == 'text_link' }}
+				<a href="{{ text_link_group:url | sanitize_url }}"{{ text_link_group:new_window ?= ' target="_blank" rel="noopener noreferrer"' }}>{{ text_link_group:text | sanitize }}{{ if text_link_group:new_window }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+
+			{{ /if }}
+
+		</div>
+	{{ /uams_multisite_settings:direct_contact }}
+
+	{{# Tax ID — the value is inherited by every site, so the *display* is gated
+		per-site by the opt-in `display_tax_id` toggle. Display-only: an
+		organization's schema.org `taxID` comes from the EIN on its schema
+		object, not from here (the entity named in a giving footer is the one
+		receiving the gifts, not the university itself). #}}
+	{{ if uams_multisite_settings:display_tax_id && uams_multisite_settings:tax_id }}
+		<div class="schema-tax-id">
+			<strong>Tax ID:</strong> <span>{{ uams_multisite_settings:tax_id | sanitize }}</span>
+		</div>
+	{{ /if }}
+
+	{{# Footer action link — rendered by presence, after the tax ID. Both halves
+		are required to render: the group's subfields are intentionally optional
+		(so leaving the whole link empty keeps the global savable), which makes a
+		URL without link text reachable — and that would emit an anchor with no
+		accessible name. #}}
+	{{ if uams_multisite_settings:footer_action_link:url && uams_multisite_settings:footer_action_link:text }}
+		<div class="schema-action-link">
+			<a href="{{ uams_multisite_settings:footer_action_link:url | sanitize_url }}"{{ if uams_multisite_settings:footer_action_link:new_window }} target="_blank" rel="noopener noreferrer"{{ /if }}>{{ uams_multisite_settings:footer_action_link:text | sanitize }}{{ if uams_multisite_settings:footer_action_link:new_window }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+		</div>
+	{{ /if }}
+
+</div>

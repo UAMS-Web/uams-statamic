@@ -1,0 +1,12 @@
+{{#
+
+	@name Logo Accessible Text
+	@desc Resolves the accessible name for a logo from its asset meta (issue UAMS-Web/uams-statamic-archive#49):
+	      the computed `alt` when present, otherwise a site-name-derived fallback.
+	      Consumers render the logo `img` as decorative (empty alt) and use this
+	      value as the link's single accessible name in an `sr-only` span.
+
+	@param alt       The logo asset's computed `alt` meta, if any.
+	@param fallback  Site-name-derived label used when the asset has no alt.
+
+#}}{{ alt ? alt : fallback }}

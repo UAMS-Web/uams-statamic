@@ -1,0 +1,47 @@
+title: 'UAMSWeb Common Reusable Fields, Find-a-Doc, MedlinePlus Syndication'
+fields:
+  -
+    handle: medline_code_type
+    field:
+      options:
+        -
+          key: none
+          value: None
+        -
+          key: icd
+          value: 'ICD-10-CM (Conditions)'
+        -
+          key: ndc
+          value: 'NDC (Drug Codes)'
+        -
+          key: lonic
+          value: 'LONIC (Lab tests)'
+      default: none
+      type: radio
+      display: 'Code Type for MedlinePlus'
+      instructions: 'Pick which code type to use.'
+      localizable: false
+  -
+    handle: medline_code_id
+    field:
+      type: text
+      display: 'MedlinePlus Code ID #'
+      instructions: 'Find Codes: <a href="https://icd10cmtool.cdc.gov/" target="_blank">ICD-10</a>; <a href="https://ndclist.com/" target="_blank">NDC</a>; <a href="https://search.loinc.org/searchLOINC/" target="_blank">LONIC</a>'
+      if:
+        medline_code_type: 'not none'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: medline_data_verification
+    field:
+      html: |-
+        <div id="view-button-container">
+          <a href="#" class="button button-secondary" id="view-medline-data" target="_blank">View MedlinePlus Data</a>
+        </div>
+      type: html
+      display: 'MedlinePlus Data Verification'
+      if:
+        medline_code_type: 'not none'
+      localizable: false

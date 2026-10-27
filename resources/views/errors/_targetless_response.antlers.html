@@ -1,0 +1,46 @@
+{{#
+	@name Error: Targetless response
+	@desc The shared body for the targetless error pages (403, 410, 451).
+#}}
+
+{{# One body for all three codes a redirect rule can emit without a destination
+    (UAMS-Web/uams-statamic-archive#1942). Each per-code view supplies only its heading and the sentence to
+    show when the rule carries no message of its own; everything else — the site
+    layout, the message slot, the recovery aids — is identical, and duplicating
+    it three times is how three pages drift apart.
+
+    `response_message` is published on the cascade by
+    {@see \App\Exceptions\SiteHttpException}, which is the only reason this page
+    has the message at all: Statamic's `View` does not hand the exception to the
+    template the way Laravel's error path does.
+
+    It is escaped because it is editor input from the `redirects` global's
+    `message` textarea, and Antlers is raw-by-default — an unescaped `{{ message }}`
+    here would render whatever markup an author pasted in. `nl2br` runs after
+    `entities` so the textarea's own line breaks survive while its angle brackets
+    do not.
+
+    This view deliberately does NOT include `errors/_redirects`. Doing so would
+    re-run the rule that raised this error and re-enter this page — the UAMS-Web/uams-statamic-archive#1934
+    trap, which is unbounded from here because Statamic's renderer has no
+    try/catch to bottom out in. #}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{# The error pages set no `title_options`, so the shared page-header
+		    renders nothing and this is the page's only heading (matching UAMS-Web/uams-statamic-archive#629's
+		    treatment of the 404). #}}
+		<h1>{{ heading }}</h1>
+
+		{{ if response_message }}
+			<p class="lead">{{ response_message | entities | nl2br }}</p>
+		{{ else }}
+			<p class="lead">{{ fallback }}</p>
+		{{ /if }}
+
+		{{ partial:errors/recovery_aids }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

@@ -1,0 +1,22 @@
+<input
+	class="{{
+		[
+			'form-control-file' => true,
+			'is-invalid' => error
+		] | classes | collapse_whitespace
+	}}"
+	id="{{ id }}"
+	type="file"
+	name="{{ handle }}{{ if max_files !== 1 }}[]{{ /if }}"
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+	{{ ( max_files !== 1 ) | attribute:multiple }}
+	{{ if validate|contains:required }}required{{ /if }}
+	{{# `visibility: read_only` — see README.md in this directory. `<input type=file readonly>`
+		is not valid HTML; `disabled` blocks file selection and the server gets nothing. #}}
+	{{ ( visibility == 'read_only' ) | attribute:disabled }}
+	{{ if error }}
+		aria-invalid="true" aria-describedby="{{ id }}-error"
+	{{ elseif instructions }}
+		aria-describedby="{{ id }}-instructions"
+	{{ /if }}
+>

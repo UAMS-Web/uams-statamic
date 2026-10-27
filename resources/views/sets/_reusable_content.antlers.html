@@ -1,0 +1,13 @@
+{{#
+	@name Reusable Content
+	@desc The Reusable Content Bard set that renders nested content inline.
+	@set page.article.reusable_content
+#}}
+
+{{# Get the reusable content entry from the content field #}}
+{{ content }}
+	{{# Render the content field (Bard) from the reusable content entry inline #}}
+	{{ content scope="block" }}
+		{{ partial src="sets/{type}" }}
+	{{ /content }}
+{{ /content }}

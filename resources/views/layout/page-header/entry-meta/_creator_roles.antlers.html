@@ -1,0 +1,117 @@
+{{#
+
+	@name Entry Meta: Creator Roles (posts & knowledge base)
+	@desc Renders labeled creator rows when `hide_creator_query` is not true. Values use the
+	`creator` group (posts and knowledge base). If `creator:generic_creator` is set, merges all named roles
+	(host through producer, writer, editor, etc.) plus `generic_creator` into one list and renders
+	a single "Creator:" row. Each role is merged with `merge_array`, which normalizes Statamic
+	entries values (collections, query builders, etc.) the same way as `normalize_list`.
+
+#}}
+
+{{# Check if the hide_creator_query is not true #}}
+{{ if hide_creator_query != true }}
+	{{# Check if the generic_creator role is set #}}
+	{{ if creator:generic_creator }}
+		{{# Initialize merged people list for collapsed creator row #}}
+		{{ $creator_merged = [] }}
+
+		{{# Merge host people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:host) }}
+
+		{{# Merge guest people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:guest) }}
+
+		{{# Merge writer people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:writer) }}
+
+		{{# Merge editor people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:editor) }}
+
+		{{# Merge sound_recordist people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:sound_recordist) }}
+
+		{{# Merge videographer people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:videographer) }}
+
+		{{# Merge audio_editor people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:audio_editor) }}
+
+		{{# Merge video_editor people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:video_editor) }}
+
+		{{# Merge producer people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:producer) }}
+
+		{{# Merge generic_creator people into the combined creator list #}}
+		{{ $creator_merged = $creator_merged | merge_array(creator:generic_creator) }}
+
+		{{# Render one combined creator row from the merged people list #}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Creator:"
+			:entries="$creator_merged"
+		}}
+	{{ else }}
+		{{# Render one creator row per role so each credit keeps its own label #}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Host:"
+			:entries="creator:host"
+			icon="fas fa-fw fa-bullhorn"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Featured Guest:"
+			:entries="creator:guest"
+			icon="fas fa-fw fa-user"
+			itemprop_replacement="https://schema.org/about"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Writer:"
+			:entries="creator:writer"
+			icon="fas fa-fw fa-quote-left"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Editor:"
+			:entries="creator:editor"
+			icon="fas fa-fw fa-marker"
+			itemprop_replacement="https://schema.org/editor"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Sound Recordist:"
+			:entries="creator:sound_recordist"
+			icon="fas fa-fw fa-headphones"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Videographer:"
+			:entries="creator:videographer"
+			icon="fas fa-fw fa-video"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Audio Editor:"
+			:entries="creator:audio_editor"
+			icon="fas fa-fw fa-volume-high"
+			itemprop_append="https://schema.org/editor"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Video Editor:"
+			:entries="creator:video_editor"
+			icon="fas fa-fw fa-film"
+			itemprop_append="https://schema.org/editor"
+		}}
+		{{
+			partial:layout/page-header/entry-meta/creator_role_row
+			label="Producer:"
+			:entries="creator:producer"
+			icon="fas fa-fw fa-sitemap"
+			itemprop_replacement="https://schema.org/producer"
+		}}
+	{{ /if }}
+{{ /if }}

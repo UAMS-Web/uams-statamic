@@ -1,0 +1,9 @@
+{{#
+	@name New Window Indicator
+	@desc The WCAG 3.2.5 "opens in new window" cue (UAMS-Web/uams-statamic-archive#702): a decorative Phosphor
+	      `arrow-square-out` glyph (aria-hidden) plus a screen-reader span. Drop it
+	      immediately after the link text, INSIDE a `target="_blank"` anchor.
+	      Convention: the UAMS KB article + UAMS-Web/uams-statamic-archive#701. Not for icon-only links — give
+	      those an `aria-label` ending in "opens in new window" instead.
+#}}
+<svg class="external-link-icon" width="0.85em" height="0.85em" viewBox="0 0 256 256" fill="currentColor" style="margin-left:0.25em" aria-hidden="true" focusable="false"><path d="M136,40a8,8,0,0,1,8-8h64a8,8,0,0,1,8,8v64a8,8,0,0,1-16,0V59.31l-98.34,98.35a8,8,0,0,1-11.32-11.32L188.69,48H144A8,8,0,0,1,136,40Zm72,80a8,8,0,0,0-8,8v72H48V72h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,72V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V128A8,8,0,0,0,208,120Z"></path></svg><span class="sr-only">opens in new window</span>

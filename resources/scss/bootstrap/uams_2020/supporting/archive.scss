@@ -1,0 +1,71 @@
+/* Archive/Blog Styling
+----------------------------------------------------------------------------- */
+
+body.page-template-default {
+    &.archive {
+        .archive-description {
+            + .entry {
+                padding-top: 0;
+            }
+        }
+
+        .entry {
+            &:last-of-type {
+                border-bottom: 0;
+            }
+
+            .entry-title {
+                @include font-size($h2-font-size);
+
+                &:after {
+                    background-color: $body-bg-border;
+                }
+            }
+
+            .entry-content {
+                h1 {
+                    @extend .h2;
+                }
+
+                h2 {
+                    @extend .h3;
+                }
+
+                h3 {
+                    @extend .h4;
+                }
+
+                h4 {
+                    @extend .h5;
+                }
+
+                h5 {
+                    @extend .h6;
+                }
+            }
+        }
+
+        .archive-pagination {
+            background-color: $body-bg-banded;
+
+            ul {
+                margin: 0 auto;
+            }
+        }
+    }
+
+    &.archive,
+    &.blog,
+    &.search {
+        .entry {
+            border-bottom: 1px solid $hr-border-color;
+            padding-bottom: $spacer*2;
+            margin-bottom: $spacer*2;
+        }
+    }
+}
+
+.entry-image-link {
+    display: inline-block;
+    margin-bottom: $spacer;
+}

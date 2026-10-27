@@ -1,0 +1,24 @@
+name: uams-statamic
+icon: null
+processes:
+  Vite:
+    command: npm run dev
+    working_dir: null
+    auto_start: true
+    auto_restart: false
+    restart_when_changed: []
+    env: {}
+  Logs:
+    command: powershell Get-Content storage/logs/laravel.log -Wait -Tail 50
+    working_dir: null
+    auto_start: true
+    auto_restart: false
+    restart_when_changed: []
+    env: {}
+  Scheduler:
+    command: php artisan schedule:work
+    working_dir: null
+    auto_start: true
+    auto_restart: false
+    restart_when_changed: []
+    env: {}

@@ -1,0 +1,21 @@
+{{#
+	@name Clinical Locations Listing
+	@desc Paginated card directory of the site's clinical locations, rendered
+	      through the shared `_list_body` (empty state, card grid, pagination).
+	      Faceted narrowing by region / service / expertise is the Find-a-Doc
+	      locations page-builder block's job (UAMS-Web/uams-statamic-archive#63), which reuses the same
+	      `_list_body`. (UAMS-Web/uams-statamic-archive#574)
+#}}
+
+{{
+	collection:clinical_locations
+	sort="title:asc"
+	paginate="12"
+	as="locations"
+}}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12">
+			{{ partial:clinical_locations/list_body }}
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /collection:clinical_locations }}

@@ -1,0 +1,15 @@
+title: 'UAMSWeb Publish Dependency'
+fields:
+  -
+    handle: publish_depends_on
+    field:
+      type: entries
+      display: 'Publish Depends On'
+      instructions: "Optional. Tether this entry's public visibility to one or more source entries — for example, the provider a resource exists for. When the tethered source(s) go dark (unpublished or deleted), this entry is automatically suppressed on the live site — redirected and hidden from listings — **without** changing its own published status; re-publishing a source restores it on the next request. This is a deliberate one-directional fate-tie, distinct from the topical Related Items above. Clear this field to opt out."
+      collections:
+        - people
+      mode: default
+      create: false
+      select_across_sites: true
+      localizable: false
+      suppression_policy: all

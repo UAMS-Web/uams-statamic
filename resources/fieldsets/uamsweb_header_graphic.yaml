@@ -1,0 +1,26 @@
+title: 'UAMSWeb Header Options, Graphic'
+fields:
+  -
+    handle: image
+    field: uamsweb_common_images.image_1920x720
+    config:
+      display: 'Cover Image'
+      instructions: 'Recommended dimensions: 5120x1920 or larger. Minimum dimensions: 1920x720. The image will be automatically cropped to a 8:3 aspect ratio.'
+      validate:
+        - 'dimensions:min_width=1920,min_height=720'
+  -
+    handle: body
+    field:
+      character_limit: 500
+      type: textarea
+      display: 'Lead Paragraph'
+      instructions: 'This text will appear below the page title. It should be a basic description of the page. There is a 500-character limit.'
+      localizable: false
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Overlay the cover image's photographer/creator credit (from the asset's Creator field). Enable this only when the image's attribution or license terms require the credit to be shown — an overlay credit competes with the page title, so it is off by default."
+      default: false
+      localizable: false

@@ -1,0 +1,66 @@
+{{# Calculated-field flag — `calculation_query: true` in the blueprint opts
+	the field into the public-form calculation engine at
+	`resources/js/calculation-engine.js`. When on, we surface the formula /
+	type / decimals as `data-calculation-*` attributes the engine picks up,
+	and render the input read-only so users can see the computed value without
+	fighting Alpine for control of it. #}}
+<input
+	class="{{
+		[
+			'form-control' => true,
+			'is-invalid' => error
+		] | classes | collapse_whitespace
+	}}"
+	id="{{ id }}"
+	type="{{ input_type ?? 'text' }}"
+	name="{{ handle }}"
+	value="{{ value | sanitize }}"
+	{{ placeholder | attribute:placeholder }}
+	{{ character_limit | attribute:maxlength }}
+	{{ autocomplete | attribute:autocomplete }}
+	{{ inputmode | attribute:inputmode }}
+	{{ min | attribute:min }}
+	{{ max | attribute:max }}
+	{{ minlength | attribute:minlength }}
+	{{ maxlength | attribute:maxlength }}
+	{{ pattern | attribute:pattern }}
+	{{ step | attribute:step }}
+	{{ spellcheck | attribute:spellcheck }}
+	{{ transform_case | attribute:data-transform-case }}
+	{{ if calculation_query == true }}
+		{{# Formula source: the Input trait's normalizeConfigWithDefaults() promotes
+			calculation_formula_{math,text} into calculation_formula, but that
+			only runs from validation/storage paths — not from the form-rendering
+			pipeline. Fall back through the chain so the template emits the right
+			formula regardless of which key the blueprint set. #}}
+		data-calculation-type="{{ calculation_type ?? 'math' }}"
+		data-calculation-formula="{{ calculation_formula ?? calculation_formula_math ?? calculation_formula_text ?? '' }}"
+		{{# Antlers `??` treats 0 as falsy, so `calculation_decimals ?? 2` would
+			emit 2 when the blueprint set 0. Pass the raw value through and let
+			the JS engine apply the 2-decimal default for empty/missing values. #}}
+		data-calculation-decimals="{{ calculation_decimals }}"
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{# `visibility: read_only` in the blueprint renders the field but blocks user
+		edits. See README.md in this directory for the per-fieldtype contract. #}}
+	{{ if visibility == 'read_only' && calculation_query !== true }}
+		readonly
+		aria-readonly="true"
+	{{ /if }}
+	{{ if js_driver }}{{ js_attributes }}{{ /if }}
+	{{ ( validate| contains:required ) | attribute:required }}
+	{{ if error }}
+		aria-invalid="true" aria-describedby="{{ id }}-error"
+	{{ elseif instructions }}
+		aria-describedby="{{ id }}-instructions"
+	{{ /if }}
+>
+
+{{# Surface unmapped fieldtype renders. A fieldtype hitting default.antlers.html
+	either (a) intentionally delegates here via
+	{{ partial:vendor/statamic/forms/fields/default }} (documented at the call
+	site), or (b) has no per-fieldtype template — a gap to fill at
+	resources/views/vendor/statamic/forms/fields/<type>.antlers.html. The HTML
+	comment is visible in page source for devs and invisible to users. #}}
+<!-- form-field default render: type="{{ type ?? 'unknown' }}" handle="{{ handle }}" -->

@@ -1,0 +1,255 @@
+title: 'Clinical Condition'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'General Details'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for This Clinical Condition'
+              instructions: |-
+                Add any other names, acronyms, abbreviations, or alternate spellings by which this clinical condition may be known. List each alternate name as a separate item.
+
+                These alternate names will help enhance this page's visibility in search results.
+          -
+            handle: excerpt
+            field: uamsweb_common.excerpt
+            config:
+              display: 'Short Description for This Clinical Condition'
+  schema:
+    display: 'Schema Data'
+    sections:
+      -
+        display: 'Categorization Schema'
+        fields:
+          -
+            handle: schema_type
+            field:
+              type: schema_type
+              display: 'Schema.org Type'
+              instructions: |-
+                Classify this clinical condition by its Schema.org type. Start with **`MedicalCondition`**, then drill down as far as applies (e.g., `MedicalCondition` → `InfectiousDisease`, or `MedicalCondition` → `MedicalSignOrSymptom` → `MedicalSign`).
+
+                The selection drives which schema fields and relationships below are shown.
+              mode: chained
+              starting_types:
+                - MedicalCondition
+              localizable: false
+              validate:
+                - required
+          -
+            handle: schema_infectious_agent
+            field: uamsweb_schema.infectious_agent
+            config:
+              display: 'Infectious Agent'
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_type.selections: 'contains InfectiousDisease'
+          -
+            handle: schema_infectious_agent_class
+            field:
+              type: schema_type
+              display: 'Infectious Agent Class'
+              mode: single
+              multiple: false
+              clearable: true
+              searchable: true
+              starting_types:
+                - InfectiousAgentClass
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                schema_type.selections: 'contains InfectiousDisease'
+          -
+            handle: schema_additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              display: 'More Specific Types for This Clinical Condition From External Vocabularies in Microdata Syntax'
+              if:
+                schema_type.value: 'not empty'
+      -
+        display: 'Identification Schema'
+        fields:
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages About This Clinical Condition'
+          -
+            handle: schema_code
+            field: uamsweb_schema.medical_code
+            config:
+              display: 'Medical Codes for This Clinical Condition'
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Clinical Areas of Expertise'
+        fields:
+          -
+            handle: clinical_expertise
+            field: uamsweb_common_fad.expertise
+            config:
+              instructions: ''
+      -
+        display: 'Clinical Conditions'
+        fields:
+          -
+            handle: schema_has_sign_or_symptom
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Signs or Symptoms of This Clinical Condition'
+              instructions: |-
+                Select any clinical conditions that are signs or symptoms of this clinical condition.
+
+                For more information on this Schema.org property, visit <a href='https://schema.org/signOrSymptom' target='_blank'>https://schema.org/signOrSymptom</a>.
+              query_scopes:
+                - exclude_self
+                - entries_by_schema_type_medical_sign_or_symptom
+          -
+            handle: schema_is_sign_or_symptom_of
+            field: uamsweb_common_fad.conditions
+            config:
+              display: 'Clinical Conditions for Which This Is a Sign or Symptom'
+              instructions: |-
+                Select any clinical conditions for which this clinical condition is a sign or symptom.
+
+                For more information on this Schema.org type, visit <a href='https://schema.org/MedicalSignOrSymptom' target='_blank'>https://schema.org/MedicalSignOrSymptom</a>.
+              if:
+                schema_type.selections: 'contains MedicalSignOrSymptom'
+              query_scopes:
+                - exclude_self
+      -
+        display: 'Clinical Services'
+        fields:
+          -
+            handle: clinical_services
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Related Clinical Services (Legacy Import — Migrate, Then Clear)'
+              instructions: |-
+                Legacy general "related treatments" list imported from the previous site. Re-classify each clinical service into the appropriate schema relationship in this section (e.g., **Primary Prevention Therapies**, **Possible Treatment Therapies**, the **Medical Tests** relationships), then clear this field.
+
+                ⚠️ The entry **cannot be saved** while this field still contains values. Once empty, this field is hidden. (Migration aide only — it is not rendered anywhere on the site.)
+              if:
+                clinical_services: 'not empty'
+              always_save: true
+              validate:
+                - prohibited
+          -
+            handle: schema_primary_prevention
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Primary Prevention Therapies'
+              instructions: 'Select any therapies used to prevent an initial occurrence of the clinical condition, such as vaccination.'
+              query_scopes:
+                - entries_by_schema_type_medical_therapy
+          -
+            handle: schema_secondary_prevention
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Secondary Prevention Therapies'
+              instructions: 'Select any therapies used to prevent reoccurrence of the clinical condition after an initial episode of the clinical condition.'
+              query_scopes:
+                - entries_by_schema_type_medical_therapy
+          -
+            handle: schema_possible_treatment
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Possible Treatment Therapies'
+              instructions: 'Select any possible therapies used to address this clinical condition.'
+              query_scopes:
+                - entries_by_schema_type_medical_therapy
+          -
+            handle: schema_identifying_exam
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Physical Examinations That Can Identify or Detect This Sign'
+              instructions: 'Select any physical examinations that can identify or detect this sign.'
+              query_scopes:
+                - entries_by_schema_type_physical_exam
+              if:
+                schema_type.selections: 'contains MedicalSign'
+          -
+            handle: schema_identifying_test
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Medical Tests That Can Identify or Detect This Sign'
+              instructions: 'Select any medical tests that can identify or detect this sign.'
+              query_scopes:
+                - entries_by_schema_type_medical_test
+              if:
+                schema_type.selections: 'contains MedicalSign'
+          -
+            handle: schema_typical_test
+            field: uamsweb_common_fad.treatments
+            config:
+              display: 'Medical Tests That Can Diagnose This Clinical Condition'
+              instructions: 'Select any medical tests typically performed to diagnose this clinical condition.'
+              query_scopes:
+                - entries_by_schema_type_medical_test
+      -
+        display: 'Clinical Resources'
+        fields:
+          -
+            handle: clinical_resources
+            field: uamsweb_common_fad.clinical_resources
+            config:
+              instructions: ''
+  deprecated_soon:
+    display: 'Deprecated Soon'
+    sections:
+      -
+        display: 'Direct Provider & Location Attachments (Deprecated — Inferred Transitively)'
+        instructions: 'These direct Provider/Location attachments are superseded by the D9 transitive inference over shared specialties (UAMS-Web/uams-statamic-archive#1063): a Provider or Location that shares a specialty with this condition now implies the relationship automatically. The stored values are preserved for reference and audit, but no longer drive default rendering — author the specialty edges instead.'
+        fields:
+          -
+            handle: clinical_providers
+            field: uamsweb_common_fad.providers
+            config:
+              display: 'Clinical Providers (Deprecated — Inferred Transitively)'
+              instructions: 'Superseded by the transitive implied-providers set. Preserved for reference; no longer drives rendering.'
+              collections:
+                - people
+          -
+            handle: clinical_locations
+            field: uamsweb_common_fad.clinical_locations
+            config:
+              display: 'Clinical Locations (Deprecated — Inferred Transitively)'
+              instructions: 'Superseded by the transitive implied-locations set. Preserved for reference; no longer drives rendering.'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+      -
+        display: 'Search'
+        collapsible: true
+        fields:
+          -
+            handle: searchable
+            field: uamsweb_entry_search.searchable
+            config:
+              instructions: "Leave on (the default) so this clinical condition can surface related Areas of Expertise in the site's interactive search. Turn off to stop it surfacing Areas of Expertise through search, without unpublishing it."

@@ -1,0 +1,13 @@
+{{#
+
+	@name Google Tag Manager (noscript)
+	@desc The Google Tag Manager `<noscript>` iframe fallback, rendered
+	      immediately after the opening `<body>` tag (UAMS-Web/uams-statamic-archive#83). Mirrors the head
+	      `<script>`'s per-site condition so it is emitted only when GTM is
+	      enabled and configured for the site.
+
+#}}
+
+	{{ if ( uams_multisite_settings:uamsweb_google_tag_manager_disable != true ) && uams_multisite_settings:uamsweb_google_tag_manager_id }}
+		<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ uams_multisite_settings:uamsweb_google_tag_manager_id }}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager" aria-hidden="true"></iframe></noscript>
+	{{ /if }}

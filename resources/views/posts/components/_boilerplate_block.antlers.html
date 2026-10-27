@@ -1,0 +1,20 @@
+{{ if boilerplate_enabled == 'true' }}
+	{{ block_id = boilerplate_id ?? "boilerplate" }}
+	{{
+		partial:page_builder/uamsweb_block
+		:block_id="block_id"
+		html_tag="footer"
+		background_color="{{ switch between="bg-gray|bg-white" for="uamsweb_block" }}"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{
+				partial:page_builder/components/block_header
+				:heading="(boilerplate_heading ?? 'More Information')"
+				:block_id="block_id"
+			}}
+			<div class="module-body">
+				{{ boilerplate_content }}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

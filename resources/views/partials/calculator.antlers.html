@@ -1,0 +1,109 @@
+{{#
+    @name Calculator
+    @desc Renders one calculator entry as:
+            1. A pretty-printed caption of the primary equation (the formula
+               whose target appears as the caption's LHS).
+            2. A two-column layout: every variable referenced by the primary's
+               formula (plus any unreferenced siblings) on the left, the
+               primary variable on the right. The user's eye lands on the
+               inputs first and the answer last. On narrow viewports the
+               columns collapse to a single column.
+            3. A full-width reset row below the columns.
+
+          The primary variable is the one with `primary: true`, or — when the
+          calculator has exactly one formula-having variable — that variable
+          implicitly. `ValidateCalculatorEntry` enforces both rules at save
+          time. The `calculator_layout` tag performs the resolution.
+
+          Composite variables (with non-empty `split`) render as a row of
+          sub-inputs in place of a single input plus a hidden input that
+          carries the composite's calculation attributes. See
+          `partials/calculator_variable` for both rendering shapes.
+
+          Pure render — no Alpine scope, no form. The caller is responsible
+          for placing this partial inside an element that provides an
+          `x-data` scope and is reachable via `closest()` from each engine
+          (`resources/js/calculation-engine.js`,
+          `resources/js/formula-caption-engine.js`, and
+          `resources/js/composite-split-engine.js`).
+#}}
+
+{{ calculator_layout }}
+	<div class="calculator">
+		{{# Reference panel: an optional Note block (Bard-rendered) above a
+		    required Formula block. Both are wrapped as `<section
+		    aria-label>` so screen readers announce each as a labelled region.
+		    The visible eyebrow label is `aria-hidden` to prevent duplicate
+		    announcement. Avoids `<figure>` / `<figcaption>` because each
+		    figure may only have one figcaption — two would be invalid markup
+		    — and avoids headings because the calculator can be embedded at
+		    any depth in the page outline. #}}
+		<div class="calculator-info">
+			{{ if note }}
+				<section class="calculator-info-section" aria-label="{{ trans:Note }}">
+					<div class="calculator-info-label" aria-hidden="true">{{ trans:Note }}</div>
+					{{ note }}
+				</section>
+			{{ /if }}
+			<section class="calculator-info-section" aria-label="{{ trans:Formula }}">
+				<div class="calculator-info-label" aria-hidden="true">{{ trans:Formula }}</div>
+				{{# Caption is pre-rendered server-side by the
+				    `calculator_layout` tag so it's visible on first paint
+				    rather than appearing on Alpine boot. `caption_html` is
+				    trusted output (label HTML is escaped inside the tag;
+				    formula and operator chars are controlled). #}}
+				{{ if caption_html }}
+					<div class="calculator-formula">{{ caption_html | raw }}</div>
+				{{ /if }}
+			</section>
+		</div>
+
+		<div class="calculator-columns">
+			{{# Left column holds the editable inputs (variables referenced
+			    by the primary's formula, plus any unreferenced siblings).
+			    Right column holds the primary — typically the read-only
+			    computed output — so the user's eye lands on inputs first
+			    and the answer last. #}}
+			<div class="calculator-column calculator-column--inputs">
+				{{ referenced }}
+					{{ partial:partials/calculator_variable }}
+				{{ /referenced }}
+				{{ other }}
+					{{ partial:partials/calculator_variable }}
+				{{ /other }}
+			</div>
+
+			<div class="calculator-column calculator-column--primary">
+				{{ primary }}
+					{{ partial:partials/calculator_variable }}
+				{{ /primary }}
+			</div>
+		</div>
+
+		<div class="calculator-reset-row">
+			{{# Two reset scopes, narrower first:
+
+			    - `local` clears every input in this calculator's scope.
+			      Synced inputs propagate through the cross-calculator sync
+			      engine, so clearing a linked handle here also clears it
+			      in every other calculator that publishes the same handle.
+			    - `page` walks every calculator scope on the page and
+			      clears each one's inputs — useful when this calculator
+			      doesn't reference handles you want cleared elsewhere.
+
+			    The reset semantics live in `calculator-reset-engine.js`;
+			    the buttons just opt in via the `data-calculator-reset`
+			    value. #}}
+			<button
+				type="button"
+				class="btn btn-outline-primary calculator-reset"
+				data-calculator-reset="local"
+			>Reset This Calculator</button>
+			<button
+				type="button"
+				class="btn btn-outline-secondary calculator-reset"
+				data-calculator-reset="page"
+			>Reset All Calculators</button>
+		</div>
+	</div>
+{{ /calculator_layout }}

@@ -1,0 +1,4 @@
+title: 'UAMSWeb Bard Set, People'
+fields:
+  -
+    import: uamsweb_common_people_block_set

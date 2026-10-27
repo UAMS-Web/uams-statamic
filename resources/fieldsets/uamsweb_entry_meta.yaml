@@ -1,0 +1,10 @@
+title: 'UAMSWeb Entry Meta Configuration'
+fields:
+  -
+    handle: excerpt
+    field: uamsweb_common.excerpt
+  -
+    handle: featured_image
+    field: uamsweb_common_images.image_1200x675
+    config:
+      display: 'Featured Image'

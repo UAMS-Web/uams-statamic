@@ -1,0 +1,21 @@
+{{#
+	@name UAMS Map
+	@desc Page Builder block: an inline map rendered through the shared map viewer
+	      partial (UAMS-Web/uams-statamic-archive#986). An empty block (no coordinate) renders nothing. (UAMS-Web/uams-statamic-archive#987)
+	@set page.page_builder.uamsweb_block_map
+#}}
+
+{{ if map }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		block_class="uamsweb-block-map"
+		:block_aria_label="caption"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12">
+				{{ partial:map :coordinate="map" :label="caption" :height="height" :zoom="zoom" }}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

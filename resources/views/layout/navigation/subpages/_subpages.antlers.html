@@ -1,0 +1,106 @@
+{{#
+
+	@name Subpages navigation (UAMS Web)
+	@desc The site's subpages navigation appears on every page unless suppressed.
+
+#}}
+
+{{# Initialize flag for whether the current page has any child entries #}}
+{{ $has_children = null }}
+
+{{# Fetch at most one child to detect whether any children exist #}}
+{{ children limit="1" }}
+	{{# Ensure the child is not the current page (avoids false positive) #}}
+	{{ if id != page:id }}
+		{{# Mark that this page has at least one child #}}
+		{{ $has_children = true }}
+	{{ /if }}
+{{ /children }}
+
+{{# Detect knowledge bases mounted directly under this page (they live in the #}}
+{{# knowledge_bases collection, not the pages structure, so children misses them). #}}
+{{ $has_mounted_knowledge_bases = null }}
+{{ mounted_knowledge_bases :under="page:id" }}
+	{{# Treat a mounted knowledge base as visible when it is not hidden from the menu
+		and not a non-public (private / password-protected) entry (UAMS-Web/uams-statamic-archive#223) #}}
+	{{ unless hide_from_menu || status_and_visibility == "private" || password_protected }}
+		{{# Mark that at least one mounted knowledge base is visible in the menu #}}
+		{{ $has_mounted_knowledge_bases = true }}
+	{{ /unless }}
+{{ /mounted_knowledge_bases }}
+
+{{# Continue only if not the collection homepage, there is something to show, and subpages not suppressed #}}
+{{ if ( !is_homepage && ( $has_children || $has_mounted_knowledge_bases ) && hide_child_menu != true ) }}
+
+{{# Check if any children are visible (not hidden from menu) #}}
+
+	{{# Initialize flag for whether any children are shown in the menu #}}
+	{{ $has_visible_children = null }}
+
+	{{# Loop over all children to count those visible in the menu #}}
+	{{ children }}
+		{{# Treat child as visible when it is not hidden from the menu #}}
+		{{ unless hide_from_menu || status_and_visibility == "private" || password_protected }}
+			{{# Mark that at least one child is visible in the menu #}}
+			{{ $has_visible_children = true }}
+		{{ /unless }}
+	{{ /children }}
+
+	{{# Check if there are visible page children or mounted knowledge bases #}}
+	{{ if ( $has_visible_children || $has_mounted_knowledge_bases ) }}
+
+		{{# Block Heading #}}
+		{{ $block_heading = subpages_alt_title ?? 'Subpages' }}
+
+		{{# Render the Block #}}
+
+			{{
+				partial:page_builder/components/block_link_list
+				:block_heading="$block_heading"
+				extra_class="subpages-navigation"
+			}}
+				{{ children }}
+					{{ unless hide_from_menu || status_and_visibility == "private" || password_protected }}
+
+						{{# Define the Variables #}}
+
+							{{ $item_text = nav_alt_name ?? title }}
+
+						{{# Render the Item #}}
+
+							{{
+								partial:page_builder/components/block_link_list_item
+								:url="url"
+								:text="$item_text"
+								:body="excerpt"
+								:data_moduletitle="$block_heading"
+							}}
+
+					{{ /unless }}
+				{{ /children }}
+
+				{{# Append any knowledge bases mounted directly under this page #}}
+				{{ mounted_knowledge_bases :under="page:id" }}
+					{{ unless hide_from_menu || status_and_visibility == "private" || password_protected }}
+
+						{{# Define the Variables #}}
+
+							{{ $item_text = nav_alt_name ?? title }}
+
+						{{# Render the Item #}}
+
+							{{
+								partial:page_builder/components/block_link_list_item
+								:url="url"
+								:text="$item_text"
+								:body="excerpt"
+								:data_moduletitle="$block_heading"
+							}}
+
+					{{ /unless }}
+				{{ /mounted_knowledge_bases }}
+			{{ /partial:page_builder/components/block_link_list }}
+
+	{{ /if }}
+
+{{ /if }}

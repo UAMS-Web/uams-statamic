@@ -1,0 +1,42 @@
+{{#
+	@name Classified Card
+	@desc One `classifieds` listing as a card: featured image, categories, title,
+	      price, and posted date, linking to the listing. Every text value is
+	      escaped, because listings are written by the people posting them (UAMS-Web/uams-statamic-archive#2096).
+#}}
+
+{{# Capture the listing's own url first: the featured-image asset pair below rebinds
+	`url` to the asset url inside its own scope. #}}
+{{ $listing_url = url }}
+
+<div class="item classified-card">
+	<div class="card h-100">
+		{{ featured_image }}
+			<div class="card-img-top">
+				<picture><img src="{{ url }}" alt="{{ alt | entities }}" loading="lazy"></picture>
+			</div>
+		{{ /featured_image }}
+		<div class="card-body">
+			{{# The same `| count` gate posts/_card uses (UAMS-Web/uams-statamic-archive#2026), where an empty relation
+			    arrives as a truthy query object and its loop prints the post's own title.
+			    On this `terms` field an empty relation is already falsy, so here the gate
+			    is defensive rather than load-bearing; it is kept so the two cards do not
+			    diverge on a trap that depends on the fieldtype. #}}
+			{{ if classified_categories | count }}
+				<p class="classified-card-categories text-uppercase mb-1"><small>
+					{{ classified_categories }}{{ title | entities }}{{ unless last }}, {{ /unless }}{{ /classified_categories }}
+				</small></p>
+			{{ /if }}
+			<h2 class="card-title h5">{{ title | entities }}</h2>
+			{{ if price > 0 }}
+				<p class="classified-card-price mb-1">${{ price | format_number:2 }}</p>
+			{{ /if }}
+			{{ if date }}
+				<p class="classified-card-date text-muted mb-2"><small>Posted <time datetime="{{ date | format('Y-m-d') }}">{{ date | ap_style_date }}</time></small></p>
+			{{ /if }}
+		</div>
+		<div class="card-footer">
+			<a class="btn btn-outline-primary stretched-link" href="{{ $listing_url }}" aria-label="View listing: {{ title | entities }}">View listing</a>
+		</div>
+	</div>
+</div>

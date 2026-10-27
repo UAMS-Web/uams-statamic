@@ -1,0 +1,213 @@
+title: 'Page Builder'
+fields:
+  -
+    handle: page_builder
+    field:
+      type: replicator
+      localizable: true
+      collapse: true
+      listable: false
+      display: 'Page Builder'
+      button_label: 'Add block'
+      validate:
+        - sometimes
+        - required
+      sets:
+        interactive:
+          display: Interactive
+          instructions: 'Interactive blocks.'
+          icon: programming-script-code
+          sets:
+            uamsweb_block_action_bar:
+              display: 'Action Bar'
+              instructions: '3-4 items with text and link'
+              icon: link
+              fields:
+                -
+                  import: uamsweb_block_action_bar
+            uamsweb_block_button:
+              display: 'Button'
+              instructions: 'A single branded UAMS button'
+              icon: link
+              fields:
+                -
+                  import: uamsweb_block_button
+            uamsweb_block_cta:
+              display: 'Call-to-Action Bar'
+              instructions: 'Large block with text and a link'
+              icon: link
+              fields:
+                -
+                  import: uamsweb_block_cta
+            uamsweb_block_form:
+              display: Form
+              instructions: 'Select and render a form.'
+              icon: mail-chat-bubble-text
+              fields:
+                -
+                  import: uamsweb_block_form
+            uamsweb_block_gallery:
+              display: 'Gallery'
+              instructions: 'Group of images'
+              icon: media-image-picture-gallery
+              fields:
+                -
+                  import: uamsweb_block_gallery
+            uamsweb_block_kb_topics:
+              display: 'Knowledge Base Topics'
+              instructions: 'List of knowledge base topics'
+              icon: hierarchy-vertical-nav-flow
+              fields:
+                -
+                  import: uamsweb_block_kb_topics
+            uamsweb_block_link_list:
+              display: 'Link List'
+              icon: link
+              fields:
+                -
+                  import: uamsweb_block_link_list
+            uamsweb_block_livewhale:
+              display: 'LiveWhale Calendar'
+              icon: calendar-date
+              fields:
+                -
+                  import: uamsweb_block_livewhale
+            uamsweb_block_logo_list:
+              display: 'Logo List'
+              instructions: 'List of logos with optional links'
+              icon: dashboard-layout
+              fields:
+                -
+                  import: uamsweb_block_logo_list
+            uamsweb_block_map:
+              display: Map
+              instructions: 'Embed an interactive map at a coordinate.'
+              icon: globe-world-wide-web
+              fields:
+                -
+                  import: uamsweb_common_map
+            uamsweb_block_news:
+              display: 'News'
+              instructions: 'Dynamic news content'
+              icon: dashboard-layout
+              fields:
+                -
+                  import: uamsweb_block_news
+            uamsweb_block_people:
+              display: 'People'
+              instructions: 'List of people'
+              icon: user-multiple
+              fields:
+                -
+                  import: uamsweb_block_people
+            uamsweb_block_rss:
+              display: 'RSS Feed'
+              instructions: 'Display entries from any RSS or Atom feed.'
+              icon: programming-rss-feed
+              fields:
+                -
+                  import: uamsweb_block_rss
+            uamsweb_block_image_side_by_side:
+              display: 'Side-by-Side Image and Text'
+              instructions: 'Large image beside text and link'
+              icon: layout-two-columns
+              fields:
+                -
+                  import: uamsweb_block_image_side_by_side
+            uamsweb_block_stacked:
+              display: 'Stacked Image and Text'
+              instructions: 'Image above text and a link'
+              icon: dashboard-layout
+              fields:
+                -
+                  import: uamsweb_block_stacked
+            uamsweb_block_overlay:
+              display: 'Text and Image Overlay'
+              instructions: 'Text and a link in front of an image'
+              icon: link
+              fields:
+                -
+                  import: uamsweb_block_overlay
+        text:
+          display: Text
+          instructions: 'Text based blocks.'
+          icon: text-formatting-initial-letter
+          sets:
+            uamsweb_block_call_out:
+              display: 'Call-Out'
+              instructions: 'Large heading and a paragraph'
+              icon: text-formatting-initial-letter
+              fields:
+                -
+                  import: uamsweb_block_call_out
+            uamsweb_block_content:
+              display: 'Content'
+              instructions: 'Heading and rich text'
+              icon: text-formatting-initial-letter
+              fields:
+                -
+                  import: uamsweb_block_content
+            uamsweb_block_bio:
+              display: 'Bio'
+              instructions: 'Right-aligned image beside constrained text'
+              icon: user-single
+              fields:
+                -
+                  import: uamsweb_block_bio
+            uamsweb_block_counter:
+              display: 'Counter List'
+              instructions: 'Items adding up over time'
+              icon: time-clock
+              fields:
+                -
+                  import: uamsweb_block_counter
+            uamsweb_block_table_of_contents:
+              display: 'Table of Contents'
+              instructions: 'Jump links to the headings on this page'
+              icon: hierarchy-vertical-nav-flow
+              fields:
+                -
+                  import: uamsweb_block_table_of_contents
+        uams_health:
+          display: 'UAMS Health'
+          icon: labs-idea-experimental-flask
+          sets:
+            uamsweb_block_fad_expertise:
+              display: 'Areas of Expertise'
+              instructions: 'Filtered list of areas of expertise'
+              icon: favorite-award
+              fields:
+                -
+                  import: uamsweb_block_fad_expertise
+            uamsweb_block_fad_clinical_resources:
+              display: 'Clinical Resources'
+              instructions: 'Filtered list of clinical resources'
+              icon: media-webcam-video
+              fields:
+                -
+                  import: uamsweb_block_fad_clinical_resources
+            uamsweb_block_fad_locations:
+              display: Locations
+              instructions: 'Filtered list of locations'
+              icon: home-house
+              fields:
+                -
+                  import: uamsweb_block_fad_locations
+            uamsweb_block_fad_providers:
+              display: Providers
+              instructions: 'Filtered list of providers'
+              icon: user-avatar
+              fields:
+                -
+                  import: uamsweb_block_fad_providers
+        reusable_content:
+          display: 'Reusable Content'
+          icon: content-book-open
+          sets:
+            uamsweb_block_reusable_content_landing_page:
+              display: 'Reusable Content'
+              instructions: 'Add a reusable content block.'
+              icon: content-book-open
+              fields:
+                -
+                  import: uamsweb_block_reusable_content_landing_page

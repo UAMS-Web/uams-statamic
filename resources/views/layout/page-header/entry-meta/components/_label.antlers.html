@@ -1,0 +1,10 @@
+{{#
+
+	@name Entry Meta Component: Label
+	@desc Renders the label row for an entry-meta item: optional icon plus optional label text.
+	Expects: icon (optional), label (optional). Used at the start of each entry-meta item type.
+
+#}}
+
+{{ partial:layout/page-header/entry-meta/components/icon :icon="icon" }}
+{{ if label }}<span class="entry-meta-label">{{ label }}</span>{{ /if }}

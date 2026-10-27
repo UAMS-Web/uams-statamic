@@ -1,0 +1,365 @@
+title: 'IPTC Digital Source Type'
+fields:
+  -
+    handle: digital_source_type_preset_text
+    field:
+      type: select
+      display: 'Quick Text Content Preset'
+      instructions: 'Select the scenario that best describes how this text content was produced.'
+      clearable: true
+      options:
+        # --- Human-Authored Text ---
+        -
+          key: humanEdits_text_standard
+          value: 'Human-Authored — Human Edited (standard workflow)'
+        -
+          key: digitalCreation_text_raw
+          value: 'Human-Authored — Raw (no outside editing)'
+        -
+          key: algorithmicallyEnhanced_text_grammarly
+          value: 'Human-Authored — Algorithmically Polished (e.g., Grammarly)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_text_ai_assisted
+          value: 'Human-Authored — AI-Refined (AI-assisted rewriting)'
+
+        # --- Transcripts and Records ---
+        -
+          key: digitalCapture_text_transcript_auto
+          value: 'Transcript: Automated — Raw (e.g., Zoom/Otter output)'
+        -
+          key: digitalCreation_text_transcript_manual
+          value: 'Transcript: Manual — Raw (staff-typed from audio)'
+        -
+          key: humanEdits_text_transcript_verified
+          value: 'Transcript: Human-Verified (edited for accuracy or flow)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_text_transcript_summary
+          value: 'Transcript: AI-Summarized (rewritten by generative AI)'
+
+        # --- Data-Driven Text ---
+        -
+          key: dataDrivenMedia_text_report_auto
+          value: 'Data/Report: Automated (live API or direct data)'
+        -
+          key: humanEdits_text_report_annotated
+          value: 'Data/Report: Human-Annotated (edited for clarity)'
+
+        # --- AI-Generated Text ---
+        -
+          key: trainedAlgorithmicMedia_text_ai_raw
+          value: 'AI-Drafted — Raw (no human intervention)'
+        -
+          key: humanEdits_text_ai_verified
+          value: 'AI-Drafted — Human Edited and Fact-Checked'
+        -
+          key: compositeSynthetic_text_ai_hybrid
+          value: 'AI-Drafted — Human Composited (merged with human reporting)'
+        -
+          key: trainedAlgorithmicMedia_text_ai_loop
+          value: 'AI-Drafted — AI-Refined (full AI loop)'
+      localizable: false
+  -
+    handle: digital_source_type_text
+    field:
+      type: group
+      display: 'Text Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_text
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false
+  -
+    handle: digital_source_type_preset_portrait
+    field:
+      type: select
+      display: 'Quick Portrait Preset'
+      instructions: 'Select the scenario that best describes how this portrait was produced.'
+      clearable: true
+      options:
+        -
+          key: humanEdits_portrait_standard
+          value: 'Human-Edited Portrait (Standard Professional/Staff Portrait)'
+        -
+          key: digitalCapture_portrait_raw
+          value: 'Unedited Portrait (Straight-out-of-camera)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_portrait_ai_retouch
+          value: 'AI-Enhanced Portrait (Background expansion or AI retouching)'
+        -
+          key: algorithmicallyEnhanced_portrait_auto_fix
+          value: 'Auto-Polished Portrait (Noise reduction or Auto-Correction)'
+      localizable: false
+  -
+    handle: digital_source_type_portrait
+    field:
+      type: group
+      display: 'Portrait Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_portrait
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false
+  -
+    handle: digital_source_type_preset_image
+    field:
+      type: select
+      display: 'Quick Image Content Preset'
+      instructions: 'Select the scenario that best describes how this image content was produced.'
+      clearable: true
+      options:
+        # --- Human-Authored Images ---
+        -
+          key: humanEdits_image_photo_edited
+          value: 'Photo — Human-Edited (e.g., Retouched headshot or campus photo)'
+        -
+          key: digitalCapture_image_photo_raw
+          value: 'Photo — Unedited (e.g., Unedited photo straight from camera)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_image_photo_ai_refine
+          value: 'Photo — AI-Refined (e.g., Background expansion or object removal)'
+
+        # --- Screenshots & Virtual Assets ---
+        -
+          key: digitalCapture_image_screenshot_raw
+          value: 'Screenshot — Unedited (e.g., Snippet of patient portal or website)'
+        -
+          key: humanEdits_image_screenshot_edited
+          value: 'Screenshot — Human-Edited (e.g., Redacted or annotated UI capture)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_image_screenshot_ai
+          value: 'Screenshot — AI-Refined (e.g., AI-generated background replacement)'
+
+        # --- Automated Processing of Human-Authored Images ---
+        -
+          key: algorithmicallyEnhanced_image_auto_batch
+          value: 'General — Auto-Enhanced (e.g., Batch-sharpened or auto-fixed assets)'
+
+        # --- Data-Driven Images ---
+        -
+          key: dataDrivenMedia_image_data_raw
+          value: 'Data/Report — Raw (e.g., Automated live dashboard or chart)'
+        -
+          key: humanEdits_image_data_annotated
+          value: 'Data/Report — Human-Edited (e.g., Chart with manual annotations)'
+
+        # --- Pure Digital Art ---
+        -
+          key: humanEdits_image_graphic_manual
+          value: 'Graphic — Human-Authored (e.g., Custom vector logo or icon created in Illustrator)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_image_graphic_hybrid
+          value: 'Graphic — AI-Hybrid (e.g., Manual drawing with AI-generated textures)'
+
+        # --- AI-Generated Images ---
+        -
+          key: trainedAlgorithmicMedia_image_ai_pure
+          value: 'Synthetic — Pure AI-Generated (e.g., AI medical illustration or banner)'
+        -
+          key: humanEdits_image_ai_retouched
+          value: 'Synthetic — AI-Generated + Human Edits (e.g., Manually retouched AI art)'
+      localizable: false
+  -
+    handle: digital_source_type_image
+    field:
+      type: group
+      display: 'Image Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_image
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false
+  -
+    handle: digital_source_type_preset_audio
+    field:
+      type: select
+      display: 'Quick Audio Content Preset'
+      instructions: 'Select the scenario that best describes how this audio content was produced.'
+      clearable: true
+      options:
+        # --- Human-Edited Audio Capture ---
+        -
+          key: humanEdits_audio_mastered
+          value: 'Human-Edited Audio Capture (e.g., Mastered podcast, trimmed interview, or polished Zoom audio)'
+        -
+          key: algorithmicallyEnhanced_audio_auto_fix
+          value: 'Audio Capture With Automated Enhancement (e.g., auto-corrected or noise-reduced audio)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_audio_ai_enhanced
+          value: 'Audio Capture With AI-Generated Elements (e.g., AI-generated background audio)'
+
+        # --- Unedited Multi-Source Audio Capture ---
+        -
+          key: compositeCapture_audio_multi_mic
+          value: 'Unedited Multi-Source Audio Capture (e.g., Uncut multi-mic assembly)'
+
+        # --- Unedited Single-Source Audio Capture ---
+        -
+          key: digitalCapture_audio_single_mic
+          value: 'Unedited Single-Source Audio Capture (e.g., Unedited single-mic studio or field recording)'
+        -
+          key: virtualRecording_audio_zoom_raw
+          value: 'Unedited Virtual Audio Capture (e.g., Unedited Zoom/Teams audio export)'
+
+        # --- AI-Generated Audio ---
+        -
+          key: trainedAlgorithmicMedia_audio_ai_speech
+          value: 'AI-Generated Audio (e.g., Pure AI voiceover or text-to-speech)'
+        -
+          key: humanEdits_audio_ai_refined
+          value: 'AI-Generated Audio With Human Refinement (e.g., AI voice with manual timing/inflection tweaks)'
+      localizable: false
+  -
+    handle: digital_source_type_audio
+    field:
+      type: group
+      display: 'Audio Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_audio
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false
+  -
+    handle: digital_source_type_preset_video
+    field:
+      type: select
+      display: 'Quick Video Content Preset'
+      instructions: 'Select the scenario that best describes how this video content was produced.'
+      clearable: true
+      options:
+        # --- Human-Edited Video Capture ---
+        -
+          key: humanEdits_video_edited_reel
+          value: 'Human-Edited Video Capture (e.g., Standard edited footage, interviews, or reels)'
+        -
+          key: algorithmicallyEnhanced_video_auto_stabilized
+          value: 'Video Capture With Automated Enhancement (e.g., Auto-stabilized or noise-reduced footage)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_video_ai_background
+          value: 'Video Capture With AI-Generated Elements (e.g., AI-generated background replacement)'
+
+        # --- Unedited Multi-Source Video Capture ---
+        -
+          key: compositeCapture_video_multi_cam
+          value: 'Unedited Multi-Source Video Capture (e.g., Uncut multi-cam production/assembly)'
+
+        # --- Unedited Single-Source Video Capture ---
+        -
+          key: digitalCapture_video_camera_raw
+          value: 'Unedited Single-Source Video Capture (e.g., Unedited camera footage or screen recordings)'
+        -
+          key: virtualRecording_video_zoom_raw
+          value: 'Unedited Virtual Video Capture (e.g., Unedited Zoom/Teams recording)'
+
+        # --- AI-Generated Video ---
+        -
+          key: trainedAlgorithmicMedia_video_ai_pure
+          value: 'AI-Generated Video (e.g., Pure AI-generated video or avatars)'
+        -
+          key: humanEdits_video_ai_refined
+          value: 'AI-Generated Video With Human Refinement (e.g., AI-generated video with manual timing tweaks)'
+      localizable: false
+  -
+    handle: digital_source_type_video
+    field:
+      type: group
+      display: 'Video Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_video
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false
+  -
+    handle: digital_source_type_preset_document
+    field:
+      type: select
+      display: 'Quick Document Preset'
+      instructions: 'Select the scenario that best describes how this document was produced.'
+      clearable: true
+      options:
+        # --- Human-Authored Documents ---
+        -
+          key: humanEdits_document_standard
+          value: 'Human-Authored — Human Edited (standard workflow)'
+        -
+          key: digitalCreation_document_raw
+          value: 'Human-Authored — Raw (no outside editing)'
+        -
+          key: algorithmicallyEnhanced_document_polished
+          value: 'Human-Authored — Algorithmically Polished (e.g., automated formatting or spell-check)'
+        -
+          key: compositeWithTrainedAlgorithmicMedia_document_ai_assisted
+          value: 'Human-Authored — AI-Refined (AI-assisted drafting or rewriting)'
+
+        # --- Digitized Documents ---
+        -
+          key: print_document_scanned
+          value: 'Scanned — From Print (e.g., a scanned PDF of a physical handout or record)'
+
+        # --- Data-Driven Documents ---
+        -
+          key: dataDrivenMedia_document_report_auto
+          value: 'Data/Report: Automated (e.g., generated from clinical or trial data)'
+        -
+          key: humanEdits_document_report_annotated
+          value: 'Data/Report: Human-Annotated (edited for clarity)'
+
+        # --- AI-Generated Documents ---
+        -
+          key: trainedAlgorithmicMedia_document_ai_raw
+          value: 'AI-Drafted — Raw (no human intervention)'
+        -
+          key: humanEdits_document_ai_verified
+          value: 'AI-Drafted — Human Edited and Fact-Checked'
+      localizable: false
+  -
+    handle: digital_source_type_document
+    field:
+      type: group
+      display: 'Document Content Origin and Transparency'
+      localizable: false
+      replicator_preview: false
+      fields:
+        -
+          handle: preset
+          field: digital_source_type.digital_source_type_preset_document
+          config:
+            localizable: false
+        -
+          import: digital_source_type_questions
+          config:
+            localizable: false

@@ -1,0 +1,53 @@
+// WordPress File block
+
+.wp-block-file {
+	// box-sizing: border-box;
+
+	// &.aligncenter {
+	// 	text-align: center;
+	// }
+
+	// &.alignright {
+	// 	text-align: right;
+	// }
+
+	&:not(.wp-element-button) {
+		// font-size: 0.8em;
+		font-size: 1em;
+	}
+
+	* + .wp-block-file__button {
+		margin-top: -0.2222em;
+		margin-bottom: -0.1481em;
+		// margin-left: .75em;
+	}
+
+	// a.wp-block-file__button {
+	// }
+}
+
+// :where(.wp-block-file) {
+//     margin-bottom: 1.5em;
+// }
+
+// .wp-block-file__embed {
+//     margin-bottom: 1em;
+// }
+
+// :where(.wp-block-file__button) {
+//     border-radius: 2em;
+//     display: inline-block;
+//     padding: .5em 1em;
+
+// 	&:is(a) {
+// 		&:active,
+// 		&:focus,
+// 		&:hover,
+// 		&:visited {
+// 			box-shadow: none;
+// 			color: #fff;
+// 			opacity: .85;
+// 			text-decoration: none;
+// 		}
+// 	}
+// }

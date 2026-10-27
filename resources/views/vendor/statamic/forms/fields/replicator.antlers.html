@@ -1,0 +1,92 @@
+{{# Replicator fieldtype (App\Fieldtypes\Replicator) on public forms (UAMS-Web/uams-statamic-archive#675).
+
+	App\Fieldtypes\Replicator::preProcessTagRenderable() renders each set's subfields by dotting
+	their handle under the field + row index, so the form tag emits the nested input name
+	`{{ handle }}[{index}][{subfield}]` that Statamic\Fieldtypes\Replicator::process() consumes
+	(flat subfields per row, alongside `type`/`enabled`). Existing/old-input rows render at concrete
+	indices; one blank `<template>` per set type renders at the `{{ replicator_index_token }}`
+	placeholder for the `replicatorField` Alpine engine (resources/js/replicator-field.js) to clone
+	on "Add Set".
+
+	The engine adds/removes sets (clamped at `min_sets`), toggles `enabled`, and reindexes every
+	set's field names to their DOM position on submit so process() receives a clean sequential list.
+	A set's `enabled` posts via a paired hidden `0` + checkbox `1`, so a toggled-off set posts `'0'`
+	(coerced to boolean `false` in preProcessValidatable, so ReplicatorRequireAtLeastOneEnabledSet
+	sees it as disabled). #}}
+<div
+	class="replicator-field"
+	x-data="replicatorField()"
+	data-replicator-handle="{{ handle }}"
+	data-replicator-min-sets="{{ replicator_min_sets }}"
+	data-replicator-index-token="{{ replicator_index_token }}"
+>
+	<div class="replicator-field__sets" data-replicator-sets>
+		{{ replicator_rows }}
+			<div class="replicator-field__set" data-replicator-set x-data="replicatorSet({{ set_values }})">
+				<input type="hidden" name="{{ handle }}[{{ index }}][type]" value="{{ type }}">
+				<label class="replicator-field__enabled">
+					{{# Paired hidden 0 + checkbox 1, so an unchecked set posts '0' (disabled). #}}
+					<input type="hidden" name="{{ handle }}[{{ index }}][enabled]" value="0">
+					<input type="checkbox" name="{{ handle }}[{{ index }}][enabled]" value="1" {{ if enabled }}checked{{ /if }}>
+					{{ trans key="Enabled" }}
+				</label>
+				<div class="replicator-field__fields">
+					{{ fields }}
+						<template x-if="{{ show_field }}">
+							<div class="replicator-field__field">
+								{{ if display }}
+									<label for="{{ id }}">{{ display }}{{ if validate | contains:required }} <sup aria-label="{{ trans:Required }}">*</sup>{{ /if }}</label>
+								{{ /if }}
+								{{ field }}
+								{{ if instructions }}<p class="replicator-field__instructions" id="{{ id }}-instructions">{{ instructions }}</p>{{ /if }}
+								{{ if error }}<p class="replicator-field__error" id="{{ id }}-error">{{ error }}</p>{{ /if }}
+							</div>
+						</template>
+					{{ /fields }}
+				</div>
+				<button type="button" class="btn btn-sm btn-link" data-replicator-remove>
+					{{ trans key="Remove" }}
+				</button>
+			</div>
+		{{ /replicator_rows }}
+	</div>
+
+	{{# "Add Set" controls — one per configured set type. #}}
+	<div class="replicator-field__add" data-replicator-add>
+		{{ replicator_set_templates }}
+			<button type="button" class="btn btn-sm btn-secondary" data-replicator-add-type="{{ type }}">
+				{{ trans key="Add" }} {{ display }}
+			</button>
+		{{ /replicator_set_templates }}
+	</div>
+
+	{{# Blank set templates, cloned client-side when a set is added (new sets default enabled). #}}
+	{{ replicator_set_templates }}
+		<template data-replicator-template="{{ type }}">
+			<div class="replicator-field__set" data-replicator-set x-data="replicatorSet({{ set_values }})">
+				<input type="hidden" name="{{ handle }}[{{ replicator_index_token }}][type]" value="{{ type }}">
+				<label class="replicator-field__enabled">
+					<input type="hidden" name="{{ handle }}[{{ replicator_index_token }}][enabled]" value="0">
+					<input type="checkbox" name="{{ handle }}[{{ replicator_index_token }}][enabled]" value="1" checked>
+					{{ trans key="Enabled" }}
+				</label>
+				<div class="replicator-field__fields">
+					{{ fields }}
+						<template x-if="{{ show_field }}">
+							<div class="replicator-field__field">
+								{{ if display }}
+									<label for="{{ id }}">{{ display }}{{ if validate | contains:required }} <sup aria-label="{{ trans:Required }}">*</sup>{{ /if }}</label>
+								{{ /if }}
+								{{ field }}
+								{{ if instructions }}<p class="replicator-field__instructions">{{ instructions }}</p>{{ /if }}
+							</div>
+						</template>
+					{{ /fields }}
+				</div>
+				<button type="button" class="btn btn-sm btn-link" data-replicator-remove>
+					{{ trans key="Remove" }}
+				</button>
+			</div>
+		</template>
+	{{ /replicator_set_templates }}
+</div>

@@ -1,0 +1,31 @@
+{{#
+
+	@name Page Header
+	@desc Passes through entry-meta params to the title-options partial (e.g. graphic, normal).
+
+#}}
+
+{{ if title_options && title_options != 'none' }}
+	{{ partial src="layout/page-header/{title_options}"
+		:date_modified_enabled="date_modified_enabled"
+		:date_modified_label="date_modified_label"
+		:date_modified_value="date_modified_value"
+		:date_published_enabled="date_published_enabled"
+		:date_published_label="date_published_label"
+		:date_published_value="date_published_value"
+		:reading_time_enabled="reading_time_enabled"
+		:reading_time_label="reading_time_label"
+		:reading_time_value="reading_time_value"
+		:download_enabled="download_enabled"
+		:download_label="download_label"
+		:download_value="download_value"
+		:download_link_text="download_link_text"
+		:download_use_download="download_use_download"
+		:download_filename="download_filename"
+		:download_rel="download_rel"
+		:download_target="download_target"
+		:cover_image="cover_image"
+		:cover_image_alt_text_override="cover_image_alt_text_override"
+		:cover_image_caption_override="cover_image_caption_override"
+	}}
+{{ /if }}

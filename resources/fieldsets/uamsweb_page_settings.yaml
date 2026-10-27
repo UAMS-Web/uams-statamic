@@ -1,0 +1,41 @@
+title: 'UAMSWeb Page Settings'
+fields:
+  -
+    handle: subsection
+    field: uamsweb_common.true_false
+    config:
+      display: 'Page Is a Subsection'
+      validate:
+        - required
+      default: false
+  -
+    handle: hide_breadcrumbs
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Breadcrumbs'
+      validate:
+        - required
+      default: false
+  -
+    handle: hide_from_menu
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide From Auto Menus'
+      validate:
+        - required
+      default: false
+  -
+    handle: hide_child_menu
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide Related Page Menu (Children)'
+      validate:
+        - required
+      default: false
+  -
+    handle: nav_alt_name
+    field:
+      type: text
+      display: 'Menu Title'
+      instructions: 'Enter a value here to set an alternate title to be used for this page/post on the automatically generated primary navigation menu. Leave it blank to use the page/post title.'
+      localizable: false

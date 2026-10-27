@@ -1,0 +1,53 @@
+{{#
+	@name Clinical Resources Type Filter
+	@desc On-page resource-type control for the clinical_resources index. Renders an
+	      "All" tab plus one tab per public resource subtype (article / audio /
+	      document / infographic / video), each a plain link driving the listing's
+	      `?type=` query; "All" clears it (`current_url`). The active tab is derived
+	      from `$filter_type` (set by `clinical_resources/_listing` from `get:type`).
+	      No JavaScript: the `collection:clinical_resources` tag re-filters on reload,
+	      so the control is progressively-enhancement-free and works without Alpine.
+
+	      `provider_spotlight` is intentionally excluded — it is a provider Q&A
+	      format, not a browsable resource category (UAMS-Web/uams-statamic-archive#1468 lists exactly the five
+	      subtypes). The tab labels are literal (not editor/import text), and the
+	      hrefs carry only fixed blueprint handles, so there is no untrusted output
+	      to escape here. (UAMS-Web/uams-statamic-archive#1468)
+
+	      Every tab preserves an active `?provider=` filter (UAMS-Web/uams-statamic-archive#1692). Without it the
+	      first type click would silently widen the archive from one provider's
+	      resources to the whole site's, which reads as a bug to anyone who arrived
+	      from a provider profile. `$provider_query` is the trailing parameter and
+	      `$provider_only` the "All types" href. The separator is `&amp;` because an
+	      href is an HTML attribute — a bare `&` there is invalid markup — and the
+	      slug is `sanitize_url`ed because it arrives from the query string.
+#}}
+{{# The archive root, passed in by the listing. `current_url` carries `/page/N` on a
+	paginated request, so a tab built from it would switch type WITHOUT returning to
+	page 1. #}}
+{{ $base_url = archive_url ?? current_url }}
+{{ $provider_slug = filter_provider ?? '' }}
+{{ $provider_query = $provider_slug ? ( '&amp;provider=' + ( $provider_slug | sanitize_url ) ) : '' }}
+{{ $provider_only = $provider_slug ? ( '?provider=' + ( $provider_slug | sanitize_url ) ) : '' }}
+<nav class="resources-type-filter" aria-label="Filter clinical resources by type">
+	<ul class="nav nav-pills resources-type-filter-list">
+		<li class="nav-item">
+			<a class="nav-link{{ unless $filter_type }} active{{ /unless }}" href="{{ $base_url }}{{ $provider_only }}"{{ unless $filter_type }} aria-current="page"{{ /unless }}>All</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link{{ if $filter_type == 'article' }} active{{ /if }}" href="{{ $base_url }}?type=article{{ $provider_query }}"{{ if $filter_type == 'article' }} aria-current="page"{{ /if }}>Article</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link{{ if $filter_type == 'audio' }} active{{ /if }}" href="{{ $base_url }}?type=audio{{ $provider_query }}"{{ if $filter_type == 'audio' }} aria-current="page"{{ /if }}>Audio</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link{{ if $filter_type == 'document' }} active{{ /if }}" href="{{ $base_url }}?type=document{{ $provider_query }}"{{ if $filter_type == 'document' }} aria-current="page"{{ /if }}>Document</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link{{ if $filter_type == 'infographic' }} active{{ /if }}" href="{{ $base_url }}?type=infographic{{ $provider_query }}"{{ if $filter_type == 'infographic' }} aria-current="page"{{ /if }}>Infographic</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link{{ if $filter_type == 'video' }} active{{ /if }}" href="{{ $base_url }}?type=video{{ $provider_query }}"{{ if $filter_type == 'video' }} aria-current="page"{{ /if }}>Video</a>
+		</li>
+	</ul>
+</nav>

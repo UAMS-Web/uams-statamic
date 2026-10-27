@@ -1,0 +1,15 @@
+title: 'UAMSWeb Posts, Creator, Video'
+fields:
+  -
+    handle: hide_creator_query
+    field: uamsweb_post_creator.hide_creator_query
+    config:
+      localizable: false
+  -
+    handle: creator
+    field: uamsweb_post_creator.creator
+    config:
+      localizable: false
+      fields:
+        -
+          import: uamsweb_post_creator_roles_video

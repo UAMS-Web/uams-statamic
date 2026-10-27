@@ -1,0 +1,125 @@
+title: 'News Home'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Page Title'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: true
+              display: 'Page Title'
+              validate:
+                - required
+      -
+        display: 'Featured Lead'
+        instructions: 'The sticky-first lead band at the top of the newsroom home. A post flagged “Stick This Post to the Front Page” is guaranteed a lead slot; the rest fill by newest first.'
+        fields:
+          -
+            handle: lead_count
+            field:
+              type: integer
+              display: 'Lead Post Count'
+              instructions: 'How many posts show in the featured lead band.'
+              default: 5
+              validate:
+                - 'min:1'
+              localizable: false
+      -
+        display: 'News Sections'
+        instructions: 'Each section lists a category’s latest posts. Sections render top-to-bottom below the lead; a post surfaced in the lead or an earlier section is never repeated (page-wide, earlier-wins deduplication).'
+        fields:
+          -
+            handle: sections
+            field:
+              type: grid
+              display: 'News Sections'
+              mode: stacked
+              reorderable: true
+              add_row: 'Add Section'
+              localizable: true
+              fields:
+                -
+                  handle: section_heading
+                  field:
+                    type: text
+                    display: 'Section Heading'
+                    localizable: true
+                -
+                  handle: category
+                  field:
+                    type: entries
+                    display: Category
+                    instructions: 'The post category this section lists. Leave empty for a “latest news” catch-all section.'
+                    collections:
+                      - post_categories
+                    max_items: 1
+                    create: false
+                    localizable: false
+                -
+                  handle: count
+                  field:
+                    type: integer
+                    display: 'Number of Posts'
+                    default: 4
+                    validate:
+                      - 'min:1'
+                    localizable: false
+      -
+        display: Embeds
+        instructions: 'Optional newsroom embeds. Each renders only when its id is set.'
+        fields:
+          -
+            handle: calendar_livewhale_id
+            field:
+              type: text
+              display: 'Calendar (LiveWhale) ID'
+              instructions: 'The calendar.uams.edu LiveWhale calendar id to embed. Leave empty to hide the calendar.'
+              localizable: false
+          -
+            handle: youtube_playlist_id
+            field:
+              type: text
+              display: 'YouTube Playlist ID'
+              instructions: 'The newsroom YouTube playlist id to embed. Leave empty to hide the video.'
+              localizable: false
+      -
+        display: 'Archive CTA'
+        fields:
+          -
+            handle: archive_cta_url
+            field:
+              type: text
+              display: 'Newsroom Archive URL'
+              instructions: 'The full newsroom archive this page links to at the bottom. Leave empty to hide the call to action.'
+              localizable: true
+          -
+            handle: archive_cta_label
+            field:
+              type: text
+              display: 'Archive CTA Label'
+              default: 'View all news'
+              localizable: true
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: pages/news_home
+              localizable: false

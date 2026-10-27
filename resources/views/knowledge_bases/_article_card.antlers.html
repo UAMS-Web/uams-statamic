@@ -1,0 +1,114 @@
+{{# Renders a single article card. Expects one article entry in scope. #}}
+{{ $resolved_topic_image_query = $resolved_topic_image_query ?? true }}
+{{
+	partial:page_builder/components/card_item
+	card_itemtype="https://schema.org/Article"
+	card_id="article-{id}"
+	card_meta_has_part_id="article-meta-{id}"
+}}
+	{{# Article Card Featured Image #}}
+	{{ $article_thumbnail_url_meta = null }}
+	{{ if $resolved_topic_image_query && featured_image_16_9 }}
+		{{
+			partial:page_builder/components/card_image
+			:image="featured_image_16_9"
+			:alt_override="alt_override"
+			:display_media_credit="featured_image_credit_query"
+			itemprop="https://schema.org/thumbnailURL"
+		}}
+	{{ elseif featured_image_16_9 }}
+		{{ $article_thumbnail_url_meta = '<meta itemprop="https://schema.org/thumbnailUrl" content="' + (featured_image_16_9 | url) + '" />' }}
+	{{ /if }}
+
+	{{# Article Card Body #}}
+	{{ partial:page_builder/components/card_body }}
+		{{ $resolved_excerpt = ( topic_article_description_query && excerpt ) ? excerpt : null }}
+		<header
+			{{
+				(
+					[
+						'mb-2' => ( topic_article_description_query && excerpt )
+					] | classes | collapse_whitespace
+				) | attribute:class
+			}}
+		>
+			{{# Article Title #}}
+			{{ $article_title_aria_label = ( title_short ?? title ) + ', View ' + topic_article_label_singular }}
+			{{ partial:page_builder/components/card_title
+				:heading="title_short ?? title"
+				has_link="true"
+				stretched_link="true"
+				:title="title"
+				:aria_label="$article_title_aria_label"
+				:url="url"
+				:data_moduletitle="topic_article_label"
+				:mb_0="!$resolved_excerpt"
+				:title_itemprop="( title_short ? 'https://schema.org/alternateName https://schema.org/alternativeHeadline' : 'https://schema.org/name https://schema.org/headline' )"
+				url_itemprop="https://schema.org/url https://schema.org/mainEntityOfPage"
+			}}
+			{{ if title_short }}<meta itemprop="https://schema.org/name https://schema.org/headline" content="{{ title }}">{{ /if }}
+		</header>
+
+		{{# Article Excerpt #}}
+		{{ if $resolved_excerpt }}
+			<p class="card-text mb-0" itemprop="https://schema.org/abstract https://schema.org/description">{{ $resolved_excerpt | widont }}</p>
+		{{ /if }}
+	{{ /partial:page_builder/components/card_body }}
+
+	{{# Article Card Footer #}}
+
+		{{# Construct article date #}}
+		{{ $article_date_modified_meta = '<meta itemprop="https://schema.org/dateModified" content="{{ updated_at | format('c') }}" />' }}
+		{{ $article_date_published_meta = '<meta itemprop="https://schema.org/datePublished" content="{{ date | format('c') }}" />' }}
+		{{ $article_date = null }}
+		{{ if topic_article_last_modified_query }}
+			{{ if
+				(updated_at && !date)
+				|| (updated_at && date && ( updated_at == date ))
+			}}
+				{{ $article_date = '<time class="text-nowrap" datetime="{{ updated_at | format('c') }}" itemprop="https://schema.org/dateModified">Updated on {{ updated_at | ap_style_date }}</time>' }}
+				{{ $article_date_modified_meta = null }}
+			{{ elseif date }}
+				{{ $article_date = '<time class="text-nowrap" datetime="{{ date | format('c') }}" itemprop="https://schema.org/datePublished">Published on {{ date | ap_style_date }}</time>' }}
+				{{ $article_date_published_meta = null }}
+			{{ /if }}
+		{{ /if }}
+
+		{{# Construct article view count #}}
+		{{ if topic_article_view_count_query && view_count }}
+			{{ $article_view_count = '<span class="text-nowrap">{{ view_count | format_number(0, '.', ',') }} views</span>' }}
+		{{ /if }}
+
+		{{# Construct article like count #}}
+		{{ if topic_article_like_count_query && like_count }}
+			{{ $article_like_count = '<span class="text-nowrap">{{ like_count | format_number(0, '.', ',') }} likes</span>' }}
+		{{ /if }}
+
+		{{# Construct article dislike count #}}
+		{{ if topic_article_dislike_count_query && dislike_count }}
+			{{ $article_dislike_count = '<span class="text-nowrap">{{ dislike_count | format_number(0, '.', ',') }} dislikes</span>' }}
+		{{ /if }}
+
+		{{# Render article footer #}}
+		{{ if $article_date || $article_view_count || $article_like_count || $article_dislike_count }}
+			{{ partial:page_builder/components/card_footer }}
+				<span class="fas fa-newspaper text-muted mr-3" aria-hidden="true"></span>
+				<small>{{ [ $article_date, $article_view_count, $article_like_count, $article_dislike_count ] | filter_empty | join(' | ') }}</small>
+			{{ /partial:page_builder/components/card_footer }}
+		{{ /if }}
+
+		{{# Render article date modified meta #}}
+		{{ if $article_date_modified_meta }}
+			{{ $article_date_modified_meta }}
+		{{ /if }}
+
+		{{# Render article date published meta #}}
+		{{ if $article_date_published_meta }}
+			{{ $article_date_published_meta }}
+		{{ /if }}
+
+		{{# Render article thumbnail URL meta #}}
+		{{ if $article_thumbnail_url_meta }}
+			{{ $article_thumbnail_url_meta }}
+		{{ /if }}
+{{ /partial:page_builder/components/card_item }}

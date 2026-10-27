@@ -1,0 +1,146 @@
+title: 'UAMSWeb Common Reusable Fields, Address and Location'
+fields:
+  -
+    handle: street_address
+    field:
+      type: text
+      display: 'Street Address'
+      instructions: |-
+        Spell out numbered streets nine and under; use figures for *10* and above (e.g., *5 Sixth Ave.*, *3012 50th St.*, *No. 10 Downing St.*).
+
+        Use the abbreviations *Ave.*, *Blvd.* and *St.* Otherwise, spell out similar words (e.g., *Alley*, *Drive*, *Road*, *Terrace*).
+
+        Always use figures for an address number (e.g., *9 Morningside Circle*).
+
+        Spell out and capitalize *First* through *Ninth* when used as street names; use figures for *10th* and above (e.g., *7 Fifth Ave.*, *100 21st St.*).
+
+        Abbreviate compass points used to indicate directional ends of a street or quadrants of a city in a numbered address (e.g., *222 E. 42nd St.*, *562 W. 43rd St.*, *600 K St. NW*). Do not use periods in quadrant abbreviations (e.g., *NW*, *SE*).
+
+        Use these forms, as appropriate in the context, for highways identified by number: *U.S. Highway 67*, *Arkansas Highway 10*, *Interstate 630*.
+
+        When a letter is appended to a number, capitalize it but do not use a hyphen (e.g., *U.S. Highway 71B*).
+      placeholder: 'e.g., 4301 W. Markham St.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: city
+    field:
+      type: text
+      display: City
+      replicator_preview: false
+      localizable: false
+  -
+    handle: state
+    field:
+      type: select
+      display: 'State or District'
+      replicator_preview: false
+      localizable: false
+      preset: us_states
+      state_types:
+        - state
+        - district
+  -
+    handle: state_district_territory
+    field:
+      type: select
+      display: 'State, District or Territory'
+      replicator_preview: false
+      localizable: false
+      preset: us_states
+      state_types:
+        - state
+        - territory
+        - district
+  -
+    handle: zip
+    field:
+      type: zip_code
+      display: 'ZIP Code'
+      instructions: "Find the ZIP+4 Code for an address at <a href='https://tools.usps.com/zip-code-lookup.htm?byaddress' target='_blank'>https://tools.usps.com/zip-code-lookup.htm?byaddress</a>."
+      replicator_preview: false
+      localizable: false
+  -
+    handle: country_iso31661_alpha2
+    field:
+      type: select
+      display: Country
+      replicator_preview: false
+      default: US
+      clearable: true
+      localizable: false
+      preset: countries
+  -
+    handle: address_group
+    field:
+      type: group
+      display: 'Address Group'
+      localizable: false
+      fields:
+        -
+          handle: street_address_1
+          field: uamsweb_common_address.street_address
+          config:
+            validate:
+              - required
+              - sometimes
+        -
+          handle: street_address_2
+          field:
+            type: text
+            display: 'Address (2)'
+            localizable: false
+        -
+          handle: city
+          field: uamsweb_common_address.city
+          config:
+            display: City
+            validate:
+              - required
+              - sometimes
+        -
+          handle: state
+          field: uamsweb_common_address.state
+          config:
+            default: AR
+            validate:
+              - required
+              - sometimes
+            width: 50
+        -
+          handle: zip
+          field: uamsweb_common_address.zip
+          config:
+            validate:
+              - required
+              - sometimes
+            width: 50
+        -
+          handle: country
+          field: uamsweb_common_address.country_iso31661_alpha2
+          config:
+            visibility: hidden
+            default: US
+            validate:
+              - required
+              - sometimes
+  -
+    handle: regions
+    field:
+      type: terms
+      display: 'Arkansas Region(s)'
+      instructions: "For information on how the Arkansas regions are defined, visit <a href='https://communications.uams.edu/web/kb/location-regions/' target='_blank'>https://communications.uams.edu/web/kb/location-regions/</a>."
+      create: false
+      taxonomies:
+        - regions
+      mode: select
+      replicator_preview: false
+      localizable: false
+  -
+    handle: map
+    field:
+      type: gps
+      display: 'GPS Location'
+      instructions: 'Click the map or drag the marker to set the location, or type the latitude and longitude in decimal degrees.'
+      replicator_preview: false
+      localizable: false

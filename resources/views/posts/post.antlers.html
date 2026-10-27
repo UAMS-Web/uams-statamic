@@ -1,0 +1,33 @@
+{{ date_modified_enabled = true }}
+{{ date_modified_label = "Last Modified:" }}
+{{ date_modified_value = updated_at }}
+{{ date_published_enabled = true }}
+{{ date_published_label = "Published:" }}
+{{ date_published_value = date }}
+{{ reading_time_enabled = true }}
+{{ reading_time_label = "Estimated Reading Time:" }}
+{{ reading_time_value = reading_time }}
+{{ cover_image = cover_image_query ? featured_image_16_9 : null }}
+
+{{ partial:layout/article
+	:cover_image="cover_image"
+	:cover_image_alt_text_override="cover_image_alt_text_override"
+	:cover_image_caption_override="cover_image_caption_override"
+}}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+		itemprop="https://schema.org/articleBody https://schema.org/text"
+	}}
+		{{ content scope="block" }}
+			{{ partial src="sets/{type}" }}
+		{{ /content }}
+	{{ /partial:layout/entry-content }}
+	{{ partial:posts/components/curation }}
+	{{
+		partial:posts/components/boilerplate_block
+		:boilerplate_enabled="( boilerplate_query | raw | bool_string )"
+		:boilerplate_heading="boilerplate ? boilerplate:heading : uams_multisite_settings:boilerplate:heading"
+		:boilerplate_content="boilerplate ? boilerplate:boilerplate : uams_multisite_settings:boilerplate:boilerplate"
+	}}
+{{ /partial:layout/article }}

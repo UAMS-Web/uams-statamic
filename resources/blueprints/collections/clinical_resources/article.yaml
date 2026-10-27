@@ -1,0 +1,191 @@
+title: Article
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          -
+            import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_cover_image
+      -
+        display: Syndication
+        collapsible: true
+        fields:
+          -
+            handle: syndication_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this syndicated from another source?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+          -
+            handle: syndication_source
+            field:
+              options:
+                -
+                  key: nci
+                  value: 'National Cancer Institute (NCI)'
+                -
+                  key: other
+                  value: Other
+              type: radio
+              display: 'Syndication Source'
+              if:
+                syndication_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: nci_embed
+            field:
+              type: code
+              display: 'National Cancer Institute (NCI) Syndication Embed / Syndication Code'
+              mode_selectable: false
+              line_numbers: false
+              if:
+                syndication_query: 'equals true'
+                syndication_source: 'equals nci'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: syndication_url
+            field: uamsweb_common.url
+            config:
+              display: 'Syndication Source URL'
+              localizable: false
+              if:
+                syndication_query: 'equals true'
+                syndication_source: 'not null'
+              validate:
+                - required
+                - sometimes
+      -
+        display: Creators
+        collapsible: true
+        fields:
+          -
+            handle: hide_creator_query
+            field: uamsweb_post_creator.hide_creator_query
+            config:
+              localizable: false
+              if:
+                syndication_query: 'custom notSyndicated'
+          -
+            handle: creator
+            field: uamsweb_post_creator.creator
+            config:
+              localizable: false
+              if:
+                hide_creator_query: 'equals false'
+                syndication_query: 'custom notSyndicated'
+              fields:
+                -
+                  import: uamsweb_post_creator_roles_text
+      -
+        display: 'Text Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_text
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+              if:
+                syndication_query: 'custom notSyndicated'
+      -
+        display: Location
+        collapsible: true
+        fields:
+          -
+            handle: geographic_location
+            field: uamsweb_creativework_location.geographic_location
+            config:
+              max_items: 1
+              instructions: 'e.g., where the clinical resource was produced'
+              default:
+                - little-rock
+              validate:
+                - required
+                - sometimes
+              localizable: false
+              if:
+                syndication_query: 'custom notSyndicated'
+          -
+            handle: geographic_location_content
+            field: uamsweb_creativework_location.geographic_location_content
+            config:
+              localizable: false
+              if:
+                syndication_query: 'custom notSyndicated'
+      -
+        display: 'Article Content'
+        collapsible: true
+        fields:
+          -
+            handle: article
+            field: uamsweb_common.article
+            config:
+              display: 'Article Content'
+              localizable: false
+              if:
+                syndication_query: 'custom articleVisible'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Subject Matter'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_clinical_resource_subject_matter
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        fields:
+          -
+            import: uamsweb_clinical_resource_related
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config:
+              localizable: false

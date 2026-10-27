@@ -1,0 +1,170 @@
+{{#
+	@name Area of Expertise section filter bar
+	@desc Client-side facet controls for an Area of Expertise routed section subpage
+	      (UAMS-Web/uams-statamic-archive#1439). The `<select>`s are bound to the shared `fadFilter` Alpine engine
+	      (`resources/js/fad-filter.js`, UAMS-Web/uams-statamic-archive#1242) via `data-fad-facet="<facet>"` +
+	      `x-model="filters.<facet>"`; the engine reads the matching `data-<facet>`
+	      slugs off each list item, narrows the list in place, and prunes any option
+	      no rendered item carries. Without JavaScript the controls are inert and the
+	      full list stays visible (progressive enhancement).
+
+	      The clinical title options come from the `providers` the section passes
+	      (UAMS-Web/uams-statamic-archive#2962), not from the whole `clinical_specializations` collection.
+
+	      Which facets render is driven by the `show_*` flags the section passes:
+	      providers get clinical title + region + descendant Areas of Expertise,
+	      locations get region + descendant Areas of Expertise, clinical resources get
+	      resource type. The descendant-Areas-of-Expertise control appears only when
+	      this Area of Expertise has child entries (i.e. a top-level Area), mirroring
+	      the ticket's "top-level only" rule.
+
+	      Option labels are taxonomy/collection titles escaped with `sanitize`
+	      (Antlers output is raw by default); the option VALUES are Statamic slugs
+	      (`[a-z0-9-]`), which are URL-safe and need no escaping.
+	@set clinical_expertise.section
+#}}
+<div class="ajax-filter aoe-section-filter">
+	<h2 class="sr-only">Filter the {{ filter_noun_plural ?? 'results' }}</h2>
+	{{# Alpine drives the filtering client-side; the submit is neutralized so pressing
+	    Enter never reloads the page. #}}
+	<form action="" @submit.prevent class="aoe-section-filter-form">
+
+		{{# UAMS-Web/uams-statamic-archive#1490: free-text search — a case-insensitive substring match over each item's
+		    `data-name`. The `fadFilter` engine detects this control via `[data-fad-search]`
+		    and is inert without it, so a section that omits `show_search` is unchanged. #}}
+		{{ if show_search }}
+			<div class="aoe-section-filter-control aoe-section-filter-search">
+				<label class="sr-only" for="aoe-filter-search">Search {{ filter_noun_plural ?? 'results' }}</label>
+				<input type="search" id="aoe-filter-search" class="form-control" data-fad-search x-model="search" placeholder="Search {{ filter_noun_plural ?? 'results' }}&hellip;" aria-label="Search {{ filter_noun_plural ?? 'results' }}">
+			</div>
+		{{ /if }}
+
+		{{ if show_specialty }}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-specialty">Clinical Title</label>
+				<select id="aoe-filter-specialty" class="form-control" data-fad-facet="specialty" x-model="filters.specialty">
+					<option value="">Any Clinical Title</option>
+					{{# UAMS-Web/uams-statamic-archive#2962: only the clinical titles the listed providers carry, once each, by
+					    title. The section passes the same `providers` it renders as cards, so an
+					    option always matches at least one of them. Every `clinical_specializations`
+					    entry lives on `default`, so a `health` page lists the same slugs. #}}
+					{{ $carried_specializations = [] }}
+					{{ providers }}
+						{{ $carried_specializations = $carried_specializations | merge_array(clinical_specializations) }}
+					{{ /providers }}
+					{{ $carried_specializations = $carried_specializations | unique_terms | sort:title }}
+					{{ $carried_specializations }}
+						<option value="{{ slug }}">{{ title | sanitize }}</option>
+					{{ /$carried_specializations }}
+				</select>
+			</div>
+		{{ /if }}
+
+		{{# UAMS-Web/uams-statamic-archive#1490: optional provider facets — patient types, gender, languages. Each maps to
+		    an existing `people` field the provider `<li>` emits as a `data-<facet>` slug; the
+		    engine prunes any option no rendered provider carries. #}}
+		{{ if show_patient_types }}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-patient-types">Patient Type</label>
+				<select id="aoe-filter-patient-types" class="form-control" data-fad-facet="patient_types" x-model="filters.patient_types">
+					<option value="">Any Patient Type</option>
+					{{ collection:patient_types site="default" sort="title:asc" }}
+						<option value="{{ slug }}">{{ title | sanitize }}</option>
+					{{ /collection:patient_types }}
+				</select>
+			</div>
+		{{ /if }}
+
+		{{ if show_gender }}
+			{{# The controlled `gender` radio; the provider card lower-cases its value, so the
+			    option values are the lowercased tokens. #}}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-gender">Gender</label>
+				<select id="aoe-filter-gender" class="form-control" data-fad-facet="gender" x-model="filters.gender">
+					<option value="">Any Gender</option>
+					<option value="female">Female</option>
+					<option value="male">Male</option>
+					<option value="other">Other</option>
+				</select>
+			</div>
+		{{ /if }}
+
+		{{ if show_language }}
+			{{# The distinct provider languages present, resolved to BCP-47 label options by the
+			    shared `provider_language_facet_options` tag (UAMS-Web/uams-statamic-archive#570); the engine prunes any the
+			    section's own providers don't carry. The option value is the raw language code,
+			    `sanitize`d defensively (Antlers output is raw by default). #}}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-language">Language</label>
+				<select id="aoe-filter-language" class="form-control" data-fad-facet="language" x-model="filters.language">
+					<option value="">Any Language</option>
+					{{ provider_language_facet_options }}
+						{{ if value }}<option value="{{ value | sanitize }}">{{ label | sanitize }}</option>{{ /if }}
+					{{ /provider_language_facet_options }}
+				</select>
+			</div>
+		{{ /if }}
+
+		{{ if show_type }}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-type">Resource Type</label>
+				<select id="aoe-filter-type" class="form-control" data-fad-facet="type" x-model="filters.type">
+					<option value="">Any Type</option>
+					<option value="article">Article</option>
+					<option value="audio">Audio</option>
+					<option value="document">Document</option>
+					<option value="infographic">Infographic</option>
+					<option value="video">Video</option>
+				</select>
+			</div>
+		{{ /if }}
+
+		{{ if show_region }}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-region">Region</label>
+				<select id="aoe-filter-region" class="form-control" data-fad-facet="region" x-model="filters.region">
+					<option value="">Any Region</option>
+					{{ taxonomy:regions sort="title:asc" }}
+						<option value="{{ slug }}">{{ title | sanitize }}</option>
+					{{ /taxonomy:regions }}
+				</select>
+			</div>
+		{{ /if }}
+
+		{{# UAMS-Web/uams-statamic-archive#1490: optional Location Type facet — the location's `location_types` terms. #}}
+		{{ if show_location_type }}
+			<div class="aoe-section-filter-control">
+				<label class="sr-only" for="aoe-filter-location-type">Location Type</label>
+				<select id="aoe-filter-location-type" class="form-control" data-fad-facet="location_type" x-model="filters.location_type">
+					<option value="">Any Location Type</option>
+					{{ taxonomy:location_types sort="title:asc" }}
+						<option value="{{ slug }}">{{ title | sanitize }}</option>
+					{{ /taxonomy:location_types }}
+				</select>
+			</div>
+		{{ /if }}
+
+		{{ if show_expertise }}
+			{{# Descendant Areas of Expertise — this Area's structure children, mirroring
+			    the specialties section query. Only rendered on a top-level Area (one
+			    that has children); prunes to those actually present among the items. #}}
+			{{ collection:clinical_expertise blueprint:is="clinical_expertise" :parent:is="load" sort="title:asc" as="descendants" }}
+				{{ unless no_results }}
+					<div class="aoe-section-filter-control">
+						<label class="sr-only" for="aoe-filter-expertise">Area of Expertise</label>
+						<select id="aoe-filter-expertise" class="form-control" data-fad-facet="expertise" x-model="filters.expertise">
+							<option value="">Any Area of Expertise</option>
+							{{ descendants }}
+								<option value="{{ slug }}">{{ title | sanitize }}</option>
+							{{ /descendants }}
+						</select>
+					</div>
+				{{ /unless }}
+			{{ /collection:clinical_expertise }}
+		{{ /if }}
+
+		<div class="aoe-section-filter-control aoe-section-filter-reset">
+			<input type="button" value="Reset" class="btn btn-outline-primary" @click="reset()">
+		</div>
+	</form>
+</div>

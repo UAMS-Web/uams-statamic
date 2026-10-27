@@ -1,0 +1,21 @@
+title: 'UAMSWeb Video Segment, Vimeo'
+fields:
+  -
+    handle: url
+    field: uamsweb_common_video.video_url
+    config:
+      display: 'Vimeo Video URL'
+      instructions: 'Choose a video from the UAMS Vimeo account. Make sure to include the full URL, starting with <code>https://</code>.'
+      validate:
+        - required
+        - vimeo_url
+  -
+    handle: aspect_ratio
+    field: uamsweb_common_video.aspect_ratio
+    config:
+      validate:
+        - required
+  -
+    import: uamsweb_post_video_segment
+  -
+    import: uamsweb_post_creator_video

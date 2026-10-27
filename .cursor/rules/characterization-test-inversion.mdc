@@ -1,0 +1,63 @@
+---
+description: "A characterization test a sibling package will invert names it as `@invertsOn`."
+alwaysApply: true
+---
+<!--
+  Synced from UAMS-Web/uams-claude-skills: shared/.claude/rules/characterization-test-inversion.md
+  Edit it there, not here; the next sync overwrites this copy.
+  Delivered to this repository through the profile(s): laravel-host.
+-->
+# Rule — a characterization test a sibling package will invert names it as `@invertsOn`
+
+A **characterization test** asserts what the code does *today*, including a known gap, so the boundary is visible in the suite instead of being assumed away. A host should keep using the pattern deliberately. But every such test is a **scheduled future red**: the day the gap is fixed, it goes green-to-red by design and has to be rewritten to assert the new behavior.
+
+When the fix lands in **this** host, the author sees it in their own diff. When it lands in a **sibling package the host consumes**, nobody here sees it until a version bump, and the red arrives in a tree whose author did not make the change, usually while they are doing something else entirely.
+
+So: when a characterization test in this host will be inverted by a ticket in a sibling package, say so in a form a release author over there can `grep` for, on its own line in the class or file docblock:
+
+```php
+/**
+ * ...why this pins today's behavior...
+ *
+ * @invertsOn UAMS-Web/some-package#494
+ */
+```
+
+In `uams-statamic` the sibling package is `wordpress-importer`, and the form is `@invertsOn UAMS-Web/wordpress-importer#494`.
+
+History: [the introduction](../../.claude/history/characterization-test-inversion.md).
+
+## How to apply
+
+1. **One tag per inverting ticket**, fully qualified `org/repo#N` even though the ticket is always in the sibling repository, so a single grep from either checkout finds every hit.
+2. **Prose still carries the *why*.** The tag is an index entry, not a replacement for explaining what the test pins and what flipping it will require.
+3. **Remove the tag when the test is flipped.** A flipped test asserts the fix and awaits nothing; a stale `@invertsOn` is a false lead in exactly the grep it exists to serve.
+4. **Same-repo inversions do not get it.** A test that inverts on a change in this tree is visible to whoever makes that change; step 5's grep is the inventory, not this file.
+
+   **And a test calling itself a characterization test is not automatically one of these.** This rule uses the term more narrowly than the industry does. The broad sense is any test that documents what the code currently does. The sense this rule governs is the subset that pins a **known gap**, and the gap is the entire reason such a test is a scheduled future red. A test that locks in behavior nobody intends to change documents current behavior too, and it never inverts, because there is nothing waiting to be fixed underneath it.
+
+   **So sort a hit by what it pins, a gap or a contract, never by the word.** A test whose docblock says it locks "the observable contract" a consumer relies on through a refactor is the clearest contract case. It must never carry `@invertsOn`, and neither should anything else whose job is to keep a refactor behavior-preserving.
+
+   In `uams-statamic`, [`tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php`](../../tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php) is the clearest contract case: its docblock says it locks "the observable contract the Control Panel relies on" through the `#873` decomposition of the `Input` trait, so a change to the grouping should make it fail.
+
+   **`grep -ril characterization tests/` therefore returns more files than this rule governs, and it is expected to.** Read each hit's docblock: a test that says it passes either way, that was generated from current output, or that locks a contract through a refactor is the broad kind and is finished. Only a test whose docblock names a defect it is waiting on belongs to this rule. That question has an answer for a file added tomorrow, which a list of today's filenames does not, which is why this step names a criterion and not a census.
+
+   **A step 5 grep that returns nothing is therefore a legitimate resting state, not a missing tag.** It means no test in the tree is currently waiting on a sibling-package fix, the state this host returns to every time one is flipped.
+
+   `BardParserSetAttributePassthroughTest` is the example of a test that was flipped and returned the tree to that state.
+
+5. **Check yourself with the grep the release author will run:** `grep -rn "@invertsOn" tests/`. Every hit should name a ticket that is still open in the sibling package.
+
+## Who consumes it
+
+The sibling package's release author. When that package cuts a release carrying a breaking change, its release author greps **this** checkout for `@invertsOn` naming any ticket in the release range and names the hits in the release callout, which is what the adopting ticket's *Known-red before you start* section is then derived from.
+
+That is the whole point of writing the tag here: the grep runs against this host, so every hit it will ever find has to have been written by someone working in this host.
+
+For `uams-statamic` that consumer is `wordpress-importer`'s `writing-release-notes` skill.
+
+## The DRY line
+
+This rule owns **when a test in this host carries the tag and what it means**. It does not own the release-time grep, where its output lands, or which changes count as breaking: those belong to the sibling package's release-notes skill and its decision log, and restating them here would be two copies to drift apart. The tag's definition is stated identically in `wordpress-importer`'s `tests/CLAUDE.md`; if the two ever disagree, that file is the original.
+
+_Refs: `UAMS-Web/uams-statamic#2080` (this rule), `UAMS-Web/wordpress-importer#614` (the convention and its decision record), `UAMS-Web/wordpress-importer#494` (the fix that inverted the one live instance), `#2025` (the adopting ticket that paid for it)._

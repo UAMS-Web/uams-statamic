@@ -1,0 +1,208 @@
+{{ scope:logo_list_item }}
+
+	{{# Define the Variables #}}
+
+		{{# Block ID #}}
+		{{ $uamsweb_block_id_base = $uamsweb_block_id_base ?? block_id }}
+
+		{{# Item element ID #}}
+		{{ $logo_list_item_element_id = $uamsweb_block_id_base + '_' + { increment } }}
+
+		{{# Show Item Heading Query #}}
+		{{ $logo_list_heading_show_query = block:logo_list_titles || !logo_list_item:logo_image }}
+
+		{{# Item element class #}}
+		{{ $logo_list_item_element_class = [
+			'item',
+			'item-has-title' => $logo_list_heading_show_query,
+			'item-has-label' => ( block:logo_list_labels && logos_item_labels ),
+			'item-has-shortdescr' => ( block:logo_list_layout == 'grid' && block:logo_list_shortdescr && logo_list_item:logo_shortdescr ),
+			'item-has-longdescr' => ( block:logo_list_layout == 'vertical' && block:logo_list_longdescr && logo_list_item:logo_longdescr ),
+			'item-has-link' => ( block:logo_list_links && logo_link ),
+			'item-has-logo' => logo_list_item:logo_image
+		] | classes | collapse_whitespace }}
+
+		{{# Item heading ID #}}
+		{{ $logo_list_item_title_id = $logo_list_item_element_id + '_title' }}
+
+		{{# Item heading class #}}
+		{{ $logo_list_item_title_class = switch(
+			( $logo_list_heading_show_query ) => 'item-title',
+			() => 'item-title-hidden sr-only'
+		) }}
+
+		{{# Item button ID #}}
+		{{ $logo_list_item_link_id = $logo_list_item_element_id + '_button' }}
+
+		{{# Item title #}}
+		{{ $logo_list_item_title = logo_list_item:logo_title ?? logo_list_item:title }}
+
+		{{# Link #}}
+
+			{{ if logo_list_item:logo_link }}
+
+				{{# target #}}
+
+					{{ $logo_list_item_link_target = switch(
+						( logo_link_target == 'inherit' && logo_list_links_target ) => '_blank',
+						( logo_link_target != 'inherit' && logo_link_target ) => '_blank',
+						() => null
+					) }}
+					{{ $logo_list_item_link_rel = $logo_list_item_link_target ? 'noopener noreferrer' : null }}
+
+				{{# class #}}
+
+					{{# Button Style and Color #}}
+
+						{{ $logo_list_item_button_class = 'btn btn-' + switch(
+							( 'block:background_color' == 'bg-white' ) => 'primary',
+							( 'block:background_color' == 'bg-gray' ) => 'primary',
+							( 'block:background_color' == 'bg-auto' ) => 'primary',
+							() => 'white',
+						) }}
+
+					{{ $logo_list_item_link_class = switch(
+						( block:logo_list_layout == 'grid' ) => 'stretched-link',
+						( block:logo_list_layout == 'vertical' ) => $logo_list_item_button_class
+					) }}
+
+				{{# aria-describedby #}}
+
+					{{ $logo_list_item_link_aria_describedby = switch(
+						( block:logo_list_layout == 'grid' ) => $logo_list_item_link_id,
+						( block:logo_list_layout == 'vertical' ) => $logo_list_item_title_id
+					) }}
+
+			{{ else }}
+
+				{{ $logo_list_item_link_target = null }}
+				{{ $logo_list_item_link_rel = null }}
+				{{ $logo_list_item_link_class = null }}
+				{{ $logo_list_item_link_aria_describedby = null }}
+
+			{{ /if }}
+
+	{{# Render the Item #}}
+
+		<div
+			{{ $logo_list_item_element_class | attribute:class }}
+			{{ $logo_list_item_element_id | attribute:id }}
+		>
+			{{ if logo_list_item:logo_image }}
+				<div class="item-img">
+					{{ if logo_list_item:logo_image:extension == 'svg' }}
+						{{# SVG scales natively, so it needs no server-side resizing — render a
+							single <img> (no <picture>/srcset/Glide). Width comes from the layout;
+							CSS keeps the intrinsic ratio and caps the max width (UAMS-Web/uams-statamic-archive#72). #}}
+						<img class="item-img-svg" src="{{ logo_list_item:logo_image:url }}" alt="{{ logo_list_item:logo_title }} logo" width="{{ $logo_list_image_width_lg }}" />
+					{{ else }}
+					<picture>
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_xxl" :h="$logo_list_image_width_xxl" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_xxl * 2 )" :h="( $logo_list_image_width_xxl * 2 )" }} 2x" media="(min-width: 1921px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_xl" :h="$logo_list_image_width_xl" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_xl * 2 )" :h="( $logo_list_image_width_xl * 2 )" }} 2x" media="(min-width: 1500px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_lg" :h="$logo_list_image_width_lg" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_lg * 2 )" :h="( $logo_list_image_width_lg * 2 )" }} 2x" media="(min-width: 1200px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_md" :h="$logo_list_image_width_md" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_md * 2 )" :h="( $logo_list_image_width_md * 2 )" }} 2x" media="(min-width: 992px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_sm" :h="$logo_list_image_width_sm" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_sm * 2 )" :h="( $logo_list_image_width_sm * 2 )" }} 2x" media="(min-width: 768px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_xs" :h="$logo_list_image_width_xs" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_md * 2 )" :h="( $logo_list_image_width_md * 2 )" }} 2x" media="(min-width: 576px)">
+						<source srcset="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_xxs" :h="$logo_list_image_width_xxs" }}, {{ glide :src="logo_list_item:logo_image:url" :w="( $logo_list_image_width_xxs * 2 )" :h="( $logo_list_image_width_xxs * 2 )" }} 2x" media="(min-width: 1px)">
+						{{# Fallback #}}
+						<img src="{{ glide :src="logo_list_item:logo_image:url" :w="$logo_list_image_width_lg" :h="$logo_list_image_width_lg" }}" alt="{{ logo_list_item:logo_title }} logo" />
+					</picture>
+					{{ /if }}
+				</div>
+			{{ /if }}
+			<div class="item-body">
+				<h3
+					{{ $logo_list_item_title_class | attribute:class }}
+					{{ $logo_list_item_title_id | attribute:id }}
+				>
+					{{ if ( block:logo_list_layout == 'grid' && logo_list_item:logo_link ) }}
+						<a
+							{{ logo_list_item:logo_link | attribute:href }}
+							{{ $logo_list_item_link_target | attribute:target }}
+							{{ $logo_list_item_link_rel | attribute:rel }}
+							{{ block:block_heading | attribute:data-moduletitle }}
+							{{ $logo_list_item_title | attribute:data-itemtitle }}
+							{{ $logo_list_item_link_class | attribute:class }}
+							{{ $logo_list_item_link_aria_describedby | attribute:aria-describedby }}
+						>{{ $logo_list_item_title | widont }}</a>
+
+					{{ else }}
+						{{ $logo_list_item_title | widont }}
+
+					{{ /if }}
+				</h3>
+				{{ if block:logo_list_labels && logo_list_item:logo_label }}
+					<p class="item-label">{{ logo_list_item:logo_label | widont }}</p>
+				{{ /if }}
+				{{ if ( block:logo_list_layout == 'grid' ) && block:logo_list_shortdescr && logo_list_item:logo_shortdescr }}
+					<p class="item-text">{{ logo_list_item:logo_shortdescr | widont }}</p>
+
+				{{ elseif ( block:logo_list_layout == 'vertical' ) }}
+					{{ logo_list_item:logo_longdescr }}
+
+				{{ /if }}
+				{{ if block:logo_list_links && logo_list_item:logo_link }}
+					<div class="link-container">
+						{{ if ( block:logo_list_layout != 'grid' && logo_list_item:logo_link ) }}
+							<a
+								{{ logo_list_item:logo_link | attribute:href }}
+								{{ $logo_list_item_link_target | attribute:target }}
+								{{ $logo_list_item_link_rel | attribute:rel }}
+								{{ block:block_heading | attribute:data-moduletitle }}
+								{{ $logo_list_item_title | attribute:data-itemtitle }}
+								{{ $logo_list_item_link_class | attribute:class }}
+								{{ $logo_list_item_link_aria_describedby | attribute:aria-describedby }}
+							>{{ logo_list_item:logo_link_text }}</a>
+
+						{{ else }}
+							<span
+								style="display: none;"
+								aria-hidden="true"
+								{{ $logo_list_item_link_id | attribute:id }}
+							>{{ logo_list_item:logo_link_text }}</span>
+
+						{{ /if }}
+					</div>
+				{{ /if }}
+			</div>
+		</div>
+
+{{ /scope:logo_list_item }}
+
+{{#
+
+	================================================================================
+
+	To-Do List
+
+	================================================================================
+
+	# Test the Migration
+
+	Test whether everything was migrated properly from the WordPress plugin.
+
+	--------------------------------------------------------------------------------
+
+	# Allow SVG Assets
+
+	Figure out the modifications needed in order to support SVG assets in the logo
+	list block, since we'll have a Logos asset container filled with SVG assets
+	available for other reasons.
+
+	If an SVG asset is used instead of a raster image asset, don't use the PICTURE
+	element since the SVG doesn't need to to be resized by the server.
+
+	--------------------------------------------------------------------------------
+
+	# Block ID in Partial's Slot
+
+	Figure out a reliable way to call the SECTION element ID parameter from the
+	partial to use in the HTML in the SLOT.
+
+	Or figure out another way to target the SECTION element with that HTML without
+	using the SECTION element ID parameter.
+
+	================================================================================
+
+#}}
+

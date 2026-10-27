@@ -1,0 +1,145 @@
+{{# Define the variables#}}
+{{ $resolved_current_blueprint = current_blueprint ?? 'topic' }}
+{{ $resolved_topic_image_query = ($resolved_current_blueprint == 'topic') ? subtopic_image_query : topic_image_query }}
+{{ $resolved_topic_description_query = ($resolved_current_blueprint == 'topic') ? subtopic_description_query : topic_description_query }}
+{{ $resolved_topic_label = ($resolved_current_blueprint == 'topic') ? subtopic_label : topic_label }}
+{{ $resolved_topic_label_singular = ($resolved_current_blueprint == 'topic') ? subtopic_label_singular : topic_label_singular }}
+{{ $resolved_topics_count = ($resolved_current_blueprint == 'topic') ? subtopic_limit : topic_limit }}
+{{ $resolved_show_all_topics_label = ($resolved_current_blueprint == 'topic') ? show_all_subtopics_label : show_all_topics_label }}
+
+{{# @TODO: add support for `$resolved_topics_count`, `$resolved_show_all_topics_label` field values #}}
+{{ collection:knowledge_bases blueprint:is="topic" :parent:is="id" as="topics" }}
+	{{# Only render the topics block if the entry has at least one displayable child topic #}}
+	{{ if has_displayable_subtopics }}
+		{{# Resolve $resolved_topic_image_query: false → false; true → true only if all displayable topics have featured_image_16_9 #}}
+		{{ if $resolved_topic_image_query === true }}
+			{{# Initialize a variable to store the result of checking if all displayable topics have a featured_image_16_9 value #}}
+			{{ $all_displayable_have_image = true }}
+
+			{{# Loop through each displayable topic and check if it has a featured_image_16_9 value #}}
+			{{ topics }}
+				{{# Check if the topic has descendant articles and we have not yet found one without featured_image_16_9 #}}
+				{{ if
+					has_descendant_articles
+					&& $all_displayable_have_image
+				}}
+					{{# Check if the topic does not have a featured_image_16_9 value #}}
+					{{ if !featured_image_16_9 }}
+						{{# Set the variable to false; subsequent iterations skip this block #}}
+						{{ $all_displayable_have_image = false }}
+					{{ /if }}
+				{{ /if }}
+			{{ /topics }}
+
+			{{# Set the variable to the result of the check #}}
+			{{ $resolved_topic_image_query = $all_displayable_have_image }}
+		{{ else }}
+			{{# Set the variable to false #}}
+			{{ $resolved_topic_image_query = false }}
+		{{ /if }}
+
+		{{# Render the topics block #}}
+		{{
+			partial:page_builder/uamsweb_block
+			block_class="mt-0"
+			itemprop="https://schema.org/hasPart"
+			itemscope="true"
+			itemtype="https://schema.org/Collection"
+		}}
+			{{ partial:page_builder/components/container_row  }}
+				{{ 
+					partial:page_builder/components/block_header 
+					:heading="$resolved_topic_label" 
+					block_header_heading_itemprop="https://schema.org/name https://schema.org/headline"
+				}}
+				{{# Topics #}}
+				{{ 
+					partial:page_builder/components/card_list 
+					:name="$resolved_topic_label" 
+					itemprop="https://schema.org/mainEntity"
+				}}
+					{{ $card_item_position_increment = 'card_list_' + {increment:card_list} }}
+					{{ topics }}
+						{{# Skip topics that have no descendant articles at any depth #}}
+						{{ if has_descendant_articles }}
+							{{
+								partial:page_builder/components/card_item
+								card_itemtype="https://schema.org/Collection"
+								:card_item_position_increment="$card_item_position_increment"
+								card_id="subtopic-{id}"
+								card_meta_has_part_id="subtopic-meta-{id}"
+							}}
+								{{# Topic Card Featured Image #}}
+								{{ if $resolved_topic_image_query && featured_image_16_9 }}
+									{{ 
+										partial:page_builder/components/card_image 
+										:image="featured_image_16_9" 
+										:alt_override="alt_override"
+										:display_media_credit="featured_image_credit_query"
+										itemprop="https://schema.org/thumbnailURL"
+									}}
+								{{ /if }}
+
+								{{# Topic Card Body #}}
+								{{ partial:page_builder/components/card_body }}
+									{{ $resolved_excerpt = ( $resolved_topic_description_query && excerpt ) ? excerpt : null }}
+									<header
+										{{
+											(
+												[
+													'mb-2' => $resolved_excerpt
+												] | classes | collapse_whitespace
+											) | attribute:class
+										}}
+									>
+										{{# Topic Title #}}
+										{{ $topic_title_aria_label = ( title_short ?? title ) + ', View ' + $resolved_topic_label_singular }}
+										{{ partial:page_builder/components/card_title
+											:heading="title_short ?? title"
+											has_link="true"
+											stretched_link="true"
+											:title="title"
+											:aria_label="$topic_title_aria_label"
+											:url="url"
+											:data_moduletitle="$resolved_topic_label"
+											:mb_0="!$resolved_excerpt"
+											:title_itemprop="( title_short ? 'https://schema.org/alternateName https://schema.org/alternativeHeadline' : 'https://schema.org/name https://schema.org/headline' )"
+											url_itemprop="https://schema.org/url https://schema.org/mainEntityOfPage"
+										}}
+										{{ if title_short }}<meta itemprop="https://schema.org/name https://schema.org/headline" content="{{ title }}">{{ /if }}
+									</header>
+
+									{{# Topic Description #}}
+									{{ if $resolved_excerpt }}
+										<p class="card-text mb-0" itemprop="https://schema.org/abstract https://schema.org/description">{{ $resolved_excerpt | widont }}</p>
+									{{ /if }}
+								{{ /partial:page_builder/components/card_body }}
+
+								{{# Topic Card Footer #}}
+								{{# Construct count of nested subtopics within the loop item topic (precomputed; no per-card query) #}}
+								{{ $topic_subtopic_count = null }}{{# Initialize the topic subtopic count variable #}}
+								{{ if direct_subtopic_count }}
+									{{ $topic_subtopic_count = '{{ direct_subtopic_count | format_number(0, '.', ',') }} {{ ( direct_subtopic_count == 1 ) ? subtopic_label_singular : subtopic_label }}' }}
+								{{ /if }}
+
+								{{# Construct count of nested articles within the loop item topic (precomputed; no per-card query) #}}
+								{{ $topic_article_count = null }}{{# Initialize the subtopic article count variable #}}
+								{{ if direct_article_count }}
+									{{ $topic_article_count = '{{ direct_article_count | format_number(0, '.', ',') }} {{ ( direct_article_count == 1 ) ? topic_article_label_singular : topic_article_label }}' }}
+								{{ /if }}
+
+								{{# If there are nested subtopics or articles, display the count in the footer #}}
+								{{ if $topic_subtopic_count || $topic_article_count }}
+									{{ partial:page_builder/components/card_footer }}
+										<span class="fas fa-layer-group text-muted mr-3" aria-hidden="true"></span>
+										<small>{{ [ $topic_subtopic_count, $topic_article_count ] | filter_empty | join(' | ') }}</small>
+									{{ /partial:page_builder/components/card_footer }}
+								{{ /if }}
+							{{ /partial:page_builder/components/card_item }}
+						{{ /if }}
+					{{ /topics }}
+				{{ /partial:page_builder/components/card_list }}
+			{{ /partial:page_builder/components/container_row }}
+		{{ /partial:page_builder/uamsweb_block }}
+	{{ /if }}
+{{ /collection:knowledge_bases }}

@@ -1,0 +1,54 @@
+title: 'UAMSWeb Bard Set, Image'
+fields:
+  -
+    handle: image
+    field: uamsweb_common_images.image
+    config:
+      width: 50
+      validate:
+        - required
+  -
+    handle: align
+    field: uamsweb_common.align_image
+    config:
+      width: 50
+      validate:
+        - required
+        - sometimes
+  -
+    handle: crop
+    field:
+      type: select
+      display: Crop
+      instructions: 'Optionally crop the image to a fixed aspect ratio (focal-point aware). "None" keeps the natural ratio.'
+      options:
+        -
+          key: ''
+          value: None
+        -
+          key: '16/9'
+          value: '16:9'
+        -
+          key: '4/3'
+          value: '4:3'
+        -
+          key: '1/1'
+          value: '1:1 (Square)'
+      default: ''
+      clearable: false
+      width: 50
+      localizable: false
+  -
+    handle: caption
+    field: uamsweb_common_images.caption
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Show the image's photographer/creator credit (from the asset's Creator field) beside the caption. Defaults to shown; turn off to suppress the credit while keeping the caption."
+      default: true
+      localizable: false
+  -
+    handle: alt_override
+    field: uamsweb_common_images.image_alt_text_override

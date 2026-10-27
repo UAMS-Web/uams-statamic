@@ -1,0 +1,104 @@
+@use "sass:map";
+
+.entry-content {
+    .entry-introduction {
+        @include bottom-separator();
+
+        .entry-introduction-header {
+            @extend .sr-only;
+
+            // .entry-introduction-title {}
+        }
+
+        .entry-introduction-content {
+            > :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    .entry-segment-container {
+        .entry-segment-container-header {
+            @extend .sr-only;
+
+            // .entry-segment-container-title {}
+        }
+        .entry-segment {
+            margin-top: map.get($spacers, 8);
+
+            &:not(:last-child) {
+                @include bottom-separator();
+            }
+
+            .entry-segment-title {
+                @extend .h2;
+            }
+
+            .entry-segment-summary {
+                @extend .lead;
+            }
+
+            .entry-segment-media {
+                margin: 0 0 1rem;
+
+                // .entry-segment-media-player {
+                //     .entry-segment-media-player-fallback {}
+                // }
+
+                // div.entry-segment-media-player {
+                //     // iframe {}
+                // }
+
+                // figcaption {}
+
+                &.entry-segment-audio {
+                    // div.entry-segment-media-player {
+                    //     // iframe {}
+                    //
+                    //     // .entry-segment-media-player-fallback {}
+                    // }
+
+                    audio.entry-segment-media-player {
+                        width: 100%;
+
+                        // .entry-segment-media-player-fallback {}
+                    }
+                }
+
+                // &.entry-segment-video {
+                //     // div.entry-segment-media-player {
+                //     //     // iframe {}
+                //     //
+                //     //     // .entry-segment-media-player-fallback {}
+                //     // }
+                //
+                //     // video.entry-segment-media-player {
+                //     //     // .entry-segment-media-player-fallback {}
+                //     // }
+                // }
+            }
+
+            .entry-segment-transcript {
+                .entry-segment-transcript-trigger {
+                    @extend .btn, .btn-sm, .btn-outline-secondary;
+                }
+
+                .entry-segment-transcript-header {
+                    margin-top: map.get($spacers, 8);
+
+                    .entry-segment-transcript-title {
+                        @extend .h3;
+                    }
+                }
+
+                .entry-segment-transcript-content {
+                    padding-top: 1em;
+
+                    > :last-child {
+                        margin-bottom: 0;
+                    }
+                }
+            }
+        }
+    }
+}

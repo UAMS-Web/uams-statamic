@@ -1,0 +1,79 @@
+{{#
+	@name Posts Listing
+	@desc Reusable, filterable, paginated card listing of the current site's
+	      published posts. Rendered by `posts/index` (if the collection is mounted
+	      as an index) and by any `pages` entry designated the site's "Posts page"
+	      (UAMS-Web/uams-statamic-archive#569, UAMS-Web/uams-statamic-archive#179). Narrows by `?category=` / `?tag=`; an empty/absent filter is
+	      a no-op. `?category=<slug>` resolves to a `post_categories` *collection*
+	      entry on the current site via the `posts_in_post_category_by_slug` scope
+	      (UAMS-Web/uams-statamic-archive#1483, after the UAMS-Web/uams-statamic-archive#1433 taxonomy→collection migration); `?tag=<slug>`
+	      resolves to a `post_tags` collection entry the same way via the
+	      `posts_in_post_tag_by_slug` scope (UAMS-Web/uams-statamic-archive#2532). The `collection` tag is
+	      site-scoped, so results are localized to the current site automatically.
+	@param posts_per_page  Optional. Posts per page. Default 10 (WordPress's
+	                       "Blog pages show at most N" default).
+	@param filter_category Optional. Force a category filter (a `post_categories`
+	                       slug); defaults to the `?category=` query string.
+	@param filter_tag      Optional. Force a tag filter (a `post_tags` slug);
+	                       defaults to the `?tag=` query string.
+#}}
+
+{{# Resolve the per-page count: a positive per-page override wins, else default to 10. #}}
+{{ $per_page = ( posts_per_page && posts_per_page > 0 ) ? posts_per_page : 10 }}
+
+{{# Optional filters: an explicit `filter_category` / `filter_tag` param wins (a
+	caller forcing a filter), else the `?category=` / `?tag=` query string. Both
+	scopes no-op on a blank slug, so an unfiltered request applies neither
+	condition. #}}
+{{ $filter_category = filter_category ? filter_category : get:category }}
+{{ $filter_tag = filter_tag ? filter_tag : get:tag }}
+
+{{
+	collection:posts
+	query_scope="posts_in_post_category_by_slug|posts_in_post_tag_by_slug"
+	category_slug="{{ $filter_category }}"
+	tag_slug="{{ $filter_tag }}"
+	sort="date:desc"
+	:paginate="$per_page"
+	as="posts"
+}}
+	{{ partial:page_builder/components/container_row }}
+		<div class="col-12">
+			{{ if $filter_category || $filter_tag }}
+				<p class="posts-filter-notice">
+					Showing posts filtered by
+					{{ if $filter_category }}category &ldquo;{{ $filter_category }}&rdquo;{{ /if }}
+					{{ if $filter_category && $filter_tag }} and {{ /if }}
+					{{ if $filter_tag }}tag &ldquo;{{ $filter_tag }}&rdquo;{{ /if }}.
+					<a href="{{ current_url }}">Clear filter</a>
+				</p>
+			{{ /if }}
+
+			{{ if no_results }}
+				<p class="posts-empty">No posts found{{ if $filter_category || $filter_tag }} for this filter{{ /if }}.</p>
+			{{ else }}
+				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+					{{ posts }}
+						{{ partial:posts/card }}
+					{{ /posts }}
+				</div>
+
+				{{ if paginate:total_pages > 1 }}
+					<nav class="posts-pagination" aria-label="Posts pagination">
+						<ul class="pagination">
+							{{ if paginate:prev_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+							{{ /if }}
+							<li class="page-item active" aria-current="page">
+								<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+							</li>
+							{{ if paginate:next_page }}
+								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+							{{ /if }}
+						</ul>
+					</nav>
+				{{ /if }}
+			{{ /if }}
+		</div>
+	{{ /partial:page_builder/components/container_row }}
+{{ /collection:posts }}

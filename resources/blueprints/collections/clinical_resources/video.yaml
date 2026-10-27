@@ -1,0 +1,141 @@
+title: Video
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          -
+            import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_cover_image
+      -
+        display: Syndication
+        collapsible: true
+        fields:
+          -
+            handle: syndication_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this syndicated from another source?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+          -
+            handle: syndication_url
+            field: uamsweb_common.url
+            config:
+              display: 'Syndication Source URL'
+              localizable: false
+              if:
+                syndication_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content'
+        collapsible: true
+        fields:
+          -
+            handle: intro
+            field: uamsweb_common.article
+            config:
+              display: Introduction
+              localizable: false
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_text
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+      -
+        display: 'Video Content'
+        collapsible: true
+        fields:
+          -
+            handle: series
+            field: uamsweb_common_video.series
+          -
+            handle: segments
+            field:
+              collapse: true
+              max_sets: 1
+              type: replicator
+              display: Video
+              localizable: false
+              validate:
+                - required
+                - sometimes
+              sets:
+                new_video_segment_group:
+                  display: 'New Video Segment Group'
+                  sets:
+                    youtube:
+                      display: 'YouTube Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_youtube
+                    vimeo:
+                      display: 'Vimeo Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_vimeo
+                    box:
+                      display: 'Box.com Video'
+                      icon: media-webcam-video
+                      fields:
+                        -
+                          import: uamsweb_video_segment_box
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        fields:
+          -
+            import: uamsweb_clinical_resource_related
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config:
+              localizable: false

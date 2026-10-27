@@ -1,0 +1,45 @@
+{{#
+	@name UAMS Gallery Image Picture
+	@desc Renders the responsive <picture> for a gallery image.
+	      Computes width/height per breakpoint using the formula from the UAMS
+	      2020 WP theme's gallery_image_dimension():
+	          width  = ( viewport - 2*padding - (cols-1)*30 ) / cols * density
+	          height = width / ratio        (when ratio > 0; otherwise native)
+
+	@param url      Image URL.
+	@param alt      Image alt text.
+	@param cols_sm  Columns-per-row at the sm breakpoint.
+	@param cols_md  Columns-per-row at the md breakpoint.
+	@param cols_lg  Columns-per-row at the lg / xl / xxl breakpoints.
+	@param ratio    Aspect ratio width÷height (e.g. 1.7778 for 16:9). 0 = native height.
+	@param density  Pixel density multiplier (1 or 2). Defaults to 1.
+#}}
+
+{{ $density = density ?? 1 }}
+{{ $ratio   = ratio   ?? 0 }}
+
+{{# Breakpoint table — ordered high → low so the first matching media query wins. #}}
+{{ $gallery_image_breakpoints = [
+	[ 'min_width' => 1921, 'viewport' => 2560, 'padding' => 48, 'cols' => $cols_lg ],
+	[ 'min_width' => 1500, 'viewport' => 1921, 'padding' => 48, 'cols' => $cols_lg ],
+	[ 'min_width' => 1200, 'viewport' => 1500, 'padding' => 48, 'cols' => $cols_lg ],
+	[ 'min_width' => 992,  'viewport' => 1200, 'padding' => 48, 'cols' => $cols_md ],
+	[ 'min_width' => 768,  'viewport' => 992,  'padding' => 48, 'cols' => $cols_sm ],
+	[ 'min_width' => 1,    'viewport' => 768,  'padding' => 32, 'cols' => 1 ]
+] }}
+
+<picture>
+	{{ $gallery_image_breakpoints }}
+		{{# Compute in two steps: Antlers groups `a / b * c` as `a / (b * c)`, so #}}
+		{{# the divide and density-multiply must be separated. #}}
+		{{ $w = ( viewport - ( 2 * padding ) - ( ( cols - 1 ) * 30 ) ) / cols }}
+		{{ $w = ( $w * $density ) | round }}
+		{{ $h = $ratio ? ( $w / $ratio ) | round : null }}
+		<source srcset="{{ glide :src="url" :w="$w" :h="$h" fit="crop_focal" }}" media="(min-width: {{ min_width }}px)">
+	{{ /$gallery_image_breakpoints }}
+	{{# Fallback uses the xl breakpoint config (viewport 1921, padding 48, cols_lg). #}}
+	{{ $fb_w = ( 1921 - 96 - ( ( $cols_lg - 1 ) * 30 ) ) / $cols_lg }}
+	{{ $fb_w = ( $fb_w * $density ) | round }}
+	{{ $fb_h = $ratio ? ( $fb_w / $ratio ) | round : null }}
+	<img src="{{ glide :src="url" :w="$fb_w" :h="$fb_h" fit="crop_focal" }}" alt="{{ alt }}" />
+</picture>

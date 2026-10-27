@@ -1,0 +1,38 @@
+{{#
+	@name Post category archive (structured collection)
+	@desc Renders a `post_categories` *collection* entry as a category archive
+	      (UAMS-Web/uams-statamic-archive#1433 data source + route; UAMS-Web/uams-statamic-archive#1434 hierarchical surface). Reuses the
+	      shared UAMS-Web/uams-statamic-archive#1145 term-archive shell + descriptive "Posts in Category X"
+	      heading (keyed off `taxonomy`) and empty state, then:
+	        - lists this category's immediate child categories (structure children,
+	          via `:parent:is="id"` — the knowledge_bases `_topic_list` idiom), so a
+	          parent category surfaces its subcategories;
+	        - lists this category's posts newest-first, sourced from the post's
+	          `post_categories` entries reference via the `posts_in_post_category`
+	          scope (not the retired taxonomy term).
+	      Breadcrumbs (the parent chain) render from the global header's
+	      `nav:breadcrumbs`, which walks this collection's structure tree — no
+	      per-template code. `post_tags` is a collection too since UAMS-Web/uams-statamic-archive#2532, with its
+	      own archive at `post_tags/show`.
+#}}
+{{ partial:taxonomies/term_archive taxonomy="post_categories" }}
+	{{# Child categories — only rendered when this category has structure children. #}}
+	{{ collection:post_categories :parent:is="id" sort="title:asc" as="child_categories" }}
+		{{ unless no_results }}
+			<nav class="category-children" aria-label="Subcategories">
+				<h2 class="category-children__heading">Subcategories</h2>
+				<ul class="category-children__list">
+					{{ child_categories }}
+						{{# Category title is editor/importer input; Antlers is raw-by-default, so strip + entity-encode (as taxonomies/_term_heading does). #}}
+						<li class="category-children__item"><a href="{{ url }}">{{ title | strip_tags | entities }}</a></li>
+					{{ /child_categories }}
+				</ul>
+			</nav>
+		{{ /unless }}
+	{{ /collection:post_categories }}
+
+	{{# This category's posts, newest first, via the entries reference. #}}
+	{{ collection:posts query_scope="posts_in_post_category" category="{{ id }}" sort="date:desc" paginate="10" as="posts" }}
+		{{ partial:taxonomies/term_archive_posts }}
+	{{ /collection:posts }}
+{{ /partial:taxonomies/term_archive }}

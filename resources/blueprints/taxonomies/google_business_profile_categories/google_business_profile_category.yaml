@@ -1,0 +1,43 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: collections
+            field:
+              type: collections
+              display: 'Valid Collection(s)'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+          -
+            handle: gcid
+            field:
+              type: text
+              display: 'Google Category ID'
+              instructions: 'The id Google gives this category, such as `acupuncture_clinic`. It identifies the category when Google renames it, so it cannot be edited here.'
+              visibility: read_only
+              localizable: false
+title: 'Google Business Profile Category'

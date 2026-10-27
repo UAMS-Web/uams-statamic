@@ -1,0 +1,22 @@
+{{#
+
+	@name Footer Resource Navigation
+	@desc The resource navigation menu in the global footer.
+
+#}}
+{{ if uams_multisite_settings:global_footer_resource_navigation || uams_multisite_settings:global_footer_supplementary_resource_navigation }}
+	<div role="navigation" aria-label="Footer Navigation">
+		<ul class="nav legal">
+			{{ uams_multisite_settings:global_footer_resource_navigation }}
+				<li class="nav-item">
+					<a class="nav-link" href="{{ link_group:url }}"{{ link_group:new_window ?= ' target="_blank" rel="noopener noreferrer"' }}>{{ link_group:text }}{{ if link_group:new_window }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+				</li>
+			{{ /uams_multisite_settings:global_footer_resource_navigation }}
+			{{ uams_multisite_settings:global_footer_supplementary_resource_navigation }}
+				<li class="nav-item">
+					<a class="nav-link" href="{{ link_group:url }}"{{ link_group:new_window ?= ' target="_blank" rel="noopener noreferrer"' }}>{{ link_group:text }}{{ if link_group:new_window }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+				</li>
+			{{ /uams_multisite_settings:global_footer_supplementary_resource_navigation }}
+		</ul>
+	</div>
+{{ /if }}

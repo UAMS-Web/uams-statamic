@@ -1,0 +1,15 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: 'Organization Name'
+              instructions: 'Name of the organization this logo represents'
+              validate:
+                - required
+              localizable: false

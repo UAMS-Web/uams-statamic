@@ -1,0 +1,16 @@
+{{#
+	@name UAMS Block Item Button Link
+	@desc The button link element in items in UAMS page builder blocks.
+	@set page.page_builder.uamsweb_block_*
+#}}
+{{ if phone }}
+
+	{{# Construct the Link Text #}}
+	{{ phone_prepend = ( phone_prepend === '' ) ? null : ( phone_prepend ?? 'Call' ) }}
+
+	{{# Render the Structure #}}
+		<a
+			href="tel:{{ phone }}"
+			{{ block:block_heading | attribute:data-moduletitle }}
+		>{{ phone_prepend }} <span class="no-break">{{ phone }}</span></a>
+{{ /if }}

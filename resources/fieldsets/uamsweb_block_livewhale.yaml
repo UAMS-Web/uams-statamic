@@ -1,0 +1,38 @@
+title: 'UAMSWeb Block, LiveWhale Calendar'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field:
+      type: hidden
+      default: false
+      replicator_preview: false
+      localizable: false
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_weighted
+    config:
+      display: 'List Description'
+      replicator_preview: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: livewhale_id
+    field:
+      type: integer
+      display: 'ID Number of Widget'
+      instructions: 'e.g., 2 (<code>&lt;div class="lwcw" data-options="id=<b>2</b>&format=html"&gt;</code>)'
+      validate:
+        - required
+      localizable: false

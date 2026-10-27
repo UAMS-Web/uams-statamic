@@ -1,0 +1,17 @@
+{{#
+	@name Taxonomy term archive
+	@desc Shared term-archive body for the post_categories / post_tags term pages
+	      (UAMS-Web/uams-statamic-archive#1145). Renders a descriptive, term-named <h1> that names the term even when
+	      it has no posts (UAMS-Web/uams-statamic-archive#1171 empty / UAMS-Web/uams-statamic-archive#1172 populated) via the shared
+	      taxonomies/term_heading partial (which the layout <title> reuses), then yields
+	      to the slot for the term's post listing.
+#}}
+{{ partial:layout/article title_options="none" article_class="term-archive" }}
+	{{ partial:layout/entry-content content_width="false" }}
+		{{ $term_heading = {partial:taxonomies/term_heading} /}}
+		<header class="term-archive-header">
+			<h1 class="page-title">{{ $term_heading | trim }}</h1>
+		</header>
+		{{ slot }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

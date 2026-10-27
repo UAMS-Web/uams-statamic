@@ -1,0 +1,118 @@
+{{# PartialDate fieldtype (App\Fieldtypes\PartialDate) — three integer-or-select
+    subfields (year / month / day) gated by the blueprint `included_parts`
+    config:
+        - year_only       → year
+        - month_only      → month
+        - year_month      → year + month
+        - month_day       → month + day
+        - year_month_day  → year + month + day  (default)
+
+    PartialDate::preProcess() returns the value as { year, month, day } nullable
+    ints, and PartialDate::process() re-serializes the posted array into the
+    canonical storage string (`YYYY-MM-DD`, `XXXX-MM`, etc.). The form submits
+    `name="{handle}[year]"` etc., which lines up with that pipeline.
+
+    Month option labels are localized via the `month_options` variable that
+    PartialDate::extraRenderableFieldData() exposes to this template — same
+    Carbon-driven labels the CP uses (`monthSelectOptionsForConfig`), so
+    switching `app()->getLocale()` changes both surfaces at once. #}}
+{{# `included_mode` rather than `ip` to avoid colliding with Statamic's request
+    `ip` global. #}}
+{{ included_mode = included_parts ?? 'year_month_day' }}
+{{ inline = ( subfields_layout ?? 'inline' ) == 'inline' }}
+
+<div class="{{ if inline }}row{{ else }}d-flex flex-column{{ /if }}">
+	{{ if included_mode == 'year_only' || included_mode == 'year_month' || included_mode == 'year_month_day' }}
+		<div class="{{ if inline }}col-md-4{{ /if }}">
+			<div class="form-group">
+				<label for="{{ id }}-year" class="small text-muted mb-1">{{ trans key="Year" }}</label>
+				<input
+					type="number"
+					id="{{ id }}-year"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[year]"
+					value="{{ (value.year ?? year_default ?? '') | sanitize }}"
+					{{ year_min | attribute:min }}
+					{{ year_max | attribute:max }}
+					inputmode="numeric"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( validate | contains:required ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if included_mode == 'year_month' || included_mode == 'year_month_day' || included_mode == 'month_only' || included_mode == 'month_day' }}
+		<div class="{{ if inline }}col-md-4{{ /if }}">
+			<div class="form-group">
+				<label for="{{ id }}-month" class="small text-muted mb-1">{{ trans key="Month" }}</label>
+				<select
+					id="{{ id }}-month"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[month]"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( validate | contains:required ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+					{{ selected_month = value.month ?? month_default ?? '' }}
+					<option value="">{{ trans key="Please select..." }}</option>
+					{{# `month_options` is a 1..12-keyed map of localized labels exposed
+						by PartialDate::extraRenderableFieldData(). Submitted value stays
+						the numeric key regardless of label, so the value/storage
+						pipeline is locale-independent. #}}
+					{{ foreach:month_options as="month_value|month_label" }}
+						<option value="{{ month_value }}" {{ if selected_month == month_value }}selected{{ /if }}>
+							{{ month_label }}
+						</option>
+					{{ /foreach:month_options }}
+				</select>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if included_mode == 'year_month_day' || included_mode == 'month_day' }}
+		<div class="{{ if inline }}col-md-4{{ /if }}">
+			<div class="form-group">
+				<label for="{{ id }}-day" class="small text-muted mb-1">{{ trans key="Day" }}</label>
+				<input
+					type="number"
+					id="{{ id }}-day"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[day]"
+					value="{{ (value.day ?? day_default ?? '') | sanitize }}"
+					min="1"
+					max="31"
+					inputmode="numeric"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( validate | contains:required ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+</div>

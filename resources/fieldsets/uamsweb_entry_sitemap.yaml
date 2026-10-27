@@ -1,0 +1,10 @@
+title: 'UAMSWeb Entry Sitemap'
+fields:
+  -
+    handle: include_in_xml_sitemap
+    field:
+      type: toggle
+      display: 'Include in XML sitemap'
+      instructions: "Leave on (the default) so this entry is listed in the site's `sitemap.xml` for search engines. Turn off to keep it out of the sitemap without unpublishing it. Entries that aren't publicly reachable — private, password-protected, non-routable, or redirected away — are always excluded automatically, regardless of this setting."
+      default: true
+      localizable: true

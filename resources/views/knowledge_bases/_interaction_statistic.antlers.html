@@ -1,0 +1,37 @@
+{{# Single like/dislike interaction statistic (schema.org InteractionCounter).
+	The trigger is wired to the reaction endpoint by resources/js/kb-article-engagement.js
+	via the data-kb-reaction / data-reaction / data-article-id hooks; the count span
+	is updated in place through data-reaction-count. #}}
+<div class="item" id="{{ item_id }}" itemprop="https://schema.org/interactionStatistic" itemscope itemtype="https://schema.org/InteractionCounter">
+	<link itemprop="https://schema.org/interactionType" href="{{ interaction_type }}">
+	<div class="card">
+		<div class="card-img-top">
+			<span
+				class="{{
+					[
+						icon_class
+					] | classes | collapse_whitespace
+				}}"
+				aria-hidden="true"
+			></span>
+		</div>
+		<div class="card-body">
+			<h3 class="card-title h5 mb-0">
+				<a
+					class="stretched-link"
+					href="#"
+					data-kb-reaction
+					data-reaction="{{ reaction }}"
+					aria-pressed="false"
+					{{ article_id | attribute:data-article-id }}
+					{{ article_title | attribute:data-article-title }}
+				>{{ action_label }}</a>
+			</h3>
+		</div>
+		<div class="card-footer">
+			<span class="count">
+				<span itemprop="https://schema.org/userInteractionCount" data-reaction-count="{{ reaction }}">{{ count | format_number(0, '.', ',') }}</span> <span data-reaction-label="{{ reaction }}" data-reaction-label-singular="{{ count_label }}">{{ count_label | plural(count) }}</span>
+			</span>
+		</div>
+	</div>
+</div>

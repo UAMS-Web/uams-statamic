@@ -1,0 +1,16 @@
+{{#
+	@name Clinical Locations Index
+	@desc The `clinical_locations` collection index (listing) page. Renders the
+	      shared paginated locations directory in the standard article shell. (UAMS-Web/uams-statamic-archive#574)
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+	}}
+		{{# Patient-safety 911 disclaimer above the directory listing (UAMS-Web/uams-statamic-archive#1466). #}}
+		{{ partial:components/emergency_disclaimer_911 }}
+		{{ partial:clinical_locations/listing }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

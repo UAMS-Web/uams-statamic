@@ -1,0 +1,180 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the parking area. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_place
+              type: entries
+              display: 'Schema Object for the Parking Area'
+              instructions: 'Select a schema object for the parking area, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Place'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Name of the Parking Area for Schema'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Names for the Parking Area'
+              if:
+                schema_object: 'equals empty'
+      -
+        display: 'Parking Area Type'
+        fields:
+          -
+            handle: subtype_division
+            field:
+              options:
+                -
+                  key: Wikidata_Part_Q13196193
+                  value: 'None — No available option is relevant to this parking area'
+                -
+                  key: Wikidata_Zone_Q219858
+                  value: Zone
+              type: radio
+              display: 'Specific Type of Parking Area'
+              instructions: 'Select the specific type of place that most closely matches this parking area. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Additional Details'
+        fields:
+          -
+            handle: parking_free_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is parking in this area free?'
+              localizable: false
+          -
+            handle: parking_validated_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is the paid parking validated?'
+              if:
+                parking_free_query: 'equals false'
+              localizable: false
+          -
+            handle: additional_type
+            field: uamsweb_brand_organization.additional_type
+            config:
+              display: 'More Specific Type(s) for This Parking Area From External Vocabularies in Microdata Syntax'
+              if:
+                schema_object: 'equals empty'
+                subtype_division: 'equals Wikidata_Part_Q13196193'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Parking Area'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: streetaddress_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this parking area have its own street address?'
+              instructions: 'Leave this off to inherit the street address from the parent parking facility. Turn it on to give this parking area its own street address.'
+              localizable: false
+          -
+            handle: streetaddress
+            field: uamsweb_common_address.street_address
+            config:
+              display: 'Street Address'
+              if:
+                streetaddress_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Entrance to the Parking Area'
+              validate:
+                - required
+                - lat_lng
+          -
+            handle: parking_instructions
+            field: uamsweb_common.article
+            config:
+              display: 'General Instructions for the Parking Area'
+              instructions: 'Describe how to find and use this parking area within its parent parking facility (e.g., which level or section to use, or any patient drop-off details).'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              localizable: false
+          -
+            handle: directions_from_parking
+            field: uamsweb_common.article
+            config:
+              display: 'General Directions From the Parking Area'
+              instructions: 'Describe the path patients should take from this parking area to the entrance or check-in area of the associated location(s). Locations and wings may override these directions for their specific entrance.'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            handle: areas_served_for_parking
+            field:
+              type: entries
+              display: 'Areas Served for Parking'
+              instructions: 'Read-only. The locations and buildings that name this parking area directly as their parking facility. Areas that only inherit parking from another facility are not listed.'
+              visibility: computed
+              localizable: false
+title: 'Parking Area'

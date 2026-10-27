@@ -1,0 +1,28 @@
+title: 'UAMSWeb Bard Set, Portrait'
+fields:
+  -
+    handle: image
+    field: uamsweb_common_images.portrait
+    config:
+      width: 50
+      validate:
+        - required
+  -
+    handle: align
+    field: uamsweb_common.align_image
+    config:
+      width: 50
+      validate:
+        - required
+        - sometimes
+  -
+    handle: caption
+    field: uamsweb_common_images.caption
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Show the portrait's photographer/creator credit (from the asset's Creator field) beside the caption. Defaults to shown; turn off to suppress the credit while keeping the caption."
+      default: true
+      localizable: false

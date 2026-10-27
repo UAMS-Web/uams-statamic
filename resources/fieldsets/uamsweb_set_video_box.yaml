@@ -1,0 +1,60 @@
+title: 'UAMSWeb Bard Set, Video, Box'
+fields:
+  -
+    handle: embed_mode
+    field:
+      type: button_group
+      display: 'Embed Type'
+      instructions: 'Choose a **Simple Embed** for a quick video, or a **Full Segment** to record transcript, creators, and transparency metadata (matches Video Post segments).'
+      options:
+        simple: 'Simple Embed'
+        full: 'Full Segment'
+      default: simple
+      localizable: false
+      validate:
+        - required
+  -
+    handle: url
+    field: uamsweb_common_video.video_url
+    config:
+      display: 'Box.com Video URL'
+      instructions: |-
+        Use a **Box.com** HTTPS **Direct link** under `/shared/static/` with a video file extension (for example `.mp4`).
+
+        **Box (summary):** In Box, turn on the shared link (people with the link, can view and download), open **Link Settings**, turn **off** link expiration, turn **on** allow download, then copy the **Direct link** value and paste it here. The URL must start with `https://app.box.com/shared/static/`.
+      placeholder: 'e.g., https://app.box.com/shared/static/yourfile.mp4'
+      validate:
+        - required
+        - box_shared_static_video_url
+  -
+    handle: caption
+    field: uamsweb_common_images.caption
+  -
+    import: uamsweb_video_caption
+  -
+    handle: aspect_ratio
+    field: uamsweb_common_video.aspect_ratio
+    config:
+      width: 50
+      validate:
+        - required
+  -
+    handle: align
+    field: uamsweb_common.align_other
+    config:
+      width: 50
+      validate:
+        - required
+        - sometimes
+  -
+    import: uamsweb_post_video_segment
+    config:
+      localizable: false
+      if:
+        embed_mode: 'equals full'
+  -
+    import: uamsweb_post_creator_video
+    config:
+      localizable: false
+      if:
+        embed_mode: 'equals full'

@@ -1,0 +1,104 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: for_employees_only
+            field:
+              options:
+                -
+                  key: 'I am a UAMS employee'
+                  value: null
+              type: checkboxes
+              display: 'For Employees Only'
+              instructions: 'Only a UAMS employee may complete this form. For non-UAMS employees who wish to submit a traveler certificate application, please use the application found on the Arkansas Secretary of State Website.'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: prefix
+            field:
+              type: text
+              display: Prefix
+              localizable: false
+              validate:
+                - required
+          -
+            handle: first_name
+            field:
+              type: text
+              display: 'First Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: last_name
+            field:
+              type: text
+              display: 'Last Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: include_rank_if_military
+            field:
+              type: text
+              display: 'Include Rank if Military'
+              localizable: false
+          -
+            handle: state_country_recipient_is_from
+            field:
+              type: text
+              display: 'State/Country Recipient is From'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: permanent_residence
+            field:
+              type: text
+              display: 'Permanent Residence'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: date_on_certificate
+            field:
+              type: text
+              display: 'Date on Certificate'
+              localizable: false
+              validate:
+                - required
+              input_type: date
+          -
+            handle: requested_by
+            field:
+              type: text
+              display: 'Requested by'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: email_address
+            field: uamsweb_common_contact.email_address
+            config:
+              validate:
+                - required
+          -
+            handle: phone
+            field: uamsweb_common_contact.phone
+            config:
+              validate:
+                - required
+          -
+            handle: certificate_deadline
+            field:
+              type: text
+              display: 'Certificate Deadline'
+              instructions: 'Please allow at least 30 days for processing.'
+              localizable: false
+              validate:
+                - required
+              input_type: date

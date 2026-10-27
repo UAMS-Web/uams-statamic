@@ -1,0 +1,260 @@
+// Self-hosted FiraGO @font-face declarations (top of file so the rules land first in the compiled bundle)
+@import "uams-supporting/fonts";
+
+// Bootstrap Core Variable Override
+@import "supporting/variables-bootstrap-core-override";
+
+// Bootstrap Genesis Theme Variables
+@import "supporting/variables-bootstrap-genesis";
+
+// UAMS Bootstrap Variables Override
+@import "uams-supporting/variables";
+
+// UAMS Bootstrap Mixins Override
+@import "uams-supporting/mixins";
+
+// Expose the keyboard-focus ring colour as an overridable design token,
+// consumed by the `uams-focus-visible()` mixin (see uams-supporting/mixins/_focus.scss).
+:root {
+    --uams-focus-ring: #{$uams-focus-ring};
+}
+
+// Import Bootstrap Core from Bootstrap NPM package
+//@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+//@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/grid"; // moved from below code partial
+@import "bootstrap/scss/type";
+
+// New UAMS Supporting Styles
+@import "uams-supporting/page";
+@import "uams-supporting/uams-alert";
+@import "uams-supporting/fontawesome";
+
+///////////////////////////////////////////////////
+// Proverbial line in the paint/sand for page load
+///////////////////////////////////////////////////
+
+// Import Bootstrap Components from Bootstrap NPM package
+@import "bootstrap/scss/images";
+@import "bootstrap/scss/code";
+@import "bootstrap/scss/tables";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/button-group";
+@import "bootstrap/scss/input-group";
+@import "bootstrap/scss/custom-forms";
+@import "bootstrap/scss/nav";
+@import "bootstrap/scss/navbar";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/breadcrumb";
+@import "bootstrap/scss/pagination";
+//@import "bootstrap/scss/badge";
+//@import "bootstrap/scss/jumbotron";
+@import "bootstrap/scss/alert";
+//@import "bootstrap/scss/progress";
+//@import "bootstrap/scss/media";
+//@import "bootstrap/scss/list-group";
+@import "bootstrap/scss/close";
+//@import "bootstrap/scss/toasts";
+@import "bootstrap/scss/modal";
+//@import "bootstrap/scss/tooltip";
+//@import "bootstrap/scss/popover";
+@import "bootstrap/scss/carousel";
+//@import "bootstrap/scss/spinners";
+@import "bootstrap/scss/utilities";
+@import "bootstrap/scss/print";
+
+// Desktop primary-nav dropdown caret (vendored from the removed
+// smartmenus-bootstrap-4 CSS — UAMS-Web/uams-statamic-archive#1343; see supporting/_desktop-nav.scss).
+@import "supporting/desktop-nav";
+
+// UAMS Bootstrap Core Override
+//@import "uams-supporting/functions";
+//@import "uams-supporting/variables";
+//@import "uams-supporting/mixins";
+//@import "uams-supporting/root";
+@import "uams-supporting/reboot";
+@import "uams-supporting/type";
+//@import "uams-supporting/images";
+//@import "uams-supporting/code";
+@import "uams-supporting/grid";
+@import "uams-supporting/tables";
+@import "uams-supporting/forms";
+@import "uams-supporting/buttons";
+//@import "uams-supporting/transitions";
+//@import "uams-supporting/dropdown";
+//@import "uams-supporting/button-group";
+//@import "uams-supporting/input-group";
+//@import "uams-supporting/custom-forms";
+@import "uams-supporting/nav";
+@import "uams-supporting/navbar";
+@import "uams-supporting/mobile-nav";
+@import "uams-supporting/toc-block";
+//@import "uams-supporting/card";
+@import "uams-supporting/breadcrumb";
+@import "uams-supporting/pagination";
+//@import "uams-supporting/badge";
+//@import "uams-supporting/jumbotron";
+@import "uams-supporting/alert";
+//@import "uams-supporting/progress";
+//@import "uams-supporting/media";
+//@import "uams-supporting/list-group";
+//@import "uams-supporting/close";
+//@import "uams-supporting/toasts";
+//@import "uams-supporting/modal";
+//@import "uams-supporting/tooltip";
+//@import "uams-supporting/popover";
+@import "uams-supporting/carousel";
+//@import "uams-supporting/spinners";
+@import "uams-supporting/utilities";
+//@import "uams-supporting/print";
+
+// New UAMS Supporting Styles
+@import "uams-supporting/layout";
+@import "uams-supporting/links";
+@import "uams-supporting/file";
+@import "uams-supporting/text-callouts";
+
+// Screen Reader Classes
+@import "supporting/screen-reader-text";
+
+// Long nonbreaking path name support
+@import "supporting/long-nonbreaking-path-name-support";
+
+// Skip to Main Content - Accessibility Link
+@import "supporting/skip-to-main-content";
+
+// Comments
+@import "supporting/comments";
+
+// Images
+@import "supporting/wordpress-images";
+
+// Table
+// @import "supporting/table";
+
+// Widgets (unused)
+// @import "supporting/widgets";
+
+// Pagination
+@import "supporting/pagination";
+
+@import "supporting/gallery";
+
+// Global Search
+@import "uams-supporting/search-results";
+@import "uams-supporting/search-results-google-cse";
+
+// Site Wrapper
+@import "uams-supporting/site-wrapper";
+
+// Navigation
+@import "supporting/nav";
+
+// Header
+@import "supporting/header";
+@import "uams-supporting/header";
+//@import "uams-supporting/header-2";
+
+// Quick Links
+@import "uams-supporting/quick-links";
+
+// Jumbotron
+@import "supporting/jumbotron";
+
+// Site Inner
+@import "supporting/site-inner";
+@import "uams-supporting/site-inner";
+
+// Archive/Blog
+@import "supporting/archive";
+
+// Single Post/Page
+@import "supporting/single";
+
+// Entry Header
+@import "uams-supporting/entry-header";
+
+// Entry Meta
+@import "uams-supporting/entry-meta";
+
+// Entry Content
+@import "uams-supporting/entry-content";
+
+// Calculator embeds
+@import "uams-supporting/calculator";
+
+// Entry Footer
+@import "uams-supporting/entry-footer";
+
+// Template, Default
+@import "uams-supporting/template-default";
+
+// Template, Landing Page
+@import "uams-supporting/template-landing-page";
+
+// Sidebar
+@import "supporting/sidebar";
+@import "uams-supporting/sidebar";
+
+// UAMS Modules
+@import "uams-supporting/uams-modules";
+
+// Hero
+@import "uams-supporting/hero";
+
+// // Ratings
+// @import "uams-supporting/find-a-doc/ratings";
+
+// // Doctors
+// @import "uams-supporting/find-a-doc/doctors-list";
+// @import "uams-supporting/find-a-doc/doctors-item";
+// @import "uams-supporting/find-a-doc/doctors-cards";
+
+// // Conditions and/or Treatments
+// @import "uams-supporting/find-a-doc/conditions-treatments";
+
+// // Locations
+// @import "uams-supporting/find-a-doc/locations-list";
+// @import "uams-supporting/find-a-doc/locations-item";
+// @import "uams-supporting/find-a-doc/location-alert";
+
+// CTA Bars
+@import "uams-supporting/cta-bar";
+
+// Jump Links
+@import "uams-supporting/jump-links";
+
+// Knowledge base – Article reactions (Was This Article Helpful?)
+@import "uams-supporting/knowledge-base/article-reactions";
+
+// Footer Widgets
+@import "supporting/footer-widgets";
+
+// Site Footer
+@import "supporting/footer";
+@import "uams-supporting/footer";
+
+// Intranet
+@import "uams-supporting/intranet";
+
+// Awesome Weather
+@import "uams-supporting/awesome-weather";
+
+// WP Adverts
+@import "uams-supporting/wp-adverts/wp-adverts";
+
+// Plugins
+@import "uams-supporting/plugins";
+
+// Responsive Embedded Videos
+@import "uams-supporting/embed-video";
+
+// PDF Generator
+@import "uams-supporting/pdf-generator";

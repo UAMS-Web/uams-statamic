@@ -1,0 +1,72 @@
+title: 'Post Category Link'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Navigation Item'
+        instructions: 'A primary-navigation item that links to a post category''s archive listing rather than to a page on this site.'
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: 'Navigation Label'
+              instructions: 'The label shown for this item in the primary navigation.'
+              localizable: true
+              validate:
+                - required
+          -
+            handle: category
+            field:
+              type: entries
+              display: 'Post Category'
+              instructions: 'The post category this navigation item links to. Only categories on the current site are listed.'
+              collections:
+                - post_categories
+              max_items: 1
+              mode: select
+              create: false
+              localizable: true
+              validate:
+                - required
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: 'Status and Visibility'
+        fields:
+          -
+            handle: status_and_visibility
+            field: uamsweb_common_status.status_and_visibility
+            config:
+              localizable: false
+              options:
+                -
+                  key: draft
+                  value: "Draft\_— Not ready to publish"
+                -
+                  key: pending
+                  value: "Pending\_— Waiting for review before publishing"
+                -
+                  key: private
+                  value: "Private\_— Only visible to site admins and editors"
+                -
+                  key: published
+                  value: "Published\_— Visible to everyone"
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate:
+                - required
+              display: Slug
+      -
+        display: 'Site Navigation'
+        fields:
+          -
+            import: uamsweb_entry_site_navigation

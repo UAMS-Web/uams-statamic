@@ -1,0 +1,59 @@
+{{#
+	@name UAMS Table of Contents
+	@desc The UAMS Table of Contents page builder block (UAMS-Web/uams-statamic-archive#1283). Lists the page's h2 and h3
+	      headings as jump links.
+
+	      The block renders its own <nav> rather than wrapping the shared
+	      `page_builder/uamsweb_block` partial, the way `uamsweb_block_link_list` renders its
+	      own component. Two reasons, and the first is an acceptance criterion: the block must
+	      disappear entirely when the page has no qualifying headings, so `hidden` has to sit on
+	      the OUTERMOST element — hiding an inner list would still leave a padded section and a
+	      heading on the page. The shared wrapper passes through no `hidden` and no data
+	      attribute, and teaching it to would change a partial 27 other blocks render through.
+
+	      The list is built by `resources/js/toc-engine.js`, which scans the rendered DOM and
+	      reveals this nav only once it has headings. It also assigns the anchor ids, reusing any
+	      id a heading already has — including the `module-<block-id>-title` id that
+	      `components/block_header` puts on every block <h2>. That engine's docblock is where the
+	      anchor-id convention is written down.
+
+	      `strip_tags` on the heading for the reason `components/block_header` documents: Antlers
+	      is raw by default, so editor-controlled text interpolated into markup would otherwise
+	      emit live HTML on a public page.
+	@set page.page_builder.uamsweb_block_table_of_contents
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Only render if the block has a heading #}}
+
+		{{ $block_valid = block_heading }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	<nav
+		class="{{
+			[
+				'uams-module alignfull toc-block' => true,
+				background_color,
+				'bg-auto' => !background_color
+			] | classes | collapse_whitespace
+		}}"
+		{{ block_id | attribute:id }}
+		{{ ( block_id + '-title' ) | attribute:aria-labelledby }}
+		data-toc
+		hidden
+	>
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12">
+				<h2
+					class="{{ ['module-title' => true, 'sr-only' => block:hide_block_heading] | classes | collapse_whitespace }}"
+					{{ ( block_id + '-title' ) | attribute:id }}
+				><span class="title">{{ block_heading | strip_tags | widont }}</span></h2>
+			</div>
+			<div class="col-12" data-toc-list></div>
+		{{ /partial:page_builder/components/container_row }}
+	</nav>
+{{ /if }}

@@ -1,0 +1,12 @@
+.env.example
+app\Http\Middleware\ProtectEntry.php
+app\Providers\AppServiceProvider.php
+app\Providers\ComputedPropertiesProvider.php
+app\Providers\EventServiceProvider.php
+app\Scopes
+bootstrap\providers.php
+composer.json
+package.json
+routes\web.php
+vite.config.js
+resources\js\cp.js

@@ -1,0 +1,101 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "dictionaryDefinitions": [
+        {
+            "name": "project-words",
+            "path": "./project-words.txt",
+            "addWords": true
+        }
+    ],
+    "dictionaries": ["project-words"],
+    // IPv6 address literals: two to seven colon-separated groups of zero to four
+    // hex digits, not touching a word character or another colon, so a PHP
+    // `Class::method` call and ordinary prose are still checked (UAMS-Web/uams-statamic-archive#3271). Without
+    // it a literal fails on whichever 16-bit groups happen to be all letters
+    // (`fffa`, `fefe`); a group holding a digit is never offered to the
+    // dictionary. The groups cannot be respelled, because they are the address.
+    // The asymmetry UAMS-Web/uams-statamic-archive#3021 hit is cspell's built-in URL pattern: a literal inside
+    // `http://[...]` is skipped whole, and the same literal outside a URL is not.
+    "patterns": [
+        {
+            "name": "ipv6-address",
+            "pattern": "/(?<![\\w:])(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}(?![\\w:])/gi"
+        }
+    ],
+    "ignoreRegExpList": ["ipv6-address"],
+    // `dontReport()`, `dontReportDuplicates()` and `ShouldntReport` are Laravel
+    // API identifiers, not prose typos, so they cannot be reworded — but as
+    // global dictionary entries `dont`/`Shouldnt` would silence a genuine
+    // "dont"/"shouldnt" anywhere in the repo. Scope them to the mirrored skill
+    // trees that actually document that API (UAMS-Web/uams-statamic-archive#1732).
+    "overrides": [
+        {
+            "filename": ["**/skills/laravel-best-practices/**"],
+            "words": ["dont", "Shouldnt"]
+        },
+        // `assertDontSee()` / `assertDontSeeIn()` are pest-plugin-browser API
+        // identifiers, so `Dont` cannot be reworded. Same reasoning as above:
+        // scoped to the browser suite rather than added globally, where it
+        // would silence a genuine "dont" anywhere in the repo (UAMS-Web/uams-statamic-archive#1859).
+        {
+            "filename": ["tests/Browser/**"],
+            "words": ["Dont"]
+        },
+        // The ipv6-address test feeds cspell deliberate misspellings and
+        // letter-only hex groups to prove which ones the pattern above hides, so
+        // they are fixtures rather than prose. Scoped to that one file; the
+        // fixture text itself is checked over stdin and does not match it (UAMS-Web/uams-statamic-archive#3271).
+        {
+            "filename": ["scripts/spell-ipv6.test.mjs"],
+            "words": ["faec", "fefe", "fffa", "metodd", "sentense", "tpyo", "wrongg"]
+        }
+    ],
+    "ignorePaths": [
+        // `--dot` (added in UAMS-Web/uams-statamic-archive#1732 so the gate can see .claude/, .github/ and
+        // .githooks/) also makes every OTHER dot-path reachable, including
+        // git-ignored ones that are not part of the repo's prose at all. Each
+        // exclusion below is deliberate:
+        //
+        //   .claude/worktrees/**  — git-ignored working trees, one full copy of
+        //     the repo per in-flight ticket. Scanning them re-checks the whole
+        //     source tree N times and reports the same finding once per worktree.
+        //   .cursor/plans/**      — generated planning transcripts, not authored
+        //     prose; they carry model output verbatim.
+        //   .tools/**             — third-party tooling fetched by
+        //     `scripts/fetch-pint.mjs` for checkouts that cannot install dev
+        //     dependencies. It is Pint's own source and test fixtures, not this
+        //     repo's prose; `vendor/**` below is what kept the identical tree out
+        //     of scope at its old location (UAMS-Web/uams-statamic-archive#1880).
+        //   .git/**               — object store, already listed below.
+        //
+        // Everything else under a dot-directory IS scanned.
+        ".claude/worktrees/**",
+        ".cursor/plans/**",
+        ".tools/**",
+        "vendor/**",
+        "node_modules/**",
+        "public/build/**",
+        "public/vendor/**",
+        "public/hot",
+        "storage/**",
+        "bootstrap/cache/**",
+        "content/**",
+        // The forms submodule (UAMS-Web/uams-statamic-forms), excluded for the
+        // reason `content/**` is: it holds form settings migrated verbatim from
+        // WordPress and edited in the Control Panel, whose names and addresses
+        // are not this repository's to spell. A dictionary entry would put each
+        // one in project-words.txt instead (UAMS-Web/uams-statamic-archive#3162).
+        "resources/forms/**",
+        "tests/Fixtures/SchemaJsonLd/**",
+        ".git/**",
+        "project-words.txt",
+        "package-lock.json",
+        "composer.lock",
+        "*.min.js",
+        "*.min.css",
+        "app/Enums/**",
+        "lang/vendor/**",
+        "CHANGELOG.md"
+    ]
+}

@@ -1,0 +1,48 @@
+{{ foreach:options as="option|label" }}
+	<div
+		class="{{
+			[
+				'form-check' => true,
+				'form-check-inline' => inline
+			] | classes | collapse_whitespace
+		}}"
+	>
+		<input
+			class="{{
+				[
+					'form-check-input' => true,
+					'is-invalid' => error
+				] | classes | collapse_whitespace
+			}}"
+			id="{{ id }}-{{ option | slugify }}-option"
+			type="radio"
+			name="{{ handle }}"
+			value="{{ option }}"
+			{{ if js_driver }}{{ js_attributes }}{{ /if }}
+			{{ if calculation_query == true }}
+				{{# Dynamic Default Value (UAMS-Web/uams-statamic-archive#2886): calculation-engine.js writes the formula's
+					text result into the group's Alpine key, which checks the matching
+					radio. Every radio carries it so a click on any of them counts as the
+					visitor's own choice. #}}
+				data-calculation-type="text"
+				data-calculation-formula="{{ calculation_formula ?? '' }}"
+				data-calculation-decimals=""
+			{{ /if }}
+			{{ ( value == option ) | attribute:checked }}
+			{{ ( validate | contains:required ) | attribute:required }}
+			{{# `visibility: read_only` — see README.md in this directory. #}}
+			{{ ( visibility == 'read_only' ) | attribute:disabled }}
+			{{# Per-choice submission limit (UAMS-Web/uams-statamic-archive#292): disable a choice that has reached
+				its cap. `full_choices` is absent (so inert) for fields without limits. #}}
+			{{ ( full_choices | contains:option ) | attribute:disabled }}
+			{{ if error }}
+				aria-invalid="true" aria-describedby="{{ id }}-error"
+			{{ elseif instructions }}
+				aria-describedby="{{ id }}-instructions"
+			{{ /if }}
+		>
+		<label class="form-check-label" for="{{ id }}-{{ option | slugify }}-option">
+			{{ label !== null ? label : option }}{{ if full_choices | contains:option }} <span class="choice-full">({{ trans key="Full" }})</span>{{ /if }}
+		</label>
+	</div>
+{{ /foreach:options }}

@@ -1,0 +1,14 @@
+{{#
+	@name Media Credit
+	@desc Renders an asset's `creator` (+ optional `creator_organization`) as a `.photo-credit`
+	attribution span with an `sr-only` "Credit: " label, both values `strip_tags`-escaped so no
+	raw HTML from an asset field reaches the DOM. Reads `creator` and `creator_organization` from
+	the current context — call it inside the asset's scope (e.g. an `{{ image }}` loop, where the
+	fields resolve on the asset) or pass them explicitly (`:creator="…"`). Renders nothing when
+	`creator` is empty. Pass `class` to append a modifier class to the span (e.g. an overlay
+	text variant).
+	@param creator The photographer / creator name (asset `creator` field).
+	@param creator_organization Optional organization the image was created for.
+	@param class Optional extra CSS classes appended to the `photo-credit` span.
+#}}
+{{ if creator }}<span{{ ['photo-credit', class] | classes | attribute:class }}><span class="sr-only">Credit: </span>{{ creator | strip_tags }}{{ if creator_organization }} / {{ creator_organization | strip_tags }}{{ /if }}</span>{{ /if }}

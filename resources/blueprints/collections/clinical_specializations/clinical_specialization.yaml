@@ -1,0 +1,890 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: keywords
+            field: uamsweb_schema.keywords
+            config:
+              localizable: false
+          -
+            handle: extension_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Extension to the Health Care Provider Taxonomy Code Set?'
+              instructions: |-
+                Is this clinical specialization part of the UAMS Health extension to the Health Care Provider Taxonomy Code Set?
+
+                Answer "Yes" if this is a clinical specialization that is **not** a part of the core Health Care Provider Taxonomy Code Set found at <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+              validate:
+                - required
+                - sometimes
+          -
+            handle: extension_kind
+            field:
+              options:
+                -
+                  key: specialization
+                  value: 'Specialization: a proposed addition to the code set'
+                -
+                  key: grouping
+                  value: 'Grouping: a UAMS label for several code-set classifications'
+              type: radio
+              display: 'Extension Kind'
+              instructions: 'A specialization is proposed for the code set and carries the qualification, certification and training details below. A grouping (for example "nursing support", which covers nurse''s aides and home health aides) gathers classifications already in the code set and has none of those details (UAMS-Web/uams-statamic-archive#2823).'
+              default: specialization
+              if:
+                extension_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Qualifications for Inclusion in the UAMS Health Extension to the Health Care Provider Taxonomy Code Set'
+        fields:
+          -
+            handle: extension_national_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Applies Nationally'
+              clearable: true
+              instructions: 'The clinical specialization applies at a national level and is not restricted to local use.'
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if:
+                extension_query: 'equals true'
+                extension_kind: 'not grouping'
+          -
+            handle: extension_unique_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Unique Need'
+              clearable: true
+              instructions: 'The clinical specialization meets a unique need that is well-defined and separate and distinct from other clinical specializations currently in the Health Care Provider Taxonomy Code Set.'
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if:
+                extension_query: 'equals true'
+                extension_kind: 'not grouping'
+          -
+            handle: extension_org_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Organizational Unit Supports the Addition'
+              clearable: true
+              instructions: 'The addition of the specialization has the support of the related UAMS organizational unit(s), if applicable.'
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if:
+                extension_query: 'equals true'
+                extension_kind: 'not grouping'
+          -
+            handle: extension_provider_type
+            field:
+              options:
+                -
+                  key: md-do
+                  value: 'Medical doctors (M.D.) or doctors of osteopathy (D.O.)'
+                -
+                  key: other
+                  value: 'Other providers'
+              type: radio
+              display: 'Provider Type'
+              instructions: 'Identify the type of provider impacted by this new clinical specialization.'
+              if:
+                extension_query: 'equals true'
+                extension_kind: 'not grouping'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: extension_authority
+            field:
+              options:
+                -
+                  key: board-certification-abms
+                  value: 'The area of specialty is recognized for certification by the American Board of Medical Specialties.'
+                -
+                  key: board-certification-aoa
+                  value: 'The area of specialty is recognized for certification by the American Osteopathic Association certifying boards or conjoint examination committees.'
+                -
+                  key: training-program-acgme
+                  value: 'There is an accredited residency/fellowship specialty/subspecialty training program by the Accreditation Council for Graduate Medical Education.'
+                -
+                  key: training-program-aoa
+                  value: 'There is an accredited residency/fellowship specialty/subspecialty training program by AOA-accredited Osteopathic Graduate Medical Education.'
+                -
+                  key: none
+                  value: 'None of the above'
+              type: radio
+              display: 'Recognizing Authority'
+              sortable: false
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_provider_type: 'equals md-do'
+              localizable: false
+          -
+            handle: extension_certificate
+            field:
+              max_items: 1
+              create: false
+              taxonomies:
+                - certifications
+              type: terms_search_index
+              search_index: certifications
+              display: 'Specialty Certificate or Subspecialty Certificate'
+              if:
+                extension_authority: 'contains_any board-certification-abms, board-certification-aoa'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: extension_training_type
+            field:
+              options:
+                -
+                  key: residency
+                  value: Residency
+                -
+                  key: fellowship
+                  value: Fellowship
+                -
+                  key: both
+                  value: 'Residency and Fellowship'
+              type: radio
+              display: 'Training Type'
+              instructions: 'Identify the type of training program.'
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_authority: 'contains_any training-program-acgme, training-program-aoa'
+              localizable: false
+          -
+            handle: extension_training_distinct_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'The training requirements demonstrate that the provider has a recognized area of specialty / subspecialty that is separate and distinct from others.'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+              if_any:
+                extension_provider_type: 'equals other'
+                extension_authority: 'equals none'
+          -
+            handle: extension_training_level
+            field:
+              options:
+                -
+                  key: specialty
+                  value: Specialty
+                -
+                  key: subspecialty
+                  value: Subspecialty
+              type: radio
+              display: 'Training Level'
+              instructions: 'Identify the specificity of the training program.'
+              validate:
+                - required
+                - sometimes
+              if_any:
+                extension_authority: 'contains_any training-program-acgme, training-program-aoa'
+                extension_training_distinct_query: 'equals true'
+              localizable: false
+          -
+            handle: extension_training_specialty
+            field:
+              type: text
+              display: "Name of the Training Program's Specialty"
+              instructions: "For the Accreditation Council for Graduate Medical Education, this information can be found at <a href='https://www.acgme.org/specialties/' target='_blank'>https://www.acgme.org/specialties/</a>."
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_training_level: 'not empty'
+              localizable: false
+          -
+            handle: extension_training_subspecialty
+            field:
+              type: text
+              display: "Name of the Training Program's Subspecialty"
+              instructions: "For the Accreditation Council for Graduate Medical Education, this information can be found in the specialty sections linked at <a href='https://www.acgme.org/specialties/' target='_blank'>https://www.acgme.org/specialties/</a>."
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_training_level: 'equals subspecialty'
+              localizable: false
+          -
+            handle: extension_training_url
+            field: uamsweb_schema.url
+            config:
+              display: "Official Webpage Concerning the Training Program's Specialty/Subspecialty"
+              if:
+                extension_training_level: 'not empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: extension_training_accreditation_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'The training program is accredited by a third party.'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if_any:
+                extension_provider_type: 'equals other'
+                extension_authority: 'equals none'
+          -
+            handle: extension_training_accreditation_org
+            field:
+              type: text
+              display: 'Name of the Third Party Accrediting Organization'
+              if:
+                extension_training_accreditation_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: extension_training_accreditation_org_url
+            field: uamsweb_schema.url
+            config:
+              display: 'Official Website of the Third Party Accrediting Organization'
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_training_accreditation_query: 'equals true'
+          -
+            handle: extension_accrediting_authority_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'The third party accrediting organization establishes training program requirements, conducts periodic reviews of the programs, and has the authority to sanction programs.'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if_any:
+                extension_provider_type: 'equals other'
+                extension_authority: 'equals none'
+          -
+            handle: extension_examination_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'A certification examination is required for graduates of the specialty / subspecialty training program to earn the designation.'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+                - accepted
+              if_any:
+                extension_provider_type: 'equals other'
+                extension_authority: 'equals none'
+      -
+        display: 'Health Care Provider Taxonomy Code Set'
+        fields:
+          -
+            handle: code_set_extension_message
+            field:
+              html: 'Enter the values in the fields below as if this clinical specialization was part of the core code set.'
+              type: html
+              display: 'Field Values for UAMS Health Extension to the Health Care Provider Taxonomy Code Set'
+              if:
+                extension_query: 'equals true'
+              localizable: false
+          -
+            handle: code_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this specialization have a taxonomy code in the Health Care Provider Taxonomy Code Set?'
+              clearable: true
+              if:
+                extension_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: code
+            field: uamsweb_common_identifiers.health_care_provider_taxonomy_code
+            config:
+              display: 'Specialization Taxonomy Code in the Health Care Provider Taxonomy Code Set'
+              instructions: |-
+                This information can be found in the Health Care Provider Taxonomy Code Set at <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+
+                Example: "207LA0401X".
+              validate:
+                - required
+                - sometimes
+              if:
+                code_query: 'equals true'
+              localizable: false
+          -
+            handle: code_name
+            field:
+              placeholder: 'e.g., Addiction Medicine'
+              type: text
+              display: 'Specialization Name in the Health Care Provider Taxonomy Code Set'
+              instructions: |-
+                This information can be found in the Health Care Provider Taxonomy Code Set at <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+
+                Example: "Addiction Medicine" for taxonomy code 207LA0401X.
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_query: 'not empty'
+              localizable: false
+          -
+            handle: code_name_display
+            field:
+              placeholder: 'e.g., Addiction Medicine (Anesthesiology) Physician'
+              type: text
+              display: 'Specialization Display Name in the Health Care Provider Taxonomy Code Set'
+              instructions: |-
+                This information can be found in the Health Care Provider Taxonomy Code Set at <a href='https://taxonomy.nucc.org/' target='_blank'>https://taxonomy.nucc.org/</a>.
+
+                Example: "Addiction Medicine (Anesthesiology) Physician" for taxonomy code 207LA0401X.
+              if:
+                extension_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: code_valid
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this clinical specialization a valid selection?'
+              clearable: true
+              instructions: 'Some taxonomy codes are strictly grouping codes for taxonomy codes within their group, and are not to be used as a taxonomy code (e.g., Pathology [207Z00000X]). One of the other codes within their group that describes provider practice, training and certification must be used instead.'
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_query: 'equals false'
+          -
+            handle: code_definition_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this specialization have a definition in the Health Care Provider Taxonomy Code Set?'
+              clearable: true
+              if:
+                extension_query: 'not empty'
+          -
+            handle: code_definition
+            field:
+              placeholder: 'e.g., An anesthesiologist who specializes in the diagnosis and treatment of addictions.'
+              type: textarea
+              display: 'Specialization Definition in the Health Care Provider Taxonomy Code Set'
+              validate:
+                - required
+                - sometimes
+              if:
+                code_definition_query: 'equals true'
+              localizable: false
+          -
+            handle: code_definition_source_query
+            field: uamsweb_common.true_false
+            config:
+              display: "Does this specialization's definition have a source in the Health Care Provider Taxonomy Code Set?"
+              clearable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                extension_query: 'equals false'
+                code_definition_query: 'equals true'
+          -
+            handle: code_definition_source
+            field:
+              placeholder: 'e.g., National Uniform Claim Committee, 2009'
+              type: textarea
+              display: 'Source of Specialization Definition in the Health Care Provider Taxonomy Code Set'
+              validate:
+                - required
+                - sometimes
+              if:
+                code_definition_query: 'equals true'
+                code_definition_source_query: 'equals true'
+              localizable: false
+          -
+            handle: code_hierarchy_justification
+            field:
+              type: textarea
+              display: 'Justification for the Current Positioning in the Hierarchy of the Health Care Provider Taxonomy Code Set'
+              instructions: 'Explain the justification for the current positioning of this clinical specialization within the hierarchy of the Health Care Provider Taxonomy code set.'
+              if:
+                extension_query: 'equals true'
+              localizable: false
+      -
+        display: 'Patient-Friendly Terms'
+        fields:
+          -
+            handle: title_occupation
+            field:
+              placeholder: 'e.g., Addiction Medicine Anesthesiologist'
+              type: text
+              display: 'Patient-Friendly Clinical Occupation Title'
+              instructions: |-
+                Determine the patient-friendly clinical occupation title to be used for this specialization based on its name, context and description in the Health Care Provider Taxonomy Code Set; the word choices used by the certifying organization; standard nomenclature; and <a href='https://trends.google.com/trends/' target='_blank'>trends.google.com</a>.
+
+                Example: "Addiction Medicine Anesthesiologist" for taxonomy code 207LA0401X.
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: title_occupation_alt
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for the Clinical Occupation'
+              instructions: 'Acronyms, shortened names or alternate spellings of the entity'
+              if:
+                code_valid: 'equals true'
+          -
+            handle: title_specialization_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Use the value of the "Specialization Name in the Health Care Provider Taxonomy Code Set" field as the patient-friendly clinical specialization title?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                code_valid: 'equals true'
+          -
+            handle: title_specialization_patient
+            field:
+              placeholder: 'e.g., Addiction Medicine Anesthesiology'
+              type: text
+              display: 'Patient-Friendly Clinical Specialization Title'
+              instructions: |-
+                Determine the patient-friendly name to be used for this specialization based on its name, context and description in the Health Care Provider Taxonomy Code Set; the word choices used by the certifying organization; standard nomenclature; and <a href='https://trends.google.com/trends/' target='_blank'>trends.google.com</a>.
+
+                Example: "Addiction Medicine Anesthesiology" for taxonomy code 207LA0401X.
+              validate:
+                - required
+                - sometimes
+              if:
+                title_specialization_query: 'equals false'
+              localizable: false
+          -
+            handle: title_specialization_patient_alt
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for the Clinical Specialization'
+              if:
+                code_valid: 'equals true'
+      -
+        display: 'Related CMS Specialty Code'
+        fields:
+          -
+            handle: cms_code_source_message
+            field:
+              type: html
+              display: 'How to Find the CMS Specialty Code'
+              instructions: |-
+                The official list of specialty codes can be found in Centers for Medicare & Medicaid Services <a href='https://www.cms.gov/regulations-and-guidance/guidance/manuals/internet-only-manuals-ioms-items/cms019018' target='_blank'>Publication 100-06: Medicare Financial Management Manual</a>; Chapter 6: Medicare Administrator Contractor (MAC) Financial Reports; Section 400.3: Specialty Codes.
+
+                Find which CMS specialty code is paired with each taxonomy code at Data.CMS.gov in the <a href='https://data.cms.gov/provider-characteristics/medicare-provider-supplier-enrollment/medicare-provider-and-supplier-taxonomy-crosswalk/data' target='_blank'>Medicare Provider and Supplier Taxonomy Crosswalk</a>.
+
+                It can also be found on <a href='https://npidb.org/' target='_blank'>NPIdb.org</a> on each taxonomy code page (e.g., <a href='https://npidb.org/taxonomy/207LA0401X/' target='_blank'>https://npidb.org/taxonomy/207LA0401X/</a>).
+              if:
+                extension_query: 'equals false'
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: cms_code_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the related CMS Specialty Code and Provider/Supplier Type from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                extension_query: 'equals false'
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: cms_code_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does a CMS Specialty Code exist for this clinical specialization?'
+              clearable: true
+              if:
+                cms_code_inherit_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: cms_code
+            field: uamsweb_common_identifiers.cms_specialty_code
+            config:
+              type: text
+              display: 'Related CMS Specialty Code'
+              instructions: 'Example: "79" for taxonomy code 207LA0401X.'
+              validate:
+                - required
+                - sometimes
+              if:
+                cms_code_inherit_query: 'equals false'
+                cms_code_query: 'equals true'
+              localizable: false
+          -
+            handle: cms_code_type
+            field:
+              placeholder: 'e.g., Physician/Addiction Medicine'
+              type: text
+              display: 'Related CMS Provider/Supplier Type'
+              instructions: |-
+                Include "Physician/" at the beginning of the value if the specialty code is in the Physician/Limited License Physician Specialty Codes list.
+
+                Examples: "Physician/Addiction Medicine" for taxonomy code 207LA0401X, "Certified Nurse Midwife" for taxonomy code 367A00000X.
+              if:
+                cms_code_inherit_query: 'equals false'
+                cms_code_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Related Schema.org MedicalSpecialty'
+        fields:
+          -
+            handle: medicalspecialty_about
+            field:
+              type: html
+              display: 'About the Schema.org MedicalSpecialty Enumeration Type'
+              instructions: 'The Schema.org MedicalSpecialty enumeration type is a limited set of possible values for the specific branch of medical science or practice. The enumeration members include clinical specialties that pertain to particular organ systems and their respective disease states, as well as allied health specialties.'
+              if:
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: medicalspecialty_member_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the related Schema.org MedicalSpecialty enumeration member from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: medicalspecialty_member
+            field: uamsweb_schema.medical_specialty_single
+            config:
+              display: 'MedicalSpecialty Enumeration Member'
+              instructions: |-
+                Select one Schema.org MedicalSpecialty enumeration member that is relevant to this entity. If there is no match, then select "None."
+
+                For information on the MedicalSpecialty Schema.org enumeration type, visit <a href='https://schema.org/MedicalSpecialty' target='_blank'>https://schema.org/MedicalSpecialty</a>.
+
+                For information on each of the MedicalSpecialty Schema.org enumeration members, visit the relevant page linked at <a href='https://schema.org/MedicalSpecialty#subtypes' target='_blank'>https://schema.org/MedicalSpecialty#subtypes</a>.
+              if:
+                medicalspecialty_member_inherit_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Related O*Net-SOC Occupation Code'
+        fields:
+          -
+            handle: onetsoc_about
+            field:
+              type: html
+              display: 'About O*Net-SOC'
+              instructions: |-
+                The Occupational Information Network — or O*NET — is a free online database that contains hundreds of job definitions to help students, job seekers, businesses and workforce development professionals understand today's world of work in the United States.
+
+                O*NET classifies jobs in job families (functional areas that include workers from entry-level to advanced and may include several sub-specialties).
+
+                All O*NET occupations conform to the Standard Occupational Classification — or SOC — the United States government system of classifying occupations.
+              if:
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: onetsoc_code_source
+            field:
+              type: html
+              display: 'How to Find the O*Net-SOC Occupation Code'
+              instructions: "Search for occupations at <a href='https://www.onetonline.org/find/quick' target='_blank'>https://www.onetonline.org/find/quick</a>."
+              if:
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: onetsoc_code_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the related O*Net-SOC Occupation Code and Occupation Name from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: onetsoc_code_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does an O*Net-SOC Occupation Code exist for this clinical specialization?'
+              clearable: true
+              if:
+                onetsoc_code_inherit_query: 'equals false'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: onetsoc_code
+            field: uamsweb_common_identifiers.onet_soc_occupation_code
+            config:
+              display: 'Related O*Net-SOC Occupation Code'
+              instructions: 'Example: "29-1211.00" — the code for Anesthesiologists — for taxonomy code 207LA0401X (Addiction Medicine [Anesthesiology] Physician).'
+              validate:
+                - required
+                - sometimes
+              if:
+                onetsoc_code_inherit_query: 'equals false'
+                onetsoc_code_query: 'equals true'
+              localizable: false
+          -
+            handle: onetsoc_code_name
+            field:
+              placeholder: 'e.g., Anesthesiologists'
+              type: text
+              display: 'Related O*Net-SOC Occupation Name'
+              instructions: 'Example: "Anesthesiologists" — the name associated with the code 29-1211.00 — for taxonomy code 207LA0401X (Addiction Medicine [Anesthesiology] Physician).'
+              if:
+                onetsoc_code_inherit_query: 'equals false'
+                onetsoc_code_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Related ISCO-08 Code'
+        fields:
+          -
+            handle: about_isco_08
+            field:
+              type: html
+              display: 'About ISCO-08'
+              instructions: 'The International Standard Classification of Occupations — or ISCO — is an International Labour Organization classification structure for organizing information on labor and jobs. It is part of the international family of economic and social classifications of the United Nations. The current version is known as ISCO-08.'
+              if:
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: isco08_code_source
+            field:
+              type: html
+              display: 'Information About Each ISCO-08 Code'
+              instructions: 'For descriptions and examples of each occupation, see pages 82-108 of "ISCO-08 Part 3: Definitions of Major Groups, Sub-Major Groups, Minor Groups and Unit Groups" at <a href="https://www.ilo.org/public/english/bureau/stat/isco/docs/groupdefn08.pdf" target="_blank">https://www.ilo.org/public/english/bureau/stat/isco/docs/groupdefn08.pdf</a> (archived at <a href="https://archive.is/TTr4R" target="_blank">https://archive.is/TTr4R</a>).'
+              if:
+                code_valid: 'equals true'
+              localizable: false
+          -
+            handle: isco08_code_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the related ISCO-08 Code from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: isco08_code_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does an ISCO-08 Code exist for this clinical specialization?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                isco08_code_inherit_query: 'equals false'
+          -
+            handle: isco08_code
+            field:
+              options:
+                -
+                  key: 2211
+                  value: 'Medical Doctors, Generalist Medical Practitioners (2211)'
+                -
+                  key: 2212
+                  value: 'Medical Doctors, Specialist Medical Practitioners (2212)'
+                -
+                  key: 2221
+                  value: 'Nursing Professionals (2221)'
+                -
+                  key: 2222
+                  value: 'Midwifery Professionals (2222)'
+                -
+                  key: 2230
+                  value: 'Traditional and Complementary Medicine Professionals (2230)'
+                -
+                  key: 2240
+                  value: 'Paramedical Practitioners (2240)'
+                -
+                  key: 2250
+                  value: 'Veterinarians (2250)'
+                -
+                  key: 2261
+                  value: 'Dentists (2261)'
+                -
+                  key: 2262
+                  value: 'Pharmacists (2262)'
+                -
+                  key: 2263
+                  value: 'Environmental and Occupational Health and Hygiene Professionals (2263)'
+                -
+                  key: 2264
+                  value: 'Physiotherapists (2264)'
+                -
+                  key: 2265
+                  value: 'Dieticians and Nutritionists (2265)'
+                -
+                  key: 2266
+                  value: 'Audiologists and Speech Therapists (2266)'
+                -
+                  key: 2267
+                  value: 'Optometrists and Ophthalmic Opticians (2267)'
+                -
+                  key: 2269
+                  value: 'Health Professionals Not Elsewhere Classified (2269)'
+                -
+                  key: other
+                  value: Other
+              type: radio
+              display: 'ISCO-08 Code'
+              if:
+                isco08_code_inherit_query: 'equals false'
+                isco08_code_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: isco08_code_other
+            field: uamsweb_common_identifiers.isco_08_code
+            config:
+              display: 'Other ISCO-08 Code'
+              instructions: 'Enter only the number value of the ISCO-08 code (e.g., 3251).'
+              validate:
+                - required
+                - sometimes
+              if:
+                isco08_code: 'equals other'
+              localizable: false
+      -
+        display: 'Reference Webpages'
+        fields:
+          -
+            handle: same_as_occupation_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the reference webpages about the occupation from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: same_as_occupation
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages About the Occupation'
+              validate:
+                - required
+                - sometimes
+              if:
+                same_as_occupation_inherit_query: 'equals false'
+          -
+            handle: same_as_field_inherit_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Inherit the reference webpages about the specialization from the parent?'
+              clearable: true
+              instructions: 'Note that changing the relevant value in the parent entry will not automatically update this entry. After any change to the relevant value in the parent entry, this entry will need to be updated by simply opening the entry and clicking "Save."'
+              if:
+                code_valid: 'equals true'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: same_as_field
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages About the Specialization'
+              validate:
+                - required
+                - sometimes
+              if:
+                same_as_field_inherit_query: 'equals false'
+      -
+        display: 'Related Medical Training Specialty or Subspecialty'
+        fields:
+          -
+            handle: training_specialty
+            field:
+              type: terms_search_index
+              display: 'Related Medical Training Specialty or Subspecialty'
+              taxonomies:
+                - specialties_aoa
+                - specialties_acgme
+                - specialties_non_accredited
+              create: false
+              search_index: medical_specialties_all
+              if:
+                code_valid: 'not false'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Clinical Specialization'

@@ -1,0 +1,24 @@
+// Table of Contents page-builder block (issue UAMS-Web/uams-statamic-archive#1283).
+//
+// The block server-renders hidden and the front-end engine reveals it only once it has found
+// headings to list, so a page with no qualifying headings shows nothing at all — and neither
+// does a page without JavaScript, where the jump links would have no ids to point at.
+//
+// The `[hidden]` rule is explicit for the same reason `.site-nav-mobile-panel[hidden]` is:
+// `.uams-module` carries padding and `position`, and a later display rule on that class would
+// otherwise defeat the attribute and leave an empty, padded block on the page.
+.toc-block {
+    &[hidden] {
+        display: none;
+    }
+
+    .toc-list {
+        margin-bottom: 0;
+
+        // Nesting is conveyed by the list structure; the counters would otherwise restart at
+        // each level and read as a second, unrelated list.
+        ol {
+            margin-bottom: 0;
+        }
+    }
+}

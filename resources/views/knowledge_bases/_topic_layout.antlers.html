@@ -1,0 +1,22 @@
+{{#
+	Shared layout for knowledge base "topic" views: the root KB page and
+	individual topic entries. Builds itemref for subtopics (schema), wraps
+	content in the article layout (CollectionPage), and renders search bar,
+	subtopic list, and article list. Used by knowledge-base.antlers.html and
+	topic.antlers.html.
+#}}
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+		{{# Search within the current topic #}}
+		{{ partial:knowledge_bases/search_bar :current_blueprint="blueprint" }}
+
+		{{# List subtopics within the current topic #}}
+		{{ partial:knowledge_bases/topic_list :current_blueprint="blueprint" }}
+
+		{{# List articles within the current topic #}}
+		{{ partial:knowledge_bases/article_list_collection }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

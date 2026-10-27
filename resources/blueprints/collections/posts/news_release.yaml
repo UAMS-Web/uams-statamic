@@ -1,0 +1,164 @@
+title: 'News Release'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          -
+            import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_cover_image
+      -
+        display: 'Associations and Curation'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_associations
+          -
+            import: uamsweb_post_curation
+      -
+        display: Creators
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_creator_text
+      -
+        display: 'Text Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_text
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+      -
+        display: Location
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_location
+            config:
+              localizable: false
+      -
+        display: Content
+        collapsible: true
+        fields:
+          -
+            handle: content
+            field: uamsweb_common.article_with_sets
+            config:
+              display: Content
+              localizable: false
+      -
+        display: 'News Release Settings'
+        fields:
+          -
+            import: uamsweb_post_news_release_settings
+      -
+        display: 'Subject Matter'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_post_subject_matter
+      -
+        display: Behavior
+        fields:
+          -
+            handle: boilerplate_query
+            field: uamsweb_post_behavior.boilerplate_query
+            config:
+              default: true
+              localizable: false
+          -
+            handle: boilerplate
+            field: uamsweb_post_behavior.boilerplate
+            config:
+              localizable: false
+          -
+            handle: sticky_query
+            field: uamsweb_post_behavior.sticky_query
+            config:
+              localizable: false
+  scripts:
+    display: Scripts
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_entry_scripts
+  robots:
+    display: 'Meta Robots Settings'
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_entry_seo_meta
+          -
+            import: uamsweb_entry_seo_robots
+      -
+        display: 'Sitemap'
+        fields:
+          -
+            import: uamsweb_entry_sitemap
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        display: 'Status and Visibility'
+        fields:
+          -
+            handle: status_and_visibility
+            field: uamsweb_common_status.status_and_visibility
+            config:
+              localizable: false
+          -
+            handle: password_protected
+            field: uamsweb_common_status.password_protected
+            config:
+              localizable: false
+          -
+            handle: visibility_password
+            field: uamsweb_common_status.visibility_password
+            config:
+              localizable: false
+          -
+            handle: is_password_hashed
+            field: uamsweb_common_status.is_password_hashed
+            config:
+              localizable: false
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {  }
+      -
+        display: Meta
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: template
+            field:
+              type: hidden
+              display: Template
+              default: posts/news_release
+              localizable: false

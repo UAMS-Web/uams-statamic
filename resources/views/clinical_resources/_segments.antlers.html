@@ -1,0 +1,70 @@
+{{#
+	@name Clinical Resource Segments
+	@desc Renders an audio/video clinical resource's segments (title, media
+	      player, transcript), mirroring the posts audio/video segment rendering.
+	      Richer caption/transparency alignment is Wave 93's charter (UAMS-Web/uams-statamic-archive#1090). (UAMS-Web/uams-statamic-archive#577)
+	@param media_type  'video' or 'audio' — the resource's blueprint. A row that
+	                   carries a set `type` is dispatched on that instead, because an
+	                   audio episode's `segments` may also hold its video rendition
+	                   (UAMS-Web/uams-statamic-archive#1807, #1808); `media_type` decides only for a row with no set type.
+#}}
+
+{{ segments as="segments" }}
+	{{ $segment_count = segments | count }}
+	{{ unless no_results }}
+		<section class="entry-segment-container">
+			<header class="entry-segment-container-header">
+				<h2 class="entry-segment-container-title">Segments</h2>
+			</header>
+			{{ segments }}
+				{{# Audio segments nest their fields under `file`; video segments expose them directly. #}}
+				{{ segment_is_remote_audio = type == 'remote_audio' }}
+				{{ segment_is_audio = type ? ( type == 'local_file' || segment_is_remote_audio ) : ( media_type == 'audio' ) }}
+				{{ if segment_is_remote_audio }}
+					{{# A remote episode MP3 (UAMS-Web/uams-statamic-archive#1803) carries no asset, so it has no asset title or transcript. #}}
+					{{ title = title_override ?? title }}
+				{{ elseif segment_is_audio }}
+					{{ title = title_override ?? file:title }}
+					{{ excerpt = excerpt_override ?? file:excerpt }}
+					{{ transcript = file:transcript }}
+				{{ /if }}
+				<article class="entry-segment">
+					<h3 {{ [ 'entry-segment-title' => true, 'sr-only' => ( $segment_count == 1 ) ] | classes | collapse_whitespace | attribute:class }}>{{ title | strip_tags | widont }}</h3>
+					{{ if excerpt }}<p class="entry-segment-summary">{{ excerpt | strip_tags | widont }}</p>{{ /if }}
+					{{ if ! segment_is_audio }}
+						{{
+							partial:sets/video
+							:video_url="url"
+							:caption_track="caption_track_file"
+							:caption_track_url="caption_track_url"
+							figure_class="entry-segment-media entry-segment-video"
+							media_player_class="entry-segment-media-player"
+							caption="Video: {{ title | strip_tags }}"
+							caption_hide="true"
+						}}
+					{{ else }}
+						{{
+							partial:sets/audio
+							:file="file"
+							:remote_audio_url="segment_is_remote_audio ? url : null"
+							:file_alternate="file_alternate"
+							:preload="preload"
+							:loop="loop"
+							:title="title"
+							figure_class="entry-segment-media entry-segment-audio"
+							media_player_class="entry-segment-media-player"
+							caption="Audio: {{ title | strip_tags }}"
+							caption_hide="true"
+						}}
+					{{ /if }}
+					{{ if transcript }}
+						<details class="entry-segment-transcript">
+							<summary class="entry-segment-transcript-trigger" aria-label="View Transcript for {{ title | sanitize }}">View Transcript</summary>
+							<div class="entry-segment-transcript-content">{{ transcript }}</div>
+						</details>
+					{{ /if }}
+				</article>
+			{{ /segments }}
+		</section>
+	{{ /unless }}
+{{ /segments }}

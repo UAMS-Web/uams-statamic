@@ -1,0 +1,9 @@
+{{#
+	@name Error: Knowledge Base Mount Redirect
+	@desc Permanently redirects a knowledge base's old un-mounted URL to its current mounted URL on 404. Mirrors errors/_redirects.
+#}}
+
+{{# Redirect if the current URL is the old un-mounted URL of a now-mounted knowledge base. #}}
+{{ knowledge_base_mount_redirect }}
+	{{ %redirect :to="target" response="301" }}
+{{ /knowledge_base_mount_redirect }}

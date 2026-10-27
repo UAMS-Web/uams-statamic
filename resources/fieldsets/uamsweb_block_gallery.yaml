@@ -1,0 +1,169 @@
+title: 'UAMSWeb Block, Gallery'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_bard
+    config:
+      display: 'Block Description'
+      buttons:
+        - italic
+        - removeformat
+      instructions: 'Optional description. It is **strongly recommended** that it be kept to a single short paragraph with a max of 290 characters.'
+  -
+    handle: columns
+    field:
+      options:
+        -
+          key: 2
+          value: null
+        -
+          key: 3
+          value: null
+        -
+          key: 4
+          value: null
+        -
+          key: 6
+          value: null
+      default: '3'
+      type: radio
+      display: 'Number of Columns'
+      instructions: 'This will be the number of columns used on desktop browser sizes.'
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: images
+    field:
+      max_files: 6
+      min_files: 2
+      container: images
+      type: assets
+      display: Images
+      instructions: |-
+        It is recommended that you select images that are of a similar aspect ratio.
+
+        Minimum dimensions: 1227x1635
+      validate:
+        - required
+        - 'dimensions:min_width=1227,min_height=1635'
+      localizable: false
+  -
+    handle: crop
+    field:
+      options:
+        -
+          key: 1
+          value: '1:1 (square)'
+        -
+          key: 0
+          value: None
+        -
+          key: 1.7778
+          value: '16:9 (landscape)'
+        -
+          key: 1.3333
+          value: '4:3 (landscape)'
+        -
+          key: 0.75
+          value: '3:4 (portrait)'
+      default: 0
+      type: radio
+      display: 'Image Crop'
+      instructions: |-
+        It is recommended that you select a crop option if your images are not all the same aspect ratio.
+
+        Choose the aspect ratio of the image crop. The remaining center portion will be visible.
+      replicator_preview: false
+      validate:
+        - required
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_full
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: modal
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include a modal with larger version of image?'
+      replicator_preview: false
+      validate:
+        - required
+      default: true
+  -
+    handle: display_media_credit
+    field: uamsweb_common.true_false
+    config:
+      display: 'Display Media Credit'
+      instructions: "Show each image's photographer/creator credit (from the asset's Creator field) beside its caption in the enlarged (modal) view. Defaults to shown; turn off to suppress the credit while keeping the caption."
+      default: true
+      localizable: false
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      replicator_preview: false
+      validate:
+        - required
+      instructions: 'This could be used to link to more images.'
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

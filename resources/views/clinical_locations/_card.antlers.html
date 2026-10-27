@@ -1,0 +1,104 @@
+{{#
+	@name Clinical Location Card
+	@desc Renders a single `clinical_locations` entry as a directory card —
+	      featured image (or the shared 3:4 "no image available" fallback), a
+	      "Part of {parent}" subtitle for child locations, the name, short
+	      description, address, the appointment/contact phone, and a Get Directions
+	      link — with a link to its profile. Pass `fad_facet="true"` (the
+	      Find-a-Doc locations block, UAMS-Web/uams-statamic-archive#63) to emit the card's `data-id` facet
+	      anchor; the region / location-type facet attributes are added by UAMS-Web/uams-statamic-archive#1242,
+	      which verifies the augmented term shapes against real content (the
+	      collections are empty today). Expects one location entry in scope.
+
+	      The whole-card `stretched-link` was dropped in UAMS-Web/uams-statamic-archive#1465: the card is now
+	      multi-action (View / Call / Get Directions), and a stretched overlay would
+	      make the Call and Get Directions links unclickable — so every action is a
+	      plain, independently-clickable link instead. (UAMS-Web/uams-statamic-archive#574, UAMS-Web/uams-statamic-archive#63, UAMS-Web/uams-statamic-archive#1465)
+#}}
+
+{{# Capture the entry's own url first: the featured-image asset pair rebinds `url`. #}}
+{{ $location_url = url }}
+
+{{# Patient-facing name: prefer the clean `generic_name` over the (often
+	disambiguated) entry title, falling back to the title when it is blank. The
+	entry title and URL are unchanged. (UAMS-Web/uams-statamic-archive#1188) #}}
+{{ $location_name = generic_name ? generic_name : title }}
+
+{{# The address parts are the `resolved_*` computeds, never the stored `address`: a child
+	location shows its parent's street unless it overrides the street group, and a location
+	inside a facility shows the facility's (UAMS-Web/uams-statamic-archive#2389, UAMS-Web/uams-statamic-archive#2608). `resolved_state` already reads the
+	canonical region handle before the preset-specific ones. Used by both the address block
+	and the Get Directions query. #}}
+{{ $address_region = resolved_state }}
+
+{{# Card contact number: mirror the location profile's precedence (UAMS-Web/uams-statamic-archive#1185/UAMS-Web/uams-statamic-archive#1167) —
+	the shared number wins, then the dedicated appointment number, then the
+	general-information line. #}}
+{{ $shared_number = shared_phone_number ? shared_phone : '' }}
+{{ $card_phone = $shared_number ? $shared_number : ( phone_appointment_new ? phone_appointment_new : phone ) }}
+
+{{# Get Directions destination, assembled from whichever address parts exist so
+	there are no dangling separators (the `map` coordinate field is populated only
+	for standalone locations, so the address is the universal source). #}}
+{{ $directions_dest = '' }}
+{{ if resolved_street_address }}{{ $directions_dest += resolved_street_address }}{{ /if }}
+{{ if resolved_city }}{{ $directions_dest += ($directions_dest ? ', ' : '') + resolved_city }}{{ /if }}
+{{ if $address_region }}{{ $directions_dest += ($directions_dest ? ', ' : '') + $address_region }}{{ /if }}
+{{ if resolved_postal_code }}{{ $directions_dest += ($directions_dest ? ' ' : '') + resolved_postal_code }}{{ /if }}
+
+<div class="item" itemscope itemtype="https://schema.org/MedicalClinic"{{ if fad_facet }} data-id="{{ id }}"{{ /if }}>
+	<div class="card h-100">
+		{{ if featured_image }}
+			{{ featured_image }}
+				<div class="card-img-top">
+					{{# The asset `alt` is editor text and Antlers is raw by default, so an
+					    unescaped interpolation here is an attribute breakout — a stored XSS
+					    reachable from any page that renders this card, which now includes the
+					    clinical provider profile (UAMS-Web/uams-statamic-archive#1676). The asset `url` is app-generated but
+					    is escaped on the same footing as every other href in the lenses. #}}
+					<picture><img src="{{ url | sanitize_url }}" alt="{{ alt | strip_tags | sanitize }}" itemprop="https://schema.org/image" loading="lazy"></picture>
+				</div>
+			{{ /featured_image }}
+		{{ else }}
+			{{# No featured image: the shared 3:4 "no image available" fallback (UAMS-Web/uams-statamic-archive#63). #}}
+			<div class="card-img-top">{{ partial:components/no-image-available_3-4 }}</div>
+		{{ /if }}
+		<div class="card-body">
+			{{# Editor/import-controlled text is escaped with `sanitize` (htmlspecialchars,
+			    ENT_QUOTES) because Antlers output is raw by default — `title`/`generic_name`,
+			    the `excerpt` textarea, the parent name, and the phone (format_phone returns
+			    its raw input on an unparseable value) are all stored verbatim. #}}
+			<h2 class="card-title h5" itemprop="https://schema.org/name">{{ $location_name | sanitize }}</h2>
+			{{# "Part of {parent}" subtitle for a child location. The parent name / URL come
+			    from the structure-tree computeds (the parent is a tree relationship, not a
+			    plain field, so it is not exposed in the listing augmentation); both are
+			    null for a top-level location. (UAMS-Web/uams-statamic-archive#1465) #}}
+			{{ if parent_location_name }}
+				<p class="card-parent"><small>Part of {{ if parent_location_url }}<a href="{{ parent_location_url }}">{{ parent_location_name | sanitize }}</a>{{ else }}{{ parent_location_name | sanitize }}{{ /if }}</small></p>
+			{{ /if }}
+			{{ if short_desc }}
+				<div class="card-text" itemprop="https://schema.org/description">{{ short_desc | sanitize }}</div>
+			{{ /if }}
+			{{ if resolved_city || resolved_street_address }}
+				{{# Compact address for the directory card (UAMS-Web/uams-statamic-archive#63), from the resolved computeds. #}}
+				<p class="card-address" itemprop="https://schema.org/address" itemscope itemtype="https://schema.org/PostalAddress">
+					{{ if resolved_street_address }}<span itemprop="https://schema.org/streetAddress">{{ resolved_street_address | sanitize }}</span>{{ /if }}
+					{{ if resolved_city }}<span itemprop="https://schema.org/addressLocality">{{ resolved_city | sanitize }}</span>{{ /if }}
+					{{ if $address_region }}<span itemprop="https://schema.org/addressRegion">{{ $address_region | sanitize }}</span>{{ /if }}
+					{{ if resolved_postal_code }}<span itemprop="https://schema.org/postalCode">{{ resolved_postal_code | sanitize }}</span>{{ /if }}
+				</p>
+			{{ /if }}
+			{{ if $card_phone }}
+				{{# Dialable contact number: raw E.164 in the tel: href (sanitized for the
+				    attribute), AP-national for display (sanitized as a raw-HTML guard). #}}
+				<p class="card-phone"><a href="tel:{{ $card_phone | sanitize }}" itemprop="https://schema.org/telephone">{{ $card_phone | format_phone | sanitize }}</a></p>
+			{{ /if }}
+			<div class="card-actions d-flex flex-wrap gap-2">
+				<a href="{{ $location_url }}" class="btn btn-primary" itemprop="https://schema.org/url" aria-label="View location: {{ $location_name | striptags | sanitize }}">View location</a>
+				{{ if $directions_dest }}
+					<a href="https://www.google.com/maps/dir/?api=1&amp;destination={{ $directions_dest | rawurlencode }}" class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" aria-label="Get directions to {{ $location_name | striptags | sanitize }}">Get Directions</a>
+				{{ /if }}
+			</div>
+		</div>
+	</div>
+</div>

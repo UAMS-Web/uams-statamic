@@ -1,0 +1,17 @@
+// .cta-bar {
+// }
+
+.cta-bar-1 {
+    text-align: center;
+
+    // h2, p {
+    // }
+
+    h2 {
+        @include line-length-em(min);
+    }
+    p {
+        @extend .lead;
+        @include line-length-em(max);
+    }
+}

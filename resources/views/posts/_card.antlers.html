@@ -1,0 +1,75 @@
+{{#
+	@name Post Card
+	@desc Renders a single `posts` entry as a listing card — featured image,
+	      post-type label (audio / video / news release), title, published date,
+	      author credits, and excerpt — linking to the entry's show page. Expects
+	      one post entry in scope (title, url, date, excerpt, creator,
+	      featured_image_16_9, cover_image_query, blueprint, …). (UAMS-Web/uams-statamic-archive#569)
+#}}
+
+{{# Capture the post's own url first: the featured-image asset pair below rebinds
+	`url` to the asset url inside its own scope. #}}
+{{ $post_url = url }}
+
+{{# Post-type label — standard posts carry none; audio/video/news releases do. #}}
+{{ $post_type_label = null }}
+{{ if blueprint == 'news_release' }}{{ $post_type_label = 'News Release' }}{{ /if }}
+{{ if blueprint == 'audio' }}{{ $post_type_label = 'Audio' }}{{ /if }}
+{{ if blueprint == 'video' }}{{ $post_type_label = 'Video' }}{{ /if }}
+
+<div class="item" itemscope itemtype="https://schema.org/Article">
+	<div class="card h-100">
+		{{ if cover_image_query && featured_image_16_9 }}
+			{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}
+			{{ $fi_creator = featured_image_16_9:creator }}{{ $fi_creator_org = featured_image_16_9:creator_organization }}
+			{{ featured_image_16_9 }}
+				<div class="card-img-top">
+					<picture><img src="{{ url }}" alt="{{ cover_image_alt_text_override ? cover_image_alt_text_override : alt }}" itemprop="https://schema.org/image" loading="lazy"></picture>
+					{{ if featured_image_credit_query && $fi_creator }}{{ partial:typography/media_credit :creator="$fi_creator" :creator_organization="$fi_creator_org" }}{{ /if }}
+				</div>
+			{{ /featured_image_16_9 }}
+		{{ /if }}
+		<div class="card-body">
+			{{ if $post_type_label }}
+				<p class="post-card-type text-uppercase mb-1"><small>{{ $post_type_label }}</small></p>
+			{{ /if }}
+			{{# Primary category label — the first-selected post_categories entry
+			    (UAMS-Web/uams-statamic-archive#1609), opt-in via `show_primary_category` (the news home UAMS-Web/uams-statamic-archive#1612). The
+			    title is sanitized: it is editor/importer-controlled and Antlers is
+			    raw by default.
+
+			    The `| count` gate is load-bearing, not defensive (UAMS-Web/uams-statamic-archive#2026).
+			    A real augmented entry never OMITS the key — `AugmentedEntry::keys()`
+			    merges every blueprint handle — so an empty relation arrives as a truthy
+			    query-builder OBJECT. Looping it emits this body once against the PARENT
+			    scope, where `url`/`title` are the post's own, printing the headline as
+			    its own category and linking the post to itself. `| count` counts the
+			    published entries the loop yields (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422). Same trap and same
+			    gate as people/provider/_ontology_list. #}}
+			{{ if show_primary_category && post_categories | count }}
+				{{ post_categories }}
+					{{ if first }}
+						<p class="post-card-category text-uppercase mb-1"><small><a href="{{ url }}">{{ title | sanitize }}</a></small></p>
+					{{ /if }}
+				{{ /post_categories }}
+			{{ /if }}
+			<h2 class="card-title h5" itemprop="https://schema.org/headline">{{ title }}</h2>
+			{{ if date || creator }}
+				<div class="post-card-meta text-muted mb-2">
+					{{ if date }}
+						<time class="post-card-date" datetime="{{ date | format('c') }}" itemprop="https://schema.org/datePublished">{{ date | ap_style_date }}</time>
+					{{ /if }}
+					{{ if creator }}
+						<div class="post-card-byline">
+							{{ partial:layout/page-header/entry-meta/creator_roles :hide_creator_query="false" :creator="creator" }}
+						</div>
+					{{ /if }}
+				</div>
+			{{ /if }}
+			{{ if excerpt }}
+				<p class="card-text" itemprop="https://schema.org/description">{{ excerpt }}</p>
+			{{ /if }}
+			<a href="{{ $post_url }}" class="btn btn-primary stretched-link" itemprop="https://schema.org/url" aria-label="Read more: {{ title | striptags }}">Read more</a>
+		</div>
+	</div>
+</div>

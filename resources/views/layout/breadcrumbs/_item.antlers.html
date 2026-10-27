@@ -1,0 +1,23 @@
+{{ $breadcrumbs_count = $breadcrumbs_count ?? 1 }}
+{{ $breadcrumbs_count_current_site = !breadcrumbs_ancestor ? ( $breadcrumbs_count_current_site ?? 1 ) : null }}
+<li
+	class="{{
+		[
+			'breadcrumb-item' => true,
+			'active' => ( is_current || $breadcrumbs_is_root_homepage )
+		] | classes | collapse_whitespace
+	}}"
+	itemprop="https://schema.org/itemListElement"
+	itemscope
+	itemtype="https://schema.org/ListItem"
+	{{ ( ( is_current || $breadcrumbs_is_root_homepage ) ? 'page' : '' ) | attribute:aria-current }}
+>
+	{{ if is_current }}
+		{{ partial:layout/breadcrumbs/item-name }}
+	{{ else }}
+		{{ partial:layout/breadcrumbs/item-link }}
+	{{ /if }}
+	{{ partial:layout/breadcrumbs/item-meta }}
+</li>
+{{ $breadcrumbs_count += 1 }}
+{{ $breadcrumbs_count_current_site = $breadcrumbs_count_current_site ? ( $breadcrumbs_count_current_site + 1 ) : null }}

@@ -1,0 +1,84 @@
+title: 'UAMSWeb Posts, Video Segment'
+fields:
+  -
+    handle: title
+    field:
+      type: text
+      display: 'Title'
+      focus: false
+      replicator_preview: true
+      localizable: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: excerpt
+    field: uamsweb_common.excerpt
+    config:
+      display: 'Summary'
+      instructions: 'Write a short summary of the video segment content.'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: transcript
+    field: uamsweb_common.bard_transcript
+    config:
+      display: 'Transcript'
+      replicator_preview: false
+      localizable: false
+      validate:
+        - required
+        - sometimes
+  -
+    handle: digital_source_type
+    field: digital_source_type.digital_source_type_video
+  -
+    handle: about
+    field: uamsweb_common.subject_matter
+    config:
+      display: 'Primary Subject Matter'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: mentions
+    field: uamsweb_common.subject_matter
+    config:
+      display: 'Concepts Mentioned'
+      instructions: 'Indicates that the video segment contains a reference to, but is not necessarily about a concept.'
+      localizable: false
+  -
+    handle: language
+    field: uamsweb_common.language
+    config:
+      display: 'Video Segment Language(s)'
+      instructions: 'Select the language(s) used in the video segment.'
+      multiple: true
+      default:
+        - en
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: geographic_location
+    field: uamsweb_creativework_location.geographic_location
+    config:
+      localizable: false
+      instructions: 'e.g., where a video segment was recorded and/or edited'
+      validate:
+        - required
+        - sometimes
+      default:
+        - little-rock
+  -
+    handle: geographic_location_content
+    field: uamsweb_creativework_location.geographic_location_content
+    config:
+      localizable: false
+      validate:
+        - required
+        - sometimes
+      default:
+        - little-rock

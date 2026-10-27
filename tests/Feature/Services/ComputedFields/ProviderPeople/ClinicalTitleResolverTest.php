@@ -1,0 +1,201 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Services\ComputedFields\ProviderPeople\ClinicalTitleResolver;
+use App\Services\Seo\DocumentTitle;
+use Statamic\Entries\Collection;
+use Statamic\Entries\Entry as EntryInstance;
+use Statamic\Facades\Collection as CollectionFacade;
+use Statamic\Facades\Entry;
+use Tests\Support\StacheIsolatedTestCase;
+
+/**
+ * Coverage for App\Services\ComputedFields\ProviderPeople\ClinicalTitleResolver —
+ * the patient-facing clinical title resolved from the primary
+ * `clinical_specializations` entry (UAMS-Web/uams-statamic-archive#2596), shared by the SEO `<title>` formula
+ * ({@see DocumentTitle}) and the `clinical_title` computed the
+ * Find-a-Doc provider card renders (UAMS-Web/uams-statamic-archive#64).
+ *
+ * Fixtures persist real people and specialization entries into an isolated
+ * Stache (StacheIsolatedTestCase) so the entry resolution runs against the real
+ * query layer rather than mocks, mirroring DocumentTitleTest. `saveQuietly()`
+ * bypasses the EntrySaved listeners so the stored `clinical_specializations`
+ * survives verbatim under the assertions.
+ *
+ * @command  php artisan test --compact tests/Feature/Services/ComputedFields/ProviderPeople/ClinicalTitleResolverTest.php
+ */
+uses(StacheIsolatedTestCase::class);
+
+beforeEach(function (): void {
+    /** @var Collection $people */
+    $people = CollectionFacade::make('people');
+    $people->title('People');
+    $people->save();
+
+    // A structured collection on `default` since UAMS-Web/uams-statamic-archive#2596; people store its entry ids.
+    /** @var Collection $specializations */
+    $specializations = CollectionFacade::make('clinical_specializations');
+    $specializations->title('Clinical Specializations');
+    $specializations->sites(['default']);
+    $specializations->structureContents(['root' => false]);
+    $specializations->save();
+});
+
+/**
+ * Persist a `clinical_specializations` entry with the given patient-title data.
+ *
+ * Its id is `spec-<slug>`, deliberately not its slug, so a lookup by slug instead of
+ * by the stored id resolves nothing and fails the test.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function clinicalTitleMakeSpecialization(string $slug, array $data): void
+{
+    /** @var EntryInstance $entry */
+    $entry = Entry::make();
+    $entry->id('spec-'.$slug);
+    $entry->collection('clinical_specializations');
+    $entry->locale('default');
+    $entry->slug($slug);
+    $entry->published(true);
+    $entry->data($data);
+    $entry->saveQuietly();
+}
+
+/**
+ * Persist a people entry, bypassing EntrySaved listeners so its stored data
+ * survives verbatim.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function clinicalTitleMakePerson(array $data): EntryInstance
+{
+    /** @var EntryInstance $entry */
+    $entry = Entry::make();
+    $entry->collection('people');
+    $entry->slug('provider-'.bin2hex(random_bytes(4)));
+    $entry->published(true);
+    $entry->data($data);
+
+    $entry->saveQuietly();
+
+    return $entry;
+}
+
+function clinicalTitleResolver(): ClinicalTitleResolver
+{
+    return app(ClinicalTitleResolver::class);
+}
+
+it('resolves the patient-friendly specialization title', function (): void {
+    clinicalTitleMakeSpecialization('thoracic', [
+        'title' => 'Thoracic Surgeon',
+        'title_specialization_patient' => 'Thoracic Surgery',
+        'title_specialization_query' => false,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-thoracic']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Thoracic Surgery');
+});
+
+it('prefers the taxonomy code-set name when the query toggle is on', function (): void {
+    clinicalTitleMakeSpecialization('oncology', [
+        'code_name' => 'Medical Oncology',
+        'title_specialization_patient' => 'Cancer Care',
+        'title_specialization_query' => true,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-oncology']]);
+
+    // The toggle prefers code_name over the patient specialization title.
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Medical Oncology');
+});
+
+it('uses the patient title (not code_name) when the toggle is off', function (): void {
+    clinicalTitleMakeSpecialization('both', [
+        'code_name' => 'Medical Oncology',
+        'title_specialization_patient' => 'Cancer Care',
+        'title_specialization_query' => false,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-both']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Cancer Care');
+});
+
+it('falls back to the occupation title, then the entry title', function (): void {
+    clinicalTitleMakeSpecialization('occ-only', [
+        'title' => 'Cardiologist',
+        'title_occupation' => 'Heart Doctor',
+        'title_specialization_query' => false,
+    ]);
+    $occ = clinicalTitleMakePerson(['clinical_specializations' => ['spec-occ-only']]);
+    expect(clinicalTitleResolver()->resolve($occ))->toBe('Heart Doctor');
+
+    clinicalTitleMakeSpecialization('title-only', [
+        'title' => 'Neurology',
+        'title_specialization_query' => false,
+    ]);
+    $titleOnly = clinicalTitleMakePerson(['clinical_specializations' => ['spec-title-only']]);
+    expect(clinicalTitleResolver()->resolve($titleOnly))->toBe('Neurology');
+});
+
+it('resolves no title from a left-over term reference or a bare slug, now that the field stores entry ids (#2596)', function (): void {
+    clinicalTitleMakeSpecialization('thoracic', [
+        'title_specialization_patient' => 'Thoracic Surgery',
+        'title_specialization_query' => false,
+    ]);
+
+    // The two shapes a taxonomy-era value could take. Neither is an entry id, and the
+    // content set stored none of them when it was converted.
+    $legacyReference = clinicalTitleMakePerson(['clinical_specializations' => ['clinical_specializations::thoracic']]);
+    $bareSlug = clinicalTitleMakePerson(['clinical_specializations' => ['thoracic']]);
+
+    expect(clinicalTitleResolver()->resolve($legacyReference))->toBe('')
+        ->and(clinicalTitleResolver()->resolve($bareSlug))->toBe('');
+});
+
+it('resolves no title from an entry in another collection', function (): void {
+    // A people entry's id in the field: a real entry, but not a specialization.
+    $other = clinicalTitleMakePerson(['title' => 'Nyota Uhura']);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => [$other->id()]]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('');
+});
+
+it('reads only the FIRST specialization when several are set', function (): void {
+    clinicalTitleMakeSpecialization('primary', [
+        'title_specialization_patient' => 'Primary Specialty',
+        'title_specialization_query' => false,
+    ]);
+    clinicalTitleMakeSpecialization('secondary', [
+        'title_specialization_patient' => 'Secondary Specialty',
+        'title_specialization_query' => false,
+    ]);
+    $person = clinicalTitleMakePerson([
+        'clinical_specializations' => ['spec-primary', 'spec-secondary'],
+    ]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Primary Specialty');
+});
+
+it('returns empty for no specialization, an unresolvable term, or a non-array field', function (): void {
+    expect(clinicalTitleResolver()->resolve(clinicalTitleMakePerson(['title' => 'No Specialty'])))->toBe('')
+        ->and(clinicalTitleResolver()->resolve(clinicalTitleMakePerson([
+            'clinical_specializations' => ['does-not-exist'],
+        ])))->toBe('')
+        ->and(clinicalTitleResolver()->resolve(clinicalTitleMakePerson([
+            'clinical_specializations' => 'oops',
+        ])))->toBe('');
+});
+
+it('exposes the resolved title through the registered clinical_title computed', function (): void {
+    clinicalTitleMakeSpecialization('thoracic', [
+        'title_specialization_patient' => 'Thoracic Surgery',
+        'title_specialization_query' => false,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-thoracic']]);
+
+    // Proves ProvidersPeopleSharedCollectionComputedsRegistrar wired the computed
+    // for `people`, not just that the resolver works when called directly.
+    expect($person->value('clinical_title'))->toBe('Thoracic Surgery');
+});

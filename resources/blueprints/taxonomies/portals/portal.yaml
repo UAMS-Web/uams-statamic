@@ -1,0 +1,81 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              placeholder: "e.g., UAMS\_Health MyChart"
+              localizable: false
+          -
+            handle: official_website
+            field: uamsweb_common.url
+            config:
+              display: 'URL of Portal'
+              placeholder: 'e.g., https://mychart.uamshealth.com/'
+              validate:
+                - required
+                - sometimes
+              unless:
+                title: 'equals None'
+          -
+            handle: link_text
+            field:
+              placeholder: 'e.g., Log in to MyChart'
+              type: text
+              display: 'Link Text for Portal'
+              validate:
+                - required
+                - sometimes
+              unless:
+                title: 'equals None'
+              localizable: false
+          -
+            handle: appointment_phone
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Appointment Line'
+              instructions: "The appointment line a patient calls when this portal is the one their location uses. Leave blank to use the Find-a-Doc system default (the UAMS\_Health appointment line)."
+              unless:
+                title: 'equals None'
+              localizable: false
+          -
+            handle: appointment_phone_name
+            field:
+              type: text
+              display: 'Appointment Line Name'
+              instructions: "How the appointment line is named in a sentence — it is read as \"by calling {name} at {number}\", so write it lowercase and with its article: \"the main Arkansas Children's Hospital appointment line\". Leave blank to use the system default."
+              placeholder: "e.g., the main Arkansas Children's Hospital appointment line"
+              unless:
+                title: 'equals None'
+              localizable: false
+          -
+            handle: content
+            field: uamsweb_common.bard_simple_lists
+            config:
+              display: Content
+              placeholder: 'UAMS Health MyChart is a free online patient portal that...'
+              unless:
+                title: 'equals None'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Patient Portal'

@@ -1,0 +1,37 @@
+{{#
+	@name UAMS Content
+	@desc The UAMS Content page builder block.
+	@set page.page_builder.uamsweb_block_content
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Block Class #}}
+
+		{{# $content_class = 'section-block' #}}
+		{{ $content_class = 'content-block' }}
+
+	{{# Only render if block_heading and body have values #}}
+
+		{{ $block_valid = block_heading && body }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$content_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header }}
+			<div class="module-body">
+				{{ body }}
+					{{ partial src="sets/{type}" }}
+				{{ /body }}
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

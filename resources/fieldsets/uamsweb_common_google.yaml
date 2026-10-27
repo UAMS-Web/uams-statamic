@@ -1,0 +1,44 @@
+title: 'UAMSWeb Common Reusable Fields, Google Business Profile'
+fields:
+  -
+    handle: google_business_profile_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Does this entity have one or more listings on Google Business Profiles?'
+      localizable: false
+  -
+    handle: google_business_profile_cid
+    field: uamsweb_common_identifiers.google_business_profile_cid_multiple
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        google_business_profile_query: 'equals true'
+      localizable: false
+  -
+    handle: google_business_profile_exclude_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Should this entity be excluded from any bulk imports and updates in Google Business Profiles?'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: google_business_profile_category
+    field:
+      type: terms_search_index
+      display: 'Google Business Profiles Category'
+      instructions: |-
+        Select up to 10 categories. Rearrange them so that the first item is the primary category.
+      taxonomies:
+        - google_business_profile_categories
+      max_items: 10
+      create: false
+      if:
+        google_business_profile_exclude_query: 'equals false'
+      validate:
+        - required
+        - sometimes
+      localizable: false

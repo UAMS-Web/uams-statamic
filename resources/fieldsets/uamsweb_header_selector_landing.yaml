@@ -1,0 +1,73 @@
+title: 'UAMSWeb Header Selector, Landing Page'
+fields:
+  -
+    handle: title_options
+    field:
+      options:
+        -
+          key: graphic
+          value: Graphic
+        -
+          key: marketing-landing-page
+          value: 'Marketing Landing Page'
+        -
+          key: hero
+          value: Hero
+        -
+          key: hidden
+          value: Hidden
+      type: radio
+      display: 'Page Header Options'
+      default: graphic
+      localizable: false
+      validate:
+        - required
+  -
+    handle: header_graphic
+    field:
+      type: group
+      display: 'Graphic Header Options'
+      if:
+        title_options: 'equals graphic'
+      localizable: false
+      fields:
+        -
+          import: uamsweb_header_graphic
+  -
+    handle: header_marketing_landing_page
+    field:
+      type: group
+      display: 'Marketing Landing Page Header Options'
+      instructions: 'The Marketing Landing Page header option should only be used for marketing landing pages.'
+      if:
+        title_options: 'equals marketing-landing-page'
+      localizable: false
+      fields:
+        -
+          import: uamsweb_header_marketing_landing_page
+        -
+          handle: hide_primary_nav
+          field:
+            type: toggle
+            display: 'Hide Primary Navigation'
+            instructions: "Hide the site's primary navigation menu on this marketing landing page, for a distraction-free campaign layout. Leave off (the default) to show the full navigation, as on every other page."
+            default: false
+            localizable: false
+        -
+          handle: hide_resource_nav
+          field:
+            type: toggle
+            display: 'Hide Resource Navigation'
+            instructions: 'Hide the resource navigation (MyChart, utility links, and site search) on this marketing landing page. Leave off (the default) to show it, as on every other page.'
+            default: false
+            localizable: false
+  -
+    handle: header_hero
+    field: uamsweb_header_hero.hero
+    config:
+      display: 'Hero Header Options'
+      validate:
+        - required
+        - sometimes
+      if:
+        title_options: 'equals hero'

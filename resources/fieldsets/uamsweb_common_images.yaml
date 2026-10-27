@@ -1,0 +1,411 @@
+title: 'UAMSWeb Common Reusable Fields, Images'
+fields:
+  -
+    handle: exempt_from_alt
+    field: uamsweb_common.true_false
+    config:
+      display: 'Exempt From Alt Text'
+      instructions: "When enabled, this image won't show up in the control panel dashboard as an image that misses alt text. Images without an alt text will automatically be hidden for screen readers."
+      validate:
+        - required
+      localizable: false
+  -
+    handle: alt
+    field:
+      display: 'Alt Text'
+      type: textarea
+      instructions: |-
+        Provide a concise description of the image's content and purpose to ensure users who cannot see it, such as those using screen readers, understand its meaning.
+
+        The alt text remains hidden from sighted users unless the image fails to load.
+
+        Focus on the essential information the image conveys, like "Red apple" for a picture of a red apple. Additionally, well-written alt text improves search engine optimization by helping search engines interpret the image's content.
+      localizable: false
+      if:
+        exempt_from_alt: 'equals false'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: image_alt_text_override
+    field:
+      type: textarea
+      display: 'Image Alt Text Override'
+      instructions: |-
+        If you want to specify alt text that differs from the one defined for this image in the asset library, you can do so here.
+
+        Alt text (alternative text) should provide a concise description of the image's content and purpose to ensure users who cannot see it, such as those using screen readers, understand its meaning.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: caption
+    field:
+      display: Caption
+      type: textarea
+      instructions: |-
+        A caption should provide additional context or details about the asset to enhance the user's understanding. Captions complement the alt text and can further support accessibility and engagement for all users.
+
+        Write details such as the subject, location, date, or other relevant information, like "A red apple from our family orchard" for a red apple image.
+
+        The caption will be displayed to everyone below the asset.
+      localizable: false
+  -
+    handle: image_caption_override
+    field:
+      type: textarea
+      display: 'Image Caption Override'
+      instructions: |-
+        If you want to specify caption text that differs from the one defined for this image in the asset library, you can do so here.
+
+        A caption should provide additional context or details about the asset to enhance the user's understanding. Captions complement the alt text and can further support accessibility and engagement for all users.
+
+        Write details such as the subject, location, date, or other relevant information, like "A red apple from our family orchard" for a red apple image.
+
+        The caption will be displayed to everyone below the asset.
+      replicator_preview: false
+      localizable: false
+  -
+    handle: image
+    field:
+      container: images
+      max_files: 1
+      type: assets
+      localizable: true
+      display: Image
+      always_save: false
+  -
+    handle: portrait
+    field:
+      container: portraits
+      max_files: 1
+      type: assets
+      localizable: true
+      display: Portrait
+      always_save: false
+  -
+    handle: portrait_wide
+    field:
+      container: portraits_wide
+      max_files: 1
+      type: assets
+      localizable: true
+      display: 'Wide Portrait'
+      always_save: false
+  -
+    handle: image_1920x1080
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1920x1080'
+      instructions: 'Recommended image dimensions: 5120x2880. Minimum image dimensions: 1920x1080.'
+      validate:
+        - 'dimensions:min_width=1920,min_height=1080'
+      localizable: false
+  -
+    handle: image_1920x720
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1920x720'
+      instructions: 'Recommended image dimensions: 5120x1920. Minimum image dimensions: 1920x720.'
+      validate:
+        - 'dimensions:min_width=1920,min_height=720'
+      localizable: false
+  -
+    handle: image_1920x960
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1920x960'
+      instructions: 'Recommended image dimensions: 5120x2560. Minimum image dimensions: 1920x960.'
+      validate:
+        - 'dimensions:min_width=1920,min_height=960'
+      localizable: false
+  -
+    handle: image_1227x1635
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1227x1635'
+      instructions: 'Minimum image dimensions: 1227x1635.'
+      validate:
+        - 'dimensions:min_width=1227,min_height=1635'
+      localizable: false
+  -
+    handle: image_1435x768
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1435x768'
+      instructions: 'Recommended dimensions: 2870x1536 or larger. Minimum dimensions: 1435x768.'
+      validate:
+        - 'dimensions:min_width=1435,min_height=768'
+      localizable: false
+  -
+    handle: image_578x409
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 578x409'
+      instructions: 'Recommended dimensions: 1156x818 or larger. Minimum dimensions: 578x409.'
+      validate:
+        - 'dimensions:min_width=578,min_height=409'
+      localizable: false
+  -
+    handle: image_768x432
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 768x432'
+      instructions: 'Recommended dimensions: 1536x864 or larger. Minimum dimensions: 768x432.'
+      validate:
+        - 'dimensions:min_width=768,min_height=432'
+      localizable: false
+  -
+    handle: image_1920x600
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1920x600'
+      instructions: 'Recommended dimensions: 5120x1600 or larger. Minimum dimensions: 1920x600.'
+      validate:
+        - 'dimensions:min_width=1920,min_height=600'
+      localizable: false
+  -
+    handle: image_992x806
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 992x806'
+      instructions: 'Recommended dimensions: 1984x1612 or larger. Minimum dimensions: 992x806.'
+      validate:
+        - 'dimensions:min_width=992,min_height=806'
+      localizable: false
+  -
+    handle: image_455x256
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 455x256'
+      instructions: 'Recommended image dimensions: 910x512. Minimum image dimensions: 455x256.'
+      validate:
+        - 'dimensions:min_width=455,min_height=256'
+      localizable: false
+  -
+    handle: image_1200x1600
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x1600'
+      instructions: 'Recommended image dimensions: 2400x3200. Minimum image dimensions: 1200x1600.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=1600'
+      localizable: false
+  -
+    handle: image_1200x1600_3_4
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x1600 and 3:4 aspect ratio'
+      instructions: 'Recommended image dimensions: 2400x3200. Minimum image dimensions: 1200x1600. Required aspect ratio: 3:4.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=1600,ratio=3/4'
+      localizable: false
+  -
+    handle: image_1200x1600_3_4_recommended
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x1600 and 3:4 aspect ratio'
+      instructions: 'Recommended image dimensions: 2400x3200. Minimum image dimensions: 1200x1600. Recommended aspect ratio: 3:4.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=1600'
+      localizable: false
+  -
+    handle: image_1200x675
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x675'
+      instructions: 'Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=675'
+      localizable: false
+  -
+    handle: image_1200x675_16_9
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x675 and 16:9 aspect ratio'
+      instructions: 'Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675. Required aspect ratio: 16:9.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=675,ratio=16/9'
+      localizable: false
+  -
+    handle: image_1200x675_16_9_recommended
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1200x675 and 16:9 aspect ratio'
+      instructions: 'Recommended image dimensions: 2400x1350. Minimum image dimensions: 1200x675. Recommended aspect ratio: 16:9.'
+      validate:
+        - 'dimensions:min_width=1200,min_height=675'
+      localizable: false
+  -
+    handle: image_1280x720
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1280x720'
+      instructions: 'Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720.'
+      validate:
+        - 'dimensions:min_width=1280,min_height=720'
+      localizable: false
+  -
+    handle: image_1280x720_16_9
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1280x720 and 16:9 aspect ratio'
+      instructions: 'Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Required aspect ratio: 16:9.'
+      validate:
+        - 'dimensions:min_width=1280,min_height=720,ratio=16/9'
+      localizable: false
+  -
+    handle: image_1280x720_16_9_recommended
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1280x720 and 16:9 aspect ratio'
+      instructions: 'Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.'
+      validate:
+        - 'dimensions:min_width=1280,min_height=720'
+      localizable: false
+  -
+    handle: image_675x675
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 675x675'
+      instructions: 'Recommended image dimensions: 1350x1350. Minimum image dimensions: 675x675.'
+      validate:
+        - 'dimensions:min_width=675,min_height=675'
+      localizable: false
+  -
+    handle: image_675x675_1_1
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 675x675 and 1:1 aspect ratio'
+      instructions: 'Recommended image dimensions: 1350x1350. Minimum image dimensions: 675x675. Required aspect ratio: 1:1.'
+      validate:
+        - 'dimensions:min_width=675,min_height=675,ratio=1/1'
+      localizable: false
+  -
+    handle: image_675x675_1_1_recommended
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 675x675 and 1:1 aspect ratio'
+      instructions: 'Recommended image dimensions: 1350x1350. Minimum image dimensions: 675x675. Recommended aspect ratio: 1:1.'
+      validate:
+        - 'dimensions:min_width=675,min_height=675'
+      localizable: false
+  -
+    handle: image_1600x1200_4_3
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1600x1200 and 4:3 aspect ratio'
+      instructions: 'Recommended image dimensions: 3200x2400. Minimum image dimensions: 1600x1200. Required aspect ratio: 4:3.'
+      validate:
+        - 'dimensions:min_width=1600,min_height=1200,ratio=4/3'
+      localizable: false
+  -
+    handle: image_1600x1200_4_3_recommended
+    field:
+      max_files: 1
+      container: images
+      type: assets
+      display: 'Image, Min 1600x1200 and 4:3 aspect ratio'
+      instructions: 'Recommended image dimensions: 3200x2400. Minimum image dimensions: 1600x1200. Recommended aspect ratio: 4:3.'
+      validate:
+        - 'dimensions:min_width=1600,min_height=1200'
+      localizable: false
+  -
+    handle: logo
+    field:
+      max_files: 1
+      container: logos
+      allow_uploads: false
+      show_set_alt: false
+      type: assets
+      display: Logo
+      localizable: false
+  -
+    handle: logo_color_group
+    field:
+      type: group
+      display: 'Logo Color Scheme Group'
+      localizable: false
+      fields:
+        -
+          handle: dark
+          field: uamsweb_common_images.logo
+          config:
+            display: Dark
+        -
+          handle: light
+          field: uamsweb_common_images.logo
+          config:
+            display: Light
+        -
+          handle: white
+          field: uamsweb_common_images.logo
+          config:
+            display: 'All White'
+        -
+          handle: black
+          field: uamsweb_common_images.logo
+          config:
+            display: 'All Black'
+  -
+    handle: logo_group
+    field:
+      type: group
+      display: 'Logo Group'
+      localizable: false
+      fields:
+        -
+          handle: horizontal
+          field: uamsweb_common_images.logo_color_group
+          config:
+            display: Horizontal
+        -
+          handle: vertical
+          field: uamsweb_common_images.logo_color_group
+          config:
+            display: Vertical

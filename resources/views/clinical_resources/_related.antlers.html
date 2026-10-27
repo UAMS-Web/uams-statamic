@@ -1,0 +1,29 @@
+{{#
+	@name Clinical Resource Related Entities
+	@desc Renders the resource's related Find-a-Doc entities (providers,
+	      locations, areas of expertise, conditions, treatments, and related
+	      resources) as linked lists. Each entity links to its show page when it
+	      has a resolvable URL, otherwise renders its name as plain text. Expects
+	      the clinical resource entry in scope. (UAMS-Web/uams-statamic-archive#577)
+#}}
+
+{{# UAMS-Web/uams-statamic-archive#919: filter related providers to clinical-provider-eligible, searchable people once, then reuse. #}}
+{{ eligible_providers = clinical_providers | clinical_provider_eligible }}
+{{# Every relation but `eligible_providers` is a RAW augmented `entries` value:
+	a `StatusQueryBuilder`, truthy even when empty. Gate on `| count`, which
+	counts the published entries the list below emits, so an aside is never
+	opened over six empty lists (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422).
+	`eligible_providers` is already a plain array (`clinical_provider_eligible`
+	returns one), so `| length` there counts what renders. #}}
+{{ $has_related = ( eligible_providers | length ) || ( clinical_locations | count ) || ( clinical_expertise | count ) || ( clinical_conditions | count ) || ( clinical_services | count ) || ( clinical_resources | count ) }}
+
+{{ if $has_related }}
+	<aside class="clinical-resource-related" aria-label="Related">
+		{{ partial:clinical_resources/related_list :entries="eligible_providers" heading="Related Providers" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_locations" heading="Related Locations" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_expertise" heading="Areas of Expertise" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_conditions" heading="Conditions" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_services" heading="Treatments" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Related Resources" }}
+	</aside>
+{{ /if }}

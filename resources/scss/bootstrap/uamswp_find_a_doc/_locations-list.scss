@@ -1,0 +1,38 @@
+@use "sass:math";
+
+.card-list-container.location-card-list-container {
+    .card-list {
+        .card {
+            margin: math.div($grid-gutter-width, 2);
+            text-align: center;
+
+            img {
+                flex-shrink: 0;
+            }
+
+            .card-body {
+                //display: flex;
+                //flex-flow: column nowrap;
+                //align-items: center;
+
+                .btn {
+                    margin-top: auto;
+                }
+            }
+
+            .btn-container {
+                padding: 0 $card-spacer-x $card-spacer-x;
+                margin: auto 0 0;
+                justify-content: center;
+
+                .inner-container {
+                    margin: -(math.div($spacer-min, 2));
+
+                    .btn {
+                        margin: math.div($spacer-min, 2);
+                    }
+                }
+            }
+        }
+    }
+}

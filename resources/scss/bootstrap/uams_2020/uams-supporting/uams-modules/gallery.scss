@@ -1,0 +1,198 @@
+@use "sass:math";
+
+.gallery-block {
+    &:not(.no-padding) {
+        .image-container {
+            padding-top: $uams-module-padding-mobile;
+
+            @include media-breakpoint-up(sm) {
+                padding-top: $uams-module-padding;
+            }
+        }
+    }
+
+    &.extra-padding {
+        .image-container {
+            padding-top: ($uams-module-padding-mobile * 2);
+
+            @include media-breakpoint-up(sm) {
+                padding-top: ($uams-module-padding * 2);
+            }
+        }
+    }
+
+    &.less-padding {
+        .image-container {
+            padding-top: math.div($uams-module-padding-mobile, 2);
+
+            @include media-breakpoint-up(sm) {
+                padding-top: math.div($uams-module-padding, 2);
+            }
+        }
+    }
+
+    .module-title,
+    .module-description {
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    // .module-body {
+    //     text-align: center;
+    // }
+
+    .image-container {
+        .row {
+            justify-content: center;
+        }
+
+        img {
+            width: 100%;
+        }
+    }
+
+    .modal-dialog.modal-xl {
+        @include media-breakpoint-up(sm) {
+            max-width: 100%;
+            padding: 0 1.75rem;
+        }
+        @include media-breakpoint-up(lg) {
+            max-width: 100%;
+        }
+
+        .modal-content {
+            width: auto;
+            margin: 0 auto;
+        }
+    }
+}
+
+// Image Gallery Bard set (UAMS-Web/uams-statamic-archive#188): a responsive grid + accessible Alpine lightbox.
+// Distinct `.gallery-set*` classes so it never collides with the `.gallery-block`
+// page-builder gallery above.
+.gallery-set {
+    &__header {
+        margin-bottom: $uams-module-padding-mobile;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: math.div($grid-gutter-width, 2);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        @include media-breakpoint-up(md) {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        // Large screens honor the configured column count (default 3).
+        @include media-breakpoint-up(lg) {
+            grid-template-columns: repeat(3, 1fr);
+
+            &[data-columns="2"] {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            &[data-columns="4"] {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    }
+
+    &__item {
+        margin: 0;
+    }
+
+    &__trigger {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: pointer;
+
+        @include uams-focus-visible();
+
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+    }
+
+    &__caption {
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: $text-muted;
+    }
+}
+
+.gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba($black, 0.85);
+    }
+
+    &__dialog {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        max-width: 90vw;
+        max-height: 90vh;
+    }
+
+    &__figure {
+        margin: 0;
+        text-align: center;
+    }
+
+    &__image {
+        max-width: 80vw;
+        max-height: 80vh;
+        width: auto;
+        height: auto;
+    }
+
+    &__caption {
+        margin-top: 0.5rem;
+        color: $white;
+    }
+
+    &__control {
+        border: 0;
+        background: rgba($black, 0.5);
+        color: $white;
+        font-size: 2rem;
+        line-height: 1;
+        padding: 0.25em 0.5em;
+        cursor: pointer;
+
+        @include uams-focus-visible();
+    }
+
+    &__close {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+
+    &__prev {
+        order: -1;
+    }
+
+    &__next {
+        order: 1;
+    }
+}

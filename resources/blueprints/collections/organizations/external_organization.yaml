@@ -1,0 +1,136 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the organization. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: organization_role
+            field:
+              type: select
+              display: 'Organization Role'
+              instructions: 'The kind of organizational unit this entry represents. Determines which pickers (brand, department, service line, …) can select it.'
+              options:
+                brand: 'Brand Organization'
+                college: College
+                institute: Institute
+                department_academic: 'Department, Academic'
+                division_academic: 'Division, Academic'
+                program: Program
+                program_academic: 'Program, Academic'
+                program_academic_degree: 'Program, Academic, Degree'
+                department_clinical: 'Department, Clinical'
+                department_institutional: 'Department, Institutional'
+                service_line: 'Service Line'
+                campus: Campus
+              cast_booleans: false
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provenance
+            field:
+              type: radio
+              display: Provenance
+              instructions: "For brand organizations only: whether this is a UAMS-owned (first-party) brand or a third-party brand. Other organization roles are UAMS-internal and do not carry provenance — if their effective provenance is ever needed, it's derived from the nearest brand ancestor (first-party cascades; third-party does not presume its descendants are third-party)."
+              options:
+                first_party: 'First Party (UAMS)'
+                third_party: 'Third Party'
+              cast_booleans: false
+              if:
+                organization_role: 'equals brand'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+              type: entries
+              display: 'Schema Object for the Organization'
+              instructions: 'Select a schema object for the organization, if available. When set, the inline fields below are not used.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Organization'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Organization Name'
+              instructions: |-
+                Name the organization using only its full official name (e.g., "University of Arkansas for Medical Sciences").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name with an abbreviation or acronym in parentheses or set off by dashes.
+              placeholder: 'e.g., University of Arkansas for Medical Sciences'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            import: uamsweb_schema_basic
+          -
+            import: uamsweb_schema_descriptions
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            handle: service_line_members
+            field:
+              type: entries
+              display: 'Members of This Service Line'
+              instructions: 'Read-only. The locations and providers whose service line is this organization. Only meaningful for a Service Line organization.'
+              visibility: computed
+              localizable: false
+          -
+            handle: academic_department_residents
+            field:
+              type: entries
+              display: 'Current Residents of This Academic Department'
+              instructions: 'Read-only. The people whose current residency academic department is this organization. Only meaningful for an academic Department or Division organization.'
+              visibility: computed
+              localizable: false
+          -
+            handle: academic_department_fellows
+            field:
+              type: entries
+              display: 'Current Fellows of This Academic Department'
+              instructions: 'Read-only. The people whose current fellowship academic department is this organization. Only meaningful for an academic Department or Division organization.'
+              visibility: computed
+              localizable: false
+title: 'External Organization'

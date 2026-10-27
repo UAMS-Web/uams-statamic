@@ -1,0 +1,71 @@
+// Responsive background image via CSS custom properties.
+// Inline <style> sets --bg-xxs, --bg-xxs-2x, --bg-xs, ... per element;
+// this mixin emits the 14 media queries that consume those vars.
+@mixin responsive-bg {
+    background-image: var(--bg-xxs);
+
+    /* XXS Breakpoint, retina */
+    @include media-breakpoint-up-retina(xxs) {
+        background-image: var(--bg-xxs-2x);
+    }
+
+    /* XS Breakpoint */
+    @include media-breakpoint-up(xs) {
+        background-image: var(--bg-xs);
+    }
+
+    /* XS Breakpoint, retina */
+    @include media-breakpoint-up-retina(xs) {
+        background-image: var(--bg-xs-2x);
+    }
+
+    /* SM Breakpoint */
+    @include media-breakpoint-up(sm) {
+        background-image: var(--bg-sm);
+    }
+
+    /* SM Breakpoint, retina */
+    @include media-breakpoint-up-retina(sm) {
+        background-image: var(--bg-sm-2x);
+    }
+
+    /* MD Breakpoint */
+    @include media-breakpoint-up(md) {
+        background-image: var(--bg-md);
+    }
+
+    /* MD Breakpoint, retina */
+    @include media-breakpoint-up-retina(md) {
+        background-image: var(--bg-md-2x);
+    }
+
+    /* LG Breakpoint */
+    @include media-breakpoint-up(lg) {
+        background-image: var(--bg-lg);
+    }
+
+    /* LG Breakpoint, retina */
+    @include media-breakpoint-up-retina(lg) {
+        background-image: var(--bg-lg-2x);
+    }
+
+    /* XL Breakpoint */
+    @include media-breakpoint-up(xl) {
+        background-image: var(--bg-xl);
+    }
+
+    /* XL Breakpoint, retina */
+    @include media-breakpoint-up-retina(xl) {
+        background-image: var(--bg-xl-2x);
+    }
+
+    /* XXL Breakpoint */
+    @include media-breakpoint-up(xxl) {
+        background-image: var(--bg-xxl);
+    }
+
+    /* XXL Breakpoint, retina */
+    @include media-breakpoint-up-retina(xxl) {
+        background-image: var(--bg-xxl-2x);
+    }
+}

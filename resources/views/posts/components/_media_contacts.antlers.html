@@ -1,0 +1,72 @@
+{{#
+	@name News Release Post Media Contacts
+	@desc Renders contact blocks for people on the `media_contact` taxonomy term
+	      (`media_contact_groups`). Markup: heading, then `ul.media-contacts-list`
+	      with one `li` per person (`address`, `strong` with `itemprop="name"`).
+	      Office / wireless / email lines use `format_phone` for display; `tel:`
+	      hrefs keep E.164. Outputs nothing when the term is missing or `people`
+	      is empty.
+
+	@param include_links  bool|string  When true (default), wrap phone and email
+	      values in `tel:` / `mailto:` anchors.
+	@param heading  string  Fixed heading text; when omitted, uses “Media
+	      Contact” for one person and “Media Contacts” for multiple.
+	@param heading_level  int|string  Numeric level only (default `2` → `<h2>`).
+	@param heading_class  string  Optional `class` on the heading.
+	@param address_class  string  Optional `class` on each `<address>`.
+	@param display_enabled  bool|string|null  Opt-in: show only when boolean
+	      `true` or string `true` (e.g., from `bool_string`). `null`, `false`,
+	      string `false`, empty string, or omission when the value is null
+	      hides the block.
+#}}
+
+{{# Resolve display toggle before other params (read at partial root only). #}}
+{{ $media_contacts_display_enabled = false }}
+{{ if display_enabled === true || display_enabled === 'true' }}
+	{{ $media_contacts_display_enabled = true }}
+{{ /if }}
+
+{{ if $media_contacts_display_enabled }}
+	{{# Normalize before loops: inside `people`, the name `include_links` can resolve
+		to that entry’s fields; partial params are read here only. Use strict checks so
+		an omitted param (null) stays true (`null == false` is true in PHP). #}}
+	{{ $media_contacts_include_links = true }}
+	{{ if include_links === false || include_links === 'false' }}
+		{{ $media_contacts_include_links = false }}
+	{{ /if }}
+
+	{{ media_contact }}
+		{{ unless no_results }}
+			{{# `people` is an `entries` relation, so it augments to a `StatusQueryBuilder`.
+				`| count` counts its published entries, which is what the loop below will
+				actually emit, so a term whose contacts are all unpublished renders no
+				heading over an empty list (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422; same gate as the clinical
+				provider lens, UAMS-Web/uams-statamic-archive#1684). #}}
+			{{ $people_count = people | count }}
+
+			{{ if $people_count > 0 }}
+				{{ $lvl = heading_level ?? 2 }}
+				{{ $heading_text = heading ?? ($people_count == 1 ? 'Media Contact' : 'Media Contacts') }}
+				<h{{ $lvl }}{{ if heading_class }} class="{{ heading_class }}"{{ /if }}>{{ $heading_text }}</h{{ $lvl }}>
+				<ul class="media-contacts-list">
+					{{ people }}
+						<li>
+							<address{{ if address_class }} class="{{ address_class }}"{{ /if }}>
+								<strong itemprop="name">{{ title }}</strong><br>
+								{{ if telephone }}
+									Office: {{ if $media_contacts_include_links }}<a href="tel:{{ telephone }}">{{ telephone | format_phone }}</a>{{ else }}{{ telephone | format_phone }}{{ /if }}<br>
+								{{ /if }}
+								{{ if telephone_mobile }}
+									Wireless: {{ if $media_contacts_include_links }}<a href="tel:{{ telephone_mobile }}">{{ telephone_mobile | format_phone }}</a>{{ else }}{{ telephone_mobile | format_phone }}{{ /if }}<br>
+								{{ /if }}
+								{{ if email }}
+									Email: {{ if $media_contacts_include_links }}<a href="mailto:{{ email }}">{{ email }}</a>{{ else }}{{ email }}{{ /if }}
+								{{ /if }}
+							</address>
+						</li>
+					{{ /people }}
+				</ul>
+			{{ /if }}
+		{{ /unless }}
+	{{ /media_contact }}
+{{ /if }}

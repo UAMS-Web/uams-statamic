@@ -1,0 +1,20 @@
+{{#
+	@name UAMS Container Row
+	@desc Wraps content in container-fluid and row; use with page_builder/uamsweb_block.
+#}}
+
+<div 
+	class="container-fluid"
+	{{ ( container_itemprop ?? null ) | attribute:itemprop }}
+	{{ ( container_itemscope ?? null ) | attribute:itemscope }}
+	{{ ( container_itemtype ?? null ) | attribute:itemtype }}
+>
+	<div 
+		class="row"
+		{{ ( row_itemprop ?? null ) | attribute:itemprop }}
+		{{ ( row_itemscope ?? null ) | attribute:itemscope }}
+		{{ ( row_temtype ?? null ) | attribute:itemtype }}
+	>
+		{{ slot }}
+	</div>
+</div>

@@ -1,0 +1,54 @@
+{{#
+	@name Error: Redirects
+	@desc Handles the 404 page redirects
+	@source Inspired by Statamic Peak SEO's "Error: Redirects" template: https://github.com/studio1902/statamic-peak-seo/blob/main/resources/views/errors/_redirects.antlers.html
+#}}
+
+{{# Redirect if current_url matches a redirect rule in the Redirects global. #}}
+{{ find_redirect_rule }}
+	{{ if response == '410' || response == '403' || response == '451' }}
+		{{# Targetless error responses (e.g. a migration "410 Gone" for retired
+		    content with no surviving ancestor, UAMS-Web/uams-statamic-archive#1641) — the stock redirect tag
+		    cannot emit these, so abort with the status directly. #}}
+		{{ respond_with_status code="{response}" message="{message}" }}
+	{{ elseif response == '404' }}
+		{{# Deliberately inert — a `404` rule is the one code that must NOT abort
+		    from here, and the reason is specific to 404 rather than a style choice.
+
+		    This partial only ever runs while the 404 page is being built, so the
+		    response is ALREADY 404 and a rule adds nothing but its message. Calling
+		    `respond_with_status` anyway re-enters this very page: `abort(404)` raises
+		    a plain Symfony NotFoundHttpException, which carries no `render()` of its
+		    own, so Laravel falls through to `Handler::renderHttpException()` — and
+		    that resolves `errors::404` to this partial's own parent view and renders
+		    it inside a try/catch. The rule matches a second time, aborts a second
+		    time, and the catch either rethrows (a 500 under `app.debug`) or answers
+		    from the ORIGINAL exception, discarding the message either way. Measured
+		    against the running site before UAMS-Web/uams-statamic-archive#1934 shipped: HTTP 500 with debug on, a
+		    generic error page with it off, and the message never rendered once.
+
+		    `403`, `410` and `451` escape this for a different reason, and the reason
+		    changed in UAMS-Web/uams-statamic-archive#1942. Those codes now DO have views — `errors/403`, `410` and
+		    `451`, all delegating to `errors/_targetless_response` — so the old
+		    "no `errors::<code>` view exists" no longer holds. What keeps them safe is
+		    that none of those views includes THIS partial, so there is no rule to
+		    re-run and nothing to re-enter. Adding a fourth targetless code is
+		    therefore fine; including `errors/_redirects` from its view is not.
+
+		    `404` remains the exception, and the message itself is rendered by
+		    `errors/404.antlers.html` (via `errors/_redirect_message`), inside the
+		    response body where a message can actually be seen. #}}
+	{{ elseif target_type == 'entry' }}
+		{{ %redirect
+			:to="(target_entry:url) + (target_query_string ? ( ( ( target_entry:url | contains('?') ) ? '&' : '?') + target_query_string ) : '')"
+			response="{response}"
+		}}
+	{{ elseif  target_type == 'url' }}
+		{{# `target_query_string` carries the rule's own query plus any the request
+		    forwarded (UAMS-Web/uams-statamic-archive#1934); it was dropped entirely on a url target before. #}}
+		{{ %redirect
+			:to="(target_url) + (target_query_string ? ( ( ( target_url | contains('?') ) ? '&' : '?') + target_query_string ) : '')"
+			response="{response}"
+		}}
+	{{ /if }}
+{{ /find_redirect_rule }}

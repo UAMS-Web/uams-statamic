@@ -1,0 +1,92 @@
+.graphic-title {
+    background-color: $primary;
+    color: $white;
+
+    &:first-child {
+        @include media-breakpoint-down(xs) {
+            border-top: 1px solid $body-bg;
+        }
+    }
+
+    &:after {
+        content: '';
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: transparent $triangles center center;
+        opacity: 0.1;
+        z-index: 0;
+    }
+
+    &.bg-image {
+        &:before {
+            opacity: 0.1;
+        }
+
+        &.full-color-dark,
+        &.full-color-light {
+            &:before {
+                filter: none;
+                opacity: 1;
+            }
+        }
+
+        &.full-color-dark {
+            color: $white;
+
+            &:after {
+                background-image: $triangles;
+            }
+        }
+
+        &.full-color-light {
+            color: $body-color;
+
+            &:after {
+                background-image: $triangles-black;
+            }
+        }
+    }
+
+    .text-container {
+        position: relative;
+        z-index: 1;
+        .graphic-title-heading {
+            text-align: center;
+
+            h1 {
+                @include line-length-em(min);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0;
+                font-family: $page-title-font-family;
+                font-weight: $page-title-font-weight;
+                line-height: $page-title-line-height;
+
+                @include media-breakpoint-up(sm) {
+                    @include font-size($page-title-font-size);
+                }
+            }
+        }
+        .graphic-title-body {
+            margin-top: $uams-module-padding-mobile;
+            text-align: center;
+
+            @include media-breakpoint-up(sm) {
+                margin-top: $uams-module-padding;
+            }
+
+            p {
+                @extend .lead;
+                @include line-length-em(max);
+            }
+
+            :last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+}

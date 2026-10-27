@@ -1,0 +1,10 @@
+app\Entries\EntryRepository.php
+app\Entries\KnowledgeBaseEntry.php
+app\Http\Controllers\CP\Collections\LocalizeEntryController.php
+app\Listeners\ValidateKnowledgeBaseEntry.php
+app\Listeners\ValidateKnowledgeBaseTree.php
+app\Providers\CustomEntryServiceProvider.php
+app\Scopes\ValidArticleParent.php
+app\Scopes\ValidTopicParent.php
+content\collections\knowledge_bases.yaml
+resources\blueprints\collections\knowledge_bases

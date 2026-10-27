@@ -1,0 +1,230 @@
+@use "sass:math";
+
+body .tshowcase {
+    line-height: $line-height-base;
+    @include make-container();
+    padding: 0;
+    @extend .clearfix;
+
+    .ts-col_1,
+    .ts-col_2,
+    .ts-col_3,
+    .ts-col_3c,
+    .ts-col_4,
+    .ts-col_4c,
+    .ts-col_5,
+    .ts-col_5c,
+    .ts-col_6,
+    .ts-col_6c {
+        padding-bottom: $grid-gutter-width;
+    }
+
+    .ts-theme-white-card-style {
+        @include make-row();
+
+        .tshowcase-box {
+            // Wraps each member
+            @include make-col-ready();
+
+            &.ts-float-left.ts-col_1 {
+                width: auto;
+                float: none;
+                @include make-col-ready();
+                //@include make-col(12);
+
+                .ts-float-left {
+                    float: none;
+                }
+
+                .tshowcase-inner-box {
+                    display: flex;
+                    width: auto;
+                    margin: 0;
+                    background-color: transparent;
+                    border: none;
+                    color: inherit;
+                    @include make-row();
+
+                    .tshowcase-box-photo,
+                    .tshowcase-box-info {
+                        @include make-col-ready();
+                    }
+
+                    .tshowcase-box-photo {
+                        line-height: inherit;
+                        margin-bottom: math.div($grid-gutter-width, 2);
+                        @include media-breakpoint-up(xs) {
+                            margin-bottom: 0;
+                            @include make-col(3);
+                        }
+
+                        &.ts-img-left {
+                            float: none;
+                        }
+
+                        img {
+                            width: auto;
+                            max-height: 171px;
+                            @include media-breakpoint-up(xs) {
+                                max-height: none;
+                            }
+                        }
+                    }
+                    .tshowcase-box-info {
+                        @include media-breakpoint-up(xs) {
+                            @include make-col(9);
+                        }
+                        .tshowcase-box-title {
+                            margin: 0 0 $headings-margin-bottom;
+                            padding: 0;
+                            color: inherit;
+                            font-size: $h4-font-size;
+                            font-weight: $headings-font-weight;
+                            line-height: $headings-line-height;
+                            text-transform: none;
+                        }
+                        .tshowcase-box-details {
+                            padding: 0;
+
+                            .tshowcase-single-position {
+                                font-size: 1.25em;
+                                margin-top: -$headings-margin-bottom;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+body.page-template-default {
+    #tshowcase-single-wrap {
+        .tshowcase-vcard {
+            display: flex;
+            @include make-row();
+
+            &:after {
+                content: '';
+                display: block;
+                height: $hr-border-width;
+                width: 100%;
+                margin: $uams-module-padding-mobile math.div($grid-gutter-width, 2);
+                background-color: $hr-border-color;
+
+                @include media-breakpoint-up(sm) {
+                    margin: $uams-module-padding math.div($grid-gutter-width, 2);
+                }
+            }
+
+            .tshowcase-vcard-left,
+            .tshowcase-vcard-right {
+                @include make-col-ready();
+            }
+
+            .tshowcase-vcard-left {
+                float: none;
+                margin-bottom: math.div($grid-gutter-width, 2);
+
+                @include media-breakpoint-up(xs) {
+                    margin-bottom: 0;
+                    @include make-col(4);
+                }
+
+                @include media-breakpoint-up(sm) {
+                    @include make-col(5);
+                }
+
+                img {
+                    display: block;
+                    width: auto;
+                    max-height: 171px;
+                    margin: 0 auto;
+
+                    @include media-breakpoint-up(xs) {
+                        max-height: none;
+                        margin: 0;
+                    }
+                }
+            }
+
+            .tshowcase-vcard-right {
+                @include media-breakpoint-up(xs) {
+                    @include make-col(8);
+                }
+
+                @include media-breakpoint-up(sm) {
+                    @include make-col(6);
+                    @include make-col-offset(1);
+                }
+
+                .tshowcase-single-position {
+                    font-size: 1.5em;
+                }
+            }
+
+            .ts-clear-both {
+                display: none;
+            }
+        }
+    }
+    footer.entry-footer {
+        &:empty {
+            display: none;
+        }
+    }
+}
+
+.tshowcase .ts-theme-white-card-style .tshowcase-box.ts-float-left.ts-col_1 .tshowcase-inner-box .tshowcase-box-info .tshowcase-box-details,
+body.page-template-default #tshowcase-single-wrap .tshowcase-vcard {
+    [class^="tshowcase-single-"],
+    .ts-fax {
+        margin-bottom: 0.5em;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        &:before {
+            font-weight: $font-weight-bold;
+        }
+    }
+
+    .tshowcase-single-position {
+        margin-bottom: $headings-margin-bottom;
+        padding-top: 0.25em;
+        color: $body-color-lightest;
+        font-style: normal;
+        line-height: $headings-line-height;
+    }
+
+    .tshowcase-single-location {
+        &:before {
+            content: "Location: ";
+        }
+    }
+
+    .tshowcase-single-telephone {
+        &:before {
+            content: "Phone: ";
+        }
+    }
+
+    .tshowcase-single-email {
+        &:before {
+            content: "Email: ";
+        }
+    }
+
+    .tshowcase-single-website {
+        &:before {
+            content: "Website: ";
+        }
+    }
+
+    .ts-fax {
+        &:before {
+            content: "Fax: ";
+        }
+    }
+}

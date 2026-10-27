@@ -1,0 +1,20 @@
+{{# Lists article entries from the collection (child entries of current entry, e.g. topic). #}}
+{{ 
+	collection:knowledge_bases 
+	blueprint:is="article" 
+	:parent:is="id" 
+	as="articles" 
+}}
+	{{ unless no_results }}
+		{{ $card_item_position_increment = 'card_list_' + {increment:card_list} }}
+		{{ 
+			partial:knowledge_bases/article_list 
+			:heading="topic_article_label" 
+			:card_item_position_increment="$card_item_position_increment" 
+		}}
+			{{ articles }}
+				{{ partial:knowledge_bases/article_card }}
+			{{ /articles }}
+		{{ /partial:knowledge_bases/article_list }}
+	{{ /unless }}
+{{ /collection:knowledge_bases }}

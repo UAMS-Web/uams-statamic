@@ -1,0 +1,9 @@
+content\collections\tables.yaml
+content\assets\table_spreadsheets.yaml
+app\Listeners\HandleTableDataImporterTrigger.php
+app\Imports\SpreadsheetImport.php
+app\Fieldtypes\Trigger.php
+app\Fieldtypes\TableDataImporter.php
+app\Events\TriggerActivated.php
+resources\blueprints\collections\tables
+resources\js\components\fieldtypes\TriggerFieldtype.vue

@@ -1,0 +1,157 @@
+@use "sass:map";
+@use "sass:math";
+
+// Calculator embeds (Bard set: `calculator`, partial: `partials/calculator`)
+//
+// Layout choices:
+//   - The whole calculator block sits inline with surrounding prose — only
+//     vertical spacing separates it. The formula captions are wrapped in a
+//     panel so the reference content is visually grouped, but the inputs
+//     stay flush with the page.
+//   - Captions are normal-weight, full-color text — these are the reference
+//     content (the formula a clinician is verifying or learning), not
+//     secondary chrome. The panel background separates them from prose.
+//   - The variable inputs sit in two equal-width columns: LHS (the primary
+//     variable) and RHS (variables referenced by the primary's formula plus
+//     any unreferenced siblings). Columns collapse to a single column at the
+//     `sm` breakpoint so each input takes full width on phones.
+//   - A reset row sits below the columns with two buttons centered side by
+//     side: one resets only this calculator's non-synced inputs, the other
+//     resets every calculator on the page. Buttons size to their content so
+//     the action labels read at their natural width.
+//   - Within each column, every input fills the column's content width — no
+//     per-field width escape hatches; the column governs the size.
+//   - Composite variables (e.g., weight rendered as lb + oz) render their
+//     sub-inputs as two adjacent equal-width inputs inside the column.
+
+.calculator {
+    margin: 0 0 $card-columns-gap 0;
+}
+
+.calculator-info {
+    margin-bottom: $card-columns-gap;
+    padding: 1em;
+    background-color: map.get($theme-colors, 'light');
+    border-radius: $border-radius-lg;
+    line-height: $line-height-base;
+	border: $hr-border-width solid $border-color;
+}
+
+// Note + Formula sub-sections within the panel. The adjacent-sibling
+// border + padding visually separate adjacent sections; no rule for the
+// first section means it sits flush with the panel's top padding.
+.calculator-info-section {
+    + .calculator-info-section {
+        margin-top: 1em;
+        padding-top: 1em;
+        border-top: $hr-border-width solid $border-color;
+    }
+
+    // The note's body is Bard-rendered HTML — typically a trailing `<p>`
+    // with its own bottom margin. Reset it so the section doesn't end with
+    // orphan whitespace.
+    > p:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.calculator-info-label {
+    margin: 0 0 $label-margin-bottom;
+    font-size: 0.75em;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $letter-spacing-wider;
+    text-transform: uppercase;
+    color: $text-muted;
+}
+
+.calculator-formula {
+    + .calculator-formula {
+        margin-top: $label-margin-bottom;
+    }
+}
+
+.calculator-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $card-columns-gap;
+    align-items: start;
+
+    @include media-breakpoint-down(sm) {
+        grid-template-columns: 1fr;
+        gap: $card-columns-gap;
+    }
+}
+
+.calculator-column {
+    display: flex;
+    flex-flow: column;
+    gap: math.div($card-columns-gap, 2) $card-columns-gap;
+    min-width: 0;
+
+    .form-group {
+        margin: 0;
+        display: flex;
+        flex-flow: column;
+
+        .form-control,
+        label {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        // Inside a Bootstrap input-group, the input + appended unit suffix
+        // are flex siblings — the column's `.form-control { width: 100% }`
+        // rule above (set so bare inputs fill the column) would push the
+        // suffix onto a second row. Restore Bootstrap's flex defaults for
+        // grouped inputs and pin the group to a single row.
+        .input-group {
+            flex-wrap: nowrap;
+
+            .form-control {
+                display: block;
+                width: 1%;
+                flex: 1 1 auto;
+            }
+        }
+    }
+}
+
+.calculator-reset-row {
+    margin-top: $card-columns-gap;
+    padding-top: $card-columns-gap;
+    border-top: $hr-border-width solid $border-color;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: math.div($card-columns-gap, 2);
+}
+
+// Composite variable: parent `.form-group` wraps a label-like header and a
+// row of sub-input form-groups. The sub-inputs share the column width
+// evenly so lb and oz line up at equal sizes.
+.calculator-composite {
+    .calculator-composite-label {
+        margin-bottom: $label-margin-bottom;
+    }
+
+    .calculator-composite-splits {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: math.div($card-columns-gap, 4);
+
+        .form-group {
+            margin: 0;
+        }
+    }
+
+    // Sub-field labels render under their inputs (DOM order) and read as
+    // captions rather than full-weight field labels — the composite's own
+    // label above already communicates the field group.
+    .calculator-composite-split-label {
+        margin: $label-margin-bottom 0 0;
+        font-weight: $font-weight-normal;
+        font-size: 0.875em;
+    }
+}

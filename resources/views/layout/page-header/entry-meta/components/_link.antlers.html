@@ -1,0 +1,24 @@
+{{#
+
+	@name Entry Meta Component: Link
+	@desc Renders a hyperlink inside the entry-meta value wrapper. Reusable for download,
+	registration, and other URL-based meta rows.
+	Expects: url (string). Optional: link_text, itemprop, rel, target, use_download,
+	download_filename.
+
+#}}
+
+{{# Default rel to noopener noreferrer when the caller opens a new tab without
+    specifying their own rel. #}}
+{{ $effective_rel = rel ?? ( target == '_blank' ? 'noopener noreferrer' : null ) }}
+
+{{ partial:layout/page-header/entry-meta/components/value }}
+	<a
+		class="entry-meta-link"
+		{{ url | attribute:href }}
+		{{ $effective_rel | attribute:rel }}
+		{{ target | attribute:target }}
+		{{ (download_filename ?? use_download ?? null) | attribute:download }}
+		{{ itemprop | attribute:itemprop }}
+	>{{ link_text ?? url }}</a>
+{{ /partial:layout/page-header/entry-meta/components/value }}

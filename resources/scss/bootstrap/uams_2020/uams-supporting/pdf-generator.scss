@@ -1,0 +1,130 @@
+// PDF uses print media (Browsershot). Bootstrap print CSS sets a large body
+// min-width and `@page { size: a3 }`. The named page below + `page:` on
+// `body.pdf-generator-body` applies Letter with 1in margins on all sides; the
+// generator sets `preferCSSPageSize: true` so Chromium uses this @page (no
+// shrink-to-fit). Chrome DevTools Protocol print margins are zero so they
+// are not stacked with @page margins. Body padding is cleared in print so
+// inset is only @page.
+@page uams-pdf-letter {
+    size: letter;
+    margin: 1in;
+}
+
+@media print {
+    body.pdf-generator-body {
+        page: uams-pdf-letter;
+        min-width: 0 !important;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0;
+    }
+
+    body.pdf-generator-body .container {
+        min-width: 0 !important;
+    }
+
+    body.pdf-generator-body img,
+    body.pdf-generator-body video,
+    body.pdf-generator-body svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    body.pdf-generator-body table {
+        max-width: 100%;
+    }
+}
+
+.pdf-generator-body {
+    color: #111;
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: 300;
+    line-height: 1.5;
+    margin: 0 auto;
+    padding: 0.5in 0.6in;
+
+    .pdf-generator-logo {
+        width: 50%;
+        height: auto;
+        margin: 0 auto 0.5in;
+        display: block;
+    }
+
+    .pdf-generator-release-line {
+        font-weight: 700;
+        font-size: 10pt;
+        margin: 0 0 1rem;
+    }
+
+    .pdf-generator-title,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0.25in 0;
+    }
+
+    .pdf-generator-title,
+    h1 {
+        font-size: 16pt;
+    }
+
+    h2 {
+        font-size: 15pt;
+    }
+
+    h3 {
+        font-size: 14pt;
+    }
+
+    h4 {
+        font-size: 13pt;
+    }
+
+    h5 {
+        font-size: 12pt;
+    }
+
+    h6 {
+        font-size: 11pt;
+    }
+
+    .pdf-generator-excerpt {
+        font-size: 14pt;
+        margin: 0 0 0.25in;
+        font-weight: 400;
+    }
+
+    hr {
+        margin: 0.25in 0;
+    }
+
+    .pdf-generator-entry-footer {
+        > :first-child {
+            margin-top: 0;
+        }
+
+        > :last-child {
+            margin-bottom: 0;
+        }
+
+        .media-contacts-list {
+            list-style: none;
+            padding: 0;
+
+            li {
+                margin-bottom: 1em;
+            }
+        }
+
+        .end-marker {
+            text-align: center;
+        }
+    }
+}

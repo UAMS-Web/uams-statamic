@@ -1,0 +1,11 @@
+{{#
+	@name  Search Card: Area of Expertise section
+	@desc  Card for a synthetic Area-of-Expertise routed-section search hit (UAMS-Web/uams-statamic-archive#1527) — a
+	       `/{entry}/{section}` subpage (e.g. "Cancer Care — Related Clinical Locations" at
+	       `/cancer-care/locations`). These are not entries, so they carry no `collection`;
+	       the results row dispatches them by `result_type` instead. Renders the combined
+	       "{Area} — {section}" title through the shared compact card (UAMS-Web/uams-statamic-archive#1510), which
+	       escapes it — the title is composed from the editor/importer-controlled AoE entry
+	       title plus the fixed section label, and Antlers output is raw by default.
+#}}
+{{ partial:search/cards/compact }}

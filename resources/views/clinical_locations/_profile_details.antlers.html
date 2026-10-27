@@ -1,0 +1,176 @@
+{{#
+	@name Clinical Location Profile Details
+	@desc The detail sections of a `clinical_locations` profile that Group HH
+	      builds on top of the foundational show template (Waves 100/101/102):
+	      eligibility messaging, contact/appointment phones, appointment
+	      guidance, modified-hours notice, and interior wayfinding. Each section
+	      is optional and renders only when its backing field has a value, so a
+	      sparsely-filled location stays visually unchanged. Rendered within the
+	      location entry's scope by `clinical_locations/show`.
+#}}
+
+{{# Eligibility-restricted access notice (UAMS-Web/uams-statamic-archive#1177). Surfaced first so patients see
+	that access is limited before reading the rest of the profile. Renders only
+	when the location opts in; the message copy is optional within it. #}}
+{{ if restricted_access }}
+	<section class="location-restricted-access" role="note" aria-label="Restricted access">
+		<h2>Restricted Access</h2>
+		{{ if restricted_access_message }}
+			<div class="location-restricted-access-message">{{ restricted_access_message }}</div>
+		{{ /if }}
+	</section>
+{{ /if }}
+
+{{# Address (UAMS-Web/uams-statamic-archive#2389). Read entirely through the `resolved_*` computeds, never from the
+	stored `address` value: only a STANDALONE location stores one, so a location inside a
+	facility or nested under a parent would render blank from the field. The computeds walk
+	the three routes (own, facility, parent location) that UAMS-Web/uams-statamic-archive#1269, UAMS-Web/uams-statamic-archive#1225 and this ticket
+	built, so the template does not need to know which case it is in.
+
+	A location contained within a facility shows WHERE IN THE BUILDING: the facility, the
+	level, and the suite. Each comes from whichever location owns its address group (UAMS-Web/uams-statamic-archive#2608),
+	so a child that overrides only its floor and suite shows its own unit inside the parent's
+	facility. `resolved_facility_name` is the facility's title, and `resolved_facility_level`
+	is already the option's label rather than its key.
+
+	`sanitize` on every value: these are editor-entered and Antlers is raw by default. #}}
+{{ if resolved_street_address || resolved_city || resolved_state || resolved_postal_code || resolved_facility_name || resolved_facility_level || resolved_suite }}
+	<section class="location-address">
+		<h2>Address</h2>
+		{{ if resolved_facility_name || resolved_facility_level || resolved_suite }}
+			<p class="location-within-facility">
+				{{ if resolved_facility_name }}<span class="location-facility-name">{{ resolved_facility_name | sanitize }}</span>{{ /if }}
+				{{ if resolved_facility_level }}<span class="location-facility-level">{{ resolved_facility_level | sanitize }}</span>{{ /if }}
+				{{ if resolved_suite }}<span class="location-suite">{{ resolved_suite | sanitize }}</span>{{ /if }}
+			</p>
+		{{ /if }}
+		<p class="location-postal-address">
+			{{ if resolved_street_address }}<span class="location-street">{{ resolved_street_address | sanitize }}</span>{{ /if }}
+			{{ if resolved_city }}<span class="location-city">{{ resolved_city | sanitize }}</span>{{ /if }}
+			{{ if resolved_state }}<span class="location-state">{{ resolved_state | sanitize }}</span>{{ /if }}
+			{{ if resolved_postal_code }}<span class="location-postal-code">{{ resolved_postal_code | sanitize }}</span>{{ /if }}
+		</p>
+	</section>
+{{ /if }}
+
+{{# Parking and directions (UAMS-Web/uams-statamic-archive#2389). The same rule: read the `resolved_*` computeds UAMS-Web/uams-statamic-archive#976
+	registered on this collection, which already walk a wing to its building and a child
+	location to its parent. The facility's name comes from `resolved_parking_facility_name`,
+	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172). #}}
+{{ if resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
+	<section class="location-parking">
+		<h2>Parking and Directions</h2>
+		{{ if resolved_parking_facility_name }}
+			<p class="location-parking-facility">{{ resolved_parking_facility_name | sanitize }}</p>
+		{{ /if }}
+		{{ if resolved_parking_instructions }}
+			<div class="location-parking-instructions">{{ resolved_parking_instructions }}</div>
+		{{ /if }}
+		{{ if resolved_directions_from_parking }}
+			<div class="location-directions-from-parking">{{ resolved_directions_from_parking }}</div>
+		{{ /if }}
+	</section>
+{{ /if }}
+
+{{# Contact information — phones and fax. Grows across Waves 100/101: the
+	appointment phone (UAMS-Web/uams-statamic-archive#1167), the general-information phone and the Arkansas
+	Children's shared-number logic (UAMS-Web/uams-statamic-archive#1185), and the fax with its purpose-driven
+	label (UAMS-Web/uams-statamic-archive#1187).
+
+	Arkansas Children's remote clinics publish one number for everything: when
+	`shared_phone_number` is on, the single `shared_phone` drives BOTH the
+	Information and Appointments displays; otherwise the separate `phone` and
+	`phone_appointment_new` render as before. (UAMS-Web/uams-statamic-archive#1185) #}}
+{{ $shared_number = shared_phone_number ? shared_phone : '' }}
+{{ $display_info_phone = $shared_number ? $shared_number : phone }}
+{{ $display_appointment_phone = $shared_number ? $shared_number : phone_appointment_new }}
+{{ if $display_info_phone || $display_appointment_phone || fax }}
+	<section class="location-contact">
+		<h2>Contact</h2>
+		<dl class="location-contact-list">
+			{{# General-information phone (UAMS-Web/uams-statamic-archive#1185). #}}
+			{{ if $display_info_phone }}
+				<dt class="location-contact-label">Information</dt>
+				<dd><a href="tel:{{ $display_info_phone }}">{{ $display_info_phone | format_phone }}</a></dd>
+			{{ /if }}
+			{{# Appointment phone — AP-style, dialable. A toll-free appointment number
+				flows through this same field and formats identically to a local one
+				(`format_phone` renders E.164 as national AP style, e.g. `800-111-1000`
+				or `501-686-8998`). (UAMS-Web/uams-statamic-archive#1167) #}}
+			{{ if $display_appointment_phone }}
+				<dt class="location-contact-label">Appointments</dt>
+				<dd><a href="tel:{{ $display_appointment_phone }}">{{ $display_appointment_phone | format_phone }}</a></dd>
+			{{ /if }}
+			{{# Fax — the label reflects its purpose: referrals when `takes_referrals`
+				is on, otherwise medical records. The number is unchanged. (UAMS-Web/uams-statamic-archive#1187) #}}
+			{{ if fax }}
+				<dt class="location-contact-label">{{ takes_referrals ? 'Referrals Fax' : 'Records Fax' }}</dt>
+				<dd>{{ fax | format_phone }}</dd>
+			{{ /if }}
+		</dl>
+	</section>
+{{ /if }}
+
+{{# Appointment guidance — post-appointment expectations (UAMS-Web/uams-statamic-archive#1181). #}}
+{{ if what_to_expect_after }}
+	<section class="location-appointment-after">
+		<h2>What to Expect After Your Appointment</h2>
+		<div class="location-appointment-after-body">{{ what_to_expect_after }}</div>
+	</section>
+{{ /if }}
+
+{{# Appointment guidance — no-show / cancellation / late-arrival policy (UAMS-Web/uams-statamic-archive#1189). #}}
+{{ if no_show_cancellation_late_policy }}
+	<section class="location-appointment-policy">
+		<h2>No Show, Cancellation and Late Arrival Policy</h2>
+		<div class="location-appointment-policy-body">{{ no_show_cancellation_late_policy }}</div>
+	</section>
+{{ /if }}
+
+{{# Regular opening hours (UAMS-Web/uams-statamic-archive#2390). The hours a location keeps week to week.
+	`schema_location_hours` has emitted these same rules as `openingHoursSpecification`
+	all along, so a search engine could read a location's hours while a person reading
+	the page could not; this renders the stored values and changes nothing about the
+	structured-data output.
+
+	Two mutually exclusive shapes, mirroring the blueprint's own `if` conditions: a
+	location whose hours vary or follow an irregular schedule describes them in prose
+	and stores no rules, and every other location stores `regular_hours` rules, which
+	`location_regular_hours` expands per day and regroups into consecutive ranges.
+
+	Telemedicine-mode rules render as their own labeled group inside the same section
+	(UAMS-Web/uams-statamic-archive#2405), so the two are read together rather than in separate places -- the blueprint
+	asks for a telemedicine rule only where those hours DIFFER, which makes the contrast
+	the point of storing one. A location with in-person hours alone is unlabeled and
+	renders exactly as it did before, so nothing here changes for most locations.
+
+	The modified-hours notice below renders IN ADDITION to this, never instead of it,
+	so an exception is read against the regular hours it modifies (UAMS-Web/uams-statamic-archive#1328). #}}
+{{ if hours_variable_query }}
+	{{ if variable_hours_description }}
+		<section class="location-hours location-hours-variable" aria-label="Hours">
+			<h2>Hours</h2>
+			<div class="location-hours-variable-description">{{ variable_hours_description }}</div>
+		</section>
+	{{ /if }}
+{{ else }}
+	{{ location_regular_hours :regular_hours="regular_hours" }}
+{{ /if }}
+
+{{# Visitor-facing modified-hours notice (UAMS-Web/uams-statamic-archive#1328). Renders active/upcoming
+	`special_hours` (holidays + temporary changes) as human copy; past entries
+	auto-expire and the section is omitted when none are active. Whole-location
+	closures (Closing tab) and system alerts (Alert tab) are handled elsewhere
+	and are not duplicated here. #}}
+{{ location_modified_hours_notice :special_hours="special_hours" }}
+
+{{# Interior wayfinding image — navigating once inside the building (UAMS-Web/uams-statamic-archive#1186).
+	Renders independently of the exterior Wayfinding Photo. #}}
+{{ if interior_wayfinding_image }}
+	<section class="location-wayfinding-interior">
+		<h2>Finding Your Way Inside</h2>
+		{{ interior_wayfinding_image }}
+			<img src="{{ url }}" alt="{{ alt }}" class="location-wayfinding-interior-image" loading="lazy">
+		{{ /interior_wayfinding_image }}
+	</section>
+{{ /if }}

@@ -1,0 +1,105 @@
+{{#
+	@name Clinical Resource Show
+	@desc Single clinical resource detail page for every type (article, audio,
+	      video, infographic, document). Syndicated resources render their NCI
+	      embed verbatim (markup + scripts intact — never routed through Bard or a
+	      sanitizer, per UAMS-Web/uams-statamic-archive#799); native resources render their type-specific body.
+	      Related Find-a-Doc entities render below. (UAMS-Web/uams-statamic-archive#577)
+#}}
+
+{{ cover_image = cover_image_query ? featured_image_16_9 : null }}
+
+{{ partial:layout/article
+	:cover_image="cover_image"
+	:cover_image_alt_text_override="cover_image_alt_text_override"
+	:cover_image_caption_override="cover_image_caption_override"
+}}
+	{{# Provider Spotlight renders a flat provider-Q&A body with its own
+		eligibility-gated CTA and suppresses every "Related *" module (UAMS-Web/uams-statamic-archive#1425). #}}
+	{{ if blueprint == 'provider_spotlight' }}
+		{{ partial:layout/entry-content content_width="true" }}
+			{{ partial:clinical_resources/provider_spotlight }}
+		{{ /partial:layout/entry-content }}
+	{{ else }}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+		itemprop="https://schema.org/articleBody https://schema.org/text"
+	}}
+		{{# Introduction (article/audio/video types carry an `intro`). #}}
+		{{ if intro }}
+			<section class="entry-introduction">
+				<header class="entry-introduction-header">
+					<h2 class="entry-introduction-title">Introduction</h2>
+				</header>
+				<div class="entry-introduction-content">{{ intro }}</div>
+			</section>
+		{{ /if }}
+
+		{{# Syndicated content: render the NCI embed exactly as imported — markup
+			and scripts intact. It is a raw `code` field and must never be routed
+			through Bard or a sanitizer (a hard requirement of UAMS-Web/uams-statamic-archive#799). #}}
+		{{ if syndication_query && nci_embed }}
+			<div class="clinical-resource-syndicated" data-syndicated="true">
+				{{ nci_embed | raw }}
+			</div>
+		{{ else }}
+			{{# Native, type-specific body. #}}
+			{{ if blueprint == 'article' }}
+				{{ if article }}<div class="clinical-resource-body">{{ article }}</div>{{ /if }}
+
+			{{ elseif blueprint == 'infographic' }}
+				{{ if infographic }}
+					{{ infographic }}
+						<figure class="clinical-resource-infographic">
+							<img src="{{ url }}" alt="{{ alt }}" itemprop="https://schema.org/image">
+						</figure>
+					{{ /infographic }}
+				{{ /if }}
+				{{ if infographic_description }}<div class="clinical-resource-infographic-description">{{ infographic_description }}</div>{{ /if }}
+				{{ if infographic_transcript }}
+					<details class="clinical-resource-transcript">
+						<summary>View Transcript</summary>
+						<div class="clinical-resource-transcript-content">{{ infographic_transcript }}</div>
+					</details>
+				{{ /if }}
+
+			{{ elseif blueprint == 'video' }}
+				{{ partial:clinical_resources/segments media_type="video" }}
+
+			{{ elseif blueprint == 'audio' }}
+				{{ partial:clinical_resources/segments media_type="audio" }}
+
+			{{ elseif blueprint == 'document' }}
+				{{ if documents_description }}<div class="clinical-resource-documents-description">{{ documents_description }}</div>{{ /if }}
+				{{ if documents | length }}
+					<section class="clinical-resource-documents">
+						<h2 class="h5">Documents</h2>
+						<ul class="clinical-resource-document-list">
+							{{ documents }}
+								{{# Capture the row's document title before the asset pair rebinds `title`. #}}
+								{{ $doc_title = title }}
+								{{ if file }}
+									{{ file }}
+										<li><a href="{{ url }}" download>{{ $doc_title ? $doc_title : basename }}</a></li>
+									{{ /file }}
+								{{ /if }}
+							{{ /documents }}
+						</ul>
+					</section>
+				{{ /if }}
+			{{ /if }}
+		{{ /if }}
+
+		{{# Source link for syndicated / externally-hosted resources. #}}
+		{{ if syndication_url }}
+			<p class="clinical-resource-source">
+				Source: <a href="{{ syndication_url }}" rel="noopener noreferrer">{{ syndication_source ? syndication_source : syndication_url }}</a>
+			</p>
+		{{ /if }}
+
+		{{# Related Find-a-Doc entities (providers, locations, expertise, …). #}}
+		{{ partial:clinical_resources/related }}
+	{{ /partial:layout/entry-content }}
+	{{ /if }}
+{{ /partial:layout/article }}

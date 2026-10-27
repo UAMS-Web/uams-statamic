@@ -1,0 +1,150 @@
+title: 'UAMSWeb Block, Stacked Image and Text'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: items
+    field:
+      type: replicator
+      display: Items
+      validate:
+        - required
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Item Group'
+          sets:
+            new_set:
+              display: 'New Item'
+              fields:
+                -
+                  handle: heading
+                  field:
+                    type: text
+                    display: Heading
+                    instructions: 'There is a 78-character limit.'
+                    character_limit: 78
+                    validate:
+                      - required
+                -
+                  handle: body
+                  field:
+                    type: textarea
+                    display: Body
+                    instructions: 'There is a 179-character limit.'
+                    replicator_preview: false
+                    character_limit: 179
+                    validate:
+                      - required
+                -
+                  handle: image
+                  field: uamsweb_common_images.image_455x256
+                  config:
+                    display: Image
+                    instructions: 'Recommended image dimensions: 910x512. Minimum image dimensions: 455x256. The image will automatically be cropped to a 16:9 aspect ratio.'
+                    replicator_preview: false
+                    validate:
+                      - required
+                      - 'dimensions:min_width=455,min_height=256'
+                -
+                  handle: alt_override
+                  field: uamsweb_common_images.image_alt_text_override
+                -
+                  handle: button_text
+                  field: uamsweb_common_link.link_text
+                -
+                  handle: button_url
+                  field: uamsweb_common_link.link_url
+                  config:
+                    validate:
+                      - required
+                      - sometimes
+                    if:
+                      button_text: 'not empty'
+                -
+                  handle: button_target
+                  field: uamsweb_common_link.new_window_query
+                  config:
+                    if:
+                      button_text: 'not empty'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: button_link_description
+                  field: uamsweb_common_link.link_description
+                  config:
+                    if:
+                      button_text: 'not empty'
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+    config:
+      validate:
+        - required
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

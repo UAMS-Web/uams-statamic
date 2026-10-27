@@ -1,0 +1,18 @@
+title: 'UAMSWeb Computed Fields, Content Usage'
+fields:
+  -
+    handle: in_use
+    field:
+      type: toggle
+      display: 'In Use'
+      instructions: 'Read-only. Whether this entry is currently transcluded on any published page.'
+      visibility: computed
+      localizable: false
+  -
+    handle: used_by
+    field:
+      type: entries
+      display: 'Used By'
+      instructions: 'Read-only. The published pages and entries that transclude this entry in their page-builder content.'
+      visibility: computed
+      localizable: false

@@ -1,0 +1,30 @@
+title: 'UAMSWeb Bard Set, File'
+fields:
+  -
+    handle: file
+    field: uamsweb_common.files
+    config:
+      max_files: 1
+      validate:
+        - required
+  -
+    handle: title
+    field:
+      type: text
+      display: 'File Title Override'
+      instructions: 'Set a custom title to display for this file. Otherwise, the title of the file in the Files asset container (or the file name, if no title is set).'
+  -
+    handle: new_window_query
+    field: uamsweb_common_link.new_window_query
+    config:
+      validate:
+        - required
+      replicator_preview: false
+      default: false
+  -
+    handle: download_button_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Show Download Button'
+      replicator_preview: false
+      default: true

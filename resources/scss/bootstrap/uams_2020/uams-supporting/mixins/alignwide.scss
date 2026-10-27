@@ -1,0 +1,8 @@
+@use "sass:math";
+
+@mixin alignwide($ratio) {
+    margin-left: -(math.div(($content-width * $ratio) - $content-width, 2));
+    margin-right: -(math.div(($content-width * $ratio) - $content-width, 2));
+    max-width: $content-width * $ratio;
+    width: $content-width * $ratio !important;
+}

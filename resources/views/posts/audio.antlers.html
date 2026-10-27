@@ -1,0 +1,128 @@
+{{# TODO: Add appropriate schema microdata markup for the audio post #}}
+{{# TODO: Pass series title to entry meta (and/or entry title as supertitle) #}}
+{{ date_modified_enabled = true }}
+{{ date_modified_label = "Last Modified:" }}
+{{ date_modified_value = updated_at }}
+{{ date_published_enabled = true }}
+{{ date_published_label = "Published:" }}
+{{ date_published_value = date }}
+{{ reading_time_enabled = true }}
+{{ reading_time_label = "Estimated Reading Time:" }}
+{{ reading_time_value = reading_time }}
+{{ cover_image = cover_image_query ? featured_image_16_9 : null }}
+
+{{ partial:layout/article
+	:cover_image="cover_image"
+	:cover_image_alt_text_override="cover_image_alt_text_override"
+	:cover_image_caption_override="cover_image_caption_override"
+}}
+	{{
+		partial:layout/entry-content
+		content_width="true"
+		itemprop="https://schema.org/articleBody https://schema.org/text"
+	}}
+		{{ if intro }}
+			<section class="entry-introduction">
+				<header class="entry-introduction-header">
+					<h2 class="entry-introduction-title">Introduction</h2>
+				</header>
+				<div class="entry-introduction-content">
+					{{ intro }}
+				</div>
+			</section>
+		{{ /if }}
+		{{ segments as="segments" }}
+			{{ $segment_count = segments | count }}
+			{{ unless no_results }}
+				<section class="entry-segment-container">
+					<header class="entry-segment-container-header">
+						<h2 class="entry-segment-container-title">Segments</h2>
+					</header>
+					{{ segments }}
+						{{# A podcast episode's video rendition rides in the same replicator as its audio (UAMS-Web/uams-statamic-archive#1807). Audio segments nest their fields under `file`; video segments expose them directly. #}}
+						{{ if type == 'local_file' }}
+							{{ title = title_override ?? file:title }}
+							{{ excerpt = excerpt_override ?? file:excerpt }}
+							{{ transcript = file:transcript }}
+							{{ segment_hide_creator = file:hide_creator_query }}
+							{{ segment_creator = file:creator }}
+						{{ else }}
+							{{ segment_hide_creator = hide_creator_query }}
+							{{ segment_creator = creator }}
+						{{ /if }}
+						<article class="entry-segment">
+							<h3
+							{{ [
+								'entry-segment-title' => true,
+								'sr-only' => ( $segment_count == 1 )
+							] | classes | collapse_whitespace | attribute:class}}
+							>{{ title | strip_tags | widont }}</h3>
+							{{ if excerpt }}<p
+							{{ [
+								'entry-segment-summary' => true,
+								'sr-only' => ( $segment_count == 1 )
+							] | classes | collapse_whitespace | attribute:class}}
+							>{{ excerpt | strip_tags | widont }}</p>{{ /if }}
+							{{ if segment_hide_creator != true && segment_creator }}
+								<div class="entry-meta entry-segment-meta">
+									{{
+										partial:layout/page-header/entry-meta/creator_roles
+										:hide_creator_query="segment_hide_creator"
+										:creator="segment_creator"
+									}}
+								</div>
+							{{ /if }}
+							{{ if type == 'local_file' }}
+							{{
+								partial:sets/audio
+								:file="file"
+								:file_alternate="file_alternate"
+								:preload="preload"
+								:loop="loop"
+								:title="title"
+								figure_class="entry-segment-media entry-segment-audio"
+								media_player_class="entry-segment-media-player"
+								caption="Audio: {{ title | strip_tags }}"
+								caption_hide="true"
+							}}
+							{{ else }}
+							{{
+								partial:sets/video
+								:video_url="url"
+								:caption_track="caption_track_file"
+								:caption_track_url="caption_track_url"
+								figure_class="entry-segment-media entry-segment-video"
+								media_player_class="entry-segment-media-player"
+								caption="Video: {{ title | strip_tags }}"
+								caption_hide="true"
+							}}
+							{{ /if }}
+							{{ if transcript }}
+								<details class="entry-segment-transcript">
+									<summary class="entry-segment-transcript-trigger" aria-label="View Transcript for {{ title | sanitize }}">View Transcript</summary>
+									<div class="entry-segment-transcript-content">
+										{{ transcript }}
+									</div>
+								</details>
+							{{ /if }}
+						</article>
+					{{ /segments }}
+				</section>
+			{{ /unless }}
+		{{ /segments }}
+	{{ /partial:layout/entry-content }}
+	{{ partial:posts/components/curation }}
+	{{
+		partial:posts/components/boilerplate_block
+		:boilerplate_enabled="( series_boilerplate_display_query | raw | bool_string )"
+		:boilerplate_heading="series ? ( series:title ? ( 'About the ' + series:title + ' Series' ) : '' ) : ''"
+		:boilerplate_content="series ? ( series:boilerplate ?? '' ) : ''"
+		boilerplate_id="audio-series-boilerplate"
+	}}
+	{{
+		partial:posts/components/boilerplate_block
+		:boilerplate_enabled="( boilerplate_query | raw | bool_string )"
+		:boilerplate_heading="boilerplate ? boilerplate:heading : uams_multisite_settings:boilerplate:heading"
+		:boilerplate_content="boilerplate ? boilerplate:boilerplate : uams_multisite_settings:boilerplate:boilerplate"
+	}}
+{{ /partial:layout/article }}

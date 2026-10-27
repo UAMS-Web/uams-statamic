@@ -1,0 +1,574 @@
+title: 'UAMSWeb Brand Organization'
+fields:
+  -
+    handle: name
+    field:
+      type: text
+      display: 'Name for Schema (name > Text)'
+      instructions: 'Name of the organization'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: legalname
+    field:
+      type: text
+      display: 'Legal Name (legalName > Text)'
+      instructions: 'The official name of the organization (e.g. the registered company name).'
+      localizable: false
+  -
+    handle: alternate_name
+    field: uamsweb_schema.alternate_name
+  -
+    handle: organization_subtype
+    field:
+      options:
+        -
+          key: 'false'
+          value: 'None — No available option is relevant to this organization'
+        -
+          key: Airline
+          value: null
+        -
+          key: Consortium
+          value: null
+        -
+          key: Corporation
+          value: null
+        -
+          key: EducationalOrganization
+          value: 'Educational Organization'
+        -
+          key: FundingScheme
+          value: 'Funding Scheme'
+        -
+          key: GovernmentOrganization
+          value: 'Government Organization'
+        -
+          key: LibrarySystem
+          value: 'Library System'
+        -
+          key: LocalBusiness
+          value: 'Local Business'
+        -
+          key: MedicalOrganization
+          value: 'Medical Organization'
+        -
+          key: NGO
+          value: 'Non-Governmental Organization'
+        -
+          key: NewsMediaOrganization
+          value: 'News Media Organization'
+        -
+          key: OnlineBusiness
+          value: 'Online Business'
+        -
+          key: PerformingGroup
+          value: 'Performing Group'
+        -
+          key: PoliticalParty
+          value: 'Political Party'
+        -
+          key: Project
+          value: null
+        -
+          key: ResearchOrganization
+          value: 'Research Organization'
+        -
+          key: SearchRescueOrganization
+          value: 'Search Rescue Organization'
+        -
+          key: SportsOrganization
+          value: 'Sports Organization'
+        -
+          key: WorkersUnion
+          value: 'Workers Union'
+      clearable: true
+      type: select
+      display: 'Specific Organization Subtype'
+      validate:
+        - required
+      cast_booleans: true
+      localizable: false
+  -
+    handle: educationalorganization_subtype
+    field:
+      options:
+        -
+          key: 'false'
+          value: 'None — No available option is relevant to this organization'
+        -
+          key: CollegeOrUniversity
+          value: 'College or University'
+        -
+          key: ElementarySchool
+          value: 'Elementary School'
+        -
+          key: HighSchool
+          value: 'High School'
+        -
+          key: MiddleSchool
+          value: 'Middle School'
+        -
+          key: Preschool
+          value: null
+        -
+          key: School
+          value: null
+      clearable: true
+      type: select
+      display: 'Specific Educational Organization Subtype'
+      validate:
+        - required
+        - sometimes
+      if:
+        organization_subtype: 'equals EducationalOrganization'
+      cast_booleans: true
+      localizable: false
+  -
+    handle: additional_type
+    field: uamsweb_schema.additional_type
+  -
+    handle: description
+    field: uamsweb_schema.description
+  -
+    handle: disambiguating_description
+    field: uamsweb_schema.disambiguating_description
+  -
+    handle: slogan
+    field:
+      type: text
+      display: 'Slogan (slogan > Text)'
+      instructions: 'A slogan or motto associated with the organization.'
+      localizable: false
+  -
+    handle: logo
+    field: uamsweb_common.url
+    config:
+      display: 'Logo (logo > URL)'
+      instructions: 'Logo for the organization'
+  -
+    handle: image
+    field: uamsweb_common.url
+    config:
+      display: 'Image (image > URL)'
+      instructions: 'An image of the organization'
+  -
+    handle: contactpoint_postaladdress
+    field:
+      type: replicator
+      display: 'Address (contactPoint > PostalAddress)'
+      instructions: 'Make the first replicator row the primary address.'
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Address Group'
+          sets:
+            new_set:
+              display: 'New Address'
+              fields:
+                -
+                  handle: contacttype
+                  field:
+                    type: text
+                    display: 'Address Type (contactType > Text)'
+                    instructions: 'A person or organization can have different contact points, for different purposes. For example, a sales contact point, a PR contact point and so on. This property is used to specify the kind of contact point.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: streetaddress_query
+                  field:
+                    options:
+                      -
+                        key: 'false'
+                        value: 'Post Office Box'
+                      -
+                        key: 'true'
+                        value: 'Street Address'
+                    type: radio
+                    display: 'Street Address or Post Office Box?'
+                    validate:
+                      - required
+                      - sometimes
+                    cast_booleans: true
+                -
+                  handle: streetaddress
+                  field:
+                    type: text
+                    display: 'Street Address (streetAddress > Text)'
+                    instructions: 'The street address. For example, 1600 Amphitheatre Pkwy.'
+                    if:
+                      streetaddress_query: 'equals true'
+                -
+                  handle: postofficeboxnumber
+                  field:
+                    type: text
+                    display: 'Post Office Box Number (postOfficeBoxNumber > Text)'
+                    instructions: 'The post office box number for PO box addresses.'
+                    if:
+                      streetaddress_query: 'equals false'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: addresslocality
+                  field:
+                    type: text
+                    display: 'City or Other Locality (addressLocality > Text)'
+                    instructions: 'The locality in which the street address is, and which is in the region. For example, Mountain View.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: addressregion
+                  field:
+                    type: text
+                    display: 'State or Other Region (addressRegion > Text)'
+                    instructions: 'The region in which the locality is, and which is in the country. For example, California or another appropriate first-level Administrative division.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: postalcode
+                  field:
+                    type: text
+                    display: 'Postal Code (postalCode > Text)'
+                    instructions: 'The postal code. For example, 94043.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: addresscountry
+                  field:
+                    type: text
+                    display: 'Country (addressCountry > Country or Text)'
+                    instructions: 'The country. For example, USA. You can also provide the two-letter ISO 3166-1 alpha-2 country code.'
+                    validate:
+                      - required
+                      - sometimes
+  -
+    handle: contactpoint_telephone
+    field:
+      type: replicator
+      display: 'Phone Number (contactPoint > ContactPoint)'
+      instructions: 'Make the first replicator row the primary phone number.'
+      sortable: false
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Phone Number Group'
+          sets:
+            new_set:
+              display: 'New Phone Number'
+              fields:
+                -
+                  handle: contacttype
+                  field:
+                    type: text
+                    display: 'Individual Telephone Number Type (contactType > Text)'
+                    instructions: 'A person or organization can have different contact points, for different purposes. For example, a sales contact point, a PR contact point and so on. This property is used to specify the kind of contact point.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: telephone
+                  field: uamsweb_common_contact.phone
+                  config:
+                    display: 'Individual Telephone Number (telephone > Text)'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: contactoption
+                  field:
+                    options:
+                      -
+                        key: 'false'
+                        value: None
+                      -
+                        key: HearingImpairedSupported
+                        value: 'Hearing Aid Supported'
+                      -
+                        key: TollFree
+                        value: Toll-Free
+                    type: radio
+                    display: 'Individual Telephone Number Option (contactOption > ContactPointOption)'
+                    cast_booleans: true
+  -
+    handle: faxnumber
+    field:
+      type: replicator
+      display: 'Fax Number (contactPoint > ContactPoint)'
+      instructions: 'Make the first replicator row the primary fax number.'
+      sortable: false
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Fax Number Group'
+          sets:
+            new_set:
+              display: 'New Fax Number'
+              fields:
+                -
+                  handle: contacttype
+                  field:
+                    type: text
+                    display: 'Individual Fax Number Type (contactType > Text)'
+                    instructions: 'A person or organization can have different contact points, for different purposes. For example, a sales contact point, a PR contact point and so on. This property is used to specify the kind of contact point.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: faxnumber
+                  field: uamsweb_common_contact.phone
+                  config:
+                    display: 'Individual Fax Number (faxNumber > Text)'
+                    validate:
+                      - required
+                      - sometimes
+  -
+    handle: email
+    field:
+      type: replicator
+      display: 'Email Address (contactPoint > ContactPoint)'
+      instructions: 'Make the first replicator row the primary email address.'
+      sortable: false
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Email Address Group'
+          sets:
+            new_set:
+              display: 'New Email Address'
+              fields:
+                -
+                  handle: contacttype
+                  field:
+                    type: text
+                    display: 'Individual Email Address Type (contactType > Text)'
+                    instructions: 'A person or organization can have different contact points, for different purposes. For example, a sales contact point, a PR contact point and so on. This property is used to specify the kind of contact point.'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: email
+                  field: uamsweb_common_contact.email_address
+                  config:
+                    display: 'Individual Email Address (email > Text)'
+                    instructions: 'Email address.'
+                    validate:
+                      - required
+                      - sometimes
+  -
+    handle: url
+    field: uamsweb_schema.url
+  -
+    handle: main_entity_of_page
+    field: uamsweb_schema.main_entity_of_page
+  -
+    handle: same_as
+    field: uamsweb_schema.same_as
+    config:
+      display: 'Organization Reference Webpages (sameAs > URL)'
+  -
+    handle: isacceptingnewpatients
+    field:
+      options:
+        -
+          key: 0
+          value: 'Not relevant'
+        -
+          key: 'True'
+          value: null
+        -
+          key: 'False'
+          value: null
+      type: radio
+      display: 'Is Accepting New Patients (isAcceptingNewPatients > Boolean)'
+      instructions: 'Whether the organization is accepting new patients.'
+      if:
+        organization_subtype: 'equals MedicalOrganization'
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: medicalspecialty_multiple
+    field: uamsweb_schema.medical_specialty_multiple
+    config:
+      display: 'Medical Specialty (medicalSpecialty > MedicalSpecialty)'
+      validate:
+        - required
+        - sometimes
+      if:
+        organization_subtype: 'equals MedicalOrganization'
+  -
+    handle: actionablefeedbackpolicy
+    field: uamsweb_common.url
+    config:
+      display: 'Actionable Feedback Policy (actionableFeedbackPolicy > URL)'
+      instructions: 'For a NewsMediaOrganization or other news-related Organization, a statement about public engagement activities (for news media, the newsroom’s), including involving the public - digitally or otherwise -- in coverage decisions, reporting and activities after publication.'
+  -
+    handle: correctionspolicy
+    field: uamsweb_common.url
+    config:
+      display: 'Corrections Policy (correctionsPolicy > URL)'
+      instructions: 'For an Organization (e.g. NewsMediaOrganization), a statement describing (in news media, the newsroom’s) disclosure and correction policy for errors.'
+  -
+    handle: diversitypolicy
+    field: uamsweb_common.url
+    config:
+      display: 'Diversity Policy (diversityPolicy > URL)'
+      instructions: 'Statement on diversity policy by an Organization e.g. a NewsMediaOrganization. For a NewsMediaOrganization, a statement describing the newsroom’s diversity policy on both staffing and sources, typically providing staffing data.'
+  -
+    handle: diversitystaffingreport
+    field: uamsweb_common.url
+    config:
+      display: 'Diversity Staffing Report (diversityStaffingReport > URL)'
+      instructions: 'Statement on diversity policy by an Organization e.g. a NewsMediaOrganization. For a NewsMediaOrganization, a statement describing the newsroom’s diversity policy on both staffing and sources, typically providing staffing data.'
+  -
+    handle: ethicspolicy
+    field: uamsweb_common.url
+    config:
+      display: 'Ethics Policy (ethicsPolicy > URL)'
+      instructions: 'Statement about ethics policy, e.g. of a NewsMediaOrganization regarding journalistic and publishing practices, or of a Restaurant, a page describing food source policies. In the case of a NewsMediaOrganization, an ethicsPolicy is typically a statement describing the personal, organizational, and corporate standards of behavior expected by the organization.'
+  -
+    handle: ownershipfundinginfo
+    field: uamsweb_common.url
+    config:
+      display: 'Ownership Funding Information (ownershipFundingInfo > URL)'
+      instructions: 'For an Organization (often but not necessarily a NewsMediaOrganization), a description of organizational ownership structure; funding and grants. In a news/media setting, this is with particular reference to editorial independence. Note that the funder is also available and can be used to make basic funder information machine-readable.'
+  -
+    handle: publishingprinciples
+    field: uamsweb_common.url
+    config:
+      display: 'Publishing Principles (publishingPrinciples > URL)'
+      instructions: |-
+        The publishingPrinciples property indicates (typically via URL) a document describing the editorial principles of an Organization (or individual, e.g. a Person writing a blog) that relate to their activities as a publisher, e.g. ethics or diversity policies. When applied to a CreativeWork (e.g. NewsArticle) the principles are those of the party primarily responsible for the creation of the CreativeWork.
+
+        While such policies are most typically expressed in natural language, sometimes related information (e.g. indicating a funder) can be expressed using schema.org terminology.
+  -
+    handle: unnamedsourcespolicy
+    field: uamsweb_common.url
+    config:
+      display: 'Unnamed Sources Policy (unnamedSourcesPolicy > URL)'
+      instructions: 'For an Organization (typically a NewsMediaOrganization), a statement about policy on use of unnamed sources and the decision process required.'
+  -
+    handle: health_plan_network_id
+    field: uamsweb_schema.health_plan_network_id
+  -
+    handle: tickersymbol
+    field: uamsweb_common_identifiers.tickersymbol
+  -
+    handle: duns
+    field: uamsweb_common_identifiers.duns
+  -
+    handle: globallocationnumber
+    field: uamsweb_common_identifiers.globallocationnumber
+  -
+    handle: isicv4
+    field: uamsweb_common_identifiers.isicv4
+  -
+    handle: iso6523code
+    field: uamsweb_common_identifiers.iso6523code
+  -
+    handle: leicode
+    field: uamsweb_common_identifiers.leicode
+  -
+    handle: naics
+    field: uamsweb_common_identifiers.naics
+  -
+    handle: taxid
+    field: uamsweb_common_identifiers.taxid
+  -
+    handle: vatid
+    field: uamsweb_common_identifiers.vatid
+  -
+    handle: google_business_profile_cid_query
+    field: uamsweb_common.true_false
+    config:
+      display: 'Does this organization have a listing on Google Business Profiles?'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: google_business_profile_cid
+    field: uamsweb_common_identifiers.google_business_profile_cid
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        google_business_profile_cid_query: 'equals true'
+  -
+    handle: identifier
+    field:
+      type: replicator
+      display: 'Other Identifier (identifier > PropertyValue)'
+      instructions: 'The identifier property represents any kind of identifier for any kind of Thing, such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated properties for representing many of these, either as textual strings or as URL (URI) links.'
+      localizable: false
+      sets:
+        new_set_group:
+          display: 'New Identifier Group'
+          sets:
+            new_set:
+              display: 'New Identifier'
+              fields:
+                -
+                  handle: name
+                  field:
+                    type: text
+                    display: 'Identifier Name (name > Text)'
+                    instructions: 'The name of the identifier property'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: value
+                  field:
+                    type: text
+                    display: 'Identifier Value (value > Boolean or Number or Text)'
+                    instructions: 'The value of the identifier property'
+                    validate:
+                      - required
+                      - sometimes
+                -
+                  handle: maxvalue
+                  field:
+                    type: float
+                    display: 'Identifier Maximum Value (maxValue > Number)'
+                    instructions: 'The upper value of the identifier property'
+                -
+                  handle: minvalue
+                  field:
+                    type: float
+                    display: 'Identifier Minimum Value (minValue > Number)'
+                    instructions: 'The lower value of the identifier property'
+                -
+                  handle: propertyid
+                  field: uamsweb_common.url
+                  config:
+                    display: 'Identifier Property Identifier (propertyID > URL)'
+                    instructions: 'A commonly used identifier for the characteristic represented by the property (e.g., a manufacturer or a standard code for a property). propertyID can be (1) a prefixed string, mainly meant to be used with standards for product properties; (2) a site-specific, non-prefixed string (e.g. the primary key of the property or the vendor-specific ID of the property), or (3) a URL indicating the type of the property, either pointing to an external vocabulary, or a Web resource that describes the property (e.g., a glossary entry). Standards bodies should promote a standard prefix for the identifiers of properties from their standards.'
+                -
+                  handle: unitcode
+                  field:
+                    type: text
+                    display: 'Identifier Unit Code (unitCode > Text or URL)'
+                    instructions: 'The unit of measurement given using the UN/CEFACT Common Code (3 characters) or a URL. Codes other than the UN/CEFACT Common Code may be used with a prefix followed by a colon.'
+                -
+                  handle: unittext
+                  field:
+                    type: text
+                    display: 'Identifier Unit Text (unitText > Text)'
+                    instructions: 'A string or text indicating the unit of measurement. Useful if you cannot provide a standard unit code for unitCode.'
+                -
+                  handle: url
+                  field: uamsweb_common.url
+                  config:
+                    display: 'Identifier URL (url > URL)'
+                    instructions: 'URL of the identifier property value'
+  -
+    handle: nonprofit_status
+    field: uamsweb_schema.nonprofit_status

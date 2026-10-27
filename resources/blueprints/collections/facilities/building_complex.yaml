@@ -1,0 +1,276 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the building complex. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_place
+              type: entries
+              display: 'Schema Object for the Building Complex'
+              instructions: 'Select a schema object for the building complex, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Place'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Building Complex Name'
+              instructions: |-
+                Name the facility using only its full official name (e.g., "Outpatient Center").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the facility with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Name(s) for the Building Complex'
+              if:
+                schema_object: 'equals empty'
+      -
+        display: 'Building Complex Type'
+        fields:
+          -
+            handle: subtype_complex
+            field:
+              options:
+                -
+                  key: Wikidata_BuildingComplex_Q1497364
+                  value: 'None — No available option is relevant to this building complex'
+                -
+                  key: Wikidata_InstitutionalComplex_Q19691007
+                  value: 'Institutional Complex'
+                -
+                  key: Wikidata_MedicalFacility_Q4260475
+                  value: 'Medical Facility'
+                -
+                  key: Wikidata_ShoppingCenter_Q11315
+                  value: 'Shopping Center'
+              type: radio
+              display: 'Specific Type of Building Complex'
+              instructions: 'Select the specific type of place that most closely matches this building complex. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_institutionalcomplex
+            field:
+              options:
+                -
+                  key: Wikidata_InstitutionalComplex_Q19691007
+                  value: 'None — No available option is relevant to this building complex'
+                -
+                  key: Wikidata_EducationalComplex_Q20860083
+                  value: 'Educational Complex'
+              type: radio
+              display: 'Specific Type of Institutional Complex'
+              instructions: 'Select the specific type of place that most closely matches this building complex. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_complex: 'equals Wikidata_InstitutionalComplex_Q19691007'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_building_educationalcomplex
+            field:
+              options:
+                -
+                  key: Wikidata_EducationalComplex_Q20860083
+                  value: 'None — No available option is relevant to this building complex'
+                -
+                  key: Wikidata_UniversityCampus_Q30785519
+                  value: 'University Campus'
+              type: radio
+              display: 'Specific Type of Educational Complex'
+              instructions: 'Select the specific type of place that most closely matches this building complex. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_building_institutionalcomplex: 'equals Wikidata_EducationalComplex_Q20860083'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: subtype_complex_medicalfacility
+            field:
+              options:
+                -
+                  key: Wikidata_MedicalFacility_Q4260475
+                  value: 'None — No available option is relevant to this building'
+                -
+                  key: SchemaOrg_Hospital
+                  value: Hospital
+              type: radio
+              display: 'Specific Type of Medical Facility'
+              instructions: 'Select the specific type of place that most closely matches this building complex. If there is no match, then select "None."'
+              if:
+                schema_object: 'equals empty'
+                subtype_complex: 'equals Wikidata_MedicalFacility_Q4260475'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+      -
+        display: 'Additional Details'
+        fields:
+          -
+            handle: additional_type
+            field: uamsweb_brand_organization.additional_type
+            config:
+              display: 'More Specific Type(s) for This Building Complex From External Vocabularies in Microdata Syntax'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Building Complex'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: google_business_profile_cid_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this building complex have a listing on Google Business Profiles?'
+              validate:
+                - required
+          -
+            handle: google_business_profile_cid
+            field: uamsweb_common_identifiers.google_business_profile_cid
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                google_business_profile_cid_query: 'equals true'
+          -
+            handle: brand_organization_query
+            field: uamsweb_schema.brand_organization_query
+            config:
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+          -
+            handle: brand_organization
+            field: uamsweb_schema.brand_organization
+            config:
+              display: 'Third-Party Brand Organization'
+              if:
+                schema_object: 'equals empty'
+                brand_organization_query: 'equals true'
+          -
+            handle: streetaddress
+            field: uamsweb_common_address.street_address
+            config:
+              display: 'Street Address'
+              validate:
+                - required
+          -
+            handle: city
+            field:
+              type: text
+              display: City
+              validate:
+                - required
+              localizable: false
+          -
+            handle: state
+            field: uamsweb_common_address.state
+            config:
+              validate:
+                - required
+          -
+            handle: zip
+            field: uamsweb_common_address.zip
+            config:
+              validate:
+                - required
+          -
+            handle: regions
+            field: uamsweb_common_address.regions
+            config:
+              display: 'Arkansas Region'
+              max_items: 1
+              validate:
+                - required
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Main Facility Entrance'
+              validate:
+                - required
+                - lat_lng
+          -
+            handle: photo
+            field:
+              max_files: 1
+              container: images
+              type: assets
+              display: 'Photo of the Facility Exterior'
+              instructions: |-
+                Select an image that will help the patient find the appropriate facility from the road.
+
+                The photo orientation must be landscape (i.e., horizontal).
+
+                It is restricted to a 16:9 aspect ratio (or close to it) and has a minimum dimension of 1200x675.
+
+                The image will be automatically cropped to a 16:9 aspect ratio when used on the site; and a 1.91:1 aspect ratio when shared to Facebook and Twitter.
+              validate:
+                - 'dimensions:min_width=1200,min_height=675,ratio=16/9'
+              localizable: false
+          -
+            handle: globallocationnumber
+            field: uamsweb_common_identifiers.globallocationnumber
+            config:
+              display: 'Global Location Number for the Facility'
+              if:
+                schema_object: 'equals empty'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Building Complex'

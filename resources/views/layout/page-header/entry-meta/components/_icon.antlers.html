@@ -1,0 +1,9 @@
+{{#
+
+	@name Entry Meta Component: Icon
+	@desc Renders an optional icon span (Font Awesome class) with aria-hidden.
+	Expects: icon (optional; CSS class string, e.g. fas fa-calendar-alt fa-fw).
+
+#}}
+
+{{ if icon }}<span class="{{ [ icon, 'entry-meta-icon' => true ] | classes | collapse_whitespace }}" aria-hidden="true"></span>{{ /if }}

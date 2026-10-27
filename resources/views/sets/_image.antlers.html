@@ -1,0 +1,45 @@
+{{#
+	@name Image
+	@desc The image component. A sizeable image rendered in a figure tag with optional caption.
+	@set page.article.image
+
+	The picture partial uses the default image formats configured in
+	`config/statamic-peak-tools.php`. All formats (WebP, JPEG) are
+	generated from the original uploaded image, and the browser automatically
+	selects the best format it supports.
+#}}
+
+{{ $image_sizes = switch(
+	( align == 'alignfull' ) => '(min-width: 1280px) 640px, (min-width: 768px) 50vw, 90vw',
+	( align == 'alignwide' ) => '(min-width: 1200px) 1019px, (min-width: 992px) 824px, (min-width: 664px) 630px, 90vw',
+	( align == 'aligncenter' ) => '(min-width: 664px) 630px, 90vw',
+	( ( align == 'alignleft' ) || ( align == 'alignright' ) ) => '(min-width: 768px) 299px, (min-width: 579px) 240px, 90vw',
+	() => '100vw'
+) }}
+
+<figure {{ align | attribute:class }}>
+	{{
+		partial:statamic-peak-tools::components/picture
+		:image="image"
+		cover="false"
+		lazy="true"
+		:sizes="$image_sizes"
+		:aspect_ratio="crop"
+	}}
+
+	{{# Caption + optional media credit inside one figcaption. The credit reads `creator` off the
+	    asset, so enter the `image` scope; capture the set-level caption first because the asset
+	    blueprint also defines a `caption` that would otherwise shadow it. The credit defaults to
+	    shown (`display_media_credit` unset or true) and is suppressed only when the toggle is
+	    explicitly false. Either element may be absent — no empty figcaption is emitted. #}}
+	{{ $set_caption = caption }}
+	{{ image }}
+		{{ if $set_caption || ( creator && (display_media_credit !== false) ) }}
+			<figcaption>
+				{{ if $set_caption }}<span class="caption-text">{{ $set_caption | strip_tags | widont }}</span>{{ /if }}
+				{{ if creator && (display_media_credit !== false) }}{{ partial:typography/media_credit }}{{ /if }}
+			</figcaption>
+		{{ /if }}
+	{{ /image }}
+</figure>
+

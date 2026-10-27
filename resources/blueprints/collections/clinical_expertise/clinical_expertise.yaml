@@ -1,0 +1,426 @@
+title: 'Area of Expertise'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'General Details'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Names for This Area of Expertise'
+              instructions: |-
+                Add any other names, acronyms, abbreviations, or alternate spellings by which this area of expertise may be known. List each alternate name as a separate item.
+
+                These alternate names will help enhance this page's visibility in search results.
+          -
+            handle: excerpt_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Use Intro Text as the Short Description for This Page?'
+              instructions: 'Preserved from the legacy WordPress page-header short-description toggle. Not currently wired to a source — the page-header block is not part of this blueprint and may be revisited. Tracked in UAMS-Web/uams-statamic-archive#800.'
+              visibility: hidden
+          -
+            handle: excerpt
+            field: uamsweb_common.excerpt
+            config:
+              display: 'Short Description for This Page'
+              # Restates `uamsweb_common.excerpt`'s own `max:160`: a `config:` override
+              # REPLACES the referenced field's `validate` rather than merging into it
+              # (`Fields::getReferencedField()` shallow-merges), so omitting it here
+              # silently drops the limit (UAMS-Web/uams-statamic-archive#1887).
+              validate:
+                - required
+                - 'max:160'
+      -
+        display: 'Featured Image'
+        collapsible: true
+        fields:
+          -
+            handle: featured_image_16_9
+            field: uamsweb_post_cover_image.featured_image_16_9
+          -
+            handle: featured_image_4_3
+            field: uamsweb_post_cover_image.featured_image_4_3
+          -
+            handle: featured_image_1_1
+            field: uamsweb_post_cover_image.featured_image_1_1
+      -
+        display: 'Page Builder'
+        collapsible: true
+        fields:
+          -
+            import: page_builder
+          -
+            handle: cta
+            field: uamsweb_common_fad.cta_bars
+            config:
+              display: 'Call-to-Action (CTA) Bars'
+          -
+            handle: cta_inherit_disabled
+            field: uamsweb_common.true_false
+            config:
+              display: 'Do not inherit an ancestor Call-to-Action (CTA) bar'
+              instructions: 'By default, an area of expertise (or a page beneath it) with no CTA bar of its own shows the CTA bar of its nearest ancestor that defines one. Enable this to suppress that inherited CTA bar on this entry.'
+              clearable: true
+      -
+        fields:
+          -
+            handle: title_options
+            field: uamsweb_header_selector_landing.title_options
+            config:
+              instructions: 'Preserved from the legacy WordPress page-header configuration. Not currently rendered — the page-header block is not part of this blueprint and may be revisited. Tracked in UAMS-Web/uams-statamic-archive#800.'
+              visibility: hidden
+              validate: []
+          -
+            handle: header_graphic
+            field: uamsweb_header_selector_landing.header_graphic
+            config:
+              visibility: hidden
+          -
+            handle: header_marketing_landing_page
+            field: uamsweb_header_selector_landing.header_marketing_landing_page
+            config:
+              visibility: hidden
+          -
+            handle: header_hero
+            field: uamsweb_header_selector_landing.header_hero
+            config:
+              visibility: hidden
+              validate: []
+  brand:
+    display: Brand
+    sections:
+      -
+        fields:
+          -
+            handle: brand_organizations
+            field: uamsweb_schema.brand_organizations
+            config:
+              display: 'Third-Party Brand Organization'
+              visibility: hidden
+  schema:
+    display: 'Schema Data'
+    sections:
+      -
+        display: 'Categorization Schema'
+        collapsible: true
+        fields:
+          -
+            handle: schema_medical_specialty
+            field: uamsweb_schema.medical_specialty_multiple
+            config:
+              display: 'Relevant Schema.org Medical Specialties'
+              instructions: |-
+                Select the Schema.org `MedicalSpecialty` member(s) this Area of Expertise maps to. Together with the Health Care Provider Taxonomy classification below, this is the controlled certifying-org anchor for the page — **a published Area of Expertise must set at least one of the two** — and it drives the page's `MedicalSpecialty` structured data (JSON-LD). If no Schema.org member applies, record the taxonomy classification below instead.
+          -
+            handle: schema_medicine_system
+            field: uamsweb_schema.medicine_system_multiple
+            config:
+              display: 'Related Systems of Medical Practice'
+          -
+            handle: clinical_specializations
+            field: uamsweb_common_fad.clinical_specializations_multiple
+            config:
+              display: 'Matching Classifications and/or Specializations From the Health Care Provider Taxonomy Code Set'
+              instructions: |-
+                Select the Health Care Provider Taxonomy (NUCC) classification(s) that match this Area of Expertise. Together with the Schema.org Medical Specialty above, this is the controlled certifying-org anchor for the page — **a published Area of Expertise must set at least one of the two.** Use this when no clean Schema.org `MedicalSpecialty` member applies.
+      -
+        display: 'Identification Schema'
+        collapsible: true
+        fields:
+          -
+            handle: schema_medical_code
+            field: uamsweb_schema.medical_code
+            config:
+              display: 'Medical Codes for This Area of Expertise'
+  media:
+    display: 'Associated Media'
+    sections:
+      -
+        display: 'Featured Video'
+        collapsible: true
+        fields:
+          -
+            handle: video_url
+            field: uamsweb_common_video.video_url
+            config:
+              display: 'Featured Video'
+              instructions: 'Choose a video from the UAMS YouTube or Vimeo accounts that showcases this area of expertise and supports the page content. Make sure to include the full URL, starting with <code>https://</code>.'
+      -
+        display: 'UAMS Health Talk Podcast'
+        collapsible: true
+        fields:
+          -
+            handle: podcast_topic_name_uams_health_talk
+            field: uamsweb_common_fad.podcast_topic_name
+      -
+        display: 'Reference Webpages'
+        collapsible: true
+        fields:
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpages About This Area of Expertise'
+  related_items:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Clinical Providers'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_providers
+            field: uamsweb_common_fad.providers
+            config:
+              instructions: |-
+                Include all providers who have this area of expertise.
+
+                The providers will be displayed on a section or subpage, arranged in alphabetical order by their last name.
+          -
+            handle: clinical_providers_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Providers Section or Subpage'
+          -
+            handle: clinical_providers_fpage_excerpt_query
+            field: uamsweb_common_fad.ontology_fpage_excerpt_query
+            config:
+              display: 'Use Intro Text as the Short Description for Related Providers Section or Subpage?'
+          -
+            handle: clinical_providers_fpage_excerpt
+            field: uamsweb_common_fad.ontology_fpage_excerpt
+            config:
+              display: 'Short Description for Related Providers Section or Subpage'
+              if:
+                clinical_providers_fpage_excerpt_query: 'equals false'
+          -
+            handle: clinical_providers_fpage_featured_image
+            field: uamsweb_common_fad.ontology_fpage_featured_image
+            config:
+              display: 'Override Featured Image for Related Providers Section or Subpage'
+      -
+        display: 'Related Clinical Locations'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_locations
+            field: uamsweb_common_fad.clinical_locations
+            config:
+              instructions: |-
+                Include all locations where this area of expertise is represented.
+
+                The locations will be displayed on a section or subpage, arranged in alphabetical order.
+          -
+            handle: regions
+            field: uamsweb_common_address.regions
+            config:
+              visibility: hidden
+          -
+            handle: clinical_locations_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Locations Section or Subpage'
+          -
+            handle: clinical_locations_fpage_excerpt_query
+            field: uamsweb_common_fad.ontology_fpage_excerpt_query
+            config:
+              display: 'Use Intro Text as the Short Description for Related Locations Section or Subpage?'
+          -
+            handle: clinical_locations_fpage_excerpt
+            field: uamsweb_common_fad.ontology_fpage_excerpt
+            config:
+              display: 'Short Description for Related Locations Section or Subpage'
+              if:
+                clinical_locations_fpage_excerpt_query: 'equals false'
+          -
+            handle: clinical_locations_fpage_featured_image
+            field: uamsweb_common_fad.ontology_fpage_featured_image
+            config:
+              display: 'Override Featured Image for Related Locations Section or Subpage'
+      -
+        display: 'Related Areas of Expertise'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_expertise_related
+            field: uamsweb_common_fad.expertise
+            config:
+              instructions: |-
+                Include all areas of expertise that are related to this area of expertise. An example of a related area of expertise would be one that is also represented in treatment plans associated with this area of expertise.
+
+                Areas of expertise that are nested under this area of expertise are excluded from this list.
+
+                The related areas of expertise will be displayed on a section or subpage, arranged in alphabetical order.
+              query_scopes:
+                - exclude_self
+                - exclude_descendants
+                - entries_by_blueprint_clinical_expertise
+          -
+            handle: clinical_expertise_related_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Areas of Expertise Section or Subpage'
+          -
+            handle: clinical_expertise_related_fpage_excerpt_query
+            field: uamsweb_common_fad.ontology_fpage_excerpt_query
+            config:
+              display: 'Use Intro Text as the Short Description for Related Areas of Expertise Section or Subpage?'
+          -
+            handle: clinical_expertise_related_fpage_excerpt
+            field: uamsweb_common_fad.ontology_fpage_excerpt
+            config:
+              display: 'Short Description for Related Areas of Expertise Section or Subpage'
+              if:
+                clinical_expertise_related_fpage_excerpt_query: 'equals false'
+          -
+            handle: clinical_expertise_related_fpage_featured_image
+            field: uamsweb_common_fad.ontology_fpage_featured_image
+            config:
+              display: 'Override Featured Image for Related Areas of Expertise Section or Subpage'
+      -
+        display: 'Related Clinical Conditions and Services'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_conditions
+            field: uamsweb_common_fad.conditions
+            config:
+              instructions: |-
+                Include all conditions that are related to this area of expertise.
+
+                These conditions will be displayed in a block on the main page for this area of expertise, arranged in the alphabetical order.
+          -
+            handle: clinical_services
+            field: uamsweb_common_fad.treatments
+            config:
+              instructions: |-
+                Include all treatments and procedures that are related to this area of expertise.
+
+                These treatments and procedures will be displayed in a block on the main page for this area of expertise, arranged in the alphabetical order.
+          -
+            handle: clinical_conditions_services_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Combined Related Conditions and Treatments Block'
+          -
+            handle: clinical_conditions_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Conditions Block'
+              instructions: |-
+                The default intro text is defined in Find-a-Doc Settings, written to be generic for all blocks of this type on any area of expertise pages. If you leave this field blank, the text from Find-a-Doc Settings will be used. If you add text here, that text will be used instead.
+
+                This will be displayed in a related conditions block on the main page for this area of expertise in a paragraph underneath the block title.
+
+                The text will be limited to 117 characters. The preferred length is at least 110 characters.
+          -
+            handle: clinical_services_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Treatments and Procedures Block'
+              instructions: |-
+                The default intro text is defined in Find-a-Doc Settings, written to be generic for all blocks of this type on any area of expertise pages. If you leave this field blank, the text from Find-a-Doc Settings will be used. If you add text here, that text will be used instead.
+
+                This will be displayed in a related treatments and procedures block on the main page for this area of expertise in a paragraph underneath the block title.
+
+                The text will be limited to 117 characters. The preferred length is at least 110 characters.
+      -
+        display: 'Related Clinical Resources'
+        collapsible: true
+        fields:
+          -
+            handle: clinical_resources
+            field: uamsweb_common_fad.clinical_resources
+            config:
+              instructions: |-
+                Include all clinical resources that are related to this area of expertise.
+
+                These clinical resources will be displayed on a section or subpage, arranged in the order in which they were published, with the most recently published resources being listed first.
+          -
+            handle: clinical_resources_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Related Clinical Resources Section or Subpage'
+          -
+            handle: clinical_resources_fpage_excerpt_query
+            field: uamsweb_common_fad.ontology_fpage_excerpt_query
+            config:
+              display: 'Use Intro Text as the Short Description for Related Clinical Resources Section or Subpage?'
+          -
+            handle: clinical_resources_fpage_excerpt
+            field: uamsweb_common_fad.ontology_fpage_excerpt
+            config:
+              display: 'Short Description for Related Clinical Resources Section or Subpage'
+              if:
+                clinical_resources_fpage_excerpt_query: 'equals false'
+          -
+            handle: clinical_resources_fpage_featured_image
+            field: uamsweb_common_fad.ontology_fpage_featured_image
+            config:
+              display: 'Override Featured Image for Related Clinical Resources Section or Subpage'
+  expertise_descendant:
+    display: 'Descendant Areas of Expertise'
+    sections:
+      -
+        fields:
+          -
+            handle: clinical_expertise_descendant_fpage_intro
+            field: uamsweb_common_fad.ontology_fpage_intro
+            config:
+              display: 'Override Intro Text for Descendant Areas of Expertise Section or Subpage'
+          -
+            handle: clinical_expertise_descendant_fpage_excerpt_query
+            field: uamsweb_common_fad.ontology_fpage_excerpt_query
+            config:
+              display: 'Use Intro Text as the Short Description for Descendant Areas of Expertise Section or Subpage?'
+          -
+            handle: clinical_expertise_descendant_fpage_excerpt
+            field: uamsweb_common_fad.ontology_fpage_excerpt
+            config:
+              display: 'Short Description for Descendant Areas of Expertise Section or Subpage'
+              if:
+                clinical_expertise_descendant_fpage_excerpt_query: 'equals false'
+          -
+            handle: clinical_expertise_descendant_fpage_featured_image
+            field: uamsweb_common_fad.ontology_fpage_featured_image
+            config:
+              display: 'Override Featured Image for Descendant Areas of Expertise Section or Subpage'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+      -
+        display: 'Sitemap'
+        collapsible: true
+        fields:
+          -
+            import: uamsweb_entry_sitemap
+      -
+        display: 'Search'
+        collapsible: true
+        fields:
+          -
+            handle: searchable
+            field: uamsweb_entry_search.searchable
+            config:
+              instructions: "Leave on (the default) so this Area of Expertise can appear in the site's interactive search results. Turn off to keep a broad parent Area of Expertise out of interactive search while it stays reachable at its URL and in the sitemap."

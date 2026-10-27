@@ -1,0 +1,101 @@
+title: 'Professional and Leadership Development — Activity'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              instructions: |-
+                Name the taxonomy term using the name of the organization hosting the professional/leadership development activity followed by the name of the activity (e.g., "Wharton School — Executive Leadership Program").
+
+                This value is only used for display in the control panel.
+              validate:
+                - required
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Official Name of the Professional/Leadership Development Activity'
+              instructions: |-
+                Do not include the name of the organization hosting the activity.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: organization
+            field:
+              type: terms_search_index
+              display: 'Organization Hosting the Professional/Leadership Development Activity'
+              taxonomies:
+                - certification_organizations
+                - membership_organizations
+                - education_organizations
+                - professional_and_leadership_development_organizations
+              max_items: 1
+              create: true
+              search_index: professional_and_leadership_development_organizations_all
+              validate:
+                - required
+              localizable: false
+          -
+            handle: type
+            field:
+              options:
+                -
+                  key: professional_development
+                  value: 'Professional Development'
+                -
+                  key: leadership_development
+                  value: 'Leadership Development'
+              type: radio
+              display: Type
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Name'
+              localizable: false
+          -
+            handle: official_website
+            field: uamsweb_common.url
+            config:
+              display: 'Professional/Leadership Development Activity Webpage URL'
+              localizable: false
+          -
+            handle: subject_matter
+            field:
+              collections:
+                - subject_matter
+                - clinical_specializations
+              type: entries
+              select_across_sites: true
+              search_index: subject_concepts
+              display: 'Subject Matter / Concept'
+              instructions: 'Select the subject matter or clinical specialization this professional/leadership development activity is related to. A clinical concept is chosen from Clinical Specializations (the NUCC Health Care Provider Taxonomy code set and its UAMS extensions), never from Subject Matter.'
+              localizable: false
+              validate:
+                - required
+              create: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

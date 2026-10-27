@@ -1,0 +1,74 @@
+{{#
+
+	@name SEO Meta
+	@desc Bespoke meta description + Open Graph / Twitter card tags for the
+	      document head (UAMS-Web/uams-statamic-archive#628). Sources the description from the entry's required
+	      `excerpt` — the single canonical page summary since UAMS-Web/uams-statamic-archive#1378 retired the
+	      overlapping `meta_description` field — and the social image from the
+	      standard cover-image set's `featured_image_16_9`, falling back to the
+	      legacy single `featured_image` (UAMS-Web/uams-statamic-archive#1553 — still the source on collections
+	      that keep it, e.g. `clinical_locations`). `people` carry no `excerpt`,
+	      so the description falls back to the person's `bio_short` (UAMS-Web/uams-statamic-archive#1378). A
+	      Provider Spotlight (UAMS-Web/uams-statamic-archive#1425) carries neither — its excerpt is empty by
+	      design and it has no featured-image field — so the description and image
+	      fall back to the `spotlight_auto_excerpt` and `spotlight_featured_image`
+	      computeds. `bio_short` is null off `people` and the spotlight computeds
+	      are null off Provider Spotlights, so both fallbacks are inert elsewhere.
+	      The `<title>`, robots (UAMS-Web/uams-statamic-archive#187),
+	      canonical (UAMS-Web/uams-statamic-archive#189), and Google Tag Manager (UAMS-Web/uams-statamic-archive#83) are handled separately —
+	      this partial does not emit them, so there is no duplication.
+
+#}}
+
+	{{ $seo_description = excerpt ? excerpt : ( bio_short ? bio_short : spotlight_auto_excerpt ) }}
+	{{ $seo_title = title ? title : site:name }}
+	{{# `:id`, not the value itself. All three sources are single-file `assets` fields, so each
+	    augments to an Asset — but the Antlers assignment below reduces that Asset to its
+	    `toAugmentedArray()`, and `{{ glide :src=<array> }}` fatals: `isValidExtension()` calls
+	    `Path::extension()` -> `Str::before()` -> `strstr(): Argument #1 must be of type string,
+	    array given`. That is a TypeError, so glide's `catch (\Exception)` does not catch it and it
+	    escapes as a 500 on every page carrying a social image. Passing `:id` hands glide the
+	    `images::default/x.jpg` handle it can resolve, and keeps the by-asset URL (focal crop
+	    preserved) rather than the by-path one. Found by UAMS-Web/uams-statamic-archive#2040, which is how the guard tests came
+	    to run trusted and could finally execute this tag at all. #}}
+	{{ $seo_image = featured_image_16_9 ? featured_image_16_9 : ( featured_image ? featured_image : spotlight_featured_image ) }}
+
+	{{# Every source above is a plain-text field by design — each "short" biography
+	    on `person.yaml` is `uamsweb_common.excerpt` (a textarea), and only the
+	    "full" ones are Bard. A value stored in a rich-text shape is therefore
+	    content drift, but it used to be fatal drift: a non-empty array is truthy,
+	    so it reached `strip_tags` and threw `must be of type string, array given`,
+	    which 500s EVERY page rendered through this layout for that entry (UAMS-Web/uams-statamic-archive#1883).
+	    Drop a non-string instead, so the tag it feeds is simply omitted. #}}
+	{{ if $seo_description | is_iterable }}
+		{{ $seo_description = '' }}
+	{{ /if }}
+	{{ if $seo_title | is_iterable }}
+		{{ $seo_title = site:name }}
+	{{ /if }}
+
+	{{ if $seo_description }}
+		<meta name="description" content="{{ $seo_description | strip_tags | entities | trim }}">
+	{{ /if }}
+
+	{{# Open Graph #}}
+	<meta property="og:site_name" content="{{ site:name | entities }}">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="{{ $seo_title | strip_tags | entities | trim }}">
+	{{ if $seo_description }}
+		<meta property="og:description" content="{{ $seo_description | strip_tags | entities | trim }}">
+	{{ /if }}
+	<meta property="og:url" content="{{ permalink ? permalink : current_url }}">
+	{{ if $seo_image }}
+		<meta property="og:image" content="{{ glide :src="$seo_image:id" width="1200" height="630" fit="crop_focal" absolute="true" }}">
+	{{ /if }}
+
+	{{# Twitter card #}}
+	<meta name="twitter:card" content="{{ $seo_image ? 'summary_large_image' : 'summary' }}">
+	<meta name="twitter:title" content="{{ $seo_title | strip_tags | entities | trim }}">
+	{{ if $seo_description }}
+		<meta name="twitter:description" content="{{ $seo_description | strip_tags | entities | trim }}">
+	{{ /if }}
+	{{ if $seo_image }}
+		<meta name="twitter:image" content="{{ glide :src="$seo_image:id" width="1200" height="630" fit="crop_focal" absolute="true" }}">
+	{{ /if }}

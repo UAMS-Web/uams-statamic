@@ -1,0 +1,76 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: schema_type
+            field:
+              options:
+                -
+                  key: 'false'
+                  value: None
+                -
+                  key: EducationalOccupationalProgram
+                  value: null
+                -
+                  key: other
+                  value: Other
+              type: radio
+              display: 'Schema Type'
+              validate:
+                - required
+              cast_booleans: true
+              localizable: false
+          -
+            handle: other_schema_type
+            field: uamsweb_common.url
+            config:
+              display: 'Other Schema Type'
+              placeholder: 'e.g., https://schema.org/Thing'
+              instructions: 'Add the URL to the Schema.org type'
+              validate:
+                - required
+                - sometimes
+                - 'regex:/^https:\/\/(?:www\.)?schema\.org\/[A-Za-z0-9]+\/?$/D'
+              if:
+                schema_type: 'equals other'
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              display: 'Alternate Name(s)'
+          -
+            handle: additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              display: 'More Specific Type(s) for This Entity From External Vocabularies in Microdata Syntax'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Entity'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Education or Training Type'

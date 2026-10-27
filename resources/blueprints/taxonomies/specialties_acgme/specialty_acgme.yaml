@@ -1,0 +1,95 @@
+title: 'Medical Specialty/Subspecialty, ACGME'
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              localizable: false
+          -
+            handle: specialty_subspecialty_type
+            field:
+              options:
+                -
+                  key: specialty
+                  value: Specialty
+                -
+                  key: subspecialty
+                  value: Subspecialty
+              type: radio
+              display: Type
+              localizable: false
+              validate:
+                - required
+          -
+            handle: description
+            field:
+              type: textarea
+              display: 'Definition of This Specialty/Subspecialty'
+              instructions: 'Provide the definition of this specialty/subspecialty, found in the introduction of the ACGME specialty/subspecialty program requirements PDF.'
+              localizable: false
+          -
+            handle: disambiguating_description
+            field:
+              type: textarea
+              display: 'Disambiguating Description for This Specialty/Subspecialty'
+              instructions: 'A short description of the item used to disambiguate from other, similar items.'
+              localizable: false
+          -
+            handle: subject_matter
+            field:
+              collections:
+                - clinical_specializations
+              type: entries
+              select_across_sites: true
+              search_index: clinical_specializations
+              display: 'Subject Matter / Concept'
+              instructions: 'Select the clinical specialization this specialty/subspecialty is related to. Clinical concepts live in Clinical Specializations: the NUCC Health Care Provider Taxonomy code set and its UAMS extensions.'
+              localizable: false
+              validate:
+                - required
+              create: false
+          -
+            handle: official_website
+            field: uamsweb_common.url_grid
+            config:
+              display: 'ACGME Specialty Homepage URL'
+              localizable: false
+              instructions: 'e.g., https://www.acgme.org/specialties/allergy-and-immunology/overview/'
+              validate:
+                - required
+          -
+            handle: program_requirements_url
+            field: uamsweb_common.url_grid
+            config:
+              display: 'ACGME Specialty/Subspecialty Program Requirements Webpage/PDF URL'
+              localizable: false
+              instructions: 'e.g., https://www.acgme.org/globalassets/pfassets/programrequirements/2025-reformatted-requirements/020_allergyimmunology_2025_reformatted.pdf'
+              validate:
+                - required
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

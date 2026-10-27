@@ -1,0 +1,38 @@
+{{#
+	@name Term archive post listing
+	@desc The card listing + empty state for a taxonomy term archive (UAMS-Web/uams-statamic-archive#1145/UAMS-Web/uams-statamic-archive#1171/
+	      UAMS-Web/uams-statamic-archive#1172). Rendered inside a `collection:posts … as="posts"` pair, so `posts`,
+	      `no_results`, and `paginate` are in scope. Mirrors posts/_listing's card and
+	      pagination markup so a term archive matches the main posts listing.
+#}}
+{{ partial:page_builder/components/container_row }}
+	<div class="col-12">
+		{{ if no_results }}
+			{{# Empty term — a well-formed page with the descriptive title/heading
+				already rendered above, plus a clear "no posts" message (UAMS-Web/uams-statamic-archive#1171). #}}
+			<p class="posts-empty">There are no posts here yet. Please check back soon.</p>
+		{{ else }}
+			<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+				{{ posts }}
+					{{ partial:posts/card }}
+				{{ /posts }}
+			</div>
+
+			{{ if paginate:total_pages > 1 }}
+				<nav class="posts-pagination" aria-label="Posts pagination">
+					<ul class="pagination">
+						{{ if paginate:prev_page }}
+							<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+						{{ /if }}
+						<li class="page-item active" aria-current="page">
+							<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
+						</li>
+						{{ if paginate:next_page }}
+							<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+						{{ /if }}
+					</ul>
+				</nav>
+			{{ /if }}
+		{{ /if }}
+	</div>
+{{ /partial:page_builder/components/container_row }}

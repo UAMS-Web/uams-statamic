@@ -1,0 +1,18 @@
+title: 'UAMSWeb Bard Set, Pull Quote'
+fields:
+  -
+    handle: align
+    field: uamsweb_common.align_other
+  -
+    handle: quote
+    field: uamsweb_common.bard_simple
+    config:
+      display: Quote
+      validate:
+        - required
+  -
+    handle: author
+    field:
+      type: text
+      localizable: true
+      display: Author

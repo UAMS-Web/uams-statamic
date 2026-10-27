@@ -1,0 +1,34 @@
+diff --git a/src/Entries/Collection.php b/src/Entries/Collection.php
+index 6c90a55..9c91de9 100644
+--- a/src/Entries/Collection.php
++++ b/src/Entries/Collection.php
+@@ -466,12 +466,27 @@ class Collection implements Arrayable, ArrayAccess, AugmentableContract, Contain
+ 
+     public function createLabel()
+     {
+-        $key = "messages.{$this->handle()}_collection_create_entry";
++        $key = "statamic::messages.{$this->handle()}_collection_create_entry";
++        $fallbackLabel = __('Create Entry');
++        $blueprint = request()->query('blueprint');
++
++        if (! empty($blueprint)) {
++            $blueprintKey = "{$key}.{$blueprint}";
++            $blueprintTranslation = __($blueprintKey);
++
++            if ($blueprintTranslation !== $blueprintKey) {
++                return $blueprintTranslation;
++            }
++        }
+ 
+         $translation = __($key);
+ 
++        if (! \is_string($translation)) {
++            return $fallbackLabel;
++        }
++
+         if ($translation === $key) {
+-            return __('Create Entry');
++            return $fallbackLabel;
+         }
+ 
+         return $translation;

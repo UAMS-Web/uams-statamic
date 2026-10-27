@@ -1,0 +1,46 @@
+<header
+	class="{{
+		[
+			'entry-header uams-module extra-padding landing-page-title' => true,
+			'bg-image' => header_marketing_landing_page:image,
+		] | classes | collapse_whitespace
+	}}"
+>
+	{{ if header_marketing_landing_page:image }}
+	<style nonce="{{ csp_nonce }}">
+		.entry-header:before {
+			--bg-xxs:    url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='576'  h='468'  fit='crop_focal' absolute='true' }}");
+			--bg-xxs-2x: url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='1152' h='936'  fit='crop_focal' absolute='true' }}");
+			--bg-xs:     url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='768'  h='624'  fit='crop_focal' absolute='true' }}");
+			--bg-xs-2x:  url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='1536' h='1248' fit='crop_focal' absolute='true' }}");
+			--bg-sm:     url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='992'  h='806'  fit='crop_focal' absolute='true' }}");
+			--bg-sm-2x:  url("{{ glide :src='header_marketing_landing_page:image_mobile ?? header_marketing_landing_page:image' w='1984' h='1612' fit='crop_focal' absolute='true' }}");
+			--bg-md:     url("{{ glide :src='header_marketing_landing_page:image' w='1200' h='375'  fit='crop_focal' absolute='true' }}");
+			--bg-md-2x:  url("{{ glide :src='header_marketing_landing_page:image' w='2400' h='750'  fit='crop_focal' absolute='true' }}");
+			--bg-lg:     url("{{ glide :src='header_marketing_landing_page:image' w='1500' h='469'  fit='crop_focal' absolute='true' }}");
+			--bg-lg-2x:  url("{{ glide :src='header_marketing_landing_page:image' w='3000' h='938'  fit='crop_focal' absolute='true' }}");
+			--bg-xl:     url("{{ glide :src='header_marketing_landing_page:image' w='1921' h='601'  fit='crop_focal' absolute='true' }}");
+			--bg-xl-2x:  url("{{ glide :src='header_marketing_landing_page:image' w='3842' h='1201' fit='crop_focal' absolute='true' }}");
+			--bg-xxl:    url("{{ glide :src='header_marketing_landing_page:image' w='2560' h='800'  fit='crop_focal' absolute='true' }}");
+			--bg-xxl-2x: url("{{ glide :src='header_marketing_landing_page:image' w='5120' h='1600' fit='crop_focal' absolute='true' }}");
+		}
+	</style>
+	{{ /if }}
+	<div class="text-container">
+		<div class="landing-page-title-heading">
+			<h1 class="entry-title">{{ title | widont }}</h1>
+		</div>
+		{{ if header_marketing_landing_page:body }}
+		<div class="landing-page-title-body">
+			<p>{{ header_marketing_landing_page:body | widont }}</p>
+		</div>
+		{{ /if }}
+	</div>
+	{{# Opt-in media credit over the landing-page header image, emitted last so assistive tech
+	    reads it after the page title (WCAG 1.3.2). Anchored to the `.entry-header`
+	    (`position: relative`); this header carries no `background_color`, so the neutral scrim
+	    applies. Off by default (`header_marketing_landing_page:display_media_credit`). #}}
+	{{ if header_marketing_landing_page:display_media_credit && header_marketing_landing_page:image:creator }}
+		<p class="media-credit-overlay">{{ partial:typography/media_credit :creator="header_marketing_landing_page:image:creator" :creator_organization="header_marketing_landing_page:image:creator_organization" }}</p>
+	{{ /if }}
+</header>

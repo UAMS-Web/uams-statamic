@@ -1,0 +1,153 @@
+title: Document
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        display: 'Entry Header'
+        collapsible: true
+        fields:
+          -
+            handle: title
+            field: uamsweb_post_settings.title
+            config:
+              required: true
+              validate:
+                - required
+          - import: uamsweb_post_entry_header
+      -
+        display: 'Featured Image and Cover Image'
+        collapsible: true
+        fields:
+          - import: uamsweb_post_cover_image
+      -
+        display: Syndication
+        collapsible: true
+        fields:
+          -
+            handle: syndication_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is this syndicated from another source?'
+              clearable: true
+              validate:
+                - required
+                - sometimes
+          -
+            handle: syndication_url
+            field: uamsweb_common.url
+            config:
+              display: 'Syndication Source URL'
+              localizable: false
+              if:
+                syndication_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Text Content'
+        collapsible: true
+        fields:
+          -
+            handle: documents_description
+            field: uamsweb_common.bard_simple
+            config:
+              display: 'Document Introduction'
+              localizable: false
+              instructions: |-
+                This will precede the links to the documents on the page.
+
+                Summarize the key points and critical information from the attached document(s).
+              validate:
+                - required
+                - sometimes
+      -
+        display: 'Document Content Origin and Transparency'
+        collapsible: true
+        fields:
+          -
+            handle: digital_source_type
+            field: digital_source_type.digital_source_type_document
+            config:
+              hide_display: true
+              fullscreen: false
+              border: false
+      -
+        display: 'Document Content'
+        collapsible: true
+        fields:
+          -
+            handle: schema_digital_document_subtype
+            field:
+              type: schema_type
+              starting_types:
+                - DigitalDocument
+              display: 'Document Subtype'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+              excluded_types:
+                - NoteDigitalDocument
+          -
+            handle: documents
+            field:
+              type: replicator
+              display: Documents
+              validate:
+                - required
+                - sometimes
+              localizable: false
+              sets:
+                document_formats:
+                  display: 'Document Formats'
+                  sets:
+                    pdf:
+                      display: 'PDF Document'
+                      instructions: 'Attach a PDF document. Additional file formats may be supported as their own sets in the future.'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: Title
+                            validate:
+                              - required
+                        -
+                          handle: file
+                          field:
+                            max_files: 1
+                            container: files
+                            type: assets
+                            display: 'PDF File'
+                            instructions: 'Upload a PDF file. Only the <code>.pdf</code> format is accepted.'
+                            validate:
+                              - required
+                              - 'mimes:pdf'
+  relationships:
+    display: 'Related Items'
+    sections:
+      -
+        display: 'Related Items'
+        fields:
+          - import: uamsweb_clinical_resource_related
+      -
+        display: 'Publish Dependency'
+        fields:
+          -
+            import: uamsweb_publish_dependency
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {}

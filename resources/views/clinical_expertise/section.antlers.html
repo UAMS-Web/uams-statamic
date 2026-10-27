@@ -1,0 +1,163 @@
+{{#
+	@name Area of Expertise section subpage
+	@desc Renders one relationship-derived section of a clinical_expertise entry at
+	      its own routed /{entry}/{section} URL (UAMS-Web/uams-statamic-archive#1058). The `section` token and the
+	      resolved `section_*` overrides come from ClinicalExpertiseSectionResolver
+	      via ClinicalExpertiseSectionController; the AoE entry is augmented into
+	      scope through `load`, so `title` / the relationship fields resolve here.
+
+	      Each list guards on the AUGMENTED relationship (published, resolvable
+	      entries), so a section whose related ids are all unpublished/dangling shows
+	      an empty state rather than a blank page — the route's 404 gate keys off raw
+	      presence, so the section can still be reached with no renderable items.
+
+	      Item rendering is the accessible baseline (linked titles). The richer
+	      Find-a-Doc card partials + the Find-a-Doc Settings `_expertise` default
+	      fallbacks are a follow-up shared with the show-page related blocks (UAMS-Web/uams-statamic-archive#573).
+	@set clinical_expertise.section
+#}}
+{{ partial:layout/article title_options="none" }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+		{{# `section_label` is resolved once in ClinicalExpertiseSectionResolver and
+			passed through the controller (shared with the breadcrumb crumb). #}}
+		<header class="aoe-section-header">
+			<h1 class="page-title">
+				<span class="aoe-name">{{ title }}</span><span class="sr-only">: </span>
+				<span class="aoe-section-label">{{ section_label }}</span>
+			</h1>
+			{{ if section_intro }}
+				<div class="aoe-section-intro">{{ section_intro }}</div>
+			{{ /if }}
+		</header>
+
+		{{ if section == 'providers' }}
+			{{# UAMS-Web/uams-statamic-archive#919: filter the provider relationship to clinical-provider-eligible, searchable people (empty state when none survive). #}}
+			{{ eligible_providers = clinical_providers | clinical_provider_eligible }}
+			{{ if eligible_providers }}
+				{{# UAMS-Web/uams-statamic-archive#1439: client-side facet filtering (clinical title, region, descendant
+				    Areas of Expertise) over the in-DOM, unpaginated provider list — the
+				    shared `fadFilter` engine narrows it with no request. Each item carries
+				    its facet slugs (URL-safe, no escaping); descendant-AoE = the provider's
+				    own `expertise` slugs. #}}
+				<div class="aoe-section-filterable" x-data="fadFilter(['specialty', 'region', 'expertise', 'patient_types', 'gender', 'language'], 'provider', 'providers')">
+					{{ partial:clinical_expertise/section_filter
+						:load="load"
+						:providers="eligible_providers"
+						show_search="true"
+						show_specialty="true"
+						show_patient_types="true"
+						show_gender="true"
+						show_language="true"
+						show_region="true"
+						show_expertise="true"
+						filter_noun_plural="providers"
+					}}
+					<ul class="aoe-section-list aoe-section-providers">
+						{{ eligible_providers }}
+							<li data-fad-card
+								data-name="{{ title | lower | strip_tags | sanitize }}"
+								data-specialty="{{ clinical_specializations | pluck:'slug' | join:' ' }}"
+								data-region="{{ regions | pluck:'slug' | join:' ' }}"
+								data-expertise="{{ expertise | pluck:'slug' | join:' ' }}"
+								data-patient_types="{{ patient_types | pluck:'slug' | join:' ' }}"
+								data-gender="{{ gender | lower | sanitize }}"
+								data-language="{{ language | pluck:'value' | join:' ' | sanitize }}">
+								<a href="{{ url }}">{{ title }}</a>
+							</li>
+						{{ /eligible_providers }}
+					</ul>
+					{{ partial:clinical_expertise/section_filter_status filter_noun_plural="providers" }}
+				</div>
+			{{ else }}
+				<p class="aoe-section-empty">No related clinical providers are available.</p>
+			{{ /if }}
+
+		{{ elseif section == 'locations' }}
+			{{ if clinical_locations }}
+				{{# UAMS-Web/uams-statamic-archive#1439: client-side facet filtering (region, descendant Areas of Expertise)
+				    over the in-DOM location list; descendant-AoE = the location's own
+				    `expertise` slugs. #}}
+				<div class="aoe-section-filterable" x-data="fadFilter(['region', 'expertise', 'location_type'], 'location', 'locations')">
+					{{ partial:clinical_expertise/section_filter
+						:load="load"
+						show_search="true"
+						show_region="true"
+						show_location_type="true"
+						show_expertise="true"
+						filter_noun_plural="locations"
+					}}
+					<ul class="aoe-section-list aoe-section-locations">
+						{{ clinical_locations }}
+							{{# `resolved_regions` rather than the stored terms: a child location that
+							    inherits its street group carries its parent's region (UAMS-Web/uams-statamic-archive#2608). #}}
+							<li data-fad-card
+								data-name="{{ title | lower | strip_tags | sanitize }}"
+								data-region="{{ resolved_regions | join:' ' | sanitize }}"
+								data-expertise="{{ expertise | pluck:'slug' | join:' ' }}"
+								data-location_type="{{ location_types | pluck:'slug' | join:' ' }}">
+								<a href="{{ url }}">{{ title }}</a>
+							</li>
+						{{ /clinical_locations }}
+					</ul>
+					{{ partial:clinical_expertise/section_filter_status filter_noun_plural="locations" }}
+				</div>
+			{{ else }}
+				<p class="aoe-section-empty">No related clinical locations are available.</p>
+			{{ /if }}
+
+		{{ elseif section == 'related' }}
+			{{ if clinical_expertise_related }}
+				<ul class="aoe-section-list aoe-section-related">
+					{{ clinical_expertise_related }}
+						<li><a href="{{ url }}">{{ title }}</a></li>
+					{{ /clinical_expertise_related }}
+				</ul>
+			{{ else }}
+				<p class="aoe-section-empty">No related areas of expertise are available.</p>
+			{{ /if }}
+
+		{{ elseif section == 'resources' }}
+			{{ if clinical_resources }}
+				{{# UAMS-Web/uams-statamic-archive#1439: client-side facet filtering by resource type (the entry's
+				    blueprint) over the in-DOM resource list. A descendant-Areas-of-Expertise
+				    facet is not offered here — clinical resources carry no Area-of-Expertise
+				    association to filter on (see the PR's follow-up note). #}}
+				<div class="aoe-section-filterable" x-data="fadFilter(['type'], 'resource', 'resources')">
+					{{ partial:clinical_expertise/section_filter
+						show_search="true"
+						show_type="true"
+						filter_noun_plural="resources"
+					}}
+					<ul class="aoe-section-list aoe-section-resources">
+						{{ clinical_resources }}
+							<li data-fad-card data-name="{{ title | lower | strip_tags | sanitize }}" data-type="{{ blueprint:handle }}">
+								<a href="{{ url }}">{{ title }}</a>
+							</li>
+						{{ /clinical_resources }}
+					</ul>
+					{{ partial:clinical_expertise/section_filter_status filter_noun_plural="resources" }}
+				</div>
+			{{ else }}
+				<p class="aoe-section-empty">No related clinical resources are available.</p>
+			{{ /if }}
+
+		{{ elseif section == 'specialties' }}
+			{{# Immediate structure children on the clinical_expertise blueprint,
+				mirroring the knowledge_bases _topic_list child query. #}}
+			{{ collection:clinical_expertise blueprint:is="clinical_expertise" :parent:is="load" as="specialties" }}
+				{{ if no_results }}
+					<p class="aoe-section-empty">No sub-specialties are available.</p>
+				{{ else }}
+					<ul class="aoe-section-list aoe-section-specialties">
+						{{ specialties }}
+							<li><a href="{{ url }}">{{ title }}</a></li>
+						{{ /specialties }}
+					</ul>
+				{{ /if }}
+			{{ /collection:clinical_expertise }}
+		{{ /if }}
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

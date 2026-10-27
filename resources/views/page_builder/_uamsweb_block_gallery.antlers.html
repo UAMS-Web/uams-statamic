@@ -1,0 +1,158 @@
+{{#
+	@name UAMS Gallery
+	@desc The UAMS Gallery page builder block.
+	@set page.page_builder.uamsweb_block_gallery
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Block Class #}}
+
+		{{ $gallery_class = 'gallery-block' }}
+
+	{{# Only render if required fields (and conditionals) have values #}}
+
+		{{ $images_count = images | safe_count }}
+		{{# `!== null` (strict) is a genuine "the field was answered" test: it passes for
+		    a falsy-but-real answer — `modal`/`more_query` augmenting to bool `false`
+		    (Toggle::augment casts to bool), or `crop` = None (the radio's integer key
+		    `0`) — and fails only for an actual `null`. Loose `!= null` treated all three
+		    falsy answers as unanswered and silently invalidated the whole block (UAMS-Web/uams-statamic-archive#1514). #}}
+		{{ $block_valid = block_heading && block_description && background_color && columns && $images_count >= 2 && $images_count <= 6 && crop !== null && modal !== null && more_query !== null }}
+		{{ if $block_valid && more_query }}
+			{{ $block_valid = more_heading && more_button_text && more_button_url }}
+		{{ /if }}
+
+	{{# Image Container #}}
+
+		{{# Column Widths #}}
+
+			{{ $gallery_columns = block:columns ?? '3' }}
+
+			{{# Bootstrap column-width class + columns-per-row, per breakpoint.
+			    Responsive ramp: sm is always 2-up; md is 2-up except the
+			    6-column layout (3-up); lg is the selected count. The class
+			    string (grid) and the numeric columns-per-row (the
+			    gallery_image_picture srcset math) are kept as two separate
+			    variables — the earlier single-var form did `+= 6` on the
+			    'col-sm-' prefix string and then divided by it, faulting on
+			    every render (ANTLR_003 numeric-type error, UAMS-Web/uams-statamic-archive#1354). #}}
+			{{ if $gallery_columns == '2' }}
+				{{ $gallery_col_sm = 'col-sm-6' }}{{ $gallery_cols_sm = 2 }}
+				{{ $gallery_col_md = 'col-md-6' }}{{ $gallery_cols_md = 2 }}
+				{{ $gallery_col_lg = 'col-lg-6' }}{{ $gallery_cols_lg = 2 }}
+			{{ elseif $gallery_columns == '4' }}
+				{{ $gallery_col_sm = 'col-sm-6' }}{{ $gallery_cols_sm = 2 }}
+				{{ $gallery_col_md = 'col-md-6' }}{{ $gallery_cols_md = 2 }}
+				{{ $gallery_col_lg = 'col-lg-3' }}{{ $gallery_cols_lg = 4 }}
+			{{ elseif $gallery_columns == '6' }}
+				{{ $gallery_col_sm = 'col-sm-6' }}{{ $gallery_cols_sm = 2 }}
+				{{ $gallery_col_md = 'col-md-4' }}{{ $gallery_cols_md = 3 }}
+				{{ $gallery_col_lg = 'col-lg-2' }}{{ $gallery_cols_lg = 6 }}
+			{{ else }}
+				{{# 3 columns — the field default. #}}
+				{{ $gallery_col_sm = 'col-sm-6' }}{{ $gallery_cols_sm = 2 }}
+				{{ $gallery_col_md = 'col-md-6' }}{{ $gallery_cols_md = 2 }}
+				{{ $gallery_col_lg = 'col-lg-4' }}{{ $gallery_cols_lg = 3 }}
+			{{ /if }}
+
+		{{# Image Dimensions #}}
+
+			{{# Compute the aspect ratio once; per-breakpoint width/height is calculated #}}
+			{{# inside the gallery_image_picture partial (replicates UAMS 2020 #}}
+			{{# gallery_image_dimension()). `crop` is a radio: at request time it augments
+			    to a `LabeledValue` object, so the ratio must be its `:value` (the numeric
+			    option key) — a bare `block:crop` would carry the object into the picture
+			    partial's `$w / $ratio` division and throw `[ANTLR_003] … got [bool]`. The
+			    `?? block:crop` fallback keeps a raw scalar/string (unaugmented / imported)
+			    working; the `!= 0` test unwraps either form, so None still yields 0. #}}
+			{{ $gallery_image_ratio = ( block:crop != 0 ) ? ( block:crop:value ?? block:crop ) : 0 }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{
+		partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$gallery_class"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			{{ partial:page_builder/components/block_header }}
+			<div class="col-12 image-container padded-grid">
+				<div class="row">
+					{{# Per-image counter uses Antlers' built-in loop variables — `index`
+					    (0-based, for the unique modal id) and `count` (1-based, for the
+					    human-facing "image N" label). A hand-rolled counter incremented
+					    inside the loop did not survive the array-loop child scope: it read
+					    back as `null`, so the old `image N` arithmetic threw `null + …` (UAMS-Web/uams-statamic-archive#1514). #}}
+					{{ $limited_images = images | limit(6) }}
+					{{ $limited_images }}
+						<div
+							class="{{
+								[
+									'col-12' => true,
+									$gallery_col_sm,
+									$gallery_col_md,
+									$gallery_col_lg
+								] | classes | collapse_whitespace
+							}}"
+						>
+							{{ if modal }}
+								<a href="#" data-toggle="modal" data-target="#modal_{{ index }}_{{ block_id }}" aria-label="Show larger version of image {{ count }}{{ alt ? ( ': ' + alt ) : '' }}">
+							{{ /if }}
+							{{
+								partial:page_builder/components/gallery_image_picture
+								:url="url"
+								:alt="alt"
+								:cols_sm="$gallery_cols_sm"
+								:cols_md="$gallery_cols_md"
+								:cols_lg="$gallery_cols_lg"
+								:ratio="$gallery_image_ratio"
+							}}
+							{{ if modal }}
+								</a>
+							{{ /if }}
+						</div>
+						{{ if modal }}
+							<div class="modal fade" id="modal_{{ index }}_{{ block_id }}" tabindex="-1" role="dialog" aria-label="Larger version of image {{ count }}{{ alt ? ( ': ' + alt ) : '' }}" aria-hidden="true">
+								<div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+									<div class="modal-content">
+										<div class="modal-header">
+											<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<span aria-hidden="true">&times;</span>
+											</button>
+										</div>
+										<div class="modal-body">
+											<figure class="figure">
+												<picture>
+													<source srcset="{{ glide :src="url" w="1106" }}" media="(min-width: 1200px)">
+													<source srcset="{{ glide :src="url" w="1094" }}" media="(min-width: 992px)">
+													<source srcset="{{ glide :src="url" w="886" }}" media="(min-width: 768px)">
+													<source srcset="{{ glide :src="url" w="702" }}" media="(min-width: 1px)">
+													{{# Fallback #}}
+													<img src="{{ glide :src="url" w="1106" }}" alt="{{ alt }}" />
+												</picture>
+												{{# Enlarged-image caption + optional media credit. Both the caption and the
+												    `creator` resolve on the gallery asset in this loop scope; the credit defaults
+												    to shown and is suppressed only when the block's toggle is explicitly false. #}}
+												{{ if caption || ( creator && (display_media_credit !== false) ) }}
+													<figcaption>
+														{{ if caption }}<span class="caption-text">{{ caption | strip_tags | widont }}</span>{{ /if }}
+														{{ if creator && (display_media_credit !== false) }}{{ partial:typography/media_credit }}{{ /if }}
+													</figcaption>
+												{{ /if }}
+											</figure>
+										</div>
+									</div>
+								</div>
+							</div>
+						{{ /if }}
+					{{ /$limited_images }}
+				</div>
+			</div>
+			{{ partial:page_builder/components/block_more block_item_button_outline="true" }}
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}

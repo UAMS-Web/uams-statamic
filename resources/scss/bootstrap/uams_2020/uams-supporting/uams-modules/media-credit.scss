@@ -1,0 +1,76 @@
+// ==========================================================================
+// Media credit overlay (UAMS-Web/uams-statamic-archive#1531)
+//
+// An opt-in, absolutely-positioned attribution ("Credit: …") painted over a
+// background-image block or page header. Because it sits over an arbitrary
+// photo, it carries its own scrim that guarantees WCAG 2.1 AA (>= 4.5:1)
+// white-on-scrim contrast regardless of the underlying image. The scrim tint
+// follows the block's `background_color`; each pairing is worst-case
+// AA-verified (the scrim composited over a pure-white image pixel — the
+// lightest possible bleed; any real pixel only darkens the effective
+// background, raising contrast). Blocks with no (or a light) background color
+// use the neutral scrim.
+// ==========================================================================
+
+// Establish a positioning context for the two containers whose background
+// image is painted on the element itself (not a `:before`), so the absolute
+// overlay anchors to the image region rather than a distant ancestor. The
+// call-out / CTA / overlay / graphic / landing-page surfaces already sit inside
+// a `position: relative` `.uams-module` / `.item` / `.entry-header`.
+.side-by-side .image-container,
+.uams-hero-block .image-container {
+	position: relative;
+}
+
+.media-credit-overlay {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	z-index: 2;
+	max-width: 100%;
+	margin: 0;
+	padding: 0.25rem 0.625rem;
+	background-color: rgba($black, 0.72); // neutral scrim — AA in all cases (>= 9:1 worst case)
+	color: $white;
+	font-size: 0.75rem;
+	line-height: 1.3;
+
+	// The shared `typography/media_credit` partial reuses the `.photo-credit`
+	// class, whose figcaption-scoped rule is italic / nowrap; here the credit is
+	// a standalone overlay line, so reset those.
+	.photo-credit {
+		font-style: normal;
+		white-space: normal;
+	}
+}
+
+// Color-matched scrims: a dark, high-opacity variant of the block's background
+// color, each worst-case AA-verified with white text. Light palette colors
+// (`bg-white` / `bg-gray`) and `bg-auto` fall back to the neutral scrim above.
+@each $class, $color in (
+	'bg-red': $red-darkest,
+	'bg-blue': $blue-darkest,
+	'bg-green': $green-darkest,
+	'bg-teal': $teal-darkest,
+	'bg-eggplant': $eggplant-darkest,
+	'bg-orange': $orange-darkest,
+	'bg-black': $black,
+) {
+	.#{$class} .media-credit-overlay {
+		background-color: rgba($color, 0.9);
+	}
+}
+
+// The hero carousel applies a bare color class (`red` / `blue` / `green` /
+// `eggplant`) for its auto palette; explicit hero slides use the `bg-*` class
+// handled above.
+@each $class, $color in (
+	'red': $red-darkest,
+	'blue': $blue-darkest,
+	'green': $green-darkest,
+	'eggplant': $eggplant-darkest,
+) {
+	.carousel-item.#{$class} .media-credit-overlay {
+		background-color: rgba($color, 0.9);
+	}
+}

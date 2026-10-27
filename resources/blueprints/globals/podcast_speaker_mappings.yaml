@@ -1,0 +1,60 @@
+tabs:
+  main:
+    display: 'Speaker Mappings'
+    sections:
+      -
+        display: 'UAMS Health Talk Speakers'
+        instructions: 'Each row maps one speaker name exactly as the podcast feed spells it to a people entry. The nightly sync adds a row for every name it cannot resolve; an episode is imported only once every one of its speakers is mapped or marked "No entry expected".'
+        fields:
+          -
+            handle: mappings
+            field:
+              type: replicator
+              display: 'Speaker Mappings'
+              collapse: true
+              localizable: false
+              sets:
+                speakers:
+                  display: Speakers
+                  sets:
+                    speaker_mapping:
+                      display: 'Speaker Mapping'
+                      icon: users-person
+                      fields:
+                        -
+                          handle: speaker
+                          field:
+                            type: text
+                            display: 'Speaker (as the feed spells it)'
+                            instructions: 'Matched exactly, including credentials and punctuation. Several spellings of one person each get their own row.'
+                            validate:
+                              - required
+                            localizable: false
+                            replicator_preview: true
+                        -
+                          handle: disposition
+                          field:
+                            type: button_group
+                            display: Resolution
+                            options:
+                              unmapped: 'Not yet mapped'
+                              person: 'People entry'
+                              none: 'No entry expected'
+                            default: unmapped
+                            localizable: false
+                            replicator_preview: true
+                        -
+                          handle: person
+                          field:
+                            type: entries
+                            display: 'People Entry'
+                            collections:
+                              - people
+                            max_items: 1
+                            mode: default
+                            create: false
+                            localizable: false
+                            if:
+                              disposition: 'equals person'
+                            validate:
+                              - 'required_if:{this}.disposition,person'

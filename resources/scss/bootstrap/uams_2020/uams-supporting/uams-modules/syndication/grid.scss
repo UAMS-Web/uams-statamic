@@ -1,0 +1,58 @@
+.uamswp-news-syndication-grid {
+    .inner-container {
+        max-width: 35em;
+        margin: 0 auto;
+        @include media-breakpoint-up(sm) {
+            max-width: 1160px;
+        }
+    }
+    .item {
+        position: relative;
+    }
+    .featured {
+        @include media-breakpoint-only(sm) {
+            padding-right: 33px;
+        }
+        @include media-breakpoint-up(lg) {
+            padding-right: 33px;
+        }
+
+        img {
+            width: 100%;
+        }
+    }
+
+    .secondary {
+        @include media-breakpoint-only(sm) {
+            font-size: 1rem;
+        }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        .item-container {
+            padding-top: $spacer * 2;
+            margin-top: $spacer * 2;
+            border-top: 1px solid $body-bg-border;
+
+            @include media-breakpoint-up(sm) {
+                padding-top: $spacer * 3;
+                margin-top: $spacer * 3;
+            }
+
+            &:first-child {
+                @include media-breakpoint-only(sm) {
+                    padding-top: 0;
+                    margin-top: 0;
+                    border-top: 0;
+                }
+                @include media-breakpoint-up(lg) {
+                    padding-top: 0;
+                    margin-top: 0;
+                    border-top: 0;
+                }
+            }
+        }
+    }
+}

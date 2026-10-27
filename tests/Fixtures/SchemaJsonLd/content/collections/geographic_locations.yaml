@@ -1,0 +1,9 @@
+title: 'Geographic Locations'
+search_index: geographic_locations
+sites:
+  - default
+propagate: false
+revisions: false
+sort_dir: asc
+structure:
+  root: false

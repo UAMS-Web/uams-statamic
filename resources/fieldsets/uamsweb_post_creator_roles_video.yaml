@@ -1,0 +1,56 @@
+title: 'UAMSWeb Post Creator Roles (video)'
+fields:
+  -
+    handle: host
+    field: uamsweb_post_creator_roles_all.host
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: guest
+    field: uamsweb_post_creator_roles_all.guest
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: writer
+    field: uamsweb_post_creator_roles_all.writer
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: sound_recordist
+    field: uamsweb_post_creator_roles_all.sound_recordist
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: videographer
+    field: uamsweb_post_creator_roles_all.videographer
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: audio_editor
+    field: uamsweb_post_creator_roles_all.audio_editor
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: video_editor
+    field: uamsweb_post_creator_roles_all.video_editor
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: producer
+    field: uamsweb_post_creator_roles_all.producer
+    config:
+      width: 50
+      localizable: false
+  -
+    handle: generic_creator
+    field: uamsweb_post_creator_roles_all.generic_creator
+    config:
+      width: 50
+      localizable: false

@@ -1,0 +1,118 @@
+body.page-template-default.search {
+    .entry {
+        border-bottom: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+
+        .entry-header {
+            padding-top: $uams-module-padding-mobile;
+            padding-right: $uams-module-padding-mobile;
+            padding-left: $uams-module-padding-mobile;
+            margin-bottom: 0;
+
+            @include media-breakpoint-up(sm) {
+                padding-top: $uams-module-padding;
+                padding-right: $uams-module-padding;
+                padding-left: $uams-module-padding;
+            }
+        }
+    }
+
+    .entry-header + .uams-module {
+        margin-top: -$uams-module-padding-mobile;
+    }
+    .search-content {
+        .post-type,
+        .module-body {
+            .entry {
+                border-bottom: 0;
+                padding-bottom: 0;
+                margin-bottom: 0;
+
+                .entry-header {
+                    padding: 0;
+                    margin: 0;
+                }
+            }
+        }
+        .post-type,
+        .taxonomy {
+            .inner-container {
+                @include media-breakpoint-down(sm) {
+                    padding-top: $uams-module-padding-mobile;
+                    padding-bottom: $uams-module-padding-mobile;
+                }
+            }
+
+            .module-title {
+                @include media-breakpoint-up(md) {
+                    text-align: left;
+                    margin-right: 0;
+                    margin-left: 0;
+                }
+
+                .title:after {
+                    @include media-breakpoint-up(md) {
+                        left: 0;
+                        right: 38.2%; // 100% - 61.8% (golden mean)
+                    }
+                }
+            }
+
+            &:nth-child(n+2) {
+                .inner-container {
+                    @include media-breakpoint-down(sm) {
+                        border-top: 1px solid $body-bg-border;
+                    }
+                }
+            }
+
+            &:nth-child(odd) {
+                .inner-container {
+                    @include media-breakpoint-up(md) {
+                        margin-right: 0;
+                    }
+                }
+            }
+
+            &:nth-child(even) {
+                .inner-container {
+                    @include media-breakpoint-up(md) {
+                        margin-left: 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Site-search type-ahead (UAMS-Web/uams-statamic-archive#1506): the suggestions listbox under the /search input.
+// Positioned over the content below the field, so it needs a stacking context above
+// the result blocks, and a height cap so a long list scrolls instead of pushing past
+// the viewport.
+.site-search-suggestions {
+    z-index: 1000;
+    max-height: 24rem;
+    overflow-y: auto;
+    margin-top: .25rem;
+    padding-left: 0;
+
+    .site-search-suggestion {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .site-search-suggestion-type {
+        flex-shrink: 0;
+    }
+
+    .site-search-suggestion.active .site-search-suggestion-type {
+        color: inherit !important;
+    }
+
+    .site-search-suggestion-all {
+        font-weight: 600;
+    }
+}

@@ -1,0 +1,235 @@
+{{# Address fieldtype (App\Fieldtypes\Address, uses HasSubfields trait) — a
+    structured address composed of street_address, address_line_2, city,
+    state_province_region, postal_code, and (international only) country.
+    The blueprint preset (american / canadian / international) switches which
+    state_province_region variant is active; all three use the same canonical
+    storage key, so a `name="{handle}[state_province_region]"` text input
+    round-trips correctly regardless of preset.
+
+    Submitted shape: flat associative under the handle, with `preset` added
+    server-side by Address::process() once any subfield is filled.
+
+    State / province / country option lists come from
+    Address::extraRenderableFieldData() (`state_options_american`,
+    `state_options_canadian`, `country_options`), which Statamic merges into
+    this template's scope. Maps are code-keyed (`'AR' => 'Arkansas'`,
+    `'ON' => 'Ontario'`, `'US' => 'United States'`); the submitted value is
+    the code, which Address::process() stores as-is — matching the CP's
+    storage format. The `international` preset keeps the state field as a
+    free-form text input. #}}
+{{ preset = preset ?? 'american' }}
+<div class="row">
+	{{ if street_address_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="street_address_width ?? 100" }}">
+			<div class="form-group">
+				<label for="{{ id }}-street_address" class="small text-muted mb-1">
+					{{ street_address_label ?? 'Street Address' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-street_address"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[street_address]"
+					value="{{ (value.street_address ?? street_address_default ?? '') | sanitize }}"
+					placeholder="{{ street_address_placeholder ?? '123 Main St.' }}"
+					autocomplete="street-address"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( ( validate | contains:required ) && ( street_address_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if address_line_2_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="address_line_2_width ?? 100" }}">
+			<div class="form-group">
+				<label for="{{ id }}-address_line_2" class="small text-muted mb-1">
+					{{ address_line_2_label ?? 'Address Line 2' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-address_line_2"
+					class="form-control"
+					name="{{ handle }}[address_line_2]"
+					value="{{ (value.address_line_2 ?? address_line_2_default ?? '') | sanitize }}"
+					placeholder="{{ address_line_2_placeholder ?? 'Apt, Suite, etc.' }}"
+					autocomplete="address-line2"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( ( validate | contains:required ) && ( address_line_2_required ?? false ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if city_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="city_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-city" class="small text-muted mb-1">
+					{{ city_label ?? 'City' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-city"
+					class="{{
+						[
+							'form-control' => true,
+							'is-invalid' => error
+						] | classes | collapse_whitespace
+					}}"
+					name="{{ handle }}[city]"
+					value="{{ (value.city ?? city_default ?? '') | sanitize }}"
+					autocomplete="address-level2"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( ( validate | contains:required ) && ( city_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{# state_province_region — single input regardless of preset; the CP
+		renders different controls per preset but the storage key is constant. #}}
+	<div class="{{ partial:vendor/statamic/forms/fields/_width :width="state_province_region_american_width ?? 50" }}">
+		<div class="form-group">
+			<label for="{{ id }}-state_province_region" class="small text-muted mb-1">
+				{{ if preset == 'canadian' }}
+					{{ state_province_region_canadian_label ?? 'Province or Territory' }}
+				{{ elseif preset == 'international' }}
+					{{ state_province_region_international_label ?? 'State, Province or Region' }}
+				{{ else }}
+					{{ state_province_region_american_label ?? 'State, Territory or District' }}
+				{{ /if }}
+			</label>
+			{{# Preset chooses the control: american/canadian render <select> with
+				localized state/province codes from extraRenderableFieldData(),
+				international stays a text input (free-form admin regions).
+				The submitted name and value semantics are identical across all
+				three — Address::process() stores whatever was submitted, so
+				selecting "AR" yields `state_province_region: AR` in storage. #}}
+			{{ state_value = value.state_province_region ?? '' }}
+			{{ state_required = ( validate | contains:required ) && ( state_province_region_american_required ?? true ) }}
+			{{ if preset == 'canadian' }}
+				<select
+					id="{{ id }}-state_province_region"
+					class="form-control"
+					name="{{ handle }}[state_province_region]"
+					autocomplete="address-level1"
+					{{ state_required | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. <select readonly> is
+						invalid HTML; selects use `disabled` (value omitted from submission). #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+					<option value="">{{ trans key="Please select..." }}</option>
+					{{ foreach:state_options_canadian as="code|name" }}
+						<option value="{{ code }}" {{ if state_value == code }}selected{{ /if }}>{{ name }}</option>
+					{{ /foreach:state_options_canadian }}
+				</select>
+			{{ elseif preset == 'international' }}
+				<input
+					type="text"
+					id="{{ id }}-state_province_region"
+					class="form-control"
+					name="{{ handle }}[state_province_region]"
+					value="{{ state_value | sanitize }}"
+					autocomplete="address-level1"
+					{{ state_required | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory.
+						International preset uses a text input — `readonly` keeps the value visible. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			{{ else }}
+				<select
+					id="{{ id }}-state_province_region"
+					class="form-control"
+					name="{{ handle }}[state_province_region]"
+					autocomplete="address-level1"
+					{{ state_required | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. <select readonly> is
+						invalid HTML; selects use `disabled` (value omitted from submission). #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+					<option value="">{{ trans key="Please select..." }}</option>
+					{{ foreach:state_options_american as="code|name" }}
+						<option value="{{ code }}" {{ if state_value == code }}selected{{ /if }}>{{ name }}</option>
+					{{ /foreach:state_options_american }}
+				</select>
+			{{ /if }}
+		</div>
+	</div>
+
+	{{ if postal_code_include ?? true }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="postal_code_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-postal_code" class="small text-muted mb-1">
+					{{ postal_code_label ?? 'Postal Code' }}
+				</label>
+				<input
+					type="text"
+					id="{{ id }}-postal_code"
+					class="form-control"
+					name="{{ handle }}[postal_code]"
+					value="{{ (value.postal_code ?? postal_code_default ?? '') | sanitize }}"
+					placeholder="{{ postal_code_placeholder ?? 'e.g., 12345 or 12345-6789' }}"
+					autocomplete="postal-code"
+					{{# js_attributes omitted for composite subfields — see name.antlers.html. #}}
+					{{ ( ( validate | contains:required ) && ( postal_code_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ if visibility == 'read_only' }}
+						readonly
+						aria-readonly="true"
+					{{ /if }}
+				>
+			</div>
+		</div>
+	{{ /if }}
+
+	{{ if preset == 'international' && ( country_include ?? true ) }}
+		<div class="{{ partial:vendor/statamic/forms/fields/_width :width="country_width ?? 50" }}">
+			<div class="form-group">
+				<label for="{{ id }}-country" class="small text-muted mb-1">
+					{{ country_label ?? 'Country' }}
+				</label>
+				{{# country_options is the ISO-3166-1 alpha-2 → name map exposed by
+					Address::extraRenderableFieldData(). Stored value is the alpha-2
+					code (e.g., 'US', 'CA'), matching the CP's stored format. #}}
+				{{ country_value = value.country ?? country_default ?? '' }}
+				<select
+					id="{{ id }}-country"
+					class="form-control"
+					name="{{ handle }}[country]"
+					autocomplete="country"
+					{{ ( ( validate | contains:required ) && ( country_required ?? true ) ) | attribute:required }}
+					{{# `visibility: read_only` — see README.md in this directory. #}}
+					{{ ( visibility == 'read_only' ) | attribute:disabled }}
+				>
+					<option value="">{{ trans key="Please select..." }}</option>
+					{{ foreach:country_options as="code|name" }}
+						<option value="{{ code }}" {{ if country_value == code }}selected{{ /if }}>{{ name }}</option>
+					{{ /foreach:country_options }}
+				</select>
+			</div>
+		</div>
+	{{ /if }}
+</div>

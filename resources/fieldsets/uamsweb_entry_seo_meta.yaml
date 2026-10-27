@@ -1,0 +1,10 @@
+title: 'UAMSWeb Entry SEO Meta'
+fields:
+  -
+    handle: canonical_from_origin
+    field:
+      type: toggle
+      display: 'Point the canonical URL at the origin entry'
+      instructions: "Only applies to a localization (an entry copied from another site). Turn ON only when this localization is a near-duplicate of its origin — search engines will then credit the origin and this copy won't compete with it. Leave OFF (default) when the content is customized for this site, so this page holds its own search ranking. Has no effect on an origin entry."
+      default: false
+      localizable: true

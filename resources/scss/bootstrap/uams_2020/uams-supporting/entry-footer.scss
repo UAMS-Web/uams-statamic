@@ -1,0 +1,22 @@
+.entry-footer {
+    @include top-separator();
+
+    .entry-meta {
+        width: 100%;
+        text-align: inherit;
+        margin-bottom: 0.25em;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .media-contacts-list {
+        list-style: none;
+        padding: 0;
+
+        li {
+            margin-bottom: 1em;
+        }
+    }
+}

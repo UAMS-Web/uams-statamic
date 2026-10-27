@@ -1,0 +1,17 @@
+# Do not ignore
+!/.cursor
+!/.cursor/
+!/.cursor/**
+!/.cursorrules
+!/node_modules
+!/node_modules/
+!/node_modules/**
+!/vendor
+!/vendor/
+!/vendor/**
+!/public/cp-hot
+!/public/cp-hot/
+!/public/cp-hot/**
+!/public/hot
+!/public/hot/
+!/public/hot/**

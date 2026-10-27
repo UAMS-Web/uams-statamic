@@ -1,0 +1,35 @@
+{{#
+
+	@name Footer Logo
+	@desc The linked logo in the global footer.
+
+#}}
+
+{{# Begin Defining Variables #}}
+
+	{{# Resolve the footer-logo owner: the closest site (current-first) up the
+		multisite origin chain that sets its OWN global_footer_logo. Statamic
+		inherits the localizable logo asset down that same chain, so the rendered
+		image already belongs to that site — point the link and accessible name
+		at it too (they were hard-pinned to the top-most ancestor). See
+		App\Tags\FooterLogo / UAMS-Web/uams-statamic-archive#46. #}}
+		{{ $footer_logo = {footer_logo} }}
+		{{ $logo_link = $footer_logo:link }}
+		{{ $logo_text = $footer_logo:text }}
+
+	{{# The asset group resolves from the current site, but the localizable
+		global_footer_logo inherits down the origin chain, so it is the owner
+		site's asset — consistent with the link/text resolved above. #}}
+		{{ $logo_asset_group = uams_multisite_settings:global_footer_logo }}
+
+	{{# Logo accessible name from the asset meta (issue UAMS-Web/uams-statamic-archive#49): computed `alt`, else
+		the site-name label. The img is decorative (empty alt) because the adjacent
+		sr-only span carries the link's single accessible name. #}}
+	{{ $logo_link_text = {partial:layout/logo_alt_text :alt="$logo_asset_group:horizontal:white:alt" :fallback="$logo_text"} | trim }}
+
+{{# End Defining Variables #}}
+
+<a href="{{ $logo_link }}" class="logo">
+	<img src="{{ $logo_asset_group:horizontal:white }}" alt="">
+	<span class="sr-only">{{ $logo_link_text }}</span>
+</a>

@@ -1,0 +1,99 @@
+title: 'UAMSWeb Block, Find-a-Doc, Areas of Expertise'
+fields:
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      validate:
+        - required
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+      validate:
+        - required
+  -
+    handle: section_filtering
+    field:
+      type: subsection
+      display: Filtering
+      localizable: false
+  -
+    handle: regions
+    field: uamsweb_common_address.regions
+  -
+    handle: clinical_locations
+    field: uamsweb_common_fad.clinical_locations
+    config:
+      display: Locations
+  -
+    handle: expertise
+    field: uamsweb_common_fad.expertise
+    config:
+      display: 'Areas of Expertise'
+  -
+    handle: section_display_settings
+    field:
+      type: subsection
+      display: 'Display Settings'
+      localizable: false
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required
+  -
+    handle: more_query
+    field: uamsweb_common_block.more_query
+  -
+    handle: more_heading
+    field: uamsweb_common_block_footer_link.more_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_text
+    field: uamsweb_common_block_footer_link.more_button_text
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_url
+    field: uamsweb_common_block_footer_link.more_button_url
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_target
+    field: uamsweb_common_block_footer_link.more_button_target
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        more_query: 'equals true'
+  -
+    handle: more_button_link_description
+    field: uamsweb_common_block_footer_link.more_button_link_description
+    config:
+      if:
+        more_query: 'equals true'

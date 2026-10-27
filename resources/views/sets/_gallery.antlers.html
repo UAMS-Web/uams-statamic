@@ -1,0 +1,86 @@
+{{#
+	@name Image Gallery
+	@desc A responsive, config-driven image gallery with an accessible Alpine
+	      lightbox (prev/next, keyboard, swipe, focus management). Every image
+	      renders via the shared responsive picture component (Glide renditions,
+	      lazy-loaded); the lightbox is driven by `galleryLightbox` in
+	      resources/js/gallery-lightbox.js. Distinct `.gallery-set*` classes avoid
+	      colliding with the page-builder gallery block's `.gallery-block`. (UAMS-Web/uams-statamic-archive#188)
+	@set page.article.gallery
+#}}
+
+{{# Unique ids so multiple galleries in one article stay distinct. #}}
+{{ $gallery_id = 'gallery-' + {increment:gallery} }}
+{{ $cols = columns ? columns : 3 }}
+
+<aside class="gallery-set" role="group" aria-labelledby="{{ $gallery_id }}-heading" x-data="galleryLightbox">
+	<header class="gallery-set__header">
+		<h2 id="{{ $gallery_id }}-heading" class="gallery-set__heading">{{ heading ? heading : 'Image Gallery' }}</h2>
+		{{ if description }}<div class="gallery-set__description">{{ description }}</div>{{ /if }}
+	</header>
+
+	<ul class="gallery-set__grid" data-columns="{{ $cols }}">
+		{{ images }}
+			{{ $trigger_label = alt ? alt : ( caption ? caption : 'gallery image' ) }}
+			<li class="gallery-set__item">
+				<button
+					type="button"
+					class="gallery-set__trigger"
+					data-gallery-item
+					data-gallery-full="{{ glide :src="url" w="1600" }}"
+					data-gallery-alt="{{ alt | sanitize }}"
+					data-gallery-caption="{{ caption | sanitize }}"
+					@click="show($el)"
+					aria-haspopup="dialog"
+					aria-label="View {{ $trigger_label | striptags | sanitize }} in a lightbox"
+				>
+					{{
+						partial:page_builder/components/gallery_image_picture
+						:url="url"
+						:alt="( alt ?? '' )"
+						cols_sm="1"
+						cols_md="2"
+						:cols_lg="$cols"
+						{{# `ratio=0` unquoted: a QUOTED "0" reaches the component as a
+						    string, which is truthy in Antlers, so the `$ratio ?` guard on
+						    the height division does not fire and the set throws
+						    `Cannot divide by zero` before rendering anything (UAMS-Web/uams-statamic-archive#2064). #}}
+						ratio=0
+					}}
+				</button>
+				{{ if caption }}<figcaption class="gallery-set__caption">{{ caption }}</figcaption>{{ /if }}
+			</li>
+		{{ /images }}
+	</ul>
+
+	{{# Accessible lightbox overlay — hidden until Alpine drives `open`. #}}
+	<div
+		class="gallery-lightbox"
+		x-cloak
+		style="display: none;"
+		x-show="open"
+		@keydown.escape.window="close()"
+		@keydown.arrow-left.window="prev()"
+		@keydown.arrow-right.window="next()"
+		@keydown.tab="trapFocus($event)"
+		@touchstart="onTouchStart($event)"
+		@touchend="onTouchEnd($event)"
+	>
+		<div class="gallery-lightbox__backdrop" @click="close()"></div>
+		<div class="gallery-lightbox__dialog" role="dialog" aria-modal="true" aria-label="Image gallery" x-ref="dialog">
+			<button type="button" class="gallery-lightbox__control gallery-lightbox__close" x-ref="close" @click="close()" aria-label="Close gallery">
+				<span aria-hidden="true">&times;</span>
+			</button>
+			<button type="button" class="gallery-lightbox__control gallery-lightbox__prev" @click="prev()" aria-label="Previous image" x-show="images.length > 1">
+				<span aria-hidden="true">&lsaquo;</span>
+			</button>
+			<figure class="gallery-lightbox__figure">
+				<img class="gallery-lightbox__image" :src="currentImage.src" :alt="currentImage.alt">
+				<figcaption class="gallery-lightbox__caption" x-show="currentImage.caption" x-text="currentImage.caption"></figcaption>
+			</figure>
+			<button type="button" class="gallery-lightbox__control gallery-lightbox__next" @click="next()" aria-label="Next image" x-show="images.length > 1">
+				<span aria-hidden="true">&rsaquo;</span>
+			</button>
+		</div>
+	</div>
+</aside>

@@ -1,0 +1,183 @@
+title: 'UAMSWeb Common Reusable Fields, Contact Information'
+fields:
+  -
+    handle: phone
+    field:
+      type: phone
+      display: 'U.S. Phone Number'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: phone_international
+    field:
+      type: phone
+      preset: tel
+      display: 'International Phone Number'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: mitel_extension
+    field:
+      type: text
+      display: 'UAMS Mitel Extension'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: sms_short_code
+    field:
+      type: phone
+      preset: sms-short-code
+      display: 'U.S. SMS Short Code'
+      instructions: |-
+        An SMS short code is a five- or six-digit phone number used for sending and receiving text messages, particularly in mass texting campaigns.
+
+        The value must be five or six digits, with the first digit being 0 or any digit from 2 to 9 (e.g., \'01234\' or \'234567\').
+      placeholder: 'e.g., 012345'
+      replicator_preview: false
+      localizable: false
+  -
+    handle: phone_contactpointoption
+    field:
+      options:
+        -
+          key: TollFree
+          value: Toll-free
+        -
+          key: HearingImpairedSupported
+          value: 'Uses devices to support users with hearing impairments (e.g., TTY or TDD)'
+      type: checkboxes
+      display: 'Features of the Phone Number'
+      localizable: false
+  -
+    handle: phone_group
+    field:
+      type: group
+      display: 'Phone Number Group'
+      localizable: false
+      fields:
+        -
+          handle: title
+          field:
+            placeholder: 'e.g., Phone'
+            type: text
+            display: 'Phone Number Label'
+            localizable: false
+        -
+          handle: phone
+          field: uamsweb_common_contact.phone
+        -
+          handle: phone_contactpointoption
+          field: uamsweb_common_contact.phone_contactpointoption
+  -
+    handle: fax_group
+    field:
+      type: group
+      display: 'Fax Number Group'
+      localizable: false
+      fields:
+        -
+          handle: title
+          field:
+            placeholder: 'e.g., Fax'
+            type: text
+            display: 'Fax Number Label'
+            localizable: false
+        -
+          handle: fax
+          field: uamsweb_common_contact.phone
+          config:
+            display: 'Fax Number'
+  -
+    handle: sms_phone_type
+    field:
+      options:
+        -
+          key: phone
+          value: 'Standard Phone Number'
+        -
+          key: sms_short_code
+          value: 'SMS Short Code'
+      default: phone
+      type: radio
+      display: 'SMS Phone Number Type'
+      localizable: false
+  -
+    handle: sms_phone_type_group
+    field:
+      type: group
+      display: 'SMS Phone Number Type'
+      localizable: false
+      fields:
+        -
+          handle: type
+          field: uamsweb_common_contact.sms_phone_type
+          config:
+            validate:
+              - required
+              - sometimes
+        -
+          handle: phone
+          field: uamsweb_common_contact.phone
+          config:
+            if:
+              type: 'equals phone'
+        -
+          handle: sms_short_code
+          field: uamsweb_common_contact.sms_short_code
+          config:
+            if:
+              type: 'equals sms_short_code'
+  -
+    handle: sms_phone_type_group_required
+    field:
+      type: group
+      display: 'SMS Phone Number Type'
+      localizable: false
+      fields:
+        -
+          handle: type
+          field: uamsweb_common_contact.sms_phone_type
+          config:
+            validate:
+              - required
+              - sometimes
+        -
+          handle: phone
+          field: uamsweb_common_contact.phone
+          config:
+            if:
+              type: 'equals phone'
+            validate:
+              - required
+              - sometimes
+        -
+          handle: sms_short_code
+          field: uamsweb_common_contact.sms_short_code
+          config:
+            if:
+              type: 'equals sms_short_code'
+            validate:
+              - required
+              - sometimes
+  -
+    handle: email_address
+    field:
+      type: email
+      display: 'Email Address'
+      localizable: false
+  -
+    handle: email_address_group
+    field:
+      type: group
+      display: 'Email Address Group'
+      localizable: false
+      fields:
+        -
+          handle: title
+          field:
+            type: text
+            display: 'Email Label'
+            localizable: false
+        -
+          handle: email_address
+          field: uamsweb_common_contact.email_address

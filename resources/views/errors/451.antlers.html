@@ -1,0 +1,12 @@
+{{#
+	@name Error: 451
+	@desc The 451 Unavailable For Legal Reasons error template.
+#}}
+
+{{# RFC 7725. A rule reaches this code only when someone deliberately chose it
+    over `410`, so the message is usually the entire point of the page (UAMS-Web/uams-statamic-archive#1942). #}}
+{{
+	partial:errors/targetless_response
+	heading="Unavailable for legal reasons"
+	fallback="This page was removed for legal reasons."
+}}

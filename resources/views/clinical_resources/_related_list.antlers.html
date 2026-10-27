@@ -1,0 +1,26 @@
+{{#
+	@name Related Entity List
+	@desc One related-entities group: a heading plus a linked list of entries.
+	      Renders nothing when the passed `entries` list is empty. Each entry
+	      links to its show page when it has a URL, else renders as plain text
+	      (Find-a-Doc collections are not all publicly routed yet). (UAMS-Web/uams-statamic-archive#577)
+	@param entries  An entries-field value (list of related entries).
+	@param heading  The group heading.
+#}}
+
+{{# A count, not a bare `entries`: a raw augmented relation is a query builder,
+	truthy even when empty. `| count` counts the published entries the loop
+	below emits (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422). Callers pass either a raw augmented relation or
+	a resolved array, and this counts both correctly. #}}
+{{ if entries | count }}
+	<section class="clinical-resource-related-group">
+		<h2 class="h5">{{ heading }}</h2>
+		<ul class="clinical-resource-related-list">
+			{{ entries }}
+				<li>
+					{{ if url }}<a href="{{ url }}">{{ title }}</a>{{ else }}{{ title }}{{ /if }}
+				</li>
+			{{ /entries }}
+		</ul>
+	</section>
+{{ /if }}

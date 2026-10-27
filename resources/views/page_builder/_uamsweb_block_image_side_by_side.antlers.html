@@ -1,0 +1,242 @@
+{{#
+	@name UAMS Side-by-Side Image and Text
+	@desc The UAMS Side-by-Side Image and Text page builder block.
+	@set page.page_builder.uamsweb_block_image_side_by_side
+#}}
+
+{{# Define the Variables #}}
+
+	{{# Check if the required top-level block fields have values #}}
+	{{ $block_valid = text_layout && block_heading && image && image_crop && image_anchor && image_position && background_color }}
+
+	{{# Paragraph only (UAMS-Web/uams-statamic-archive#2759) and Blockquote with Citation (UAMS-Web/uams-statamic-archive#2757) have no button: their
+		limits were measured for the full text box, so the button fields are hidden and a
+		value left over from another layout is ignored here and below. A paragraph with a
+		button uses the Paragraph and button layout, whose own field is measured for it. #}}
+	{{ $show_button = ( text_layout != 'body-only' ) && ( text_layout != 'blockquote_with_citation' ) }}
+
+	{{# If the button text is present, check if the button URL is present #}}
+	{{ if $block_valid && $show_button && button_text }}
+		{{ $block_valid = button_url }}
+	{{ /if }}
+
+	{{# Check if required fields for the selected text layout have values #}}
+	{{ if $block_valid }}
+		{{ if text_layout == 'body-only'}}
+			{{ $block_valid = body_body_only != null }}
+		{{ elseif text_layout == 'paragraph_and_button' }}
+			{{# A paragraph above the button, in its own field (UAMS-Web/uams-statamic-archive#2759). #}}
+			{{ $block_valid = body_with_button != null }}
+		{{ elseif text_layout == 'link-list' }}
+			{{# Limit the number of items in the link list to 6 #}}
+			{{ $link_list_items = link_list | limit(6) }}
+
+			{{# Count the number of items in the link list #}}
+			{{ $item_count = ( $link_list_items | safe_count ) }}
+			{{ $block_valid = $item_count >= 1 }}
+
+			{{# Check if each item has the required field values #}}
+			{{ if $block_valid }}
+				{{ $link_list_items }}
+					{{ if ( !text || !url ) }}
+						{{ $block_valid = false }}
+					{{ /if }}
+				{{ /$link_list_items }}
+			{{ /if }}
+
+			{{# If the link list has less than 6 items, check if include_more is not null #}}
+			{{ if $block_valid && $item_count < 6 }}
+				{{ $block_valid = include_more != null }}
+			{{ /if }}
+
+		{{ elseif text_layout == 'paragraph_and_simple_list' }}
+			{{# Paragraph plus a plain (non-linked) list (UAMS-Web/uams-statamic-archive#1193). The paragraph has its own
+				field, measured beside the list (UAMS-Web/uams-statamic-archive#2767); Paragraph only's would not fit. #}}
+			{{ $block_valid = ( body_simple_list != null ) && ( ( simple_list | safe_count ) >= 1 ) }}
+		{{ elseif text_layout == 'simple_list_only' }}
+			{{# A plain (non-linked) list only (UAMS-Web/uams-statamic-archive#1193). #}}
+			{{ $block_valid = ( simple_list | safe_count ) >= 1 }}
+		{{ elseif ( text_layout == 'blockquote_with_citation' ) || ( text_layout == 'blockquote_with_citation_and_link' ) }}
+			{{# A quote and the person who said it (UAMS-Web/uams-statamic-archive#2757). The speaker title is optional.
+				The layout with a button keeps its quote in its own field, because the button
+				takes a line and the two quotes carry different character limits.
+				`wrap_in_quotes` strips any marks the editor typed at the ends, so a value
+				that is only quotation marks counts as empty. #}}
+			{{ $quote_source = ( text_layout == 'blockquote_with_citation_and_link' ) ? quote_text_with_link : quote_text }}
+			{{ $quote = $quote_source | wrap_in_quotes }}
+			{{ $block_valid = $quote && speaker_name }}
+		{{ /if }}
+	{{ /if }}
+
+	{{# Block Class #}}
+	{{ if $block_valid }}
+		{{# Base Class #}}
+		{{ $side_by_side_class = 'side-by-side' }}
+
+		{{# Layout — explicit `left`/`right` render as authored; the two
+			auto-alternating options (UAMS-Web/uams-statamic-archive#1192) resolve to a server-computed side that
+			flips relative to the Side-by-Side block directly above. The
+			`side_by_side_alignments` entry computed maps this block's id to its
+			resolved side; fall back to the stated default if it is absent. #}}
+		{{ $effective_image_position = image_position }}
+		{{ if ( image_position == 'auto_default_left' ) || ( image_position == 'auto_default_right' ) }}
+			{{ $auto_default_side = ( image_position == 'auto_default_right' ) ? 'right' : 'left' }}
+			{{# `block:id` is this block's stored replicator id (the alignment map's
+				key) inside the `scope="block"` loop; top-level `id` is the fallback,
+				matching the `page_builder_block_auto_id` resolution order. #}}
+			{{ $sxs_block_id = ( block:id ?? id ) }}
+			{{ $effective_image_position = ( side_by_side_alignments[$sxs_block_id] ?? $auto_default_side ) }}
+		{{ /if }}
+		{{ $side_by_side_class += ' image-on-' + ( $effective_image_position ?? left ) }}
+
+		{{# Image Anchor #}}
+		{{ $side_by_side_class += ' image-background-' + ( image_anchor ?? 'center' ) }}
+	{{ /if }}
+
+	{{# Image Fit #}}
+	{{ if $block_valid }}
+		{{# Horizontal Position #}}
+
+			{{ if image_anchor == 'left '}}
+				{{ $side_by_side_fit_horizontal = '0' }}
+			{{ elseif image_anchor == 'right' }}
+				{{ $side_by_side_fit_horizontal = '100' }}
+			{{ else }}
+				{{ $side_by_side_fit_horizontal = '50' }}
+			{{ /if }}
+
+		{{# Vertical Position #}}
+
+			{{ if image_crop == 'top '}}
+				{{ $side_by_side_fit_vertical = '0' }}
+			{{ elseif image_crop == 'bottom' }}
+				{{ $side_by_side_fit_vertical = '100' }}
+			{{ else }}
+				{{ $side_by_side_fit_vertical = '50' }}
+			{{ /if }}
+
+		{{ $side_by_side_fit = [ 'crop', $side_by_side_fit_horizontal, $side_by_side_fit_vertical ] | join('-') }}
+	{{ /if }}
+
+{{# Render the Block #}}
+
+{{ if $block_valid }}
+	{{ block_id = {page_builder_block_auto_id} }}
+	{{ partial:page_builder/uamsweb_block
+		auto_block_id="true"
+		:block_class="$side_by_side_class"
+		block_no_padding="1"
+		:block_aria_label="block_heading"
+	}}
+		{{ partial:page_builder/components/container_row }}
+			<div class="col-12 col-md-6 image-container" aria-label="{{ image:alt }}" role="img">
+				<style nonce="{{ csp_nonce }}">
+					#{{ block_id }} .image-container {
+						--bg-xxs:    url("{{ glide :src='image:url' w='576'  h='324'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xxs-2x: url("{{ glide :src='image:url' w='1152' h='648'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xs:     url("{{ glide :src='image:url' w='768'  h='432'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xs-2x:  url("{{ glide :src='image:url' w='1536' h='864'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-sm:     url("{{ glide :src='image:url' w='992'  h='558'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-sm-2x:  url("{{ glide :src='image:url' w='1984' h='1116' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-md:     url("{{ glide :src='image:url' w='1200' h='675'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-md-2x:  url("{{ glide :src='image:url' w='2400' h='1350' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-lg:     url("{{ glide :src='image:url' w='1500' h='844'  :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-lg-2x:  url("{{ glide :src='image:url' w='3000' h='1688' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xl:     url("{{ glide :src='image:url' w='1921' h='1081' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xl-2x:  url("{{ glide :src='image:url' w='3842' h='2161' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xxl:    url("{{ glide :src='image:url' w='2560' h='1440' :fit='$side_by_side_fit' absolute='true' }}");
+						--bg-xxl-2x: url("{{ glide :src='image:url' w='5120' h='2880' :fit='$side_by_side_fit' absolute='true' }}");
+					}
+				</style>
+				<div class="image-inner-container"></div>
+				{{# Opt-in media credit over the side image. Anchored to the `.image-container`
+				    (made `position: relative` in the module SCSS); scrim tint follows the block's
+				    `background_color`. Off by default (`display_media_credit`). #}}
+				{{ if display_media_credit && image:creator }}
+					<p class="media-credit-overlay">{{ partial:typography/media_credit :creator="image:creator" :creator_organization="image:creator_organization" }}</p>
+				{{ /if }}
+			</div>
+			<div class="col-12 col-md-6 text-container">
+				<div class="text-inner-container">
+					<h2 class="h3">{{ block_heading | widont }}</h2>
+					{{ if ( text_layout == 'link-list' ) }}
+					{{ if body_link_list }}
+					<p>{{ body_link_list | widont }}</p>
+					{{ /if }}
+					{{ $link_list_items as="items" }}
+					<ul>
+						{{ items }}
+						{{ if text && url }}
+						{{ $item_aria_label = description ?? ( [ text, block:block_heading ] | filter_empty | join(', ') ) }}
+						<li><a href="{{ url }}" aria-label="{{ $item_aria_label }}" data-moduletitle="{{ block_heading }}">{{ text }}</a></li>
+						{{ /if }}
+						{{ /items }}
+						{{ if include_more && ( $item_count < 6 ) }}
+						<li class="font-italic">and more</li>
+						{{ /if }}
+					</ul>
+					{{ /$link_list_items }}
+					{{ elseif text_layout == 'body-only' }}
+					{{ if body_body_only }}
+					<p>{{ body_body_only | widont }}</p>
+					{{ /if }}
+					{{ elseif text_layout == 'paragraph_and_button' }}
+					{{ if body_with_button }}
+					<p>{{ body_with_button | widont }}</p>
+					{{ /if }}
+					{{ elseif text_layout == 'paragraph_and_simple_list' }}
+					{{ if body_simple_list }}
+					<p>{{ body_simple_list | widont }}</p>
+					{{ /if }}
+					<ul>
+						{{ simple_list }}
+						{{ if text }}
+						<li>{{ text | widont }}</li>
+						{{ /if }}
+						{{ /simple_list }}
+					</ul>
+					{{ elseif text_layout == 'simple_list_only' }}
+					<ul>
+						{{ simple_list }}
+						{{ if text }}
+						<li>{{ text | widont }}</li>
+						{{ /if }}
+						{{ /simple_list }}
+					</ul>
+					{{ elseif ( text_layout == 'blockquote_with_citation' ) || ( text_layout == 'blockquote_with_citation_and_link' ) }}
+					<figure>
+						<blockquote>
+							<p>{{ $quote | widont }}</p>
+						</blockquote>
+						<figcaption class="blockquote-footer">
+							{{ speaker_name }}{{ if speaker_title }}<br>
+							{{ speaker_title }}{{ /if }}
+						</figcaption>
+					</figure>
+					{{ /if }}
+					{{ if $show_button }}
+					{{ partial:page_builder/components/item_button }}
+					{{ /if }}
+				</div>
+			</div>
+		{{ /partial:page_builder/components/container_row }}
+	{{ /partial:page_builder/uamsweb_block }}
+{{ /if }}
+
+{{#
+
+	================================================================================
+
+	To-Do List
+
+	================================================================================
+
+	# Logic for "and more" Toggle
+
+	Figure out a conditionally display the `Include "and more" at the end of the
+	Link List?` field only when the `Link List` replicator field has fewer than six
+	sections.
+
+	================================================================================
+
+#}}

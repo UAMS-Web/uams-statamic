@@ -1,0 +1,226 @@
+title: 'UAMSWeb Block, News'
+fields:
+  -
+    handle: format
+    field:
+      options:
+        -
+          key: headlines
+          value: Headlines
+        -
+          key: excerpts
+          value: Excerpts
+        -
+          key: cards
+          value: 'Cards (4)'
+        -
+          key: full
+          value: 'Full (1)'
+        -
+          key: grid
+          value: 'Grid (3)'
+        -
+          key: side
+          value: 'Side-by-Side Image and Text (1)'
+      default: grid
+      type: radio
+      display: Format
+      instructions: 'Select format (number of articles)'
+      validate:
+        - required
+      localizable: false
+  -
+    handle: block_heading
+    field: uamsweb_common_block.block_heading
+    config:
+      display: 'Block Heading'
+      instructions: 'Even if this heading is hidden, it is necessary for accessibility.'
+      placeholder: 'e.g., News and Announcements'
+      default: 'News & Announcements'
+      if:
+        format: 'contains_any headlines, excerpts, cards, grid'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: hide_block_heading
+    field: uamsweb_common_block.hide_block_heading
+    config:
+      validate:
+        - required
+        - sometimes
+      if:
+        format: 'contains_any headlines, excerpts, cards, grid'
+  -
+    handle: block_description
+    field: uamsweb_common_block.description_textarea_centered
+    config:
+      display: 'Block Description'
+      if:
+        format: 'contains_any headlines, excerpts, cards, grid'
+  -
+    handle: article_id
+    field:
+      type: entries
+      display: Article
+      instructions: 'Select the news post to feature.'
+      max_items: 1
+      mode: select
+      create: false
+      collections:
+        - posts
+      if:
+        format: 'equals full'
+      localizable: false
+  -
+    handle: category
+    field:
+      type: entries
+      display: Category
+      instructions: 'Select one or more categories to filter by. Leave empty to show all news.'
+      collections:
+        - post_categories
+      mode: select
+      create: false
+      # `post_categories` is `propagate: false` and its per-site entries carry no
+      # `origin`, so without this the picker can only offer categories belonging to the
+      # placement's own site — while `source_sites` defaults to pulling posts from the
+      # News site. A block in its default configuration therefore could not be filtered by any
+      # category of the site it syndicates from, and a stored cross-site id was dropped
+      # on read: measured both ways on UAMS-Web/uams-statamic-archive#2165, kept with the flag and silently lost
+      # without it. That silent drop is why `wordpress-importer#628` omits the field
+      # rather than writing a value that would render completely unfiltered.
+      select_across_sites: true
+      if:
+        format: 'not full'
+      localizable: false
+  -
+    handle: source_sites
+    field:
+      type: checkboxes
+      display: 'Source Sites'
+      instructions: 'Which site(s) to pull news posts from. "Current site" uses the site this page belongs to. Defaults to the News site.'
+      options:
+        news: 'News site'
+        current: 'Current site'
+      default:
+        - news
+      validate:
+        - required
+      localizable: false
+  -
+    handle: count
+    field:
+      type: range
+      display: Count
+      replicator_preview: false
+      min: 1
+      max: 9
+      default: 3
+      localizable: false
+      if:
+        format: 'contains_any headlines, excerpts'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: offset
+    field:
+      type: range
+      display: Offset
+      max: 8
+      default: 0
+      localizable: false
+      validate:
+        - required
+        - sometimes
+      unless:
+        format: 'equals full'
+  -
+    handle: hide_img
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Images'
+      replicator_preview: false
+      if:
+        format: 'contains_any excerpts, cards, grid, full'
+      validate:
+        - required
+        - sometimes
+      default: false
+  -
+    handle: require_featured_image
+    field: uamsweb_common.true_false
+    config:
+      display: 'Only Show Posts With a Featured Image'
+      instructions: 'Skip posts that have no cover/featured image so the image-led layouts never render an empty image slot.'
+      replicator_preview: false
+      if:
+        format: 'contains_any cards, grid, side'
+      validate:
+        - required
+        - sometimes
+      default: false
+  -
+    handle: hide_creator_query
+    field: uamsweb_post_settings.hide_creator_query
+    config:
+      if:
+        format: 'contains_any excerpts, full'
+      validate:
+        - required
+        - sometimes
+  -
+    handle: hide_date
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Dates'
+      replicator_preview: false
+      if:
+        format: 'contains_any excerpts, full'
+      validate:
+        - required
+        - sometimes
+      default: false
+  -
+    handle: hide_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Hide the Meta (Author and Date)'
+      instructions: 'Hide both the author and the publish date on each item at once. Overrides the individual hide toggles above.'
+      replicator_preview: false
+      if:
+        format: 'contains_any excerpts, full'
+      validate:
+        - required
+        - sometimes
+      default: false
+  -
+    handle: include_link
+    field: uamsweb_common.true_false
+    config:
+      display: 'Include a Link to the Category'
+      replicator_preview: false
+      if:
+        format: 'contains_any cards, grid, side'
+      validate:
+        - required
+        - sometimes
+      default: true
+  -
+    handle: position
+    field: uamsweb_block_image_side_by_side.image_position
+    config:
+      default: left
+      validate:
+        - required
+        - sometimes
+      if:
+        format: 'equals side'
+  -
+    handle: background_color
+    field: uamsweb_common_block.background_color_simple
+    config:
+      display: 'Background Color'
+      validate:
+        - required

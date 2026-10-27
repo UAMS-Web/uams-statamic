@@ -1,0 +1,728 @@
+tabs:
+  template:
+    display: 'Template Settings'
+    sections:
+      -
+        display: 'Template Settings'
+        fields:
+          -
+            handle: subject
+            field:
+              type: radio
+              display: 'Website Subject'
+              options:
+                -
+                  key: root
+                  value: 'Root-Level Brand'
+                -
+                  key: major_entity
+                  value: 'Major Entity'
+                -
+                  key: sub_entity
+                  value: Sub-Entity
+                -
+                  key: non_entity
+                  value: Non-Entity
+              default: sub_entity
+              validate:
+                - required
+              localizable: true
+              instructions: |-
+                **Root-Level Brand**: The primary site of a distinct domain or top-level brand (e.g., uams.edu, uamshealth.com). Stops ancestor recursion in breadcrumbs. Does not reference a parent website in the global header.
+
+                **Major Entity**: A core entity site within a root-level brand, offering comprehensive services (e.g., a college or institute). Does not reference a parent website in the global header.
+
+                **Sub-Entity**: A smaller entity site under a major entity or root-level brand (e.g., a department or regional campus). Displays a reference in the global header to its nearest parent website designated as a "Major Entity."
+
+                **Non-Entity**: A conceptual or functional site (e.g., news, research) under any higher level. Displays a reference in the global header to its nearest parent website designated as either a "Major Entity" or "Sub-Entity."
+  schema:
+    display: Schema
+    sections:
+      -
+        display: 'Subject Schema'
+        fields:
+          -
+            handle: schema_subject
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+                - entries_by_schema_type_person
+              type: entries
+              display: 'Subject Schema Object'
+              instructions: 'Select a schema object for the subject of the website.'
+              localizable: true
+              validate:
+                - 'entry_schema_type_in:Organization,Person'
+      -
+        display: 'WebSite Schema'
+        fields:
+          -
+            handle: schema_website
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_web_site
+              type: entries
+              display: 'WebSite Schema Object'
+              instructions: 'Select a schema object for the website itself.'
+              localizable: true
+              validate:
+                - 'entry_schema_type_in:WebSite'
+  department_hub:
+    display: 'Departmental News Hub'
+    sections:
+      -
+        display: 'Department Organization'
+        fields:
+          -
+            handle: department_organization
+            field:
+              collections:
+                - organizations
+              max_items: 1
+              query_scopes:
+                - entries_by_organization_role_department_unit
+              type: entries
+              display: 'Department Organization'
+              instructions: 'The organization — a college, institute, department, division, or service line — this site is the news hub for. Selecting one opts the site in as a Departmental News Hub: its news feed, people zone, and schema entity node key on this organization. Leave empty for a non-hub site.'
+              localizable: true
+              select_across_sites: true
+      -
+        display: 'News / Hub Page'
+        fields:
+          -
+            handle: department_hub_page
+            field:
+              collections:
+                - pages
+              max_items: 1
+              type: entries
+              display: 'News / Hub Page'
+              instructions: 'The single page that is this site’s news surface: it renders the site’s posts as a listing, and — when a Department Organization is set above — the enriched Departmental News Hub. One per site (this guarded designation replaces the per-page “Posts page” toggle from UAMS-Web/uams-statamic-archive#179). Leave empty for a site with no news page.'
+              localizable: true
+  global_header:
+    display: 'Global Header'
+    sections:
+      -
+        display: Images
+        fields:
+          -
+            handle: global_header_logo
+            field: uamsweb_common_images.logo_group
+            config:
+              display: 'Global Header Logo'
+              localizable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                subject: 'equals root'
+      -
+        display: Sub-Brand
+        fields:
+          -
+            handle: global_header_site_name
+            field: uamsweb_common.true_false
+            config:
+              display: 'Display the site name in the global header'
+              instructions: 'When enabled, the site (and parent) name appears beside the logo in the header sub-brand. Disable to show the logo alone.'
+              localizable: true
+              default: true
+      -
+        display: 'Resource Navigation'
+        fields:
+          -
+            handle: global_header_resource_navigation
+            field:
+              type: replicator
+              display: 'Global Header Text Resource Navigation'
+              localizable: true
+              collapse: true
+              if:
+                subject: 'equals root'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    new_text_link:
+                      display: 'Text Link'
+                      icon: text-formatting-type-cursor
+                      fields:
+                        -
+                          handle: link_group
+                          field: uamsweb_common_link.text_link_group
+                          config:
+                            validate:
+                              - required
+          -
+            handle: global_header_resource_navigation_icon
+            field:
+              type: replicator
+              display: 'Global Header Icon Resource Navigation'
+              localizable: true
+              collapse: true
+              instructions: 'This navigation will be displayed alongside the site search button.'
+              if:
+                subject: 'equals root'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    new_icon_link:
+                      display: 'Icon Link'
+                      icon: media-image-picture-orientation
+                      fields:
+                        -
+                          handle: link_group
+                          field: uamsweb_common_link.icon_link_group
+                          config:
+                            validate:
+                              - required
+  global_footer:
+    display: 'Global Footer'
+    sections:
+      -
+        display: Images
+        fields:
+          -
+            handle: global_footer_logo
+            field: uamsweb_common_images.logo_group
+            config:
+              display: 'Global Footer Logo'
+              localizable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: global_footer_background_image
+            field:
+              max_files: 1
+              container: images
+              allow_uploads: false
+              show_set_alt: false
+              type: assets
+              display: 'Global Footer Background Image'
+              localizable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+      -
+        display: 'Footer Information'
+        fields:
+          -
+            handle: tax_id
+            field:
+              type: text
+              display: 'Tax ID'
+              instructions: 'The tax identification number shown in the footer information block. This is the tax ID of the entity named in this site’s footer — on a site that solicits gifts, that is the legal entity receiving them (the University of Arkansas Foundation, Inc.), which is not the university’s own EIN. Shown only when the toggle below is enabled. This value is display-only: an organization’s schema.org `taxID` comes from the EIN on its schema object, not from here.'
+              default: '71-6046242'
+              localizable: true
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: display_tax_id
+            field: uamsweb_common.true_false
+            config:
+              display: 'Display the tax ID in the footer'
+              instructions: 'When enabled, the footer information block shows the Tax ID above. Off by default — the value is inherited by every site, so each site opts in to displaying it.'
+              localizable: true
+              default: false
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: footer_action_link
+            field: uamsweb_common_link.optional_text_link_group
+            config:
+              display: 'Footer Action Link'
+              instructions: 'An optional call-to-action link rendered in the footer information block after the tax ID (e.g. “Give Now”). Leave empty for no action link.'
+              localizable: true
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+      -
+        display: 'Resource Navigation'
+        fields:
+          -
+            handle: global_footer_resource_navigation
+            field:
+              type: replicator
+              display: 'Global Footer Core Resource Navigation'
+              localizable: true
+              collapse: true
+              if:
+                subject: 'equals root'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    text_link:
+                      display: 'Text Link'
+                      icon: text-formatting-type-cursor
+                      fields:
+                        -
+                          handle: link_group
+                          field: uamsweb_common_link.text_link_group
+                          config:
+                            validate:
+                              - required
+          -
+            handle: global_footer_supplementary_resource_navigation
+            field:
+              type: replicator
+              display: 'Global Footer Supplementary Resource Navigation'
+              localizable: true
+              instructions: 'Allows for adding additional links specific to this branch of the multisite without breaking the inheritance of the core resource navigation.'
+              collapse: true
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    text_link:
+                      display: 'Text Link'
+                      icon: text-formatting-type-cursor
+                      fields:
+                        -
+                          handle: link_group
+                          field: uamsweb_common_link.text_link_group
+                          config:
+                            validate:
+                              - required
+  primary_navigation:
+    display: 'Primary Navigation'
+    sections:
+      -
+        fields:
+          -
+            handle: manual_primary_navigation
+            field:
+              type: toggle
+              display: 'Use Manually Defined Primary Navigation'
+              localizable: false
+  organization_information:
+    display: 'Organization Information'
+    sections:
+      -
+        display: Founding
+        fields:
+          -
+            handle: founder
+            field:
+              display: Founder
+              instructions: 'Select one or more people who founded the organization.'
+              type: entries
+              collections:
+                - people
+              create: false
+              localizable: true
+              if:
+                subject: 'contains_any root'
+          -
+            handle: founding_date
+            field:
+              type: date
+              display: 'Founding Date'
+              instructions: 'Select the date the organization was founded.'
+              format: Y-m-d
+              if:
+                subject: 'contains_any root'
+              localizable: true
+          -
+            handle: founding_location
+            field:
+              type: address
+              display: 'Founding Location'
+              instructions: 'Select the location where the organization was founded.'
+              if:
+                subject: 'contains_any root'
+              localizable: true
+              street_address_required: false
+              city_required: false
+              state_province_region_american_required: false
+              postal_code_required: false
+  contact_information:
+    display: 'Contact Information'
+    sections:
+      -
+        display: 'Physical Addresses'
+        fields:
+          -
+            handle: street_address
+            field:
+              type: address
+              display: 'Street Address'
+              localizable: true
+          -
+            handle: mailing_address
+            field:
+              type: address
+              display: 'Mailing Address'
+              localizable: true
+          -
+            handle: physical_address
+            field:
+              type: replicator
+              display: 'Additional Physical Addresses'
+              localizable: true
+              collapse: true
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    physical_address:
+                      display: 'Physical Address'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: 'Physical Address Name'
+                            instructions: 'Leave blank for a single address'
+                            placeholder: 'e.g., Mailing Address'
+                            localizable: false
+                        -
+                          handle: address_group
+                          field: uamsweb_common_address.address_group
+                          config:
+                            replicator_preview: false
+      -
+        display: 'Direct Contact Methods'
+        fields:
+          -
+            handle: direct_contact
+            field:
+              collapse: true
+              type: replicator
+              display: 'Direct Contact Methods'
+              localizable: true
+              if:
+                subject: 'contains_any root,major_entity,sub_entity'
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    phone_number:
+                      display: 'Phone Number'
+                      icon: phone-telephone-call
+                      fields:
+                        -
+                          handle: phone_group
+                          field: uamsweb_common_contact.phone_group
+                    fax_number:
+                      display: 'Fax Number'
+                      icon: phone-telephone-call
+                      fields:
+                        -
+                          handle: fax_group
+                          field: uamsweb_common_contact.fax_group
+                    text_link:
+                      display: 'Text Link'
+                      icon: link
+                      fields:
+                        -
+                          handle: text_link_group
+                          field: uamsweb_common_link.text_link_group
+                    email_address:
+                      display: 'Email Address'
+                      icon: mail-send-email-attachment-document
+                      fields:
+                        -
+                          handle: email_address_group
+                          field: uamsweb_common_contact.email_address_group
+      -
+        display: 'Media Contacts'
+        collapsible: true
+        fields:
+          -
+            handle: media_contact
+            field:
+              taxonomies:
+                - media_contact_groups
+              create: false
+              max_items: '1'
+              type: terms_search_index
+              display: 'Media Contacts'
+              localizable: false
+              if:
+                subject: 'equals root'
+              validate:
+                - required
+                - sometimes
+  content:
+    display: 'Content Details'
+    sections:
+      -
+        display: Copyright
+        collapsible: true
+        fields:
+          -
+            handle: copyright_holder
+            field:
+              type: text
+              display: 'Copyright Holder Text'
+              placeholder: 'e.g., University of Arkansas for Medical Sciences'
+              if:
+                subject: 'equals root'
+              validate:
+                - required
+                - sometimes
+              localizable: true
+          -
+            handle: copyright_holder_schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+                - entries_by_schema_type_person
+              type: entries
+              display: 'Copyright Holder Schema Object'
+              instructions: 'Select a schema object for the copyright holder.'
+              create: false
+              if:
+                subject: 'equals root'
+              validate:
+                - required
+                - sometimes
+              localizable: true
+          -
+            handle: copyright_year
+            field:
+              type: text
+              display: 'Copyright Year'
+              antlers: true
+              if:
+                subject: 'equals root'
+              validate:
+                - required
+              localizable: true
+          -
+            handle: copyright_notice
+            field:
+              type: text
+              display: 'Copyright Notice'
+              placeholder: 'e.g., © 2026 University of Arkansas for Medical Sciences'
+              antlers: true
+              if:
+                subject: 'equals root'
+              validate:
+                - required
+              localizable: true
+      -
+        display: 'Content Creation Location'
+        collapsible: true
+        fields:
+          -
+            handle: country_of_origin
+            field:
+              type: entries
+              display: 'Default Country of Origin'
+              instructions: 'Select a schema object for the default country of origin for the website.'
+              collections:
+                - schema_objects
+              create: false
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_country
+              localizable: true
+      -
+        display: Accountability
+        collapsible: true
+        fields:
+          -
+            handle: accountable_person
+            field:
+              collections:
+                - people
+              create: false
+              type: entries
+              display: 'Accountable Person'
+              instructions: 'Specify one or more people that are legally accountable for the website content.'
+              localizable: false
+              validate:
+                - required
+      -
+        display: 'General Attribution'
+        collapsible: true
+        fields:
+          -
+            handle: producer
+            field:
+              type: entries
+              display: 'Default Producer'
+              instructions: 'Select a schema object for the default producer for the website and web content.'
+              collections:
+                - schema_objects
+              create: false
+              query_scopes:
+                - entries_by_schema_type_organization
+                - entries_by_schema_type_person
+              max_items: 1
+              localizable: false
+          -
+            handle: publisher
+            field:
+              type: entries
+              display: 'Default Publisher'
+              instructions: 'Select a schema object for the default publisher for the website and web content.'
+              collections:
+                - schema_objects
+              create: false
+              query_scopes:
+                - entries_by_schema_type_organization
+                - entries_by_schema_type_person
+              max_items: 1
+              localizable: false
+          -
+            handle: source_organization
+            field:
+              type: entries
+              display: 'Default Source Organization'
+              instructions: 'Select a schema object for the default source organization for the website and web content.'
+              collections:
+                - schema_objects
+              create: false
+              query_scopes:
+                - entries_by_schema_type_organization
+              max_items: 1
+              localizable: false
+  post_settings:
+    display: 'Posts Settings'
+    sections:
+      -
+        fields:
+          -
+            handle: boilerplate
+            field:
+              type: terms_search_index
+              display: 'Default Boilerplate'
+              instructions: "The boilerplate appended to a post on this site when the post opts in but does not pick its own. Each boilerplate's heading and content are edited on the boilerplate term."
+              taxonomies:
+                - boilerplates
+              max_items: 1
+              create: false
+              localizable: true
+  social_media:
+    display: 'Social Media'
+    sections:
+      -
+        fields:
+          -
+            handle: social_facebook
+            field: uamsweb_common_social.facebook
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_x
+            field: uamsweb_common_social.x
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_instagram
+            field: uamsweb_common_social.instagram
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_youtube
+            field: uamsweb_common_social.youtube
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_linkedin
+            field: uamsweb_common_social.linkedin
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_pinterest
+            field: uamsweb_common_social.pinterest
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_bluesky
+            field: uamsweb_common_social.bluesky
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_vimeo
+            field: uamsweb_common_social.vimeo
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_mastodon
+            field: uamsweb_common_social.mastodon
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+          -
+            handle: social_github
+            field: uamsweb_common_social.github
+            config:
+              localizable: true
+              if_any:
+                subject: 'contains_any root,major_entity,sub_entity'
+  google_tag_manager:
+    display: 'Google Tag Manager'
+    sections:
+      -
+        fields:
+          -
+            handle: uamsweb_google_tag_manager_disable
+            field: uamsweb_common.true_false
+            config:
+              display: 'Disable Google Tag Manager'
+              localizable: true
+              default: false
+              validate:
+                - required
+          -
+            handle: uamsweb_google_tag_manager_id
+            field: uamsweb_common_identifiers.gtm_id
+            config:
+              localizable: true
+              validate:
+                - required
+                - sometimes
+              if:
+                uamsweb_google_tag_manager_disable: 'equals false'
+  search_engine_visibility:
+    display: 'Search Engine Visibility'
+    sections:
+      -
+        fields:
+          -
+            handle: discourage_indexing
+            field: uamsweb_common.true_false
+            config:
+              display: 'Discourage search engines from indexing this site'
+              instructions: 'When enabled, every page on this site emits `<meta name="robots" content="noindex, nofollow">`, asking search engines not to index it. The WordPress "Discourage search engines from indexing this site" equivalent. Leave off for public production sites.'
+              localizable: true
+              default: false

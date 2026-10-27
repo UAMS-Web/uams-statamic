@@ -1,0 +1,12 @@
+{{#
+	@name Map
+	@desc Bard set: an inline map rendered through the shared map viewer partial
+	      (UAMS-Web/uams-statamic-archive#986). An empty set (no coordinate) renders nothing. (UAMS-Web/uams-statamic-archive#988)
+	@set page.article.map
+#}}
+
+{{ if map }}
+	<div class="bard-set-map">
+		{{ partial:map :coordinate="map" :label="caption" :height="height" :zoom="zoom" }}
+	</div>
+{{ /if }}

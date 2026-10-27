@@ -1,0 +1,83 @@
+title: 'UAMSWeb Entry SEO Configuration, Meta Robots Settings'
+fields:
+  -
+    handle: robots_index_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not display this page in search engine results (noindex)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "noindex".
+
+        Search engines will not index this URL in the search results.
+
+        `<meta name="robots" content="noindex" />`
+      default: false
+  -
+    handle: robots_follow_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not follow links for this page (nofollow)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "nofollow".
+
+        Search engines will not follow links from this URL.
+
+        `<meta name="robots" content="nofollow" />`
+      default: false
+  -
+    handle: robots_odp_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not use Open Directory project metadata for titles or excerpts for this page (noodp)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "noodp".
+
+        Note that Google and Yahoo have stopped considering this tag since the closing of DMOZ directory.
+
+        `<meta name="robots" content="noodp" />`
+      default: false
+  -
+    handle: robots_imageindex_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not index images for this page (noimageindex)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "noimageindex".
+
+          Note that your images can always be indexed if they are linked from other pages.
+
+        `<meta name="google" content="noimageindex" />`
+      default: false
+  -
+    handle: robots_archive_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not display a "Cached" link in the Google search results (noarchive)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "noarchive".
+
+        `<meta name="robots" content="noarchive" />`
+      default: false
+  -
+    handle: robots_snippet_meta
+    field: uamsweb_common.true_false
+    config:
+      display: 'Do not display a description in search results for this page (nosnippet)'
+      instructions: |-
+        By enabling this option, you will add a meta robots tag with the value "nosnippet".
+
+        `<meta name="robots" content="nosnippet" />`
+      default: false
+  -
+    handle: robots_canonical_meta
+    field: uamsweb_common.url
+    config:
+      display: 'Canonical URL'
+      instructions: |-
+        A canonical URL is the URL of the page that Google thinks is most representative from a set of duplicate pages on your site.
+
+        For example, if you have URLs for the same page (for example: `example.com?dress=1234` and `example.com/dresses/1234`), Google chooses one as canonical.
+
+        Note that the pages do not need to be absolutely identical; minor changes in sorting or filtering of list pages do not make the page unique (for example, sorting by price or filtering by item color). The canonical can be in a different domain than a duplicate.
+
+        `<link rel="canonical" href="https://www.example.com/my-post-url/" />`

@@ -1,0 +1,84 @@
+.entry-header {
+    // Page title style for default ("Normal") entry header. Add class
+    // entry-header--default to header.entry-header so .entry-title uses the pagetitle
+    // mixin without depending on a body class.
+    &.entry-header--default {
+        margin-bottom: $page-title-margin-bottom-mobile;
+
+        @at-root body.page-template-page_landing #{&} {
+            padding-top: $uams-module-padding-mobile;
+            padding-right: $uams-module-padding-mobile;
+            padding-left: $uams-module-padding-mobile;
+
+            @include media-breakpoint-up(sm) {
+                padding-top: $uams-module-padding;
+                padding-right: $uams-module-padding;
+                padding-left: $uams-module-padding;
+            }
+        }
+
+        @include media-breakpoint-up(sm) {
+            margin-bottom: $page-title-margin-bottom;
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+
+            @include media-breakpoint-up(sm) {
+                margin-bottom: 0;
+            }
+        }
+
+        .entry-title,
+        .archive-title {
+            @include pagetitle();
+
+            &:last-child {
+                margin-bottom: 0;
+
+                @include media-breakpoint-up(sm) {
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        .entry-meta {
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 100%;
+            text-align: center;
+            width: $content-width;
+            @include bottom-separator();
+
+            // .entry-meta-item {
+            //     // &:last-child {}
+            //
+            //     // .entry-meta-icon {}
+            //
+            //     // .entry-meta-label {}
+            //
+            //     // .entry-meta-value {}
+            // }
+        }
+
+        .entry-cover-image {
+            margin: 0;
+
+            @include media-breakpoint-up(md) {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            @include media-breakpoint-up(lg) {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            &:after {
+                content: '';
+                display: block;
+                @include content-width;
+                @include bottom-separator();
+            }
+        }
+    }
+}

@@ -1,0 +1,40 @@
+MIT License
+
+Copyright (c) 2025 University of Arkansas for Medical Sciences
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Paths not covered by this license
+
+The following paths hold third-party material. The MIT License above does not
+apply to them; each remains under the terms its owner publishes it under.
+
+- patches/: changes to third-party Composer packages, each under its
+  package's own license.
+- resources/fonts/firago/: the FiraGO typeface, under the SIL Open Font
+  License 1.1 (resources/fonts/firago/OFL.txt).
+- resources/svg/: icon artwork.
+- resources/raster_images/: photography and other raster images.
+- resources/js/uams_2020/source/genesis/: a script from the Genesis framework
+  by StudioPress.
+- lang/vendor/statamic/: translations published from Statamic.
+- app/Services/EnumGeneration/Schema/schemaorg-current-https.jsonld: the
+  Schema.org vocabulary, under the terms Schema.org publishes it under.

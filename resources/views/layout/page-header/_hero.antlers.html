@@ -1,0 +1,19 @@
+{{#
+
+	@name Hero
+	@desc The hero block.
+
+#}}
+
+{{# Check if there are any enabled hero sets #}}
+{{ $has_hero_sets = ( header_hero | safe_count ) >= 1 }}
+
+{{ if $has_hero_sets }}
+	<header class="sr-only">
+		<h1>{{ title }}</h1>
+	</header>
+	{{ $i = 0 }}{{# Set $i for blocks since it is outside of the block editor #}}
+	{{ partial:layout/page-header/hero-content }}
+{{ else }}
+	{{ partial src="layout/page-header/graphic" }}
+{{ /if }}

@@ -1,0 +1,49 @@
+{{#
+	@name UAMS Card Image
+	@desc Renders a responsive card image (picture + img); use inside card item.
+	@param image                Asset (pass with :image="image"); used as image:url in glide.
+	@param alt_override         Optional alt text override; falls back to image:alt.
+	@param card_image_position  Optional. 'top' (default), 'bottom', or 'overlay'; forms card-img-* class.
+	@param display_media_credit Optional (UAMS-Web/uams-statamic-archive#1532). When truthy AND the asset has a `creator`, render
+	                            the asset's photo credit under the card image. The consuming entry
+	                            passes its entry-level `featured_image_credit_query` toggle here.
+#}}
+
+{{# Apply default position and build card-img-* class #}}
+{{ card_image_position = ( card_image_position === '' ) ? null : ( card_image_position ?? 'top' ) }}
+
+<div
+	class="{{
+		[
+			'card-img-top' => ( card_image_position == 'top' ),
+			'card-img-bottom' => ( card_image_position == 'bottom' ),
+			'card-img-overlay' => ( card_image_position == 'overlay' ),
+		] | classes | collapse_whitespace
+	}}"
+>
+	<picture>
+		<source srcset="{{ glide :src="image:url" w="455" h="256" fit="crop_focal" }} 1x, {{ glide :src="image:url" w="910" h="512" fit="crop_focal" }} 2x" media="(min-width: 1921px)">
+		<source srcset="{{ glide :src="image:url" w="433" h="244" fit="crop_focal" }} 1x, {{ glide :src="image:url" w="866" h="487" fit="crop_focal" }} 2x" media="(min-width: 1500px)">
+		<source srcset="{{ glide :src="image:url" w="455" h="256" fit="crop_focal" }} 1x, {{ glide :src="image:url" w="910" h="512" fit="crop_focal" }} 2x" media="(min-width: 992px)">
+		<source srcset="{{ glide :src="image:url" w="433" h="244" fit="crop_focal" }} 1x, {{ glide :src="image:url" w="866" h="487" fit="crop_focal" }} 2x" media="(min-width: 768px)">
+		<source srcset="{{ glide :src="image:url" w="455" h="256" fit="crop_focal" }} 1x, {{ glide :src="image:url" w="910" h="512" fit="crop_focal" }} 2x" media="(min-width: 1px)">
+		{{# Fallback #}}
+		<img
+			src="{{ glide :src="image:url" w="455" h="256" fit="crop_focal" }}"
+			alt="{{ alt_override ?? image:alt }}"
+			{{ itemprop | attribute:itemprop }}
+			{{ ( itemprop ? image:url : null) | attribute:content }}
+		/>
+	</picture>
+</div>
+{{# Entry-sourced media credit (UAMS-Web/uams-statamic-archive#1532): when the consuming entry opts in via its
+    `featured_image_credit_query` toggle (passed as `display_media_credit`) AND the
+    asset carries a `creator`, surface the photo credit under the card image. The
+    `_media_credit` partial strip_tags-escapes both values and renders nothing on an
+    empty `creator`, so the guard here only avoids the extra partial call.
+    Deliberately a normal-flow sibling AFTER the card-image wrapper (not inside it):
+    this partial can render a `card-img-overlay` (absolutely-positioned) wrapper, and
+    the credit must stay in the card's normal flow below the image, not over it. #}}
+{{ if display_media_credit && image:creator }}
+	{{ partial:typography/media_credit :creator="image:creator" :creator_organization="image:creator_organization" }}
+{{ /if }}

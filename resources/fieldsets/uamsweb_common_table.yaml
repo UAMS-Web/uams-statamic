@@ -1,0 +1,64 @@
+title: 'UAMSWeb Common Reusable Fields, Tables'
+fields:
+  -
+    handle: caption
+    field:
+      type: text
+      display: 'Table Caption'
+      instructions: |-
+        <a href="https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html" target="_blank">Web Content Accessibility Guidelines 2.1 Success Criterion 1.3.1 (Info and Relationships, Level A)</a> requires that the structure and relationships of content, **like tables**, be programmatically determinable. A table caption that clearly describes the table's purpose can satisfy this by providing context to assistive technologies (e.g., screen readers).
+
+        Provide a brief, descriptive caption for the table to summarize its purpose or content. This helps users, including those using screen readers, understand the table's context. Follow these guidelines:
+
+        Keep the caption concise (e.g., `Monthly Sales Data` or `Employee Schedule`).
+
+        - Ensure the caption clearly describes what the table contains.
+        - Avoid repeating nearby headings verbatim unless necessary for clarity.
+        - Do not include instructions (e.g., `Click to sort`) or lengthy explanations in the caption.
+        - If the table is purely for layout purposes, use a different design approach instead of a table.
+
+        **Example:**
+        - Good: `Quarterly Revenue by Region`
+        - Poor: `This table shows revenue data for Q1 2023, click headers to sort`
+
+        **Character Limit:** The field is limited to a maximum of 100 characters to ensure brevity.
+      placeholder: 'e.g., Quarterly Revenue by Region'
+      character_limit: 100
+      validate:
+        - required
+        - sometimes
+      localizable: false
+  -
+    handle: first_row_headers
+    field:
+      display: 'First Row as Header'
+      type: toggle
+      instructions: 'Show the first row as a header and give it a header styling.'
+      instructions_position: below
+      localizable: false
+      default: true
+      visibility: read_only
+  -
+    handle: first_column_headers
+    field:
+      display: 'First Column as Header'
+      type: toggle
+      instructions: 'Show the first column as a header and give it a header styling.'
+      instructions_position: below
+      localizable: false
+  -
+    handle: last_row_footers
+    field:
+      display: 'Last Row as Footer'
+      type: toggle
+      instructions: 'Show the last row as a footer and give it a footer styling.'
+      instructions_position: below
+      localizable: false
+  -
+    handle: table_data
+    field:
+      display: 'Table Data'
+      type: table
+      validate:
+        - required
+      localizable: false

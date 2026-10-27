@@ -1,0 +1,276 @@
+// Consolidated from legacy WordPress body classes (advert-template-default, archive,
+// blog, error404, kb-template-default, page-template-modules, post-template-default,
+// search, sfwd-courses-template-default, tshowcase-template-default,
+// uamspeople-template-default). Use page-template-page_landing for landing layouts.
+
+// Matches any figure that doesn't already carry one of the align classes, so
+// bare figures inherit the same layout treatment as `.aligncenter` figures.
+$figure-without-align: 'figure:not(.alignnone, .aligncenter, .alignleft, .alignright, .alignwide, .alignfull)';
+
+body.page-template-default {
+	.archive-description,
+	.entry {
+		padding: $uams-module-padding-mobile;
+		margin-bottom: 0;
+		line-height: inherit;
+
+		@include media-breakpoint-up(sm) {
+			padding: $uams-module-padding;
+		}
+
+		.entry-content,
+		.entry-footer {
+			&.content-width {
+				@include content-width;
+				text-align: left;
+			}
+
+			.entry-meta {
+				color: $gray-600;
+				font-size: 1rem;
+			}
+		}
+
+		figcaption {
+			.photo-credit {
+				font-style: italic;
+				white-space: nowrap;
+			}
+		}
+	}
+
+	// .entry-content.content-width,
+	// .entry-footer.content-width,
+	// .entry-comments,
+	// #respond,
+	// .archive-description,
+	// .archive-pagination {
+	// }
+
+	.entry-comments {
+		@extend .bg-gray;
+
+		> h3,
+		.comment-list {
+			width: $content-width;
+			max-width: 100%;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		.comment {
+			.comment-header,
+			.comment-reply {
+				background-color: transparent;
+			}
+
+			.comment-header {
+				display: flex;
+				flex-flow: row wrap;
+				justify-content: flex-start;
+
+				.comment-author {
+					width: 100%;
+					margin-bottom: 0.5em;
+				}
+
+				.comment-meta,
+				.comment-edit-link {
+					white-space: nowrap;
+					font-size: 1rem;
+				}
+
+				.comment-meta {
+					padding-right: 1em;
+				}
+				// .comment-edit-link {
+				// }
+			}
+		}
+
+		+ #respond {
+			padding-top: 0;
+
+			@include media-breakpoint-up(sm) {
+				padding-top: 0;
+			}
+		}
+	}
+
+	#respond {
+		@extend .bg-gray;
+
+		#reply-title,
+		#commentform {
+			width: $content-width;
+			max-width: 100%;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		#reply-title {
+			text-align: left;
+		}
+
+		.must-log-in {
+			@include content-width;
+		}
+
+		.form-submit {
+			#submit {
+				@extend .btn-primary;
+			}
+		}
+	}
+}
+
+.alignnone,
+.aligncenter,
+.alignleft,
+.alignright,
+.alignwide,
+.alignfull,
+#{$figure-without-align} {
+	margin-top: $page-title-margin-bottom-mobile;
+	margin-bottom: $page-title-margin-bottom-mobile;
+
+	figcaption {
+		display: block;
+		max-width: $figure-caption-font-size * $line-length-max;
+		margin-top: 1em;
+		margin-bottom: 0;
+		font-size: $figure-caption-font-size;
+		color: $figure-caption-color;
+	}
+}
+
+.alignnone,
+.aligncenter,
+.alignwide,
+.alignfull,
+#{$figure-without-align} {
+	margin-right: 0;
+	margin-left: 0;
+}
+
+.alignnone,
+.alignleft,
+.alignright {
+	figcaption {
+		text-align: left;
+	}
+}
+
+.aligncenter,
+.alignwide,
+.alignfull,
+#{$figure-without-align} {
+	figcaption {
+		text-align: center;
+		margin-left: auto;
+		margin-right: auto;
+	}
+}
+
+.aligncenter,
+#{$figure-without-align} {
+	width: 100% !important;
+}
+
+.alignwide {
+	@include media-breakpoint-up(md) {
+		@include alignwide($alignwide-ratio-md);
+	}
+	@include media-breakpoint-up(lg) {
+		@include alignwide($alignwide-ratio-lg);
+	}
+}
+
+body.page-template-default {
+	.alignfull {
+		width: 100vw !important;
+		max-width: 100vw;
+		margin-left: calc( 50% - 50vw );
+		margin-right: calc( 50% - 50vw );
+	}
+}
+
+.alignleft,
+.alignright {
+	display: block;
+	//width: 100% !important;
+	margin-right: auto;
+	margin-left: auto;
+	float: none;
+
+	@include media-breakpoint-up(xs) {
+		margin: 0 0 1em 0;
+		max-width: calc(($breakpoint-xs - $uams-module-padding-mobile * 3) / 2) !important;
+	}
+
+	@include media-breakpoint-up(sm) {
+		max-width: calc(($content-width - $page-title-margin-bottom-mobile) / 2) !important;
+	}
+
+	&.small {
+		@include media-breakpoint-up(md) {
+			max-width: calc(($content-width - $page-title-margin-bottom-mobile) / 2 * 0.75) !important;
+		}
+	}
+
+	img,
+	figcaption {
+		@include media-breakpoint-only(xxs) {
+			margin-right: auto;
+			margin-left: auto;
+		}
+	}
+
+	figcaption {
+		@include media-breakpoint-only(xxs) {
+			text-align: center;
+		}
+	}
+}
+
+.alignleft {
+	@include media-breakpoint-up(xs) {
+		margin-right: $page-title-margin-bottom-mobile;
+		float: left;
+	}
+}
+
+.alignright {
+	@include media-breakpoint-up(xs) {
+		margin-left: $page-title-margin-bottom-mobile;
+		float: right;
+	}
+}
+
+figure + figure {
+	&.alignleft {
+		clear: left;
+	}
+	&.alignright {
+		clear: right;
+	}
+}
+
+// Same edge-of-flow margin reset that `figure` gets in reboot.scss, applied to
+// non-figure align containers (table `<div>`, pull-quote `<blockquote>`, video
+// and audio inner `<div>`s) so they don't double up vertical margin at the
+// start or end of a content flow.
+.alignnone,
+.aligncenter,
+.alignleft,
+.alignright,
+.alignwide,
+.alignfull {
+	&:first-child {
+		margin-top: 0;
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+}

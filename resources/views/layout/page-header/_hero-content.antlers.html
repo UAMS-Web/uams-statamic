@@ -1,0 +1,189 @@
+{{#
+	@name UAMS Hero Block
+	@desc
+#}}
+
+{{# Define Variables #}}
+
+	{{# Limit hero slides to the first 4 sets (hero max_sets in resources/fieldsets/uamsweb_header_hero.yaml). Disabled sets are filtered out by the replicator's augmentation before this point. #}}
+	{{ $hero_slides = header_hero | limit(4) }}
+
+	{{# Count the number of hero slides #}}
+	{{ $hero_row_count = ( $hero_slides | safe_count ) }}
+
+	{{# Check if there is more than one hero slide #}}
+	{{ $hero_multiple_query = $hero_row_count > 1 }}
+
+	{{# Check if there is at least one hero slide #}}
+	{{ $block_valid = $hero_row_count >= 1 }}
+
+	{{# Block ID #}}
+
+		{{ if $block_valid }}
+			{{ $module_i = $module_i ?? 0 }}
+			{{ $hero_id_base = 'carousel-hero-module-' + ( $module_i + 1 ) }}
+			{{ $block_id = null }}{{# Get ID from the entry block that is defined in the entry editor #}}
+			{{ $hero_id = $block_id ? ( $hero_id_base + ' ' + ( $hero_id | urlencode ) ) : $hero_id_base }}
+		{{ /if }}
+
+	{{# Block Class #}}
+
+		{{ if $block_valid }}
+			{{ $block_class = $block_class ?? null }}{{# @TODO: Get class from the entry block that is defined in the entry editor #}}
+		{{ /if }}
+
+	{{# Data Attributes #}}
+
+		{{ if $block_valid }}
+			{{# data-ride initializes the carousel on load so keyboard/touch/indicator handlers
+				are bound; data-interval="false" disables auto-cycling
+				(WCAG 2.2.2 + vestibular/cognitive accessibility —
+				see UAMS-Web/uams-statamic-archive#604 and UAMS-Web/uams-statamic-archive#734). #}}
+			{{ $hero_data_ride = $hero_multiple_query ? 'carousel' : null }}
+			{{ $hero_data_interval = $hero_multiple_query ? 'false' : null }}
+			{{ $hero_data_keyboard = $hero_multiple_query ? 'true' : null }}
+			{{# tabindex makes the carousel root reachable by keyboard (Tab) so the
+				data-keyboard Left/Right arrow handler can actually receive focus.
+				Only when there is more than one slide — a single-slide hero is not a
+				tab stop (UAMS-Web/uams-statamic-archive#736). #}}
+			{{ $hero_tabindex = $hero_multiple_query ? '0' : null }}
+		{{ /if }}
+
+	{{# Check every set has required fields #}}
+
+		{{ if $block_valid }}
+			{{ $hero_slides }}
+				{{ if ( !heading || !body || !button_text || !button_url || !image_desktop || !background_color ) }}
+					{{ $block_valid = false }}
+				{{ /if }}
+			{{ /$hero_slides }}
+		{{ /if }}
+
+{{# Render Block #}}
+
+{{ if $block_valid }}
+	<section
+		class="{{
+			[
+				'hero carousel uams-hero-block slide' => true,
+				'multiple-slides' => $hero_multiple_query,
+				$block_class
+			] | classes | collapse_whitespace
+		}}"
+		id="{{ $hero_id }}"
+		aria-label="Hero banner"
+		{{ $hero_tabindex | attribute:tabindex }}
+		{{ $hero_data_ride | attribute:data-ride }}
+		{{ $hero_data_interval | attribute:data-interval }}
+		{{ $hero_data_keyboard | attribute:data-keyboard }}
+	>
+		{{ if $hero_multiple_query }}
+		<ol class="carousel-indicators">
+			{{ $hero_indicator_i = 0 }}
+			{{ loop from="1" :to="$hero_row_count" }}
+			{{ $hero_indicator_class = ( $hero_indicator_i == 0 ) ? 'active' : null }}
+			<li
+				data-target="#{{ $hero_id_base }}"
+				data-slide-to="{{ $hero_indicator_i }}"
+				{{ $hero_indicator_class | attribute:class }}
+			></li>
+			{{ $hero_indicator_i = $hero_indicator_i + 1 }}
+			{{ /loop }}
+		</ol>
+		{{ /if }}
+		<div class="carousel-inner">
+			{{ $hero_item_index = 0 }}
+			{{ $hero_slides }}
+
+			{{# Define Variables Inside the Loop #}}
+
+				{{# Define fallback values #}}
+
+					{{ $heading = heading ?? 'Heading goes here...' }}
+					{{ $body = body ?? 'This is where the description goes' }}
+					{{ $button_text = button_text ?? null }}
+					{{ $button_target = button_target ? ' target="_blank" rel="noopener noreferrer"' : null }}
+					{{ $button_link_description = button_link_description ?? ( $button_text + ', ' + $heading ) }}
+					{{# The button carries an aria-label (which overrides inner text), so the
+						WCAG 3.2.5 cue must live in the accessible name here (UAMS-Web/uams-statamic-archive#702). #}}
+					{{ if button_target }}{{ $button_link_description = $button_link_description + ', opens in new window' }}{{ /if }}
+					{{ $image_desktop = image_desktop ?? null }}
+					{{ $image_tablet = image_tablet ?? $image_desktop }}
+					{{ $image_mobile = image_mobile ?? $image_desktop }}
+					{{ $image_alt = image_alt ?? $image_desktop:alt ?? null }}
+					{{ $background_color = background_color ?? 'bg-auto' }}
+
+				{{# Load values for if background is set to auto #}}
+
+					{{ $background_color_auto = [
+						'red',
+						'blue',
+						'green',
+						'eggplant'
+					] }}
+					{{ $background_color = ( $background_color == 'bg-auto') ? ( $background_color_auto[$hero_item_index] ) : $background_color }}
+
+				{{# Item ID #}}
+
+					{{ $item_id = 'carousel-item-' + $hero_item_index }}
+
+			<div
+				class="{{
+					[
+						'carousel-item' => true,
+						$background_color,
+						'active' => ( $hero_item_index == 0 )
+					] | classes | collapse_whitespace
+				 }}"
+				id="{{ $item_id }}"
+			>
+				<div class="image-container">
+					<picture>
+						{{# Desktop Image, Aspect ratio 1.8685:1 #}}
+						<source srcset="{{ glide :src="$image_desktop:url" w="1435" h="768" fit="crop_focal" }} 1x, {{ glide :src="$image_desktop:url" w="2870" h="1536" fit="crop_focal" }} 2x" media="(min-width: 1921px)">
+						<source srcset="{{ glide :src="$image_desktop:url" w="1076" h="576" fit="crop_focal" }} 1x, {{ glide :src="$image_desktop:url" w="2152" h="1152" fit="crop_focal" }} 2x" media="(min-width: 1500px)">
+						<source srcset="{{ glide :src="$image_desktop:url" w="841" h="450" fit="crop_focal" }} 1x, {{ glide :src="$image_desktop:url" w="1682" h="900" fit="crop_focal" }} 2x" media="(min-width: 1200px)">
+						<source srcset="{{ glide :src="$image_desktop:url" w="673" h="360" fit="crop_focal" }} 1x, {{ glide :src="$image_desktop:url" w="1346" h="720" fit="crop_focal" }} 2x" media="(min-width: 992px)">
+						{{# Tablet Image, Aspect ratio 1.4132:1 #}}
+						<source srcset="{{ glide :src="$image_tablet:url" w="578" h="409" fit="crop_focal" }} 1x, {{ glide :src="$image_tablet:url" w="1156" h="818" fit="crop_focal" }} 2x" media="(min-width: 768px)">
+						{{# Mobile Image, Aspect ratio 16:9 #}}
+						<source srcset="{{ glide :src="$image_mobile:url" w="768" h="432" fit="crop_focal" }} 1x, {{ glide :src="$image_mobile:url" w="1536" h="864" fit="crop_focal" }} 2x" media="(min-width: 576px)">
+						<source srcset="{{ glide :src="$image_mobile:url" w="576" h="324" fit="crop_focal" }} 1x, {{ glide :src="$image_mobile:url" w="1152" h="648" fit="crop_focal" }} 2x" media="(min-width: 1px)">
+						{{# Fallback #}}
+						<img src="{{ glide :src="$image_tablet:url" w="455" h="256" fit="crop_focal" }}" alt="{{ $image_alt }}" />
+					</picture>
+					{{# Opt-in per-slide media credit over the hero image. Anchored to the slide's
+					    `.image-container` (made `position: relative` in the hero SCSS); the scrim
+					    tint follows the slide's `$background_color`. Off by default
+					    (per-slide `display_media_credit`). #}}
+					{{ if display_media_credit && $image_desktop:creator }}
+						<p class="media-credit-overlay">{{ partial:typography/media_credit :creator="$image_desktop:creator" :creator_organization="$image_desktop:creator_organization" }}</p>
+					{{ /if }}
+				</div>
+				<div class="text-container">
+					<div class="inner-container">
+						<h2>{{ $heading | widont }}</h2>
+						<p>{{ $body | widont }}</p>
+						{{ if ( $button_text && button_url ) }}
+						<a class="btn btn-white" href="{{ button_url }}" aria-label="{{ $button_link_description }}"{{ $button_target }} data-itemtitle="{{ $heading }}">{{ $button_text }}{{ if button_target }}{{ partial:components/new_window_indicator }}{{ /if }}</a>
+						{{ /if }}
+					</div>
+				</div>
+			</div>
+
+			{{ $hero_item_index += 1 }}
+
+			{{ /$hero_slides }}
+		</div>
+		{{ if $hero_multiple_query }}
+		<a class="carousel-control-prev" href="#{{ $hero_id_base }}" role="button" data-slide="prev">
+			<span class="fas fa-angle-left"></span>
+			<span class="sr-only">Previous</span>
+		</a>
+		<a class="carousel-control-next" href="#{{ $hero_id_base }}" role="button" data-slide="next">
+			<span class="fas fa-angle-right"></span>
+			<span class="sr-only">Next</span>
+		</a>
+		{{ /if }}
+	</section>
+{{ /if }}

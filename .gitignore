@@ -1,0 +1,115 @@
+/.phpunit.cache
+/node_modules
+/public/build
+/public/cp-hot
+/public/hot
+# A static fixture page the tests/Browser suite writes in beforeEach and deletes in
+# afterEach. Ignored because that afterEach does NOT run when the process dies
+# first — a band killed at its bound, a crash, a Ctrl-C — and an untracked
+# leftover is fatal to the NEXT run: local-ci's worktree-drift gate (UAMS-Web/uams-statamic-archive#1889)
+# refuses to validate any worktree whose paths differ from the commit under test,
+# so one interrupted run blocks every branch queued behind it. That was
+# survivable while the browser suite was opt-in; UAMS-Web/uams-statamic-archive#1727 puts it in the default
+# gate, where it runs every time and, being LAST in the chain, is the one an
+# interrupt is most likely to land on.
+#
+# An ignore rule is the right shape HERE and only here: `public/` holds build
+# output, and the `__*_fixture.html` prefix is reserved. It was NOT the right shape
+# for the suite's blueprint, collection and user writes, which landed in tracked
+# source trees where a glob can mask a genuine file — UAMS-Web/uams-statamic-archive#1920 relocated those into
+# storage/framework/testing instead (Tests\Support\BrowserWriteIsolation), so
+# nothing is written to hide.
+/public/__*_fixture.html
+/public/storage
+/public/vendor/app
+/public/vendor/seo-pro
+/public/vendor/statamic
+/storage/*.key
+/storage/pail
+# Stored form submissions: what people typed into a form, never committed (UAMS-Web/uams-statamic-archive#2817)
+/storage/forms
+/storage/phpstan
+/vendor
+.env
+.env.*
+!.env.example
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+.DS_Store
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.zed
+
+# studio1902/statamic-peak Additions
+
+/public/vendor/statamic-peak-tools
+/public/img/
+/public/static/
+/.phpunit.cache
+.antlers.json
+
+# el-schneider/statamic-admin-bar Additions
+
+/public/vendor/statamic-admin-bar
+/public/vendor/statamic-bard-texstyle
+
+# uams-web/statamic-alpine-csp-forms published assets (UAMS-Web/uams-statamic-archive#3073)
+/public/vendor/statamic-alpine-csp-forms
+/storage/antlers
+
+# uams-web/statamic-multisite-forms published assets (UAMS-Web/uams-statamic-archive#3066)
+/public/vendor/statamic-multisite-forms
+
+# uams-web/statamic-form-settings published assets (#3072)
+/public/vendor/statamic-form-settings
+
+# Pest browser-test failure screenshots (issue UAMS-Web/uams-statamic-archive#852)
+/tests/Browser/Screenshots/
+
+# JUnit reports written by the phpunit bands for the skip-baseline check (UAMS-Web/uams-statamic-archive#1744)
+/junit-parallel.xml
+/junit-serial.xml
+
+# Generated test artifacts that must never be committed, and — since UAMS-Web/uams-statamic-archive#1889 — must
+# never read as worktree drift either: the local-CI runner refuses a reused worktree
+# whose `git status` is not clean, so an un-ignored artifact wedges every later run.
+# `tests/.pest/` is Pest's profile directory (`--update-shards`); `mutate.log` is the
+# `tee` target in ci.yml's mutation smoke. Neither is written by a plain gate run
+# today, which is exactly why the rule belongs here before one is.
+/tests/.pest/
+/mutate.log
+
+# Per-container Claude Code settings (ported from wordpress-importer#515)
+.claude/settings.local.json
+
+# Security-audit reports. The `security-audit` skill writes its finding-level report
+# here, and that detail must stay out of the repository once it is public (UAMS-Web/uams-statamic-archive#2651),
+# whether a finding is open or fixed (UAMS-Web/uams-statamic-archive#2733). Reports stay on the machine that ran
+# the audit; the approved findings become `security` issues instead.
+.claude/notes/
+
+# Ephemeral worktrees the harness `EnterWorktree` tool creates. The stable slots
+# in `.claude/rules/worktrees.md` are siblings of this checkout and never appear
+# here, but the exception cases still land in this directory and must not be
+# stageable. This lived only in `.git/info/exclude` — a per-machine, untracked
+# file — so the rule's "can never be staged by construction" claim held on one
+# machine and silently did not on the other supported platform.
+.claude/worktrees/
+
+# Tools fetched for a checkout that has no dev dependencies — a Claude Code cloud
+# session cannot install them (`phpstan/phpstan` is dist-only, and one unsatisfiable
+# package aborts the whole install), so `scripts/fetch-pint.mjs` puts Pint's prebuilt
+# phar here over the git transport instead. Nothing it writes may ever be staged (UAMS-Web/uams-statamic-archive#1880).
+/.tools/
+
+# Python bytecode. The release-notes tests import `gen_release_notes.py`, and Python
+# writes its cache beside whatever it imports. The tests set `PYTHONDONTWRITEBYTECODE`,
+# so this covers running the generator or its tests by hand. Unanchored, because the
+# cache lands beside the imported module wherever that is (UAMS-Web/uams-statamic-archive#2527).
+__pycache__/
+*.pyc

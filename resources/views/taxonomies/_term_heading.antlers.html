@@ -1,0 +1,12 @@
+{{#
+	@name Term archive heading
+	@desc The descriptive, term-named heading for a taxonomy term archive —
+	      "Posts in Category X" / "Posts Tagged with X" (UAMS-Web/uams-statamic-archive#1171/UAMS-Web/uams-statamic-archive#1172) — shared by the
+	      term page's <h1> and the layout <title> so the phrasing lives in one place.
+	      The term title is arbitrary editor input and Antlers is raw-by-default, so it
+	      is stripped of markup and entity-encoded before output. Reads `taxonomy` and
+	      `title` from the term-page cascade. Callers capture and `| trim` the output
+	      (this partial may emit surrounding whitespace).
+#}}
+{{ $term_name = title | strip_tags | entities }}
+{{ if taxonomy == 'post_tags' }}Posts Tagged with {{ $term_name }}{{ elseif taxonomy == 'post_categories' }}Posts in Category {{ $term_name }}{{ else }}{{ $term_name }}{{ /if }}

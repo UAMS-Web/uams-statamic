@@ -1,0 +1,134 @@
+title: Table
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              display: 'Table Heading'
+              instructions: |-
+                This heading text will be used to populate the **mandatory** heading of page builder blocks for tables.
+
+                This heading text will be used to populate the **optional** heading of Bard sets for tables.
+              validate:
+                - required
+              localizable: false
+          -
+            handle: description
+            field: uamsweb_common_block.description_bard
+            config:
+              display: 'Table Description'
+              localizable: false
+              instructions: 'This optional description may be included above the table in page builder blocks and Bard sets for tables.'
+      -
+        display: 'Table Content'
+        fields:
+          -
+            handle: table_data_importer
+            field:
+              type: assets
+              display: 'Spreadsheet File'
+              instructions: 'Select or upload a `.csv`, `.xls`, or `.xlsx` file to populate the table data.'
+              container: table_spreadsheets
+              restrict: true
+              max_files: 1
+              localizable: false
+              validate:
+                - 'mimetypes:text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              width: 50
+          -
+            handle: table_data_importer_trigger
+            field:
+              type: trigger
+              display: 'Replace Table Data'
+              width: 50
+              localizable: false
+              instructions: 'Replace the current Table Data value with the values from the selected spreadsheet file.'
+              sortable: false
+              replicator_preview: false
+              duplicate: false
+              input_label: Replace
+              related_field: table_data_importer
+          -
+            handle: table_data_paste
+            field:
+              type: textarea
+              display: 'Paste Table Data'
+              instructions: 'Paste a table copied from a spreadsheet (Excel or Google Sheets), a web page, raw HTML, or CSV. Then use **Replace Table Data from Paste** to populate the table below.'
+              localizable: false
+          -
+            handle: table_data_paste_trigger
+            field:
+              type: trigger
+              display: 'Replace Table Data from Paste'
+              localizable: false
+              instructions: 'Replace the current Table Data value with the parsed contents of the pasted data above.'
+              sortable: false
+              replicator_preview: false
+              duplicate: false
+              input_label: Replace
+              related_field: table_data_paste
+          -
+            handle: table_data
+            field: uamsweb_common_table.table_data
+            config:
+              validate:
+                - 'required_without:table_data_importer'
+              localizable: false
+          -
+            handle: caption
+            field: uamsweb_common_table.caption
+            config:
+              localizable: false
+      -
+        display: 'Table Structure'
+        fields:
+          -
+            handle: first_row_headers
+            field: uamsweb_common_table.first_row_headers
+            config:
+              localizable: false
+              visibility: read_only
+          -
+            handle: first_column_headers
+            field: uamsweb_common_table.first_column_headers
+            config:
+              localizable: false
+          -
+            handle: last_row_footers
+            field: uamsweb_common_table.last_row_footers
+            config:
+              localizable: false
+      -
+        display: 'Table Style'
+        fields:
+          -
+            import: uamsweb_common_table_style
+      -
+        display: 'Table Features'
+        fields:
+          -
+            import: uamsweb_common_table_features
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: false
+              validate: 'max:200'
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            import: uamsweb_computed_content_usage

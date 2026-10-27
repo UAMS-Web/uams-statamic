@@ -1,0 +1,14 @@
+body {
+    color: $body-color;
+    font-family: $font-family-base;
+    font-weight: $font-weight-base;
+    width: 100%;
+    overflow-x: hidden;
+    // This (overflow-x: hidden;) is a bug fix.
+    // The 'alignfull' class uses 100vw which OSX calculates before taking vertical scrollbars into account.
+    // This results in a horizontal scrollbar appearing. Hiding the overflow-x disables that horizontal scroll.
+}
+
+.content-width {
+    @include content-width;
+}

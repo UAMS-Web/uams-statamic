@@ -1,0 +1,106 @@
+{{#
+	@name News Home
+	@desc The `news` site's home template (UAMS-Web/uams-statamic-archive#1612) — the `axis=category`,
+	      `scope=all`, `zones=none` configuration of the shared news-magazine core
+	      (UAMS-Web/uams-statamic-archive#1158). A sticky-first lead over the whole newsroom (no org filter), then
+	      category-slot sections with page-wide earlier-wins dedup, the
+	      calendar.uams.edu (LiveWhale) + newsroom YouTube-playlist embeds, and a
+	      bottom CTA to the full newsroom archive (UAMS-Web/uams-statamic-archive#1599). Backed by the
+	      {{ news_home }} tag. Distinct from the org-scoped Departmental News Hub
+	      (UAMS-Web/uams-statamic-archive#1602); the media-mentions scroller and the internal events zone are
+	      dropped per UAMS-Web/uams-statamic-archive#1609.
+#}}
+
+{{ partial:layout/article }}
+	{{
+		partial:layout/entry-content
+		content_width="false"
+	}}
+
+		{{ news_home }}
+
+			{{ if no_results }}
+
+				{{# No lead post and every section deduplicated to nothing — render nothing. #}}
+
+			{{ else }}
+
+				{{# Sticky-first lead band over the whole newsroom. #}}
+				{{ if lead | length }}
+					<section class="news-home-lead">
+						<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+							{{ lead }}
+								{{ partial:posts/card show_primary_category="true" }}
+							{{ /lead }}
+						</div>
+					</section>
+				{{ /if }}
+
+				{{# Category-slot sections; a lead post never repeats here (page-wide dedup). #}}
+				{{ sections }}
+
+					{{# Skip a section that deduplicated down to nothing. #}}
+					{{ if posts | length }}
+
+						<section class="news-home-section">
+
+							{{ if heading }}
+								<h2 class="news-home-heading">{{ heading | sanitize }}</h2>
+							{{ /if }}
+
+							<div class="card-list card-list-left">
+								{{ posts }}
+									{{ partial:posts/card show_primary_category="true" }}
+								{{ /posts }}
+							</div>
+
+							{{ if category_url }}
+								<a class="news-home-more" href="{{ category_url }}">
+									More{{ if category_name }} {{ category_name }}{{ /if }}
+								</a>
+							{{ /if }}
+
+						</section>
+
+					{{ /if }}
+
+				{{ /sections }}
+
+			{{ /if }}
+
+		{{ /news_home }}
+
+		{{# Newsroom YouTube playlist. A lazy iframe — the lite-youtube playlist
+		    facade is a UAMS-Web/uams-statamic-archive#224 follow-up. The id is sanitized (editor-controlled,
+		    rendered into an attribute; Antlers is raw by default). #}}
+		{{ if youtube_playlist_id }}
+			<section class="news-home-video">
+				<div class="ratio ratio-16x9">
+					<iframe
+						src="https://www.youtube-nocookie.com/embed/videoseries?list={{ youtube_playlist_id | sanitize }}"
+						title="Newsroom video playlist"
+						loading="lazy"
+						allowfullscreen
+						referrerpolicy="strict-origin-when-cross-origin"></iframe>
+				</div>
+			</section>
+		{{ /if }}
+
+		{{# calendar.uams.edu LiveWhale calendar (mirrors the LiveWhale page-builder
+		    block). The id is sanitized before it enters the data-options attribute. #}}
+		{{ if calendar_livewhale_id }}
+			<section class="news-home-calendar">
+				<div class="lwcw" data-options="id={{ calendar_livewhale_id | sanitize }}&format=html"></div>
+				<script type="text/javascript" id="lw_lwcw" src="https://calendar.uams.edu/livewhale/theme/core/scripts/lwcw.js"></script>
+			</section>
+		{{ /if }}
+
+		{{# Bottom CTA to the full newsroom archive (UAMS-Web/uams-statamic-archive#1599). #}}
+		{{ if archive_cta_url }}
+			<div class="news-home-archive-cta">
+				<a class="btn btn-primary" href="{{ archive_cta_url | sanitize_url }}">{{ if archive_cta_label }}{{ archive_cta_label | sanitize }}{{ else }}View all news{{ /if }}</a>
+			</div>
+		{{ /if }}
+
+	{{ /partial:layout/entry-content }}
+{{ /partial:layout/article }}

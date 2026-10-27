@@ -1,0 +1,18 @@
+title: 'UAMSWeb Block, Reusable Landing Page Content'
+fields:
+  -
+    handle: content
+    field:
+      type: entries
+      display: 'Reusable Landing Page Content'
+      instructions: 'Select a reusable landing page content block.'
+      collections:
+        - reusable_content
+      query_scopes:
+        - reusable_content_landing_page_only
+      blueprints:
+        - reusable_content_landing_page
+      max_items: 1
+      localizable: false
+      validate:
+        - required

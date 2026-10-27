@@ -1,0 +1,127 @@
+@use "sass:map";
+@use "sass:math";
+
+$person-card-width: 255px;
+
+@function person-list-width-formula($count) {
+    @return ((($card-list-gap * 2) + $person-card-width) * $count);
+}
+
+@function person-list-mq-formula($count) {
+    @return person-list-width-formula($count) + ($uams-module-padding-px * 2);
+}
+
+$person-list-rows: (
+    // When the viewport is wide enough to display X number of cards, which eligible counts (how many cards are displayed by default) get to show X number of cards per row?
+    // cards-per-row-* is a container for the the combinations of cards per row and eligible counts. If you want to add a new amount of cards per row, add a new cards-per-row-*.
+    // Set the "cards" value to define the number of cards per row in each check.
+    // Set the "eligible-count" value for which counts get to show that amount per row.
+    // This map gets used in the "person-cards-eligible-count" and "person-cards-per-row" mixins below.
+    // The eligible count is the number defined in the PHP file (single-location.php, single-expertise.php, etc.)
+    cards-per-row-1: (
+        cards: 1,
+        eligible-count: (
+            4,
+            6,
+            8,
+            10,
+            12
+        )
+    ),
+    cards-per-row-2: (
+        cards: 2,
+        eligible-count: (
+            4,
+            6,
+            8,
+            10,
+            12
+        )
+    ),
+    cards-per-row-3: (
+        cards: 3,
+        eligible-count: (
+            6,
+            12
+        )
+    ),
+    cards-per-row-4: (
+        cards: 4,
+        eligible-count: (
+            4,
+            8,
+            12
+        )
+    ),
+    cards-per-row-5: (
+        cards: 5,
+        eligible-count: (
+            10
+        )
+    ),
+    cards-per-row-6: (
+        cards: 6,
+        eligible-count: (
+            6,
+            12
+        )
+    ),
+    cards-per-row-8: (
+        cards: 8,
+        eligible-count: (
+            8
+        )
+    ),
+    cards-per-row-10: (
+        cards: 10,
+        eligible-count: (
+            10
+        )
+    ),
+    cards-per-row-12: (
+        cards: 12,
+        eligible-count: (
+            12
+        )
+    )
+);
+
+@mixin person-cards-eligible-count($var, $count) {
+    @each $value in map.get(map.get($person-list-rows, $var), "eligible-count") {
+        &-count-#{$value} {
+            width: person-list-width-formula($count);
+        }
+    }
+}
+
+@mixin person-cards-per-row() {
+    @each $keyname, $value in $person-list-rows {
+        @each $cardvalue in map.get(map.get($person-list-rows, $keyname), "cards") {
+            @include media-custom-up(person-list-mq-formula($cardvalue)) {
+                @include person-cards-eligible-count($keyname, $cardvalue);
+            }
+        }
+    }
+}
+
+.card-list {
+    &.card-list-doctors {
+        margin-right: auto;
+        margin-left: auto;
+        @include person-cards-per-row();
+
+        .card {
+            width: $person-card-width;
+        }
+    }
+    // .no-results {
+    // }
+}
+.card-list .no-results,
+.card-list-container .ajax-loading {
+    @include line-length-em(ideal);
+    padding: math.div($grid-gutter-width, 2) 0;
+    font-size: $lead-font-size;
+    font-weight: $lead-font-weight;
+    text-align: center;
+}

@@ -1,0 +1,257 @@
+title: Audience
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              localizable: false
+              validate:
+                - required
+              display: 'Term Title'
+          -
+            handle: schema_type
+            field:
+              type: schema_type
+              localizable: false
+              display: 'Schema Type'
+              starting_types:
+                - Audience
+              validate:
+                - required
+      -
+        display: 'General Audience Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Display Name'
+              localizable: false
+              validate:
+                - required
+          -
+            handle: alternate_name
+            field: uamsweb_schema.alternate_name
+            config:
+              localizable: false
+          -
+            handle: audience_type
+            field:
+              type: textarea
+              display: 'Audience Type'
+              instructions: 'The target group associated with a given audience (e.g., veterans, car owners, musicians, etc.).'
+              localizable: false
+          -
+            handle: description
+            field: uamsweb_schema.description
+            config:
+              localizable: false
+          -
+            handle: disambiguating_description
+            field: uamsweb_schema.disambiguating_description
+            config:
+              localizable: false
+          -
+            handle: geographic_area
+            field:
+              type: entries
+              select_across_sites: true
+              display: 'Geographic Area'
+              instructions: 'The geographic area associated with the audience.'
+              collections:
+                - geographic_locations
+              search_index: geographic_locations
+              localizable: false
+          -
+            handle: measurement_suggested
+            field:
+              type: quantitative_value
+              display: 'Suggested Measurement'
+              instructions: 'A suggested range of body measurements for the intended audience or person, for example inseam between 32 and 34 inches or height between 170 and 190 cm. Typically found on a size chart for wearable products.'
+              number_mode: float
+              unit_code_enabled: true
+              unit_text_enabled: true
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+              localizable: false
+          -
+            handle: additional_type
+            field: uamsweb_schema.additional_type
+            config:
+              localizable: false
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              localizable: false
+      -
+        display: 'Audience Educational Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: educational_role
+            field:
+              type: textarea
+              display: 'Educational Role'
+              instructions: 'An educational role of an educational audience.'
+              if:
+                schema_type.value: 'contains_any EducationalAudience'
+              localizable: false
+      -
+        display: 'Business Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: number_of_employees
+            field:
+              type: quantitative_value
+              display: 'Number of Employees'
+              instructions: 'The number of employees in an organization (e.g., business).'
+              if:
+                schema_type.value: 'contains_any BusinessAudience'
+              localizable: false
+          -
+            handle: yearly_revenue
+            field:
+              type: quantitative_value
+              display: 'Yearly Revenue'
+              instructions: 'The size of the business in annual revenue.'
+              if:
+                schema_type.value: 'contains_any BusinessAudience'
+              localizable: false
+          -
+            handle: years_in_operation
+            field:
+              type: quantitative_value
+              display: 'Years in Operation'
+              instructions: 'The number of years the organization has been in operation.'
+              if:
+                schema_type.value: 'contains_any BusinessAudience'
+              localizable: false
+      -
+        display: 'Audience Gender Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: gender_suggested
+            field: uamsweb_common_people.gender
+            config:
+              display: 'Suggested Gender'
+              localizable: false
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+          -
+            handle: gender_required
+            field: uamsweb_common_people.gender
+            config:
+              display: 'Required Gender'
+              localizable: false
+              instructions: "Audiences defined by a person's gender."
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+      -
+        display: 'Audience Age Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: age_suggested
+            field:
+              type: quantitative_value
+              mode: duration
+              display: 'Suggested Age'
+              instructions: 'The recommended age or age range for the intended audience or person (e.g., 3-12 months for infants, 1-5 years for toddlers).'
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+              localizable: false
+          -
+            handle: age_required
+            field:
+              type: quantitative_value
+              mode: duration
+              display: 'Required Age'
+              instructions: 'The required age or age range for the intended audience or person (e.g., 3-12 months for infants, 1-5 years for toddlers).'
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+              localizable: false
+      -
+        display: 'Children Age Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: child_age
+            field:
+              type: quantitative_value
+              display: "Age of the Parent's Child"
+              if:
+                schema_type.value: 'contains_any ParentAudience'
+              localizable: false
+              mode: duration
+              duration_units:
+                - years
+                - months
+                - weeks
+                - days
+      -
+        display: 'Audience Medical Characteristics'
+        collapsible: true
+        fields:
+          -
+            handle: health_condition
+            field:
+              type: entries
+              display: 'Health Condition'
+              instructions: 'Specifying the health condition(s) of a patient, medical study, or other target audience.'
+              collections:
+                - clinical_conditions
+              search_index: clinical_conditions
+              create: false
+              if:
+                schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
+              localizable: false
+          -
+            handle: diagnosis
+            field:
+              type: entries
+              display: Diagnosis
+              instructions: 'One or more alternative conditions considered in the differential diagnosis process as output of a diagnosis process.'
+              collections:
+                - clinical_conditions
+              search_index: clinical_conditions
+              create: false
+              if:
+                schema_type.value: 'contains_any Patient'
+              localizable: false
+          -
+            handle: drug
+            field:
+              type: terms_search_index
+              display: Drug
+              instructions: 'Specifying a drug or medicine used in a medication procedure.'
+              taxonomies:
+                - drugs
+              search_index: drugs
+              create: false
+              if:
+                schema_type.value: 'contains_any Patient'
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false

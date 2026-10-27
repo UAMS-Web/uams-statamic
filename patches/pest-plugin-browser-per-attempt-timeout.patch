@@ -1,0 +1,48 @@
+diff --git a/src/Execution.php b/src/Execution.php
+index 7ffc945..d8c2e81 100644
+--- a/src/Execution.php
++++ b/src/Execution.php
+@@ -146,7 +146,42 @@ final class Execution
+ 
+         while (microtime(true) < $end) {
+             try {
+-                return Playwright::usingTimeout(1_000, $callback);
++                // Temporary: drop this patch once pest-plugin-browser separates
++                // action execution from the assertion retry loop. Upstream report:
++                // https://github.com/pestphp/pest/issues/1852
++                //
++                // Each attempt used a hardcoded 1_000ms while Configuration::timeout()
++                // only sized the retry WINDOW, so `Playwright::setTimeout(30_000)` did
++                // not do what its name says: every attempt was still cut off at one
++                // second and only the final post-loop call ever saw the configured
++                // value. Two consequences, both upstream-verified: wall-clock scaled
++                // with the configured timeout rather than the work (a constant 2s
++                // delay cost 5.32s at 3000ms and 14.82s at 12000ms, the loop
++                // re-running an operation it kept truncating), and side-effecting
++                // actions were re-executed, because a retry loop was being applied to
++                // an operation that is not idempotent.
++                //
++                // Giving each attempt the configured timeout removes the truncation,
++                // which is the root cause of BOTH: an operation that fits inside the
++                // budget now completes on its first attempt and is never retried.
++                // Retry itself is untouched, so an assertion waiting on an async
++                // render still re-checks until the window closes.
++                //
++                // The budget is clamped to what is LEFT of the window, which is what
++                // keeps the total bound unchanged. The loop tests its deadline only at
++                // the top and nothing else bounds an attempt, so handing every attempt
++                // the full timeout would let one admitted at $end - epsilon run to 2x
++                // the timeout, and the unconditional post-loop call would then push the
++                // ceiling to 3x. Clamping keeps the loop inside one timeout and the
++                // final call inside another: the same ~2x ceiling as before the patch,
++                // where the 1_000ms attempts could only overrun the window by a second.
++                //
++                // The first attempt is unaffected - at that point the whole window is
++                // still remaining - so an operation that fits the budget still completes
++                // on attempt one, which is the point of the patch.
++                $remaining = (int) max(1, ($end - microtime(true)) * 1_000);
++
++                return Playwright::usingTimeout(min($timeout, $remaining), $callback);
+             } catch (ExpectationFailedException) {
+                 //
+             }

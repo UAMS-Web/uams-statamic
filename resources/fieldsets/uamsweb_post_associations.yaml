@@ -1,0 +1,52 @@
+title: 'UAMSWeb Posts, Clinical-Entity Associations'
+fields:
+  -
+    handle: clinical_providers
+    field:
+      type: entries
+      display: 'Related Providers'
+      instructions: 'Associate one or more clinical providers this story is about.'
+      collections:
+        - clinical_providers
+      create: false
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: areas_of_expertise
+    field:
+      type: entries
+      display: 'Related Areas of Expertise'
+      instructions: 'Associate one or more clinical areas of expertise this story is about.'
+      collections:
+        - clinical_expertise
+      create: false
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: clinical_locations
+    field:
+      type: entries
+      display: 'Related Locations'
+      instructions: 'Associate one or more clinical locations this story is about.'
+      collections:
+        - clinical_locations
+      create: false
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false
+  -
+    handle: related_organizations
+    field:
+      type: entries
+      display: 'Related Organizations'
+      instructions: 'Associate one or more organizations — a college, institute, department, division, or service line — this story is about. A Departmental News Hub surfaces the posts associated with its organization.'
+      collections:
+        - organizations
+      query_scopes:
+        - entries_by_organization_role_department_unit
+      create: false
+      select_across_sites: true
+      replicator_preview: false
+      localizable: false

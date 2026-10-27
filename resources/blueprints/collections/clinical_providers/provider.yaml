@@ -1,0 +1,82 @@
+title: Provider
+tabs:
+  main:
+    display: 'General Details'
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              display: 'Provider Entry Title'
+              validate:
+                - required
+              instructions: "Enter this value by following this format: the provider's last name, followed by a comma, then their first name, middle name, generational suffix, etc. For example, <code>McCoy, Leonard Horatio Sr</code>."
+              localizable: false
+          -
+            handle: person
+            field:
+              collections:
+                - people
+              search_index: people
+              create: false
+              max_items: 1
+              type: entries
+              display: 'Person Entry'
+              instructions: 'Select the matching entry from the People collection.'
+              localizable: false
+          -
+            handle: uams_workday_id
+            field:
+              type: group
+              display: 'UAMS Workday IDs'
+              fields:
+                -
+                  handle: workday_universal_id
+                  field: uamsweb_common_identifiers.workday_universal_id
+                  config:
+                    localizable: false
+                -
+                  handle: workday_employee_id
+                  field: uamsweb_common_identifiers.workday_employee_id
+                  config:
+                    localizable: false
+                -
+                  handle: workday_contingent_worker_id
+                  field: uamsweb_common_identifiers.workday_contingent_worker_id
+                  config:
+                    localizable: false
+                -
+                  handle: workday_student_id
+                  field: uamsweb_common_identifiers.workday_student_id
+                  config:
+                    localizable: false
+              localizable: false
+          -
+            handle: npi
+            field: uamsweb_common_identifiers.npi
+            config:
+              localizable: false
+          -
+            handle: epic_ser_id
+            field: uamsweb_common_identifiers.epic_ser_id
+            config:
+              localizable: false
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate: 'max:200'
+              instructions: 'Format the slug to match the display name in lowercase. Replace spaces with dashes and remove any punctuation, nicknames, and credentials. For example, the slug for "Leonard H. ''Bones'' McCoy Sr., M.D." would be "leonard-h-mccoy-sr".'
+          -
+            handle: date
+            field: uamsweb_common_status.date
+            config: {  }

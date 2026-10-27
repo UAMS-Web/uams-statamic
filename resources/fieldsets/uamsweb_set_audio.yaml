@@ -1,0 +1,7 @@
+title: 'UAMSWeb Bard Set, Audio'
+fields:
+  -
+    # Mirror the Audio Post segment fields (primary MP3, alternate OGG, title /
+    # summary overrides, hidden preload / loop) by importing the shared fieldset,
+    # so the Bard "Audio" set never drifts from the Audio Post segment UI (UAMS-Web/uams-statamic-archive#588).
+    import: uamsweb_audio_segment_local_file

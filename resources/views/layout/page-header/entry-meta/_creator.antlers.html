@@ -1,0 +1,26 @@
+{{#
+
+	@name Entry Meta Item: Creator
+	@desc Renders the creator entry-meta item: label (with icon) plus person(s) via components/person.
+	Expects: label, value (array of entries, read for `title` and `permalink` by
+	components/person), fallback_name, icon (optional).
+
+	`value` is a PLAIN ARRAY, not an `entries` relation: the only caller is
+	`creator_role_row`, which passes `$entries_normalized` — already resolved by
+	`normalize_list`, whose `->get()` on the query builder applies the published
+	filter. So `| count` here counts what renders (UAMS-Web/uams-statamic-archive#1693).
+
+#}}
+
+{{# Fall back to a count-derived icon only when the caller names none. Plural
+	past one person, singular otherwise — including the single `fallback_name`
+	the person component emits when the list is empty. #}}
+{{
+	partial:layout/page-header/entry-meta/components/label
+	:label="label"
+	:icon="( icon ?? ( ( value | count ) > 1 ? 'fas fa-users fa-fw' : 'fas fa-user fa-fw' ) )"
+}}
+{{
+	partial:layout/page-header/entry-meta/components/person
+	:fallback_name="( fallback_name ?? 'Staff Writer' )"
+}}

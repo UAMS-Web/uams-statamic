@@ -1,0 +1,44 @@
+{{#
+	@name  Search Results Listing
+	@desc  Shared search-results listing (UAMS-Web/uams-statamic-archive#815 / UAMS-Web/uams-statamic-archive#56). Runs the `local` `search:results`
+	       tag for the given index and renders each hit as a full-width result row.
+	       Reused by knowledge-base search (UAMS-Web/uams-statamic-archive#506) with its own `knowledge_bases` index
+	       and the `knowledge_base_subtree_articles` query scope. Per-type cards and
+	       shared pagination are layered on in the following commits.
+	@param index        Required. The search-index handle to query (e.g. `default`, `people`).
+	@param query_scope  Optional. A registered query Scope to constrain results (the KB
+	                    subtree scope, UAMS-Web/uams-statamic-archive#506). It is added to `hide_private_search_results`,
+	                    which every listing applies (UAMS-Web/uams-statamic-archive#2634).
+	@param scope_root   Optional. A value forwarded to the query scope — the KB/topic
+	                    entry id the subtree search is rooted at (UAMS-Web/uams-statamic-archive#506).
+	@param all_results_url  Optional. A `/search` url re-running the query against the
+	                    unified `default` index, offered from a scoped empty state
+	                    (UAMS-Web/uams-statamic-archive#1510). Built by the caller with the query already
+	                    `urlencode`d, so it is safe in an href.
+#}}
+
+{{# Every listing hides the private entries this reader may not open (UAMS-Web/uams-statamic-archive#2634), the rule
+    the type-ahead applies; a caller's own scope runs alongside it. #}}
+{{ $result_scopes = 'hide_private_search_results' }}
+{{ if query_scope }}
+	{{ $result_scopes = $result_scopes + '|' + query_scope }}
+{{ /if }}
+{{ search:results :index="index" :query_scope="$result_scopes" :scope_root="scope_root" as="results" paginate="10" }}
+	{{ if no_results }}
+		{{# No matches for this query and type; nudge the reader to broaden it, with a
+		    link to the unified index when this search was scoped (UAMS-Web/uams-statamic-archive#1510). #}}
+		<p class="search-results-empty text-muted">No results found. Try a different search term{{ if index != 'default' && all_results_url }} or <a href="{{ all_results_url }}">search all results</a>{{ /if }}.</p>
+	{{ else }}
+		{{# One full-width result per row (not a grid): the native cards fill their
+		    container because this list is deliberately not a `.card-list`. No ItemList
+		    microdata — the per-type cards carry their own (Article / MedicalClinic / …). #}}
+		<div class="search-results module-body">
+			{{ results }}
+				{{# One row per hit: a result-type label and the hit's card (UAMS-Web/uams-statamic-archive#1510). #}}
+				{{ partial:search/result }}
+			{{ /results }}
+		</div>
+
+		{{ partial:components/pagination :paginate="paginate" aria_label="Search results pagination" }}
+	{{ /if }}
+{{ /search:results }}

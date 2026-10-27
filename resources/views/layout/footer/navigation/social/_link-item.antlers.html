@@ -1,0 +1,15 @@
+{{#
+
+	@name Footer Social Media Navigation Item
+	@desc An item in the social media navigation menu in the global footer.
+
+#}}
+{{ if platform:handle }}
+<li class="nav-item">
+	<a class="nav-link" href="{{ platform:prefix }}{{ platform:handle }}" target="_blank" rel="noopener noreferrer" title="{{ platform:name }}">
+		<span {{ platform:icon | attribute:class }}></span>
+		{{# Icon-only link: the accessible name carries the WCAG 3.2.5 cue (no visible glyph). #}}
+		<span class="sr-only">{{ platform:name }}, opens in new window</span>
+	</a>
+</li>
+{{ /if }}

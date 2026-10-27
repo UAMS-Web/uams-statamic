@@ -1,0 +1,29 @@
+{{#
+	@name Error: Redirect message
+	@desc Renders the message carried by a `response: 404` redirect rule, inside the 404 page's body.
+#}}
+
+{{# A `404` rule is the one response code that cannot abort out of
+    `errors/_redirects` — doing so re-enters this very page through Laravel's error
+    handler and loses both the message and the styled page (UAMS-Web/uams-statamic-archive#1934; see that
+    partial's `404` branch for the full mechanism). The status is already 404 by
+    the time anything here runs, so the rule's only remaining job is its message,
+    and this renders it where a message can actually be seen.
+
+    It lives in its own partial rather than inline in `errors/404.antlers.html`
+    because a tag pair nested inside the `layout/entry-content` slot resolves the
+    tag but binds none of its row values — verified: the pair iterates exactly
+    once for a matching rule and not at all for none, with every key empty. A
+    partial gets its own scope and binds them correctly, which is the same shape
+    `errors/_redirects` already uses. #}}
+{{# Escaped because `message` is editor input from the `redirects` global's
+    textarea and Antlers is raw-by-default — verified against the running site,
+    where a stored `<img src=x onerror=alert(1)>` reached the 404 page as live
+    markup. `nl2br` runs after `entities` so the textarea's own line breaks
+    survive while its angle brackets do not, matching
+    `errors/_targetless_response` (UAMS-Web/uams-statamic-archive#1942). #}}
+{{ find_redirect_rule }}
+	{{ if response == '404' && message }}
+		<p class="lead">{{ message | entities | nl2br }}</p>
+	{{ /if }}
+{{ /find_redirect_rule }}

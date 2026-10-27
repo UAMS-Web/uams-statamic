@@ -1,0 +1,247 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: Title
+              instructions: 'The full official name of the parking facility. Used for display and listing in the control panel.'
+              localizable: false
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_place
+              type: entries
+              display: 'Schema Object for the Parking Facility'
+              instructions: 'Select a schema object for the parking facility, if available.'
+              localizable: true
+              create: false
+              validate:
+                - 'entry_schema_type_in:Place'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Name of the Parking Facility for Schema'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: alternate_name
+            field: uamsweb_brand_organization.alternate_name
+            config:
+              display: 'Alternate Names for the Parking Facility'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: subtype
+            field:
+              options:
+                -
+                  key: SchemaOrg_ParkingFacility
+                  value: 'None — No available option is relevant to this parking facility'
+                -
+                  key: Wikidata_MultistoreyCarPark_Q13218805
+                  value: 'Parking Deck'
+                -
+                  key: Wikidata_ParkingLot_Q6501349
+                  value: 'Parking Lot'
+                -
+                  key: Wikidata_RoadsideParking_Q110887044
+                  value: 'Street Parking'
+              type: radio
+              display: 'Specific Type of Parking Facility'
+              instructions: 'Select the specific type of place that most closely matches this parking facility.'
+              if:
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: parking_free_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is parking at this facility free?'
+              localizable: false
+          -
+            handle: parking_validated_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Is the paid parking validated?'
+              if:
+                parking_free_query: 'equals false'
+              localizable: false
+          -
+            handle: additional_type
+            field: uamsweb_brand_organization.additional_type
+            config:
+              display: 'More Specific Type(s) for This Parking Facility From External Vocabularies in Microdata Syntax'
+              if:
+                schema_object: 'equals empty'
+                subtype: 'equals SchemaOrg_ParkingFacility'
+          -
+            handle: same_as
+            field: uamsweb_schema.same_as
+            config:
+              display: 'Reference Webpage(s) About This Parking Facility'
+              if:
+                schema_object: 'equals empty'
+          -
+            handle: google_business_profile_cid_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Does this parking facility have a listing on Google Business Profiles?'
+              clearable: true
+              validate:
+                - required
+          -
+            handle: google_business_profile_cid
+            field: uamsweb_common_identifiers.google_business_profile_cid
+            config:
+              validate:
+                - required
+                - sometimes
+              if:
+                google_business_profile_cid_query: 'equals true'
+          -
+            handle: streetaddress
+            field: uamsweb_common_address.street_address
+            config:
+              display: 'Approximate Street Address'
+              validate:
+                - required
+          -
+            handle: city
+            field:
+              type: text
+              display: City
+              validate:
+                - required
+              localizable: false
+          -
+            handle: state
+            field: uamsweb_common_address.state
+            config:
+              display: State
+              validate:
+                - required
+          -
+            handle: zip
+            field: uamsweb_common_address.zip
+            config:
+              validate:
+                - required
+          -
+            handle: regions
+            field: uamsweb_common_address.regions
+            config:
+              display: 'Arkansas Region'
+              max_items: 1
+              validate:
+                - required
+          -
+            handle: map
+            field: uamsweb_common_address.map
+            config:
+              display: 'GPS Location of the Entrance to the Parking Facility'
+              validate:
+                - required
+                - lat_lng
+          -
+            handle: parking_instructions
+            field: uamsweb_common.article
+            config:
+              display: 'General Instructions for the Parking Facility'
+              instructions: |-
+                Specify which parking facility patients should use and whether it is a parking deck or surface-level parking. For example, "Parking is available in Parking 3, a parking deck at the corner of South Cedar Street and West Capitol Avenue."
+
+                If patients will be using a specific parking deck, suggest the ideal areas within the deck where they should park for most locations associated with this parking facility. For example, "For your convenience, park on Levels 2B, 3B, 4B, or 5B."
+
+                Additionally, if there is a patient drop-off area within or near the parking facility, provide details about that to further assist patients.
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              validate:
+                - required
+              localizable: false
+          -
+            handle: directions_from_parking
+            field: uamsweb_common.article
+            config:
+              display: 'General Directions From the Parking Facility'
+              instructions: 'Describe the path patients should take from this parking facility to the entrance or check-in area of the associated location(s). Locations and wings may override these directions for their specific entrance.'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              localizable: false
+          -
+            handle: photo
+            field:
+              max_files: 1
+              container: images
+              type: assets
+              display: 'Photo of the Parking Facility Exterior'
+              instructions: |-
+                Select an image that will help the patient find the appropriate parking facility from the road.
+
+                The photo orientation must be landscape (i.e., horizontal).
+
+                It is restricted to a 16:9 aspect ratio (or close to it) and has a minimum dimension of 1200x675.
+
+                The image will be automatically cropped to a 16:9 aspect ratio when used on the site; and a 1.91:1 aspect ratio when shared to Facebook and Twitter.
+              validate:
+                - 'dimensions:min_width=1200,min_height=675,ratio=16/9'
+              localizable: false
+          -
+            handle: globallocationnumber
+            field: uamsweb_common_identifiers.globallocationnumber
+            config:
+              display: 'Global Location Number of the Parking Facility'
+              if:
+                schema_object: 'equals empty'
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+  computed:
+    display: Computed
+    sections:
+      -
+        fields:
+          -
+            handle: areas_served_for_parking
+            field:
+              type: entries
+              display: 'Areas Served for Parking'
+              instructions: 'Read-only. The locations and buildings that name this parking facility directly as their parking facility. Areas that only inherit parking from another facility are not listed.'
+              visibility: computed
+              localizable: false
+title: 'Parking Facility'

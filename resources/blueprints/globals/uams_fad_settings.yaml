@@ -1,0 +1,3632 @@
+tabs:
+  main:
+    display: 'General Settings'
+    sections:
+      -
+        fields:
+          -
+            handle: fad_jump_links_title
+            field:
+              type: text
+              display: 'Jump Links Title'
+              instructions: "When a page has a list of jump links (a.k.a. anchor links), this title defines the text used in the list's heading."
+              placeholder: Content
+              default: Content
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'API Keys'
+        fields:
+          -
+            handle: fad_google_key
+            field:
+              type: text
+              display: 'Google Maps API Key'
+              localizable: false
+      -
+        display: 'Brand Organizations'
+        fields:
+          -
+            handle: fad_default_brand_organization_clinical
+            field:
+              type: entries
+              display: 'Default Clinical UAMS Brand Organization'
+              instructions: 'Select the most specific UAMS brand organization to associate with every provider and location in schema data properties relevant to clinical practice by default.'
+              max_items: 1
+              create: false
+              collections:
+                - organizations
+              query_scopes:
+                - entries_by_provenance_first_party
+                - entries_by_organization_role_brand
+              select_across_sites: true
+              localizable: false
+          -
+            handle: fad_default_brand_organization_affiliation
+            field:
+              type: entries
+              display: 'Default UAMS Brand Organizations as Affiliations'
+              instructions: 'Select the most specific UAMS brand organizations to list in the affiliations for every provider and location in schema data properties by default.'
+              create: false
+              collections:
+                - organizations
+              query_scopes:
+                - entries_by_provenance_first_party
+                - entries_by_organization_role_brand
+              select_across_sites: true
+              localizable: false
+          -
+            handle: fad_default_brand_organization_credit
+            field:
+              type: entries
+              display: 'Default UAMS Brand Organizations to Credit'
+              instructions: 'Select the UAMS brand organizations to credit as the creator for all creative works on the website by default. In order to'
+              create: false
+              collections:
+                - organizations
+              query_scopes:
+                - entries_by_provenance_first_party
+                - entries_by_organization_role_brand
+              select_across_sites: true
+              localizable: false
+          -
+            handle: fad_default_brand_organization_locationcreated
+            field:
+              type: entries
+              display: 'Default UAMS Brand Organizations as the Locations Where the Website and Its Contents Were Created'
+              instructions: 'Select the UAMS brand organization(s) to credit as the default location(s) where all creative works on the website were created. In order to generate valid schema data, the schema type or subtype of the selected organization(s) must also be a subtype of Location.'
+              create: false
+              collections:
+                - organizations
+              query_scopes:
+                - entries_by_provenance_first_party
+                - entries_by_organization_role_brand
+              select_across_sites: true
+              localizable: false
+          -
+            handle: fad_default_brand_organization_copyright
+            field:
+              type: entries
+              display: 'Default UAMS Brand Organizations as Copyright Holder'
+              instructions: 'Select the UAMS brand organizations to indicate as the default copyright holder for all creative works on the website.'
+              max_items: 1
+              create: false
+              collections:
+                - organizations
+              query_scopes:
+                - entries_by_provenance_first_party
+                - entries_by_organization_role_brand
+              select_across_sites: true
+              localizable: false
+  clinical_providers:
+    display: 'Clinical Providers'
+    sections:
+      -
+        display: 'Provider Labels'
+        fields:
+          -
+            handle: provider_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: Provider
+              default: Provider
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: Providers
+              default: Providers
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Providers Archive Page'
+        fields:
+          -
+            handle: provider_archive_headline
+            field:
+              type: text
+              display: 'Title of Provider Archive'
+              instructions: 'Your theme uses accessible headings.'
+              placeholder: 'UAMS Health Providers'
+              default: 'UAMS Health Providers'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_archive_featured_image
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image for the Provider Archive'
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: provider_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Providers'
+              localizable: false
+          -
+            handle: provider_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Providers'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for providers in an area of expertise subsection [or profile])."
+              placeholder: 'Related Providers'
+              default: 'Related Providers'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Providers'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for providers in an area of expertise subsection [or profile])."
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Providers'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: provider_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'General Reference to the Main Provider Archive'
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Provider Archive'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the title used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main provider archive on a fake subpage for providers in an area of expertise subsection).
+              placeholder: 'Full List of Providers'
+              default: 'Full List of Providers'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Provider Archive'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the body text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main provider archive on a fake subpage for providers in an area of expertise subsection).
+              placeholder: 'Explore providers across specialties for top care at UAMS Health.'
+              default: 'Explore providers across specialties for top care at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Provider Archive'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the link text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main provider archive on a fake subpage for providers in an area of expertise subsection).
+              placeholder: 'View All Providers'
+              default: 'View All Providers'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Providers"
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Providers"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the title used in that reference.'
+              placeholder: 'Full List of Providers'
+              default: 'Full List of Providers'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Providers"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the body text used in that reference.'
+              placeholder: 'Explore providers across specialties for top care at UAMS Health.'
+              default: 'Explore providers across specialties for top care at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Providers"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the link text used in that reference.'
+              placeholder: 'View All Providers'
+              default: 'View All Providers'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: provider_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Providers in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: provider_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Providers in a Location Subsection (or Profile)'
+              placeholder: 'Providers at [the Location Title]'
+              default: 'Providers at [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Providers in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_featured_image_location
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Providers in a Location Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: provider_fpage_ref_main_message_location
+            field:
+              type: subsection
+              display: 'Reference to the Main Provider Archive in a Location Subsection'
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_title_location
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Provider Archive in a Location Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_intro_location
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Provider Archive on a Fake Subpage for Providers in a Location Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_link_location
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Provider Archive on a Fake Subpage for Providers in a Location Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_message_location
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Location's Fake Subpage for Providers"
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_title_location
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Location's Fake Subpage for Providers"
+              instructions: |-
+                Fake subpages for providers under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Providers at the Specialty Clinic" to "Providers at the Orthopaedic and Spine Hospital"). This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_intro_location
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Location's Fake Subpage for Providers"
+              instructions: |-
+                Fake subpages for providers under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Providers at the Specialty Clinic" to "Providers at the Orthopaedic and Spine Hospital"). This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_link_location
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Location's Fake Subpage for Providers"
+              instructions: |-
+                Fake subpages for providers under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Providers at the Specialty Clinic" to "Providers at the Orthopaedic and Spine Hospital"). This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: provider_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Providers in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: provider_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Providers in an Area of Expertise Subsection (or Profile)'
+              placeholder: '[Area of Expertise Title] [Providers]'
+              default: '[Area of Expertise Title] [Providers]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Providers in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_featured_image_expertise
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Providers in an Area of Expertise Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: provider_fpage_ref_main_message_expertise
+            field:
+              type: subsection
+              display: 'Reference to the Main Provider Archive in an Area of Expertise Subsection'
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_title_expertise
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Provider Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_intro_expertise
+            field:
+              display: 'Body Text of a Reference to the Main Provider Archive on a Fake Subpage for Providers in an Area of Expertise Subsection'
+              type: textarea
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_link_expertise
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Provider Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_message_expertise
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Area of Expertise's Fake Subpage for Providers"
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_title_expertise
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Area of Expertise's Fake Subpage for Providers"
+              instructions: 'Fake subpages for providers under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the title used in that reference.'
+              placeholder: '[Area of Expertise Title] [Providers]'
+              default: '[Area of Expertise Title] [Providers]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_intro_expertise
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Providers"
+              instructions: 'Fake subpages for providers under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the body text used in that reference.'
+              placeholder: 'Find providers in [Area of Expertise Title] for comprehensive care.'
+              default: 'Find providers in [Area of Expertise Title] for comprehensive care.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_top_link_expertise
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Providers"
+              instructions: 'Fake subpages for providers under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Providers" to "Cancer Care Providers"). This sets the link text used in that reference.'
+              placeholder: 'View Providers'
+              default: 'View Providers'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: provider_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Providers in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: provider_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Providers in a Clinical Resource Subsection (or Profile)'
+              placeholder: '[Area of Expertise Title] [Providers]'
+              default: '[Area of Expertise Title] [Providers]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: provider_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Providers in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_featured_image_clinical_resource
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Providers in a Clinical Resource Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: provider_fpage_ref_main_message_clinical_resource
+            field:
+              type: subsection
+              display: 'Reference to the Main Provider Archive in a Clinical Resource Subsection'
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Provider Archive in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Provider Archive on a Fake Subpage for Providers in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: provider_fpage_ref_main_link_clinical_resource
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Provider Archive on a Fake Subpage for Providers in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for providers contain references linking users back to the main provider archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Include Main Appointment Line'
+        fields:
+          -
+            handle: provider_mainline
+            field: uamsweb_common.true_false
+            config:
+              display: 'Include references to main appointment line?'
+              instructions: 'On provider profiles, we present a list of methods a patient can use to make an appointment. Set whether or not the main appointment line will be included in that list.'
+              default: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: appointment_phone_default
+            field: uamsweb_common_contact.phone
+            config:
+              display: 'Default Appointment Line'
+              instructions: "The appointment line used on a provider profile when the provider's primary location has no patient portal, or its portal carries no number of its own. A portal that does carry one overrides this."
+              default: 501-686-8000
+              validate:
+                - required
+              localizable: false
+          -
+            handle: appointment_phone_name_default
+            field:
+              type: text
+              display: 'Default Appointment Line Name'
+              instructions: 'How the default appointment line is named in a sentence — it is read as "by calling {name} at {number}", so write it lowercase and with its article.'
+              placeholder: "e.g., the UAMS\_Health appointment line"
+              default: "the UAMS\_Health appointment line"
+              validate:
+                - required
+              localizable: false
+  clinical_locations:
+    display: 'Clinical Locations'
+    sections:
+      -
+        display: 'Location Labels'
+        fields:
+          -
+            handle: location_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: Location
+              default: Location
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: Locations
+              default: Locations
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Location Descendant Item Labels'
+        fields:
+          -
+            handle: location_descendant_single_name
+            field:
+              type: text
+              display: 'Single Descendant Item Name'
+              placeholder: 'Additional Location'
+              default: 'Additional Location'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_descendant_plural_name
+            field:
+              type: text
+              display: 'Plural Descendant Item Name'
+              placeholder: 'Additional Locations'
+              default: 'Additional Locations'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Locations Archive Page'
+        fields:
+          -
+            handle: location_archive_headline
+            field:
+              type: text
+              display: 'Title of Location Archive'
+              instructions: 'Your theme uses accessible headings.'
+              placeholder: Locations
+              default: Locations
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_archive_featured_image
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image for the Location Archive'
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: location_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Locations'
+              localizable: false
+          -
+            handle: location_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Locations'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for locations in an area of expertise subsection [or profile])."
+              placeholder: 'Related Locations'
+              default: 'Related Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Locations'
+              instructions: |-
+                If you leave this blank, the default intro text structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for locations in an area of expertise subsection [or profile]).
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Locations'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'General Reference to the Main Location Archive'
+              localizable: false
+          -
+            handle: location_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Location Archive'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main location archive on a fake subpage for locations in an area of expertise subsection).
+              placeholder: 'Full List of Locations'
+              default: 'Full List of Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Location Archive'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main location archive on a fake subpage for locations in an area of expertise subsection).
+              placeholder: 'Explore locations for exceptional care across UAMS Health specialties.'
+              default: 'Explore locations for exceptional care across UAMS Health specialties.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Location Archive'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main location archive on a fake subpage for locations in an area of expertise subsection).
+              placeholder: 'View All Locations'
+              default: 'View All Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Locations"
+              localizable: false
+          -
+            handle: location_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Locations"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the title used in that reference.'
+              placeholder: 'Full List of Locations'
+              default: 'Full List of Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Locations"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the body text used in that reference.'
+              placeholder: 'Explore locations for exceptional care across UAMS Health specialties.'
+              default: 'Explore locations for exceptional care across UAMS Health specialties.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Locations"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the link text used in that reference.'
+              placeholder: 'View All Locations'
+              default: 'View All Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_descendant_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Descendant Locations'
+              localizable: false
+          -
+            handle: location_descendant_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Descendant Locations'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for descendant locations in location subsection [or profile])."
+              placeholder: 'Related Locations'
+              default: 'Related Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_descendant_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Descendant Locations'
+              instructions: |-
+                If you leave this blank, the default intro text structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for descendant locations in location subsection [or profile]).
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_descendant_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Descendant Locations'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_descendant_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'Reference to the Main Location Archive on a Fake Subpage for Descendant Locations'
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                If you leave this blank, the general title for references on locations will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main location archive on a fake subpage for descendant locations in a location subsection).
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general intro text for references on locations will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main location archive on a fake subpage for descendant locations in a location subsection).
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general link text for references on locations will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main location archive on a fake subpage for descendant locations in a location subsection).
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Locations"
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Locations"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Additional Locations Within the Specialty Clinic" to "Additional Locations Within the Orthopaedic and Spine Hospital"). This sets the title used in that reference.
+
+                If you leave this blank, the general title for references on locations will be used.
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Locations"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Additional Locations Within the Specialty Clinic" to "Additional Locations Within the Orthopaedic and Spine Hospital"). This sets the body text used in that reference.
+
+                If you leave this blank, the general intro text for references on locations will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_descendant_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Locations"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Additional Locations Within the Specialty Clinic" to "Additional Locations Within the Orthopaedic and Spine Hospital"). This sets the link text used in that reference.
+
+                If you leave this blank, the general link text for references on locations will be used.
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: location_fpage_title_message_provider
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Locations in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: location_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Locations in a Provider Subsection (or Profile)'
+              placeholder: 'Locations Where [Provider Short Name] Practices'
+              default: 'Locations Where [Provider Short Name] Practices'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Locations in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_featured_image_provider
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Locations in a Provider Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_fpage_ref_main_message_provider
+            field:
+              type: subsection
+              display: 'Reference to the Main Location Archive in a Provider Subsection'
+              localizable: false
+          -
+            handle: location_fpage_ref_main_title_provider
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Location Archive in a Provider Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: location_fpage_ref_main_intro_provider
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Location Archive on a Fake Subpage for Locations in a Provider Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_main_link_provider
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Location Archive on a Fake Subpage for Locations in a Provider Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: location_descendant_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Descendant Locations in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: location_descendant_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Descendant Locations in a Location Subsection (or Profile)'
+              placeholder: 'Descendant Locations Within [the Location Title]'
+              default: 'Descendant Locations Within [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_descendant_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Descendant Locations in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_descendant_fpage_featured_image_location
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Descendant Locations in a Location Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_fpage_ref_main_message_location
+            field:
+              type: subsection
+              display: 'Reference to the Main Location Archive on a Fake Subpage for Descendant Locations in a Location Subsection'
+              localizable: false
+          -
+            handle: location_fpage_ref_main_title_location
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations in a Location Subsection'
+              instructions: |-
+                Fake subpages for descendant locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: location_fpage_ref_main_intro_location
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations in a Location Subsection'
+              instructions: |-
+                Fake subpages for descendant locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_main_link_location
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Location Archive on a Fake Subpage for Descendant Locations in a Location Subsection'
+              instructions: |-
+                Fake subpages for descendant locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: location_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Locations in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: location_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Locations in an Area of Expertise Subsection (or Profile)'
+              placeholder: '[Area of Expertise Title] Locations'
+              default: '[Area of Expertise Title] Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Locations in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_featured_image_expertise
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Locations in an Area of Expertise Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_fpage_ref_main_message_expertise
+            field:
+              type: subsection
+              display: 'Reference to the Main Location Archive in an Area of Expertise Subsection'
+              localizable: false
+          -
+            handle: location_fpage_ref_main_title_expertise
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Location Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: location_fpage_ref_main_intro_expertise
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Location Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_main_link_expertise
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Location Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: location_fpage_ref_top_message_expertise
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Area of Expertise's Fake Subpage for Locations"
+              localizable: false
+          -
+            handle: location_fpage_ref_top_title_expertise
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Area of Expertise's Fake Subpage for Locations"
+              instructions: 'Fake subpages for locations under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the title used in that reference.'
+              placeholder: '[Area of Expertise Title] Locations'
+              default: '[Area of Expertise Title] Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_ref_top_intro_expertise
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Locations"
+              instructions: 'Fake subpages for locations under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the body text used in that reference.'
+              placeholder: 'Find locations for [Area of Expertise Title] specialized care.'
+              default: 'Find locations for [Area of Expertise Title] specialized care.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_top_link_expertise
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Locations"
+              instructions: 'Fake subpages for locations under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Bone Cancer Care Locations" to "Cancer Care Locations"). This sets the link text used in that reference.'
+              placeholder: 'View Locations'
+              default: 'View Locations'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: location_fpage_title_clinical_message_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Locations in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: location_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Locations in a Clinical Resource Subsection (or Profile)'
+              placeholder: 'Related Locations'
+              default: 'Related Locations'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: location_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Locations in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_featured_image_clinical_resource
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Locations in a Clinical Resource Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: location_fpage_ref_main_message_clinical_resource
+            field:
+              type: subsection
+              display: 'Reference to the Main Location Archive in a Clinical Resource Subsection'
+              localizable: false
+          -
+            handle: location_fpage_ref_main_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Location Archive in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: location_fpage_ref_main_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Location Archive on a Fake Subpage for Locations in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: location_fpage_ref_main_link_clinical_resource
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Location Archive on a Fake Subpage for Locations in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for locations contain references linking users back to the main location archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'General Prescription Information for Clinical Locations'
+        fields:
+          -
+            handle: location_prescription_clinic
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Call Clinic for Prescription'
+              localizable: false
+          -
+            handle: location_prescription_pharmacy
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Call Pharmacy for Prescription'
+              localizable: false
+      -
+        display: 'General After Hours Information for Clinical Locations'
+        fields:
+          -
+            handle: location_after_hours_description
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'After Hours Description'
+              localizable: false
+      -
+        display: 'General Telemedicine Information for Clinical Locations'
+        fields:
+          -
+            handle: location_telemed_description
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Telemedicine Description'
+              localizable: false
+      -
+        display: 'General What to Bring Information for Clinical Locations'
+        fields:
+          -
+            handle: location_bring_to_appointment_info
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'What to Bring to Your Visit'
+              instructions: "Standard \"What to Bring to Your Visit\" content. A clinical location that leaves its own What to Bring field empty falls back to this copy."
+              localizable: false
+      -
+        display: 'General Description Sections for Clinical Locations'
+        fields:
+          -
+            handle: location_section_billing
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: Billing
+              instructions: 'Standard Billing section copy. A location that adds the Billing block uses this as-is unless it chooses to prepend/append/override.'
+              localizable: false
+          -
+            handle: location_section_medical_records
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Medical Records'
+              instructions: 'Standard Medical Records section copy. A location that adds the Medical Records block uses this as-is unless it chooses to prepend/append/override.'
+              localizable: false
+      -
+        display: "General Arkansas Children's Appointment Phone Numbers"
+        fields:
+          -
+            handle: location_ac_appointments_primary
+            field: uamsweb_common_contact.phone
+            config:
+              display: "Arkansas Children's Primary Care Appointments Phone Number"
+              instructions: "Standard primary-care appointments number for Arkansas Children's locations. An AC location that leaves its own primary number empty falls back to this."
+              localizable: false
+          -
+            handle: location_ac_appointments_specialty
+            field: uamsweb_common_contact.phone
+            config:
+              display: "Arkansas Children's Specialty Care Appointments Phone Number"
+              instructions: "Standard specialty-care appointments number for Arkansas Children's locations. An AC location that leaves its own specialty number empty falls back to this."
+              localizable: false
+      -
+        display: 'Clinical Locations Alert'
+        fields:
+          -
+            handle: location_alert_heading
+            field:
+              type: text
+              display: 'Alert Heading'
+              instructions: "If no value is set, the heading will be 'Alert' but will be hidden."
+              localizable: false
+          -
+            handle: location_alert_body
+            field: uamsweb_common.bard_simple_lists_links
+            config:
+              display: 'Alert Body'
+              localizable: false
+          -
+            handle: location_alert_color
+            field:
+              type: radio
+              display: 'Alert Color'
+              options:
+                -
+                  key: alert-success
+                  value: Success
+                -
+                  key: alert-danger
+                  value: Danger
+                -
+                  key: alert-warning
+                  value: Warning
+                -
+                  key: alert-info
+                  value: Info
+              default: alert-warning
+              localizable: false
+      -
+        display: 'Clinical Locations Closures'
+        instructions: 'Define system-wide holiday closures once here and they broadcast to every clinical location that honors them — use this for closures that apply to most or all locations (for example, "Closed for Thanksgiving") instead of adding the same holiday to every location. A location can opt out, or override a specific date with its own Special / Modified Hours (the location always wins for that date). Past closures stop displaying automatically.'
+        fields:
+          -
+            handle: location_closures
+            field:
+              type: replicator
+              display: 'System-Wide Closures'
+              instructions: 'Each closure broadcasts to every location that honors system-wide closures. Add a rule for each date (or contiguous range of dates) whose hours differ from the regular schedule.'
+              button_label: 'Add Closure'
+              localizable: false
+              sets:
+                closures:
+                  display: Closures
+                  sets:
+                    holiday:
+                      display: 'Holiday / Closure'
+                      instructions: 'A named holiday or system-wide closure. Add a rule for each day (or contiguous range of days) whose hours differ from the regular schedule.'
+                      fields:
+                        -
+                          handle: title
+                          field:
+                            type: text
+                            display: Title
+                            instructions: 'The name of the holiday or closure (for example, "Thanksgiving").'
+                            validate:
+                              - required
+                            localizable: false
+                        -
+                          handle: description
+                          field: uamsweb_common.bard_simple_lists_links
+                          config:
+                            display: Description
+                            instructions: 'Optionally add a brief note (for example, "Reopening the next business day at 8 a.m.").'
+                            localizable: false
+                        -
+                          handle: rules
+                          field:
+                            type: replicator
+                            display: 'Hours Rules'
+                            instructions: 'Each rule applies a status (and time spans, when open) to a date or a contiguous range of dates within this closure.'
+                            button_label: 'Add Rule'
+                            validate:
+                              - required
+                              - sometimes
+                            localizable: false
+                            sets:
+                              rules:
+                                display: 'Hours Rules'
+                                sets:
+                                  rule:
+                                    display: Rule
+                                    fields:
+                                      -
+                                        handle: date
+                                        field:
+                                          type: date
+                                          display: Date
+                                          instructions: 'The date this rule applies.'
+                                          validate:
+                                            - required
+                                          localizable: false
+                                      -
+                                        handle: through
+                                        field:
+                                          type: date
+                                          display: Through
+                                          instructions: 'For a contiguous range of days with the same status (for example, Friday through Monday), the last date. Leave blank for a single day.'
+                                          localizable: false
+                                      -
+                                        handle: service_mode
+                                        field: uamsweb_common_fad_hours_rule.service_mode
+                                      -
+                                        handle: status
+                                        field: uamsweb_common_fad_hours_rule.status
+                                        config:
+                                          default: closed
+                                      -
+                                        handle: time_span
+                                        field: uamsweb_common_fad_hours_rule.time_span
+  clinical_areas_of_expertise:
+    display: 'Clinical Areas of Expertise'
+    sections:
+      -
+        display: 'Areas of Expertise Labels'
+        fields:
+          -
+            handle: expertise_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: 'Area of Expertise'
+              default: 'Area of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: 'Areas of Expertise'
+              default: 'Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Areas of Expertise Descendant Item Labels'
+        fields:
+          -
+            handle: expertise_descendant_single_name
+            field:
+              type: text
+              display: 'Single Descendant Item Name'
+              placeholder: Specialty
+              default: Specialty
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_descendant_plural_name
+            field:
+              type: text
+              display: 'Plural Descendant Item Name'
+              placeholder: Specialties
+              default: Specialties
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Areas of Expertise Archive Page'
+        fields:
+          -
+            handle: expertise_archive_headline
+            field:
+              type: text
+              display: 'Title of Area of Expertise Archive'
+              placeholder: 'Areas of Expertise'
+              default: 'Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_archive_intro_text
+            field: uamsweb_common.article
+            config:
+              display: 'Intro Text of Area of Expertise Archive'
+              instructions: 'Leave empty if you do not want to display any intro text.'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              character_limit: 500
+              localizable: false
+          -
+            handle: expertise_archive_featured_image
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image for the Area of Expertise Archive'
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: expertise_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Areas of Expertise'
+              localizable: false
+          -
+            handle: expertise_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Areas of Expertise'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for descendant areas of expertise in an area of expertise subsection [or profile])."
+              placeholder: 'Related Areas of Expertise'
+              default: 'Related Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Areas of Expertise'
+              instructions: |-
+                If you leave this blank, the default intro text structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for descendant areas of expertise in an area of expertise subsection [or profile]).
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Areas of Expertise'
+          -
+            handle: expertise_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'General Reference to the Main Area of Expertise Archive'
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Area of Expertise Archive'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main area of expertise archive on a fake subpage for areas of expertise in a location subsection).
+              placeholder: 'Full List of Areas of Expertise'
+              default: 'Full List of Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Area of Expertise Archive'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main area of expertise archive on a fake subpage for areas of expertise in a location subsection).
+              placeholder: 'Discover diverse areas of expertise at UAMS Health.'
+              default: 'Discover diverse areas of expertise at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Area of Expertise Archive'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main area of expertise archive on a fake subpage for areas of expertise in a location subsection).
+              placeholder: 'View All Areas of Expertise'
+              default: 'View All Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Areas of Expertise"
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Areas of Expertise"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Areas of Expertise Related to Bone Cancer Care" to "Areas of Expertise Related to Cancer Care"). This sets the title used in that reference.'
+              placeholder: 'Full List of Areas of Expertise'
+              default: 'Full List of Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Areas of Expertise"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Areas of Expertise Related to Bone Cancer Care" to "Areas of Expertise Related to Cancer Care"). This sets the body text used in that reference.'
+              placeholder: 'Discover diverse areas of expertise at UAMS Health.'
+              default: 'Discover diverse areas of expertise at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Areas of Expertise"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Areas of Expertise Related to Bone Cancer Care" to "Areas of Expertise Related to Cancer Care"). This sets the link text used in that reference.'
+              placeholder: 'View All Areas of Expertise'
+              default: 'View All Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Descendant Areas of Expertise'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for descendant areas of expertise in an area of expertise subsection [or profile])."
+              placeholder: 'Descendant Areas of Expertise'
+              default: 'Descendant Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Descendant Areas of Expertise'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for descendant areas of expertise in an area of expertise subsection [or profile])."
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Descendant Areas of Expertise'
+          -
+            handle: expertise_descendant_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive on a Fake Subpage for Descendant Areas of Expertise'
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Descendant Areas of Expertise'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general title for references on areas of expertise will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main area of expertise archive on a fake subpage for descendant areas of expertise in an area of expertise subsection).
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Descendant Areas of Expertise'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general body text for references on areas of expertise will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main area of expertise archive on a fake subpage for descendant areas of expertise in an area of expertise subsection).
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Descendant Areas of Expertise'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general link text for references on areas of expertise will be used.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main area of expertise archive on a fake subpage for descendant areas of expertise in an area of expertise subsection).
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Areas of Expertise"
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Areas of Expertise"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Specialties" to "Cancer Care Specialties"). This sets the title used in that reference.
+
+                If you leave this blank, the general title for references on areas of expertise will be used.
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Areas of Expertise"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Specialties" to "Cancer Care Specialties"). This sets the body text used in that reference.
+
+                If you leave this blank, the general body text for references on areas of expertise will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Descendant Areas of Expertise"
+              instructions: |-
+                Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care Specialties" to "Cancer Care Specialties"). This sets the link text used in that reference.
+
+                If you leave this blank, the general link text for references on areas of expertise will be used.
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: expertise_fpage_title_message_provider
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Areas of Expertise in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: expertise_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Areas of Expertise in a Provider Subsection (or Profile)'
+              placeholder: "[Provider Short Name's] Areas of Expertise"
+              default: "[Provider Short Name's] Areas of Expertise"
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Areas of Expertise in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_featured_image_provider
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Areas of Expertise in a Provider Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: expertise_fpage_ref_main_message_provider
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive in a Provider Subsection'
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_title_provider
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Area of Expertise Archive in a Provider Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_intro_provider
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Provider Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_link_provider
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Provider Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: expertise_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Areas of Expertise in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: expertise_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Areas of Expertise in a Location Subsection (or Profile)'
+              placeholder: 'Areas of Expertise Represented at [the Location Title]'
+              default: 'Areas of Expertise Represented at [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Areas of Expertise in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_featured_image_location
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Areas of Expertise in a Location Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: expertise_fpage_ref_main_message_location
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive in a Location Subsection'
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_title_location
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Area of Expertise Archive in a Location Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_intro_location
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Location Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_link_location
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Location Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_message_location
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Location's Fake Subpage for Areas of Expertise"
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_title_location
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Location's Fake Subpage for Areas of Expertise"
+              instructions: |-
+                Fake subpages for areas of expertise under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Areas of Expertise Represented at the Specialty Clinic" to "Areas of Expertise Represented at the Orthopaedic and Spine Hospital"). This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_intro_location
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Location's Fake Subpage for Areas of Expertise"
+              instructions: |-
+                Fake subpages for areas of expertise under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Areas of Expertise Represented at the Specialty Clinic" to "Areas of Expertise Represented at the Orthopaedic and Spine Hospital"). This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_top_link_location
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Location's Fake Subpage for Areas of Expertise"
+              instructions: |-
+                Fake subpages for areas of expertise under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Areas of Expertise Represented at the Specialty Clinic" to "Areas of Expertise Represented at the Orthopaedic and Spine Hospital"). This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: expertise_descendant_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Descendant Areas of Expertise in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Descendant Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Descendant Areas of Expertise in [Area of Expertise Title]'
+              default: 'Descendant Areas of Expertise in [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Descendant Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_featured_image_expertise
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Descendant Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: expertise_descendant_fpage_ref_main_message_expertise
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Descendant Areas of Expertise in an Area of Expertise Subsection'
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_title_expertise
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Descendant Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_intro_expertise
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Descendant Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_descendant_fpage_ref_main_link_expertise
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Descendant Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Related Areas of Expertise in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: expertise_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Related Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Areas of Expertise Related to [Area of Expertise Title]'
+              default: 'Areas of Expertise Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Related Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_featured_image_expertise
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Related Areas of Expertise Items in an Area of Expertise Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: expertise_fpage_ref_main_message_expertise
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Related Areas of Expertise in an Area of Expertise Subsection'
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_title_expertise
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Related Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_intro_expertise
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Related Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_link_expertise
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage (or Section) for Related Areas of Expertise in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: expertise_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Areas of Expertise in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: expertise_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Areas of Expertise in a Clinical Resource Subsection (or Profile)'
+              placeholder: 'Related Areas of Expertise'
+              default: 'Related Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: expertise_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Areas of Expertise in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_featured_image_clinical_resource
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Areas of Expertise in a Clinical Resource Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: expertise_fpage_ref_main_message_clinical_resource
+            field:
+              type: subsection
+              display: 'Reference to the Main Area of Expertise Archive in a Clinical Resource Subsection'
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Area of Expertise Archive in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: expertise_fpage_ref_main_link_clinical_resource
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Area of Expertise Archive on a Fake Subpage for Areas of Expertise in a Clinical Resource Subsection'
+              instructions: |-
+                Fake subpages for areas of expertise contain references linking users back to the main area of expertise archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+  clinical_resources:
+    display: 'Clinical Resources'
+    sections:
+      -
+        display: 'Clinical Resources Labels'
+        fields:
+          -
+            handle: clinical_resource_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: 'Clinical Resource'
+              default: 'Clinical Resource'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: 'Clinical Resources'
+              default: 'Clinical Resources'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Clinical Resources Archive Page'
+        fields:
+          -
+            handle: clinical_resource_archive_headline
+            field:
+              type: text
+              display: 'Title of Clinical Resource Archive'
+              placeholder: 'Clinical Resources'
+              default: 'Clinical Resources'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_archive_intro_text
+            field: uamsweb_common.article
+            config:
+              display: 'Clinical Resource Archive Intro Text'
+              instructions: 'Leave empty if you do not want to display any intro text.'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              character_limit: 500
+              localizable: false
+          -
+            handle: clinical_resource_archive_featured_image
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image for the Clinical Resource Archive'
+      -
+        display: 'Clinical Resources Facet Labels'
+        fields:
+          -
+            handle: clinical_resource_type_single_name
+            field:
+              type: text
+              display: 'Resource Type Single Item Name'
+              placeholder: 'Resource Type'
+              default: 'Resource Type'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_type_plural_name
+            field:
+              type: text
+              display: 'Resource Type Plural Item Name'
+              placeholder: 'Resource Types'
+              default: 'Resource Types'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: clinical_resource_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Clinical Resources'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Clinical Resources'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for clinical resources in an area of expertise subsection [or profile])."
+              placeholder: 'Related Clinical Resources'
+              default: 'Related Clinical Resources'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Clinical Resources'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for clinical resources in an area of expertise subsection [or profile])."
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_featured_image_general
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'General Featured Image of a Fake Subpage (or Section) for Clinical Resources'
+          -
+            handle: clinical_resource_fpage_ref_main_message_general
+            field:
+              type: subsection
+              display: 'General Reference to the Main Clinical Resource Archive'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_title_general
+            field:
+              type: text
+              display: 'General Title of a Reference to the Main Clinical Resource Archive'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the title used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., title in a reference to the main clinical resource archive on a fake subpage for clinical resources in an area of expertise subsection).
+              placeholder: 'Full List of Clinical Resources'
+              default: 'Full List of Clinical Resources'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_intro_general
+            field:
+              type: textarea
+              display: 'General Body Text of a Reference to the Main Clinical Resource Archive'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the body text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., body text in a reference to the main clinical resource archive on a fake subpage for clinical resources in an area of expertise subsection).
+              placeholder: 'Access clinical resources for various specialties at UAMS Health.'
+              default: 'Access clinical resources for various specialties at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_link_general
+            field:
+              type: text
+              display: 'General Link Text of a Reference to the Main Clinical Resource Archive'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the link text used in that reference.
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., link text in a reference to the main clinical resource archive on a fake subpage for clinical resources in an area of expertise subsection).
+              placeholder: 'View All Areas of Expertise'
+              default: 'View All Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_message_general
+            field:
+              type: subsection
+              display: "General Reference to a Top-Level Ontology Item's Fake Subpage for Clinical Resources"
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_title_general
+            field:
+              type: text
+              display: "General Title of a Reference to a Top-Level Ontology Item's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care clinical resources" to "Cancer Care clinical resources"). This sets the title used in that reference.'
+              placeholder: 'Full List of Clinical Resources'
+              default: 'Full List of Clinical Resources'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_intro_general
+            field:
+              type: textarea
+              display: "General Body Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care clinical resources" to "Cancer Care clinical resources"). This sets the body text used in that reference.'
+              placeholder: 'Access clinical resources for various specialties at UAMS Health.'
+              default: 'Access clinical resources for various specialties at UAMS Health.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_link_general
+            field:
+              type: text
+              display: "General Link Text of a Reference to a Top-Level Ontology Item's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages under nested ontology items contain references linking users back to the same type of fake subpage under the top-level ancestor ontology item (e.g., from "Bone Cancer Care clinical resources" to "Cancer Care clinical resources"). This sets the link text used in that reference.'
+              placeholder: 'View All Areas of Expertise'
+              default: 'View All Areas of Expertise'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_message_general
+            field:
+              type: subsection
+              display: 'General "More" Section of a Fake Subpage (or Section) for Clinical Resources'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_text_general
+            field:
+              type: text
+              display: 'General "More" Intro Text of a Fake Subpage (or Section) for Clinical Resources'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'Want to find more clinical resources?'
+              default: 'Want to find more clinical resources?'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_text_general
+            field:
+              type: text
+              display: 'General "More" Link Text of a Fake Subpage (or Section) for Clinical Resources'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the Full List'
+              default: 'View the Full List'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_descr_general
+            field:
+              type: text
+              display: 'General "More" Button Description of a Fake Subpage (or Section) for Clinical Resources'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the full list of clinical resources'
+              default: 'View the full list of clinical resources'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: general_information_for_a_fake_subpage_or_section_for_clinical_resources_in_a_provider_subsection_or_profile
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              placeholder: 'Clinical Resources Related to [Provider Short Name]'
+              default: 'Clinical Resources Related to [Provider Short Name]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_featured_image_provider
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: clinical_resource_fpage_ref_main_message_provider
+            field:
+              type: subsection
+              display: 'Reference to the Main Clinical Resource Archive in a Provider Subsection'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_title_provider
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Clinical Resource Archive in a Provider Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_intro_provider
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Clinical Resources in a Provider Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_link_provider
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Clinical Resources in a Provider Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_message_provider
+            field:
+              type: subsection
+              display: '"More" Section of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_text_provider
+            field:
+              type: text
+              display: '"More" Intro Text of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'Want to find more clinical resources related to [Provider Short Name]?'
+              default: 'Want to find more clinical resources related to [Provider Short Name]?'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_text_provider
+            field:
+              type: text
+              display: '"More" Link Text of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the Full List'
+              default: 'View the Full List'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_descr_provider
+            field:
+              type: text
+              display: '"More" Button Description of a Fake Subpage (or Section) for Clinical Resources in a Provider Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the full list of clinical resources related to [Provider Short Name]'
+              default: 'View the full list of clinical resources related to [Provider Short Name]'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: clinical_resource_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              placeholder: 'Clinical Resources Related to [the Location Title]'
+              default: 'Clinical Resources Related to [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_featured_image_location
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: clinical_resource_fpage_ref_main_message_location
+            field:
+              type: subsection
+              display: 'Reference to the Main Clinical Resource Archive in a Location Subsection'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_title_location
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Clinical Resource Archive in a Location Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_intro_location
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Clinical Resources in a Location Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_link_location
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Clinical Resources in a Location Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_message_location
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Location's Fake Subpage for Clinical Resources"
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_title_location
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Location's Fake Subpage for Clinical Resources"
+              instructions: |-
+                Fake subpages for clinical resources under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Clinical Resources Related to the Specialty Clinic" to "Clinical Resources Related to the Orthopaedic and Spine Hospital"). This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_intro_location
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Location's Fake Subpage for Clinical Resources"
+              instructions: |-
+                Fake subpages for clinical resources under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Clinical Resources Related to the Specialty Clinic" to "Clinical Resources Related to the Orthopaedic and Spine Hospital"). This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_link_location
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Location's Fake Subpage for Clinical Resources"
+              instructions: |-
+                Fake subpages for clinical resources under descendant locations contain references linking users back to the same type of fake subpage under the top-level ancestor location (e.g., from "Clinical Resources Related to the Specialty Clinic" to "Clinical Resources Related to the Orthopaedic and Spine Hospital"). This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_message_location
+            field:
+              type: subsection
+              display: '"More" Section of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_text_location
+            field:
+              type: text
+              display: '"More" Intro Text of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'Want to find more clinical resources related to [the Location Title]?'
+              default: 'Want to find more clinical resources related to [the Location Title]?'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_text_location
+            field:
+              type: text
+              display: '"More" Link Text of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the Full List'
+              default: 'View the Full List'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_descr_location
+            field:
+              type: text
+              display: '"More" Button Description of a Fake Subpage (or Section) for Clinical Resources in a Location Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the full list of clinical resources related to [the Location Title]'
+              default: 'View the full list of clinical resources related to [the Location Title]'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: clinical_resource_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Clinical Resources Related to [Area of Expertise Title]'
+              default: 'Clinical Resources Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_featured_image_expertise
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: clinical_resource_fpage_ref_main_message_expertise
+            field:
+              type: subsection
+              display: 'Reference to the Main Clinical Resource Archive in an Area of Expertise Subsection'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_title_expertise
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Clinical Resource Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_intro_expertise
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Clinical Resource Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_link_expertise
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Clinical Resource Archive in an Area of Expertise Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_message_expertise
+            field:
+              type: subsection
+              display: "Reference to a Top-Level Area of Expertise's Fake Subpage for Clinical Resources"
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_title_expertise
+            field:
+              type: text
+              display: "Title of a Reference to a Top-Level Area of Expertise's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages for clinical resources under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Clinical Resources Related to Bone Cancer Care" to "Clinical Resources Related to Cancer Care"). This sets the title used in that reference.'
+              placeholder: 'Clinical Resources Related to [Area of Expertise Title]'
+              default: 'Clinical Resources Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_intro_expertise
+            field:
+              type: textarea
+              display: "Body Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages for clinical resources under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Clinical Resources Related to Bone Cancer Care" to "Clinical Resources Related to Cancer Care"). This sets the body text used in that reference.'
+              placeholder: 'Explore clinical resources for [Area of Expertise Title].'
+              default: 'Explore clinical resources for [Area of Expertise Title].'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_top_link_expertise
+            field:
+              type: text
+              display: "Link Text of a Reference to a Top-Level Area of Expertise's Fake Subpage for Clinical Resources"
+              instructions: 'Fake subpages for clinical resources under descendant areas of expertise contain references linking users back to the same type of fake subpage under the top-level ancestor area of expertise (e.g., from "Clinical Resources Related to Bone Cancer Care" to "Clinical Resources Related to Cancer Care"). This sets the link text used in that reference.'
+              placeholder: 'View Clinical Resources'
+              default: 'View Clinical Resources'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_message_expertise
+            field:
+              type: subsection
+              display: '"More" Section of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_text_expertise
+            field:
+              type: text
+              display: '"More" Intro Text of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'Want to find more clinical resources related to [Area of Expertise Title]?'
+              default: 'Want to find more clinical resources related to [Area of Expertise Title]?'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_text_expertise
+            field:
+              type: text
+              display: '"More" Link Text of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the Full List'
+              default: 'View the Full List'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_descr_expertise
+            field:
+              type: text
+              display: '"More" Button Description of a Fake Subpage (or Section) for Clinical Resources in an Area of Expertise Subsection (or Profile)'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile])."
+              placeholder: 'View the full list of clinical resources related to [Area of Expertise Title]'
+              default: 'View the full list of clinical resources related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: clinical_resource_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default title structure will be used.'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_featured_image_clinical_resource
+            field: uamsweb_common_images.image_1280x720_16_9_recommended
+            config:
+              display: 'Featured Image of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the general placement image will be used.
+
+                Recommended image dimensions: 2560x1920. Minimum image dimensions: 1280x720. Recommended aspect ratio: 16:9.
+          -
+            handle: clinical_resource_fpage_ref_main_message_clinical_resource
+            field:
+              type: subsection
+              display: 'Reference to the Main Clinical Resource Archive in a Clinical Resources Subsection'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Reference to the Main Clinical Resource Archive in a Clinical Resources Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the title used in that reference.
+
+                If you leave this blank, the general placement title structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Body Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Related Clinical Resources in a Clinical Resources Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the body text used in that reference.
+
+                If you leave this blank, the general placement body text structure will be used.
+              character_limit: 117
+              localizable: false
+          -
+            handle: clinical_resource_fpage_ref_main_link_clinical_resource
+            field:
+              type: text
+              display: 'Link Text of a Reference to the Main Clinical Resource Archive on a Fake Subpage for Related Clinical Resources in a Clinical Resources Subsection'
+              instructions: |-
+                Fake subpages for clinical resources contain references linking users back to the main clinical resource archive. This sets the link text used in that reference.
+
+                If you leave this blank, the general placement link text structure will be used.
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_message_clinical_resource
+            field:
+              type: subsection
+              display: '"More" Section of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources (or Profile)'
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_text_clinical_resource
+            field:
+              type: text
+              display: '"More" Intro Text of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the default "more" text structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile]).
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_text_clinical_resource
+            field:
+              type: text
+              display: '"More" Link Text of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the default link text structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile]).
+              localizable: false
+          -
+            handle: clinical_resource_fpage_more_link_descr_clinical_resource
+            field:
+              type: text
+              display: '"More" Button Description of a Fake Subpage (or Section) for Related Clinical Resources in a Clinical Resources Subsection (or Profile)'
+              instructions: |-
+                If you leave this blank, the default link description structure will be used
+
+                This value may be overridden by inputs specific to the text element's placement (e.g., more text of a fake subpage (or section) for clinical resources in a provider subsection [or profile]).
+              localizable: false
+  conditions:
+    display: Conditions
+    sections:
+      -
+        display: 'Conditions Labels'
+        fields:
+          -
+            handle: conditions_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: Condition
+              default: Condition
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: Conditions
+              default: Conditions
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Conditions Archive Page'
+        fields:
+          -
+            handle: conditions_archive_headline
+            field:
+              type: text
+              display: 'Title of Condition Archive'
+              placeholder: Conditions
+              default: Conditions
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_archive_intro_text
+            field: uamsweb_common.article
+            config:
+              display: 'Intro Text of Condition Archive'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              character_limit: 500
+              localizable: false
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: conditions_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions'
+              localizable: false
+          -
+            handle: conditions_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Conditions'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for conditions in an area of expertise subsection [or profile])."
+              placeholder: 'Related Conditions'
+              default: 'Related Conditions'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Conditions'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for conditions in an area of expertise subsection [or profile])."
+              placeholder: 'UAMS Health providers care for a broad range of conditions, some of which may not be listed below.'
+              default: 'UAMS Health providers care for a broad range of conditions, some of which may not be listed below.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: conditions_fpage_title_message_provider
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: conditions_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions in a Provider Subsection (or Profile)'
+              placeholder: 'Conditions Diagnosed or Treated by [Provider Short Name]'
+              default: 'Conditions Diagnosed or Treated by [Provider Short Name]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: conditions_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: conditions_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions in a Location Subsection (or Profile)'
+              placeholder: 'Conditions Diagnosed or Treated at [the Location Title]'
+              default: 'Conditions Diagnosed or Treated at [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: conditions_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: conditions_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Conditions Related to [Area of Expertise Title]'
+              default: 'Conditions Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: conditions_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: conditions_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: conditions_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default title structure will be used.'
+              localizable: false
+          -
+            handle: conditions_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+  treatments:
+    display: Treatments
+    sections:
+      -
+        display: 'Treatments Labels'
+        fields:
+          -
+            handle: treatments_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: Treatment/Procedure
+              default: Treatment/Procedure
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: 'Treatments and Procedures'
+              default: 'Treatments and Procedures'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'Treatments Archive Page'
+        fields:
+          -
+            handle: treatments_archive_headline
+            field:
+              type: text
+              display: 'Title of Treatments Archive'
+              placeholder: 'Treatments and Procedures'
+              default: 'Treatments and Procedures'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_archive_intro_text
+            field: uamsweb_common.article
+            config:
+              display: 'Intro Text of Treatments Archive'
+              buttons:
+                - italic
+                - unorderedlist
+                - orderedlist
+                - removeformat
+              character_limit: 500
+              localizable: false
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: treatments_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Treatments'
+              localizable: false
+          -
+            handle: treatments_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Treatments'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for treatments in an area of expertise subsection [or profile])."
+              placeholder: 'Related Treatments'
+              default: 'Related Treatments'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Treatments'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for treatments in an area of expertise subsection [or profile])."
+              placeholder: 'UAMS Health providers perform and prescribe a broad range of treatments, some of which may not be listed below.'
+              default: 'UAMS Health providers perform and prescribe a broad range of treatments, some of which may not be listed below.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: treatments_fpage_title_message_provider
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Treatments in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: treatments_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Treatments in a Provider Subsection (or Profile)'
+              placeholder: 'Treatments Performed or Prescribed by [Provider Short Name]'
+              default: 'Treatments Performed or Prescribed by [Provider Short Name]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Treatments in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: treatments_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Treatments in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: treatments_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Treatments in a Location Subsection (or Profile)'
+              placeholder: 'Treatments Performed or Prescribed at [the Location Title]'
+              default: 'Treatments Performed or Prescribed at [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Treatments in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: treatments_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Treatments in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: treatments_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Treatments in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Treatments Related to [Area of Expertise Title]'
+              default: 'Treatments Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: treatments_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Treatments in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: treatments_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Treatments in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: treatments_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Treatments in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default title structure will be used.'
+              localizable: false
+          -
+            handle: treatments_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Treatments in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+  conditions_and_treatments:
+    display: 'Combined Conditions and Treatments'
+    sections:
+      -
+        display: 'Combined Conditions and Treatments Labels'
+        fields:
+          -
+            handle: condition_treatment_single_name
+            field:
+              type: text
+              display: 'Single Item Name'
+              placeholder: Condition/Treatment
+              default: Condition/Treatment
+              validate:
+                - required
+              localizable: false
+          -
+            handle: condition_treatment_plural_name
+            field:
+              type: text
+              display: 'Plural Item Name'
+              placeholder: 'Conditions and Treatments'
+              default: 'Conditions and Treatments'
+              validate:
+                - required
+              localizable: false
+      -
+        display: 'General Placement'
+        fields:
+          -
+            handle: condition_treatment_fpage_title_message_general
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions and Treatments Combined'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_title_general
+            field:
+              type: text
+              display: 'General Title of a Fake Subpage (or Section) for Conditions and Treatments Combined'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., title of a fake subpage (or section) for conditions and treatments combined in an area of expertise subsection [or profile])."
+              placeholder: 'Related Conditions and Treatments'
+              default: 'Related Conditions and Treatments'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: condition_treatment_fpage_intro_general
+            field:
+              type: textarea
+              display: 'General Intro Text of a Fake Subpage (or Section) for Conditions and Treatments Combined'
+              instructions: "This value may be overridden by inputs specific to the text element's placement (e.g., intro text of a fake subpage (or section) for conditions and treatments combined in an area of expertise subsection [or profile])."
+              placeholder: 'UAMS Health offers treatments for many conditions, some of which may not be listed below.'
+              default: 'UAMS Health offers treatments for many conditions, some of which may not be listed below.'
+              validate:
+                - required
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Provider Subsection'
+        fields:
+          -
+            handle: condition_treatment_fpage_title_message_provider
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions and Treatments Combined in a Provider Subsection (or Profile)'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_title_provider
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Provider Subsection (or Profile)'
+              placeholder: 'Conditions and Treatments Related to [Provider Short Name]'
+              default: 'Conditions and Treatments Related to [Provider Short Name]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: condition_treatment_fpage_intro_provider
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Provider Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Location Subsection'
+        fields:
+          -
+            handle: condition_treatment_fpage_title_message_location
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions and Treatments Combined in a Location Subsection (or Profile)'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_title_location
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Location Subsection (or Profile)'
+              placeholder: 'Conditions and Treatments Related to [the Location Title]'
+              default: 'Conditions and Treatments Related to [the Location Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: condition_treatment_fpage_intro_location
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Location Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Area of Expertise Subsection'
+        fields:
+          -
+            handle: condition_treatment_fpage_title_message_expertise
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions and Treatments Combined in an Area of Expertise Subsection (or Profile)'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_title_expertise
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions and Treatments Combined in an Area of Expertise Subsection (or Profile)'
+              placeholder: 'Conditions and Treatments Related to [Area of Expertise Title]'
+              default: 'Conditions and Treatments Related to [Area of Expertise Title]'
+              validate:
+                - required
+              localizable: false
+          -
+            handle: condition_treatment_fpage_intro_expertise
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions and Treatments Combined in an Area of Expertise Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+      -
+        display: 'Clinical Resource Profile'
+        fields:
+          -
+            handle: condition_treatment_fpage_title_message_clinical_resource
+            field:
+              type: subsection
+              display: 'General Information for a Fake Subpage (or Section) for Conditions and Treatments Combined in a Clinical Resource Subsection (or Profile)'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_title_clinical_resource
+            field:
+              type: text
+              display: 'Title of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default title structure will be used.'
+              localizable: false
+          -
+            handle: condition_treatment_fpage_intro_clinical_resource
+            field:
+              type: textarea
+              display: 'Intro Text of a Fake Subpage (or Section) for Conditions and Treatments Combined in a Clinical Resource Subsection (or Profile)'
+              instructions: 'If you leave this blank, the default intro text structure will be used.'
+              character_limit: 117
+              localizable: false
+  mychart_open_scheduling:
+    display: 'MyChart Open Scheduling'
+    sections:
+      -
+        display: 'MyChart Open Scheduling Widget Configuration'
+        fields:
+          -
+            handle: mychart_scheduling_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Allow optional MyChart open scheduling?'
+              instructions: 'Grant the ability at the page level to enable MyChart open scheduling.'
+              default: false
+              validate:
+                - required
+              localizable: false
+          -
+            handle: mychart_scheduling_domain
+            field:
+              type: text
+              display: Domain
+              instructions: 'Example: "scheduling.uamshealth.com" in https://scheduling.uamshealth.com/MyChart/'
+              placeholder: 'e.g., scheduling.uamshealth.com'
+              default: scheduling.uamshealth.com
+              validate:
+                - required
+                - sometimes
+              if:
+                mychart_scheduling_query: 'equals true'
+              localizable: false
+          -
+            handle: mychart_scheduling_instance
+            field:
+              type: text
+              display: Instance
+              instructions: 'Example: "MyChart" in https://scheduling.uamshealth.com/MyChart/'
+              placeholder: 'e.g., MyChart'
+              default: MyChart
+              if:
+                mychart_scheduling_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: mychart_scheduling_linksource
+            field:
+              type: text
+              display: 'Link Source'
+              placeholder: 'e.g., uamshealth.com'
+              default: uamshealth.com
+              if:
+                mychart_scheduling_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+  uams_health_talk_podcast:
+    display: 'UAMS Health Talk Podcast'
+    sections:
+      -
+        display: 'Podcast Embed Configuration'
+        fields:
+          -
+            handle: health_talk_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Show the UAMS Health Talk podcast section on provider profiles?'
+              instructions: 'When enabled, a provider whose profile carries a podcast guest name gets a section listing their UAMS Health Talk episodes. Turning this off removes the section and its third-party script from every profile.'
+              default: true
+              validate:
+                - required
+              localizable: false
+          -
+            handle: health_talk_script_url
+            field:
+              type: text
+              display: 'Widget Script URL'
+              instructions: 'The RadioMD widget script the embed loads. Changing the host also requires a matching `script-src` / `frame-src` allowance in the site''s Content Security Policy.'
+              placeholder: 'e.g., https://radiomd.com/widget/easyXDM.js'
+              default: 'https://radiomd.com/widget/easyXDM.js'
+              if:
+                health_talk_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+                - url
+              localizable: false
+          -
+            handle: health_talk_client
+            field:
+              type: text
+              display: 'Client Slug'
+              instructions: 'The RadioMD client identifier for UAMS. Issued by RadioMD — not something to guess.'
+              placeholder: 'e.g., uams'
+              default: uams
+              if:
+                health_talk_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: health_talk_station_id
+            field:
+              type: integer
+              display: 'Station ID'
+              instructions: 'The RadioMD station identifier. Issued by RadioMD — not derivable, and nothing validates it: a wrong value fails silently, showing an empty or wrong episode list rather than an error.'
+              default: 303
+              if:
+                health_talk_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: health_talk_program_id
+            field:
+              type: integer
+              display: 'Program ID'
+              instructions: 'The RadioMD program identifier. Issued by RadioMD — not derivable, and, like the station ID, a wrong value fails silently rather than erroring.'
+              default: 1837
+              if:
+                health_talk_query: 'equals true'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            handle: health_talk_more_url
+            field:
+              type: text
+              display: '"Listen to More Episodes" Destination'
+              instructions: 'Where the section''s "Listen to More Episodes" link points. Leave blank to omit the link entirely, which is the default: WordPress sends readers to `/podcast/`, and no equivalent page exists in Statamic yet, so a default would link a 404.'
+              placeholder: 'e.g., /health/podcast'
+              if:
+                health_talk_query: 'equals true'
+              localizable: false
+  remove_medical_ontology:
+    display: 'Remove Medical Ontology'
+    sections:
+      -
+        display: 'Removal Conditions'
+        fields:
+          -
+            handle: remove_ontology_criteria
+            field:
+              type: replicator
+              display: Removals
+              localizable: false
+              sets:
+                new_set_group:
+                  display: 'New Set Group'
+                  sets:
+                    new_removal:
+                      display: 'New Removal'
+                      fields:
+                        -
+                          handle: remove_service_lines
+                          field:
+                            max_items: 1
+                            create: false
+                            collections:
+                              - organizations
+                            query_scopes:
+                              - entries_by_organization_role_service_line
+                            select_across_sites: true
+                            type: entries
+                            display: 'Service Line'
+                        -
+                          handle: remove_regions
+                          field:
+                            max_items: 1
+                            mode: select
+                            create: false
+                            taxonomies:
+                              - regions
+                            type: terms
+                            display: Region
+  csv_export:
+    display: 'CSV Export'
+    sections:
+      - {  }

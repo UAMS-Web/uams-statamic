@@ -1,0 +1,77 @@
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+              validate:
+                - required
+              display: 'Term Title'
+              instructions: 'This value is only used for display in the control panel.'
+              localizable: false
+          -
+            handle: associated_location_profile
+            field: uamsweb_common_fad.clinical_locations
+            config:
+              display: 'Associated Location Profile'
+              instructions: 'Select the location profile that matches this affiliated hospital.'
+              max_items: 1
+          -
+            handle: schema_object
+            field:
+              collections:
+                - schema_objects
+              max_items: 1
+              query_scopes:
+                - entries_by_schema_type_organization
+              type: entries
+              display: 'Schema Object for the Organization'
+              instructions: 'Select a schema object for the organization, if available.'
+              localizable: true
+              create: false
+              if:
+                associated_location_profile: 'equals empty'
+              validate:
+                - 'entry_schema_type_in:Organization'
+          -
+            handle: name
+            field:
+              type: text
+              display: 'Hospital Name'
+              instructions: |-
+                Name the taxonomy item using only the full official name of the hospital (e.g., "Arkansas Children's Hospital").
+
+                Do not include the word "The" at the beginning of the name.
+
+                Do not follow the full name of the hospital with an abbreviation or acronym in parentheses or set off by dashes.
+              if:
+                associated_location_profile: 'equals empty'
+                schema_object: 'equals empty'
+              validate:
+                - required
+                - sometimes
+              localizable: false
+          -
+            import: uamsweb_schema_basic
+          -
+            import: uamsweb_schema_descriptions
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              required: true
+              validate:
+                - required
+                - 'max:200'
+              localizable: false
+title: 'Affiliation, Hospital'

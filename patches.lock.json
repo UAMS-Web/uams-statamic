@@ -1,0 +1,223 @@
+{
+    "_hash": "f1f53cdb967ede7f6f7a86c6e62a5fd15e32108c8c54185c1d400f5670f639c0",
+    "patches": {
+        "larastan/larastan": [
+            {
+                "package": "larastan/larastan",
+                "description": "Resolve console commands the console kernel registers, so argument() and option() keep their signature types on Laravel 13.36 and later (temporary; see #3156)",
+                "url": "patches/larastan-console-kernel-commands.patch",
+                "sha256": "d1048904672cfd7e61e81c1899806eb62155c8ebee8aa79ac29311adeab5340a",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ],
+        "pestphp/pest-plugin-browser": [
+            {
+                "package": "pestphp/pest-plugin-browser",
+                "description": "Fail a request instead of busy-looping when the Playwright socket closes (temporary; see #1814)",
+                "url": "patches/pest-plugin-browser-client-bounded-requests.patch",
+                "sha256": "a8488a9c0242bd7cf31a26e48c035dd6db8b5af68c5621f548beb253c7069715",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-browser",
+                "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)",
+                "url": "patches/pest-plugin-browser-per-attempt-timeout.patch",
+                "sha256": "9cb5a827de985d79d7d784588e48b4550577234dc25e46aafa9edc7f1ab2cc28",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-browser",
+                "description": "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)",
+                "url": "patches/pest-plugin-browser-server-no-shell.patch",
+                "sha256": "2be97e8163df9ff3f65febd5829943eb9c150325e487467b5e738cbdfa100a56",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ],
+        "pestphp/pest-plugin-mutate": [
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Launch each mutant child process so a run cannot score every mutant killed without executing one (temporary; see #2322)",
+                "url": "patches/pest-plugin-mutate-mutant-process-launch.patch",
+                "sha256": "7a6c762ea7a0eaf0043f251a76fec8bb48f2bf6dd062e684a989b592e670ebbc",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Stop three silent @pest-mutate-ignore parsing defects suppressing nothing or the wrong set (temporary; see #2327)",
+                "url": "patches/pest-plugin-mutate-annotation-parsing.patch",
+                "sha256": "6e0994c0bfa9a637a90efccfb14b3c37831b76bd39d57f826ac18aeaf2a57915",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Let a mutant child on Windows run its tests and write files, so its failure is a real kill (temporary; see #2524)",
+                "url": "patches/pest-plugin-mutate-windows-mutant-child.patch",
+                "sha256": "2d3d2cebd7d0d6ef642c6e1c64ddce866d018e1bdec235df57b8a00f988a6341",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Drop the run's own --filter from each mutant child so a filtered run cannot score every mutant killed (temporary; see #2570)",
+                "url": "patches/pest-plugin-mutate-drop-run-filter.patch",
+                "sha256": "538ba0225a9ed22a1cb01483ddc62dffb41f2f220d4629333ba7caaf052026b7",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)",
+                "url": "patches/pest-plugin-mutate-windows-filter-length.patch",
+                "sha256": "6490ba74c6308ae31143850356cea27bbc7bca53e22d266f5c3b3d19ed3a21b1",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)",
+                "url": "patches/pest-plugin-mutate-write-mutated-source.patch",
+                "sha256": "5519d00dce1e8bd364c28c208997e57619242f39733d04f953fba9d0708d1c62",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)",
+                "url": "patches/pest-plugin-mutate-drop-parallel-runner-options.patch",
+                "sha256": "b999bc57c3eb43da339e37e7781f3f1d479481dc6f82c5b388775f1083b5043c",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ],
+        "statamic/cms": [
+            {
+                "package": "statamic/cms",
+                "description": "Add blueprint-aware collection create labels",
+                "url": "patches/statamic-collection-create-label-blueprint.patch",
+                "sha256": "795ddc21d85270e1e2b642dd9ec5fa2a483ce5642bdb8623ecbf295f4da63278",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Add blueprint-aware taxonomy create labels",
+                "url": "patches/statamic-taxonomy-create-label-blueprint.patch",
+                "sha256": "97c8ac5b5de383513981adeb14c0c725beb1f74c22b832a630fddf9e263dd5fe",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Align CP updates badge with updater availableUpdatesCount",
+                "url": "patches/statamic-updates-overview-badge.patch",
+                "sha256": "8a89d44c84095f3e0a2560f0419d017bf58d090a46e14639d2ff3c9161a9fe6c",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see #2241)",
+                "url": "patches/statamic-stache-traverser-vanished-file.patch",
+                "sha256": "97cb35eae5d57869c5a7476684a29c1570823079e56853c035ab0cdfdc602556",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see #2643)",
+                "url": "patches/statamic-stache-store-vanished-file-paths.patch",
+                "sha256": "10610d3761d3a4f5b7d412e0e3926af052180807e92eeebb31c7da543dd6d8bf",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see #2643)",
+                "url": "patches/statamic-stache-store-vanished-file-modified.patch",
+                "sha256": "13ddb6ba19ca9f90e9049e73bf5ae0dbe2970fb2c65b2f5ae6f3fff5295c4292",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see #2643)",
+                "url": "patches/statamic-stache-terms-vanished-file-modified.patch",
+                "sha256": "4b9ba9c167faaf7bae52a246e16fbc67d73057d96c372668d8b711633a8541b3",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)",
+                "url": "patches/statamic-stache-terms-vanished-file-paths.patch",
+                "sha256": "b57bbb7673fcbd5cbd6cad05754a8397202643e297ea79d2804e14926111dc4e",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)",
+                "url": "patches/statamic-stache-terms-vanished-file-get-item.patch",
+                "sha256": "54a321a6e6ba825e97866ac9add0dc9631df18c35c79a4b745dcf976a5dd1396",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)",
+                "url": "patches/statamic-stache-basic-vanished-file-get-item.patch",
+                "sha256": "edb5b63794a9508c335872c3dd9fa9357d0a68082efff1313d690a2e25f252be",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}
