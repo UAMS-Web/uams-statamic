@@ -1,5 +1,5 @@
 {
-    "_hash": "0e63ccffa1ab759aac768d7e0fa402bee6d96909c30a1a45bc32974f6ae8dab7",
+    "_hash": "3e743213f081b0d6b0c9c39a3a465d3800ad4032c714faa2230f103ccf89bbab",
     "patches": {
         "larastan/larastan": [
             {
@@ -222,7 +222,7 @@
         "symfony/console": [
             {
                 "package": "symfony/console",
-                "description": "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #2771)",
+                "description": "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #232)",
                 "url": "patches/symfony-console-terminal-input-windows-null-device.patch",
                 "sha256": "d42571844146f7223f2db500a6a506a28808878245c580030306322cbe8d53ef",
                 "depth": 1,

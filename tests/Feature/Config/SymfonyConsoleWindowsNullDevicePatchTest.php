@@ -7,7 +7,7 @@ use Tests\TestCase;
 // cspell:ignore stty
 
 /**
- * Guards `patches/symfony-console-terminal-input-windows-null-device.patch` (#2769).
+ * Guards `patches/symfony-console-terminal-input-windows-null-device.patch` (#230).
  *
  * The defect: `TerminalInputHelper` restores the terminal with
  * `stty <state> 2>/dev/null || stty sane`. `shell_exec()` runs that through `cmd.exe` on
@@ -23,7 +23,7 @@ use Tests\TestCase;
  * keeps the unpatched code while the install reports success, and this test is what notices.
  *
  * Remove this file with the patch; see **`symfony/console` Windows null device for the stty
- * restore** in `patches/README.md` for the retirement condition (#2771).
+ * restore** in `patches/README.md` for the retirement condition (#232).
  *
  * @command  php artisan test --compact tests/Feature/Config/SymfonyConsoleWindowsNullDevicePatchTest.php
  */

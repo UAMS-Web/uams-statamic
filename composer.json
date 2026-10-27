@@ -179,7 +179,7 @@
                 "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-basic-vanished-file-get-item.patch"
             },
             "symfony/console": {
-                "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #2771)": "patches/symfony-console-terminal-input-windows-null-device.patch"
+                "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #232)": "patches/symfony-console-terminal-input-windows-null-device.patch"
             }
         },
         "laravel": {
