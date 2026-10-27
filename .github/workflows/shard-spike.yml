@@ -1,0 +1,146 @@
+name: Shard spike (#384)
+
+# Research spike for UAMS-Web/uams-statamic#384, on its branch only; never merged.
+# Measures the Pest parallel band split across separate GitHub-hosted runners
+# with --shard, against the same band run whole, and checks that every shard
+# count's union of shards runs exactly the baseline's test cases. The mode
+# (count-based or time-balanced) comes from .github/shard-spike/plan.txt.
+
+on:
+  push:
+    branches: [384-shard-spike]
+
+concurrency:
+  group: shard-spike
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      mode: ${{ steps.plan.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: plan
+        run: php .github/shard-spike/make-plan.php >> "$GITHUB_OUTPUT"
+
+  band:
+    name: ${{ matrix.id }}
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Mark job start
+        run: echo "start=$(date +%s)" >> "$RUNNER_TEMP/times.txt"
+
+      - uses: actions/checkout@v7
+
+      # Same steps as the pest job in ci.yml, up to the band
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Composer post-autoload-dump scripts
+        run: composer run-script post-autoload-dump --no-interaction
+
+      - name: Build Stache seed (testing env)
+        run: 'DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache'
+
+      - name: Build route cache (testing env)
+        run: APP_ENV=testing php artisan route:cache
+
+      # Time-balanced mode reads the timings the count-mode baseline recorded
+      - name: Place shards.json (time-balanced mode)
+        if: needs.plan.outputs.mode == 'timed'
+        run: mkdir -p tests/.pest && cp .github/shard-spike/shards.json tests/.pest/shards.json
+
+      - name: Run the band
+        env:
+          SHARD: ${{ matrix.shard }}
+          KIND: ${{ matrix.kind }}
+          ID: ${{ matrix.id }}
+        run: |
+          echo "band_start=$(date +%s)" >> "$RUNNER_TEMP/times.txt"
+          if [ "$KIND" = serial ]; then
+            args=(--group=serial)
+          else
+            args=(--parallel --exclude-group=serial)
+            if [ -n "$SHARD" ]; then args+=("--shard=$SHARD"); fi
+            # The baseline also records per-class timings for time-balanced mode
+            if [ "$ID" = baseline ]; then args+=(--update-shards); fi
+          fi
+          set +e
+          php -d pcov.enabled=0 vendor/bin/pest "${args[@]}" --display-all-issues --log-junit "junit-$ID.xml" > "band-$ID.log" 2>&1
+          rc=$?
+          set -e
+          echo "band_end=$(date +%s)" >> "$RUNNER_TEMP/times.txt"
+          echo "rc=$rc" >> "$RUNNER_TEMP/times.txt"
+          tail -25 "band-$ID.log"
+          cp "$RUNNER_TEMP/times.txt" "times-$ID.txt"
+          exit "$rc"
+
+      - name: Upload the report, log and timings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: band-${{ matrix.id }}
+          path: |
+            junit-${{ matrix.id }}.xml
+            band-${{ matrix.id }}.log
+            times-${{ matrix.id }}.txt
+            tests/.pest/shards.json
+          if-no-files-found: warn
+
+  union:
+    needs: band
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Compare each union of shards with the baseline
+        run: |
+          set -o pipefail
+          ls -la artifacts artifacts/tests/.pest 2>/dev/null || true
+          php .github/shard-spike/union.php artifacts | tee -a "$GITHUB_STEP_SUMMARY"
