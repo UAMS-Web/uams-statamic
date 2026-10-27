@@ -159,8 +159,8 @@ jobs:
     #   pull request or a push never runs it.
     # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
     #   manual run reaches this step at once instead of after phpstan.
-    # - Outside the cost-ordered chain: nothing `needs:` it, so it cannot skip or
-    #   hold up any gate job.
+    # - Nothing `needs:` it, and since #373 no job here needs anything, so it
+    #   cannot skip or hold up any gate job.
     # - Re-run it by hand whenever a private submodule is added. The token is
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
@@ -192,8 +192,8 @@ jobs:
     # Fails, naming the file, when a rule or skill the sync manages was edited
     # by hand rather than in UAMS-Web/uams-claude-skills.
     #
-    # Outside the cost-ordered chain: it needs nothing and nothing needs it, so
-    # it cannot skip or hold up a gate job, and it reports beside them.
+    # It needs nothing and nothing needs it, which since #373 is true of every
+    # job here, so it cannot skip or hold up a gate job and reports beside them.
     #
     # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
     # own synced-files job arrives with the shared runner in #2837. Until then
@@ -215,8 +215,9 @@ jobs:
   pest:
     name: Pest (full suite)
     runs-on: ubuntu-latest
-    # CI chain: runs only after Larastan passes — the longest job of the PHP
-    # chain, with only the browser smoke after it.
+    # Local-chain cost rank (scripts/local-ci.mjs orders by it; here every job
+    # runs in parallel): after Larastan, the longest job of the PHP set, with
+    # only the browser smoke behind it.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -265,7 +266,16 @@ jobs:
           extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
           coverage: none
           tools: composer:v2
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing
+          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
+          # runs, because four tests are written to run only under those values and
+          # self-skip otherwise: two assert an AssertionError and need assertions
+          # compiled in, two induce a PCRE failure the JIT does not produce. The
+          # runner's defaults (-1 and 1) made all four skip, which took the parallel
+          # band to 5 skips against a baseline of 3 and failed
+          # scripts/check-skip-baseline.php. Raising the baseline would have recorded
+          # the coverage loss instead of fixing it, which that file's own header
+          # forbids; matching the local environment restores the four tests.
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -503,7 +513,7 @@ jobs:
   pint:
     name: Pint (changed files)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the Vite build passes.
+    # Local-chain cost rank: after the Vite build.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -576,7 +586,7 @@ jobs:
   rector:
     name: Rector (gating profile)
     runs-on: ubuntu-latest
-    # CI chain: runs only after Pint passes. Pint MUST come first — the two tools
+    # Local-chain cost rank: after Pint. Pint MUST come first there, because the two tools
     # rewrite the same files, and rector.php sets `removeUnusedImports: false`
     # because Rector's remover is not `{@see}`-aware, leaving Pint the sole owner
     # of that operation (UAMS-Web/uams-statamic-archive#1131).
@@ -636,8 +646,8 @@ jobs:
   mutate:
     name: Mutation tooling smoke
     runs-on: ubuntu-latest
-    # CI chain: runs only after Rector passes. Cheap (~9s of work) so it sits
-    # ahead of the two 2-min+ jobs.
+    # Local-chain cost rank: after Rector. Cheap (~9s of work) so it sits ahead
+    # of the two 2-min+ jobs there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # This gates the mutation TOOLING, not the mutants. UAMS-Web/uams-statamic-archive#1728 was not a mutant
@@ -732,7 +742,7 @@ jobs:
   phpstan:
     name: Larastan (PHPStan)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the mutation smoke passes — the two 2-min+ jobs come last.
+    # Local-chain cost rank: after the mutation smoke; the two 2-min+ jobs come last there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Larastan boots the Laravel app — vendor/larastan/larastan/bootstrap.php
@@ -785,7 +795,7 @@ jobs:
   build:
     name: Vite build
     runs-on: ubuntu-latest
-    # CI chain: runs only after the JS unit tests pass.
+    # Local-chain cost rank: after the JS unit tests.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -850,7 +860,7 @@ jobs:
   js:
     name: JS unit tests (Vitest)
     runs-on: ubuntu-latest
-    # CI chain: runs only after spell passes.
+    # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
@@ -884,13 +894,14 @@ jobs:
   spell:
     name: Spell check (cspell)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the encoding guard passes.
+    # Local-chain cost rank: after the encoding guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Blocking gate (UAMS-Web/uams-statamic-archive#1541): the dictionary is clean (0 hits), so a spelling issue
-    # fails the job — and because every more-expensive job runs downstream of it in
-    # the cost-ordered chain, a typo skips (and never bills) js, build, pint,
-    # phpstan, Pest, and the browser smoke. Framework-free and cheap: Node + the
+    # fails the job. In scripts/local-ci.mjs, where the cost-ordered chain still
+    # runs, a typo skips (and never bills) js, build, pint, phpstan, Pest and the
+    # browser smoke; here every job runs in parallel, so it fails this job alone.
+    # Framework-free and cheap: Node + the
     # cspell CLI, no PHP, Composer, or content submodule. It supersedes the earlier
     # advisory (`continue-on-error`) phase from UAMS-Web/uams-statamic-archive#1018.
     steps:
@@ -921,7 +932,8 @@ jobs:
   browser:
     name: CP browser smoke (Pest + Playwright)
     runs-on: ubuntu-latest
-    # CI chain: runs LAST, only after Pest passes.
+    # Local-chain cost rank: LAST, the most expensive job. Here it runs in
+    # parallel with the rest.
     # Runs on every PR, like every other job here. The `browser-tests` label gate
     # this job used to carry was REMOVED in UAMS-Web/uams-statamic-archive#1727, along with the opt-in framing
     # in the local-ci mirror.
@@ -1024,11 +1036,11 @@ jobs:
   composer-validate:
     name: Composer validate (composer.lock freshness)
     runs-on: ubuntu-latest
-    # CI chain: second link — runs only after the isolation guard passes, and
-    # gates every job after it. Measured locally at ~1.5s against the isolation
-    # guard's ~0.8s, so shortest -> longest puts it here rather than at the head
-    # of the chain; either way it precedes the first job that costs real time
-    # (encoding-guard runs `composer install`), which is the saving that matters.
+    # Local-chain cost rank: second. Measured locally at ~1.5s against the
+    # isolation guard's ~0.8s, so shortest -> longest puts it there rather than at
+    # the head; either way it precedes the first job that costs real time
+    # (encoding-guard runs `composer install`), which is the saving that matters
+    # locally. Here every job runs in parallel and nothing is gated.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when `composer.lock` no longer matches `composer.json` —
@@ -1072,10 +1084,10 @@ jobs:
   no-emoji-guard:
     name: No-emoji guard (durable records)
     runs-on: ubuntu-latest
-    # CI chain: runs after the composer.lock validation and BEFORE the encoding
-    # guard, which is the first job that costs real time (it runs `composer
-    # install`). This one is a pure file scan needing only Node, so a glyph
-    # fails the build without ever billing an install.
+    # Local-chain cost rank: after the composer.lock validation and BEFORE the
+    # encoding guard, which is the first job that costs real time (it runs
+    # `composer install`). This one is a pure file scan needing only Node, so
+    # locally a glyph fails the build without ever billing an install.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when a durable record carries an emoji code point, per
@@ -1104,8 +1116,8 @@ jobs:
   content-pointer-guard:
     name: Submodule pointer guard (each on its main)
     runs-on: ubuntu-latest
-    # CI chain: runs after the no-emoji guard and BEFORE the encoding guard, the
-    # first job that runs `composer install`. It needs only git and Node.
+    # Local-chain cost rank: after the no-emoji guard and BEFORE the encoding
+    # guard, the first job that runs `composer install`. It needs only git and Node.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when any submodule gitlink of the validated commit names a
@@ -1161,7 +1173,7 @@ jobs:
   encoding-guard:
     name: Encoding guard (Windows-1252 double-encoding)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the content pointer guard passes.
+    # Local-chain cost rank: after the content pointer guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
@@ -1277,9 +1289,9 @@ jobs:
   test-isolation-guard:
     name: Test isolation guard (parallel-safety)
     runs-on: ubuntu-latest
-    # First (fastest) link in the cost-ordered CI chain: every other job runs
-    # downstream via `needs:`, so a failure here skips — and never bills — the
-    # entire rest of the pipeline.
+    # First (fastest) link in scripts/local-ci.mjs's cost-ordered chain, where a
+    # failure here skips, and never bills, the entire rest of the pipeline. Here
+    # it runs in parallel with every other job; see the fan-out note in the header.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when a test uses a parallel-unsafe, shared-state pattern
