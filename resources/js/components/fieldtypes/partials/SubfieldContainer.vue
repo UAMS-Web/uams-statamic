@@ -25,7 +25,7 @@
 								:label="subfield.label"
 								:handle="subfield.handle"
 								:required="subfield.required"
-								:id="'field_' + subfield.handle"
+								:id="subfieldId(props.fieldId, parentHandle, subfield.handle)"
 							/>
 						</div>
 					</div>
@@ -51,6 +51,7 @@
 import { inject } from 'vue';
 import { publishContextKey } from '@statamic/cms/ui';
 import SubfieldLabel from './SubfieldLabel.vue';
+import { subfieldId } from './subfieldId.js';
 
 defineOptions({ name: 'SubfieldContainer' });
 
@@ -63,6 +64,8 @@ const props = defineProps({
 	customClass: { type: String, default: '' },
 	fieldtypeHandle: { type: String, required: true },
 	parentHandle: { type: String, required: true },
+	// The fieldtype's id from Statamic, which carries the publish container (#327).
+	fieldId: { type: String, default: '' },
 });
 
 const sectionClass = { 'mt-14 p-4': props.config.fullscreen };

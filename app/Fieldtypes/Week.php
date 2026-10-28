@@ -197,19 +197,26 @@ class Week extends Fieldtype
         // ---
 
         // Get the minimum week value from config
-        /** @var string|null $min */
         $min = $this->config('min');
 
         // Check if min is configured
         if (! empty($min)) {
+            // Narrow the configured min week to a string
+            // Either fallback has no week separator and skips the comparison, so EmptyStringToNotEmpty is equivalent
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
+            $min = \is_scalar($min) ? (string) $min : '';
+
             // Add closure to enforce min week constraint
             $rules[] = function (
-                $attribute,
-                $value,
-                $fail
+                string $attribute,
+                mixed $value,
+                \Closure $fail
             ) use ($min): void {
-                /** @var string $value */
-                /** @var callable $fail */
+                // Narrow the value under validation to a string
+                // Either fallback has no week separator and skips the comparison, so EmptyStringToNotEmpty is equivalent
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $value = \is_scalar($value) ? (string) $value : '';
+
                 // Check if value is less than min
                 if (
                     $this->compareWeeks(
@@ -228,19 +235,26 @@ class Week extends Fieldtype
         // ---
 
         // Get the maximum week value from config
-        /** @var string|null $max */
         $max = $this->config('max');
 
         // Check if max is configured
         if (! empty($max)) {
+            // Narrow the configured max week to a string
+            // Either fallback has no week separator and skips the comparison, so EmptyStringToNotEmpty is equivalent
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
+            $max = \is_scalar($max) ? (string) $max : '';
+
             // Add closure to enforce max week constraint
             $rules[] = function (
-                $attribute,
-                $value,
-                $fail
+                string $attribute,
+                mixed $value,
+                \Closure $fail
             ) use ($max): void {
-                /** @var string $value */
-                /** @var callable $fail */
+                // Narrow the value under validation to a string
+                // Either fallback has no week separator and skips the comparison, so EmptyStringToNotEmpty is equivalent
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $value = \is_scalar($value) ? (string) $value : '';
+
                 // Check if value is greater than max
                 if (
                     $this->compareWeeks(
@@ -260,16 +274,26 @@ class Week extends Fieldtype
 
     /**
      * Compare two ISO week strings (YYYY-Www).
-     * Returns -1 if $a < $b, 0 if equal, 1 if $a > $b.
+     * Returns -1 if $a < $b, 0 if equal, 1 if $a > $b. Returns 0 when either
+     * string has no year-week separator, since it cannot be ordered.
      *
      * @param  string  $a  The first week string
      * @param  string  $b  The second week string
-     * @return int -1 if $a < $b, 0 if equal, 1 if $a > $b
+     * @return int -1 if $a < $b, 0 if equal or not comparable, 1 if $a > $b
      */
     protected function compareWeeks(
         string $a,
         string $b
     ): int {
+        // A string with no year-week separator cannot be split into the two parts
+        // compared below; treat it as equal so no bound fails on it
+        if (
+            ! \str_contains($a, '-W')
+            || ! \str_contains($b, '-W')
+        ) {
+            return 0;
+        }
+
         // Split first week string into year and week components
         [$yearA, $weekA] = \explode(
             '-W',
@@ -286,12 +310,16 @@ class Week extends Fieldtype
         // Compare years first
         // ---
 
-        // Check if first year is less than second year
+        // Return -1 if first year is less than second year
+        // Callers read only the sign, so returning -2 instead of -1 is equivalent
+        // @pest-mutate-ignore: DecrementInteger
         if ((int) $yearA < (int) $yearB) {
             return -1;
         }
 
-        // Check if first year is greater than second year
+        // Return 1 if first year is greater than second year
+        // Callers read only the sign, so returning 2 instead of 1 is equivalent
+        // @pest-mutate-ignore: IncrementInteger
         if ((int) $yearA > (int) $yearB) {
             return 1;
         }
@@ -300,12 +328,16 @@ class Week extends Fieldtype
         // If years are equal, compare week numbers
         // ---
 
-        // Check if first week is less than second week
+        // Return -1 if first week is less than second week
+        // Callers read only the sign, so returning -2 instead of -1 is equivalent
+        // @pest-mutate-ignore: DecrementInteger
         if ((int) $weekA < (int) $weekB) {
             return -1;
         }
 
-        // Check if first week is greater than second week
+        // Return 1 if first week is greater than second week
+        // Callers read only the sign, so returning 2 instead of 1 is equivalent
+        // @pest-mutate-ignore: IncrementInteger
         if ((int) $weekA > (int) $weekB) {
             return 1;
         }

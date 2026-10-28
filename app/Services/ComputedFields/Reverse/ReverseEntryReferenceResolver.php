@@ -111,6 +111,10 @@ class ReverseEntryReferenceResolver
     ): EntryCollection {
         $fieldList = is_string($fields) ? [$fields] : $fields;
 
+        // Swapping the concatenation gives `<fields>nested:`, which is still distinct
+        // from every shallow key: every caller passes blueprint field handles, and a
+        // blueprint handle cannot contain `:`.
+        // @pest-mutate-ignore: ConcatSwitchSides
         return $this->resolveMatching(
             // A distinct key namespace so a shallow and a nested resolve of the same
             // (collections, field, id) never share a memoized result.
@@ -139,7 +143,10 @@ class ReverseEntryReferenceResolver
         mixed $targetId,
         bool $publishedOnly
     ): EntryCollection {
-        // An unsaved or id-less target cannot be referenced by anything yet.
+        // An unsaved or id-less target cannot be referenced by anything yet. Letting
+        // '' through instead is unobservable: every extractor drops empty ids, so the
+        // query would match nothing.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         if (! is_string($targetId) || $targetId === '') {
             return EntryCollection::make();
         }
@@ -147,13 +154,18 @@ class ReverseEntryReferenceResolver
         // Normalize the collection argument to a list for the query and cache key.
         $collections = is_string($sourceCollections) ? [$sourceCollections] : $sourceCollections;
 
-        // Memoize the resolved set per distinct reverse for the request.
+        // Memoize the resolved set per distinct reverse for the request. The parts are
+        // joined with `|` because handles contain `_`: joined with `_`, collection
+        // `a` with field `b_c` and collection `a_b` with field `c` shared one key.
+        // The status is a word rather than 1/0 so no integer mutant can merge the two
+        // statuses; negating the ternary only swaps the words, which stay distinct.
+        // @pest-mutate-ignore: TernaryNegated
         $cacheKey = sprintf(
-            'reverse_entry_reference_%s_%s_%s_%d',
+            'reverse_entry_reference|%s|%s|%s|%s',
             implode('.', $collections),
             $keyDiscriminator,
             $targetId,
-            $publishedOnly ? 1 : 0
+            $publishedOnly ? 'published' : 'any'
         );
 
         /** @var EntryCollection<int, Entry> $result */
@@ -188,6 +200,9 @@ class ReverseEntryReferenceResolver
         // a configured source can be absent in a minimal/isolated Stache (e.g. the
         // people-merge tests provision only `people`) — and a collection that does
         // not exist holds no reverse references, so skipping it is also correct.
+        // The list is only read by value (`whereIn`, `=== []`), so the gaps
+        // array_filter() leaves are harmless.
+        // @pest-mutate-ignore: UnwrapArrayValues
         $collections = array_values(array_filter(
             $collections,
             fn (string $handle): bool => CollectionFacade::findByHandle($handle) !== null
@@ -208,6 +223,10 @@ class ReverseEntryReferenceResolver
         /** @var EntryCollection<int, Entry> $candidates */
         $candidates = $query->get();
 
+        // An entry query only yields Entry instances, so this is never false at run
+        // time. PHPStan types the query result's items as mixed and rejects an
+        // Entry-typed closure, so the instanceof is what narrows them.
+        // @pest-mutate-ignore: InstanceOfToTrue
         /** @var EntryCollection<int, Entry> $matches */
         $matches = $candidates
             ->filter(fn (mixed $entry): bool => $entry instanceof Entry
@@ -229,6 +248,8 @@ class ReverseEntryReferenceResolver
     ): array {
         $value = $entry->get($field);
 
+        // Without this return, null becomes [null], which the filter below drops.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($value === null) {
             return [];
         }
@@ -236,7 +257,10 @@ class ReverseEntryReferenceResolver
         // A `max_items: 1` field stores a scalar; a multi field stores an array.
         $ids = is_array($value) ? $value : [$value];
 
-        // Keep only non-empty id strings (references are stored as string ids).
+        // Keep only non-empty id strings (references are stored as string ids). The
+        // only consumer is a strict in_array() of a non-empty string target, which
+        // can never match an empty or non-string id or depend on key order.
+        // @pest-mutate-ignore: UnwrapArrayFilter, UnwrapArrayValues, BooleanAndToBooleanOr, EmptyStringToNotEmpty
         return array_values(array_filter(
             $ids,
             fn (mixed $id): bool => is_string($id) && $id !== ''
@@ -276,6 +300,9 @@ class ReverseEntryReferenceResolver
     private function collectReferencedIds(mixed $value): array
     {
         if (is_string($value)) {
+            // The target is never '' (resolveMatching() returns first), so keeping an
+            // empty id cannot change a match.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             return $value !== '' ? [$value] : [];
         }
 

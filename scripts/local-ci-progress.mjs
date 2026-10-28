@@ -30,9 +30,6 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-/** Order the runner executes jobs in — shortest to longest (the cost gate). */
-const JOB_ORDER = ['isolation', 'encoding', 'spell', 'js', 'build', 'pint', 'larastan', 'phpunit'];
-
 const ANSI = /\x1b\[[0-9;]*[a-zA-Z]/g;
 
 const HELP = `local-ci-progress.mjs — periodic stage/progress report for a local-CI run.
@@ -214,6 +211,62 @@ export function runHasStalled(idleSeconds, stallAfterSeconds) {
     return stallAfterSeconds > 0 && idleSeconds >= stallAfterSeconds;
 }
 
+// #338: read the summary block by its own delimiters, never by a line count.
+//
+// The block opens with the `CI summary` rule, prints a preamble (`Runner:`, `PHP:`,
+// one line per pest band), a `----` rule, one verdict row per job, and a closing
+// `====` rule. An earlier read took a fixed window of lines sized from an 8-name
+// job list, so the 14-job chain lost its tail, and a failure there read as a pass.
+/**
+ * Parse the runner's `CI summary` block out of an ANSI-stripped log.
+ *
+ * @param  string  $text  Log text with ANSI codes already removed.
+ * @return ?{jobs: Array<{job: string, result: string}>, complete: boolean, failed: boolean}
+ *         Null when the log carries no summary block yet.
+ */
+export function parseSummary(text) {
+    const lines = text.split('\n').map((line) => line.trim());
+    const start = lines.findIndex((line) => line.includes('CI summary'));
+
+    if (start === -1) {
+        return null;
+    }
+
+    // Take every line up to the closing rule; a log cut off mid-block has none.
+    const rest = lines.slice(start + 1);
+    const close = rest.findIndex((line) => /^={4,}$/.test(line));
+    const block = close === -1 ? rest : rest.slice(0, close);
+
+    // Read verdict rows only, so preamble lines of any number never count as jobs.
+    const jobs = block
+        .map((line) => line.match(/^([a-z][a-z-]*)\s+(PASS|FAIL|SKIP)\b/))
+        .filter(Boolean)
+        .map(([, job, result]) => ({ job, result }));
+
+    return {
+        jobs,
+        complete: close !== -1,
+        failed: jobs.some(({ result }) => result === 'FAIL'),
+    };
+}
+
+/**
+ * The verdict word a heartbeat prints for a parsed summary.
+ *
+ * A pass is claimed only for a block that closed with at least one row and no
+ * failure; a block still being written says so rather than guessing.
+ *
+ * @param  {jobs: Array, complete: boolean, failed: boolean}  $summary
+ * @return string
+ */
+export function summaryVerdict(summary) {
+    if (summary.failed) {
+        return 'FAILED';
+    }
+
+    return summary.complete && summary.jobs.length > 0 ? 'passed' : 'summary incomplete';
+}
+
 /**
  * Format a duration in seconds as `12m34s`.
  *
@@ -234,7 +287,7 @@ function human(seconds) {
  * @param  array   $state
  * @return ?string
  */
-function buildReport(logPath, options, state) {
+export function buildReport(logPath, options, state) {
     const stats = statSync(logPath);
     const text = readFileSync(logPath, 'utf8').replace(ANSI, '');
     const name = basename(logPath, '.log');
@@ -247,22 +300,10 @@ function buildReport(logPath, options, state) {
         const duration = (stats.mtimeMs - born) / 1000;
         const idle = (now - stats.mtimeMs) / 1000;
 
-        const summary = text
-            .split('\n')
-            .slice(text.split('\n').findIndex((line) => line.includes('CI summary')) + 1)
-            .slice(0, JOB_ORDER.length + 2)
-            .map((line) => line.trim())
-            .filter((line) => /^[a-z]+\s+(PASS|FAIL|SKIP)/.test(line))
-            .map((line) => {
-                const [job, result] = line.split(/\s+/);
-
-                return `${job}=${result}`;
-            })
-            .join(' ');
-
-        const failed = /\b(FAIL)\b/.test(summary);
-        const exitMatch = text.match(/^EXIT=(\d+)/m);
-        const verdict = exitMatch ? `exit ${exitMatch[1]}` : (failed ? 'FAILED' : 'passed');
+        // Parse the block and list every job row it holds as `job=RESULT`
+        const parsed = parseSummary(text);
+        const summary = parsed.jobs.map(({ job, result }) => `${job}=${result}`).join(' ');
+        const verdict = summaryVerdict(parsed);
 
         const line = `HEARTBEAT  ${name}  COMPLETE (${verdict})  ${summary}  ran ${human(duration)}, finished ${human(idle)} ago — idle, no run in flight`;
 
@@ -324,7 +365,7 @@ function buildReport(logPath, options, state) {
     }
 
     const lastJobLine = jobLines[jobLines.length - 1];
-    const stage = lastJobLine.match(/==> JOB ([a-z]+)/)?.[1] ?? '?';
+    const stage = lastJobLine.match(/==> JOB ([a-z][a-z-]*)/)?.[1] ?? '?';
     const position = configured.indexOf(stage) + 1;
     const where = `stage=${stage} (${position > 0 ? position : '?'} of ${configured.length || '?'})`;
 
