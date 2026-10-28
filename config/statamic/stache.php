@@ -157,15 +157,15 @@ return [
     | `ExampleTest` to the serial tail.
     |
     | So the suite turns it off (phpunit.xml sets STATAMIC_STACHE_LOCK_ENABLED
-    | to false), which both short-circuits the middleware and swaps the lock
+    | to 0), which both short-circuits the middleware and swaps the lock
     | factory to a `NullLockStore`. Each worker has its own cache store, so the
     | warm the lock would deduplicate is one the other workers do not want.
     | It defaults to on, so production is unchanged — and that default is pinned
     | by a test, since phpunit.xml would otherwise mask a regression in it.
     |
-    | The `(bool)` cast is load-bearing, not decoration: a phpunit.xml `<env>` of
-    | "false" reaches `env()` as an EMPTY STRING, which is truthy nowhere but is
-    | not `false` either — and because the variable IS set, `env()` returns it
+    | The `(bool)` cast is load-bearing, not decoration: the phpunit.xml pin of
+    | 0 reaches a spawned child's `env()` as the STRING "0", which is falsy but is
+    | not `false` either, and because the variable IS set, `env()` returns it
     | rather than the default. Same reason `config/maps.php` casts.
     |
     */

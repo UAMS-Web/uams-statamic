@@ -1,5 +1,5 @@
 {
-    "_hash": "f1f53cdb967ede7f6f7a86c6e62a5fd15e32108c8c54185c1d400f5670f639c0",
+    "_hash": "3e743213f081b0d6b0c9c39a3a465d3800ad4032c714faa2230f103ccf89bbab",
     "patches": {
         "larastan/larastan": [
             {
@@ -213,6 +213,18 @@
                 "description": "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)",
                 "url": "patches/statamic-stache-basic-vanished-file-get-item.patch",
                 "sha256": "edb5b63794a9508c335872c3dd9fa9357d0a68082efff1313d690a2e25f252be",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ],
+        "symfony/console": [
+            {
+                "package": "symfony/console",
+                "description": "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #232)",
+                "url": "patches/symfony-console-terminal-input-windows-null-device.patch",
+                "sha256": "d42571844146f7223f2db500a6a506a28808878245c580030306322cbe8d53ef",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
