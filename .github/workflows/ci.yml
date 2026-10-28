@@ -52,8 +52,12 @@ concurrency:
 # The two are kept in lockstep BY HAND: when you add, remove, or change a job's
 # command here, mirror it in the script (and vice versa). The parity-critical
 # surface is each job's final run step, flagged inline with `# PARITY:` below:
-#   pest        -> "Run Pest (parallel, excluding the serial group)"
-#                     + "Run Pest (serial tail for the serial group)"
+#   pest        -> "Run Pest (parallel shard, excluding the serial group)"
+#                     (the local command plus `--shard`: CI splits the band
+#                     four ways, the local runner runs it whole; #387)
+#   pest-serial -> "Run Pest (serial tail for the serial group)"
+#   pest-report -> no counterpart: it merges the shards' reports, and its two
+#                     band checks are the local pest job's parallel-band checks
 #   pint           -> "Determine changed PHP files" + "Run Pint on changed files"
 #   rector         -> "Run Rector (gating profile, dry-run)"
 #   mutate         -> "Run the mutation-tooling smoke"
@@ -71,8 +75,10 @@ concurrency:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
-# JOB FAN-OUT: every job below runs in parallel. No job declares `needs:`, so one
-# job's failure neither skips nor delays another, and a run reports every fault it
+# JOB FAN-OUT: every job below runs in parallel. One job declares `needs:`, and
+# only on the job whose output it reads: `pest-report` merges the reports of the
+# four `pest` shards, so it cannot start before them (#387). Otherwise one job's
+# failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first.
 # Until #373 these ran as a strict sequential chain, cost-ordered shortest to
 # longest, each job entered through `needs:` on the one before it, so an early
@@ -88,7 +94,8 @@ concurrency:
 # whatever any graph says, and stopping early saves the developer's own wall-clock
 # rather than a budget. So the parity contract below covers each job's COMMAND and
 # the SET of jobs, never the order they run in; `scripts/local-ci.chain.test.mjs`
-# asserts that set, and asserts that this file declares no `needs:` edge.
+# asserts that set, and asserts that the only `needs:` edge here is
+# `pest-report` on `pest`.
 # LOCAL-ONLY (intentionally no job here): `local-ci.mjs` resets a REUSED worktree's
 # runtime state (storage/framework, bootstrap caches, Stache) before the framework
 # jobs. There is no counterpart here on purpose — every CI run starts from a fresh
@@ -159,8 +166,8 @@ jobs:
     #   pull request or a push never runs it.
     # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
     #   manual run reaches this step at once instead of after phpstan.
-    # - Nothing `needs:` it, and since #373 no job here needs anything, so it
-    #   cannot skip or hold up any gate job.
+    # - Nothing `needs:` it, so it cannot skip or hold up any gate job. Since
+    #   #373 the only `needs:` edge in this file is `pest-report` on `pest`.
     # - Re-run it by hand whenever a private submodule is added. The token is
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
@@ -213,11 +220,352 @@ jobs:
         run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
 
   pest:
-    name: Pest (full suite)
+    name: Pest (parallel band, shard ${{ matrix.shard }} of 4)
     runs-on: ubuntu-latest
-    # Local-chain cost rank (scripts/local-ci.mjs orders by it; here every job
-    # runs in parallel): after Larastan, the longest job of the PHP set, with
-    # only the browser smoke behind it.
+    # The parallel band runs as four shards, one runner each (#387). Run whole on
+    # one runner it was the longest job in this file by far: about 22 minutes of
+    # band plus setup against about 4 for the serial tail, so it decided the
+    # workflow's wall-clock alone. Split four ways on recorded timings, the longest
+    # shard job took 453s and 506s in two runs of the #384 spike, where the whole
+    # band's job took about 1662s on main.
+    #
+    # Pest assigns test CLASSES to shards (`--shard=<i>/4`), from the per-class
+    # timings in tests/.pest/shards.json when that file exists. Every shard here
+    # reads the same copy (see "Place shard timings") and lists the band's tests,
+    # and `pest-report` merges the four reports, refuses a band no shard ran whole,
+    # and runs the two checks that judge the band as a whole. The serial group runs
+    # beside the shards as `pest-serial`.
+    #
+    # Each shard repeats the full setup below, about half a minute per runner.
+    # That repeated setup is why four shards and not more: past four, the setup
+    # and the longest single class decide the job's length, not the share of the
+    # band (#384).
+    #
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    if: vars.RUN_REMOTE_CI != 'false'
+    strategy:
+      # Every shard runs to its end, so one shard's failure does not hide another's.
+      fail-fast: false
+      matrix:
+        # 1 to SHARD_TOTAL below. scripts/local-ci.chain.test.mjs holds the
+        # two together, and `pest-report` passes the same total to the merge.
+        shard: [1, 2, 3, 4]
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Asset containers, taxonomies, entries, and globals live in the private
+      # `content/` submodule. Without it, `statamic:stache:warm` discovers
+      # nothing and content-dependent tests fail with null lookups (e.g.
+      # `Asset::container()` returning null in the augmented hook).
+      #
+      # `users/` is checked out too (UAMS-Web/uams-statamic-archive#2477). Since UAMS-Web/uams-statamic-archive#2454 it holds only the two
+      # seed accounts and the `.gitignore` allowlist that keeps registrant
+      # records out of git -- a 2 KB pack and no user data -- and checking it
+      # out is what lets tests/Feature/Users/RegistrantRecordsAreGitIgnoredTest.php
+      # run here rather than skip, so a reverted allowlist reds this job instead
+      # of passing it.
+      #
+      # `resources/forms` is checked out too (UAMS-Web/uams-statamic-archive#2818): the form configurations live
+      # in the private forms repository, and the tests that read the real forms
+      # skip without it.
+      #
+      # The other two submodules (public/assets, app/private/assets)
+      # hold binary assets and user data the PHPUnit suite does not need, so they
+      # stay un-initialized to keep checkout cheap. The token reuse works because
+      # these submodules live in the same UAMS-Web org as the private composer
+      # package COMPOSER_AUTH_TOKEN is already scoped for.
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
+
+      # `shivammathur/setup-php` disables OPcache for the CLI by default. For a
+      # framework-booted test suite this is the single biggest perf lever — every
+      # `Tests\TestCase`-derived class re-bootstraps Laravel + Statamic, and the
+      # bulk of that cost is parsing vendor sources. OPcache + JIT bring CI
+      # within range of local PHP-with-OPcache wall-clock times.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # imagick: SvgRasterizerTest self-skips without it, and the app runs
+          # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
+          # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          coverage: none
+          tools: composer:v2
+          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
+          # runs, because four tests are written to run only under those values and
+          # self-skip otherwise: two assert an AssertionError and need assertions
+          # compiled in, two induce a PCRE failure the JIT does not produce. The
+          # runner's defaults (-1 and 1) made all four skip, which took the parallel
+          # band to 5 skips against a baseline of 3 and failed
+          # scripts/check-skip-baseline.php. Raising the baseline would have recorded
+          # the coverage loss instead of fixing it, which that file's own header
+          # forbids; matching the local environment restores the four tests.
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      - name: Prepare environment file
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run Composer post-autoload-dump scripts
+        run: composer run-script post-autoload-dump --no-interaction
+
+      # Run the Unit+Feature suite in parallel (paratest), turning a ~3h
+      # single-process run into ~5 min by using every core. Two pieces keep the
+      # split correct:
+      #   - config/cache.php gives each worker an isolated per-TEST_TOKEN file
+      #     cache, so a concurrent cache clear in one worker can't corrupt another;
+      #     the existing per-process stache warm in tests/CreatesApplication.php
+      #     then populates each worker's own cache, so no separate
+      #     `statamic:stache:warm` step is needed.
+      #   - phpunit.xml forces Statamic's NullCacher, whose lock is a no-op, so the
+      #     static-cache middleware's per-URL lock can't 503 under cross-worker
+      #     contention. It disables the Stache warming lock for the same reason:
+      #     that one is a flock over the single, non-tokenized
+      #     storage/statamic/stache-locks, held for the duration of a warm or a
+      #     Duplicates::find(), so whoever holds it 503s every other worker's
+      #     front-end request (UAMS-Web/uams-statamic-archive#1689). The seed step below makes a warm the
+      #     fallback rather than the norm here, which narrows that window without
+      #     closing it.
+      # A few tests are parallel-fragile (an unpinnable race, or a hardcoded shared
+      # path); they are tagged `->group('serial')` and run in the serial tail step
+      # below rather than the parallel pass — see tests/README.md for the
+      # convention. `-d pcov.enabled=0` keeps the gate coverage-free (a no-op here —
+      # setup-php installs no coverage driver — but mirrors the local runner, where
+      # PCOV is present). paratest auto-detects the runner's (stable) core count;
+      # CI's CLI memory_limit is the -1 (unlimited) default, so workers need no
+      # tuning.
+      # Build the Stache seed once, in the testing env, before the parallel
+      # suite. Each of the ~12 paratest workers otherwise runs
+      # statamic:stache:warm at startup, and because all warm concurrently they
+      # saturate the disk (~168s each vs 21s alone) — the dominant parallel cost
+      # (UAMS-Web/uams-statamic-archive#1537). test:seed-stache warms once and snapshots; each worker then
+      # copies the snapshot into its own per-worker cache (CreatesApplication)
+      # instead of re-warming. Built as APP_ENV=testing so the snapshot matches
+      # the env the workers read. DB_DATABASE=:memory: mirrors phpunit.xml: the
+      # warm builds computed-field indexes that probe the DB (e.g. Schema::hasTable
+      # in the article-engagement computed), so it needs a connectable database —
+      # the tests use in-memory SQLite, and a fresh checkout has no sqlite file.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Build Stache seed (testing env)
+        run: 'DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache'
+
+      # Build the route cache in the testing env before the suite so the URL
+      # generator uses the compiled O(1) RouteCollection instead of scanning the
+      # full table. mitydigital/sitemapamic registers one sitemap route per site
+      # (255 on this multisite), and uncached URL generation scales with route
+      # count, ~2x slower on the render-heavy suite (UAMS-Web/uams-statamic-archive#1537). Built as
+      # APP_ENV=testing so an env-conditional route (e.g. the local-only dev
+      # preview route) is baked exactly as the tests expect; a failure here also
+      # surfaces a route the prod deploy's route:cache could not serialize.
+      # Built AFTER the Stache seed (UAMS-Web/uams-statamic-archive#3106): routes/web.php registers each site's
+      # feed.xml only when `Collection::findByHandle('posts')` resolves as the
+      # route file loads, and against a cold Stache it does not, so the compiled
+      # table would omit every feed route and PostsFeedRouteTest would 404.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Build route cache (testing env)
+        run: APP_ENV=testing php artisan route:cache
+
+      # The timings Pest balances the shards on (#387). Each push to main writes
+      # them, from that run's merged report, to the Actions cache (see
+      # `pest-report`); a pull request reads the newest one main wrote, since a
+      # branch can read its base branch's cache. Restored by prefix only: the
+      # exact key below is never written, so the newest saved entry always wins.
+      # With no entry yet (a new repository, or an evicted cache) the committed
+      # copy in .github/pest-shards.json is used instead.
+      #
+      # REMOTE-ONLY: the local runner runs the parallel band whole, so it reads
+      # no timings.
+      - name: Restore shard timings
+        id: shard-timings
+        uses: actions/cache/restore@v6
+        with:
+          path: tests/.pest/shards.json
+          key: pest-shard-timings-never-written
+          restore-keys: pest-shard-timings-
+
+      # Logs which timings this shard read, and records their source and hash for
+      # `pest-report`. Every shard partitions the band from its own copy, so four
+      # shards that read different copies (a main push saving new timings between
+      # two shards' restores) can run a class twice or not at all; `pest-report`
+      # refuses that by comparing the four notes.
+      - name: Place shard timings
+        env:
+          SHARD: ${{ matrix.shard }}
+          MATCHED_KEY: ${{ steps.shard-timings.outputs.cache-matched-key }}
+        run: |
+          if [ -n "$MATCHED_KEY" ] && [ -s tests/.pest/shards.json ]; then
+            source="cache entry $MATCHED_KEY"
+          else
+            mkdir -p tests/.pest
+            cp .github/pest-shards.json tests/.pest/shards.json
+            source="committed .github/pest-shards.json"
+          fi
+          note="source=$source sha256=$(sha256sum tests/.pest/shards.json | cut -d' ' -f1)"
+          echo "Shard timings: $note"
+          echo "$note" > "shard-timings-$SHARD.txt"
+
+      # What the whole band holds, so `pest-report` can show the shards ran each
+      # class exactly once. Listing loads the test files without running them.
+      # REMOTE-ONLY: the local runner does not shard, so it has nothing to compare.
+      - name: List the parallel band's tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: php -d pcov.enabled=0 vendor/bin/pest --list-tests --exclude-group=serial > "pest-list-$SHARD.txt"
+
+      # NO --tia HERE, DELIBERATELY (UAMS-Web/uams-statamic-archive#1717). Pest 5's test-impact-analysis engine
+      # replays cached results instead of executing tests it believes a change
+      # cannot reach. It is excluded from BOTH bands below for three independent
+      # reasons, any one of which is disqualifying:
+      #
+      #   1. No coverage driver. Tia builds its graph from coverage, and this job
+      #      pins `coverage: none` above (local-ci.mjs passes `-d pcov.enabled=0`).
+      #      With no driver it records zero edges, and a graph with no edges marks
+      #      nothing affected -- so every run replays and reports a green suite
+      #      having executed nothing. Pest 5.0.1 does not warn about this.
+      #   2. No persistent cache. Tia's graph lives at tests/.pest/tia/, which #192
+      #      pins via `pest()->tia()->directory()` instead of the default
+      #      ~/.pest/tia/<key>/. Either way every Actions job is a fresh checkout on
+      #      a fresh runner, so the graph never survives; Tia here would need the
+      #      --baselined artifact-fetch pipeline to do anything at all.
+      #   3. The content/ blind spot. `.gitmodules` sets `ignore = dirty` on the
+      #      content submodule, so `git status --porcelain` -- Tia's exact change
+      #      detection -- reports nothing when content changes, and a submodule
+      #      path is a directory, which Tia's watch-pattern fallback drops anyway.
+      #      Reproduced: with one content entry added, --tia returned `2 passed,
+      #      2 replayed` (exit 0) where --no-tia returned `1 failed` (exit 1).
+      #
+      # Tia IS available locally, opt-in, behind a guard that refuses to run under
+      # conditions 1 and 3: `composer test:tia` (scripts/check-tia-safe.php). The
+      # gate deliberately does not use it -- an exhaustive run is the whole point.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # --shard selects this job's share of the classes, and changes nothing about
+      # how they run. --log-junit feeds `pest-report`, which merges the four shards'
+      # reports before the skip-baseline and slowest-class checks read them.
+      - name: Run Pest (parallel shard, excluding the serial group)
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --shard="$SHARD/$SHARD_TOTAL" --display-all-issues --log-junit "junit-parallel-$SHARD.xml"
+
+      # Only a shard whose band passed uploads, and `pest-report` needs all four,
+      # so a failed shard leaves the report job skipped rather than merging an
+      # incomplete band.
+      - name: Upload the shard's report, listing and timings note
+        uses: actions/upload-artifact@v7
+        with:
+          name: pest-shard-${{ matrix.shard }}
+          path: |
+            junit-parallel-${{ matrix.shard }}.xml
+            pest-list-${{ matrix.shard }}.txt
+            shard-timings-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      # Every test process holds the content mirror band lock shared, and a child a
+      # test spawns inherits that descriptor, so the lock can outlive both bands and
+      # refuse every later `test:seed-stache` with nothing naming a lock or a
+      # process (UAMS-Web/uams-statamic-archive#3018). Probed only here, after the serial tail: a live band
+      # legitimately holds the lock. `if: always()` because a failed band can leave
+      # a child behind as easily as a passing one. PHP, not Node, as above.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check the content mirror band lock was released
+        if: always()
+        run: php scripts/check-band-lock-released.php
+
+      # Clear the cached table so it can't leak into a warm-runner rerun.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Clear route cache
+        if: always()
+        run: php artisan route:clear
+
+      # A test that persists a fixture into the live content/ submodule strands the
+      # file whenever the process does not reach its cleanup — a band killed at its
+      # bound, or one that fatals (UAMS-Web/uams-statamic-archive#1873). Locally that dirties the checkout for every
+      # later run, and the stray is boot-visible input: `statamic:stache:warm` indexes
+      # it and memoizes a collection-structure entry against the real collection, which
+      # is the state that produced UAMS-Web/uams-statamic-archive#1845.
+      #
+      # `if: always()` deliberately: a band that FAILED is exactly the case where
+      # cleanup did not run, so skipping the check on failure would hide the litter in
+      # the run most likely to have produced it.
+      #
+      # No before/after diff here, unlike local-ci.mjs — this runner checks out fresh,
+      # so anything dirty was written by this run. The runner reuses its worktree and
+      # therefore has to tell the two apart.
+      #
+      # users/ is checked the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the file user
+      # driver writes there, and what this catches is not a test-created account
+      # (the allowlist ignores those, and --untracked-files=all lists untracked, not
+      # ignored) but a tracked seed account a test deleted or rewrote.
+      # resources/forms/ is checked since UAMS-Web/uams-statamic-archive#2818 made it a submodule: a test that saves
+      # a form without re-rooting statamic.forms.forms writes its YAML there.
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # Nothing is held aside any more. `models/assets/` used to be, mirroring
+      # KNOWN_CONTENT_LITTER in scripts/local-ci.mjs, because app/Models/Asset.php
+      # rewrote content/models/assets/{id}.yml through base_path() on model save,
+      # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
+      # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
+      # so the exemption came out and this gate now fails on any write at all.
+      - name: Check the suite left content/, users/ and resources/forms/ clean
+        if: always()
+        run: |
+          code=0
+          for sub in content users resources/forms; do
+            dirty=$(git -C "$sub" status --porcelain --untracked-files=all)
+            if [ -n "$dirty" ]; then
+              echo "::error::The suite wrote into the $sub/ submodule:"
+              echo "$dirty"
+              if [ "$sub" = resources/forms ]; then
+                echo "A test saved a form into the live forms submodule. Point statamic.forms.forms"
+                echo "at a throwaway directory for the test, the way the Feature/Forms tests do."
+              elif [ "$sub" = content ]; then
+                echo "Put the test on Tests\\Support\\CollectionTreeIsolatedTestCase, which re-roots the"
+                echo "collection-trees store at a throwaway directory so its writes land in"
+                echo "storage/framework/testing/ instead of the live submodule."
+              else
+                echo "A test deleted or rewrote a tracked seed account. Delete only what the test created,"
+                echo "by the email it chose, and never User::all() in bulk; or re-root the users store"
+                echo "the way Tests\\Support\\BrowserWriteIsolation does."
+              fi
+              code=1
+            else
+              echo "$sub/ litter: none — the suite left the submodule as it found it."
+            fi
+          done
+          exit "$code"
+
+  pest-serial:
+    name: Pest (serial group)
+    runs-on: ubuntu-latest
+    # The serial group, beside the parallel band's shards rather than after them
+    # (#387): the two share nothing at run time, since each job has its own
+    # checkout, seed and route cache. Its setup is the shards' setup, step for
+    # step; scripts/local-ci.chain.test.mjs holds the two together.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -385,53 +733,15 @@ jobs:
       # conditions 1 and 3: `composer test:tia` (scripts/check-tia-safe.php). The
       # gate deliberately does not use it -- an exhaustive run is the whole point.
       # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
-      # --log-junit feeds the skip-baseline check below; it changes nothing about
-      # what runs.
-      - name: Run Pest (parallel, excluding the serial group)
-        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --display-all-issues --log-junit junit-parallel.xml
-
       # The serial tail runs the parallel-fragile `->group('serial')` tests in a
       # single process (no --parallel), where they are reliable.
       # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
       - name: Run Pest (serial tail for the serial group)
         run: php -d pcov.enabled=0 vendor/bin/pest --group=serial --display-all-issues --log-junit junit-serial.xml
 
-      # A band that silently skips tests reports PASS having tested less than it
-      # should have. Skips are how this suite degrades when content or Stache state
-      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
-      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
-      # passed, caught only because the count had been predicted by hand. The
-      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
-      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
-      # tolerates the guard being absent, since it validates older branches too; CI
-      # only ever runs a branch's own workflow, so no counterpart is needed here.)
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
-      - name: Check skip baseline (parallel band)
-        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
-
       # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
       - name: Check skip baseline (serial band)
         run: php scripts/check-skip-baseline.php --report=junit-serial.xml --band=serial
-
-      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
-      # passed in silence — the gate reports PASS on any duration. It has happened
-      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
-      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
-      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
-      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
-      #
-      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
-      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
-      # class seconds inflate with runner load exactly as band wall time does
-      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
-      # bounds the band, since paratest distributes by class. Reads the reports
-      # the two steps above already produced, so it costs no extra run. PHP, not
-      # Node, for the same reason as the skip guard: this job sets up PHP only.
-      # (local-ci.mjs additionally tolerates the guard being absent, since it
-      # validates older branches too.)
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
-      - name: Check slowest class (parallel band)
-        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
 
       # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
       - name: Check slowest class (serial band)
@@ -509,6 +819,110 @@ jobs:
             fi
           done
           exit "$code"
+
+  pest-report:
+    name: Pest (parallel band report)
+    runs-on: ubuntu-latest
+    # Merges the four shards' reports into the one parallel band report the two
+    # band checks read, and refuses a band the shards did not run exactly once
+    # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
+    # the whole band, and the slowest class is judged by its share of the whole
+    # band's time. Fed one shard's report, the first compares a quarter of the
+    # band with a whole-band baseline and the second divides by a quarter of the
+    # band, so neither runs in a shard.
+    #
+    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # reads the shards' output, so it cannot run before them. It skips when any
+    # shard fails, as the checks below skipped in the single job when the band
+    # failed; the failed shard already fails the run.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: pest
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pest-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-parallel.xml, the band report the checks below read, and the
+      # per-class timings the next run balances its shards on. Fails, naming what
+      # it found, when a shard's files are missing, the shards read different
+      # timings or listed different tests, a case ran in two shards, or a class's
+      # case count differs from the listing. PHP, not Node, like the checks.
+      # REMOTE-ONLY: the local runner writes junit-parallel.xml from one band.
+      - name: Merge the shard reports into the parallel band report
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-parallel.xml --timings=tests/.pest/shards.json
+
+      # A band that silently skips tests reports PASS having tested less than it
+      # should have. Skips are how this suite degrades when content or Stache state
+      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
+      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
+      # passed, caught only because the count had been predicted by hand. The
+      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
+      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # tolerates the guard being absent, since it validates older branches too; CI
+      # only ever runs a branch's own workflow, so no counterpart is needed here.)
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check skip baseline (parallel band)
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+
+      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
+      # passed in silence — the gate reports PASS on any duration. It has happened
+      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
+      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
+      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
+      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
+      #
+      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
+      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
+      # class seconds inflate with runner load exactly as band wall time does
+      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
+      # bounds the band, since paratest distributes by class. Reads the reports
+      # the two steps above already produced, so it costs no extra run. PHP, not
+      # Node, for the same reason as the skip guard: this job sets up PHP only.
+      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # validates older branches too.)
+      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      - name: Check slowest class (parallel band)
+        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
+
+      # The timings a pull request's shards read: written on each push to main,
+      # under a key unique to the run, and read back by prefix (see "Restore shard
+      # timings"). Never written by a pull request, so a branch cannot change the
+      # partition another branch reads. The committed fallback,
+      # .github/pest-shards.json, is refreshed by hand from this artifact when the
+      # cache is empty for long enough to matter.
+      # REMOTE-ONLY: the local runner does not shard.
+      - name: Save shard timings for later runs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: tests/.pest/shards.json
+          key: pest-shard-timings-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload the band report and timings
+        uses: actions/upload-artifact@v7
+        with:
+          name: pest-parallel-band
+          path: |
+            junit-parallel.xml
+            tests/.pest/shards.json
+          if-no-files-found: error
+          retention-days: 14
 
   pint:
     name: Pint (changed files)

@@ -23,12 +23,13 @@ import {
 // so a locally-green branch is gated differently than it would be on CI. The
 // `.githooks/pre-commit` hook only catches staging one file without the other; it
 // cannot see whether the two agree. These assert that they do.
-// Since #373 the ORDER is deliberately not shared. ci.yml declares no `needs:` and
-// runs its jobs in parallel, because GitHub does not meter the standard runners
-// they use for a public repository; the local runner keeps its cost-ordered chain
-// because one machine runs the jobs serially whatever any graph says. So these
-// cases pin the SET, and pin that ci.yml stays unchained, rather than comparing
-// two orders that no longer both exist.
+// Since #373 the ORDER is deliberately not shared. ci.yml runs its jobs in
+// parallel, because GitHub does not meter the standard runners they use for a
+// public repository; the local runner keeps its cost-ordered chain because one
+// machine runs the jobs serially whatever any graph says. So these cases pin the
+// SET, and pin that ci.yml stays unchained apart from the one edge #387 added
+// (`pest-report` reads the `pest` shards' output), rather than comparing two
+// orders that no longer both exist.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
@@ -49,7 +50,12 @@ const JOB_KEYS = {
     rector: 'rector',
     mutate: 'mutate',
     phpstan: 'phpstan',
+    // #387 splits the local pest job three ways in CI: the parallel band as a
+    // four-shard matrix, the serial group beside it, and a job that merges the
+    // shards' reports and runs the parallel band's checks on the merged report.
     pest: 'pest',
+    'pest-serial': 'pest',
+    'pest-report': 'pest',
     browser: 'browser',
 }
 
@@ -135,7 +141,7 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect([...jobs.keys()].sort()).toEqual(Object.keys(JOB_KEYS).sort())
     })
 
-    it('declares no `needs:` edge, so every remote job runs in parallel (#373)', () => {
+    it('declares no `needs:` edge but `pest-report` on `pest`, so the remote jobs run in parallel (#373, #387)', () => {
         // The remote jobs fan out. The cost-ordered chain they used to run as was
         // there to protect a metered Actions budget, and GitHub does not meter the
         // standard runners every job here uses for a public repository. An edge
@@ -144,6 +150,9 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // fails rather than letting one return unnoticed. Reintroducing an edge is
         // a decision to take deliberately in docs/DECISIONS.md, not to discover
         // through a passing parity test.
+        //
+        // The one allowed edge (#387) is not an ordering choice: `pest-report`
+        // merges the `pest` shards' reports, so it cannot run before them.
         //
         // An empty result is evidence only if the scanner can still SEE an edge: a
         // parser that stopped matching `needs:` would report a clean fan-out for a
@@ -156,8 +165,8 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect(control.get('beta').needs).toEqual(['alpha'])
         expect(control.get('alpha').needs).toBeNull()
 
-        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id]) => id)
-        expect(chained).toEqual([])
+        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id, job]) => [id, job.needs])
+        expect(chained).toEqual([['pest-report', ['pest']]])
     })
 
     it('addresses every chained job by a valid `--jobs` key', () => {
@@ -500,5 +509,97 @@ describe('reading a file at a ref a checkout may not have (#375)', () => {
         withRepo((dir) => {
             expect(() => readAtRef(dir, 'HEAD', 'absent.txt')).toThrow()
         })
+    })
+})
+
+/**
+ * The text of one job in ci.yml: its header line through the line before the next
+ * job's header. Throws when the job is missing, so a rename cannot leave the cases
+ * below reading an empty string.
+ */
+function jobText(yaml, id) {
+    const lines = yaml.split(/\r?\n/)
+    const start = lines.indexOf(`  ${id}:`)
+    if (start === -1) {
+        throw new Error(`ci.yml has no job ${id}.`)
+    }
+    const rest = lines.slice(start + 1)
+    const end = rest.findIndex((line) => /^ {2}[A-Za-z0-9_-]+:\s*$/.test(line) || (/^\S/.test(line) && !line.startsWith('#')))
+
+    return [lines[start], ...(end === -1 ? rest : rest.slice(0, end))].join('\n')
+}
+
+describe('the sharded pest job in ci.yml (#387)', () => {
+    const pest = jobText(workflow, 'pest')
+    const report = jobText(workflow, 'pest-report')
+
+    it('runs one shard per number from 1 to the total it and the merge both read', () => {
+        // The matrix, the total each shard passes to --shard and the total the
+        // merge expects are three separate literals. A shard added to the matrix
+        // without the totals runs a fifth of a band the merge never asks for; a
+        // total raised without the matrix leaves a quarter of the classes without a shard,
+        // which the merge then refuses as missing inputs only if it is told the
+        // new total.
+        const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
+        const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+
+        expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
+        expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
+        expect(reportTotal, 'pest-report sets no SHARD_TOTAL').not.toBeNull()
+
+        const total = Number(pestTotal[1])
+        const shards = matrix[1].split(',').map((n) => Number(n.trim()))
+        expect(shards).toEqual(Array.from({ length: total }, (_, i) => i + 1))
+        expect(Number(reportTotal[1])).toBe(total)
+        expect(report).toContain('--total="$SHARD_TOTAL"')
+        expect(pest).toContain('--shard="$SHARD/$SHARD_TOTAL"')
+    })
+
+    it('gives the serial group the shards\' setup, step for step', () => {
+        // pest-serial and the shards each build their own environment, and the
+        // serial group is half of what the local pest job runs. A setup step
+        // changed in one job and not the other gates the two halves of the band
+        // differently, so everything from `steps:` through the route cache must be
+        // byte-identical.
+        const setup = (text, id) => {
+            const from = text.indexOf('\n    steps:\n')
+            const marker = '        run: APP_ENV=testing php artisan route:cache\n'
+            const to = text.indexOf(marker)
+            expect(from, `${id} has no steps:`).toBeGreaterThan(-1)
+            expect(to, `${id} builds no route cache`).toBeGreaterThan(from)
+
+            return text.slice(from, to + marker.length)
+        }
+        const serial = jobText(workflow, 'pest-serial')
+
+        // A control: the comparison must see a one-character change.
+        expect(setup(serial, 'pest-serial').replace('Set up PHP', 'Set up PHP!')).not.toBe(setup(pest, 'pest'))
+        expect(setup(serial, 'pest-serial')).toBe(setup(pest, 'pest'))
+    })
+
+    it('runs each shard with the local parallel band command, plus --shard', () => {
+        // Sharding changes which classes a runner gets, never how they run. So
+        // once the shard selector and the per-shard report name are taken out,
+        // the shard's flags must be the local runner's parallel-band flags, less
+        // the memory passthru the local runner adds for a developer machine.
+        const runLine = pest.match(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/m)
+        expect(runLine, 'no parallel shard run step in the pest job').not.toBeNull()
+        const remote = runLine[1]
+            .replace(' --shard="$SHARD/$SHARD_TOTAL"', '')
+            .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
+            .split(' ')
+
+        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], worktreePath\)/)
+        expect(localCall, 'no parallel band call in scripts/local-ci.mjs').not.toBeNull()
+        const local = ['php', ...[...localCall[1].matchAll(/'([^']*)'|`[^`]*`|(parallelReport)/g)]
+            .filter((m) => m[0].startsWith("'") || m[2])
+            .map((m) => (m[2] ? 'junit-parallel.xml' : m[1]))]
+
+        // A control: a drifted flag must make the two differ, or the comparison
+        // proves nothing.
+        expect([...remote, '--stop-on-failure']).not.toEqual(local)
+        expect(remote).toEqual(local)
     })
 })

@@ -37,8 +37,17 @@ describe('the pest job builds the route cache after the Stache seed (#3106)', ()
         expect(cacheRun).toBeGreaterThan(cacheStep)
     })
 
-    it('runs the seed step before the route-cache step in ci.yml', () => {
-        const at = (fragment) => offsetIn(workflow, '.github/workflows/ci.yml', fragment)
+    // Since #387 two jobs run Pest in ci.yml, the parallel band's shards and the
+    // serial group, and each builds its own seed and route cache. So the order is
+    // pinned per job, each fragment exactly once within it.
+    it.each(['pest', 'pest-serial'])('runs the seed step before the route-cache step in ci.yml job %s', (id) => {
+        const lines = workflow.split(/\r?\n/)
+        const start = lines.indexOf(`  ${id}:`)
+        expect(start, `ci.yml has no job ${id}`).toBeGreaterThanOrEqual(0)
+        const rest = lines.slice(start + 1)
+        const end = rest.findIndex((line) => /^ {2}[A-Za-z0-9_-]+:\s*$/.test(line))
+        const job = (end === -1 ? rest : rest.slice(0, end)).join('\n')
+        const at = (fragment) => offsetIn(job, `.github/workflows/ci.yml job ${id}`, fragment)
 
         const seed = at('- name: Build Stache seed (testing env)')
         const cache = at('- name: Build route cache (testing env)')

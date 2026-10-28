@@ -83,8 +83,11 @@
 //
 //     ci.yml job        this script
 //     --------------    -------------------------------------------------
-//     pest           pest --parallel --exclude-group=serial then a serial
-//                       pest --group=serial tail (paratest; each worker gets an
+//     pest, pest-serial, pest-report
+//                    pest --parallel --exclude-group=serial then a serial
+//                       pest --group=serial tail. CI shards the parallel band
+//                       four ways and merges the reports (#387); here the band
+//                       runs whole (paratest; each worker gets an
 //                       isolated per-TEST_TOKEN cache warmed by the per-process
 //                       CreatesApplication stache warm), plus the
 //                       .env/key:generate/post-autoload-dump prep and the
@@ -2478,7 +2481,12 @@ function main() {
             // PARITY: mirrors the pest job's note in ci.yml.
             // --log-junit feeds the skip-baseline check below; it changes nothing
             // about what runs.
-            // PARITY: mirrors the "Run Pest (parallel...)" step in ci.yml.
+            // PARITY: mirrors the "Run Pest (parallel shard...)" step in ci.yml.
+            // CI runs the same command four times with `--shard=<i>/4` and merges
+            // the four reports in its `pest-report` job before the band checks
+            // (#387); this runner runs the band whole, so it has nothing to shard
+            // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
+            // differ only by --shard.
             step('JOB pest - parallel suite (excluding serial group)')
             const parallelReport = join(worktreePath, 'junit-parallel.xml')
             const serialReport = join(worktreePath, 'junit-serial.xml')
