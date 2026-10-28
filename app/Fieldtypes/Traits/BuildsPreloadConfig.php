@@ -246,7 +246,7 @@ trait BuildsPreloadConfig
         ) {
             // Set dirname to name attribute with .dir suffix
             $name = $config['name'];
-            $config['dirname'] = (\is_scalar($name) ? (string) $name : '').'.dir';
+            $config['dirname'] = (\is_scalar($name) ? $name : '').'.dir';
         }
 
         // ---

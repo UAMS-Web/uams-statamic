@@ -76,7 +76,7 @@ class FirstPartyUrl extends BaseValidationRule
         // ---
 
         // Check if no host could be extracted
-        if (! \is_string($host) || $host === '') {
+        if (! \is_string($host)) {
             // No host means it cannot be a first-party URL
             return false;
         }

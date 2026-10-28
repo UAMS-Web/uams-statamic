@@ -445,29 +445,6 @@ class Currency extends Fieldtype
                         // relevant
                         // ---
                         $config['input_mask_append_text'] = ($currency_symbol_separation ? ' ' : '').$currency_symbol;
-                    } elseif ($currency_symbol_placement === 'between') { // If the symbol placement is 'between', set the currency symbol as the radix
-                        // ---
-                        // Set the currency symbol as the radix
-                        // ---
-
-                        // Disable prepended text
-                        $config['input_mask_prepend_text_enabled'] = false;
-
-                        // Disable appended text
-                        $config['input_mask_append_text_enabled'] = false;
-
-                        // Set the currency symbol as the radix
-                        $config['input_mask_radix'] = $currency_symbol;
-                    } else { // Otherwise
-                        // ---
-                        // Disable both prepend and append
-                        // ---
-
-                        // Disable prepended text
-                        $config['input_mask_prepend_text_enabled'] = false;
-
-                        // Disable appended text
-                        $config['input_mask_append_text_enabled'] = false;
                     }
 
                     // Clean up variables to free up memory

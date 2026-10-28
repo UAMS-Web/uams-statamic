@@ -7,6 +7,7 @@ use App\Rules\LeadershipDevelopmentActivitiesTerm;
 use App\Rules\ProfessionalDevelopmentActivitiesTerm;
 use App\Scopes\ProfessionalAndLeadershipDevelopmentActivitiesTermType as ActivitiesScope;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\TestCase;
 
@@ -151,3 +152,66 @@ it('normalizes an array value, skipping non-string and empty entries', function 
         ['professional_and_leadership_development_activities::pd', 123, ''],
     ))->toBeEmpty();
 });
+
+it('names the id and the found taxonomy in the wrong-taxonomy message', function () {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('certifications');
+
+    mockTermRepository()->shouldReceive('find')->once()->andReturn($term);
+
+    expect(activitiesTermMessages(new ProfessionalDevelopmentActivitiesTerm, 'certifications::x'))->toBe([__(
+        'statamic::validation.professional_development_activity_term.wrong_taxonomy',
+        ['id' => 'certifications::x', 'taxonomy' => 'certifications'],
+    )]);
+});
+
+it('names the id, the found type and the expected type in the wrong-type message', function (mixed $type, string $display) {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn(ActivitiesScope::TAXONOMY);
+    $term->shouldReceive('get')->once()->with(ActivitiesScope::TYPE_FIELD)->andReturn($type);
+
+    mockTermRepository()->shouldReceive('find')->once()->andReturn($term);
+
+    expect(activitiesTermMessages(new LeadershipDevelopmentActivitiesTerm, 'activities::x'))->toBe([__(
+        'statamic::validation.leadership_development_activity_term.wrong_type',
+        [
+            'id' => 'activities::x',
+            'type' => $display,
+            'expected' => ActivitiesScope::TYPE_VALUE_LEADERSHIP_DEVELOPMENT,
+        ],
+    )]);
+})->with([
+    'string' => ['other', 'other'],
+    'integer' => [3, '3'],
+    'null' => [null, ''],
+    'array' => [['other'], ''],
+]);
+
+it('keeps reading the array after a skipped entry', function (mixed $skipped) {
+    mockTermRepository()->shouldReceive('find')->once()->with('activities::missing')->andReturn(null);
+
+    expect(activitiesTermMessages(new ProfessionalDevelopmentActivitiesTerm, [$skipped, 'activities::missing']))->toBe([__(
+        'statamic::validation.professional_development_activity_term.not_found',
+        ['id' => 'activities::missing'],
+    )]);
+})->with([
+    'non-string' => [123],
+    'empty string' => [''],
+]);
+
+it('accepts a localized term from the repository', function () {
+    $term = Mockery::mock(LocalizedTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn(ActivitiesScope::TAXONOMY);
+    $term->shouldReceive('get')->once()->with(ActivitiesScope::TYPE_FIELD)
+        ->andReturn(ActivitiesScope::TYPE_VALUE_PROFESSIONAL_DEVELOPMENT);
+
+    mockTermRepository()->shouldReceive('find')->once()->andReturn($term);
+
+    expect(activitiesTermMessages(new ProfessionalDevelopmentActivitiesTerm, 'activities::pd'))->toBe([]);
+});
+
+it('refuses a repository result that is not a term', function () {
+    mockTermRepository()->shouldReceive('find')->once()->andReturn(new stdClass);
+
+    activitiesTermMessages(new ProfessionalDevelopmentActivitiesTerm, 'activities::x');
+})->throws(AssertionError::class, 'Term::find must return a LocalizedTerm or Term instance.');

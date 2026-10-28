@@ -50,6 +50,9 @@ class NotTopLevelOrganization implements ValidationRule
 
             // Name the refused organization, falling back to its id
             $organization = Entry::find($id);
+            // phpstan requires this type guard; a tree drops a node whose entry is
+            // missing, so every top-level id resolves to an entry.
+            // @pest-mutate-ignore: InstanceOfToTrue
             $title = $organization instanceof EntryItem ? $organization->get('title') : null;
 
             $fail(__('statamic::validation.not_top_level_organization.top_level', [

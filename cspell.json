@@ -49,6 +49,19 @@
         {
             "filename": ["scripts/spell-ipv6.test.mjs"],
             "words": ["faec", "fefe", "fffa", "metodd", "sentense", "tpyo", "wrongg"]
+        },
+        // The identifier-rule tests feed the rules sample identifiers: Google
+        // Scholar author ids, Legal Entity Identifiers, and a name with an
+        // accented first letter. They are fixtures whose exact characters the
+        // rules check, so they cannot be reworded, and as global entries they
+        // would silence the same strings anywhere in the repo. Scoped to the two
+        // files (#311).
+        {
+            "filename": [
+                "tests/Feature/Rules/CheckedIdentifierRulesTest.php",
+                "tests/Feature/Rules/PatternIdentifierRulesTest.php"
+            ],
+            "words": ["kjtiigc", "Ölaf", "yaaa", "yaaaa", "yaaaaj", "yaaaajx"]
         }
     ],
     "ignorePaths": [

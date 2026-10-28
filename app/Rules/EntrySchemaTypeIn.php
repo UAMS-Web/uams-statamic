@@ -45,7 +45,7 @@ class EntrySchemaTypeIn implements ValidationRule
             }
         }
 
-        $this->allowedTypes = array_values(array_unique($allowed));
+        $this->allowedTypes = array_unique($allowed);
     }
 
     /**
@@ -64,10 +64,10 @@ class EntrySchemaTypeIn implements ValidationRule
         $ids = \is_array($value) ? array_filter($value) : ($value ? [$value] : []);
 
         foreach ($ids as $id) {
-            $idString = \is_scalar($id) ? (string) $id : '';
-            $entry = Entry::find($id);
+            // Look the entry up only by a scalar id; any other value names no entry.
+            $entry = \is_scalar($id) ? Entry::find($id) : null;
             if ($entry === null) {
-                $fail(__('statamic::validation.entry_schema_type_in.not_found', ['id' => $idString]));
+                $fail(__('statamic::validation.entry_schema_type_in.not_found', ['id' => \is_scalar($id) ? $id : '']));
 
                 return;
             }
@@ -76,10 +76,10 @@ class EntrySchemaTypeIn implements ValidationRule
             $schema = $entry->get('schema');
             $typeRaw = \is_array($schema) ? ($schema['type'] ?? null) : null;
             $types = $this->normalizeTypeToArray($typeRaw);
-            if ($types === [] || array_intersect($types, $this->allowedTypes) === []) {
+            if (array_intersect($types, $this->allowedTypes) === []) {
                 $typeString = \is_array($typeRaw)
                     ? implode(', ', array_map(static fn ($t): string => \is_scalar($t) ? (string) $t : '', $typeRaw))
-                    : (\is_scalar($typeRaw) ? (string) $typeRaw : '');
+                    : (\is_scalar($typeRaw) ? $typeRaw : '');
                 $fail(__(
                     'statamic::validation.entry_schema_type_in.not_allowed',
                     [
@@ -96,17 +96,20 @@ class EntrySchemaTypeIn implements ValidationRule
     /**
      * Normalize type to array of type strings (single type or MTE).
      *
+     * An empty string is kept: it matches no allowed type, so it fails like any
+     * other type outside the list.
+     *
      * @param  mixed  $type  Stored type (string or array)
-     * @return array<int, string>
+     * @return array<array-key, string>
      */
     private function normalizeTypeToArray(mixed $type): array
     {
         if (\is_string($type)) {
-            return $type !== '' ? [$type] : [];
+            return [$type];
         }
 
         if (\is_array($type)) {
-            return array_values(array_unique(array_filter($type, static fn ($t): bool => \is_string($t) && $t !== '')));
+            return array_filter($type, \is_string(...));
         }
 
         return [];

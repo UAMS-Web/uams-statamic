@@ -73,16 +73,11 @@ final class PersonNameDisplayFormatRule implements DataAwareRule, ValidationRule
             return;
         }
 
-        if (
-            $this->parentFieldMarkedRequired
-            && ($value === null || $value === '')
-        ) {
-            $fail(__('validation.required'));
-
-            return;
-        }
-
         if ($value === null || $value === '') {
+            if ($this->parentFieldMarkedRequired) {
+                $fail(__('validation.required'));
+            }
+
             return;
         }
 
@@ -92,6 +87,9 @@ final class PersonNameDisplayFormatRule implements DataAwareRule, ValidationRule
             return;
         }
 
+        // Equivalent: format keys such as `full_first_only@ns` are never numeric
+        // strings, so loose comparison matches exactly as strict comparison does.
+        // @pest-mutate-ignore: TrueToFalse
         if (! \in_array($value, $allowed, true)) {
             $fail(__('validation.in'));
         }

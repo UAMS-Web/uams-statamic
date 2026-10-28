@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Rules\PersonNameDisplayFormatRule;
+use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Translation\PotentiallyTranslatedString;
 use Tests\TestCase;
 
 /**
@@ -83,3 +85,22 @@ it('refuses a key no name allows', function (): void {
         'name_display_format' => 'not_a_format@ns',
     ]))->toBeFalse();
 });
+
+// The validator skips an empty string for a rule that is not implicit, so this
+// reaches the rule's own empty-string branch by calling it directly.
+it('treats an empty string as no format chosen', function (bool $required, ?string $expectedKey): void {
+    $messages = [];
+
+    (new PersonNameDisplayFormatRule('person_name', $required, true))
+        ->setData(['person_name' => displayFormatRuleLegalName()])
+        ->validate('name_display_format', '', function (string $message) use (&$messages): PotentiallyTranslatedString {
+            $messages[] = $message;
+
+            return new PotentiallyTranslatedString($message, mustBe(Translator::class, app('translator'), 'translator'));
+        });
+
+    expect($messages)->toBe($expectedKey === null ? [] : [__($expectedKey)]);
+})->with([
+    'required' => [true, 'validation.required'],
+    'optional' => [false, null],
+]);

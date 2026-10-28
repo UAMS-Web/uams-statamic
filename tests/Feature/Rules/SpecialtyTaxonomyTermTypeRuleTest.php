@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Rules\SpecialtyTaxonomyTermType as SpecialtyTaxonomyTermTypeRule;
 use App\Scopes\SpecialtyTaxonomyTermType as SpecialtyTaxonomyTermTypeScope;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\TestCase;
 
@@ -37,14 +38,15 @@ function specialtyTermTypeMessages(SpecialtyTaxonomyTermTypeRule $rule, mixed $v
     return $messages;
 }
 
-it('fails when the scope alias is unknown', function () {
+it('fails when the scope alias is unknown, without looking up a term', function () {
+    mockTermRepository()->shouldReceive('find')->never();
+
     $messages = specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('not_a_real_alias'),
-        'specialties_acgme::anything',
+        ['specialties_acgme::anything', 'specialties_acgme::other'],
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain('not_a_real_alias');
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.invalid_rule_config', ['alias' => 'not_a_real_alias'])]);
 });
 
 it('fails when given three parameters', function () {
@@ -53,8 +55,7 @@ it('fails when given three parameters', function () {
         'research_specialties_acgme::slug',
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain('specialty,medical,extra');
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.invalid_rule_config', ['alias' => 'specialty,medical,extra'])]);
 });
 
 it('skips when the value is empty', function () {
@@ -66,13 +67,13 @@ it('skips when the value is empty', function () {
 it('fails when the term is not found', function () {
     mockTermRepository()->shouldReceive('find')->once()->with('specialties_acgme::missing')->andReturn(null);
 
+    // A second id after the missing one is never looked up
     $messages = specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('specialty_acgme'),
-        'specialties_acgme::missing',
+        ['specialties_acgme::missing', 'specialties_acgme::next'],
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain('specialties_acgme::missing');
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.not_found', ['id' => 'specialties_acgme::missing'])]);
 });
 
 it('fails when the taxonomy mismatches a suffixed alias, before reading type', function () {
@@ -84,11 +85,10 @@ it('fails when the taxonomy mismatches a suffixed alias, before reading type', f
 
     $messages = specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('specialty_acgme'),
-        'specialties_aoa::slug',
+        ['specialties_aoa::slug', 'specialties_acgme::next'],
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain('specialties_aoa');
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_taxonomy', ['id' => 'specialties_aoa::slug', 'taxonomy' => 'specialties_aoa'])]);
 });
 
 it('fails when a bare specialty sees a taxonomy outside the allowed set', function () {
@@ -132,11 +132,14 @@ it('fails a type-only alias when the specialty_subspecialty_type still mismatche
 
     $messages = specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('specialty_type_only'),
-        'other_specialties::slug',
+        ['other_specialties::slug', 'other_specialties::next'],
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SUBSPECIALTY);
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_type', [
+        'id' => 'other_specialties::slug',
+        'type' => SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SUBSPECIALTY,
+        'expected' => SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY,
+    ])]);
 });
 
 it('fails when the specialty_subspecialty_type mismatches', function () {
@@ -152,8 +155,11 @@ it('fails when the specialty_subspecialty_type mismatches', function () {
         'specialties_acgme::slug',
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SUBSPECIALTY);
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_type', [
+        'id' => 'specialties_acgme::slug',
+        'type' => SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SUBSPECIALTY,
+        'expected' => SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY,
+    ])]);
 });
 
 it('passes for a matching suffixed term', function () {
@@ -212,11 +218,14 @@ it('fails a medical research specialty when medical_query is false', function ()
 
     $messages = specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('medical_research_specialty'),
-        'research_specialties_acgme::slug',
+        ['research_specialties_acgme::slug', 'research_specialties_acgme::next'],
     );
 
-    expect($messages)->not->toBeEmpty();
-    expect($messages[0] ?? '')->toContain('research_specialties_acgme::slug');
+    expect($messages)->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_medical_query', [
+        'id' => 'research_specialties_acgme::slug',
+        'negation' => '',
+        'actual' => 'false',
+    ])]);
 });
 
 it('passes the comma form specialty,medical', function () {
@@ -278,6 +287,134 @@ it('normalizes an array value, skipping non-string and empty entries', function 
 
     expect(specialtyTermTypeMessages(
         new SpecialtyTaxonomyTermTypeRule('specialty_acgme'),
-        ['specialties_acgme::slug', 123, ''],
+        [123, '', 'specialties_acgme::slug'],
     ))->toBeEmpty();
 });
+
+it('fails a non-medical research specialty flagged medical, naming the negation', function () {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('research_specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)
+        ->andReturn(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY);
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::MEDICAL_QUERY_FIELD)
+        ->andReturn(true);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('research_specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('specialty', 'non-medical'),
+        'research_specialties_acgme::slug',
+    ))->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_medical_query', [
+        'id' => 'research_specialties_acgme::slug',
+        'negation' => 'not ',
+        'actual' => 'true',
+    ])]);
+});
+
+it('describes a medical_query value that is not a boolean', function (mixed $raw, string $actual) {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('research_specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)
+        ->andReturn(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY);
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::MEDICAL_QUERY_FIELD)
+        ->andReturn($raw);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('research_specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('medical_research_specialty'),
+        'research_specialties_acgme::slug',
+    ))->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_medical_query', [
+        'id' => 'research_specialties_acgme::slug',
+        'negation' => '',
+        'actual' => $actual,
+    ])]);
+})->with([
+    'missing' => [null, 'empty'],
+    'empty string' => ['', 'empty'],
+    'a word' => ['yes', 'yes'],
+    'a number' => [2, '2'],
+    'a list' => [['true'], 'invalid'],
+    'the string false' => ['false', 'false'],
+    'zero' => [0, 'false'],
+]);
+
+it('accepts the string and integer spellings of a true medical_query', function (mixed $raw) {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('research_specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)
+        ->andReturn(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY);
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::MEDICAL_QUERY_FIELD)
+        ->andReturn($raw);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('research_specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('medical_research_specialty'),
+        'research_specialties_acgme::slug',
+    ))->toBe([]);
+})->with([
+    'the string true' => ['true'],
+    'the string 1' => ['1'],
+    'the integer 1' => [1],
+]);
+
+it('names a type that is not a string as its text', function (mixed $raw, string $type) {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)->andReturn($raw);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('specialty_acgme'),
+        'specialties_acgme::slug',
+    ))->toBe([__('statamic::validation.specialty_taxonomy_term_type.wrong_type', [
+        'id' => 'specialties_acgme::slug',
+        'type' => $type,
+        'expected' => SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY,
+    ])]);
+})->with([
+    'missing' => [null, ''],
+    'a number' => [3, '3'],
+]);
+
+it('checks a localized term the repository returns', function () {
+    $term = Mockery::mock(LocalizedTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)
+        ->andReturn(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('specialty_acgme'),
+        'specialties_acgme::slug',
+    ))->toBe([]);
+});
+
+it('accepts the string and integer spellings of a false medical_query on a non-medical rule', function (mixed $raw) {
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('taxonomyHandle')->once()->andReturn('research_specialties_acgme');
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::TYPE_FIELD)
+        ->andReturn(SpecialtyTaxonomyTermTypeScope::TYPE_VALUE_SPECIALTY);
+    $term->shouldReceive('get')->once()->with(SpecialtyTaxonomyTermTypeScope::MEDICAL_QUERY_FIELD)
+        ->andReturn($raw);
+
+    mockTermRepository()->shouldReceive('find')->once()->with('research_specialties_acgme::slug')->andReturn($term);
+
+    expect(specialtyTermTypeMessages(
+        new SpecialtyTaxonomyTermTypeRule('specialty', 'non-medical'),
+        'research_specialties_acgme::slug',
+    ))->toBe([]);
+})->with([
+    'the string false' => ['false'],
+    'the string 0' => ['0'],
+    'the integer 0' => [0],
+]);
+
+it('refuses a repository result that is not a term', function () {
+    mockTermRepository()->shouldReceive('find')->once()->with('specialties_acgme::slug')->andReturn(new stdClass);
+
+    specialtyTermTypeMessages(new SpecialtyTaxonomyTermTypeRule('specialty_acgme'), 'specialties_acgme::slug');
+})->throws(AssertionError::class, 'Term::find must return a LocalizedTerm or Term instance.');
