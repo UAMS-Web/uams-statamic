@@ -1,13 +1,14 @@
 <!--
  * Custom fieldtype for structured name (prefix, first, middle, last, suffix).
  * Not a fork of a Statamic component; delegates to has-subfields with value,
- * meta, and handle.
+ * meta, handle and id.
  -->
 <template>
 	<has-subfields
 		:value="value"
 		:meta="meta"
 		:handle="handle"
+		:id="id"
 	/>
 </template>
 
