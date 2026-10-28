@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\ComputedFields\Ontology\ImpliedOntologyComputedValues;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
 use Statamic\Facades\Blink;
@@ -32,6 +33,13 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 */
 
 beforeEach(function () {
+    // Pad Pest's mutant-child timeout once per process under `--mutate`.
+    static $padded = false;
+    if (! $padded && runningUnderMutate()) {
+        usleep(20_000_000);
+        $padded = true;
+    }
+
     Blink::flush();
 });
 
@@ -214,6 +222,84 @@ it('recomputes (does not memoize) when the entry id is not a string (unsaved ent
 
     expect(impliedIds($service->resolveImpliedServices($entry)))->toBe(['svc-a'])
         ->and(impliedIds($service->resolveImpliedServices($entry)))->toBe(['svc-a']);
+});
+
+it('memoizes the transitive-only set per entry per request (one query for repeated reads)', function () {
+    $query = Mockery::mock();
+    $query->shouldReceive('where')->andReturnSelf();
+    $query->shouldReceive('whereJsonOverlaps')->andReturnSelf();
+    $query->shouldReceive('whereStatus')->andReturnSelf();
+    // A single get() across two reads asserts the Blink memoization.
+    $query->shouldReceive('get')->once()->andReturn(EntryCollection::make([impliedRelatedEntry('svc-a')]));
+    EntryFacade::shouldReceive('query')->once()->andReturn($query);
+
+    $entry = impliedSubjectEntry('subject-transitive-memo', ['spec-1'], []);
+    $service = app(ImpliedOntologyComputedValues::class);
+
+    expect(impliedIds($service->resolveTransitiveServices($entry)))->toBe(['svc-a'])
+        ->and(impliedIds($service->resolveTransitiveServices($entry)))->toBe(['svc-a']);
+});
+
+it('recomputes the transitive-only set when the entry id is not a string (unsaved entry)', function () {
+    $query = Mockery::mock();
+    $query->shouldReceive('where')->andReturnSelf();
+    $query->shouldReceive('whereJsonOverlaps')->andReturnSelf();
+    $query->shouldReceive('whereStatus')->andReturnSelf();
+    // No stable Blink key, so each read queries afresh.
+    $query->shouldReceive('get')->twice()->andReturn(EntryCollection::make([impliedRelatedEntry('svc-a')]));
+    EntryFacade::shouldReceive('query')->twice()->andReturn($query, $query);
+
+    $entry = impliedSubjectEntry(null, ['spec-1'], []);
+    $service = app(ImpliedOntologyComputedValues::class);
+
+    expect(impliedIds($service->resolveTransitiveServices($entry)))->toBe(['svc-a'])
+        ->and(impliedIds($service->resolveTransitiveServices($entry)))->toBe(['svc-a']);
+});
+
+/**
+ * A query mock whose overlap read returns $results, whatever it is asked.
+ *
+ * @param  array<int, mixed>  $results
+ */
+function impliedLooseQuery(array $results): MockInterface
+{
+    $query = Mockery::mock();
+    $query->shouldReceive('where')->andReturnSelf();
+    $query->shouldReceive('whereJsonOverlaps')->andReturnSelf();
+    $query->shouldReceive('whereStatus')->andReturnSelf();
+    $query->shouldReceive('get')->andReturn(EntryCollection::make($results));
+
+    return $query;
+}
+
+it('keeps a non-entry overlap result in the implied set rather than reading its id', function () {
+    EntryFacade::shouldReceive('query')->once()->andReturn(impliedLooseQuery([impliedRelatedEntry('svc-a'), 'not-an-entry']));
+
+    $set = app(ImpliedOntologyComputedValues::class)
+        ->resolveImpliedServices(impliedSubjectEntry('subject-loose-implied', ['spec-1'], []));
+
+    expect($set->count())->toBe(2)
+        ->and($set->last())->toBe('not-an-entry');
+});
+
+it('keeps a non-entry overlap result in the transitive-only set rather than reading its id', function () {
+    EntryFacade::shouldReceive('query')->once()->andReturn(impliedLooseQuery([impliedRelatedEntry('cond-a'), 'not-an-entry']));
+
+    $set = app(ImpliedOntologyComputedValues::class)
+        ->resolveTransitiveConditions(impliedSubjectEntry('subject-loose-transitive', ['spec-1'], []));
+
+    expect($set->count())->toBe(2)
+        ->and($set->last())->toBe('not-an-entry');
+});
+
+it('skips a non-entry overlap result when listing scope candidates', function () {
+    EntryFacade::shouldReceive('query')->twice()->andReturn(
+        impliedLooseQuery(['not-an-entry', impliedRelatedEntry('svc-a')]),
+        impliedLooseQuery([impliedRelatedEntry('cond-a')]),
+    );
+
+    expect(app(ImpliedOntologyComputedValues::class)->candidateOverrideIds(impliedSubjectEntry('subject-loose-candidates', ['spec-1'], [])))
+        ->toBe(['svc-a', 'cond-a']);
 });
 
 // ---------------------------------------------------------------------------

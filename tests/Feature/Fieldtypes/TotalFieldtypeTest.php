@@ -49,3 +49,37 @@ it('exposes the configured amount prefix, defaulting to Total', function () {
     expect(makeTotal(['prefix' => 'Grand Total'])->preload()['prefix'])->toBe('Grand Total');
     expect(makeTotal()->preload()['prefix'])->toBe('Total');
 });
+
+it('uses the money-bag-dollar icon', function () {
+    expect(makeTotal()->icon())->toBe('money-bag-dollar');
+});
+
+it('exposes the configured amount prefix to the front-end template, defaulting to Total', function () {
+    expect(makeTotal(['prefix' => 'Grand Total'])->extraRenderableFieldData())->toBe(['prefix' => 'Grand Total'])
+        ->and(makeTotal()->extraRenderableFieldData())->toBe(['prefix' => 'Total']);
+});
+
+it('renders an empty prefix when the configured prefix is not scalar', function () {
+    expect(makeTotal(['prefix' => ['Grand', 'Total']])->extraRenderableFieldData())->toBe(['prefix' => ''])
+        ->and(makeTotal(['prefix' => ['Grand', 'Total']])->preload())->toBe(['prefix' => '']);
+});
+
+it('pins its prefix config field exactly', function () {
+    expect((new ReflectionMethod(Total::class, 'configFieldItems'))->invoke(makeTotal()))->toBe([
+        'prefix' => [
+            'display' => 'Amount Prefix',
+            'instructions' => 'Text shown before the computed total (e.g. "Order Total").',
+            'type' => 'text',
+            'default' => 'Total',
+        ],
+    ]);
+});
+
+it('casts a numeric prefix to a string', function () {
+    expect(makeTotal(['prefix' => 5])->preload())->toBe(['prefix' => '5'])
+        ->and(makeTotal(['prefix' => 5])->extraRenderableFieldData())->toBe(['prefix' => '5']);
+});
+
+it('stores a total of 1000 or more with no thousands separator', function () {
+    expect(makeTotal()->process('1234.5'))->toBe('1234.50');
+});
