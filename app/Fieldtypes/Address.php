@@ -28,6 +28,17 @@ class Address extends Fieldtype
     use HasSubfields;
 
     /**
+     * The selectable Address Type presets, keyed by handle.
+     *
+     * @var array<string, string> The selectable Address Type presets
+     */
+    private const array PRESET_OPTIONS = [
+        'american' => 'American',
+        'canadian' => 'Canadian',
+        'international' => 'International',
+    ];
+
+    /**
      * Indicates whether the fieldtype is selectable in form blueprints.
      *
      * @var bool Indicates whether the fieldtype is selectable in form blueprints
@@ -77,11 +88,8 @@ class Address extends Fieldtype
         // Read merged field config (cached) for the preset key
         $config = $this->getCachedConfig();
 
-        // Load the selectable preset keys
-        $presetOptions = $this->getPresetOptions()['options'];
-
         // Resolve preset from config, falling back to the first defined option
-        $preset = $config['preset'] ?? array_key_first($presetOptions);
+        $preset = $config['preset'] ?? array_key_first(self::PRESET_OPTIONS);
 
         // Write the resolved preset onto the stored subfield map
         $result['preset'] = $preset;
@@ -89,7 +97,6 @@ class Address extends Fieldtype
         unset(
             $data,
             $config,
-            $presetOptions,
             $preset,
         );
 
@@ -249,17 +256,13 @@ class Address extends Fieldtype
     /**
      * Preset options for Address Type.
      *
-     * @return array{display: string, options: array<string, string>} Preset options
+     * @return array<string, mixed> Preset options for Address Type
      */
     protected function getPresetOptions(): array
     {
         return [
             'display' => 'Address Format',
-            'options' => [
-                'american' => 'American',
-                'canadian' => 'Canadian',
-                'international' => 'International',
-            ],
+            'options' => self::PRESET_OPTIONS,
         ];
     }
 
