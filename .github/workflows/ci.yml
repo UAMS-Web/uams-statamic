@@ -12,6 +12,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Every job reads the repository and nothing more (#391). `GITHUB_TOKEN` is used
+# only by `actions/checkout`; private repositories are reached through
+# `secrets.COMPOSER_AUTH_TOKEN`, and `actions/cache` and the artifact actions
+# authenticate with the runner's own token, which `permissions` does not govern.
+# A job that ever needs more gets a job-level block saying why.
+permissions:
+  contents: read
+
 # RUN_REMOTE_CI — budget kill-switch (UAMS-Web/uams-statamic-archive#980).
 # GitHub Actions minutes are billed at the *organization* level (a single pool
 # shared by every UAMS-Web repo), not per repo. When that budget is exhausted,
