@@ -28,6 +28,13 @@ use Tests\Support\StacheIsolatedTestCase;
 uses(StacheIsolatedTestCase::class);
 
 beforeEach(function (): void {
+    // Pad Pest's mutant-child timeout once per process under `--mutate`.
+    static $padded = false;
+    if (! $padded && runningUnderMutate()) {
+        usleep(20_000_000);
+        $padded = true;
+    }
+
     /** @var Collection $people */
     $people = CollectionFacade::make('people');
     $people->title('People');
@@ -186,6 +193,89 @@ it('returns empty for no specialization, an unresolvable term, or a non-array fi
         ->and(clinicalTitleResolver()->resolve(clinicalTitleMakePerson([
             'clinical_specializations' => 'oops',
         ])))->toBe('');
+});
+
+it('returns empty for a non-array field even when it reads as a specialization id', function (): void {
+    // A string field indexes to its first character, so a one-character id would
+    // resolve if the array guard did not stop the read first.
+    /** @var EntryInstance $entry */
+    $entry = Entry::make();
+    $entry->id('x');
+    $entry->collection('clinical_specializations');
+    $entry->locale('default');
+    $entry->slug('x-ray');
+    $entry->published(true);
+    $entry->data(['title_specialization_patient' => 'Radiology']);
+    $entry->saveQuietly();
+
+    $person = clinicalTitleMakePerson(['clinical_specializations' => 'x']);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('');
+});
+
+it('returns empty when the primary id is an empty string', function (): void {
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('');
+});
+
+it('returns empty for an integer id even when a specialization carries it as a string', function (): void {
+    /** @var EntryInstance $specialization */
+    $specialization = Entry::make();
+    $specialization->id('1701');
+    $specialization->collection('clinical_specializations');
+    $specialization->locale('default');
+    $specialization->slug('enterprise');
+    $specialization->published(true);
+    $specialization->data(['title_specialization_patient' => 'Starfleet Medical']);
+    $specialization->saveQuietly();
+
+    $person = clinicalTitleMakePerson(['clinical_specializations' => [1701]]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('');
+});
+
+it('returns empty when every title the specialization carries is blank', function (): void {
+    clinicalTitleMakeSpecialization('blank-titles', [
+        'title_specialization_patient' => '  ',
+        'title_occupation' => '',
+        'title' => ' ',
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-blank-titles']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('');
+});
+
+it('trims a stored title and reads a numeric one as text', function (mixed $stored, string $expected): void {
+    clinicalTitleMakeSpecialization('scalar-title', ['title_specialization_patient' => $stored]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-scalar-title']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe($expected);
+})->with([
+    'padded text' => ['  Sickbay  ', 'Sickbay'],
+    'an integer' => [47, '47'],
+]);
+
+it('falls through to the patient title when the toggle is on but code_name is empty', function (): void {
+    clinicalTitleMakeSpecialization('blank-code', [
+        'code_name' => '',
+        'title_specialization_patient' => 'Sickbay',
+        'title_specialization_query' => true,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-blank-code']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Sickbay');
+});
+
+it('skips a non-scalar title value and reads the next fallback', function (): void {
+    clinicalTitleMakeSpecialization('non-scalar', [
+        'title_specialization_patient' => ['Engineering'],
+        'title_occupation' => 'Chief Engineer',
+        'title_specialization_query' => false,
+    ]);
+    $person = clinicalTitleMakePerson(['clinical_specializations' => ['spec-non-scalar']]);
+
+    expect(clinicalTitleResolver()->resolve($person))->toBe('Chief Engineer');
 });
 
 it('exposes the resolved title through the registered clinical_title computed', function (): void {

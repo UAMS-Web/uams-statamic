@@ -111,3 +111,118 @@ it('renders a username input from the public form template', function () {
     expect($out)->toContain('type="text"');
     expect($out)->toContain('autocomplete="username"');
 });
+
+it('exposes its search keywords exactly', function (): void {
+    expect((new Username)->keywords())->toBe([
+        'account',
+        'handle',
+        'login',
+        'user',
+        'username',
+    ]);
+});
+
+it('belongs to its fieldtype categories exactly', function (): void {
+    expect((new Username)->categories())->toBe([
+        'text',
+        'special',
+    ]);
+});
+
+it('pins every config field override exactly', function (): void {
+    expect((new ReflectionMethod(Username::class, 'getConfigFieldOverrides'))->invoke(usernameFieldtypeUnderTest()))->toBe([
+        'input_type' => [
+            'default' => 'text',
+        ],
+        'autocomplete_query' => [
+            'default' => 'on',
+        ],
+        'autocomplete' => [
+            'default' => 'username',
+        ],
+        'autocapitalize' => [
+            'default' => 'off',
+        ],
+        'autocorrect' => [
+            'default' => 'off',
+        ],
+        'spellcheck' => [
+            'default' => 'off',
+        ],
+        'writingsuggestions' => [
+            'default' => 'off',
+        ],
+        'maxlength' => [
+            'instructions' => 'Set the maximum number of characters allowed for the username.',
+        ],
+        'minlength' => [
+            'instructions' => 'Set the minimum number of characters required for the username.',
+        ],
+        'pattern' => [
+            'instructions' => 'Set a regular expression pattern for username validation.
+
+Example: `^[a-zA-Z0-9_.-]{3,20}$` to allow 3–20 letters, digits, underscores, dots, and hyphens.',
+        ],
+        'calculation_type' => [
+            'default' => 'text',
+        ],
+    ]);
+});
+
+it('unsets no config fields', function (): void {
+    expect((new ReflectionMethod(Username::class, 'getUnsetConfigFields'))->invoke(usernameFieldtypeUnderTest()))->toBe([]);
+});
+
+it('pins every hidden config field handle exactly', function (): void {
+    expect((new ReflectionMethod(Username::class, 'getHiddenConfigFields'))->invoke(usernameFieldtypeUnderTest()))->toBe([
+        'accept',
+        'accesskey',
+        'alt',
+        'anchor',
+        'antlers',
+        'append',
+        'autocapitalize',
+        'autocomplete',
+        'autocomplete_query',
+        'autocorrect',
+        'calculation_type',
+        'capture',
+        'checked',
+        'class',
+        'contenteditable',
+        'debounce',
+        'dir',
+        'dirname',
+        'draggable',
+        'enterkeyhint',
+        'exportparts',
+        'focus',
+        'form',
+        'id',
+        'inert',
+        'inputmode',
+        'is',
+        'itemid',
+        'itemprop',
+        'itemref',
+        'itemscope',
+        'itemtype',
+        'lang',
+        'list',
+        'name',
+        'nonce',
+        'part',
+        'popover',
+        'prepend',
+        'role',
+        'size',
+        'slot',
+        'spellcheck',
+        'style',
+        'tabindex',
+        'title',
+        'translate',
+        'virtualkeyboardpolicy',
+        'writingsuggestions',
+    ]);
+});

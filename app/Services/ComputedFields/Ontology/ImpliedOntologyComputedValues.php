@@ -296,6 +296,9 @@ class ImpliedOntologyComputedValues
         foreach ($this->explicitOverride($entry, $collection) as $related) {
             $id = $related->id();
             if (is_string($id)) {
+                // The filter reads the index with `isset()`, which is true for `false`
+                // as well, so the stored value never matters.
+                // @pest-mutate-ignore: TrueToFalse
                 $overrideIds[$id] = true;
             }
         }
@@ -380,6 +383,8 @@ class ImpliedOntologyComputedValues
         $overrideField = self::OVERRIDE_FIELD_BY_COLLECTION[$collection] ?? null;
 
         // A collection with no special-interest field (never happens for C/T) → nothing to add.
+        // Every caller passes a collection the map names, so no test can reach this.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($overrideField === null) {
             return EntryCollection::make();
         }
