@@ -924,6 +924,255 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  demo-missing-shard:
+    name: DEMO (temporary) - a shard report is missing
+    runs-on: ubuntu-latest
+    # Merges the four shards' reports into the one parallel band report the two
+    # band checks read, and refuses a band the shards did not run exactly once
+    # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
+    # the whole band, and the slowest class is judged by its share of the whole
+    # band's time. Fed one shard's report, the first compares a quarter of the
+    # band with a whole-band baseline and the second divides by a quarter of the
+    # band, so neither runs in a shard.
+    #
+    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # reads the shards' output, so it cannot run before them. It skips when any
+    # shard fails, as the checks below skipped in the single job when the band
+    # failed; the failed shard already fails the run.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: pest
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pest-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-parallel.xml, the band report the checks below read, and the
+      # per-class timings the next run balances its shards on. Fails, naming what
+      # it found, when a shard's files are missing, the shards read different
+      # timings or listed different tests, a case ran in two shards, or a class's
+      # case count differs from the listing. PHP, not Node, like the checks.
+      # REMOTE-ONLY: the local runner writes junit-parallel.xml from one band.
+      - name: Break the input on purpose (temporary, #387)
+        run: |
+          rm shards/junit-parallel-3.xml && echo "Removed shards/junit-parallel-3.xml"
+
+      - name: Merge the shard reports into the parallel band report
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-parallel.xml --timings=tests/.pest/shards.json
+
+      # A band that silently skips tests reports PASS having tested less than it
+      # should have. Skips are how this suite degrades when content or Stache state
+      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
+      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
+      # passed, caught only because the count had been predicted by hand. The
+      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
+      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # tolerates the guard being absent, since it validates older branches too; CI
+      # only ever runs a branch's own workflow, so no counterpart is needed here.)
+      - name: Check skip baseline (parallel band)
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+
+      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
+      # passed in silence — the gate reports PASS on any duration. It has happened
+      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
+      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
+      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
+      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
+      #
+      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
+      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
+      # class seconds inflate with runner load exactly as band wall time does
+      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
+      # bounds the band, since paratest distributes by class. Reads the reports
+      # the two steps above already produced, so it costs no extra run. PHP, not
+      # Node, for the same reason as the skip guard: this job sets up PHP only.
+      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # validates older branches too.)
+      - name: Check slowest class (parallel band)
+        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
+
+
+  demo-listing-mismatch:
+    name: DEMO (temporary) - the merged report disagrees with the listing
+    runs-on: ubuntu-latest
+    # Merges the four shards' reports into the one parallel band report the two
+    # band checks read, and refuses a band the shards did not run exactly once
+    # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
+    # the whole band, and the slowest class is judged by its share of the whole
+    # band's time. Fed one shard's report, the first compares a quarter of the
+    # band with a whole-band baseline and the second divides by a quarter of the
+    # band, so neither runs in a shard.
+    #
+    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # reads the shards' output, so it cannot run before them. It skips when any
+    # shard fails, as the checks below skipped in the single job when the band
+    # failed; the failed shard already fails the run.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: pest
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pest-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-parallel.xml, the band report the checks below read, and the
+      # per-class timings the next run balances its shards on. Fails, naming what
+      # it found, when a shard's files are missing, the shards read different
+      # timings or listed different tests, a case ran in two shards, or a class's
+      # case count differs from the listing. PHP, not Node, like the checks.
+      # REMOTE-ONLY: the local runner writes junit-parallel.xml from one band.
+      - name: Break the input on purpose (temporary, #387)
+        run: |
+          php -r '$p="shards/junit-parallel-2.xml"; $d=new DOMDocument(); $d->load($p); $c=$d->getElementsByTagName("testcase")->item(0); echo "Removed ", $c->getAttribute("class"), " :: ", $c->getAttribute("name"), PHP_EOL; $c->parentNode->removeChild($c); $d->save($p);'
+
+      - name: Merge the shard reports into the parallel band report
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-parallel.xml --timings=tests/.pest/shards.json
+
+      # A band that silently skips tests reports PASS having tested less than it
+      # should have. Skips are how this suite degrades when content or Stache state
+      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
+      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
+      # passed, caught only because the count had been predicted by hand. The
+      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
+      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # tolerates the guard being absent, since it validates older branches too; CI
+      # only ever runs a branch's own workflow, so no counterpart is needed here.)
+      - name: Check skip baseline (parallel band)
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+
+      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
+      # passed in silence — the gate reports PASS on any duration. It has happened
+      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
+      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
+      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
+      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
+      #
+      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
+      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
+      # class seconds inflate with runner load exactly as band wall time does
+      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
+      # bounds the band, since paratest distributes by class. Reads the reports
+      # the two steps above already produced, so it costs no extra run. PHP, not
+      # Node, for the same reason as the skip guard: this job sets up PHP only.
+      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # validates older branches too.)
+      - name: Check slowest class (parallel band)
+        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
+
+
+  demo-baseline:
+    name: DEMO (temporary) - the parallel band exceeds its skip baseline
+    runs-on: ubuntu-latest
+    # Merges the four shards' reports into the one parallel band report the two
+    # band checks read, and refuses a band the shards did not run exactly once
+    # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
+    # the whole band, and the slowest class is judged by its share of the whole
+    # band's time. Fed one shard's report, the first compares a quarter of the
+    # band with a whole-band baseline and the second divides by a quarter of the
+    # band, so neither runs in a shard.
+    #
+    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # reads the shards' output, so it cannot run before them. It skips when any
+    # shard fails, as the checks below skipped in the single job when the band
+    # failed; the failed shard already fails the run.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: pest
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pest-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-parallel.xml, the band report the checks below read, and the
+      # per-class timings the next run balances its shards on. Fails, naming what
+      # it found, when a shard's files are missing, the shards read different
+      # timings or listed different tests, a case ran in two shards, or a class's
+      # case count differs from the listing. PHP, not Node, like the checks.
+      # REMOTE-ONLY: the local runner writes junit-parallel.xml from one band.
+      - name: Break the input on purpose (temporary, #387)
+        run: |
+          php -r '$p="tests/skip-baseline.json"; $j=json_decode(file_get_contents($p),true); $j["bands"]["parallel"]["expected"]=0; file_put_contents($p,json_encode($j)); echo "Set the parallel baseline to 0", PHP_EOL;'
+
+      - name: Merge the shard reports into the parallel band report
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-parallel.xml --timings=tests/.pest/shards.json
+
+      # A band that silently skips tests reports PASS having tested less than it
+      # should have. Skips are how this suite degrades when content or Stache state
+      # is unavailable (UAMS-Web/uams-statamic-archive#1738, UAMS-Web/uams-statamic-archive#1740) — deliberate, but invisible to the gate until
+      # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
+      # passed, caught only because the count had been predicted by hand. The
+      # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
+      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # tolerates the guard being absent, since it validates older branches too; CI
+      # only ever runs a branch's own workflow, so no counterpart is needed here.)
+      - name: Check skip baseline (parallel band)
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+
+      # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
+      # passed in silence — the gate reports PASS on any duration. It has happened
+      # twice: UAMS-Web/uams-statamic-archive#1348 added one `sitemap.xml` route per site (255 on this multisite)
+      # and uncached URL generation taxed the render-heavy suite ~2x (UAMS-Web/uams-statamic-archive#1521 →
+      # UAMS-Web/uams-statamic-archive#1573), and one class grew to 1085.3s of a 1306s band while eleven of twelve
+      # workers idled (UAMS-Web/uams-statamic-archive#1797). Both were found by hand, long after the fact.
+      #
+      # Guards the slowest CLASS by its SHARE of the band's summed class time, plus
+      # a generous absolute backstop. A JUnit `time` is wall-clock per test, so raw
+      # class seconds inflate with runner load exactly as band wall time does
+      # (UAMS-Web/uams-statamic-archive#2530); a share cancels that inflation, and is what decides whether a class
+      # bounds the band, since paratest distributes by class. Reads the reports
+      # the two steps above already produced, so it costs no extra run. PHP, not
+      # Node, for the same reason as the skip guard: this job sets up PHP only.
+      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # validates older branches too.)
+      - name: Check slowest class (parallel band)
+        run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
+
+
   pint:
     name: Pint (changed files)
     runs-on: ubuntu-latest
