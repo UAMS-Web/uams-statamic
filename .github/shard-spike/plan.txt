@@ -1,1 +1,1 @@
-timed 3
+timed 2
