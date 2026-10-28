@@ -104,6 +104,32 @@ it('parses invalid XML without raising a warning, and restores the libxml error 
 ]);
 
 /**
+ * Describe why proc_open() could not start the server: the warning it raised, or
+ * a note that it raised none, and the size of the environment block it was given.
+ * Windows refuses to start a process whose environment block is too large, so the
+ * size is reported with the reason.
+ *
+ * @param  string|null  $warning  The message of the warning proc_open() raised, if any
+ * @param  array<string, string>  $environment
+ */
+function icdXmlServerStartFailure(?string $warning, array $environment): string
+{
+    $bytes = 0;
+    foreach ($environment as $name => $value) {
+        $bytes += strlen($name) + strlen($value) + 2;
+    }
+
+    $reason = $warning ?? 'proc_open() raised no error';
+
+    return sprintf(
+        'Could not start the local web server: %s (environment: %d variables, %d bytes).',
+        $reason,
+        count($environment),
+        $bytes
+    );
+}
+
+/**
  * Serve one file from a throwaway directory with PHP's built-in web server, run
  * the callback against its base URL, and stop the server afterwards. The router
  * answers 406 to any request whose Accept header is not application/xml, so a
@@ -149,6 +175,7 @@ function withIcdXmlServer(string $fileName, string $body, Closure $callback): mi
         // Pipes rather than file descriptors: mutation testing replaces the file
         // stream wrapper, and a file descriptor spec then fails to open. The server
         // logs a line or two per request, far below a pipe's buffer.
+        error_clear_last();
         $process = proc_open(
             [PHP_BINARY, '-S', '127.0.0.1:'.$port, '-t', $root, $root.'/router.php'],
             [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
@@ -157,7 +184,7 @@ function withIcdXmlServer(string $fileName, string $body, Closure $callback): mi
             $environment
         );
         if (! is_resource($process)) {
-            throw new RuntimeException('Could not start the local web server.');
+            throw new RuntimeException(icdXmlServerStartFailure(error_get_last()['message'] ?? null, $environment));
         }
 
         // Wait up to five seconds for the server to accept connections. A refused
@@ -214,6 +241,19 @@ it('returns null when the code list cannot be fetched', function () {
 
     expect($records)->toBeNull();
 });
+
+it('names the reason and the environment size when the server cannot start', function (?string $warning, string $expected) {
+    expect(icdXmlServerStartFailure($warning, ['AB' => 'cde', 'F' => '']))->toBe($expected);
+})->with([
+    'a warning was raised' => [
+        'proc_open(): CreateProcess failed, error code: 206',
+        'Could not start the local web server: proc_open(): CreateProcess failed, error code: 206 (environment: 2 variables, 10 bytes).',
+    ],
+    'no warning was raised' => [
+        null,
+        'Could not start the local web server: proc_open() raised no error (environment: 2 variables, 10 bytes).',
+    ],
+]);
 
 it('points the default fetch at the OpenPEPPOL ICD code list', function () {
     expect(IcdXmlParser::DEFAULT_ICD_XML_URL)

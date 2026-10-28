@@ -116,7 +116,9 @@ final class WordMetricsModifierInput
         $imploded = collect($value)
             ->map(
 
-                // Bard text nodes augment to Values; skip anything else
+                // Bard text nodes augment to Values; skip anything else. Values wraps a
+                // Collection, so all() is already an array and the cast only types it.
+                // @pest-mutate-ignore: RemoveArrayCast
                 fn (mixed $values): array => $values instanceof Values ? (array) $values->all() : []
             )
             ->where(

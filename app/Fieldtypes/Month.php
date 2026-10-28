@@ -373,37 +373,18 @@ class Month extends Fieldtype
             // Extract the year from the matches
             $year = $matches[1];
 
-            // Build a timestamp for the first day of the matched month. Only the month
-            // name is read from it, and any time of day or day from 1 to 28 names the same month.
-            $timestamp = mktime(
-                // Hour; one o'clock names the same month
-                // @pest-mutate-ignore: IncrementInteger
-                0,
-                // Minute; one past the hour names the same month
-                // @pest-mutate-ignore: IncrementInteger
-                0,
-                // Second; one past the minute names the same month
-                // @pest-mutate-ignore: IncrementInteger
-                0,
-                $monthNum,
-                // Day; the second of the month names the same month
-                // @pest-mutate-ignore: IncrementInteger
-                1
-            );
-
-            // Return original string if the timestamp could not be built
-            // mktime() uses the current year here, and a month number of at most 99
-            // keeps it inside the 64-bit timestamp range, so this is unreachable
-            // @pest-mutate-ignore: FalseToTrue
-            if ($timestamp === false) {
-                return $month;
-            }
-
-            // Get the full month name from the month number
-            $monthName = \date(
-                'F',
-                $timestamp
-            );
+            // Get the full month name from the first day of the matched month. A month
+            // number of 0 or above 12 rolls into an earlier or later year; only the
+            // month name is used.
+            $monthName = (new \DateTimeImmutable)
+                ->setDate(
+                    (int) $year,
+                    $monthNum,
+                    // Day; the second of the month names the same month
+                    // @pest-mutate-ignore: IncrementInteger
+                    1
+                )
+                ->format('F');
 
             // Return the formatted string as 'Month yyyy'
             return sprintf('%s %s', $monthName, $year);

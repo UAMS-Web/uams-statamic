@@ -218,6 +218,8 @@ it('formats a YYYY-MM month as Month yyyy and leaves anything else unchanged', f
     expect($format->invoke(monthFieldtype(), $month))->toBe($display);
 })->with([
     'a valid month' => ['2024-09', 'September 2024'],
+    'a month above 12, which names the following January' => ['2024-13', 'January 2024'],
+    'a zero month, which names the previous December' => ['2024-00', 'December 2024'],
     'a single-digit month' => ['2024-9', '2024-9'],
     'a trailing character' => ['2024-09x', '2024-09x'],
     'a leading character' => ['x2024-09', 'x2024-09'],

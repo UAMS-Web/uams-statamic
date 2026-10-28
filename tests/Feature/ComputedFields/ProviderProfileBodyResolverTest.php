@@ -57,6 +57,13 @@ const PROFILE_BODY_RELATION_COLLECTIONS = [
 ];
 
 beforeEach(function (): void {
+    // Pad Pest's mutant-child timeout once per process under `--mutate`.
+    static $padded = false;
+    if (! $padded && runningUnderMutate()) {
+        usleep(20_000_000);
+        $padded = true;
+    }
+
     $people = CollectionFacade::make('people');
     $people->title('People');
     $people->save();
@@ -235,6 +242,12 @@ it('reports a rendered body when a relation mixes a published and an unpublished
     $draft = profileBodyRelated('clinical_resources', 'draft-resource-two', published: false);
 
     expect(resolvesProfileBody(['clinical_resources' => [$draft, $live]]))->toBeTrue();
+});
+
+it('skips a malformed relation id and still finds a published entry after it', function (): void {
+    $live = profileBodyRelated('clinical_locations', 'live-clinic');
+
+    expect(resolvesProfileBody(['clinical_locations' => [1701, '', $live]]))->toBeTrue();
 });
 
 it('reports nothing rendered for a relation holding an id that no longer exists', function (): void {
@@ -436,6 +449,12 @@ it('treats a scalar false section value as no content', function (): void {
 // `!== null` arm), so a section field holding it renders.
 it('treats a non-null scalar section value as content', function (): void {
     expect(resolvesProfileBody(['bio' => 42]))->toBeTrue();
+});
+
+// `isEnabledItem()`: a list element that is not a set carries no `enabled` flag to
+// read, so it counts as content rather than being dereferenced.
+it('treats a non-array list element as content', function (): void {
+    expect(resolvesProfileBody(['bio' => ['Captain Kirk']]))->toBeTrue();
 });
 
 // `hasPublishedRelation()`: a non-string relation id (malformed data) is skipped
