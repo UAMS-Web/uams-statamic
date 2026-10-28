@@ -112,6 +112,8 @@ final readonly class ProviderProfileBodyResolver
         $suppressed = $this->suppressedRelationHandles($entry);
 
         foreach (self::RELATION_HANDLES as $handle) {
+            // Both sides are strings, so a loose comparison finds the same handles.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($handle, $suppressed, true)) {
                 continue;
             }
@@ -163,6 +165,10 @@ final readonly class ProviderProfileBodyResolver
      */
     private function isEnabledItem(mixed $item): bool
     {
+        // A scalar has no `enabled` key, so the `??` read below would also give
+        // `true`; removing this return is an equivalent mutant. It stays so the
+        // offset is only ever read from an array.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if (! \is_array($item)) {
             return true;
         }
@@ -212,11 +218,8 @@ final readonly class ProviderProfileBodyResolver
         }
 
         foreach ($ids as $id) {
+            // An empty id needs no check of its own: no entry has that id.
             if (! \is_string($id)) {
-                continue;
-            }
-
-            if ($id === '') {
                 continue;
             }
 

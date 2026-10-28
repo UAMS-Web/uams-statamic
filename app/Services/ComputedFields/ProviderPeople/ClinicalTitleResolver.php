@@ -39,8 +39,10 @@ final readonly class ClinicalTitleResolver
             return '';
         }
 
+        // A non-string id is rejected here rather than handed to `find()`, which
+        // compares loosely. An empty string needs no check: no entry has that id.
         $primary = $entryIds[0] ?? null;
-        if (! \is_string($primary) || $primary === '') {
+        if (! \is_string($primary)) {
             return '';
         }
 
@@ -54,7 +56,9 @@ final readonly class ClinicalTitleResolver
         }
 
         // When the editor opts to reuse the code-set name as the patient-friendly
-        // title, prefer it over the specialization title.
+        // title, prefer it over the specialization title. An `if` already reads its
+        // condition as a bool, so removing the cast is an equivalent mutant.
+        // @pest-mutate-ignore: RemoveBooleanCast
         if ((bool) $specialization->get('title_specialization_query')) {
             $codeName = $this->stringValue($specialization->get('code_name'));
             if ($codeName !== '') {
