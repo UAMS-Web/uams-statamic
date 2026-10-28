@@ -39,6 +39,7 @@
 
 <script>
 import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
+import { videoEmbedUrl } from '../../lib/video-embed-url.js';
 
 /**
  * Fork of Statamic `VideoFieldtype.vue` with a host-agnostic preview fix:
@@ -46,6 +47,7 @@ import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
  * `<video>` element instead of an `<iframe>`, avoiding spurious downloads from
  * hosts that serve the bytes as a file (Box, object storage, CDNs, etc.).
  *
+ * The embed URL rewrite lives in `resources/js/lib/video-embed-url.js`.
  * Keep in sync with core after Statamic upgrades; see `App\Fieldtypes\Video`.
  */
 export default {
@@ -68,32 +70,7 @@ export default {
 		},
 
 		embedUrl() {
-			let embed_url = this.value || '';
-
-			if (embed_url.includes('youtube')) {
-				embed_url = embed_url.includes('shorts/')
-					? embed_url.replace('shorts/', 'embed/')
-					: embed_url.replace('watch?v=', 'embed/');
-			}
-
-			if (embed_url.includes('youtu.be')) {
-				embed_url = embed_url.replace('youtu.be', 'www.youtube.com/embed');
-			}
-
-			if (embed_url.includes('vimeo')) {
-				embed_url = embed_url.replace('/vimeo.com', '/player.vimeo.com/video');
-
-				if (!this.value.includes('progressive_redirect') && embed_url.split('/').length > 5) {
-					let hash = embed_url.substr(embed_url.lastIndexOf('/') + 1);
-					embed_url = embed_url.substr(0, embed_url.lastIndexOf('/')) + '?h=' + hash.replace('?', '&');
-				}
-			}
-
-			if (embed_url.includes('&') && !embed_url.includes('?')) {
-				embed_url = embed_url.replace('&', '?');
-			}
-
-			return embed_url;
+			return videoEmbedUrl(this.value);
 		},
 
 		directFileSrc() {
