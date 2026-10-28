@@ -40,8 +40,9 @@ class BackfillBardRelNoopener extends Command
 
         foreach (Entry::all() as $entry) {
             // Guard the collection's mixed element type down to an Entry. Entry::all()
-            // yields only entries, so forcing the check true changes nothing.
-            // @pest-mutate-ignore: InstanceOfToTrue
+            // yields only entries, so forcing the check true, or breaking out of the
+            // loop where it would skip one, changes nothing.
+            // @pest-mutate-ignore: InstanceOfToTrue, ContinueToBreak
             if (! $entry instanceof EntryModel) {
                 continue;
             }
