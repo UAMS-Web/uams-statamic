@@ -36,7 +36,8 @@ export default {
 	},
 	computed: {
 		fieldId() {
-			return 'field_' + this.handle;
+			// Statamic's id carries the publish container, and its label points at it (#327).
+			return String(this.id || `field_${this.handle}`).replace(/\./g, '_');
 		},
 		current() {
 			return typeof this.value === 'string' && this.value !== '' ? this.value : null;
