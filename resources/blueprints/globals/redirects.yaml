@@ -120,34 +120,34 @@ tabs:
                           field:
                             options:
                               -
-                                key: 301
+                                key: '301'
                                 value: '301 Moved Permanently'
                               -
-                                key: 302
+                                key: '302'
                                 value: '302 Found'
                               -
-                                key: 303
+                                key: '303'
                                 value: '303 See Other'
                               -
-                                key: 304
+                                key: '304'
                                 value: '304 Not Modified'
                               -
-                                key: 307
+                                key: '307'
                                 value: '307 Temporary Redirect'
                               -
-                                key: 308
+                                key: '308'
                                 value: '308 Permanent Redirect'
                               -
-                                key: 403
+                                key: '403'
                                 value: '403 Forbidden'
                               -
-                                key: 404
+                                key: '404'
                                 value: '404 Not Found'
                               -
-                                key: 410
+                                key: '410'
                                 value: '410 Gone'
                               -
-                                key: 451
+                                key: '451'
                                 value: '451 Unavailable For Legal Reasons'
                             searchable: false
                             display: 'HTTP Response Code'
