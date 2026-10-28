@@ -151,15 +151,10 @@ trait ProcessesInputValue
 
         // Check if input mask is enabled in the field configuration
         if ($this->isInputMaskEnabled($config)) {
-            // Get the field handle
-            $handle = $field->handle();
-            $fieldHandle = is_scalar($handle) ? (string) $handle : '';
-
             // Process the value for input mask storage
             $processedValue = $this->processInputMaskValue(
                 $value,
-                $config,
-                $fieldHandle
+                $config
             );
 
             // Return the processed value

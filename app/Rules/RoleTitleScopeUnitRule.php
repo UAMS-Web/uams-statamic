@@ -134,7 +134,7 @@ final class RoleTitleScopeUnitRule implements DataAwareRule, ValidationRule
         // Without this guard the read below resolves `job_title.0.` and finds
         // nothing, so no mutant of it can be killed; it is kept so the
         // no-row-link case does not rest on how `Arr::get()` treats a trailing dot.
-        // @pest-mutate-ignore
+        // @pest-mutate-ignore: BooleanOrToBooleanAnd, EmptyStringToNotEmpty, RemoveEarlyReturn
         if ($this->rowLinkHandle === null || $this->rowLinkHandle === '') {
             return null;
         }

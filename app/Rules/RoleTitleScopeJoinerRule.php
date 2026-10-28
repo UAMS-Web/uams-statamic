@@ -70,6 +70,9 @@ final class RoleTitleScopeJoinerRule implements DataAwareRule, ValidationRule
                 RoleTitleScopeUnit::GROUP_KEY,
                 'scope_joiner'
             ),
+            // Equivalent: joiner keys are words such as `in`, never numeric strings,
+            // so loose comparison matches exactly as strict comparison does.
+            // @pest-mutate-ignore: TrueToFalse
             true
         )) {
             return;

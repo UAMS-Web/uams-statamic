@@ -44,16 +44,9 @@ class XpathSyntax implements ValidationRule
 
         // Try to evaluate the XPath expression
         try {
-            // Create a new DOMDocument
-            $doc = new DOMDocument;
-
-            // Load the XML content. Syntax is checked the same against an empty document,
-            // so removing this load is a surviving, equivalent mutant; no marker can reach a
-            // mutation of the statement it sits on.
-            $doc->loadXML('<r/>');
-
-            // Create a new DOMXPath object
-            $xpath = new DOMXPath($doc);
+            // Create a DOMXPath over an empty document: syntax is checked the same
+            // whatever the document holds, so there is nothing to load
+            $xpath = new DOMXPath(new DOMDocument);
 
             // Execute the XPath query. An invalid expression returns false whatever
             // libxml's error mode, while the warning that also signals it is collected

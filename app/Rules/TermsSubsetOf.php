@@ -147,28 +147,13 @@ class TermsSubsetOf implements ValidationRule, ValidatorAwareRule
     private function extractTermStrings(
         mixed $value
     ): array {
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            return [];
-        }
-
         if (\is_array($value)) {
             $out = [];
 
             foreach ($value as $item) {
-                if ($item === null) {
-                    continue;
-                }
-
-                if ($item === '') {
-                    continue;
-                }
-
-                if (\is_string($item)) {
-                    $out[] = $item;
-                } elseif (\is_scalar($item)) {
+                // Keep scalar entries as strings; null and nested values are not
+                // term ids, and blank strings drop out during normalization
+                if (\is_scalar($item)) {
                     $out[] = (string) $item;
                 }
             }
@@ -176,12 +161,12 @@ class TermsSubsetOf implements ValidationRule, ValidatorAwareRule
             return $out;
         }
 
-        if (\is_string($value)) {
-            $trimmed = trim($value);
-
-            return $trimmed === ''
-                ? []
-                : [$value];
+        // Treat a blank single value as no selection, so it needs no parent
+        if (
+            \is_string($value)
+            && trim($value) !== ''
+        ) {
+            return [$value];
         }
 
         return [];
@@ -196,18 +181,8 @@ class TermsSubsetOf implements ValidationRule, ValidatorAwareRule
         array $strings
     ): ?string {
         foreach ($strings as $s) {
-            if (
-                $s !== ''
-                && str_contains(
-                    $s,
-                    '::'
-                )
-            ) {
-                return explode(
-                    '::',
-                    $s,
-                    2
-                )[0];
+            if (str_contains($s, '::')) {
+                return explode('::', $s)[0];
             }
         }
 
@@ -237,7 +212,8 @@ class TermsSubsetOf implements ValidationRule, ValidatorAwareRule
             }
         }
 
-        return array_values(array_unique($set));
+        // Duplicates are harmless: the set is only read for membership and emptiness
+        return $set;
     }
 
     /**

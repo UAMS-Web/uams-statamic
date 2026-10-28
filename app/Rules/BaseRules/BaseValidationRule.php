@@ -160,8 +160,10 @@ abstract class BaseValidationRule implements ValidationRule
             return $isValid;
         }
 
-        // Perform validation with a fail closure that sets the flag to false.
+        // Perform validation with a fail closure that sets the flag to false. The
+        // attribute only names the field in messages, which this check discards.
         $this->validateValue(
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             '',
             $preparedValue,
             function ($message) use (&$isValid): void {
