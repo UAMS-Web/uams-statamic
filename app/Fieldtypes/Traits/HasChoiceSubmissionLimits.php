@@ -83,9 +83,14 @@ trait HasChoiceSubmissionLimits
     protected function fullChoicesForRender(): array
     {
         $field = $this->field();
-        $form = $field?->form();
 
-        if (! $field instanceof Field || ! $form instanceof Form) {
+        if (! $field instanceof Field) {
+            return [];
+        }
+
+        $form = $field->form();
+
+        if (! $form instanceof Form) {
             return [];
         }
 

@@ -190,47 +190,23 @@ trait ConfigSectionWrapper
 
             // Check if we have fields to add to this section
             if (isset($fieldsToAdd[$sectionDisplayKey]) && isset($section['fields'])) {
-                // Add the new fields to the existing section based on position
-                switch ($position) {
-                    // Add fields before existing fields
-                    case 'before':
-                        // Narrow the existing section fields to an array for the merge
-                        /** @var array<string, mixed> $existingSectionFields */
-                        $existingSectionFields = $section['fields'];
+                // Narrow the existing section fields to an array for the merge
+                /** @var array<string, mixed> $existingSectionFields */
+                $existingSectionFields = $section['fields'];
 
-                        // Merge the new fields with the existing fields
-                        $section['fields'] = \array_merge(
-                            $fieldsToAdd[$sectionDisplayKey],
-                            $existingSectionFields
-                        );
-
-                        // Update the section fields with the new fields
-                        break;
-
-                        // Replace existing fields
-                    case 'replace':
-                        // Replace the existing fields with the new fields
-                        $section['fields'] = $fieldsToAdd[$sectionDisplayKey];
-
-                        // Update the section fields with the new fields
-                        break;
-
-                        // Add fields after existing fields
-                    case 'after':
-                    default:
-                        // Narrow the existing section fields to an array for the merge
-                        /** @var array<string, mixed> $existingSectionFields */
-                        $existingSectionFields = $section['fields'];
-
-                        // Merge the new fields with the existing fields
-                        $section['fields'] = \array_merge(
-                            $existingSectionFields,
-                            $fieldsToAdd[$sectionDisplayKey]
-                        );
-
-                        // Update the section fields with the new fields
-                        break;
-                }
+                // Add the new fields to the existing section based on position:
+                // before or in place of the existing fields, and otherwise after
+                $section['fields'] = match ($position) {
+                    'before' => \array_merge(
+                        $fieldsToAdd[$sectionDisplayKey],
+                        $existingSectionFields
+                    ),
+                    'replace' => $fieldsToAdd[$sectionDisplayKey],
+                    default => \array_merge(
+                        $existingSectionFields,
+                        $fieldsToAdd[$sectionDisplayKey]
+                    ),
+                };
             }
         }
 
