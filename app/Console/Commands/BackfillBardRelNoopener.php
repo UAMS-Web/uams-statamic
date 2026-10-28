@@ -48,10 +48,14 @@ class BackfillBardRelNoopener extends Command
 
             $rawData = $entry->data();
 
-            // data() always returns a Collection, so the is_array() fallback never runs:
-            // forcing the instanceof true, or negating that fallback, changes nothing.
-            // @pest-mutate-ignore: InstanceOfToTrue, TernaryNegated
-            $entryData = $rawData instanceof Collection ? $rawData->all() : (\is_array($rawData) ? $rawData : []);
+            // data() always returns a Collection, so forcing the instanceof true
+            // changes nothing.
+            // @pest-mutate-ignore: InstanceOfToTrue
+            $entryData = $rawData instanceof Collection
+                ? $rawData->all()
+                // The is_array() fallback never runs, so negating it changes nothing.
+                // @pest-mutate-ignore: TernaryNegated
+                : (\is_array($rawData) ? $rawData : []);
 
             [$data, $count] = BardRelNoopenerBackfill::apply($entryData);
 
