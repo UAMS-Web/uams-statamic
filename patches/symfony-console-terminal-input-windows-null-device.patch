@@ -1,0 +1,22 @@
+diff --git a/Helper/TerminalInputHelper.php b/Helper/TerminalInputHelper.php
+index d0bc120..a0a2c20 100644
+--- a/Helper/TerminalInputHelper.php
++++ b/Helper/TerminalInputHelper.php
+@@ -102,7 +102,7 @@ final class TerminalInputHelper
+         // and shell_exec() gives no way to detect that failure. Try the exact restore first so
+         // any custom terminal settings survive, but always fall back to "stty sane" so the
+         // terminal is left in a usable state even when the exact restore silently fails.
+-        shell_exec('stty '.$this->initialState.' 2>/dev/null || stty sane');
++        shell_exec('stty '.$this->initialState.' 2>'.('\\' === \DIRECTORY_SEPARATOR ? 'NUL' : '/dev/null').' || stty sane');
+         $this->signalToKill = 0;
+ 
+         foreach ($this->signalHandlers as $signal => $originalHandler) {
+@@ -130,7 +130,7 @@ final class TerminalInputHelper
+                 // is rejected by "stty" (see the same fallback in finish()), to make sure it
+                 // runs with a usable terminal.
+                 $currentState = shell_exec('stty -g');
+-                shell_exec('stty '.$this->initialState.' 2>/dev/null || stty sane');
++                shell_exec('stty '.$this->initialState.' 2>'.('\\' === \DIRECTORY_SEPARATOR ? 'NUL' : '/dev/null').' || stty sane');
+                 $originalHandler = $this->signalHandlers[$signal];
+ 
+                 if (\is_callable($originalHandler)) {
