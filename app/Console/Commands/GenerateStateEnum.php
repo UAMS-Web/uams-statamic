@@ -26,15 +26,17 @@ class GenerateStateEnum extends Command
 {
     /**
      * Execute the console command.
+     *
+     * @param  StateEnumGenerator  $stateEnumGenerator  The TIGERweb state enum generator.
      */
-    public function handle(): int
+    public function handle(StateEnumGenerator $stateEnumGenerator): int
     {
         // Inform the user that we are starting a network fetch
         $this->info('Fetching TIGERweb state attributes...');
 
         try {
             // Delegate the fetch + render + write to the generator service
-            $outputPath = (new StateEnumGenerator)->generate();
+            $outputPath = $stateEnumGenerator->generate();
         } catch (RuntimeException $runtimeException) {
             // Surface an actionable error and exit non-zero
             $this->error($runtimeException->getMessage());
