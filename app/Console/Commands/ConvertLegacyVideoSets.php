@@ -28,19 +28,35 @@ class ConvertLegacyVideoSets extends Command
      */
     public function handle(): int
     {
+        // A VALUE_NONE option is already a bool, so dropping the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         $dryRun = (bool) $this->option('dry-run');
         $blocksConverted = 0;
         $blocksSkipped = 0;
         $entriesChanged = 0;
 
         foreach (Entry::all() as $entry) {
-            // Guard the collection's mixed element type down to an Entry.
+            // Guard the collection's mixed element type down to an Entry. Entry::all()
+            // yields only entries, so forcing the check true, or breaking out of the
+            // loop where it would skip one, changes nothing.
+            // @pest-mutate-ignore: InstanceOfToTrue, ContinueToBreak
             if (! $entry instanceof EntryModel) {
                 continue;
             }
 
             $rawData = $entry->data();
-            $entryData = $rawData instanceof Collection ? $rawData->all() : (\is_array($rawData) ? $rawData : []);
+
+            // data() always returns a Collection, so forcing the instanceof true
+            // changes nothing.
+            // @pest-mutate-ignore: InstanceOfToTrue
+            if ($rawData instanceof Collection) {
+                $entryData = $rawData->all();
+            } else {
+                // Never reached, since data() always returns a Collection, so negating
+                // this fallback changes nothing.
+                // @pest-mutate-ignore: TernaryNegated
+                $entryData = \is_array($rawData) ? $rawData : [];
+            }
 
             [$data, $converted, $skipped] = LegacyVideoSetConverter::apply($entryData);
             $blocksSkipped += $skipped;
@@ -59,10 +75,15 @@ class ConvertLegacyVideoSets extends Command
 
             $id = $entry->id();
 
+            // An entry id is always a string, so the cast and the empty fallback are
+            // never what decides the printed label.
+            // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
+            $label = \is_scalar($id) ? (string) $id : '';
+
             $this->line(sprintf(
                 '%s %s (%d block%s)',
                 $dryRun ? '[dry-run]' : 'Converted',
-                \is_scalar($id) ? (string) $id : '',
+                $label,
                 $converted,
                 $converted === 1 ? '' : 's'
             ));
