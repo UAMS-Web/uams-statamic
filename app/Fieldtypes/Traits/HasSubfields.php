@@ -42,6 +42,8 @@ use Statamic\Support\Str;
  *     <has-subfields
  *         :value="value"
  *         :meta="meta"
+ *         :handle="handle"
+ *         :id="id"
  *         v-on="$listeners"
  *     />
  * </template>
@@ -99,8 +101,10 @@ use Statamic\Support\Str;
  *
  * ### Key Points:
  *
- *   - The Vue component should be minimal and only pass `value` and `meta` to
- *     `has-subfields`
+ *   - The Vue component should be minimal and pass only `value`, `meta`,
+ *     `handle` and `id` to `has-subfields`. `id` is Statamic's field id, which
+ *     carries the publish container; without it two containers rendering the
+ *     fieldtype give their subfields the same ids (#327)
  *   - The `has-subfields` component handles all subfield rendering, validation,
  *     and data management
  *   - The `meta` object contains `subfields` and `fieldtype_handle` from the
