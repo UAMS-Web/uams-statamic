@@ -39,8 +39,14 @@ concurrency:
 #     the kill switch off before adding it; see UAMS-Web/uams-statamic-archive#980, UAMS-Web/uams-statamic-archive#2016 and UAMS-Web/uams-statamic-archive#3166.
 #   - While off, validate branches with `scripts/local-ci.mjs` (no Actions
 #     minutes). Flip in Settings -> Secrets and variables -> Actions -> Variables.
+#   - An ORG variable whose visibility is "private repositories" does NOT reach
+#     this repository, which is public. Measured 2026-10-27, the hour it was made
+#     public: the org's `RUN_REMOTE_CI=false` read as 1 org variable from the
+#     private `uams-statamic-archive` and 0 from here, and the full chain started
+#     on every open pull request. To switch THIS repository off, set a REPO
+#     variable; the org value cannot do it.
 #
-# PARITY: `scripts/local-ci.mjs` reproduces every chained job below (all but the
+# PARITY: `scripts/local-ci.mjs` reproduces every job below (all but the
 # REMOTE-ONLY `submodule-access` and `synced-files`, noted further down) for local runs (no
 # Docker, no act, no Actions minutes) — used when GitHub Actions budget is out.
 # The two are kept in lockstep BY HAND: when you add, remove, or change a job's
@@ -65,14 +71,24 @@ concurrency:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
-# JOB CHAIN (cost-ordered): the jobs run as a strict sequential chain via `needs:`,
-# ordered shortest -> longest —
-#   isolation -> composer-validate -> no-emoji -> content-pointer -> encoding ->
-#   spell -> js -> build -> pint -> rector -> mutate -> phpstan -> pest -> browser
-# so a failure at any step SKIPS (and never bills Actions minutes for) every more-
-# expensive step after it. The deliberate trade: successful runs no longer run in
-# parallel, so wall-clock is the sum of the jobs, not the max. `local-ci.mjs` mirrors
-# the chain, stopping at the first failed job. Supersedes the UAMS-Web/uams-statamic-archive#1543 spell-only gate.
+# JOB FAN-OUT: every job below runs in parallel. No job declares `needs:`, so one
+# job's failure neither skips nor delays another, and a run reports every fault it
+# found rather than only the first.
+# Until #373 these ran as a strict sequential chain, cost-ordered shortest to
+# longest, each job entered through `needs:` on the one before it, so an early
+# failure never billed Actions minutes for the expensive jobs behind it. That
+# protected a metered budget pooled across the whole organization. It does not
+# apply here: this repository is public and every job runs on `ubuntu-latest`, a
+# standard runner, which GitHub does not meter for a public repository. With
+# nothing left to save the trade inverts, and wall-clock is the longest job rather
+# than the sum of all of them. Supersedes the 2026-07-15 entry in
+# docs/DECISIONS.md, which superseded the UAMS-Web/uams-statamic-archive#1543 spell-only gate.
+# DELIBERATELY NOT MIRRORED: `local-ci.mjs` keeps its cost-ordered chain and its
+# stop at the first failure. It runs on ONE machine, where the jobs are serial
+# whatever any graph says, and stopping early saves the developer's own wall-clock
+# rather than a budget. So the parity contract below covers each job's COMMAND and
+# the SET of jobs, never the order they run in; `scripts/local-ci.chain.test.mjs`
+# asserts that set, and asserts that this file declares no `needs:` edge.
 # LOCAL-ONLY (intentionally no job here): `local-ci.mjs` resets a REUSED worktree's
 # runtime state (storage/framework, bootstrap caches, Stache) before the framework
 # jobs. There is no counterpart here on purpose — every CI run starts from a fresh
@@ -107,13 +123,11 @@ concurrency:
 # their absence. No counterpart here because every CI run is a fresh checkout, which
 # cannot carry residue from a previous one. See UAMS-Web/uams-statamic-archive#1889.
 # REMOTE-ONLY (no job in local-ci.mjs until #256): `synced-files` runs the shared
-# check that a synced rule or skill was not edited by hand. It sits outside the chain:
-# nothing `needs:` it and it `needs:` nothing. See UAMS-Web/uams-statamic-archive#3084.
+# check that a synced rule or skill was not edited by hand. See UAMS-Web/uams-statamic-archive#3084.
 # REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
 # a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
 # the private submodules. That secret exists only on GitHub, and the local runner
-# clones them with the developer's own credentials instead. It sits outside the chain:
-# nothing `needs:` it and it `needs:` nothing. See UAMS-Web/uams-statamic-archive#2497.
+# clones them with the developer's own credentials instead. See UAMS-Web/uams-statamic-archive#2497.
 # Toolchain pins that must also match: PHP 8.4 (setup-php), Node 22 (setup-node),
 # and npm >= 11.10.0 (the `engines.npm` floor `.npmrc`'s engine-strict enforces; UAMS-Web/uams-statamic-archive#1826).
 # A pre-commit hook (`.githooks/pre-commit`, auto-wired by composer) blocks a
@@ -145,8 +159,8 @@ jobs:
     #   pull request or a push never runs it.
     # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
     #   manual run reaches this step at once instead of after phpstan.
-    # - Outside the cost-ordered chain: nothing `needs:` it, so it cannot skip or
-    #   hold up any gate job.
+    # - Nothing `needs:` it, and since #373 no job here needs anything, so it
+    #   cannot skip or hold up any gate job.
     # - Re-run it by hand whenever a private submodule is added. The token is
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
@@ -178,8 +192,8 @@ jobs:
     # Fails, naming the file, when a rule or skill the sync manages was edited
     # by hand rather than in UAMS-Web/uams-claude-skills.
     #
-    # Outside the cost-ordered chain: it needs nothing and nothing needs it, so
-    # it cannot skip or hold up a gate job, and it reports beside them.
+    # It needs nothing and nothing needs it, which since #373 is true of every
+    # job here, so it cannot skip or hold up a gate job and reports beside them.
     #
     # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
     # own synced-files job arrives with the shared runner in #256. Until then
@@ -201,9 +215,9 @@ jobs:
   pest:
     name: Pest (full suite)
     runs-on: ubuntu-latest
-    # CI chain: runs only after Larastan passes — the longest job of the PHP
-    # chain, with only the browser smoke after it.
-    needs: phpstan
+    # Local-chain cost rank (scripts/local-ci.mjs orders by it; here every job
+    # runs in parallel): after Larastan, the longest job of the PHP set, with
+    # only the browser smoke behind it.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -252,7 +266,16 @@ jobs:
           extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
           coverage: none
           tools: composer:v2
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing
+          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
+          # runs, because four tests are written to run only under those values and
+          # self-skip otherwise: two assert an AssertionError and need assertions
+          # compiled in, two induce a PCRE failure the JIT does not produce. The
+          # runner's defaults (-1 and 1) made all four skip, which took the parallel
+          # band to 5 skips against a baseline of 3 and failed
+          # scripts/check-skip-baseline.php. Raising the baseline would have recorded
+          # the coverage loss instead of fixing it, which that file's own header
+          # forbids; matching the local environment restores the four tests.
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -490,8 +513,7 @@ jobs:
   pint:
     name: Pint (changed files)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the Vite build passes.
-    needs: build
+    # Local-chain cost rank: after the Vite build.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -564,11 +586,10 @@ jobs:
   rector:
     name: Rector (gating profile)
     runs-on: ubuntu-latest
-    # CI chain: runs only after Pint passes. Pint MUST come first — the two tools
+    # Local-chain cost rank: after Pint. Pint MUST come first there, because the two tools
     # rewrite the same files, and rector.php sets `removeUnusedImports: false`
     # because Rector's remover is not `{@see}`-aware, leaving Pint the sole owner
     # of that operation (UAMS-Web/uams-statamic-archive#1131).
-    needs: pint
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Rector is a static analyzer: it reads source and resolves classes through
@@ -625,9 +646,8 @@ jobs:
   mutate:
     name: Mutation tooling smoke
     runs-on: ubuntu-latest
-    # CI chain: runs only after Rector passes. Cheap (~9s of work) so it sits
-    # ahead of the two 2-min+ jobs.
-    needs: rector
+    # Local-chain cost rank: after Rector. Cheap (~9s of work) so it sits ahead
+    # of the two 2-min+ jobs there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # This gates the mutation TOOLING, not the mutants. UAMS-Web/uams-statamic-archive#1728 was not a mutant
@@ -722,8 +742,7 @@ jobs:
   phpstan:
     name: Larastan (PHPStan)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the mutation smoke passes — the two 2-min+ jobs come last.
-    needs: mutate
+    # Local-chain cost rank: after the mutation smoke; the two 2-min+ jobs come last there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Larastan boots the Laravel app — vendor/larastan/larastan/bootstrap.php
@@ -776,8 +795,7 @@ jobs:
   build:
     name: Vite build
     runs-on: ubuntu-latest
-    # CI chain: runs only after the JS unit tests pass.
-    needs: js
+    # Local-chain cost rank: after the JS unit tests.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
@@ -842,8 +860,7 @@ jobs:
   js:
     name: JS unit tests (Vitest)
     runs-on: ubuntu-latest
-    # CI chain: runs only after spell passes.
-    needs: spell
+    # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
@@ -877,14 +894,14 @@ jobs:
   spell:
     name: Spell check (cspell)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the encoding guard passes.
-    needs: encoding-guard
+    # Local-chain cost rank: after the encoding guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Blocking gate (UAMS-Web/uams-statamic-archive#1541): the dictionary is clean (0 hits), so a spelling issue
-    # fails the job — and because every more-expensive job runs downstream of it in
-    # the cost-ordered chain, a typo skips (and never bills) js, build, pint,
-    # phpstan, Pest, and the browser smoke. Framework-free and cheap: Node + the
+    # fails the job. In scripts/local-ci.mjs, where the cost-ordered chain still
+    # runs, a typo skips (and never bills) js, build, pint, phpstan, Pest and the
+    # browser smoke; here every job runs in parallel, so it fails this job alone.
+    # Framework-free and cheap: Node + the
     # cspell CLI, no PHP, Composer, or content submodule. It supersedes the earlier
     # advisory (`continue-on-error`) phase from UAMS-Web/uams-statamic-archive#1018.
     steps:
@@ -915,8 +932,8 @@ jobs:
   browser:
     name: CP browser smoke (Pest + Playwright)
     runs-on: ubuntu-latest
-    # CI chain: runs LAST, only after Pest passes.
-    needs: pest
+    # Local-chain cost rank: LAST, the most expensive job. Here it runs in
+    # parallel with the rest.
     # Runs on every PR, like every other job here. The `browser-tests` label gate
     # this job used to carry was REMOVED in UAMS-Web/uams-statamic-archive#1727, along with the opt-in framing
     # in the local-ci mirror.
@@ -935,6 +952,19 @@ jobs:
     if: vars.RUN_REMOTE_CI != 'false'
     steps:
       - uses: actions/checkout@v7
+
+      # The served application boots from the same three submodules the `pest`
+      # job checks out: collection and asset-container configs in `content/`, the
+      # Control Panel login user in `users/`, and the form configurations in
+      # `resources/forms/`. Without them every smoke stops at the login screen
+      # and fails on whatever it reaches first (#378); tests/Pest.php now refuses
+      # the run and names what is missing instead. Same token wiring as `pest`.
+      - name: Check out the content, users and forms submodules
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
+        run: |
+          git -c "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              submodule update --init --depth 1 content users resources/forms
 
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
@@ -958,10 +988,9 @@ jobs:
       - name: Configure Composer auth for private GitHub packages
         run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
 
-      # The browser smoke seeds its own throwaway collection, so it needs no
-      # `content/` submodule. It does need the framework booted: `.env` + app
-      # key, plus `statamic:install` (run by post-autoload-dump) to publish the
-      # Statamic core CP assets the served Control Panel loads.
+      # The framework has to be booted: `.env` + app key, plus `statamic:install`
+      # (run by post-autoload-dump) to publish the Statamic core CP assets the
+      # served Control Panel loads.
       - name: Prepare environment file
         run: cp .env.example .env
 
@@ -1019,12 +1048,11 @@ jobs:
   composer-validate:
     name: Composer validate (composer.lock freshness)
     runs-on: ubuntu-latest
-    # CI chain: second link — runs only after the isolation guard passes, and
-    # gates every job after it. Measured locally at ~1.5s against the isolation
-    # guard's ~0.8s, so shortest -> longest puts it here rather than at the head
-    # of the chain; either way it precedes the first job that costs real time
-    # (encoding-guard runs `composer install`), which is the saving that matters.
-    needs: test-isolation-guard
+    # Local-chain cost rank: second. Measured locally at ~1.5s against the
+    # isolation guard's ~0.8s, so shortest -> longest puts it there rather than at
+    # the head; either way it precedes the first job that costs real time
+    # (encoding-guard runs `composer install`), which is the saving that matters
+    # locally. Here every job runs in parallel and nothing is gated.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when `composer.lock` no longer matches `composer.json` —
@@ -1068,11 +1096,10 @@ jobs:
   no-emoji-guard:
     name: No-emoji guard (durable records)
     runs-on: ubuntu-latest
-    # CI chain: runs after the composer.lock validation and BEFORE the encoding
-    # guard, which is the first job that costs real time (it runs `composer
-    # install`). This one is a pure file scan needing only Node, so a glyph
-    # fails the build without ever billing an install.
-    needs: composer-validate
+    # Local-chain cost rank: after the composer.lock validation and BEFORE the
+    # encoding guard, which is the first job that costs real time (it runs
+    # `composer install`). This one is a pure file scan needing only Node, so
+    # locally a glyph fails the build without ever billing an install.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when a durable record carries an emoji code point, per
@@ -1101,9 +1128,8 @@ jobs:
   content-pointer-guard:
     name: Submodule pointer guard (each on its main)
     runs-on: ubuntu-latest
-    # CI chain: runs after the no-emoji guard and BEFORE the encoding guard, the
-    # first job that runs `composer install`. It needs only git and Node.
-    needs: no-emoji-guard
+    # Local-chain cost rank: after the no-emoji guard and BEFORE the encoding
+    # guard, the first job that runs `composer install`. It needs only git and Node.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when any submodule gitlink of the validated commit names a
@@ -1159,8 +1185,7 @@ jobs:
   encoding-guard:
     name: Encoding guard (Windows-1252 double-encoding)
     runs-on: ubuntu-latest
-    # CI chain: runs only after the content pointer guard passes.
-    needs: content-pointer-guard
+    # Local-chain cost rank: after the content pointer guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
@@ -1276,9 +1301,9 @@ jobs:
   test-isolation-guard:
     name: Test isolation guard (parallel-safety)
     runs-on: ubuntu-latest
-    # First (fastest) link in the cost-ordered CI chain: every other job runs
-    # downstream via `needs:`, so a failure here skips — and never bills — the
-    # entire rest of the pipeline.
+    # First (fastest) link in scripts/local-ci.mjs's cost-ordered chain, where a
+    # failure here skips, and never bills, the entire rest of the pipeline. Here
+    # it runs in parallel with every other job; see the fan-out note in the header.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when a test uses a parallel-unsafe, shared-state pattern

@@ -6,6 +6,7 @@ use App\Models\ArticleEngagementCount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Statamic\Entries\Collection;
 use Statamic\Entries\Entry as EntryInstance;
+use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
@@ -24,6 +25,13 @@ uses(StacheIsolatedTestCase::class, RefreshDatabase::class);
  * @command php artisan test --compact tests/Feature/Services/ComputedFields/Registration/ArticleEngagementComputedsRegistrarTest.php
  */
 beforeEach(function (): void {
+    // Pad Pest's mutant-child timeout once per process under `--mutate`.
+    static $padded = false;
+    if (! $padded && runningUnderMutate()) {
+        usleep(20_000_000);
+        $padded = true;
+    }
+
     foreach (['article', 'topic'] as $handle) {
         /** @var Statamic\Fields\Blueprint $blueprint */
         $blueprint = Blueprint::make($handle);
@@ -117,4 +125,97 @@ it('reads zero for a non-article entry even if a row exists for its id', functio
 
     expect($viewCount->value())->toBe(0)
         ->and($likeCount->value())->toBe(0);
+});
+
+/**
+ * The four engagement computeds of an entry, keyed by handle.
+ *
+ * @return array<string, mixed>
+ */
+function engagementValues(EntryInstance $entry): array
+{
+    $values = [];
+    foreach (['view_count', 'like_count', 'dislike_count', 'like_count_net'] as $handle) {
+        /** @var Value $value */
+        $value = $entry->augmentedValue($handle);
+        $values[$handle] = $value->value();
+    }
+
+    return $values;
+}
+
+/**
+ * The request-memo key the registrar reads a saved entry's tallies under.
+ */
+function engagementCacheKey(EntryInstance $entry): string
+{
+    $id = $entry->id();
+    expect($id)->toBeString();
+
+    return 'kb_engagement_counts_'.(is_string($id) ? $id : '');
+}
+
+it('reads the tallies memoized for the request under the entry id', function (): void {
+    $article = makeComputedEntry('article', 'memoized');
+    // The store holds nothing, so only the memoized read can supply these.
+    Blink::put(engagementCacheKey($article), ['views' => 11, 'likes' => 4, 'dislikes' => 1, 'net' => 3]);
+
+    expect(engagementValues($article))->toBe([
+        'view_count' => 11,
+        'like_count' => 4,
+        'dislike_count' => 1,
+        'like_count_net' => 3,
+    ]);
+});
+
+it('reads zero for each tally the memoized row lacks', function (): void {
+    $article = makeComputedEntry('article', 'partial');
+    Blink::put(engagementCacheKey($article), []);
+
+    expect(engagementValues($article))->toBe([
+        'view_count' => 0,
+        'like_count' => 0,
+        'dislike_count' => 0,
+        'like_count_net' => 0,
+    ]);
+});
+
+it('coerces numeric strings and zeroes non-numeric tallies', function (): void {
+    $article = makeComputedEntry('article', 'strings');
+    Blink::put(engagementCacheKey($article), ['views' => '12', 'likes' => 'many', 'dislikes' => null, 'net' => '-2']);
+
+    expect(engagementValues($article))->toBe([
+        'view_count' => 12,
+        'like_count' => 0,
+        'dislike_count' => 0,
+        'like_count_net' => -2,
+    ]);
+});
+
+it('reads zero when the memoized value is not a row', function (): void {
+    $article = makeComputedEntry('article', 'not-a-row');
+    Blink::put(engagementCacheKey($article), 'oops');
+
+    expect(engagementValues($article))->toBe([
+        'view_count' => 0,
+        'like_count' => 0,
+        'dislike_count' => 0,
+        'like_count_net' => 0,
+    ]);
+});
+
+it('reads zero for an unsaved article, which has no id to key the store on', function (): void {
+    /** @var EntryInstance $article */
+    $article = Entry::make();
+    $article->collection('knowledge_bases');
+    $article->blueprint('article');
+    $article->data(['title' => 'Unsaved']);
+
+    expect($article->id())->toBeNull()
+        ->and(engagementValues($article))->toBe([
+            'view_count' => 0,
+            'like_count' => 0,
+            'dislike_count' => 0,
+            'like_count_net' => 0,
+        ]);
 });

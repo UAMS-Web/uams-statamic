@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -17,11 +18,17 @@ import {
 } from './local-ci.mjs'
 
 // UAMS-Web/uams-statamic-archive#1735 — `scripts/local-ci.mjs` is a HAND-maintained mirror of
-// `.github/workflows/ci.yml`, and the cost-ordered chain is the part of it that
-// silently rots: edit one file's `needs:` graph and the other keeps running the
-// old order, so a locally-green branch is gated differently than it would be on
-// CI. The `.githooks/pre-commit` hook only catches staging one file without the
-// other — it cannot see whether the two agree. These assert that they do.
+// `.github/workflows/ci.yml`, and the job SET is the part of it that silently
+// rots: add a job to one file and the other keeps gating a branch by the old set,
+// so a locally-green branch is gated differently than it would be on CI. The
+// `.githooks/pre-commit` hook only catches staging one file without the other; it
+// cannot see whether the two agree. These assert that they do.
+// Since #373 the ORDER is deliberately not shared. ci.yml declares no `needs:` and
+// runs its jobs in parallel, because GitHub does not meter the standard runners
+// they use for a public repository; the local runner keeps its cost-ordered chain
+// because one machine runs the jobs serially whatever any graph says. So these
+// cases pin the SET, and pin that ci.yml stays unchained, rather than comparing
+// two orders that no longer both exist.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
@@ -46,12 +53,12 @@ const JOB_KEYS = {
     browser: 'browser',
 }
 
-// ci.yml jobs with deliberately no local counterpart, each outside the chain. Kept as an
+// ci.yml jobs with deliberately no local counterpart. Kept as an
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
 // (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
 // gains its own job with #256. The first case in the parity block below pins that each
-// stays outside the chain.
+// still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
 const REMOTE_ONLY = new Set(['submodule-access', 'synced-files'])
 
 /**
@@ -109,56 +116,18 @@ function parseWorkflowJobs(yaml) {
     return jobs
 }
 
-/**
- * Flatten the `needs:` graph into the sequential order it encodes.
- *
- * The chain is a strict linked list by design (docs/DECISIONS.md, 2026-07-15):
- * exactly one head with no `needs:`, every other job depending on exactly one
- * predecessor, and no job depended on twice. Each of those is asserted here —
- * a fan-out would mean the chain stopped being sequential, which is a decision
- * to make deliberately, not to discover through a passing parity test.
- */
-function linearize(jobs) {
-    const heads = [...jobs].filter(([, job]) => job.needs === null).map(([id]) => id)
-    expect(heads).toHaveLength(1)
-
-    const nextOf = new Map()
-    for (const [id, job] of jobs) {
-        if (job.needs === null) {
-            continue
-        }
-        expect(job.needs).toHaveLength(1)
-        const parent = job.needs[0]
-        expect(jobs.has(parent)).toBe(true)
-        expect(nextOf.has(parent)).toBe(false)
-        nextOf.set(parent, id)
-    }
-
-    const order = []
-    for (let id = heads[0]; id !== undefined; id = nextOf.get(id)) {
-        order.push(id)
-    }
-    expect(order).toHaveLength(jobs.size)
-
-    return order
-}
-
 describe('ci.yml <-> local-ci.mjs chain parity', () => {
     const allJobs = parseWorkflowJobs(workflow)
     const jobs = new Map([...allJobs].filter(([id]) => !REMOTE_ONLY.has(id)))
 
-    it('keeps every remote-only job in ci.yml and outside the chain', () => {
-        // Each listed job must exist, so a rename cannot leave a stale exemption, and must
-        // neither need a job nor be needed by one. A remote-only job joined to the chain
-        // would gate or be gated by jobs local-ci runs while local-ci never runs it.
+    it('keeps every remote-only job in ci.yml', () => {
+        // Each listed job must exist, so a rename cannot leave a stale exemption
+        // pointing at nothing while the renamed job slips past this guard unseen.
+        // The "outside the chain" half of this case retired with #373: no job in
+        // ci.yml carries an edge any more, and the unchained case below asserts
+        // that for every job at once rather than for these two.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
-            expect(allJobs.get(id).needs).toBeNull()
-        }
-        for (const [, job] of allJobs) {
-            for (const parent of job.needs ?? []) {
-                expect(REMOTE_ONLY.has(parent)).toBe(false)
-            }
         }
     })
 
@@ -166,8 +135,29 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect([...jobs.keys()].sort()).toEqual(Object.keys(JOB_KEYS).sort())
     })
 
-    it('runs local-ci jobs in the exact order ci.yml `needs:` encodes', () => {
-        expect(linearize(jobs).map((id) => JOB_KEYS[id])).toEqual(CHAIN)
+    it('declares no `needs:` edge, so every remote job runs in parallel (#373)', () => {
+        // The remote jobs fan out. The cost-ordered chain they used to run as was
+        // there to protect a metered Actions budget, and GitHub does not meter the
+        // standard runners every job here uses for a public repository. An edge
+        // added back would restore the serial wall-clock for nothing and diverge
+        // from the local runner, whose chain is deliberately NOT mirrored, so this
+        // fails rather than letting one return unnoticed. Reintroducing an edge is
+        // a decision to take deliberately in docs/DECISIONS.md, not to discover
+        // through a passing parity test.
+        //
+        // An empty result is evidence only if the scanner can still SEE an edge: a
+        // parser that stopped matching `needs:` would report a clean fan-out for a
+        // fully chained workflow, which is byte-identical to the truth. So the
+        // control is a fixture carrying one edge, read by the same function, and it
+        // has to come back with that edge AND with its head still null.
+        const control = parseWorkflowJobs(
+            ['jobs:', '  alpha:', '    runs-on: ubuntu-latest', '  beta:', '    needs: alpha', ''].join('\n'),
+        )
+        expect(control.get('beta').needs).toEqual(['alpha'])
+        expect(control.get('alpha').needs).toBeNull()
+
+        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id]) => id)
+        expect(chained).toEqual([])
     })
 
     it('addresses every chained job by a valid `--jobs` key', () => {
@@ -251,25 +241,35 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // may be OLDER than this file. A pre-#1882 `parseArgs` has no case for the
         // flag, so its `default:` arm throws `Unknown option` — which would make
         // every branch cut before this change un-validatable the moment it merged.
-        // Asserted against the real base-branch source, not a hand-written stand-in.
         const argv = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
         expect(argv).not.toContain(RUNNER_PINNED_FLAG)
-
-        const baseRunner = execFileSync('git', ['-C', repoRoot, 'show', 'origin/main:scripts/local-ci.mjs'], { encoding: 'utf8' })
-        for (const arg of argv) {
-            if (!arg.startsWith('-')) {
-                continue
-            }
-            // Every flag the handoff forwards must be one the BASE branch's parser
-            // already knows, or that older runner dies before it validates anything.
-            expect(baseRunner).toContain(`'${arg}'`)
-        }
 
         // And the env channel is what the child actually reads — a name an older
         // parser cannot see at all.
         expect(RUNNER_PINNED_ENV).toBe('LOCAL_CI_RUNNER_PINNED')
         expect(readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8'))
             .toContain(`[RUNNER_PINNED_ENV]: '1'`)
+    })
+
+    it('forwards only flags the base branch\'s runner already parses', (context) => {
+        // Asserted against the real base-branch source, not a hand-written stand-in.
+        // A CI checkout fetches only the commit under test and creates no
+        // `origin/main`, so there the base cannot be read at all (#375). That case
+        // is a skip that names the missing ref, never a pass: with no base source
+        // the loop below would have nothing to compare against.
+        const base = readAtRef(repoRoot, 'origin/main', 'scripts/local-ci.mjs')
+        if (base.unreachable !== null) {
+            context.skip(base.unreachable)
+        }
+
+        const flags = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
+            .filter((arg) => arg.startsWith('-'))
+        expect(flags.length).toBeGreaterThan(0)
+        for (const arg of flags) {
+            // Every flag the handoff forwards must be one the BASE branch's parser
+            // already knows, or that older runner dies before it validates anything.
+            expect(base.source).toContain(`'${arg}'`)
+        }
     })
 
     it('rejects an unknown job name even when `all` is also requested', () => {
@@ -424,5 +424,81 @@ describe('--jobs usage text', () => {
 
         expect(opts.jobs).toEqual(documentedJobs())
         expect(unknownJobs(opts.jobs)).toEqual([])
+    })
+})
+
+/**
+ * Read a file as it stands at a git ref, or say why the ref cannot be read.
+ *
+ * A ref that does not resolve is reported, not thrown, so a caller can skip with
+ * a stated reason: a CI checkout has the commit under test and nothing else. A
+ * ref that resolves but lacks the file throws, because that is a real finding
+ * about the ref and must fail rather than skip.
+ *
+ * @param {string} cwd Any directory inside the repository to read.
+ * @param {string} ref The ref to read the file at, such as `origin/main`.
+ * @param {string} file The file's path relative to the repository root.
+ * @returns {{source: string|null, unreachable: string|null}} The file's text, or
+ *          the reason the ref could not be read.
+ */
+function readAtRef(cwd, ref, file) {
+    // Check whether the ref names a commit in this checkout at all
+    try {
+        execFileSync('git', ['-C', cwd, 'rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+        })
+    } catch {
+        return {
+            source: null,
+            unreachable: `${ref} does not resolve in this checkout, so ${file} cannot be read at it`,
+        }
+    }
+
+    // Read the file at the ref; a missing file throws out of here on purpose
+    return {
+        source: execFileSync('git', ['-C', cwd, 'show', `${ref}:${file}`], {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        }),
+        unreachable: null,
+    }
+}
+
+describe('reading a file at a ref a checkout may not have (#375)', () => {
+    // A throwaway repository with one commit and no remote: the shape of a CI
+    // checkout, which has the commit under test and no `origin/main`.
+    const withRepo = (body) => {
+        const dir = mkdtempSync(join(tmpdir(), 'read-at-ref-'))
+        try {
+            const git = (...args) => execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+            git('init', '--quiet')
+            writeFileSync(join(dir, 'present.txt'), 'present\n')
+            git('add', 'present.txt')
+            git('-c', 'user.name=test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '-m', 'one')
+            body(dir)
+        } finally {
+            rmSync(dir, { recursive: true, force: true })
+        }
+    }
+
+    it('reports a ref that does not resolve, naming it, instead of reading nothing', () => {
+        withRepo((dir) => {
+            expect(readAtRef(dir, 'origin/main', 'present.txt')).toEqual({
+                source: null,
+                unreachable: 'origin/main does not resolve in this checkout, so present.txt cannot be read at it',
+            })
+        })
+    })
+
+    it('reads the file when the ref resolves', () => {
+        withRepo((dir) => {
+            expect(readAtRef(dir, 'HEAD', 'present.txt')).toEqual({ source: 'present\n', unreachable: null })
+        })
+    })
+
+    it('throws when the ref resolves but the file is not there, rather than skipping', () => {
+        withRepo((dir) => {
+            expect(() => readAtRef(dir, 'HEAD', 'absent.txt')).toThrow()
+        })
     })
 })

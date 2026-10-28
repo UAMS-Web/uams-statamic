@@ -25,11 +25,13 @@
 //               + .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
 //     validate  composer validate (composer.json <-> composer.lock freshness)
 //
-// The jobs run as a cost-ordered CHAIN (mirrors ci.yml's `needs:` graph), shortest
+// The jobs run as a cost-ordered CHAIN, shortest
 // -> longest: isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
-// skips every more-expensive job after it — saving your wall-clock locally, Actions
-// minutes on CI.
+// skips every more-expensive job after it, saving your wall-clock. This order is
+// LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
+// because one machine runs them serially whatever the graph says and stopping early
+// saves your own time rather than a metered budget.
 // Run one job (e.g. `--jobs pest`) to bypass the chain.
 //
 // The target branch is checked out into a sibling worktree (default
@@ -190,15 +192,15 @@ export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spe
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
 
-// PARITY: the cost-ordered `needs:` chain from ci.yml, shortest -> longest. A job
-// runs only if every earlier selected job passed; the moment one fails, the rest
-// are SKIPPED (not run), so a failure never pays for the more-expensive jobs after
-// it (locally: your wall-clock; on CI: Actions minutes). `browser` runs last, as
-// the most expensive link. Run a single job (e.g. `--jobs pest`) to bypass the
-// chain. Module-scoped and exported so the parity test can compare this order
-// against the `needs:` graph declared in ci.yml (UAMS-Web/uams-statamic-archive#1735).
+// PARITY: the cost-ordered chain, shortest -> longest. A job runs only if every
+// earlier selected job passed; the moment one fails, the rest are SKIPPED (not
+// run), so a failure never pays for the more-expensive jobs after it. `browser`
+// runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
+// bypass the chain. This ORDER is local only: ci.yml declares no `needs:` and runs
+// its jobs in parallel (#373). Module-scoped and exported so the parity test can
+// compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
 export const CHAIN = ['isolation', 'validate', 'no-emoji', 'content-pointer', 'encoding', 'spell', 'js', 'build', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']
-// PARITY-END: the chain ORDER only. What follows is unrelated (UAMS-Web/uams-statamic-archive#2376).
+// PARITY-END: the chain itself only. What follows is unrelated (UAMS-Web/uams-statamic-archive#2376).
 
 // UAMS-Web/uams-statamic-archive#2880: the jobs that run a script through `node`, so the runner resolves Node when the
 // job list includes any of them. `node` used to be resolved only for `encoding`, so
@@ -2683,7 +2685,8 @@ function main() {
     }
 
     // The chain order itself is the module-scoped CHAIN above (exported so the
-    // parity test can hold it against ci.yml's `needs:` graph).
+    // parity test can hold its SET against the jobs ci.yml declares; since #373
+    // ci.yml encodes no order of its own).
     let brokenBy = null
     for (const job of CHAIN) {
         if (!jobs.includes(job)) {

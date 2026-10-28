@@ -40,10 +40,23 @@ it('leaves an import referenced only by a {@see} docblock tag untouched', functi
     mkdir($tmp);
 
     try {
+        // Bound the child at 300 seconds rather than Symfony's 60-second
+        // default. This guard runs in the parallel band, where 12 processes
+        // compete. The basis is carried over from
+        // UAMS-Web/uams-statamic-archive#3311, not measured on this child: on
+        // Windows 11 with Herd PHP 8.4 the sibling gating child in
+        // RectorProfileSplitTest took 7.3 to 32.7 seconds across 80 in-band
+        // runs, and one band ran it past 60 seconds
+        // (UAMS-Web/uams-statamic-archive#3297). On macOS (Darwin 25.6.0, Herd
+        // PHP 8.4.27) this single-file child took 89% as long as that directory
+        // run (UAMS-Web/uams-statamic-archive#3389), so it is treated as
+        // equally exposed. No run of this guard has been seen to time out on
+        // either platform.
         $process = new Process(
             [PHP_BINARY, 'vendor/bin/rector', 'process', $fixture, '--dry-run', '--no-ansi'],
             $root,
             ['TMPDIR' => $tmp, 'TMP' => $tmp, 'TEMP' => $tmp],
+            timeout: 300,
         );
         $process->run();
 
