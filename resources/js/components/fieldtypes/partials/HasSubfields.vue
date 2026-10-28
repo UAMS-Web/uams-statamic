@@ -9,13 +9,14 @@
 	<SubfieldContainer
 		:subfields="subfields"
 		:parent-handle="handle"
+		:field-id="id"
 		:fieldtype-handle="fieldtypeHandle"
 	>
 		<template #input="{ subfield }">
 			<custom-text-input
 				v-if="subfield.type === 'text'"
 				:model-value="[undefined, null].includes(currentValue[subfield.handle]) ? subfield.default : currentValue[subfield.handle]"
-				:id="'field_' + subfield.handle"
+				:id="subfieldId(subfield.handle)"
 				:name="subfield.handle"
 				:placeholder="subfield.placeholder"
 				:config="subfield"
@@ -24,7 +25,7 @@
 			/>
 			<zip_code-fieldtype
 				v-else-if="subfield.type === 'zip_code'"
-				:id="'field_' + subfield.handle"
+				:id="subfieldId(subfield.handle)"
 				:config="subfield"
 				:handle="subfield.handle"
 				:meta="meta || {}"
@@ -37,7 +38,7 @@
 				v-else-if="subfield.type === 'select'"
 				:clearable="subfield.clearable ?? false"
 				:disabled="subfield.disabled ?? false"
-				:id="'field_' + subfield.handle"
+				:id="subfieldId(subfield.handle)"
 				:model-value="selectModelValues[subfield.handle]"
 				:options="formatOptions(subfield.options)"
 				:option-label="'label'"
@@ -59,6 +60,7 @@ import { computed, getCurrentInstance } from 'vue';
 import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
 import { Combobox } from '@statamic/cms/ui';
 import SubfieldContainer from './SubfieldContainer.vue';
+import { subfieldId as buildSubfieldId } from './subfieldId.js';
 
 export default {
 	name: 'HasSubfields',
@@ -172,6 +174,11 @@ export default {
 			instance.update(updated);
 		}
 
+		// `id` is Statamic's id for this field, carrying the publish container (#327).
+		function subfieldId(subfieldHandle) {
+			return buildSubfieldId(props.id, props.handle, subfieldHandle);
+		}
+
 		return {
 			subfields,
 			currentValue,
@@ -179,7 +186,8 @@ export default {
 			formatOptions,
 			getSelectDisplayValue,
 			onSubfieldInput,
-			selectModelValues
+			selectModelValues,
+			subfieldId
 		};
 	}
 };
