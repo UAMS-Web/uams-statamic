@@ -49,16 +49,17 @@ class GenerateMimeTypeEnum extends Command
     /**
      * Execute the console command.
      *
+     * @param  MimeTypeEnumGenerator  $mimeTypeEnumGenerator  The MIME type enum generator.
      * @return int Exit status code (0 on success, non-zero on error)
      */
-    public function handle(): int
+    public function handle(MimeTypeEnumGenerator $mimeTypeEnumGenerator): int
     {
         // Inform the user that we are starting a network fetch
         $this->info('Reading MIME types from mime-db, IANA media types, and Apache MIME types...');
 
         try {
             // Delegate the fetch + merge + render + write to the generator service
-            $outputPath = (new MimeTypeEnumGenerator)->generate();
+            $outputPath = $mimeTypeEnumGenerator->generate();
         } catch (RuntimeException $runtimeException) {
             // Surface an actionable error and exit non-zero
             $this->error($runtimeException->getMessage());

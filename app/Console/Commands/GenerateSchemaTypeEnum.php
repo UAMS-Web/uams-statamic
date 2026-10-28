@@ -28,16 +28,16 @@ class GenerateSchemaTypeEnum extends Command
     /**
      * Execute the console command.
      *
+     * @param  SchemaTypeEnumGenerator  $schemaTypeEnumGenerator  The schema.org enum generator.
      * @return int Command exit code
      */
-    public function handle(): int
+    public function handle(SchemaTypeEnumGenerator $schemaTypeEnumGenerator): int
     {
         $this->info(
             'Generating SchemaType, SchemaProperty, SchemaDataType, and SchemaEnumerationMember enums from schema.org JSON-LD...'
         );
 
-        $generator = new SchemaTypeEnumGenerator;
-        [$typePath, $propertyPath, $dataTypePath, $cacheWarmed, $enumerationMemberPath] = $generator->generate();
+        [$typePath, $propertyPath, $dataTypePath, $cacheWarmed, $enumerationMemberPath] = $schemaTypeEnumGenerator->generate();
 
         $this->info('Wrote '.$typePath);
         $this->info('Wrote '.$propertyPath);
