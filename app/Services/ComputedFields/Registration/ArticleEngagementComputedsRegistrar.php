@@ -95,7 +95,11 @@ final readonly class ArticleEngagementComputedsRegistrar
             fn (): array => $this->engagement->counts($id)
         );
 
-        // Blink erases the closure's array shape to mixed; coerce it back
+        // Blink erases the closure's array shape to mixed; coerce it back. A
+        // scalar has none of the keys below, so the `??` reads would also give
+        // zero; removing this return is an equivalent mutant. It stays so the
+        // offsets are only ever read from an array.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if (! is_array($cached)) {
             return $this->zero();
         }
@@ -131,11 +135,7 @@ final readonly class ArticleEngagementComputedsRegistrar
      */
     private function toInt(mixed $value): int
     {
-        // Preserve genuine integers; coerce numeric strings; zero anything else
-        if (is_int($value)) {
-            return $value;
-        }
-
+        // Coerce integers and numeric strings; zero anything else
         return is_numeric($value) ? (int) $value : 0;
     }
 }

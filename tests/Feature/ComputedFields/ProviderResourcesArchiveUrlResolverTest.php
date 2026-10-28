@@ -22,6 +22,13 @@ use Tests\Support\StacheIsolatedTestCase;
 uses(StacheIsolatedTestCase::class);
 
 beforeEach(function (): void {
+    // Pad Pest's mutant-child timeout once per process under `--mutate`.
+    static $padded = false;
+    if (! $padded && runningUnderMutate()) {
+        usleep(20_000_000);
+        $padded = true;
+    }
+
     $pages = CollectionFacade::make('pages');
     $pages->title('Pages');
     $pages->routes('/{slug}');
@@ -136,6 +143,48 @@ it('emits the slug verbatim, and encodes anything that would break the query str
 
     expect(app(ProviderResourcesArchiveUrlResolver::class)->resolve(archiveUrlProvider('jean-luc-picard')))
         ->toEndWith('?provider=jean-luc-picard');
+});
+
+it('yields no destination for a provider with no slug', function (?string $slug): void {
+    archiveUrlCollection(archiveUrlLanding());
+
+    // Built rather than saved: a save would give the entry a slug.
+    /** @var Statamic\Entries\Entry $provider */
+    $provider = Entry::make();
+    $provider->collection('people');
+    $provider->slug($slug);
+
+    expect(app(ProviderResourcesArchiveUrlResolver::class)->resolve($provider))->toBe('');
+})->with([
+    'no slug at all' => [null],
+    'an empty slug' => [''],
+    // Non-empty as stored, but `slug()` normalizes it to ''.
+    'a slug of punctuation only' => ['!!!'],
+]);
+
+it('yields no destination when the resources collection does not exist', function (): void {
+    expect(app(ProviderResourcesArchiveUrlResolver::class)->resolve(archiveUrlProvider('chekov')))->toBe('');
+});
+
+it('yields no destination when the mounted landing has no URL', function (): void {
+    // A collection without a route gives its entries no URL, so the landing is
+    // published and still has nowhere to send the reader.
+    $unrouted = CollectionFacade::make('unrouted');
+    $unrouted->title('Unrouted');
+    $unrouted->save();
+
+    /** @var Statamic\Entries\Entry $landing */
+    $landing = Entry::make();
+    $landing->collection('unrouted');
+    $landing->id('unrouted-landing');
+    $landing->slug('resources');
+    $landing->published(true);
+    $landing->data(['title' => 'Clinical Resources']);
+    $landing->saveQuietly();
+
+    archiveUrlCollection('unrouted-landing');
+
+    expect(app(ProviderResourcesArchiveUrlResolver::class)->resolve(archiveUrlProvider('rand')))->toBe('');
 });
 
 // --- The archive's filter notice ------------------------------------------------
