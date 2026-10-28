@@ -150,3 +150,46 @@ it('throws for the string rule with Google TTS on but normalize off', function (
         ['ipa' => ['international_phonetic_alphabet:1,0,1']],
     )->passes())->toThrow(InvalidArgumentException::class);
 });
+
+it('names the raw attribute when the rule runs without a validator', function (string $value, string $key) {
+    $messages = [];
+
+    (new InternationalPhoneticAlphabet)->validate(
+        'last_name.phonetic_text',
+        $value,
+        function (string $message) use (&$messages): void {
+            $messages[] = $message;
+        },
+    );
+
+    expect($messages)->toBe([__(
+        'statamic::validation.international_phonetic_alphabet.'.$key,
+        ['attribute' => 'last_name.phonetic_text'],
+    )]);
+})->with([
+    'delimiters' => ['/ˈtɛst/', 'delimiters_disallowed'],
+    'outside the inventory' => ["tɛst\u{2603}", 'invalid'],
+]);
+
+it('reads the allowDelimiters flag from each argument spelling', function (bool|int|string|null $flag, bool $allowed) {
+    $validator = validator(
+        ['ipa' => '/ˈtɛst/'],
+        ['ipa' => [new InternationalPhoneticAlphabet(allowDelimiters: $flag)]],
+    );
+
+    expect($validator->passes())->toBe($allowed);
+})->with([
+    'true' => [true, true],
+    'false' => [false, false],
+    'null' => [null, false],
+    'one' => [1, true],
+    'zero' => [0, false],
+    'two' => [2, true],
+    'string one' => ['1', true],
+    'padded true' => [' true ', true],
+    'yes' => ['yes', true],
+    'blank' => ['  ', false],
+    'empty' => ['', false],
+    'string false' => ['false', false],
+    'unrecognized' => ['maybe', false],
+]);

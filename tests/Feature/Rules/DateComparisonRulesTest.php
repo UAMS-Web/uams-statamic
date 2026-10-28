@@ -13,14 +13,15 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-covers(After::class, Before::class, BaseDateComparisonRule::class);
+covers(After::class, AfterOrEqual::class, Before::class, BeforeOrEqual::class, DateEquals::class, BaseDateComparisonRule::class);
 
 /**
- * Behavior of the date/time comparison rules (`After`, `Before`) and their shared
- * base `BaseDateComparisonRule`: the empty and non-string guards, unparseable
- * input on either side, strict ordering for the `date`, `time` and `datetime`
- * types, the strict `datetime` format gate, the UTC re-read of a `datetime`
- * value, and how `message()` picks a type-specific or generic language line.
+ * Behavior of the date/time comparison rules (`After`, `Before`, `AfterOrEqual`,
+ * `BeforeOrEqual`, `DateEquals`) and their shared base `BaseDateComparisonRule`:
+ * the empty and non-string guards, unparseable input on either side, strict
+ * ordering for the `date`, `time` and `datetime` types, the inclusive boundary of
+ * the or-equal rules, the strict `datetime` format gate, the UTC re-read of a
+ * `datetime` value, and how `message()` picks a type-specific or generic line.
  *
  * @command  php artisan test --compact tests/Feature/Rules/DateComparisonRulesTest.php
  */
@@ -68,6 +69,16 @@ it('compares dates strictly for the default date type', function (string $value,
     'the same day' => ['2024-06-15', false, false],
     'one second later' => ['2024-06-15 00:00:01', true, false],
     'one second earlier' => ['2024-06-14 23:59:59', false, true],
+]);
+
+it('includes the boundary for the or-equal rules and matches only it for DateEquals', function (string $value, bool $afterOrEqual, bool $beforeOrEqual, bool $equals): void {
+    expect((new AfterOrEqual('2024-06-15'))->passes('when', $value))->toBe($afterOrEqual)
+        ->and((new BeforeOrEqual('2024-06-15'))->passes('when', $value))->toBe($beforeOrEqual)
+        ->and((new DateEquals('2024-06-15'))->passes('when', $value))->toBe($equals);
+})->with([
+    'one second later' => ['2024-06-15 00:00:01', true, false, false],
+    'one second earlier' => ['2024-06-14 23:59:59', false, true, false],
+    'the same instant' => ['2024-06-15', true, true, true],
 ]);
 
 it('compares only the time of day for the time type', function (string $value, bool $after, bool $before): void {

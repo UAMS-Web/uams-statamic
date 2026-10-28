@@ -69,7 +69,7 @@ class YouTubeUrl extends BaseValidationRule
             )
         ) {
             // If the pattern doesn't match, fail validation with a specific message
-            $fail(__('statamic::validation.url_video_.youtube'));
+            $fail(__('statamic::validation.url_video.youtube'));
         }
     }
 }

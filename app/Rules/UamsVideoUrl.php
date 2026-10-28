@@ -60,7 +60,7 @@ class UamsVideoUrl extends BaseValidationRule
          * combined message.
          */
         if (! $isValid) {
-            $fail(__('statamic::validation.url_video_.uams'));
+            $fail(__('statamic::validation.url_video.uams'));
         }
     }
 }

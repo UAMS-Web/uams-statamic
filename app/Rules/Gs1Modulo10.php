@@ -88,15 +88,8 @@ class Gs1Modulo10 extends BaseValidationRule
         string $number
     ): bool {
         // ---
-        // Extract the base number (first 12 digits) and check digit (13th digit)
+        // Extract the check digit (13th digit)
         // ---
-
-        // Extract the base number (first 12 digits) from the input number
-        $baseNumber = \substr(
-            $number,
-            0,
-            12
-        );
 
         // Extract the actual check digit (13th digit) from the input number
         $actualCheckDigit = (int) $number[12];
@@ -108,17 +101,17 @@ class Gs1Modulo10 extends BaseValidationRule
         // Initialize the sum accumulator to zero for calculating the weighted sum
         $sum = 0;
 
-        // Split the base number into an array of individual digit characters
-        $digits = str_split($baseNumber);
-
         // ---
         // Process each of the first 12 digits according to the GS1 algorithm
         // ---
 
         // Iterate through each of the 12 digits to calculate the weighted sum
         for ($i = 0; $i < 12; $i++) {
-            // Convert the current digit character to an integer value
-            $digit = (int) $digits[$i];
+            // Convert the current digit character to an integer value. Equivalent:
+            // both callers check the thirteen-digit format first, and PHP
+            // arithmetic reads a digit string as the same integer without the cast.
+            // @pest-mutate-ignore: RemoveIntegerCast
+            $digit = (int) $number[$i];
 
             // Calculate the 1-based position of the current digit for the algorithm
             $position = $i + 1;

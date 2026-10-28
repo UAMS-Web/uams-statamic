@@ -276,6 +276,105 @@ it('reads a time-enabled value calendar day in the display timezone, not UTC', f
     expect(runDateBoundary($latest, Carbon::parse('2026-06-16T04:30:00Z')))->toBeNull();
 });
 
+it('validates a field-relative latest against its own sibling', function (): void {
+    $config = ['latest_date_type' => 'field', 'latest_date_field' => 'end'];
+
+    expect(runDateBoundary($config, Carbon::parse('2026-06-12'), ['end' => Carbon::parse('2026-06-10')]))
+        ->toContain('on or before 2026-06-10');
+    expect(runDateBoundary($config, Carbon::parse('2026-06-10'), ['end' => Carbon::parse('2026-06-10')]))
+        ->toBeNull();
+});
+
+it('names no sibling for a blank field handle', function (): void {
+    $config = ['earliest_date_type' => 'field', 'earliest_date_field' => ''];
+
+    expect(runDateBoundary($config, Carbon::parse('2026-06-05'), ['' => Carbon::parse('2026-06-10')]))->toBeNull();
+});
+
+it('reports only the first boundary a value breaks', function (array $config, mixed $value, string $expected): void {
+    expect(runDateBoundary(mustBeStringKeyed($config, 'boundary config'), $value))->toContain($expected);
+})->with([
+    // 2026-05-30 is a Saturday, so it also falls on a disallowed weekday.
+    'before earliest and on a disallowed weekday' => [
+        ['earliest_date_type' => 'custom', 'earliest_date_custom' => '2026-06-01', 'days_of_week' => ['1', '2', '3', '4', '5']],
+        Carbon::parse('2026-05-30'),
+        'on or after 2026-06-01',
+    ],
+    // 2026-07-04 is a Saturday.
+    'after latest and on a disallowed weekday' => [
+        ['latest_date_type' => 'custom', 'latest_date_custom' => '2026-06-30', 'days_of_week' => ['1', '2', '3', '4', '5']],
+        Carbon::parse('2026-07-04'),
+        'on or before 2026-06-30',
+    ],
+]);
+
+it('names a blackout on an allowed weekday as unavailable, not as a weekday', function (): void {
+    // 2026-07-01 is a Wednesday.
+    $config = ['days_of_week' => ['1', '2', '3', '4', '5'], 'date_exceptions' => [['type' => 'single_date', 'item' => '2026-07-01']]];
+
+    expect(runDateBoundary($config, Carbon::parse('2026-07-01')))->toContain('not available');
+});
+
+it('checks a range endpoint after one it cannot read', function (): void {
+    $config = ['latest_date_type' => 'custom', 'latest_date_custom' => '2026-06-30'];
+
+    expect(runDateBoundary($config, ['start' => null, 'end' => Carbon::parse('2026-07-10')]))->toContain('on or before 2026-06-30');
+});
+
+it('checks a range value that carries only one endpoint key', function (array $value): void {
+    $config = ['earliest_date_type' => 'custom', 'earliest_date_custom' => '2026-06-15'];
+
+    expect(runDateBoundary($config, $value))->toContain('on or after 2026-06-15');
+})->with([
+    'start only' => [['start' => Carbon::parse('2026-06-10')]],
+    'end only' => [['end' => Carbon::parse('2026-06-10')]],
+]);
+
+it('reads a time-enabled string value as given', function (): void {
+    $config = ['time_enabled' => true, 'earliest_date_type' => 'custom', 'earliest_date_custom' => '2026-06-15'];
+
+    expect(runDateBoundary($config, '2026-06-10'))->toContain('on or after 2026-06-15');
+});
+
+it('reads a value with no time_enabled key by its own-frame day, outside the display timezone', function (): void {
+    Config::set('statamic.system.display_timezone', 'America/Chicago');
+
+    // 2026-06-16 00:30 UTC is 2026-06-15 in Chicago; without time_enabled the
+    // value's own day, June 16, is the one compared.
+    $config = ['latest_date_type' => 'custom', 'latest_date_custom' => '2026-06-15'];
+
+    expect(runDateBoundary($config, Carbon::parse('2026-06-16T00:30:00Z')))->toContain('on or before 2026-06-15');
+});
+
+it('takes the display timezone, then the app timezone, then UTC', function (mixed $display, mixed $app, bool $readsChicago): void {
+    Config::set('statamic.system.display_timezone', $display);
+    Config::set('app.timezone', $app);
+
+    // 2026-06-15 04:30 UTC is June 14 in Chicago, before the earliest day, and
+    // June 15 in UTC, on it.
+    $config = ['time_enabled' => true, 'earliest_date_type' => 'custom', 'earliest_date_custom' => '2026-06-15'];
+    $message = runDateBoundary($config, Carbon::parse('2026-06-15T04:30:00Z'));
+
+    expect($message === null)->toBe(! $readsChicago);
+})->with([
+    'the display timezone' => ['America/Chicago', 'UTC', true],
+    'the app timezone when the display one is blank' => ['', 'America/Chicago', true],
+    'the app timezone when the display one is unset' => [null, 'America/Chicago', true],
+    'the app timezone when the display one is not a string' => [false, 'America/Chicago', true],
+    'UTC when both are blank' => ['', '', false],
+    'UTC when neither is a string' => [null, false, false],
+]);
+
+it('accepts today under a today earliest in a timezone behind UTC', function (): void {
+    // The frozen now, 2026-06-01 12:00 UTC, is 07:00 that day in Chicago.
+    Config::set('statamic.system.display_timezone', 'America/Chicago');
+
+    $config = ['earliest_date_type' => 'today'];
+
+    expect(runDateBoundary($config, Carbon::parse('2026-06-01')))->toBeNull()
+        ->and(runDateBoundary($config, Carbon::parse('2026-05-31')))->toContain('on or after 2026-06-01');
+});
+
 // ---------------------------------------------------------------------------
 // End-to-end through the Statamic fields validator (proves the wiring fires).
 // ---------------------------------------------------------------------------

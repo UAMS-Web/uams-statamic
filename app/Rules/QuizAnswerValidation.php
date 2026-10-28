@@ -87,33 +87,23 @@ class QuizAnswerValidation implements DataAwareRule, ValidationRule
             fn ($option): bool => \is_array($option) && isset($option['is_correct']) && $option['is_correct'] === true
         )->count();
 
-        // Validate based on question fieldtype
-        switch ($questionFieldtype) {
-            // Handle radio and select fieldtypes
-            case 'radio':
-            case 'select':
-                // Check if exactly one answer is marked as correct
-                if ($correctAnswers !== 1) {
-                    // Fail validation with a specific message
-                    $fail(__('statamic::validation.quiz_answer.marked_correct.exactly_one'));
-                }
+        // Check if the question takes a single answer (radio or select)
+        if (\in_array($questionFieldtype, ['radio', 'select'], true)) {
+            // Check if exactly one answer is marked as correct
+            if ($correctAnswers !== 1) {
+                // Fail validation with a specific message
+                $fail(__('statamic::validation.quiz_answer.marked_correct.exactly_one'));
+            }
 
-                // Exit the switch case
-                break;
+            // Return early, since a single-answer question is fully checked
+            return;
+        }
 
-                // Handle checkboxes fieldtype
-            case 'checkboxes':
-
-                // Handle default/unknown fieldtypes
-            default:
-                // Check if at least one answer is marked as correct
-                if ($correctAnswers < 1) {
-                    // Fail validation with a specific message
-                    $fail(__('statamic::validation.quiz_answer.marked_correct.at_least_one'));
-                }
-
-                // Exit the switch case
-                break;
+        // Check if at least one answer is marked as correct for checkboxes and
+        // any other fieldtype
+        if ($correctAnswers < 1) {
+            // Fail validation with a specific message
+            $fail(__('statamic::validation.quiz_answer.marked_correct.at_least_one'));
         }
     }
 }
