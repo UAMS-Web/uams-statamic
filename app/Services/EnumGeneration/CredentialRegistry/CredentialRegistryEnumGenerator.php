@@ -116,6 +116,21 @@ final class CredentialRegistryEnumGenerator
     ];
 
     /**
+     * Reads a URL and returns its body, or null on failure; an HTTP(S) read unless a test passes another.
+     *
+     * @var \Closure(string): ?string
+     */
+    private readonly \Closure $readUrl;
+
+    /**
+     * @param  ?\Closure(string): ?string  $readUrl  Replaces the HTTP(S) read of the registry fixtures and CTDL JSON (tests only)
+     */
+    public function __construct(?\Closure $readUrl = null)
+    {
+        $this->readUrl = $readUrl ?? self::readUrlOverHttp(...);
+    }
+
+    /**
      * Generate app/Enums/CredentialRegistry.php from remote fixtures.
      *
      * @return string Written path relative to base path
@@ -905,6 +920,16 @@ PHP;
      */
     private function fetchRemoteOptional(string $url): ?string
     {
+        return ($this->readUrl)($url);
+    }
+
+    /**
+     * Read a URL over HTTP(S) with a two-minute timeout, following redirects.
+     *
+     * @return ?string The body, or null when the read fails
+     */
+    private static function readUrlOverHttp(string $url): ?string
+    {
         $context = stream_context_create([
             'http' => [
                 'timeout' => 120,
@@ -972,18 +997,8 @@ PHP;
      */
     private function fetchRemote(string $url): string
     {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-            'https' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-        ]);
-        $raw = @file_get_contents($url, false, $context);
-        if ($raw === false) {
+        $raw = ($this->readUrl)($url);
+        if ($raw === null) {
             throw new \RuntimeException('Failed to fetch: '.$url);
         }
 

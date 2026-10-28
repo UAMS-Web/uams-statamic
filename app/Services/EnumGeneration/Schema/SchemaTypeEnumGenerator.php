@@ -92,6 +92,30 @@ final class SchemaTypeEnumGenerator
     ];
 
     /**
+     * Reads the schema.org JSON-LD and returns its body, or null on failure; an HTTP read unless a test passes another.
+     *
+     * @var \Closure(string): ?string
+     */
+    private readonly \Closure $readUrl;
+
+    /**
+     * Warms the entries-by-schema-type alias cache for the generated type names; EntriesBySchemaType unless a test passes another.
+     *
+     * @var \Closure(list<string>): mixed
+     */
+    private readonly \Closure $warmAliasesCache;
+
+    /**
+     * @param  ?\Closure(string): ?string  $readUrl  Replaces the HTTP read of the schema.org JSON-LD (tests only)
+     * @param  ?\Closure(list<string>): mixed  $warmAliasesCache  Replaces EntriesBySchemaType::warmAliasesCache() (tests only)
+     */
+    public function __construct(?\Closure $readUrl = null, ?\Closure $warmAliasesCache = null)
+    {
+        $this->readUrl = $readUrl ?? self::readUrlOverHttp(...);
+        $this->warmAliasesCache = $warmAliasesCache ?? EntriesBySchemaType::warmAliasesCache(...);
+    }
+
+    /**
      * Generate SchemaType, SchemaProperty, SchemaDataType, and SchemaEnumerationMember enums
      * (shared graph, single fetch).
      *
@@ -177,10 +201,7 @@ final class SchemaTypeEnumGenerator
         $cacheWarmed = false;
         if (class_exists(EntriesBySchemaType::class)) {
             try {
-                \call_user_func(
-                    EntriesBySchemaType::warmAliasesCache(...),
-                    $typeNames
-                );
+                ($this->warmAliasesCache)($typeNames);
                 $cacheWarmed = true;
             } catch (\Throwable) {
                 // Enum files are already written; do not fail the command.
@@ -203,18 +224,30 @@ final class SchemaTypeEnumGenerator
      */
     private function fetchJsonLd(): string
     {
+        $raw = ($this->readUrl)(self::SCHEMA_ORG_JSONLD_URL);
+        if ($raw === null) {
+            throw new \RuntimeException('Failed to fetch schema.org JSON-LD from '.self::SCHEMA_ORG_JSONLD_URL);
+        }
+
+        return $raw;
+    }
+
+    /**
+     * Read a URL over HTTP with a one-minute timeout, following redirects.
+     *
+     * @return ?string The body, or null when the read fails
+     */
+    private static function readUrlOverHttp(string $url): ?string
+    {
         $context = stream_context_create([
             'http' => [
                 'timeout' => 60,
                 'follow_location' => true,
             ],
         ]);
-        $raw = @file_get_contents(self::SCHEMA_ORG_JSONLD_URL, false, $context);
-        if ($raw === false) {
-            throw new \RuntimeException('Failed to fetch schema.org JSON-LD from '.self::SCHEMA_ORG_JSONLD_URL);
-        }
+        $raw = @file_get_contents($url, false, $context);
 
-        return $raw;
+        return $raw === false ? null : $raw;
     }
 
     /**

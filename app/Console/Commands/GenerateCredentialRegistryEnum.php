@@ -27,14 +27,14 @@ class GenerateCredentialRegistryEnum extends Command
     /**
      * Execute the console command.
      *
+     * @param  CredentialRegistryEnumGenerator  $credentialRegistryEnumGenerator  The Credential Registry enum generator.
      * @return int Command exit code
      */
-    public function handle(): int
+    public function handle(CredentialRegistryEnumGenerator $credentialRegistryEnumGenerator): int
     {
         $this->info('Generating CredentialRegistry enum from Credential Registry fixtures...');
 
-        $generator = new CredentialRegistryEnumGenerator;
-        $path = $generator->generate();
+        $path = $credentialRegistryEnumGenerator->generate();
 
         $this->info('Wrote '.$path);
 

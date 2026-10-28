@@ -39,6 +39,21 @@ use Illuminate\Support\Facades\File as LaravelFile;
 final class MimeTypeEnumGenerator
 {
     /**
+     * Fetches a URL and returns its body, or null on failure; GeneratorUtils::httpGet() unless a test passes another.
+     *
+     * @var \Closure(string, array<string, string>, int): ?string
+     */
+    private readonly \Closure $httpGet;
+
+    /**
+     * @param  ?\Closure(string, array<string, string>, int): ?string  $httpGet  Replaces GeneratorUtils::httpGet() (tests only)
+     */
+    public function __construct(?\Closure $httpGet = null)
+    {
+        $this->httpGet = $httpGet ?? GeneratorUtils::httpGet(...);
+    }
+
+    /**
      * Fetch all sources, merge extensions, build, and write the timestamped enum file.
      *
      * @return string Absolute path to the generated enum file
@@ -399,7 +414,7 @@ final class MimeTypeEnumGenerator
         $url = 'https://svn.apache.org/repos/asf/httpd/httpd/trunk/docs/conf/mime.types';
 
         // Fetch the content
-        $content = GeneratorUtils::httpGet(
+        $content = ($this->httpGet)(
             $url,
             ['Accept' => 'text/plain'],
             60
@@ -461,7 +476,7 @@ final class MimeTypeEnumGenerator
                 $content = $cached;
             } else { // Otherwise
                 // Fetch the CSV content
-                $content = GeneratorUtils::httpGet(
+                $content = ($this->httpGet)(
                     $url,
                     ['Accept' => 'text/csv'],
                     60
@@ -883,7 +898,7 @@ final class MimeTypeEnumGenerator
                 $url = 'https://www.iana.org/assignments/media-types/'.$ianaMimeType;
 
                 // Fetch the detail page content
-                $content = GeneratorUtils::httpGet(
+                $content = ($this->httpGet)(
                     $url,
                     ['Accept' => 'text/html'],
                     30
