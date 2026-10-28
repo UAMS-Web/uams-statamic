@@ -206,6 +206,76 @@ it('restricts to published pointing entries by default and includes drafts when 
         ->toBe([REV_PREFIX.'draft', REV_PREFIX.'published']);
 })->group('serial');
 
+it('ignores a pointing entry in a collection that was not asked for', function (): void {
+    $targetId = 'zz-scoped-target';
+
+    // Both entries point at the target through the same field; only one sits in a
+    // collection the resolve names.
+    revMakeEntry(REV_COLLECTION_A, 'in-scope', $targetId);
+    revMakeEntry(REV_COLLECTION_B, 'out-of-scope', $targetId);
+
+    $resolved = app(ReverseEntryReferenceResolver::class)
+        ->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId);
+
+    expect(revSlugs($resolved))->toBe([REV_PREFIX.'in-scope']);
+})->group('serial');
+
+it('keeps the published-only and all-statuses reverses distinct within one request', function (): void {
+    $targetId = 'zz-status-distinct';
+
+    revMakeEntry(REV_COLLECTION_A, 'live', $targetId, published: true);
+    revMakeEntry(REV_COLLECTION_A, 'unpublished', $targetId, published: false);
+
+    $resolver = app(ReverseEntryReferenceResolver::class);
+
+    // No Blink flush between the reads: each status filter must memoize under its
+    // own key, in either order.
+    expect(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
+        ->toBe([REV_PREFIX.'live'])
+        ->and(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId, publishedOnly: false)))
+        ->toBe([REV_PREFIX.'live', REV_PREFIX.'unpublished']);
+
+    Blink::flush();
+
+    expect(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId, publishedOnly: false)))
+        ->toBe([REV_PREFIX.'live', REV_PREFIX.'unpublished'])
+        ->and(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
+        ->toBe([REV_PREFIX.'live']);
+})->group('serial');
+
+it('keeps nested resolves over different fields distinct within one request', function (): void {
+    $targetId = 'zz-field-distinct';
+
+    // The target is named only under the shallow probe field.
+    revMakeEntry(REV_COLLECTION_A, 'probe-field', $targetId);
+
+    $resolver = app(ReverseEntryReferenceResolver::class);
+
+    // The nested probe field names nothing, so this memoizes an empty set.
+    expect(revSlugs($resolver->resolveNested(REV_COLLECTION_A, REV_NESTED_PROBE_FIELD, $targetId)))
+        ->toBe([]);
+
+    // Same request, a different field list: it must not reuse the empty set above.
+    expect(revSlugs($resolver->resolveNested(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
+        ->toBe([REV_PREFIX.'probe-field']);
+})->group('serial');
+
+it('keeps resolves distinct when handles differ only in where an underscore splits them', function (): void {
+    $targetId = 'zz-boundary-target';
+    revMakeEntry(REV_COLLECTION_A, 'boundary', $targetId);
+
+    $resolver = app(ReverseEntryReferenceResolver::class);
+
+    // `reusable` is no collection, so this memoizes an empty set. Joined with `_`,
+    // its collection and field read the same as the real pair below.
+    expect(revSlugs($resolver->resolve('reusable', 'content_'.REV_PROBE_FIELD, $targetId)))
+        ->toBe([]);
+
+    // Same request: the real pair must not reuse the empty set above.
+    expect(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
+        ->toBe([REV_PREFIX.'boundary']);
+})->group('serial');
+
 it('returns an empty set for a target that nothing references', function (): void {
     revMakeEntry(REV_COLLECTION_A, 'unrelated', ['some-other-id']);
 
@@ -241,10 +311,15 @@ it('skips a source collection that does not exist but still queries the real one
 
 it('returns an empty set (and no query) for a null or empty target id', function (): void {
     // A not-yet-saved target has no id to be referenced by; must short-circuit.
+    // An entry storing an empty id must not make '' a match either.
+    revMakeEntry(REV_COLLECTION_A, 'empty-id', '');
+    revMakeNestedEntry(REV_COLLECTION_A, 'empty-nested-id', ['writer' => ['']]);
+
     $resolver = app(ReverseEntryReferenceResolver::class);
 
     expect($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, null)->all())->toBe([])
-        ->and($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, '')->all())->toBe([]);
+        ->and($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, '')->all())->toBe([])
+        ->and($resolver->resolveNested(REV_COLLECTION_A, REV_NESTED_PROBE_FIELD, '')->all())->toBe([]);
 })->group('serial');
 
 it('resolveNested matches an id nested anywhere inside a group value, spanning roles', function (): void {
