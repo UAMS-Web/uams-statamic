@@ -30,6 +30,21 @@ use RuntimeException;
 final class CountyEnumGenerator
 {
     /**
+     * Fetches the TIGERweb county records for a layer; TigerWebUtils::fetchCountyRecords() unless a test passes another.
+     *
+     * @var \Closure(int): ?array<int, array<string, string>>
+     */
+    private readonly \Closure $fetchCountyRecords;
+
+    /**
+     * @param  ?\Closure(int): ?array<int, array<string, string>>  $fetchCountyRecords  Replaces TigerWebUtils::fetchCountyRecords() (tests only)
+     */
+    public function __construct(?\Closure $fetchCountyRecords = null)
+    {
+        $this->fetchCountyRecords = $fetchCountyRecords ?? TigerWebUtils::fetchCountyRecords(...);
+    }
+
+    /**
      * Fetch TIGERweb counties, normalize, and write the timestamped enum file.
      *
      * @return string Absolute path to the generated enum file
@@ -42,7 +57,7 @@ final class CountyEnumGenerator
         $outputPath = GeneratorUtils::makeTimestampedEnumPath('County');
 
         // Download and parse TIGERweb layer 1 JSON features
-        $records = TigerWebUtils::fetchCountyRecords(1);
+        $records = ($this->fetchCountyRecords)(1);
 
         // Abort on fetch/parse failure
         if ($records === null) {
@@ -50,7 +65,7 @@ final class CountyEnumGenerator
         }
 
         // Download and parse TIGERweb layer 55 JSON features (supplemental)
-        $layer55Records = TigerWebUtils::fetchCountyRecords(55);
+        $layer55Records = ($this->fetchCountyRecords)(55);
 
         // Merge in layer 55 records only when that supplemental fetch succeeded
         if ($layer55Records !== null) {

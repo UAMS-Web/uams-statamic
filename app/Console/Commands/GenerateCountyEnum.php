@@ -26,15 +26,17 @@ class GenerateCountyEnum extends Command
 {
     /**
      * Execute the console command.
+     *
+     * @param  CountyEnumGenerator  $countyEnumGenerator  The TIGERweb county enum generator.
      */
-    public function handle(): int
+    public function handle(CountyEnumGenerator $countyEnumGenerator): int
     {
         // Inform the user that we are starting a network fetch
         $this->info('Fetching TIGERweb county data...');
 
         try {
             // Delegate the fetch + merge + render + write to the generator service
-            $outputPath = (new CountyEnumGenerator)->generate();
+            $outputPath = $countyEnumGenerator->generate();
         } catch (RuntimeException $runtimeException) {
             // Surface an actionable error and exit non-zero
             $this->error($runtimeException->getMessage());

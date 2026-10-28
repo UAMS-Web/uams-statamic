@@ -33,9 +33,10 @@ class GenerateZipCodeEnum extends Command
     /**
      * Execute the console command.
      *
+     * @param  ZipCodeEnumGenerator  $zipCodeEnumGenerator  The HUD crosswalk ZIP code enum generator.
      * @return int Exit status code (0 on success, non-zero on error)
      */
-    public function handle(): int
+    public function handle(ZipCodeEnumGenerator $zipCodeEnumGenerator): int
     {
         // Parse optional --limit argument
         $limitOpt = $this->option('limit');
@@ -57,7 +58,7 @@ class GenerateZipCodeEnum extends Command
 
         try {
             // Delegate the fetch + normalize + render + write to the generator service
-            $outputPath = (new ZipCodeEnumGenerator)->generate($limit);
+            $outputPath = $zipCodeEnumGenerator->generate($limit);
         } catch (RuntimeException $runtimeException) {
             // Surface an actionable error and exit non-zero
             $this->error($runtimeException->getMessage());
