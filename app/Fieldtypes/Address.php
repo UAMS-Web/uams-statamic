@@ -28,6 +28,17 @@ class Address extends Fieldtype
     use HasSubfields;
 
     /**
+     * The selectable Address Type presets, keyed by handle.
+     *
+     * @var array<string, string> The selectable Address Type presets
+     */
+    private const array PRESET_OPTIONS = [
+        'american' => 'American',
+        'canadian' => 'Canadian',
+        'international' => 'International',
+    ];
+
+    /**
      * Indicates whether the fieldtype is selectable in form blueprints.
      *
      * @var bool Indicates whether the fieldtype is selectable in form blueprints
@@ -77,23 +88,8 @@ class Address extends Fieldtype
         // Read merged field config (cached) for the preset key
         $config = $this->getCachedConfig();
 
-        // Load preset option keys (extended or simple format)
-        $presetOptionsRaw = $this->getPresetOptions();
-
-        // Extract the selectable preset keys for default resolution.
-        // Field config always supplies a default `preset`, so the coalesce onto
-        // the raw map and the non-array ternary branch are unreachable for a
-        // bound field instance: equivalent mutants under --covered-only.
-        // @pest-mutate-ignore: CoalesceRemoveLeft
-        $presetOptions = $presetOptionsRaw['options'] ?? $presetOptionsRaw;
-
-        // Resolve preset from config, falling back to the first defined option.
-        // @pest-mutate-ignore: TernaryNegated
-        $preset = $config['preset'] ?? (
-            \is_array($presetOptions)
-                ? array_key_first($presetOptions)
-                : null
-        );
+        // Resolve preset from config, falling back to the first defined option
+        $preset = $config['preset'] ?? array_key_first(self::PRESET_OPTIONS);
 
         // Write the resolved preset onto the stored subfield map
         $result['preset'] = $preset;
@@ -101,8 +97,6 @@ class Address extends Fieldtype
         unset(
             $data,
             $config,
-            $presetOptionsRaw,
-            $presetOptions,
             $preset,
         );
 
@@ -268,11 +262,7 @@ class Address extends Fieldtype
     {
         return [
             'display' => 'Address Format',
-            'options' => [
-                'american' => 'American',
-                'canadian' => 'Canadian',
-                'international' => 'International',
-            ],
+            'options' => self::PRESET_OPTIONS,
         ];
     }
 

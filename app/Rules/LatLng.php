@@ -47,41 +47,31 @@ class LatLng extends BaseValidationRule
     ): void {
         /**
          * Split the value into latitude and longitude using comma as delimiter,
-         * allowing optional whitespace around the comma.
+         * allowing optional whitespace around the comma. A half left empty is not a
+         * pair: the coordinate rules skip an empty value, so it would otherwise pass.
+         * Whitespace around the pair needs no trimming, since `is_numeric()` accepts
+         * it around a number.
          */
         $coordinates = preg_split(
             '/\s*,\s*/',
-            \trim($value)
+            $value
         );
-        if ($coordinates === false || \count($coordinates) !== 2) {
+        if (
+            // phpstan requires this check; `preg_split()` fails only on a PCRE
+            // error, which this constant pattern cannot raise.
+            // @pest-mutate-ignore: FalseToTrue
+            $coordinates === false
+            || \count($coordinates) !== 2
+            || $coordinates[0] === ''
+            || $coordinates[1] === ''
+        ) {
             $fail(__('statamic::validation.lat_lng.comma_separated'));
 
             return;
         }
 
-        $latitude = $coordinates[0];
-        $longitude = $coordinates[1];
-
-        /**
-         * Validate latitude using the Latitude rule.
-         */
-        $this->latitudeRule->validate(
-            $attribute.'[latitude]',
-            $latitude,
-            function ($message) use ($fail): void {
-                $fail($message);
-            }
-        );
-
-        /**
-         * Validate longitude using the Longitude rule.
-         */
-        $this->longitudeRule->validate(
-            $attribute.'[longitude]',
-            $longitude,
-            function ($message) use ($fail): void {
-                $fail($message);
-            }
-        );
+        // Validate each half with its coordinate rule, whose messages name no attribute
+        $this->latitudeRule->validate($attribute, $coordinates[0], $fail);
+        $this->longitudeRule->validate($attribute, $coordinates[1], $fail);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Rules\UniqueIdentifier;
 use App\Rules\UniqueIdentifierList;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Entries\Entry as ConcreteEntry;
@@ -407,4 +408,88 @@ it('passes a list field holding no rows at all', function (): void {
 it('rejects an empty collection handle and an empty row key in the constructor', function (): void {
     expect(fn () => new UniqueIdentifierList('  ', null, 'dep'))->toThrow(InvalidArgumentException::class);
     expect(fn () => new UniqueIdentifierList('clinical_locations', null, '  '))->toThrow(InvalidArgumentException::class);
+});
+
+/**
+ * Run a rule directly against a validator over the given payload, returning
+ * every failure message in the order the rule raised it.
+ *
+ * @param  UniqueIdentifier  $rule  Rule under test
+ * @param  array<string, mixed>  $data  Submitted payload
+ * @param  string  $attribute  Dotted path of the field being validated
+ * @return list<string> Failure messages
+ */
+function uniqueIdentifierMessages(UniqueIdentifier $rule, array $data, string $attribute): array
+{
+    $messages = [];
+
+    $rule->setValidator(Validator::make($data, []))
+        ->validate($attribute, Arr::get($data, $attribute), function (string $message) use (&$messages): void {
+            $messages[] = $message;
+        });
+
+    return $messages;
+}
+
+it('reports a within-entry collision alone, without scanning the store as well', function (): void {
+    identifierEntry('people', 'other-person', ['title' => 'Dana Reed'] + workdayGroup(['workday_student_id' => 'W-1']));
+
+    expect(uniqueIdentifierMessages(
+        new UniqueIdentifier('people', null, ...workdayPool()),
+        workdayGroup(['workday_universal_id' => 'W-1', 'workday_employee_id' => 'W-1']),
+        'uams_workday_id.workday_universal_id',
+    ))->toBe([__('statamic::validation.unique_identifier.within_entry', [
+        'value' => 'W-1',
+        'other' => 'uams_workday_id.workday_employee_id',
+    ])]);
+});
+
+it('reports only the first sibling that repeats the value', function (): void {
+    expect(uniqueIdentifierMessages(
+        new UniqueIdentifier('people', null, ...workdayPool()),
+        workdayGroup([
+            'workday_universal_id' => 'W-1',
+            'workday_employee_id' => 'W-1',
+            'workday_student_id' => 'W-1',
+        ]),
+        'uams_workday_id.workday_universal_id',
+    ))->toBe([__('statamic::validation.unique_identifier.within_entry', [
+        'value' => 'W-1',
+        'other' => 'uams_workday_id.workday_employee_id',
+    ])]);
+});
+
+it('checks the sibling in a pool of exactly two fields', function (): void {
+    expect(uniqueIdentifierMessages(
+        new UniqueIdentifier('people', null, 'npi', 'epic_ser_id'),
+        ['npi' => '42', 'epic_ser_id' => '42'],
+        'npi',
+    ))->toBe([__('statamic::validation.unique_identifier.within_entry', [
+        'value' => '42',
+        'other' => 'epic_ser_id',
+    ])]);
+});
+
+it('needs no validator for a single-field pool, which has no sibling to read', function (): void {
+    $messages = [];
+
+    (new UniqueIdentifier('people', null, 'npi'))->validate('epic_ser_id', '42', function (string $message) use (&$messages): void {
+        $messages[] = $message;
+    });
+
+    expect($messages)->toBe([]);
+});
+
+it('reports one repeat within a list, reading past blank rows to find it', function (): void {
+    $messages = [];
+
+    (new UniqueIdentifierList('clinical_locations', null, 'dep'))->validate(
+        'epic_dep_ids',
+        identifierRows(['', 'D-1', 'D-1', 'D-1'], 'dep'),
+        function (string $message) use (&$messages): void {
+            $messages[] = $message;
+        },
+    );
+
+    expect($messages)->toBe([__('statamic::validation.unique_identifier_list.within_entry', ['value' => 'D-1'])]);
 });

@@ -133,43 +133,19 @@ class InternationalPhoneticAlphabet extends BaseValidationRule implements Valida
     private function coerceToBool(
         bool|int|string|null $value
     ): bool {
-        // Return booleans unchanged
-        if (\is_bool($value)) {
-            return $value;
-        }
-
-        // Treat null as false
-        if ($value === null) {
-            return false;
-        }
-
-        // Treat non-zero integers as true
+        // Treat non-zero integers as true (the filter reads 2 as unrecognized)
         if (\is_int($value)) {
             return $value !== 0;
         }
 
-        // Trim string input for comparison
-        $trimmed = trim($value);
-
-        // Treat empty string as false
-        if ($trimmed === '') {
-            return false;
-        }
-
-        // Parse common boolean string forms from validation rule parameters
-        $parsed = filter_var(
-            $trimmed,
+        // Parse booleans, null and common boolean string forms (the filter trims
+        // surrounding whitespace and reads null or an empty string as false),
+        // falling back to false for unrecognized strings
+        return filter_var(
+            $value,
             FILTER_VALIDATE_BOOL,
             FILTER_NULL_ON_FAILURE
-        );
-
-        // Return parsed boolean when filter recognized the value
-        if ($parsed !== null) {
-            return $parsed;
-        }
-
-        // Fall back to false for unrecognized strings
-        return false;
+        ) ?? false;
     }
 
     /**
@@ -225,22 +201,30 @@ class InternationalPhoneticAlphabet extends BaseValidationRule implements Valida
         bool $normalize,
         bool $googleTtsNormalization
     ): TranscriptionValidator {
-        $key = ($allowDelimiters ? '1' : '0')
-            .($normalize ? '1' : '0')
-            .($googleTtsNormalization ? '1' : '0')
-            .'.'.TranscriptionValidator::SEGMENT_SCALARS;
+        // Key the cache by the option tuple; the prefix names the segmentation mode
+        // and keeps PHP from turning a digit-only key into an integer
+        $key = \sprintf(
+            'scalars:%d%d%d',
+            $allowDelimiters,
+            $normalize,
+            $googleTtsNormalization
+        );
 
         if (! isset(self::$transcriptionValidators[$key])) {
             self::$transcriptionValidators[$key] = TranscriptionValidator::fromDisk(
                 null,
                 null,
+                // Equivalent: the inventory itself allows `/`, `[` and `]`, so stripping
+                // them changes no verdict; disallowed delimiters are refused before this.
+                // @pest-mutate-ignore: TernaryNegated
                 $allowDelimiters
                     ? TranscriptionValidator::STRIP_DELIMITERS_WIKIMEDIA_SLASH_BRACKETS
                     : TranscriptionValidator::STRIP_DELIMITERS_NONE,
                 null,
                 $normalize,
                 $normalize,
-                $normalize && $googleTtsNormalization,
+                // The constructor guarantees Google/TTS implies normalize
+                $googleTtsNormalization,
                 TranscriptionValidator::SEGMENT_SCALARS,
                 false
             );

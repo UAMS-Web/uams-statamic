@@ -50,52 +50,20 @@ class SubfieldsAny extends BaseSubfieldsRule
         // Check if at least one subfield has a value
         // ---
 
-        // Initialize flag to track if at least one subfield has a value
-        $hasValue = false;
-
-        // Initialize array to store subfield validation results
-        $subfieldResults = [];
-
         // Loop through each subfield in the field data
-        foreach ($fieldData as $subfieldKey => $subfieldValue) {
+        foreach ($fieldData as $subfieldValue) {
             // Check if the subfield has a non-empty value
-            $subfieldHasValue = $this->subfieldHasValue($subfieldValue);
-
-            // Add subfield result to the results array
-            $subfieldResults[] = [
-                'subfield' => $subfieldKey,
-                'value' => $subfieldValue,
-                'has_value' => $subfieldHasValue,
-            ];
-
-            // Check if the subfield has a value
-            if ($subfieldHasValue) {
-                // Mark that at least one subfield has a value
-                $hasValue = true;
-
-                // Exit loop early since we found a subfield with a value
-                break; // Found a subfield with a value, no need to check others
+            if ($this->subfieldHasValue($subfieldValue)) {
+                // Return early, since one subfield with a value satisfies the rule
+                return;
             }
         }
 
         // ---
-        // If no subfield has a value, validation fails
+        // No subfield has a value, so validation fails
         // ---
 
-        // Check if no subfield has a value
-        if (! $hasValue) {
-            // Fail validation with a specific message
-            $fail(__('statamic::validation.subfields.any.one_subfield', ['attribute' => $attribute]));
-        }
-
-        // Clean up variables to free up memory
-        unset(
-            $fieldData,
-            $hasValue,
-            $subfieldResults,
-            $subfieldKey,
-            $subfieldValue,
-            $subfieldHasValue
-        );
+        // Fail validation with a specific message
+        $fail(__('statamic::validation.subfields.any.one_subfield', ['attribute' => $attribute]));
     }
 }

@@ -48,7 +48,9 @@ abstract class AbstractProfessionalAndLeadershipDevelopmentActivitiesTerm implem
         // Normalize the field value to a list of string term identifiers
         $ids = $this->normalizeTermIds($value);
 
-        // Skip further checks when there is nothing to validate
+        // Skip further checks when there is nothing to validate. Equivalent: the
+        // loop below does nothing for an empty list, so the early return only says so.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($ids === []) {
             return;
         }
@@ -108,9 +110,8 @@ abstract class AbstractProfessionalAndLeadershipDevelopmentActivitiesTerm implem
                     'statamic::validation.'.$this->translationKeyPrefix().'.wrong_type',
                     [
                         'id' => $id,
-                        'type' => \is_string($typeRaw)
-                            ? $typeRaw
-                            : (\is_scalar($typeRaw) ? (string) $typeRaw : ''),
+                        // The translator stringifies scalar replacements itself
+                        'type' => \is_scalar($typeRaw) ? $typeRaw : '',
                         'expected' => $this->expectedTypeValue(),
                     ]
                 ));

@@ -105,13 +105,15 @@ class AssetMinimumDimensions implements ValidationRule
                 continue;
             }
 
-            if ($this->minWidth > 0 && $width < $this->minWidth) {
+            // A minimum of zero or less imposes nothing, since every measured
+            // dimension is positive
+            if ($width < $this->minWidth) {
                 $fail($this->message($asset, $width, $height));
 
                 return;
             }
 
-            if ($this->minHeight > 0 && $height < $this->minHeight) {
+            if ($height < $this->minHeight) {
                 $fail($this->message($asset, $width, $height));
 
                 return;
@@ -128,6 +130,8 @@ class AssetMinimumDimensions implements ValidationRule
     {
         $values = is_array($value) ? $value : [$value];
 
+        // Equivalent: callers only iterate the list, so its keys are never read.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_filter(
             array_map(
                 static fn ($reference): string => is_string($reference) ? $reference : '',
@@ -179,14 +183,16 @@ class AssetMinimumDimensions implements ValidationRule
     {
         $name = $asset->basename();
 
-        if ($this->minWidth > 0 && $this->minHeight > 0) {
-            return sprintf('%s must be at least %dx%d pixels; it is %dx%d.', $name, $this->minWidth, $this->minHeight, $width, $height);
-        }
-
-        if ($this->minWidth > 0) {
+        // Name only the width when no height minimum is set
+        if ($this->minHeight <= 0) {
             return sprintf('%s must be at least %d pixels wide; it is %d.', $name, $this->minWidth, $width);
         }
 
-        return sprintf('%s must be at least %d pixels tall; it is %d.', $name, $this->minHeight, $height);
+        // Name only the height when no width minimum is set
+        if ($this->minWidth <= 0) {
+            return sprintf('%s must be at least %d pixels tall; it is %d.', $name, $this->minHeight, $height);
+        }
+
+        return sprintf('%s must be at least %dx%d pixels; it is %dx%d.', $name, $this->minWidth, $this->minHeight, $width, $height);
     }
 }

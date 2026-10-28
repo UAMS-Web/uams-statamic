@@ -102,6 +102,8 @@ class UniqueIdentifier implements ValidationRule, ValidatorAwareRule
             );
         }
 
+        // Equivalent without the reindex: the pool is only iterated and counted
+        // @pest-mutate-ignore: UnwrapArrayValues
         $handles = array_values(array_filter(array_map(trim(...), $pool), static fn (string $h): bool => $h !== ''));
 
         if ($handles === []) {

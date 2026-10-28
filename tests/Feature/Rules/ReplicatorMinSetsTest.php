@@ -111,3 +111,19 @@ it('uses the singular message when min_sets is one and the plural message otherw
     expect($one[0] ?? null)->toBe(__('statamic::validation.replicator.min_sets.one'));
     expect($multiple[0] ?? null)->toBe(__('statamic::validation.replicator.min_sets.multiple', ['min' => 3]));
 });
+
+it('reads a string min_sets as its integer', function () {
+    $messages = static fn (string $minSets): array => replicatorMinSetsMessages(
+        ['validate' => ['required'], 'min_sets' => $minSets],
+        ['blocks' => []],
+        'blocks',
+        [],
+    );
+
+    expect($messages('1'))->toBe([__('statamic::validation.replicator.min_sets.one')])
+        ->and($messages('2'))->toBe([__('statamic::validation.replicator.min_sets.multiple', ['min' => 2])]);
+});
+
+it('skips when min_sets is not configured', function () {
+    expect(replicatorMinSetsMessages(['validate' => ['required']], ['blocks' => []], 'blocks', []))->toBe([]);
+});

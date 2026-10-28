@@ -44,9 +44,6 @@ class SubfieldsAll extends BaseSubfieldsRule
         // Initialize flag to track if all subfields have values
         $allHaveValue = true;
 
-        // Initialize array to store subfield validation results
-        $subfieldResults = [];
-
         // Initialize array to collect empty subfield keys
         $emptySubfields = [];
 
@@ -54,13 +51,6 @@ class SubfieldsAll extends BaseSubfieldsRule
         foreach ($fieldData as $subfieldKey => $subfieldValue) {
             // Check if the subfield has a non-empty value
             $subfieldHasValue = $this->subfieldHasValue($subfieldValue);
-
-            // Add subfield result to the results array
-            $subfieldResults[] = [
-                'subfield' => $subfieldKey,
-                'value' => $subfieldValue,
-                'has_value' => $subfieldHasValue,
-            ];
 
             // Check if the subfield does not have a value
             if (! $subfieldHasValue) {
@@ -91,7 +81,6 @@ class SubfieldsAll extends BaseSubfieldsRule
         unset(
             $fieldData,
             $allHaveValue,
-            $subfieldResults,
             $emptySubfields,
             $subfieldKey,
             $subfieldValue,

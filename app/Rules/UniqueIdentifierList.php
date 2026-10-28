@@ -109,10 +109,8 @@ class UniqueIdentifierList implements ValidationRule
             return;
         }
 
-        // Track each comparison form already seen on this entry
-        $seen = [];
-
-        // Accumulate the comparison forms this entry submits
+        // Accumulate the comparison forms this entry submits, which also records
+        // each value so a later row can be seen as a repeat
         $submitted = [];
 
         // Walk each submitted row in editor order
@@ -130,7 +128,7 @@ class UniqueIdentifierList implements ValidationRule
             }
 
             // Report a repeat within this entry's own list
-            if (isset($seen[$forms['compare']])) {
+            if (isset($submitted[$forms['compare']])) {
                 // Fail naming the repeated value
                 $fail(__('statamic::validation.unique_identifier_list.within_entry', [
                     'value' => $forms['display'],
@@ -139,14 +137,14 @@ class UniqueIdentifierList implements ValidationRule
                 return;
             }
 
-            // Record the value so a later row can be seen as a repeat
-            $seen[$forms['compare']] = true;
-
             // Keep the original spelling for the cross-entry message
             $submitted[$forms['compare']] = $forms['display'];
         }
 
-        // An entry submitting no usable rows collides with nothing
+        // An entry submitting no usable rows collides with nothing. Equivalent
+        // without the return: the scan below would compare nothing, at the cost
+        // of reading the store.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($submitted === []) {
             // Nothing to check
             return;

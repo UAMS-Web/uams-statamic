@@ -3,7 +3,8 @@
 	@desc The image component. A sizeable image rendered in a figure tag with optional caption.
 	@set page.article.image
 
-	The picture partial uses the default image formats configured in
+	The `picture_with_alt` tag (the peak-tools `picture` tag plus an `alt`
+	override, #340) uses the default image formats configured in
 	`config/statamic-peak-tools.php`. All formats (WebP, JPEG) are
 	generated from the original uploaded image, and the browser automatically
 	selects the best format it supports.
@@ -19,8 +20,9 @@
 
 <figure {{ align | attribute:class }}>
 	{{
-		partial:statamic-peak-tools::components/picture
+		picture_with_alt
 		:image="image"
+		:alt="alt_override"
 		cover="false"
 		lazy="true"
 		:sizes="$image_sizes"

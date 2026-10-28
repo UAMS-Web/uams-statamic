@@ -206,8 +206,8 @@ class TrueFalse extends BaseButtonGroup
      * Normalize a value to a boolean or null.
      *
      * Converts string representations of booleans to actual boolean values.
-     * Handles null values, string 'true'/'false', boolean values, and other
-     * types by casting to boolean.
+     * Null stays null, the string 'false' becomes false, and every other value
+     * is cast to boolean, which already maps true and the string 'true' to true.
      *
      * @param  mixed  $value  The value to normalize
      * @return ?bool The normalized boolean value, or null
@@ -226,24 +226,12 @@ class TrueFalse extends BaseButtonGroup
         }
 
         // ---
-        // Convert string 'true'/'false' to boolean if needed
+        // Convert the string 'false' to boolean, since a cast would make it true
         // ---
 
-        // Check if value is true (string 'true' or boolean true)
-        if (
-            $value === 'true'
-            || $value === true
-        ) {
-            // Return true for true values
-            return true;
-        }
-
-        // Check if value is false (string 'false' or boolean false)
-        if (
-            $value === 'false'
-            || $value === false
-        ) {
-            // Return false for false values
+        // Check if value is the string 'false'
+        if ($value === 'false') {
+            // Return false for the string 'false'
             return false;
         }
 
