@@ -57,7 +57,7 @@ const JOB_KEYS = {
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
 // (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
-// gains its own job with #2837. The first case in the parity block below pins that each
+// gains its own job with #256. The first case in the parity block below pins that each
 // still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
 const REMOTE_ONLY = new Set(['submodule-access', 'synced-files'])
 

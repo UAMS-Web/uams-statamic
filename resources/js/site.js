@@ -21,7 +21,7 @@
  *      * the evaluator answers "should this field be visible right now"
  *    - It replaced Statamic's helpers.js, which layout.antlers.html used to load
  *      as a script tag. That bundle decided every comparison with eval(), the
- *      last 'unsafe-eval' consumer on a public page and so the blocker on #667.
+ *      last 'unsafe-eval' consumer on a public page and so the blocker on #33.
  *
  * 3. CONDITIONAL FORM FIELD FLOW
  *    - User interacts with form field (e.g., selects dropdown option)

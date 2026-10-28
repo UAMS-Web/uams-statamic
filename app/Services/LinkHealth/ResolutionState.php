@@ -40,7 +40,7 @@ enum ResolutionState: string
     /**
      * The path does not resolve directly but a redirect rule serves it, so it is not broken.
      *
-     * #1767 turns this into a recommendation for where the link should point instead; this
+     * #172 turns this into a recommendation for where the link should point instead; this
      * slice only reports it.
      */
     case Redirected = 'redirected';

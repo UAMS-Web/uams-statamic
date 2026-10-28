@@ -513,7 +513,7 @@ ships, delete or revert all of:
 
 ### `pest-plugin-mutate` `@pest-mutate-ignore` parsing (three silent defects)
 
-`patches/pest-plugin-mutate-annotation-parsing.patch` — temporary, tracked by #2327 and removed by #2330.
+`patches/pest-plugin-mutate-annotation-parsing.patch` — temporary, tracked by #2327 and removed by #212.
 
 **What it fixes.** Three defects in how `@pest-mutate-ignore` is parsed, all of which fail silently. Two make an annotation suppress *nothing* while reading as discharged in review; the third makes a bare annotation suppress the *wrong set*.
 
@@ -538,7 +538,7 @@ patched     5 Mutations for 1 Files created
 
 **Two traps when verifying this patch.** The plugin caches mutation sets keyed on the file *contents* under `vendor/pestphp/pest-plugin-mutate/.temp/pest-mutate-cache`, so patching the plugin and re-running against an unchanged fixture replays the pre-patch result and reads exactly like "the patch does nothing" — clear that directory between arms. And `composer install` does not re-patch an already-installed package: remove `vendor/pestphp/pest-plugin-mutate` first, or the install reports success while the vendored code stays unpatched.
 
-**Removal checklist** — see #2330. The patch comes out before the package moves, or `composer install` hard-fails under `composer-exit-on-patch-failure: true`.
+**Removal checklist** — see #212. The patch comes out before the package moves, or `composer install` hard-fails under `composer-exit-on-patch-failure: true`.
 
 ### `pest-plugin-mutate` Windows mutant child (two false-kill defects)
 
@@ -629,7 +629,7 @@ The three survivors are the equivalents `SanitizeUrlTest.php` already records, s
 - The write moves into a new `Mutation::writeModifiedSource($directory, $source)`, which creates the directory when it is missing and throws, naming the path and the PHP error, when the directory cannot be created or the file cannot be written. Warnings raised inside it are captured by a scoped error handler and carried in the exception message, so they are not reported separately. Taking the directory as an argument is what lets the guard test exercise it against a temporary directory.
 - `MutationGenerator` uses a cached mutation set only when `Mutation::modifiedSourcesExist()` finds every one of its files; otherwise it regenerates the set, which writes the files again. The patch edits `MutationGenerator.php` after `pest-plugin-mutate-annotation-parsing.patch` does, so it is listed after that patch in `composer.json`.
 
-**Upstream.** Present on the locked `v5.0.2` and on `pestphp/pest-plugin-mutate`'s `5.x` at `d0c8711`. The issue is already filed (#1942); the pull request is batched with the other `pest-plugin-mutate` reports in #2676.
+**Upstream.** Present on the locked `v5.0.2` and on `pestphp/pest-plugin-mutate`'s `5.x` at `d0c8711`. The issue is already filed (#1942); the pull request is batched with the other `pest-plugin-mutate` reports in #227.
 
 **Retirement condition.** A released `pest-plugin-mutate` whose `Mutation::create()` checks the write and creates its directory, and whose cache does not hand out a mutation whose file is gone. Check the tag, per *Checking whether the fix shipped* in the [`upstream-patch-lifecycle`](../.claude/skills/upstream-patch-lifecycle/SKILL.md) skill.
 
@@ -665,7 +665,7 @@ Both patched figures equal a serial run of the same file, which takes no paralle
 
 **What the patch does.** It removes each option above from the arguments a child inherits, in every spelling: `--option=value`, `--option value`, `-m value` and `-m<value>`, and the bare flags. It runs after the run filter is removed (#2570), so neither patch undoes the other. A child never collects coverage or spawns workers, so it needs nothing these options carry; the parallel workers still receive them from the parent run.
 
-**Upstream.** Not checked against `pestphp/pest-plugin-mutate`'s default branch, and no upstream issue has been filed. Whether to report it upstream is a separate question, as #2576 handled it; #2676 is the batch of plugin reports waiting on upstream activity.
+**Upstream.** Not checked against `pestphp/pest-plugin-mutate`'s default branch, and no upstream issue has been filed. Whether to report it upstream is a separate question, as #2576 handled it; #227 is the batch of plugin reports waiting on upstream activity.
 
 **Retirement condition.** A released `pest-plugin-mutate` whose `MutationTest::start()` forwards none of these options to a mutant child.
 
@@ -679,7 +679,7 @@ Both patched figures equal a serial run of the same file, which takes no paralle
 
 ### `larastan` console commands registered through the kernel
 
-`patches/larastan-console-kernel-commands.patch` is temporary, tracked by #3168, which removes it. (#3156, which carried it in, is closed.) It is a backport of [`larastan/larastan#2585`](https://github.com/larastan/larastan/pull/2585) onto the locked `v3.10.0`.
+`patches/larastan-console-kernel-commands.patch` is temporary, tracked by #279, which removes it. (#3156, which carried it in, is closed.) It is a backport of [`larastan/larastan#2585`](https://github.com/larastan/larastan/pull/2585) onto the locked `v3.10.0`.
 
 **What it fixes.** Since laravel/framework `v13.36.0`, `Illuminate\Foundation\Console\Kernel::load()` and `command()` no longer register their commands through `Artisan::starting()`; they keep them on the kernel and hand them to the kernel's own Artisan application. Larastan's `ConsoleApplicationResolver` builds a standalone Artisan application and reads its commands, so it no longer sees any command discovered in `app/Console/Commands`. `argument()` and `option()` on those commands then fall back to their broad docblock union, and every place that uses the value as a string is reported. Upstream tracks the defect as [`larastan/larastan#2260`](https://github.com/larastan/larastan/issues/2260).
 

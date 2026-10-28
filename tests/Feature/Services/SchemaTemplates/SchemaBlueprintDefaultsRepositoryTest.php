@@ -13,7 +13,7 @@ uses(StacheIsolatedTestCase::class);
 /**
  * `SchemaBlueprintDefaultsRepository` reads and writes a blueprint's Schema Templates
  * defaults in its collection's or taxonomy's `inject` cascade, under
- * `schema_templates.blueprint_defaults.<blueprint>` (#2834 coverage batch 12).
+ * `schema_templates.blueprint_defaults.<blueprint>` (#255 coverage batch 12).
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaBlueprintDefaultsRepositoryTest.php
  */

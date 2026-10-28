@@ -24,7 +24,7 @@ use Closure;
  * honestly declared gone instead.
  *
  * Dedup collapses (N old permalinks → one canonical survivor) are emitted by the
- * dedup tickets (#798 / UAMS-Web/uams-statamic-archive#1639) directly and are out of this resolver's scope — it
+ * dedup tickets (#46 / UAMS-Web/uams-statamic-archive#1639) directly and are out of this resolver's scope — it
  * only handles permalinks with *no* survivor.
  */
 class NotMigratedRedirectResolver

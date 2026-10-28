@@ -79,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Carry the submitter's request context onto the form settings add-on's
-        // queued notification job (UAMS-Web/uams-statamic-archive#830, #3072)
+        // queued notification job (UAMS-Web/uams-statamic-archive#830, #263)
         $this->app->bind(
             SubmissionContext::class,
             FormRequestSubmissionContext::class
@@ -144,7 +144,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // #2113 — the emailed password-reset link must land on the front end, not the
+        // #206 — the emailed password-reset link must land on the front end, not the
         // Control Panel.
         //
         // Statamic registers `GET !/auth/password/reset/{token}` as
@@ -162,7 +162,7 @@ class AppServiceProvider extends ServiceProvider
         // the Statamic handler still listed. `booted()` runs after every provider, so this
         // one is the survivor.
         //
-        // Deliberately NARROWER than the alternative #2113 rejected for the five auth
+        // Deliberately NARROWER than the alternative #206 rejected for the five auth
         // pages. That rejection was about freezing five editor-owned page URLs in code;
         // this is one handler for a URI Statamic already owns, no editor would ever set,
         // and an emailed link resolves against. Decided on the ticket, 2026-09-08.

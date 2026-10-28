@@ -14,11 +14,11 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /*
- * #2113 — the front-end account pages.
+ * #206 — the front-end account pages.
  *
  * The DISPLAY pages are `pages` entries with a `template:` override, and those entries
- * are #2305's. The POST handlers Statamic registers are reachable now, so the flow is
- * testable here and only the GET pages wait on #2305 — which is why these drive the
+ * are #211's. The POST handlers Statamic registers are reachable now, so the flow is
+ * testable here and only the GET pages wait on #211 — which is why these drive the
  * handlers directly rather than visiting a URL.
  */
 
@@ -149,7 +149,7 @@ it('shows a sign-in prompt on the profile page when signed out', function (): vo
  * The override is registered from AppServiceProvider's `booted()` callback, NOT from
  * routes/web.php: Laravel's RouteCollection keys on method+URI and the last registration
  * wins, and Statamic registers this URI after the app's route file loads. An override
- * there is replaced silently — measured during #2113, the route was absent from all 2,662
+ * there is replaced silently — measured during #206, the route was absent from all 2,662
  * registered routes while the Statamic handler was still listed, with no error either way.
  * This asserts the survivor, so a future move back into routes/web.php cannot pass.
  */

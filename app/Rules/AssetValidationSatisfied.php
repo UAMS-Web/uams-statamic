@@ -87,7 +87,7 @@ class AssetValidationSatisfied implements ValidationRule
         // Check if the value is not a non-empty string asset reference. The empty
         // string never reaches here: isEmptyAssetSelection() has already returned for
         // '', a blank string and a blank array candidate, so EmptyStringToNotEmpty on
-        // the second clause cannot be told apart from the original (#2834).
+        // the second clause cannot be told apart from the original (#255).
         // @pest-mutate-ignore: EmptyStringToNotEmpty
         if (
             ! \is_string($value)

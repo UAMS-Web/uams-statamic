@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
  * The allowed hosts are:
  *
  *   - the application URL's host and all of its subdomains;
- *   - the site's other domains, listed by hand until #2986 records them where this
+ *   - the site's other domains, listed by hand until #259 records them where this
  *     class can read them;
  *   - every published entry in the `redirect_domains` collection, read on each
  *     request, so a domain published after boot is allowed with no deploy.
@@ -44,7 +44,7 @@ class TrustHosts extends BaseTrustHosts
     /**
      * The site's other domains, each matched exactly.
      *
-     * Listed by hand until #2986 records the site domains where this class can
+     * Listed by hand until #259 records the site domains where this class can
      * read them; replace this list with that read when it lands.
      *
      * @var list<string>

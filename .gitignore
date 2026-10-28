@@ -65,7 +65,7 @@ yarn-error.log
 # uams-web/statamic-multisite-forms published assets (UAMS-Web/uams-statamic-archive#3066)
 /public/vendor/statamic-multisite-forms
 
-# uams-web/statamic-form-settings published assets (#3072)
+# uams-web/statamic-form-settings published assets (#263)
 /public/vendor/statamic-form-settings
 
 # Pest browser-test failure screenshots (issue UAMS-Web/uams-statamic-archive#852)

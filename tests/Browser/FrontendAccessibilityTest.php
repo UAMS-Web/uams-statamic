@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Statamic\Facades\Antlers;
 
 /*
- | §504 / WCAG automated accessibility gate (issue UAMS-Web/uams-statamic-archive#1046, part of epic #1045).
+ | §504 / WCAG automated accessibility gate (issue UAMS-Web/uams-statamic-archive#1046, part of epic #54).
  |
  | The pest-plugin-browser bundles axe-core and exposes window.axe on every page,
  | so this gate needs no npm dependency. It runs in the opt-in `browser` job
@@ -17,7 +17,7 @@ use Statamic\Facades\Antlers;
  |     nav, sites, collections). The `browser` CI job deliberately omits it for
  |     cost, so every real route 500s in this environment (verified).
  |   - Even with content present, the live site carries the pre-existing
- |     violations the OTHER #1045 child issues remediate — scanning it would fail
+ |     violations the OTHER #54 child issues remediate — scanning it would fail
  |     forever, and fixing those is explicitly out of scope here. So the gate
  |     proves it CATCHES serious/critical issues (known-bad fixture) and holds a
  |     clean baseline on real template output, stopping NEW automatable failures.

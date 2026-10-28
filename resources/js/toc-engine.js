@@ -14,7 +14,7 @@
  * so they cannot drift. Deriving them server-side would mean reproducing, in a second place,
  * every rule Bard and the block templates use to emit a heading.
  *
- * ANCHOR-ID CONVENTION, because a second implementation will meet it (see issue #1214, which
+ * ANCHOR-ID CONVENTION, because a second implementation will meet it (see issue #77, which
  * puts an author-supplied anchor id on a SET where this generates one on a HEADING):
  *
  *   1. An id already on the heading always wins and is never rewritten. That covers both the

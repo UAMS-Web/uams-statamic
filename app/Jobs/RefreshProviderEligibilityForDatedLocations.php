@@ -34,7 +34,7 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * A new job rather than an extension of {@see ApplyScheduledPublishing}: that job writes `publish_at`
  * and `unpublish_at` on undated collections and saves entries, while this one saves nothing and only
  * re-reads a status that `date_behavior` already resolves. It also belongs to the clinical provider
- * layer, which moves into `uams-web/statamic-people` (#3181), while scheduled publishing stays in the site.
+ * layer, which moves into `uams-web/statamic-people` (#281), while scheduled publishing stays in the site.
  *
  * The time of the last run is kept in the cache. A run with no previous time, the first after a deploy
  * or after the cache is cleared, treats every location dated up to now as passed, which costs one wider

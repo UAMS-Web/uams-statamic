@@ -13,7 +13,7 @@ return [
     | `provider_meta` payload for the shipped "UAMS Health" native app
     | (edu.uams.uamsnow). Only providers eligible for a clinical-provider profile
     | (UAMS-Web/uams-statamic-archive#919) and currently searchable (not separated/hidden) are exposed, and the
-    | payload is an explicit allow-list — no `people` PII (#803) ever leaves.
+    | payload is an explicit allow-list — no `people` PII (#47) ever leaves.
     |
     */
 

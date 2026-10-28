@@ -8,7 +8,7 @@ declare(strict_types=1);
  *
  * Estimates use Pest's `MutationGenerator` with the default mutator set on each
  * source file without running the covering suite. That count is a wall-time
- * proxy for `--covered-only` (measured #2834: Hidden 114, Gps 117, Currency ~196,
+ * proxy for `--covered-only` (measured #255: Hidden 114, Gps 117, Currency ~196,
  * LikertScale 1510). A later narrow run that finds 0 covered mutants is still
  * recorded as `n/a` on the CSV and skipped, the same as Html.
  *

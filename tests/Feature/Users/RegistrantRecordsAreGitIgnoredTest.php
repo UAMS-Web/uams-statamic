@@ -17,7 +17,7 @@ use Tests\TestCase;
  *
  * **Scope.** This asserts that records cannot reach *git*. It says nothing about
  * how registrant records are protected at rest on the server or in backups, which
- * is open on #2627 and #2628 (split from UAMS-Web/uams-statamic-archive#2455). What Statamic's own automatic
+ * is open on #223 and #224 (split from UAMS-Web/uams-statamic-archive#2455). What Statamic's own automatic
  * commits stage is pinned by RegistrantRecordsStayOutOfAutomaticCommitsTest (UAMS-Web/uams-statamic-archive#2629).
  *
  * **Where this runs.** In BOTH gates, and in every developer checkout and worktree

@@ -26,7 +26,7 @@ function formSettingsAddOnRoutingRegistrations(string $directory): int
 
 /*
  * Proves the Control Panel form settings screen renders the `uams-web/statamic-form-settings`
- * add-on's own fieldtypes (#3072).
+ * add-on's own fieldtypes (#263).
  *
  * The site's CP bundle used to register those fieldtypes itself. They now ship in the add-on's
  * bundle, so the site's `resources/js/cp.js` registers none of them. A feature test cannot see
@@ -35,7 +35,7 @@ function formSettingsAddOnRoutingRegistrations(string $directory): int
  * seeing the button proves a bundle registered that component.
  *
  * The site's CP bundle once registered a component of the same name with the same button, so a
- * slot whose `public/vendor/app` predates #3072 would pass on the site's copy. The test first
+ * slot whose `public/vendor/app` predates #263 would pass on the site's copy. The test first
  * reads the built files and requires the registration in the add-on's bundle and nowhere in the
  * site's, so the button can only have come from the add-on.
  *

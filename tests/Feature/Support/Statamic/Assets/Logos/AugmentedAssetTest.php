@@ -12,7 +12,7 @@ uses(TestCase::class);
 
 /**
  * The `logos` container's augmented asset hands every blueprint field the title and alt
- * resolver reads to `TitleAltResolver` (#2834 coverage batch 12).
+ * resolver reads to `TitleAltResolver` (#255 coverage batch 12).
  *
  * Each data set makes a different group of fields decide the result, so a field the
  * augmented asset failed to pass would change the title or the alt. The expected title is

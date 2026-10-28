@@ -4,7 +4,7 @@
  *
  * Kept apart from local-ci.mjs because scripts/worktree-slots.mjs judges the CI slot by the
  * same rules and imports them, and local-ci.mjs is retired when this repository moves onto
- * the shared runner (#2837). A second copy of either rule would drift silently.
+ * the shared runner (#256). A second copy of either rule would drift silently.
  */
 
 // The submodules every gate checks out ahead of the pest job (UAMS-Web/uams-statamic-archive#2477), in the order

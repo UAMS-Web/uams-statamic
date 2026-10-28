@@ -23,7 +23,7 @@ use function Pest\Laravel\withServerVariables;
 
 /**
  * Proves a form imported from WordPress renders and sends its notification with the
- * `uams-web/statamic-form-settings` add-on installed and no importer change (#3072).
+ * `uams-web/statamic-form-settings` add-on installed and no importer change (#263).
  *
  * The form is the stored `mail_processing_center_bulk_mail_request` in the private
  * `resources/forms` submodule, added by the 2025 import of the Mail Processing Center

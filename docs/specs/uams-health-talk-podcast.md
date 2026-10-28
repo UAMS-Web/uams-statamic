@@ -11,7 +11,7 @@ UAMS Health Talk is produced and hosted by **DoctorPodcasting** (RadioMD, LLC d/
 That explains the negative findings recorded in `UAMS-Web/wordpress-importer#424`: across all 259 WXR exports there is no podcast post type and no episode metadata. WordPress holds exactly three podcast-adjacent artifacts, none of them content:
 
 - the `/podcast` page carrying the widget embed;
-- `podcast_guest_name_uams_health_talk` on provider records — a vendor widget filter string, not a relationship, retired by #1685;
+- `podcast_guest_name_uams_health_talk` on provider records — a vendor widget filter string, not a relationship, retired by #170;
 - seven incidental title mentions in unrelated posts.
 
 Two public, unauthenticated endpoints carry everything:
@@ -97,7 +97,7 @@ The 69 link-less episodes carry **66 distinct speakers**, a mix of physicians wh
 
 The slug format is confirmed compatible: checked against a 43-entry partial test-import set, `c-lowry-barnes` and `t-glenn-pait` match exactly. The remaining 38 provider slugs have no local match only because the collection is not yet populated.
 
-**This is an open decision, not a solved mapping** — tracked on UAMS-Web/uams-statamic-archive#1803. The candidate resolutions are the vendor's `podcast:person href` (which would supply the URL for every episode and dissolve the problem), an editorial backfill of the 66 names, name matching against `people` (risky — the source's name strings are dirty), or accepting empty credits on those episodes. Whichever is chosen bounds how complete #1685's provider-lens list can be.
+**This is an open decision, not a solved mapping** — tracked on UAMS-Web/uams-statamic-archive#1803. The candidate resolutions are the vendor's `podcast:person href` (which would supply the URL for every episode and dissolve the problem), an editorial backfill of the 66 names, name matching against `people` (risky — the source's name strings are dirty), or accepting empty credits on those episodes. Whichever is chosen bounds how complete #170's provider-lens list can be.
 
 ## Published set versus production catalog
 
@@ -201,6 +201,6 @@ The importer is a WXR tool. Its input is a WordPress export, and the podcast epi
 
 - `UAMS-Web/wordpress-importer#500` — source investigation; `#424` — the superseded importer mapping; `#443` — `audio_series` subtype tagging (unaffected).
 - UAMS-Web/uams-statamic-archive#1097 — the original audio-blueprint expansion; UAMS-Web/uams-statamic-archive#1611 — the `audio_series` `subtype` model that supersedes `podcast_series`; UAMS-Web/uams-statamic-archive#1487 — `PodcastEpisode` / `PodcastSeries` JSON-LD.
-- UAMS-Web/uams-statamic-archive#1683 — the MVP RadioMD embed on the clinical provider lens; #1685 — its first-party replacement, which needs the entries this document describes.
+- UAMS-Web/uams-statamic-archive#1683 — the MVP RadioMD embed on the clinical provider lens; #170 — its first-party replacement, which needs the entries this document describes.
 - Podcast Namespace 1.0 — [`alternate-enclosure`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/alternate-enclosure.md), [`source`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/source.md), [`person`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/person.md), [`episode`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/episode.md), [`transcript`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/transcript.md), [`medium`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/medium.md).
 - Public channel: `https://www.youtube.com/@UAMSHealth`.

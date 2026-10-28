@@ -50,4 +50,4 @@ Without the `nonce` attribute the browser blocks the block (or, while we remain 
 
 ### Source of truth
 
-`csp.nonce_directives` in [`../../config/security-headers.php`](../../config/security-headers.php) lists exactly which directives receive the nonce. The `style-src` half shipped in [#668](https://github.com/UAMS-Web/uams-statamic-archive/issues/668) and the `script-src` half in [#1741](https://github.com/UAMS-Web/uams-statamic-archive/issues/1741); the Report-Only → enforce flip is [#667](https://github.com/UAMS-Web/uams-statamic-archive/issues/667).
+`csp.nonce_directives` in [`../../config/security-headers.php`](../../config/security-headers.php) lists exactly which directives receive the nonce. The `style-src` half shipped in [#668](https://github.com/UAMS-Web/uams-statamic-archive/issues/668) and the `script-src` half in [#1741](https://github.com/UAMS-Web/uams-statamic-archive/issues/1741); the Report-Only → enforce flip is [#33](https://github.com/UAMS-Web/uams-statamic-archive/issues/667).

@@ -13,7 +13,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * The queued UAMS Health Talk sync job runs the sync it is handed (#2834 coverage batch 12).
+ * The queued UAMS Health Talk sync job runs the sync it is handed (#255 coverage batch 12).
  *
  * The sync caches its report and takes a lock in the default cache store, which is a file
  * store shared by every test process, so these tests switch to the array store: they cannot

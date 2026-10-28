@@ -25,7 +25,7 @@ final class Resolution
      * Whether this outcome needs an editor's attention.
      *
      * `Redirected` is deliberately NOT actionable here: the link works today, and recommending
-     * where it should point instead is #1767's job rather than this slice's.
+     * where it should point instead is #172's job rather than this slice's.
      */
     public function isBroken(): bool
     {

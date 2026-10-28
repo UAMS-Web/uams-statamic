@@ -19,7 +19,7 @@ use Statamic\Statamic;
  * Registers the `people` collection's behavior through the site's collection extension point (UAMS-Web/uams-statamic-archive#3180).
  *
  * Site core no longer names `people` for these four behaviors; this provider supplies them through
- * {@see CollectionExtensions}, and it moves with the people code into `uams-web/statamic-people` (#3181).
+ * {@see CollectionExtensions}, and it moves with the people code into `uams-web/statamic-people` (#281).
  *
  * - **Entry class:** `people` rows are built as {@see PersonEntry}, which suppresses the route of a
  *   person opted out of a profile page.

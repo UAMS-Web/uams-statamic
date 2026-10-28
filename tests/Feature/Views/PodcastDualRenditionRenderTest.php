@@ -9,7 +9,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * #1808 — a podcast episode is ONE entry whose `segments` replicator may carry a
+ * #187 — a podcast episode is ONE entry whose `segments` replicator may carry a
  * video rendition beside its audio, per UAMS-Web/uams-statamic-archive#1807's decision. The audio blueprints
  * therefore register the whole `new_video_segment_group` (`youtube`, `vimeo`,
  * `box`), and the templates choose the player PER ROW from the set `type` rather

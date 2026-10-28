@@ -21,7 +21,7 @@ use function Pest\Laravel\post;
  *
  * The form settings add-on sends the row's `message` as the notification body and owns the rest
  * of that behavior and its tests. The `all_fields` tag stays in the site, so these two cases stay
- * here (#3072): the table is sent once with no second field list, and a quoted parameter in the
+ * here (#263): the table is sent once with no second field list, and a quoted parameter in the
  * stored Bard text reaches the tag. A form is submitted over HTTP and the captured Symfony
  * message is read back.
  *

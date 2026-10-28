@@ -412,7 +412,7 @@ function makeDedupKeptPostWithId(string $slug, string $originalUrl, int $postId,
 }
 
 /**
- * A pair as the cleaner writes it for #798, with both WordPress post ids.
+ * A pair as the cleaner writes it for #46, with both WordPress post ids.
  *
  * @return array{source: string, target: string, notes: string|null, source_wordpress_post_id: int|null, target_wordpress_post_id: int|null}
  */

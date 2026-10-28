@@ -13,7 +13,7 @@ declare(strict_types=1);
 | violation report (every impact level) in the job output for visibility, and
 | fail only on `serious`/`critical` — the automatable failures the §504 gate
 | must stop from merging. `moderate`/`minor` are reported, not failed, so the
-| gate can be ratcheted later (#1045).
+| gate can be ratcheted later (#54).
 |
 | Run via the opt-in browser suite:  vendor/bin/pest tests/Browser
 |

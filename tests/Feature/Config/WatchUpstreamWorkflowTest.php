@@ -10,8 +10,8 @@ use Symfony\Component\Yaml\Yaml;
  *
  * UAMS-Web/uams-statamic-archive#2576 decided to report the five local `pest-plugin-mutate` patches upstream once the plugin
  * shows activity, and relies on this workflow to notice it. The row in
- * `.github/upstream-watches/2676-pestphp-pest-plugin-mutate-43.json` watches two signals for
- * #2676: `pestphp/pest-plugin-mutate#43` being merged or closed, and a Packagist release past the
+ * `.github/upstream-watches/227-pestphp-pest-plugin-mutate-43.json` watches two signals for
+ * #227: `pestphp/pest-plugin-mutate#43` being merged or closed, and a Packagist release past the
  * version `composer.lock` installs.
  *
  * The tests run the workflow's own step script, read from the YAML, in a scratch directory that
@@ -34,7 +34,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * The row file under test, relative to the repository root.
  */
-const WATCH_UPSTREAM_MUTATE_ROW = '.github/upstream-watches/2676-pestphp-pest-plugin-mutate-43.json';
+const WATCH_UPSTREAM_MUTATE_ROW = '.github/upstream-watches/227-pestphp-pest-plugin-mutate-43.json';
 
 /**
  * The `released` row under test, as it is staged in the scratch directory (UAMS-Web/uams-statamic-archive#2727).
@@ -247,11 +247,11 @@ function runWatchUpstream(array $files = [], string $row = WATCH_UPSTREAM_MUTATE
     ];
 }
 
-it('watches pest-plugin-mutate#43 and the plugin releases against #2676', function (): void {
+it('watches pest-plugin-mutate#43 and the plugin releases against #227', function (): void {
     $row = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/'.WATCH_UPSTREAM_MUTATE_ROW), true);
 
     expect($row)->toBe([
-        'tracker' => 2676,
+        'tracker' => 227,
         'repo' => 'pestphp/pest-plugin-mutate',
         'kind' => 'pr',
         'number' => 43,
@@ -266,7 +266,7 @@ it('stays silent while the pull request is open and no newer release exists', fu
         ->and($run['posted'])->toBe([]);
 })->skipOnWindows();
 
-it('comments once on #2676 when a release past the installed version ships', function (): void {
+it('comments once on #227 when a release past the installed version ships', function (): void {
     $next = watchUpstreamNextMutateVersion();
     $packagist = watchUpstreamPackagist([$next, watchUpstreamInstalledMutateVersion()]);
 
@@ -284,7 +284,7 @@ it('comments once on #2676 when a release past the installed version ships', fun
         ->and($second['posted'])->toBe([]);
 })->skipOnWindows();
 
-it('comments once on #2676 when #43 is merged', function (): void {
+it('comments once on #227 when #43 is merged', function (): void {
     $pr = '{"state":"MERGED","mergedAt":"2026-09-29T12:00:00Z"}';
 
     $first = runWatchUpstream(['pr.json' => $pr]);
@@ -300,7 +300,7 @@ it('comments once on #2676 when #43 is merged', function (): void {
         ->and($second['posted'])->toBe([]);
 })->skipOnWindows();
 
-it('comments once on #2676 when #43 is closed without merging', function (): void {
+it('comments once on #227 when #43 is closed without merging', function (): void {
     $pr = '{"state":"CLOSED","mergedAt":null}';
 
     $first = runWatchUpstream(['pr.json' => $pr]);
@@ -316,7 +316,7 @@ it('comments once on #2676 when #43 is closed without merging', function (): voi
         ->and($second['posted'])->toBe([]);
 })->skipOnWindows();
 
-it('stops watching once #2676 is closed', function (): void {
+it('stops watching once #227 is closed', function (): void {
     $run = runWatchUpstream([
         'tracker-state' => "CLOSED\n",
         'pr.json' => '{"state":"MERGED","mergedAt":"2026-09-29T12:00:00Z"}',

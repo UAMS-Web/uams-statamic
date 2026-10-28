@@ -3,7 +3,7 @@
  *
  * Progressive enhancement for the Find-a-Doc Providers page-builder block
  * (`resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html`), the
- * sibling ontology blocks (#1287/UAMS-Web/uams-statamic-archive#61/UAMS-Web/uams-statamic-archive#62/UAMS-Web/uams-statamic-archive#63), and — via the same contract, with the
+ * sibling ontology blocks (#140/UAMS-Web/uams-statamic-archive#61/UAMS-Web/uams-statamic-archive#62/UAMS-Web/uams-statamic-archive#63), and — via the same contract, with the
  * extra directory chrome below — the shipped `/providers` provider directory (UAMS-Web/uams-statamic-archive#570,
  * `resources/views/people/provider/_listing.antlers.html`).
  *
