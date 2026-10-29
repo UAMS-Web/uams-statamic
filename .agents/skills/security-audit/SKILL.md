@@ -42,10 +42,10 @@ error in a `ModifierException`, and `NodeProcessor::runModifier()` rethrows **on
 Antlers then emits the raw input verbatim: a throw inside a sanitizer is a stored-XSS
 **fail-open**, not a 500. Verified in `uams-statamic` on `sanitize_table_cell`, which emitted
 `<script>alert(document.cookie)</script>` once its HTMLPurifier definition cache was corrupt
-(`UAMS-Web/uams-statamic#1853`).
+(`UAMS-Web/uams-statamic-archive#1853`).
 
 **Whether a throw fails open or 500s turns on `Exception` vs `Error`**, re-verified 2026-10-02
-against `statamic/cms` v6.35.0 (the build `wordpress-importer` pins, `UAMS-Web/wordpress-importer#1290`):
+against `statamic/cms` v6.35.0 (the build `wordpress-importer` pins, `UAMS-Web/wordpress-importer-archive#1290`):
 `Modify::modify()` still catches `Exception`, and `NodeProcessor` still catches
 `ModifierException`. The distinction matters because it decides the severity of every sanitizer
 finding:
@@ -59,7 +59,7 @@ finding:
 - **`Error` family → a real 500.** `TypeError`, `ParseError` and `DivisionByZeroError` extend
   `Error`, so they escape `catch (Exception)`, are never wrapped, and propagate. `strip_tags()` on
   an array (which Antlers' truthy-array `?:` / `??` will happily feed it) raises a `TypeError`
-  on PHP 8, so it 500s rather than leaking; that is `UAMS-Web/uams-statamic#1883`, whose four
+  on PHP 8, so it 500s rather than leaking; that is `UAMS-Web/uams-statamic-archive#1883`, whose four
   entries returned a 500 on every page. Loud, but still a sanitizer that did not sanitize.
 
 So when auditing a sanitizer, ask *"what makes this throw, and with which class"* alongside *"what
@@ -204,8 +204,8 @@ session context (e.g. `2026-06-12`); read it from context, don't shell out for i
 
 **`.claude/notes/` is git-ignored, and the report must stay that way: never commit it, move it, or
 paste it into an issue or pull request.** It records each finding at exploit-level detail, and this
-repository is going public from a clean `main` (#2651), so a committed report would disclose every
-open finding and describe how the fixed ones were defended (#2733). The approved findings reach the
+repository is going public from a clean `main` (UAMS-Web/uams-statamic-archive#2651), so a committed report would disclose every
+open finding and describe how the fixed ones were defended (UAMS-Web/uams-statamic-archive#2733). The approved findings reach the
 tracker through step 5 instead, each as its own `security` issue.
 
 Structure:
