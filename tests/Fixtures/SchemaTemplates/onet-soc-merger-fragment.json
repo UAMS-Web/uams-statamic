@@ -1,0 +1,57 @@
+{
+    "sourceKey": "onet_soc_occupation_code",
+    "fragment": {
+        "identifier": {
+            "@type": "PropertyValue",
+            "name": "O*NET-SOC code",
+            "alternateName": [
+                "O*NET OnLine code",
+                "O*NET OnLine occupation code",
+                "O*NET SOC code",
+                "O*NET SOC occupation code",
+                "O*NET SOC system code",
+                "O*NET SOC system occupation code",
+                "O*NET Standard Occupational Classification code",
+                "O*NET Standard Occupational Classification occupation code",
+                "O*NET Standard Occupational Classification system code",
+                "O*NET Standard Occupational Classification system occupation code",
+                "O*NET code",
+                "O*NET occupation code",
+                "ONET OnLine code",
+                "ONET OnLine occupation code",
+                "ONET SOC code",
+                "ONET SOC occupation code",
+                "ONET SOC system code",
+                "ONET SOC system occupation code",
+                "ONET Standard Occupational Classification code",
+                "ONET Standard Occupational Classification occupation code",
+                "ONET Standard Occupational Classification system code",
+                "ONET Standard Occupational Classification system occupation code",
+                "ONET code",
+                "ONET occupation code",
+                "Occupational Information Network OnLine code",
+                "Occupational Information Network OnLine occupation code",
+                "Occupational Information Network code",
+                "Occupational Information Network occupation code",
+                "SOC code",
+                "SOC occupation code",
+                "SOC system occupation code",
+                "Standard Occupational Classification code",
+                "Standard Occupational Classification occupation code",
+                "Standard Occupational Classification system code",
+                "Standard Occupational Classification system occupation code"
+            ],
+            "propertyID": "https://www.wikidata.org/wiki/Property:P8734",
+            "value": "VALUE-1"
+        },
+        "occupationalCategory": {
+            "@type": "CategoryCode",
+            "codeValue": "VALUE-1",
+            "inCodeSet": {
+                "@type": "CategoryCodeSet",
+                "name": "O*NET-SOC Taxonomy",
+                "url": "https://www.onetcenter.org/taxonomy.html"
+            }
+        }
+    }
+}

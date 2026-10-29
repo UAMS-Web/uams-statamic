@@ -1,0 +1,934 @@
+{
+    "AhaidMerger": {
+        "sourceKey": "ahaid",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "American Hospital Association Hospital Identifier",
+                "alternateName": [
+                    "AHA ID",
+                    "AHA ID number",
+                    "AHA IDNUMBER",
+                    "AHA hospital ID",
+                    "AHA hospital ID number",
+                    "AHA hospital identifier",
+                    "AHA identifier",
+                    "AHAID",
+                    "AHAID number",
+                    "American Hospital Association ID",
+                    "American Hospital Association ID number",
+                    "American Hospital Association IDNUMBER",
+                    "American Hospital Association hospital ID",
+                    "American Hospital Association hospital ID number",
+                    "American Hospital Association hospital identifier",
+                    "American Hospital Association identifier",
+                    "IDNUMBER"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "CageMerger": {
+        "sourceKey": "cage",
+        "fragment": {
+            "iso6523Code": "0141:VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Commercial and Government Entity code",
+                "alternateName": [
+                    "CAGE code",
+                    "CAGE number",
+                    "CAGE",
+                    "FSCM",
+                    "Federal CAGE code",
+                    "Federal CAGE number",
+                    "Federal Commercial and Government Entity code",
+                    "Federal Commercial and Government Entity number",
+                    "NCAGE",
+                    "NSCM",
+                    "U.S. Federal CAGE code",
+                    "U.S. Federal CAGE number",
+                    "U.S. Federal Commercial and Government Entity code",
+                    "U.S. Federal Commercial and Government Entity number",
+                    "US Federal CAGE code",
+                    "US Federal CAGE number",
+                    "US Federal Commercial and Government Entity code",
+                    "US Federal Commercial and Government Entity number"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P5574",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "CmsCertificationNumberMerger": {
+        "sourceKey": "hospital_ccn_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "CMS Certification Number",
+                "alternateName": [
+                    "CCN",
+                    "CCN number",
+                    "CMS CCN",
+                    "CMS Certification Number",
+                    "CMS certification number",
+                    "Centers for Medicare & Medicaid Services Certification Number",
+                    "Centers for Medicare and Medicaid Services Certification Number",
+                    "Medicare provider number",
+                    "Medicare/Medicaid provider number",
+                    "OSCAR number",
+                    "Online Survey Certification and Reporting number",
+                    "provider number"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "CmsSpecialtyCodeMerger": {
+        "sourceKey": "cms_specialty_code",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "CMS Specialty Code",
+                "alternateName": [
+                    "Centers for Medicare & Medicaid Services Specialty Code",
+                    "Centers for Medicare and Medicaid Services Specialty Code",
+                    "HCFA Specialty Code",
+                    "Health Care Financing Administration Specialty Code",
+                    "Medicare Specialty Code"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "DunsMerger": {
+        "sourceKey": "duns",
+        "fragment": {
+            "duns": "VALUE-1",
+            "iso6523Code": "0060:VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "D-U-N-S",
+                "alternateName": [
+                    "D-U-N-S Number",
+                    "DUNS Number",
+                    "DUNS",
+                    "Data Universal Numbering System Number",
+                    "Data Universal Numbering System",
+                    "Dun & Bradstreet D-U-N-S Number",
+                    "Dun & Bradstreet DUNS Number",
+                    "Dun & Bradstreet DUNS",
+                    "Dun & Bradstreet Data Universal Numbering System Number",
+                    "Dun & Bradstreet Data Universal Numbering System"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P2771",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "EinMerger": {
+        "sourceKey": "ein",
+        "fragment": {
+            "taxID": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Employer Identification Number",
+                "alternateName": [
+                    "EIN",
+                    "Federal Employer Identification Number",
+                    "FEIN",
+                    "Federal Tax Identification Number",
+                    "FTIN",
+                    "Taxpayer Identification Number",
+                    "TIN"
+                ],
+                "propertyID": [
+                    "https://www.wikidata.org/wiki/Property:P1297",
+                    "https://purl.org/ctdl/terms/fein"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "GlnMerger": {
+        "sourceKey": "gln",
+        "fragment": {
+            "globalLocationNumber": "VALUE-1",
+            "iso6523Code": "0088:VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Global Location Number",
+                "alternateName": [
+                    "GLN",
+                    "GS1 GLN",
+                    "GS1 Global Location Number"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P9860",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "GoogleCidMerger": {
+        "sourceKey": "google_business_profile_cid",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Google Maps Customer ID",
+                "alternateName": [
+                    "CID number",
+                    "CID",
+                    "GM CID number",
+                    "GM CID",
+                    "GMCID number",
+                    "GMCID",
+                    "Google CID number",
+                    "Google CID",
+                    "Google Maps CID number",
+                    "Google Maps CID",
+                    "Google Maps Customer ID number",
+                    "Google Maps Place CID number",
+                    "Google Maps Place CID",
+                    "Ludocid number",
+                    "Ludocid"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P3749",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "GoogleScholarAuthorIdMerger": {
+        "sourceKey": "google_scholar_author_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Google Scholar author ID",
+                "alternateName": [
+                    "Scholar ID in Google Scholar",
+                    "Google Scholar ID",
+                    "Google Scholar person ID",
+                    "GoogleScholar author ID"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P1960",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "GoogleTagManagerContainerIdMerger": {
+        "sourceKey": "google_tag_manager_container_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Google Tag Manager Container ID",
+                "alternateName": [
+                    "Container ID",
+                    "GTM Container ID",
+                    "GTM ID",
+                    "Google Tag Manager ID",
+                    "Container ID number",
+                    "GTM Container ID number",
+                    "GTM ID number",
+                    "Google Tag Manager ID number"
+                ],
+                "propertyID": "https://tagmanager.google.com/",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "HealthCareProviderTaxonomyCodeMerger": {
+        "sourceKey": "health_care_provider_taxonomy_code",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Healthcare Provider Taxonomy Code",
+                "alternateName": [
+                    "HPTC code",
+                    "HPTC taxonomy code",
+                    "HPTC taxonomy",
+                    "HPTC",
+                    "Health Care Provider Taxonomy code",
+                    "Health Care Provider Taxonomy",
+                    "Healthcare Provider Taxonomy",
+                    "NUCC code",
+                    "NUCC taxonomy code",
+                    "NUCC taxonomy",
+                    "NUCC",
+                    "National Uniform Claim Committee code",
+                    "National Uniform Claim Committee taxonomy code"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "IpedsMerger": {
+        "sourceKey": "ipeds",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Integrated Postsecondary Education Data System ID",
+                "alternateName": [
+                    "IPEDS ID number",
+                    "IPEDS ID",
+                    "IPEDS Number",
+                    "Integrated Postsecondary Education Data System ID number",
+                    "Integrated Postsecondary Education Data System ID",
+                    "Integrated Postsecondary Education Data System Number",
+                    "Integrated Postsecondary Education Data System identifier number",
+                    "Integrated Postsecondary Education Data System identifier",
+                    "Unit ID code",
+                    "Unit ID number",
+                    "Unit ID",
+                    "Unit Identification Code",
+                    "UnitID code",
+                    "UnitID number",
+                    "UnitID"
+                ],
+                "propertyID": [
+                    "https://www.wikidata.org/wiki/Property:P1771",
+                    "https://purl.org/ctdl/terms/ipedsID"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "Isco08CodeMerger": {
+        "sourceKey": "isco_08_code",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "International Standard Classification of Occupations 2008",
+                "alternateName": [
+                    "ISCO-08 code",
+                    "ISCO-08",
+                    "ISCO08 code",
+                    "ISCO08"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P8283",
+                "value": "VALUE-1"
+            },
+            "occupationalCategory": {
+                "@type": "CategoryCode",
+                "codeValue": "VALUE-1",
+                "inCodeSet": {
+                    "@type": "CategoryCodeSet",
+                    "name": "International Standard Classification of Occupations 2008",
+                    "sameAs": "https://www.wikidata.org/wiki/Q113864458"
+                }
+            }
+        }
+    },
+    "IsicRev4CodeMerger": {
+        "sourceKey": "isic_rev_4_code",
+        "fragment": {
+            "isicV4": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "International Standard Industrial Classification code Rev.4",
+                "alternateName": [
+                    "ISIC Rev. 4",
+                    "ISIC Rev. 4 code",
+                    "ISIC Rev.4",
+                    "ISIC Rev.4 code"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P1796",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "Iso6523CodeMerger": {
+        "sourceKey": "iso_6523_code",
+        "fragment": {
+            "iso6523Code": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "ISO/IEC 6523",
+                "alternateName": [
+                    "ISO 6523",
+                    "ISO 6523 code",
+                    "ISO/IEC 6523 code"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P3743",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "LegalEntityIdentifierMerger": {
+        "sourceKey": "legal_entity_identifier",
+        "fragment": {
+            "leiCode": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Legal Entity Identifier",
+                "alternateName": [
+                    "GLEI code",
+                    "GLEI",
+                    "GLEIF code",
+                    "GLEIF",
+                    "Global Legal Entity Identifier code",
+                    "Global Legal Entity Identifier",
+                    "ISO 17442 ID",
+                    "ISO 17442 code",
+                    "LEI code",
+                    "LEI",
+                    "Legal Entity ID",
+                    "Legal Entity Identifier code"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P1278",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "NaicsMerger": {
+        "sourceKey": "naics",
+        "fragment": {
+            "naics": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "NAICS code",
+                "alternateName": [
+                    "NAICS industry classification code",
+                    "NAICS industry classification",
+                    "NAICS",
+                    "North American Industry Classification System code",
+                    "North American Industry Classification System"
+                ],
+                "propertyID": [
+                    "https://www.wikidata.org/wiki/Property:P3224",
+                    "https://purl.org/ctdl/terms/naics"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "NpiMerger": {
+        "sourceKey": "npi",
+        "fragment": {
+            "usNPI": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "National Provider Identifier",
+                "alternateName": [
+                    "NPI number",
+                    "NPI",
+                    "National Provider ID number",
+                    "National Provider ID",
+                    "National Provider Identifier number"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P9450",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "OpeIdMerger": {
+        "sourceKey": "ope_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Office of Postsecondary Education ID",
+                "alternateName": [
+                    "FICE code",
+                    "FICE number",
+                    "FICE",
+                    "Federal Interagency Committee on Education code",
+                    "Federal Interagency Committee on Education number",
+                    "Federal Interagency Committee on Education",
+                    "Federal School Code",
+                    "OPE ID code",
+                    "OPE ID number",
+                    "OPE ID",
+                    "OPE number",
+                    "OPEID code",
+                    "OPEID number",
+                    "OPEID",
+                    "Office of Postsecondary Education Identification code",
+                    "Office of Postsecondary Education Identification number",
+                    "Office of Postsecondary Education Identification",
+                    "U.S. FICE code",
+                    "U.S. FICE number",
+                    "U.S. FICE",
+                    "U.S. Federal Interagency Committee on Education code",
+                    "U.S. Federal Interagency Committee on Education number",
+                    "U.S. Federal Interagency Committee on Education",
+                    "U.S. Federal School Code",
+                    "U.S. OPE ID code",
+                    "U.S. OPE ID number",
+                    "U.S. OPE ID",
+                    "U.S. OPE number",
+                    "U.S. OPEID code",
+                    "U.S. OPEID number",
+                    "U.S. OPEID",
+                    "U.S. Office of Postsecondary Education Identification code",
+                    "U.S. Office of Postsecondary Education Identification number",
+                    "U.S. Office of Postsecondary Education Identification",
+                    "US FICE code",
+                    "US FICE number",
+                    "US FICE",
+                    "US Federal Interagency Committee on Education code",
+                    "US Federal Interagency Committee on Education number",
+                    "US Federal Interagency Committee on Education",
+                    "US Federal School Code",
+                    "US OPE ID code",
+                    "US OPE ID number",
+                    "US OPE ID",
+                    "US OPE number",
+                    "US OPEID code",
+                    "US OPEID number",
+                    "US OPEID",
+                    "US Office of Postsecondary Education Identification code",
+                    "US Office of Postsecondary Education Identification number",
+                    "US Office of Postsecondary Education Identification"
+                ],
+                "propertyID": "https://purl.org/ctdl/terms/opeID",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "OrcidMerger": {
+        "sourceKey": "orcid",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "ORCID iD",
+                "alternateName": [
+                    "ORC ID number",
+                    "ORC ID",
+                    "ORCID iD number",
+                    "ORCID iD",
+                    "ORCID identifier",
+                    "ORCID number",
+                    "ORCID",
+                    "Open Research Contributor ID number",
+                    "Open Research Contributor ID",
+                    "Open Research Contributor identifier",
+                    "Open Researcher and Contributor ID number",
+                    "Open Researcher and Contributor ID",
+                    "Open Researcher and Contributor identifier"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P496",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "PmidMerger": {
+        "sourceKey": "pmid",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "PubMed publication ID",
+                "alternateName": [
+                    "PMID",
+                    "PubMed ID",
+                    "PubMed reference number"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P698",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "PubmedAuthorIdMerger": {
+        "sourceKey": "pubmed_author_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "PubMed Author ID",
+                "alternateName": [
+                    "PubMed author identifier"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "ResearcherIdMerger": {
+        "sourceKey": "researcherid",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "ResearcherID",
+                "alternateName": [
+                    "RID",
+                    "Researcher ID",
+                    "Web of Science ID",
+                    "Web of Science RID",
+                    "Web of Science Researcher ID",
+                    "Web of Science ResearcherID",
+                    "WoS ID",
+                    "WoS RID",
+                    "WoS Researcher ID",
+                    "WoS ResearcherID",
+                    "webofscience.com ID",
+                    "webofscience.com RID",
+                    "webofscience.com Researcher ID",
+                    "webofscience.com ResearcherID"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P1053",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "RxcuiMerger": {
+        "sourceKey": "rxcui",
+        "fragment": {
+            "rxcui": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "RxNorm CUI",
+                "alternateName": [
+                    "RXCUI code",
+                    "RXCUI number",
+                    "RXCUI",
+                    "RxNorm CUI code number",
+                    "RxNorm CUI code",
+                    "RxNorm CUI identifier",
+                    "RxNorm CUI number",
+                    "RxNorm CUI",
+                    "RxNorm ID code",
+                    "RxNorm ID number",
+                    "RxNorm ID",
+                    "RxNorm concept unique identifier code",
+                    "RxNorm concept unique identifier number",
+                    "RxNorm concept unique identifier",
+                    "RxNorm identifier code",
+                    "RxNorm identifier number",
+                    "RxNorm identifier"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P3345",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "ScopusAuthorIdMerger": {
+        "sourceKey": "scopus_author_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Scopus author ID",
+                "alternateName": [
+                    "Mendeley author ID",
+                    "Mendeley author identifier",
+                    "ScienceDirect author ID",
+                    "ScienceDirect author identifier",
+                    "Scopus ID",
+                    "Scopus author identifier",
+                    "Scopus identifier",
+                    "ScopusID"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P1153",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "TickerSymbolMerger": {
+        "sourceKey": "ticker_symbol",
+        "fragment": {
+            "tickerSymbol": "VALUE-1",
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "ticker symbol",
+                "alternateName": [
+                    "stock code",
+                    "traded as",
+                    "stock symbol",
+                    "trading symbol",
+                    "stock ticker"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P249",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "UeiMerger": {
+        "sourceKey": "uei",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "Unique Entity ID",
+                "alternateName": [
+                    "SAM identifier",
+                    "System for Award Management ID",
+                    "System for Award Management identifier",
+                    "U.S. SAM ID",
+                    "UEI",
+                    "Unique Entity ID from SAM.gov",
+                    "Unique Entity Identifier"
+                ],
+                "propertyID": "https://www.wikidata.org/wiki/Property:P9955",
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "VaStationIdMerger": {
+        "sourceKey": "va_station_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "STA3N",
+                "alternateName": [
+                    "Department of Veterans Affairs STA3N",
+                    "Department of Veterans Affairs facility #",
+                    "Department of Veterans Affairs facility ID",
+                    "Department of Veterans Affairs facility identifier",
+                    "Department of Veterans Affairs facility number",
+                    "Department of Veterans Affairs facilityId",
+                    "Department of Veterans Affairs institutionCode",
+                    "Department of Veterans Affairs location ID",
+                    "Department of Veterans Affairs location identifier",
+                    "Department of Veterans Affairs location number",
+                    "Department of Veterans Affairs locationid",
+                    "Department of Veterans Affairs parent station",
+                    "Department of Veterans Affairs sta3nid code",
+                    "Department of Veterans Affairs sta3nid",
+                    "Department of Veterans Affairs station ID",
+                    "Department of Veterans Affairs station code",
+                    "Department of Veterans Affairs station identifier",
+                    "Department of Veterans Affairs station number",
+                    "Department of Veterans Affairs stationID",
+                    "STA3N",
+                    "U.S. Department of Veterans Affairs STA3N",
+                    "U.S. Department of Veterans Affairs facility #",
+                    "U.S. Department of Veterans Affairs facility ID",
+                    "U.S. Department of Veterans Affairs facility identifier",
+                    "U.S. Department of Veterans Affairs facility number",
+                    "U.S. Department of Veterans Affairs facilityId",
+                    "U.S. Department of Veterans Affairs institutionCode",
+                    "U.S. Department of Veterans Affairs location ID",
+                    "U.S. Department of Veterans Affairs location identifier",
+                    "U.S. Department of Veterans Affairs location number",
+                    "U.S. Department of Veterans Affairs locationid",
+                    "U.S. Department of Veterans Affairs parent station",
+                    "U.S. Department of Veterans Affairs sta3nid code",
+                    "U.S. Department of Veterans Affairs sta3nid",
+                    "U.S. Department of Veterans Affairs station ID",
+                    "U.S. Department of Veterans Affairs station code",
+                    "U.S. Department of Veterans Affairs station identifier",
+                    "U.S. Department of Veterans Affairs station number",
+                    "U.S. Department of Veterans Affairs stationID",
+                    "United States Department of Veterans Affairs STA3N",
+                    "United States Department of Veterans Affairs facility #",
+                    "United States Department of Veterans Affairs facility ID",
+                    "United States Department of Veterans Affairs facility identifier",
+                    "United States Department of Veterans Affairs facility number",
+                    "United States Department of Veterans Affairs facilityId",
+                    "United States Department of Veterans Affairs institutionCode",
+                    "United States Department of Veterans Affairs location ID",
+                    "United States Department of Veterans Affairs location identifier",
+                    "United States Department of Veterans Affairs location number",
+                    "United States Department of Veterans Affairs locationid",
+                    "United States Department of Veterans Affairs parent station",
+                    "United States Department of Veterans Affairs sta3nid code",
+                    "United States Department of Veterans Affairs sta3nid",
+                    "United States Department of Veterans Affairs station ID",
+                    "United States Department of Veterans Affairs station code",
+                    "United States Department of Veterans Affairs station identifier",
+                    "United States Department of Veterans Affairs station number",
+                    "United States Department of Veterans Affairs stationID",
+                    "VA STA3N",
+                    "VA facility #",
+                    "VA facility ID",
+                    "VA facility identifier",
+                    "VA facility number",
+                    "VA facilityId",
+                    "VA institutionCode",
+                    "VA location ID",
+                    "VA location identifier",
+                    "VA location number",
+                    "VA locationid",
+                    "VA parent station",
+                    "VA sta3nid code",
+                    "VA sta3nid",
+                    "VA station ID",
+                    "VA station code",
+                    "VA station identifier",
+                    "VA station number",
+                    "VA stationID",
+                    "Veterans Affairs STA3N",
+                    "Veterans Affairs facility #",
+                    "Veterans Affairs facility ID",
+                    "Veterans Affairs facility identifier",
+                    "Veterans Affairs facility number",
+                    "Veterans Affairs facilityId",
+                    "Veterans Affairs institutionCode",
+                    "Veterans Affairs location ID",
+                    "Veterans Affairs location identifier",
+                    "Veterans Affairs location number",
+                    "Veterans Affairs locationid",
+                    "Veterans Affairs parent station",
+                    "Veterans Affairs sta3nid code",
+                    "Veterans Affairs sta3nid",
+                    "Veterans Affairs station ID",
+                    "Veterans Affairs station code",
+                    "Veterans Affairs station identifier",
+                    "Veterans Affairs station number",
+                    "Veterans Affairs stationID",
+                    "facility #",
+                    "facility ID",
+                    "facility identifier",
+                    "facility number",
+                    "facilityId",
+                    "institutionCode",
+                    "location ID",
+                    "location identifier",
+                    "location number",
+                    "locationid",
+                    "parent station",
+                    "sta3nid code",
+                    "sta3nid",
+                    "station ID",
+                    "station code",
+                    "station identifier",
+                    "station number",
+                    "stationID"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    },
+    "VaSubstationIdMerger": {
+        "sourceKey": "va_substation_id",
+        "fragment": {
+            "identifier": {
+                "@type": "PropertyValue",
+                "name": "STA6A",
+                "alternateName": [
+                    "Department of Veterans Affairs STA6A",
+                    "Department of Veterans Affairs facility #",
+                    "Department of Veterans Affairs facility ID",
+                    "Department of Veterans Affairs facility identifier",
+                    "Department of Veterans Affairs facility number",
+                    "Department of Veterans Affairs facilityId",
+                    "Department of Veterans Affairs institutionCode",
+                    "Department of Veterans Affairs location ID",
+                    "Department of Veterans Affairs location identifier",
+                    "Department of Veterans Affairs location number",
+                    "Department of Veterans Affairs locationid",
+                    "Department of Veterans Affairs parent station with suffix",
+                    "Department of Veterans Affairs sta6aid code",
+                    "Department of Veterans Affairs sta6aid",
+                    "Department of Veterans Affairs station ID",
+                    "Department of Veterans Affairs station code",
+                    "Department of Veterans Affairs station identifier",
+                    "Department of Veterans Affairs station number",
+                    "Department of Veterans Affairs stationID",
+                    "Department of Veterans Affairs substation ID",
+                    "Department of Veterans Affairs substation code",
+                    "Department of Veterans Affairs substation identifier",
+                    "Department of Veterans Affairs substation number",
+                    "STA6A",
+                    "U.S. Department of Veterans Affairs STA6A",
+                    "U.S. Department of Veterans Affairs facility #",
+                    "U.S. Department of Veterans Affairs facility ID",
+                    "U.S. Department of Veterans Affairs facility identifier",
+                    "U.S. Department of Veterans Affairs facility number",
+                    "U.S. Department of Veterans Affairs facilityId",
+                    "U.S. Department of Veterans Affairs institutionCode",
+                    "U.S. Department of Veterans Affairs location ID",
+                    "U.S. Department of Veterans Affairs location identifier",
+                    "U.S. Department of Veterans Affairs location number",
+                    "U.S. Department of Veterans Affairs locationid",
+                    "U.S. Department of Veterans Affairs parent station with suffix",
+                    "U.S. Department of Veterans Affairs sta6aid code",
+                    "U.S. Department of Veterans Affairs sta6aid",
+                    "U.S. Department of Veterans Affairs station ID",
+                    "U.S. Department of Veterans Affairs station code",
+                    "U.S. Department of Veterans Affairs station identifier",
+                    "U.S. Department of Veterans Affairs station number",
+                    "U.S. Department of Veterans Affairs stationID",
+                    "U.S. Department of Veterans Affairs substation ID",
+                    "U.S. Department of Veterans Affairs substation code",
+                    "U.S. Department of Veterans Affairs substation identifier",
+                    "U.S. Department of Veterans Affairs substation number",
+                    "United States Department of Veterans Affairs STA6A",
+                    "United States Department of Veterans Affairs facility #",
+                    "United States Department of Veterans Affairs facility ID",
+                    "United States Department of Veterans Affairs facility identifier",
+                    "United States Department of Veterans Affairs facility number",
+                    "United States Department of Veterans Affairs facilityId",
+                    "United States Department of Veterans Affairs institutionCode",
+                    "United States Department of Veterans Affairs location ID",
+                    "United States Department of Veterans Affairs location identifier",
+                    "United States Department of Veterans Affairs location number",
+                    "United States Department of Veterans Affairs locationid",
+                    "United States Department of Veterans Affairs parent station with suffix",
+                    "United States Department of Veterans Affairs sta6aid code",
+                    "United States Department of Veterans Affairs sta6aid",
+                    "United States Department of Veterans Affairs station ID",
+                    "United States Department of Veterans Affairs station code",
+                    "United States Department of Veterans Affairs station identifier",
+                    "United States Department of Veterans Affairs station number",
+                    "United States Department of Veterans Affairs stationID",
+                    "United States Department of Veterans Affairs substation ID",
+                    "United States Department of Veterans Affairs substation code",
+                    "United States Department of Veterans Affairs substation identifier",
+                    "United States Department of Veterans Affairs substation number",
+                    "VA STA6A",
+                    "VA facility #",
+                    "VA facility ID",
+                    "VA facility identifier",
+                    "VA facility number",
+                    "VA facilityId",
+                    "VA institutionCode",
+                    "VA location ID",
+                    "VA location identifier",
+                    "VA location number",
+                    "VA locationid",
+                    "VA parent station with suffix",
+                    "VA sta6aid code",
+                    "VA sta6aid",
+                    "VA station ID",
+                    "VA station code",
+                    "VA station identifier",
+                    "VA station number",
+                    "VA stationID",
+                    "VA substation ID",
+                    "VA substation code",
+                    "VA substation identifier",
+                    "VA substation number",
+                    "Veterans Affairs STA6A",
+                    "Veterans Affairs facility #",
+                    "Veterans Affairs facility ID",
+                    "Veterans Affairs facility identifier",
+                    "Veterans Affairs facility number",
+                    "Veterans Affairs facilityId",
+                    "Veterans Affairs institutionCode",
+                    "Veterans Affairs location ID",
+                    "Veterans Affairs location identifier",
+                    "Veterans Affairs location number",
+                    "Veterans Affairs locationid",
+                    "Veterans Affairs parent station with suffix",
+                    "Veterans Affairs sta6aid code",
+                    "Veterans Affairs sta6aid",
+                    "Veterans Affairs station ID",
+                    "Veterans Affairs station code",
+                    "Veterans Affairs station identifier",
+                    "Veterans Affairs station number",
+                    "Veterans Affairs stationID",
+                    "Veterans Affairs substation ID",
+                    "Veterans Affairs substation code",
+                    "Veterans Affairs substation identifier",
+                    "Veterans Affairs substation number",
+                    "facility #",
+                    "facility ID",
+                    "facility identifier",
+                    "facility number",
+                    "facilityId",
+                    "institutionCode",
+                    "location ID",
+                    "location identifier",
+                    "location number",
+                    "locationid",
+                    "parent station with suffix",
+                    "sta6aid code",
+                    "sta6aid",
+                    "station ID",
+                    "station code",
+                    "station identifier",
+                    "station number",
+                    "stationID",
+                    "substation ID",
+                    "substation code",
+                    "substation identifier",
+                    "substation number"
+                ],
+                "value": "VALUE-1"
+            }
+        }
+    }
+}
