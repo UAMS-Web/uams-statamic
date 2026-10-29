@@ -184,18 +184,16 @@ class JsonLdCompositionProfiler
             'property_key' => \is_string($schemaPropertyKey) ? $schemaPropertyKey : null,
         ];
 
+        // Sort slowest first; an entry that is not an array, or has no ms, sorts as 0
+        $msOf = static fn (mixed $sample): mixed => \is_array($sample) ? ($sample['ms'] ?? 0) : 0;
+
         usort(
             $top,
-            fn (mixed $a, mixed $b): int => ((\is_array($b) ? $b['ms'] ?? 0 : 0) <=> (\is_array($a) ? $a['ms'] ?? 0 : 0))
+            static fn (mixed $a, mixed $b): int => $msOf($b) <=> $msOf($a)
         );
 
-        $limit = $this->topNLimit();
-
-        if (\count($top) > $limit) {
-            $top = \array_slice($top, 0, $limit);
-        }
-
-        $bag['antlers_parse_top'] = $top;
+        // array_slice() returns a shorter list whole, so no length check is needed
+        $bag['antlers_parse_top'] = \array_slice($top, 0, $this->topNLimit());
 
         $request->attributes->set(
             self::REQUEST_JSON_LD_COMPOSITION_PROFILE,
@@ -206,8 +204,7 @@ class JsonLdCompositionProfiler
             $bag,
             $bagRaw,
             $request,
-            $top,
-            $limit
+            $top
         );
     }
 
@@ -229,12 +226,7 @@ class JsonLdCompositionProfiler
         $bagRaw = $request->attributes->get(self::REQUEST_JSON_LD_COMPOSITION_PROFILE);
 
         /** @var array{augment_uncached_calls?: int, augment_uncached_ms?: float} $bag */
-        $bag = \is_array($bagRaw)
-            ? $bagRaw
-            : [
-                'augment_uncached_calls' => 0,
-                'augment_uncached_ms' => 0.0,
-            ];
+        $bag = \is_array($bagRaw) ? $bagRaw : [];
 
         $bag['augment_uncached_calls'] = ($bag['augment_uncached_calls'] ?? 0) + 1;
         $bag['augment_uncached_ms'] = ($bag['augment_uncached_ms'] ?? 0.0) + $elapsedMs;
