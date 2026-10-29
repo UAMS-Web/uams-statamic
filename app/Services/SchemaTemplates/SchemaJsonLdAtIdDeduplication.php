@@ -127,10 +127,11 @@ class SchemaJsonLdAtIdDeduplication
                 $existingIndex = $seen[$key];
                 $existing = $out[$existingIndex] ?? null;
 
-                // Check if the existing value is a compact @id reference and the new item is full
+                // Check if the existing value is a compact @id reference and the
+                // new item is full. A full item only shares a key through its
+                // @id, so an existing array without @type is that reference.
                 if (
                     \is_array($existing)
-                    && isset($existing['@id'])
                     && ! isset($existing['@type'])
                     && \is_array($item)
                     && isset($item['@type'])
@@ -201,12 +202,7 @@ class SchemaJsonLdAtIdDeduplication
         array &$emittedNodeIds,
         ?array $node
     ): void {
-        // Skip recording when the node is missing
-        if ($node === null) {
-            return;
-        }
-
-        // Skip reference-only maps (no inline @type)
+        // Skip a missing node and reference-only maps (no inline @type)
         if (! isset($node['@type'])) {
             return;
         }
@@ -390,12 +386,8 @@ class SchemaJsonLdAtIdDeduplication
             return $value;
         }
 
-        // Check if the value is a list of nested values
-        if (
-            \is_array($value)
-            && array_is_list($value)
-        ) {
-            // Deduplicate each list item recursively
+        // Deduplicate each item of a list recursively (maps returned above)
+        if (\is_array($value)) {
             foreach ($value as $index => $itemValue) {
                 $value[$index] = $this->dedupeNodeByAtId(
                     $itemValue,
@@ -410,8 +402,6 @@ class SchemaJsonLdAtIdDeduplication
                 $index,
                 $itemValue
             );
-
-            return $value;
         }
 
         return $value;
@@ -421,7 +411,9 @@ class SchemaJsonLdAtIdDeduplication
      * Build a comparison key for dedupeResolvedPropertyList, or null to keep.
      *
      * Scalars use serialize. Maps with a string @id dedupe by that id. Other
-     * arrays use JSON encoding so identical structures collapse.
+     * arrays use JSON encoding so identical structures collapse. The three
+     * kinds cannot meet: a serialized value starts with a type letter, a JSON
+     * array starts with `[` or `{`, and an @id key starts with `id:`.
      *
      * @param  mixed  $item  One resolved list item
      */
@@ -435,7 +427,7 @@ class SchemaJsonLdAtIdDeduplication
             || \is_float($item)
             || \is_bool($item)
         ) {
-            return 's:'.serialize($item);
+            return serialize($item);
         }
 
         // Skip dedupe key for non-array values (e.g. unexpected objects)
@@ -449,21 +441,22 @@ class SchemaJsonLdAtIdDeduplication
             && \is_string($item['@id'])
             && $item['@id'] !== ''
         ) {
+            // The prefix only has to mark the key as an @id key, and as a
+            // suffix it would still do that, so ConcatSwitchSides changes no
+            // dedupe result.
+            // @pest-mutate-ignore: ConcatSwitchSides
             return 'id:'.$item['@id'];
         }
 
         // Encode list-shaped or other arrays for structural equality
-        $json = json_encode(
-            $item,
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-        );
+        $json = json_encode($item);
 
-        // Fall back to serialize when JSON encoding fails
+        // Fall back to serialize when JSON encoding fails (INF, NAN, bad UTF-8)
         if ($json === false) {
-            return 'z:'.serialize($item);
+            return serialize($item);
         }
 
-        return 'j:'.$json;
+        return $json;
     }
 
     /**
