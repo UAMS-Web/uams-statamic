@@ -1,0 +1,397 @@
+{
+    "siteDefaults": {
+        "tabs": {
+            "main": {
+                "sections": [
+                    {
+                        "display": "Schema Output",
+                        "instructions": "Enable JSON-LD and set schema entries for Subject (site subject), Website, Webpage, and Main Content. Section and blueprint levels can override Webpage and Main Content entries.",
+                        "fields": [
+                            {
+                                "handle": "enabled",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Schema Output",
+                                    "options": {
+                                        "true": "Enabled",
+                                        "false": "Disabled"
+                                    },
+                                    "default": "true",
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "subject_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Subject (Site Subject)",
+                                    "instructions": "Select a schema entry for what the site is about (e.g., organization, person).",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "website_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Website",
+                                    "instructions": "Select a schema entry for the website node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "webpage_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Webpage",
+                                    "instructions": "Select a schema entry for the webpage node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "main_content_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Main Content",
+                                    "instructions": "Select a schema entry for the main content node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "sectionDefaults(false)": {
+        "tabs": {
+            "main": {
+                "sections": [
+                    {
+                        "display": "Schema Output",
+                        "instructions": "Override or inherit from Site Defaults. Webpage and Main Content entries cascade to blueprint and entry.",
+                        "fields": [
+                            {
+                                "handle": "enabled",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Schema Output",
+                                    "options": {
+                                        "true": "Enabled",
+                                        "false": "Disabled",
+                                        "inherit": "Inherit from Site Defaults"
+                                    },
+                                    "default": "inherit",
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "inherit_webpage_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Webpage Entry From Site Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "true",
+                                    "read_only": false,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "webpage_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Webpage",
+                                    "instructions": "Select a schema entry for the webpage node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "inherit_main_content_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Main Content Entry From Site Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "true",
+                                    "read_only": false,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "main_content_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Main Content",
+                                    "instructions": "Select a schema entry for the main content node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "sectionDefaults(true)": {
+        "tabs": {
+            "main": {
+                "sections": [
+                    {
+                        "display": "Schema Output",
+                        "instructions": "Override or inherit from Site Defaults. Webpage and Main Content entries cascade to blueprint and entry.",
+                        "fields": [
+                            {
+                                "handle": "enabled",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Schema Output",
+                                    "options": {
+                                        "true": "Enabled",
+                                        "false": "Disabled",
+                                        "inherit": "Inherit from Site Defaults"
+                                    },
+                                    "default": "inherit",
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "inherit_webpage_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Webpage Entry From Site Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "false",
+                                    "read_only": true,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "webpage_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Webpage",
+                                    "instructions": "Select a schema entry for the webpage node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "inherit_main_content_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Main Content Entry From Site Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "false",
+                                    "read_only": true,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "main_content_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Main Content",
+                                    "instructions": "Select a schema entry for the main content node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "blueprintDefaults(false)": {
+        "tabs": {
+            "main": {
+                "sections": [
+                    {
+                        "display": "Schema Output",
+                        "instructions": "Override or inherit from Section Defaults. Webpage and Main Content entries combine with Site/Section to build the JSON-LD @graph.",
+                        "fields": [
+                            {
+                                "handle": "enabled",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Schema Output",
+                                    "options": {
+                                        "true": "Enabled",
+                                        "false": "Disabled",
+                                        "inherit": "Inherit from Section Defaults"
+                                    },
+                                    "default": "inherit",
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "inherit_webpage_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Webpage Entry From Section Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "true",
+                                    "read_only": false,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "webpage_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Webpage",
+                                    "instructions": "Select a schema entry for the webpage node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "inherit_main_content_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Main Content Entry From Section Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "true",
+                                    "read_only": false,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "main_content_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Main Content",
+                                    "instructions": "Select a schema entry for the main content node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "blueprintDefaults(true)": {
+        "tabs": {
+            "main": {
+                "sections": [
+                    {
+                        "display": "Schema Output",
+                        "instructions": "Override or inherit from Section Defaults. Webpage and Main Content entries combine with Site/Section to build the JSON-LD @graph.",
+                        "fields": [
+                            {
+                                "handle": "enabled",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Schema Output",
+                                    "options": {
+                                        "true": "Enabled",
+                                        "false": "Disabled",
+                                        "inherit": "Inherit from Section Defaults"
+                                    },
+                                    "default": "inherit",
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "inherit_webpage_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Webpage Entry From Section Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "false",
+                                    "read_only": true,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "webpage_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Webpage",
+                                    "instructions": "Select a schema entry for the webpage node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            },
+                            {
+                                "handle": "inherit_main_content_entry",
+                                "field": {
+                                    "type": "button_group",
+                                    "display": "Inherit Main Content Entry From Section Defaults",
+                                    "options": {
+                                        "true": "Inherit",
+                                        "false": "Use Custom Template"
+                                    },
+                                    "default": "false",
+                                    "read_only": true,
+                                    "cast_booleans": "true"
+                                }
+                            },
+                            {
+                                "handle": "main_content_entry",
+                                "field": {
+                                    "type": "entries",
+                                    "display": "Main Content",
+                                    "instructions": "Select a schema entry for the main content node.",
+                                    "collections": [
+                                        "schema_objects"
+                                    ],
+                                    "max_items": 1
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
