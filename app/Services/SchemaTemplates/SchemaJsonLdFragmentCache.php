@@ -60,7 +60,9 @@ final readonly class SchemaJsonLdFragmentCache
      */
     public function enabled(): bool
     {
-        // Honor the master switch for every JSON-LD cache layer
+        // Honor the master switch for every JSON-LD cache layer. Negation
+        // already reads the value as a boolean, so the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         if (! (bool) config('schema_templates.json_ld_cache.enabled', true)) {
             return false;
         }
@@ -93,6 +95,8 @@ final readonly class SchemaJsonLdFragmentCache
         /** @var \Statamic\Sites\Site $currentSite */
         $currentSite = Site::current();
         $handle = $currentSite->handle();
+        // implode() stringifies a scalar the same way, so the cast changes no key.
+        // @pest-mutate-ignore: RemoveStringCast
         $currentSiteHandle = \is_scalar($handle) ? (string) $handle : '';
 
         // Assemble the generation-scoped fragment key
@@ -146,6 +150,9 @@ final readonly class SchemaJsonLdFragmentCache
 
         // Reuse the page-output TTL so fragment staleness matches page staleness
         $ttlConfig = config('schema_templates.json_ld_cache.ttl_seconds', 3600);
+        // Cache::put() truncates a numeric-string TTL to whole seconds itself,
+        // so the integer cast changes no stored lifetime.
+        // @pest-mutate-ignore: RemoveIntegerCast
         $ttlSeconds = max(
             60,
             \is_numeric($ttlConfig) ? (int) $ttlConfig : 3600
@@ -167,7 +174,7 @@ final readonly class SchemaJsonLdFragmentCache
     private function targetIdentitySegment(mixed $targetEntity): ?string
     {
         // Identify entries by id
-        if ($targetEntity instanceof EntryModel || $targetEntity instanceof EntryContract) {
+        if ($targetEntity instanceof EntryContract) {
             // Every concrete entry implements id(); the contract does not declare it.
             /** @var EntryModel $targetEntity */
             $id = $targetEntity->id();
@@ -185,7 +192,7 @@ final readonly class SchemaJsonLdFragmentCache
         }
 
         // Identify taxonomy terms by id
-        if ($targetEntity instanceof TaxonomyTerm || $targetEntity instanceof TermContract) {
+        if ($targetEntity instanceof TermContract) {
             // Every concrete term implements id(); the contract does not declare it.
             /** @var TaxonomyTerm $targetEntity */
             $id = $targetEntity->id();

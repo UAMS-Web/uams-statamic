@@ -30,16 +30,11 @@ final class SchemaJsonLdOutputCache
         // Resolve the cache key name for the bust counter
         $key = $this->stringConfig('schema_templates.json_ld_cache.bust_cache_key');
 
-        // Read the stored bust value and coerce it to a non-negative integer
-        $stored = Cache::get(
-            $key,
-            0
-        );
+        // Read the stored bust value (null when unset)
+        $stored = Cache::get($key);
 
-        return max(
-            0,
-            \is_numeric($stored) ? (int) $stored : 0
-        );
+        // Coerce it to a non-negative integer, zero when unset or not numeric
+        return \is_numeric($stored) ? max(0, (int) $stored) : 0;
     }
 
     /**
@@ -91,7 +86,10 @@ final class SchemaJsonLdOutputCache
         // Read the raw metadata payload from cache
         $raw = Cache::get($metaKey);
 
-        // Check if the cached value is a usable array container
+        // Check if the cached value is a usable array container. isset() below
+        // already reads null for a non-array, so RemoveEarlyReturn changes no
+        // result; PHPStan needs the guard to allow the offset reads.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if (! \is_array($raw)) {
             return null;
         }
@@ -204,6 +202,8 @@ final class SchemaJsonLdOutputCache
         /** @var \Statamic\Sites\Site $currentSite */
         $currentSite = Site::current();
         $handle = $currentSite->handle();
+        // implode() stringifies a scalar the same way, so the cast changes no key.
+        // @pest-mutate-ignore: RemoveStringCast
         $siteHandle = is_scalar($handle) ? (string) $handle : '';
 
         // Resolve the locale segment from the route-bound entity
@@ -278,24 +278,13 @@ final class SchemaJsonLdOutputCache
     private function stringifyTagParam(
         mixed $value
     ): string {
-        // Treat null and empty string as an empty fingerprint token
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            // Return an empty string
-            return '';
-        }
-
         // Coerce array tag arguments using the first non-empty scalar element
         if (\is_array($value)) {
             // Read the first element for a simple list-like tag argument
             $first = reset($value);
 
-            // Return the first element as a string when it is usable
-            return ! in_array($first, [false, null, ''], true) && \is_scalar($first)
-                ? (string) $first
-                : '';
+            // Return the first element as a string when it is scalar
+            return \is_scalar($first) ? (string) $first : '';
         }
 
         // Coerce scalar values to string for fingerprinting
