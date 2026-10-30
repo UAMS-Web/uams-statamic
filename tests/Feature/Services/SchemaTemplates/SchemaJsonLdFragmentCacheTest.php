@@ -7,17 +7,23 @@ use App\Services\SchemaTemplates\SchemaJsonLdOutputCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Entry as EntryModel;
+use Statamic\Facades\Site;
+use Statamic\Taxonomies\LocalizedTerm;
+use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
+
+covers(SchemaJsonLdFragmentCache::class);
 
 /**
  * Unit tests for JSON-LD fragment cache key generation, generation-scoped
  * busting, node storage round trips, and the enablement switches.
  *
- * Mutation: not recorded. An earlier figure here (100% on App\Services\SchemaTemplates\SchemaJsonLdFragmentCache,
- * 62 mutants, --covered-only) named no command or revision and was removed (UAMS-Web/uams-statamic-archive#2915).
+ * Every mutant of the class is killed by this file alone, without
+ * --covered-only (UAMS-Web/uams-statamic#320).
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaJsonLdFragmentCacheTest.php
  */
@@ -148,4 +154,191 @@ it('requires both cache switches before fragment caching is enabled', function (
 
     // Check fragments are enabled only when both switches are on.
     expect($cache->enabled())->toBeTrue();
+});
+
+/**
+ * Build the fragment cache over a fresh output cache.
+ */
+function fragmentCache(): SchemaJsonLdFragmentCache
+{
+    return new SchemaJsonLdFragmentCache(new SchemaJsonLdOutputCache);
+}
+
+/**
+ * The current site's handle as a string.
+ */
+function fragmentSiteHandle(): string
+{
+    /** @var Statamic\Sites\Site $site */
+    $site = Site::current();
+    $handle = $site->handle();
+
+    return \is_string($handle) ? $handle : '';
+}
+
+/**
+ * Build a mocked taxonomy term with a fixed id.
+ *
+ * @param  mixed  $id  Value id() returns.
+ */
+function fragmentTerm(mixed $id): TaxonomyTerm
+{
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('id')->andReturn($id);
+
+    return $term;
+}
+
+it('assembles every fragment key segment in order', function (): void {
+    Cache::flush();
+    Config::set('schema_templates.json_ld_cache.bust_cache_key', 'fragment-bust-key');
+    Cache::forever('fragment-bust-key', 3);
+
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('id')->andReturn('e1');
+
+    expect(fragmentCache()->keyFor('template-1', $entry))->toBe(implode(':', [
+        'schema_templates',
+        'json_ld_fragment',
+        'v3',
+        fragmentSiteHandle(),
+        'template-1',
+        'entry-e1',
+    ]))->and(fragmentSiteHandle())->not->toBe('');
+});
+
+it('identifies taxonomy terms and localized terms by the term id', function (): void {
+    Cache::flush();
+
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('term')->andReturn(fragmentTerm('tags::one'));
+    $localized->shouldNotReceive('id');
+
+    expect(fragmentCache()->keyFor('t', fragmentTerm('tags::two')))->toEndWith(':t:term-tags::two')
+        ->and(fragmentCache()->keyFor('t', $localized))->toEndWith(':t:term-tags::one');
+});
+
+it('refuses targets whose id is unusable', function (mixed $target): void {
+    Cache::flush();
+
+    expect(fragmentCache()->keyFor('t', $target))->toBeNull();
+})->with([
+    'entry with an empty id' => function (): EntryModel {
+        $entry = Mockery::mock(EntryModel::class);
+        $entry->shouldReceive('id')->andReturn('');
+
+        return $entry;
+    },
+    'entry with a non-string id' => function (): EntryModel {
+        $entry = Mockery::mock(EntryModel::class);
+        $entry->shouldReceive('id')->andReturn(5);
+
+        return $entry;
+    },
+    'term with an empty id' => fn (): TaxonomyTerm => fragmentTerm(''),
+    'term with a non-string id' => fn (): TaxonomyTerm => fragmentTerm(5),
+    'localized term with a non-string term id' => function (): LocalizedTerm {
+        $localized = Mockery::mock(LocalizedTerm::class);
+        $localized->shouldReceive('term')->andReturn(fragmentTerm(5));
+
+        return $localized;
+    },
+    'localized term without a taxonomy term' => function (): LocalizedTerm {
+        $localized = Mockery::mock(LocalizedTerm::class);
+        $localized->shouldReceive('term')->andReturn(null);
+
+        return $localized;
+    },
+    'an object of another kind' => fn (): stdClass => new stdClass,
+]);
+
+it('identifies an entry known only by its contract', function (): void {
+    Cache::flush();
+
+    $entry = Mockery::mock(EntryContract::class);
+    $entry->shouldReceive('id')->andReturn('e2');
+
+    expect(fragmentCache()->keyFor('t', $entry))->toEndWith(':t:entry-e2');
+});
+
+it('reads only well-formed nodes back', function (mixed $raw, ?array $expected): void {
+    Cache::flush();
+    Cache::forever('fragment-key', $raw);
+
+    expect(fragmentCache()->get('fragment-key'))->toBe($expected);
+})->with([
+    'node' => [['@type' => 'Person', 'name' => 'A'], ['@type' => 'Person', 'name' => 'A']],
+    'array without @type' => [['name' => 'A'], null],
+    'string' => ['Person', null],
+]);
+
+it('stores a node for the configured TTL, floored at 60 seconds', function (mixed $ttl, int $seconds): void {
+    Cache::flush();
+    Config::set('schema_templates.json_ld_cache.ttl_seconds', $ttl);
+    $now = now();
+    $this->travelTo($now);
+
+    fragmentCache()->put('fragment-key', ['@type' => 'Person']);
+
+    // The file store expires an item once its lifetime has fully elapsed
+    $this->travelTo($now->copy()->addSeconds($seconds - 1));
+    expect(fragmentCache()->get('fragment-key'))->toBe(['@type' => 'Person']);
+
+    $this->travelTo($now->copy()->addSeconds($seconds));
+    expect(fragmentCache()->get('fragment-key'))->toBeNull();
+})->with([
+    'configured' => [7200, 7200],
+    'numeric string' => ['120', 120],
+    'below the floor' => [10, 60],
+    'non-numeric' => ['soon', 3600],
+]);
+
+it('stores a node for an hour when no TTL is configured', function (): void {
+    Cache::flush();
+    /** @var array<string, mixed> $settings */
+    $settings = config('schema_templates.json_ld_cache');
+    unset($settings['ttl_seconds']);
+    Config::set('schema_templates.json_ld_cache', $settings);
+    $now = now();
+    $this->travelTo($now);
+
+    fragmentCache()->put('fragment-key', ['@type' => 'Person']);
+
+    $this->travelTo($now->copy()->addSeconds(3599));
+    expect(fragmentCache()->get('fragment-key'))->toBe(['@type' => 'Person']);
+
+    $this->travelTo($now->copy()->addSeconds(3600));
+    expect(fragmentCache()->get('fragment-key'))->toBeNull();
+});
+
+it('reads non-boolean switch values as booleans', function (): void {
+    Config::set('schema_templates.json_ld_cache.enabled', 1);
+    Config::set('schema_templates.json_ld_cache.fragments_enabled', 1);
+
+    expect(fragmentCache()->enabled())->toBeTrue();
+
+    Config::set('schema_templates.json_ld_cache.fragments_enabled', 0);
+
+    expect(fragmentCache()->enabled())->toBeFalse();
+});
+
+it('uses an empty site segment when the site handle is not scalar', function (): void {
+    Cache::flush();
+    $site = Mockery::mock(Statamic\Sites\Site::class);
+    $site->shouldReceive('handle')->andReturn(null);
+    Site::shouldReceive('current')->andReturn($site);
+
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('id')->andReturn('e1');
+
+    expect(fragmentCache()->keyFor('t', $entry))->toBe('schema_templates:json_ld_fragment:v0::t:entry-e1');
+});
+
+it('enables fragments by default when neither switch is configured', function (): void {
+    /** @var array<string, mixed> $settings */
+    $settings = config('schema_templates.json_ld_cache');
+    unset($settings['enabled'], $settings['fragments_enabled']);
+    Config::set('schema_templates.json_ld_cache', $settings);
+
+    expect(fragmentCache()->enabled())->toBeTrue();
 });

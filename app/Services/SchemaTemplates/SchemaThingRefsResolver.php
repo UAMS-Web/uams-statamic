@@ -49,14 +49,9 @@ class SchemaThingRefsResolver
         array $context,
         array $params
     ): string {
-        // Build an ordered list of term field handles (supports `a|b|c` fallbacks)
+        // Build an ordered list of term field handles (supports `a|b|c` fallbacks);
+        // with none, no term is collected and the result is an empty array
         $handles = SchemaTagFieldHandles::listFromParam($params['field'] ?? null);
-
-        // Check if no usable field handles were provided
-        if ($handles === []) {
-            // Return an empty JSON array when the field handle is unusable
-            return $this->jsonEncodeRefs([]);
-        }
 
         // Initialize the taxonomy handle from params with a project default
         $taxonomy = $params['taxonomy'] ?? 'geographic_locations';
@@ -107,19 +102,6 @@ class SchemaThingRefsResolver
         unset(
             $fieldHandle
         );
-
-        // Bail before walking terms when no term items were resolved
-        if ($termItems === []) {
-            unset(
-                $entryLimit,
-                $handles,
-                $taxonomy,
-                $termEntriesField,
-                $termLimit
-            );
-
-            return $this->jsonEncodeRefs([]);
-        }
 
         // Collect schema_objects entry ids in term order (ids per term, then next term)
         $allEntryIds = [];
@@ -185,13 +167,9 @@ class SchemaThingRefsResolver
         array $context,
         array $params
     ): string {
-        // Build an ordered list of field handles (supports `a|b|c` fallbacks)
+        // Build an ordered list of field handles (supports `a|b|c` fallbacks);
+        // with none, no linked entry is read and the result is an empty array
         $handles = SchemaTagFieldHandles::listFromParam($params['field'] ?? null);
-
-        // Return an empty JSON array when the field handle is unusable
-        if ($handles === []) {
-            return $this->jsonEncodeRefs([]);
-        }
 
         // Read the entries field on each linked entry, defaulting to schema_object
         $linkedField = $params['linked_entries_field'] ?? 'schema_object';
@@ -397,14 +375,9 @@ class SchemaThingRefsResolver
         array $context,
         array $params
     ): string {
-        // Build an ordered list of entries field handles (supports `a|b|c` fallbacks)
+        // Build an ordered list of entries field handles (supports `a|b|c` fallbacks);
+        // with none, no id is collected and the result is an empty array
         $handles = SchemaTagFieldHandles::listFromParam($params['field'] ?? null);
-
-        // Check if no usable field handles were provided
-        if ($handles === []) {
-            // Return an empty JSON array when the field handle is unusable
-            return $this->jsonEncodeRefs([]);
-        }
 
         // Parse the optional cap on how many entry ids to include
         $entryLimit = $this->parseOptionalPositiveInt($params['entry_limit'] ?? null);
@@ -493,7 +466,7 @@ class SchemaThingRefsResolver
      *
      * Loads entries with one `whereInId` query instead of per-id `find` calls.
      *
-     * @param  array<int, string>  $ids  Entry id strings (may include duplicates or empties)
+     * @param  array<int, string>  $ids  Non-empty entry id strings (may include duplicates)
      * @return string JSON list of reference objects
      */
     private function encodeRefsForSchemaObjectEntryIds(
@@ -505,15 +478,9 @@ class SchemaThingRefsResolver
         // Track canonical @id strings already added to avoid duplicates
         $seen = [];
 
-        // Collect non-empty id strings in encounter order
-        $orderedIds = [];
-
-        foreach ($ids as $entryId) {
-            // Keep only non-empty string ids
-            if ($entryId !== '') {
-                $orderedIds[] = $entryId;
-            }
-        }
+        // Keep the ids in encounter order (collectEntryIdsFromRaw() yields a list
+        // of non-empty strings, and array_slice() keeps it a list)
+        $orderedIds = $ids;
 
         // Return early when there is nothing to resolve
         if ($orderedIds === []) {
@@ -549,8 +516,11 @@ class SchemaThingRefsResolver
                 continue;
             }
 
-            // Index the entry by its Statamic id string
+            // Index the entry by its Statamic id string. Every id looked up below
+            // is a non-empty string, and an array key coerces a scalar the same
+            // way, so neither the cast nor the empty fallback key changes a lookup.
             $entryId = $entry->id();
+            // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
             $schemaObjectEntriesById[is_scalar($entryId) ? (string) $entryId : ''] = $entry;
 
             unset($entry);
@@ -654,10 +624,6 @@ class SchemaThingRefsResolver
         array $context,
         string $fieldHandle
     ): mixed {
-        if ($fieldHandle === '') {
-            return null;
-        }
-
         $segments = explode('.', $fieldHandle);
         $cursor = $context;
 
@@ -685,11 +651,8 @@ class SchemaThingRefsResolver
                 continue;
             }
 
+            // A missing collection key reads as null, which ends the walk
             if ($cursor instanceof Collection) {
-                if (! $cursor->has($segment)) {
-                    return null;
-                }
-
                 $cursor = $cursor->get($segment);
 
                 continue;
@@ -762,7 +725,9 @@ class SchemaThingRefsResolver
             $geographicLocation = \array_slice($geographicLocation, 0, $termLimit);
         }
 
-        // Reindex the list so iteration order is explicit
+        // Reindex the list so iteration order is explicit. The caller only
+        // iterates it, so the reindex changes no result.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values($geographicLocation);
     }
 
@@ -845,12 +810,6 @@ class SchemaThingRefsResolver
         // Look up the term id in Statamic using the taxonomy handle and slug
         $found = Term::find(sprintf('%s::%s', $taxonomy, $slug));
 
-        // Check if Statamic has no term for that id
-        if ($found === null) {
-            // Return null when no term is found
-            return null;
-        }
-
         // Check if the found term is a localized facade
         if ($found instanceof LocalizedTerm) {
             // Unwrap the localized facade to the shared taxonomy Term instance
@@ -876,7 +835,7 @@ class SchemaThingRefsResolver
             $found
         );
 
-        // Reject unexpected types from Term::find
+        // Reject a missing term and unexpected types from Term::find
         return null;
     }
 
@@ -943,17 +902,9 @@ class SchemaThingRefsResolver
             $raw = $raw->value();
         }
 
-        // Check if the raw value is null or an empty string
-        if (
-            $raw === null
-            || $raw === ''
-        ) {
-            // Unset local variable to free memory
-            unset(
-                $raw
-            );
-
-            // Return an empty array when the raw value is null or an empty string
+        // Check if the raw value is an empty string (null is rejected below)
+        if ($raw === '') {
+            // Return an empty array when the raw value is an empty string
             return [];
         }
 
@@ -1072,15 +1023,6 @@ class SchemaThingRefsResolver
     private function parseOptionalPositiveInt(
         mixed $value
     ): ?int {
-        // Check if the value is null or an empty string
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            // Return null to signal that the value is null or an empty string
-            return null;
-        }
-
         // Check if the value is an integer
         if (\is_int($value)) {
             // Return the value if it is a strictly positive integer
@@ -1099,7 +1041,7 @@ class SchemaThingRefsResolver
             return $i > 0 ? $i : null;
         }
 
-        // Return null to reject other scalar types and non-digit strings
+        // Return null to reject null, other scalar types and non-digit strings
         return null;
     }
 }
