@@ -45,6 +45,19 @@ describe('every PHP process the runner starts carries the memory limit', () => {
         const bare = runner.match(/\b(?:run|capture)\(\s*php\s*,/g) ?? []
 
         expect(bare).toHaveLength(2)
-        expect(runner.match(/\b(?:runPhp|capturePhp)\(/g)?.length ?? 0).toBeGreaterThan(20)
+        expect(runner.match(/\b(?:runPhp|capturePhp)\(/g)?.length ?? 0).toBeGreaterThan(5)
+    })
+
+    it.each(['gate-browser.mjs', 'gate-pest.mjs', 'gate-pint.mjs', 'gate-rector.mjs'])('starts PHP in %s only through phpRunner()', (name) => {
+        const step = readFileSync(join(repoRoot, 'scripts', name), 'utf8')
+
+        expect(step).toContain('const runPhp = phpRunner(php)')
+        expect(step.match(/\b(?:run|capture)\(\s*php\s*,/g) ?? []).toEqual([])
+    })
+
+    it('defines phpRunner() on withPhpMemoryLimit()', () => {
+        const shared = readFileSync(join(repoRoot, 'scripts', 'gate-process.mjs'), 'utf8')
+
+        expect(shared).toContain('return (args, cwd, extraEnv) => run(php, withPhpMemoryLimit(args), cwd, extraEnv)')
     })
 })

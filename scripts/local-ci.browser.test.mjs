@@ -53,7 +53,8 @@ describe('browser job build reuse (#1727)', () => {
         const runner = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
 
         expect(runner).toContain('const reusePriorBuild = canReuseBuildOutput(results)')
-        expect(runner).toContain('if (reusePriorBuild) {')
+        expect(runner).toContain('gateBrowser({ tree: worktreePath, npm, npx, php, reuseBuild: reusePriorBuild })')
+        expect(readFileSync(join(repoRoot, 'scripts', 'gate-browser.mjs'), 'utf8')).toContain('if (reuseBuild) {')
     })
 })
 
