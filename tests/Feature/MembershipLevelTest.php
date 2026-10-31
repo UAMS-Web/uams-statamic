@@ -285,3 +285,22 @@ it('wraps a level above Member in a Role around the organization in JSON-LD', fu
     'fellow' => ['fellow', 'Fellow'],
     'emeritus fellow' => ['emeritus_fellow', 'Emeritus Fellow'],
 ]);
+
+it('keeps each row its own node when levels are mixed', function (): void {
+    $graph = membershipLevelGraph([
+        ['id' => 'first', 'organization' => MEMBERSHIP_LEVEL_ORGANIZATION, 'membership_level' => 'fellow'],
+        ['id' => 'second', 'organization' => 'society-for-arthritic-joint-surgery', 'membership_level' => 'emeritus_fellow'],
+        ['id' => 'third', 'organization' => 'american-orthopaedic-association', 'membership_level' => 'member'],
+    ]);
+
+    $roles = membershipLevelRoles($graph);
+    $names = [];
+
+    foreach ($roles as $role) {
+        $names[] = membershipLevelMemberOf($role['memberOf'] ?? null)[0]['name'] ?? null;
+    }
+
+    expect(array_column($roles, 'roleName'))->toBe(['Fellow', 'Emeritus Fellow'])
+        ->and(array_unique(array_column($roles, '@id')))->toHaveCount(2)
+        ->and($names)->toBe([MEMBERSHIP_LEVEL_ORGANIZATION_NAME, 'Society for Arthritic Joint Surgery']);
+});
