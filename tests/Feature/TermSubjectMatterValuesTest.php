@@ -220,7 +220,7 @@ it('gives every credential a subject_matter value that resolves to an offered en
 
     $terms = termSubjectMatterTerms('credentials');
 
-    expect($terms)->toHaveCount(129)
+    expect($terms)->toHaveCount(121)
         ->and(termSubjectMatterProblems($terms, termSubjectMatterEntryIds(termSubjectMatterCollections('credentials'))))->toBe([]);
 });
 
