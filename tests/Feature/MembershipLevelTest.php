@@ -144,7 +144,7 @@ function membershipLevelNodesWith(array $graph, string $key): array
 
 /**
  * The full nodes in a graph rendered from the membership Role template. A person's
- * other roles, such as a residency, carry `roleName` too, so `@id` picks these out.
+ * other roles, such as a residency, are Roles too, so `@id` picks these out.
  *
  * @param  array<mixed>  $graph
  * @return list<array<mixed>>
@@ -152,8 +152,8 @@ function membershipLevelNodesWith(array $graph, string $key): array
 function membershipLevelRoles(array $graph): array
 {
     return array_values(array_filter(
-        membershipLevelNodesWith($graph, 'roleName'),
-        static fn (array $node): bool => is_string($node['@id'] ?? null) && str_contains($node['@id'], MEMBERSHIP_LEVEL_ROLE_TEMPLATE_ID),
+        membershipLevelNodesWith($graph, '@id'),
+        static fn (array $node): bool => ($node['@type'] ?? null) === 'Role' && is_string($node['@id']) && str_contains($node['@id'], MEMBERSHIP_LEVEL_ROLE_TEMPLATE_ID),
     ));
 }
 
@@ -301,6 +301,86 @@ it('keeps each row its own node when levels are mixed', function (): void {
     }
 
     expect(array_column($roles, 'roleName'))->toBe(['Fellow', 'Emeritus Fellow'])
-        ->and(array_unique(array_column($roles, '@id')))->toHaveCount(2)
+        ->and(collect($roles)->pluck('@id')->unique())->toHaveCount(2)
         ->and($names)->toBe([MEMBERSHIP_LEVEL_ORGANIZATION_NAME, 'Society for Arthritic Joint Surgery']);
+});
+
+it('skips a row whose organization no longer resolves in JSON-LD', function (int $missingAt, string $level): void {
+    $rows = [
+        ['id' => 'first', 'organization' => MEMBERSHIP_LEVEL_ORGANIZATION, 'membership_level' => 'member'],
+        ['id' => 'second', 'organization' => 'society-for-arthritic-joint-surgery', 'membership_level' => 'fellow'],
+        ['id' => 'third', 'organization' => 'american-orthopaedic-association', 'membership_level' => 'member'],
+    ];
+
+    // Deleting a term removes the row's organization and leaves the row
+    $rows[$missingAt] = ['id' => 'missing', 'membership_level' => $level];
+
+    $people = array_values(array_filter(
+        membershipLevelNodesWith(membershipLevelGraph(array_values($rows)), 'memberOf'),
+        static fn (array $node): bool => in_array('Person', (array) ($node['@type'] ?? []), true),
+    ));
+
+    expect($people)->not->toBeEmpty()
+        ->and($people[0]['memberOf'])->toBeArray()->toHaveCount(2);
+})->with([
+    'first' => [0, 'member'],
+    'middle' => [1, 'fellow'],
+    'last' => [2, 'member'],
+]);
+
+it('renders no card for a row whose organization no longer resolves', function (): void {
+    $html = membershipLevelRender([
+        ['id' => 'missing', 'membership_level' => 'fellow'],
+        ['id' => 'member', 'organization' => MEMBERSHIP_LEVEL_ORGANIZATION, 'membership_level' => 'member'],
+    ]);
+
+    preg_match_all('/<dt\b/', $html, $headings);
+
+    expect($headings[0])->toHaveCount(1)
+        ->and($html)->toContain(MEMBERSHIP_LEVEL_ORGANIZATION_NAME);
+});
+
+it('treats a row with no level as Member in JSON-LD', function (): void {
+    $graph = membershipLevelGraph([
+        ['id' => 'absent', 'organization' => MEMBERSHIP_LEVEL_ORGANIZATION],
+    ]);
+
+    $people = array_values(array_filter(
+        membershipLevelNodesWith($graph, 'memberOf'),
+        static fn (array $node): bool => in_array('Person', (array) ($node['@type'] ?? []), true),
+    ));
+
+    expect($people)->not->toBeEmpty()
+        ->and(membershipLevelRoles($graph))->toBe([])
+        ->and(membershipLevelMemberOf($people[0]['memberOf'])[0]['name'] ?? null)->toBe(MEMBERSHIP_LEVEL_ORGANIZATION_NAME);
+});
+
+it('keeps affiliation a plain Organization for a higher level', function (): void {
+    $graph = membershipLevelGraph([
+        ['id' => 'fellow', 'organization' => MEMBERSHIP_LEVEL_ORGANIZATION, 'membership_level' => 'fellow'],
+    ]);
+
+    $types = [];
+
+    foreach (membershipLevelNodesWith($graph, 'affiliation') as $node) {
+        foreach (membershipLevelMemberOf($node['affiliation']) as $affiliation) {
+            $types[] = $affiliation['@type'] ?? null;
+        }
+    }
+
+    expect($types)->not->toContain('Role')
+        ->and(membershipLevelRoles($graph))->toHaveCount(1);
+});
+
+it('reads the heading from a schema object when the term stores no name', function (): void {
+    $html = (string) Antlers::parse(
+        '{{ partial:people/components/professional_background_list heading="Professional Memberships" :activities_list="member_of" variant="member_of" }}',
+        ['member_of' => [[
+            'organization' => ['name' => null, 'schema_object' => ['name' => 'American College of Surgeons']],
+            'membership_level' => ['value' => 'fellow'],
+        ]]],
+        true
+    );
+
+    expect($html)->toContain('Fellow of the American College of Surgeons');
 });
