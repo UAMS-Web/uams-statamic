@@ -379,7 +379,7 @@ jobs:
       # warm builds computed-field indexes that probe the DB (e.g. Schema::hasTable
       # in the article-engagement computed), so it needs a connectable database —
       # the tests use in-memory SQLite, and a fresh checkout has no sqlite file.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Build Stache seed (testing env)
         run: 'DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache'
 
@@ -395,7 +395,7 @@ jobs:
       # feed.xml only when `Collection::findByHandle('posts')` resolves as the
       # route file loads, and against a cold Stache it does not, so the compiled
       # table would omit every feed route and PostsFeedRouteTest would 404.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Build route cache (testing env)
         run: APP_ENV=testing php artisan route:cache
 
@@ -471,7 +471,7 @@ jobs:
       # Tia IS available locally, opt-in, behind a guard that refuses to run under
       # conditions 1 and 3: `composer test:tia` (scripts/check-tia-safe.php). The
       # gate deliberately does not use it -- an exhaustive run is the whole point.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       # --shard selects this job's share of the classes, and changes nothing about
       # how they run. --log-junit feeds `pest-report`, which merges the four shards'
       # reports before the skip-baseline and slowest-class checks read them.
@@ -500,13 +500,13 @@ jobs:
       # process (UAMS-Web/uams-statamic-archive#3018). Probed only here, after the serial tail: a live band
       # legitimately holds the lock. `if: always()` because a failed band can leave
       # a child behind as easily as a passing one. PHP, not Node, as above.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check the content mirror band lock was released
         if: always()
         run: php scripts/check-band-lock-released.php
 
       # Clear the cached table so it can't leak into a warm-runner rerun.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Clear route cache
         if: always()
         run: php artisan route:clear
@@ -532,9 +532,9 @@ jobs:
       # ignored) but a tracked seed account a test deleted or rewrote.
       # resources/forms/ is checked since UAMS-Web/uams-statamic-archive#2818 made it a submodule: a test that saves
       # a form without re-rooting statamic.forms.forms writes its YAML there.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       # Nothing is held aside any more. `models/assets/` used to be, mirroring
-      # KNOWN_CONTENT_LITTER in scripts/local-ci.mjs, because app/Models/Asset.php
+      # KNOWN_CONTENT_LITTER in scripts/gate-pest.mjs, because app/Models/Asset.php
       # rewrote content/models/assets/{id}.yml through base_path() on model save,
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
@@ -695,7 +695,7 @@ jobs:
       # warm builds computed-field indexes that probe the DB (e.g. Schema::hasTable
       # in the article-engagement computed), so it needs a connectable database —
       # the tests use in-memory SQLite, and a fresh checkout has no sqlite file.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Build Stache seed (testing env)
         run: 'DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache'
 
@@ -711,7 +711,7 @@ jobs:
       # feed.xml only when `Collection::findByHandle('posts')` resolves as the
       # route file loads, and against a cold Stache it does not, so the compiled
       # table would omit every feed route and PostsFeedRouteTest would 404.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Build route cache (testing env)
         run: APP_ENV=testing php artisan route:cache
 
@@ -740,18 +740,18 @@ jobs:
       # Tia IS available locally, opt-in, behind a guard that refuses to run under
       # conditions 1 and 3: `composer test:tia` (scripts/check-tia-safe.php). The
       # gate deliberately does not use it -- an exhaustive run is the whole point.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       # The serial tail runs the parallel-fragile `->group('serial')` tests in a
       # single process (no --parallel), where they are reliable.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Run Pest (serial tail for the serial group)
         run: php -d pcov.enabled=0 vendor/bin/pest --group=serial --display-all-issues --log-junit junit-serial.xml
 
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check skip baseline (serial band)
         run: php scripts/check-skip-baseline.php --report=junit-serial.xml --band=serial
 
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check slowest class (serial band)
         run: php scripts/check-slowest-class.php --report=junit-serial.xml --band=serial
 
@@ -761,13 +761,13 @@ jobs:
       # process (UAMS-Web/uams-statamic-archive#3018). Probed only here, after the serial tail: a live band
       # legitimately holds the lock. `if: always()` because a failed band can leave
       # a child behind as easily as a passing one. PHP, not Node, as above.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check the content mirror band lock was released
         if: always()
         run: php scripts/check-band-lock-released.php
 
       # Clear the cached table so it can't leak into a warm-runner rerun.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Clear route cache
         if: always()
         run: php artisan route:clear
@@ -793,9 +793,9 @@ jobs:
       # ignored) but a tracked seed account a test deleted or rewrote.
       # resources/forms/ is checked since UAMS-Web/uams-statamic-archive#2818 made it a submodule: a test that saves
       # a form without re-rooting statamic.forms.forms writes its YAML there.
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       # Nothing is held aside any more. `models/assets/` used to be, mirroring
-      # KNOWN_CONTENT_LITTER in scripts/local-ci.mjs, because app/Models/Asset.php
+      # KNOWN_CONTENT_LITTER in scripts/gate-pest.mjs, because app/Models/Asset.php
       # rewrote content/models/assets/{id}.yml through base_path() on model save,
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
@@ -884,7 +884,7 @@ jobs:
       # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
       # tolerates the guard being absent, since it validates older branches too; CI
       # only ever runs a branch's own workflow, so no counterpart is needed here.)
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check skip baseline (parallel band)
         run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
 
@@ -904,7 +904,7 @@ jobs:
       # Node, for the same reason as the skip guard: this job sets up PHP only.
       # (local-ci.mjs additionally tolerates the guard being absent, since it
       # validates older branches too.)
-      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check slowest class (parallel band)
         run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
 

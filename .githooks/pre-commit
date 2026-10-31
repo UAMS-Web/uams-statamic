@@ -62,7 +62,8 @@ SCRIPT_FILE="scripts/local-ci.mjs"
 staged=$(git diff --cached --name-only)
 
 echo "$staged" | grep -qxF "$CI_FILE"     && ci=1 || ci=0
-echo "$staged" | grep -qxF "$SCRIPT_FILE" && sc=1 || sc=0
+# The gate step scripts count as the script side: they hold what the runner calls (#295).
+echo "$staged" | grep -qE '^scripts/(local-ci|gate-(browser|pest|pint|rector))[.]mjs$' && sc=1 || sc=0
 
 # `command -v node` asks whether node is INSTALLED, which is not the question:
 # what can be missing is the SCRIPT. Both are checked, and the exit code is then
