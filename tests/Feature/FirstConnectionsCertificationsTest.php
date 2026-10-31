@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Support\Collection;
 use Statamic\Facades\Term;
-use Statamic\Fields\Field;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\TermSaveValidation;
