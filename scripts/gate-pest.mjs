@@ -11,16 +11,17 @@
  *
  * The reset deletes every ignored file under `storage/framework` and `bootstrap/cache`, sessions
  * included, so `--no-reset` is for a tree where that matters, and for a tree already reset, which
- * is how `local-ci.mjs` calls `gatePest` (#295).
+ * is how `local-ci.mjs` calls `gatePest` (#295). It keeps the served site's asset metadata
+ * database, which `migrate` cannot rebuild, and it refuses while a test process in the tree holds
+ * the content mirror band lock.
  *
- * It exits with the status of the first failing stage, or 2 for a wrong flag or a missing tool.
+ * It exits non-zero when any stage fails, or 2 for a wrong flag or a missing tool.
  */
 
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
-import { captureResult, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
+import { captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
 import { GATE_SUBMODULES } from './gate-slot.mjs'
 
 export const KNOWN_CONTENT_LITTER = []
@@ -102,10 +103,11 @@ export function driftLabel(status) {
  * @param  {string}  git
  * @param  {string}  tree
  * @param  {string}  cwd
+ * @param  {string[]}  keep  Paths the clean leaves in place.
  * @return {void}
  */
-export function clearFileCaches(git, tree, cwd = tree) {
-    run(git, ['-C', tree, 'clean', '-xdf', 'storage/framework', 'bootstrap/cache'], cwd)
+export function clearFileCaches(git, tree, cwd = tree, keep = []) {
+    run(git, ['-C', tree, 'clean', '-xdf', ...keep.flatMap((path) => ['-e', path]), 'storage/framework', 'bootstrap/cache'], cwd)
 }
 
 /**
@@ -130,8 +132,20 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     const runPhp = phpRunner(php)
 
     if (reset) {
+        // The clean deletes the band lock and the mirror it guards, so the seed's own refusal
+        // would come too late. Absent-on-older-branches, as for the guards below.
+        if (existsSync(join(tree, 'scripts', 'check-band-lock-released.php'))) {
+            const bandCode = runPhp(['scripts/check-band-lock-released.php'], tree)
+
+            if (bandCode !== 0) {
+                console.error(red('Not resetting: a test process in this tree holds the content mirror band lock. Wait for it to finish, then re-run.'))
+
+                return bandCode
+            }
+        }
+
         step('JOB pest - resetting file caches and the Stache')
-        clearFileCaches(git, tree, repoRoot)
+        clearFileCaches(git, tree, repoRoot, ['storage/framework/cache/asset-metadata.sqlite'])
         clearRuntimeCaches(php, tree)
     }
 
@@ -438,7 +452,7 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // PARITY-END
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (isMainModule(import.meta.url)) {
     runCli({ 'no-reset': { type: 'boolean' } }, ({ tree, 'no-reset': noReset }) => gatePest({
         tree,
         php: resolvePhp(),

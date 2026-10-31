@@ -11,8 +11,7 @@
  */
 
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
-import { phpRunner, resolveNpm, resolveNpx, resolvePhp, run, runCli, step } from './gate-process.mjs'
+import { isMainModule, phpRunner, resolveNpm, resolveNpx, resolvePhp, run, runCli, step } from './gate-process.mjs'
 
 /**
  * @param  {{tree: string, npm: string, npx: string, php: string, reuseBuild?: boolean}}  options
@@ -65,7 +64,7 @@ export function gateBrowser({ tree, npm, npx, php, reuseBuild = false }) {
     // PARITY-END
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (isMainModule(import.meta.url)) {
     runCli({ 'skip-build': { type: 'boolean' } }, ({ tree, 'skip-build': skipBuild }) => gateBrowser({
         tree,
         npm: resolveNpm(),

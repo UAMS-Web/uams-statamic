@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -113,6 +113,21 @@ describe('gate-pint.mjs', () => {
         expect(result.stdout).toContain('No PHP files changed vs base')
         expect(calls()).toEqual([])
     })
+
+    it('fails rather than reporting no changes when the diff cannot run', () => {
+        const result = runStep('gate-pint.mjs', ['--base', 'no-such-base'])
+
+        expect(result.status).not.toBe(0)
+        expect(result.stdout).not.toContain('No PHP files changed')
+        expect(result.stderr).toContain('Could not diff against no-such-base')
+    })
+
+    it('applies a relative --tree once', () => {
+        const result = spawnSync(process.execPath, [join(scripts, 'gate-pint.mjs'), '--tree', 'tree'], { cwd: root, encoding: 'utf8', env })
+
+        expect(result.status).toBe(0)
+        expect(callOf('vendor/bin/pint').call.args.slice(-1)).toEqual(['a.php'])
+    })
 })
 
 describe('gate-rector.mjs', () => {
@@ -145,6 +160,7 @@ describe('gate-browser.mjs', () => {
     it('skips both builds on --skip-build', () => {
         expect(runStep('gate-browser.mjs', ['--skip-build']).status).toBe(0)
         expect(calls().filter((call) => call.tool === 'npm')).toEqual([])
+        expect(callOf('tests/Browser').index).toBeGreaterThan(-1)
     })
 
     it.each([
@@ -200,6 +216,44 @@ describe('gate-pest.mjs', () => {
         expect(existsSync(join(tree, 'storage', 'framework', 'stale.txt'))).toBe(false)
     })
 
+    it('keeps the served site\'s asset metadata database through the reset', () => {
+        const cache = join(tree, 'storage', 'framework', 'cache')
+
+        mkdirSync(cache, { recursive: true })
+        writeFileSync(join(cache, 'asset-metadata.sqlite'), 'x')
+        writeFileSync(join(cache, 'stale.txt'), 'x')
+
+        expect(runStep('gate-pest.mjs').status).toBe(0)
+        expect(existsSync(join(cache, 'asset-metadata.sqlite'))).toBe(true)
+        expect(existsSync(join(cache, 'stale.txt'))).toBe(false)
+    })
+
+    it('refuses to reset while the band lock is held, and leaves the tree alone', () => {
+        mkdirSync(join(tree, 'scripts'))
+        writeFileSync(join(tree, 'scripts', 'check-band-lock-released.php'), '<?php\n')
+        mkdirSync(join(tree, 'storage', 'framework'), { recursive: true })
+        writeFileSync(join(tree, 'storage', 'framework', 'live.txt'), 'x')
+
+        const result = runStep('gate-pest.mjs', [], 'check-band-lock-released')
+
+        expect(result.status).toBe(3)
+        expect(result.stderr).toContain('Not resetting')
+        expect(existsSync(join(tree, 'storage', 'framework', 'live.txt'))).toBe(true)
+        expect(callOf('test:seed-stache').index).toBe(-1)
+    })
+
+    it.each([
+        'check-skip-baseline.php',
+        'check-slowest-class.php',
+        'check-band-lock-released.php',
+    ])('exits with the status of %s when the branch carries it and it fails', (guard) => {
+        mkdirSync(join(tree, 'scripts'))
+        writeFileSync(join(tree, 'scripts', guard), '<?php\n')
+
+        expect(runStep('gate-pest.mjs', ['--no-reset'], guard).status).toBe(3)
+        expect(callOf(guard).index).toBeGreaterThan(callOf('--group=serial').index)
+    })
+
     it.each([
         ['the seed', 'test:seed-stache'],
         ['the route cache', 'route:cache'],
@@ -251,6 +305,17 @@ describe('every step script as a command', () => {
         expect(calls()).toEqual([])
     })
 
+    it('runs when it is reached through a link', () => {
+        const linked = join(root, 'linked')
+
+        symlinkSync(scripts, linked, 'junction')
+
+        const result = spawnSync(process.execPath, [join(linked, 'gate-rector.mjs'), '--tree', tree], { encoding: 'utf8', env })
+
+        expect(result.status).toBe(0)
+        expect(callOf('vendor/bin/rector').index).toBeGreaterThan(-1)
+    })
+
     it('exits 2 and names the variable when a tool override cannot be executed', () => {
         // The control for this case is every test above, which accepts a stub that can run.
         const text = join(root, 'not-a-tool.txt')
@@ -267,6 +332,14 @@ describe('every step script as a command', () => {
 })
 
 describe('the gate step scripts stay under the CI parity gate', () => {
+    // The first and last things each step's mirrored code does.
+    const regionMustHold = {
+        'scripts/gate-browser.mjs': ['install', 'tests/Browser'],
+        'scripts/gate-pest.mjs': ['test:seed-stache', 'return cacheCode'],
+        'scripts/gate-pint.mjs': ['diff', 'return pintCode'],
+        'scripts/gate-rector.mjs': ['vendor/bin/rector'],
+    }
+
     const ciRegion = {
         ciDiff: '@@ -2,1 +2,1 @@\n',
         ciSource: '# x\n      # PARITY: y\n      - name: Run\n        run: z\n',
@@ -278,7 +351,50 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         const regions = parityRegions(source, 'mjs')
 
         expect(regions).toHaveLength(1)
-        expect(regions[0].end - regions[0].start).toBeGreaterThan(3)
+
+        const region = source.split('\n').slice(regions[0].start - 1, regions[0].end).join('\n')
+
+        for (const fragment of regionMustHold[file]) {
+            expect(region).toContain(fragment)
+        }
+    })
+
+    it('lists the same steps in the check, the hook and the runner', () => {
+        const names = GATE_STEP_FILES.map((file) => file.replace('scripts/gate-', '').replace('.mjs', ''))
+        const hook = readFileSync(join(scripts, '..', '.githooks', 'pre-commit'), 'utf8')
+        const runner = readFileSync(join(scripts, 'local-ci.mjs'), 'utf8')
+        const imported = [...runner.matchAll(/from '\.\/gate-(\w+)\.mjs'/g)].map((match) => match[1])
+
+        expect(hook).toContain(`gate-(${names.join('|')})`)
+        expect([...new Set(imported)].filter((name) => name !== 'process' && name !== 'slot').sort()).toEqual(names)
+    })
+
+    it('exits 2 from the command line on a marked step edit alone, and 0 on an edit outside the marks', () => {
+        const repo = join(root, 'parity')
+        const inRepo = (...args) => spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8' })
+        const step = join(repo, 'scripts', 'gate-pest.mjs')
+        const source = ['one', '// PARITY: a', 'two', '// PARITY-END', 'three', ''].join('\n')
+
+        mkdirSync(join(repo, 'scripts'), { recursive: true })
+        mkdirSync(join(repo, '.github', 'workflows'), { recursive: true })
+        inRepo('init', '-q')
+        inRepo('config', 'user.email', 'gate@example.test')
+        inRepo('config', 'user.name', 'Gate')
+        writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), 'on: push\n')
+        writeFileSync(join(repo, 'scripts', 'local-ci.mjs'), '// runner\n')
+        writeFileSync(step, source)
+        inRepo('add', '.')
+        inRepo('commit', '-q', '-m', 'seed')
+
+        const check = () => spawnSync(process.execPath, [join(scripts, 'check-ci-parity.mjs')], { cwd: repo, encoding: 'utf8' })
+
+        writeFileSync(step, source.replace('three', 'changed'))
+        inRepo('add', '.')
+        expect(check().status).toBe(0)
+
+        writeFileSync(step, source.replace('two', 'changed'))
+        inRepo('add', '.')
+        expect(check().status).toBe(2)
     })
 
     it('fires on a marked step edit with no ci.yml change, and not on a change outside the marks', () => {

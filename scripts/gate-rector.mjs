@@ -12,8 +12,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
-import { phpRunner, resolvePhp, runCli, step } from './gate-process.mjs'
+import { isMainModule, phpRunner, resolvePhp, runCli, step } from './gate-process.mjs'
 
 /**
  * @param  {{tree: string, php: string}}  options
@@ -56,6 +55,6 @@ export function gateRector({ tree, php }) {
     // PARITY-END
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (isMainModule(import.meta.url)) {
     runCli({}, ({ tree }) => gateRector({ tree, php: resolvePhp() }))
 }

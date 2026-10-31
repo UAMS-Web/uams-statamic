@@ -47,6 +47,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { isMainModule } from './gate-process.mjs';
 
 /** A real one-sided change. Distinct from 1, which node itself returns when it cannot run this file. */
 export const VIOLATION = 2;
@@ -320,4 +321,4 @@ export function main() {
     return VIOLATION;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main());
+if (isMainModule(import.meta.url)) process.exit(main());

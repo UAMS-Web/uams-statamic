@@ -11,8 +11,7 @@
  */
 
 import process from 'node:process'
-import { pathToFileURL } from 'node:url'
-import { capture, phpRunner, resolveGit, resolvePhp, runCli, step } from './gate-process.mjs'
+import { capture, captureResult, isMainModule, phpRunner, resolveGit, resolvePhp, red, runCli, step } from './gate-process.mjs'
 
 // Split a list of file-path args into batches whose joined length stays under
 // `maxLen`, so a spawned command line never exceeds the OS limit (Windows
@@ -77,7 +76,16 @@ export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) 
         ? remoteBase
         : baseRef
     step(`JOB pint - diffing .php files vs ${diffBase}`)
-    const changed = capture(git, ['-C', tree, 'diff', '--name-only', '--diff-filter=ACMR', `${diffBase}...HEAD`, '--', '*.php'], repoRoot)
+    const diff = captureResult(git, ['-C', tree, 'diff', '--name-only', '--diff-filter=ACMR', `${diffBase}...HEAD`, '--', '*.php'], repoRoot)
+
+    // A failed diff prints nothing, which is what an unchanged branch prints too.
+    if (diff.status !== 0) {
+        console.error(red(`Could not diff against ${diffBase}, so Pint did not run.`))
+
+        return diff.status
+    }
+
+    const changed = diff.stdout
         .split('\n')
         .map((f) => f.trim())
         .filter(Boolean)
@@ -101,6 +109,6 @@ export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) 
     // PARITY-END
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (isMainModule(import.meta.url)) {
     runCli({ base: { type: 'string' } }, ({ tree, base }) => gatePint({ tree, php: resolvePhp(), git: resolveGit(), baseRef: base }))
 }

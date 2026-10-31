@@ -992,7 +992,7 @@ jobs:
           echo "files=$files" >> "$GITHUB_OUTPUT"
           echo "Changed PHP files: ${files:-<none>}"
 
-      # PARITY: mirrored by the pint job in scripts/local-ci.mjs (same
+      # PARITY: mirrored by scripts/gate-pint.mjs (same
       # diff-filter=ACMR, origin/<base>...HEAD, *.php scope). This step passes
       # the whole changed-file list as one argv because the Ubuntu runner allows
       # a ~2 MB command line; local-ci.mjs additionally chunks the list so a
@@ -1047,7 +1047,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
 
-      # PARITY: mirrored by the rector job in scripts/local-ci.mjs (same gating
+      # PARITY: mirrored by scripts/gate-rector.mjs (same gating
       # profile, same --dry-run, same private TMPDIR).
       #
       # The private temp dir is load-bearing, not hygiene. Rector's file cache
@@ -1461,7 +1461,7 @@ jobs:
       - name: Build CP assets
         run: npm run cp:build
 
-      # PARITY: mirrored by the browser job in scripts/local-ci.mjs.
+      # PARITY: mirrored by scripts/gate-browser.mjs.
       # tests/Browser holds the CP smokes and the axe-core accessibility gate
       # (UAMS-Web/uams-statamic-archive#1046), which fails on serious/critical WCAG violations.
       - name: Run CP browser smokes + accessibility gate

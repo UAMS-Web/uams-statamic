@@ -9,10 +9,11 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { isExecutable, needsShell, which, winQuote } from './spawn-helpers.mjs'
 
@@ -188,6 +189,30 @@ export function phpRunner(php) {
 // --- command line ----------------------------------------------------------
 
 /**
+ * Whether the module at `moduleUrl` is the script node was started with.
+ *
+ * Node resolves links in a module's URL and leaves `argv[1]` as typed, so the two are compared
+ * after resolving both. Compared as they stand, a script reached through a symbolic link or a
+ * junction would run nothing and exit 0, which reads as a pass.
+ *
+ * @param  {string}  moduleUrl  The caller's `import.meta.url`.
+ * @return {boolean}
+ */
+export function isMainModule(moduleUrl) {
+    const entry = process.argv[1]
+
+    if (! entry) {
+        return false
+    }
+
+    try {
+        return moduleUrl === pathToFileURL(realpathSync(resolve(entry))).href
+    } catch {
+        return false
+    }
+}
+
+/**
  * Run a step script as a command: parse its flags, run it, and exit with its code.
  *
  * Flags are strict, so a mistyped one refuses rather than running the step with a default the
@@ -206,7 +231,9 @@ export function runCli(options, body) {
             strict: true,
         })
 
-        process.exitCode = body({ ...values, tree: values.tree ?? process.cwd() })
+        // Absolute, as every step passes the tree both as a spawn cwd and to `git -C`, which would
+        // apply a relative path twice.
+        process.exitCode = body({ ...values, tree: resolve(values.tree ?? process.cwd()) })
     } catch (error) {
         console.error(red(error.message))
         process.exitCode = 2
