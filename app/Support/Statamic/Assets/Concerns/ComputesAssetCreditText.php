@@ -16,7 +16,7 @@ trait ComputesAssetCreditText
      *
      * @return string|null Combined or single value, or null
      */
-    protected function credit_text(): ?string
+    protected function creditText(): ?string
     {
         // Resolve the credit text from the creator and creator organization
         return CreditTextResolver::resolve(

@@ -173,6 +173,14 @@ const TREE_ISOLATION_EXPERTISE_ID = '79295ce3-cdca-4463-8dac-74d04571f104';
  */
 const TREE_ISOLATION_TRANSIENT_ID = 'tree-isolation-uri-transient';
 
+/** The path the cached Stache keys hold for the health `pages` tree, empty when they have none. */
+function treeIsolationHealthTreeKeyPath(): string
+{
+    $keys = Stache::cacheStore()->get('stache::keys/collection-trees');
+
+    return \is_array($keys) ? mustBeString($keys['pages::health'] ?? '', 'the health pages tree key') : '';
+}
+
 /** The cached `pages` URI of the expertise entry, or null when it has no row. */
 function treeIsolationCachedExpertiseUri(): mixed
 {
@@ -216,8 +224,17 @@ it('creates and deletes a pages entry inside the base', function (): void {
 
     $entry->delete();
 
-    expect(Entry::find(TREE_ISOLATION_TRANSIENT_ID))->toBeNull();
+    // The delete saved a blank tree, so the shared keys now hold its throwaway path.
+    // Asserted here so a changed cache key cannot pass the case after this one
+    expect(Entry::find(TREE_ISOLATION_TRANSIENT_ID))->toBeNull()
+        ->and(treeIsolationHealthTreeKeyPath())->toContain('framework/testing/collection-trees/');
 });
+
+// A throwaway path left here hides the committed tree from every later test in the
+// process: `PreventMountingToTreeRoot` then resolves the wrong root for `pages` (#329)
+it('leaves no throwaway tree key for the next test', function (): void {
+    expect(treeIsolationHealthTreeKeyPath())->not->toContain('framework/testing/collection-trees/');
+})->depends('it creates and deletes a pages entry inside the base');
 
 it('leaves no uri row for an entry an earlier test created and deleted', function (): void {
     $checked = 0;

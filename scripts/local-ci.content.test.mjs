@@ -27,8 +27,8 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 // suite would survive the gate being dropped, which is the same false green the
 // gate itself exists to remove.
 describe('the gate is wired into both mirrored CI files', () => {
-    it('runs in the local runner`s phpunit job', () => {
-        const runner = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+    it('runs in the local runner`s pest step', () => {
+        const runner = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
 
         expect(runner).toContain('contentLitter(')
         // The snapshot half is what makes the verdict attributable; a check that
