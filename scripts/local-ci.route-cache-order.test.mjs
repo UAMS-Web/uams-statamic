@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 // it, in both CI surfaces. These pin that order.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
-const runner = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+const runner = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
 
 /** The offset of a fragment that must occur exactly once in the given text. */
@@ -24,8 +24,8 @@ const offsetIn = (text, file, fragment) => {
 }
 
 describe('the pest job builds the route cache after the Stache seed (#3106)', () => {
-    it('runs test:seed-stache before route:cache in scripts/local-ci.mjs', () => {
-        const at = (fragment) => offsetIn(runner, 'scripts/local-ci.mjs', fragment)
+    it('runs test:seed-stache before route:cache in scripts/gate-pest.mjs', () => {
+        const at = (fragment) => offsetIn(runner, 'scripts/gate-pest.mjs', fragment)
 
         const seedStep = at("step('JOB pest - build Stache seed (testing env)')")
         const seedRun = at("runPhp(['artisan', 'test:seed-stache']")

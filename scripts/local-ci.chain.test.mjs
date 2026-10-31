@@ -590,9 +590,9 @@ describe('the sharded pest job in ci.yml (#387)', () => {
             .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
             .split(' ')
 
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], worktreePath\)/)
-        expect(localCall, 'no parallel band call in scripts/local-ci.mjs').not.toBeNull()
+        const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
+        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree\)/)
+        expect(localCall, 'no parallel band call in scripts/gate-pest.mjs').not.toBeNull()
         const local = ['php', ...[...localCall[1].matchAll(/'([^']*)'|`[^`]*`|(parallelReport)/g)]
             .filter((m) => m[0].startsWith("'") || m[2])
             .map((m) => (m[2] ? 'junit-parallel.xml' : m[1]))]

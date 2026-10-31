@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use App\Support\ContentRoot;
+use Illuminate\Support\Collection as IlluminateCollection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Statamic\Entries\Collection as EntryCollection;
@@ -14,6 +15,7 @@ use Statamic\Facades\Stache;
 use Statamic\Stache\Indexes\Index;
 use Statamic\Stache\Stores\CollectionEntriesStore;
 use Statamic\Stache\Stores\EntriesStore;
+use Statamic\Stache\Stores\Keys;
 use Statamic\Stache\Stores\Store;
 use Tests\TestCase;
 
@@ -236,7 +238,7 @@ abstract class CollectionTreeIsolatedTestCase extends TestCase
         /** @var EntriesStore $entries */
         $entries = Stache::store('entries');
 
-        /** @var \Illuminate\Support\Collection<int, EntryCollection> $collections */
+        /** @var IlluminateCollection<int, EntryCollection> $collections */
         $collections = Collection::all();
 
         // Load each structured collection's index, which builds and caches it when absent
@@ -290,6 +292,9 @@ abstract class CollectionTreeIsolatedTestCase extends TestCase
 
     protected function tearDown(): void
     {
+        // Leave no throwaway tree key behind for the next test in this process
+        $this->forgetThrowawayTreeKeys();
+
         // Leave no throwaway-derived index behind for the next test in this process.
         $this->treeStore()->clearCachedPaths();
 
@@ -299,6 +304,29 @@ abstract class CollectionTreeIsolatedTestCase extends TestCase
         File::deleteDirectory($this->throwawayTreeDirectory);
 
         parent::tearDown();
+    }
+
+    /**
+     * Forget the key of every tree this test saved (#329).
+     *
+     * Saving a tree records its key as well as its path, and the path index is all
+     * that {@see tearDown()} used to clear. The key kept the throwaway path, so the
+     * next rebuild took the committed file for a duplicate and left its tree out of
+     * the store. `CollectionStructure::in()` then made a blank tree and filled it in
+     * entry order, whose root is the wrong entry. Listed before the path index is
+     * cleared, this is every tree the test could have saved.
+     */
+    private function forgetThrowawayTreeKeys(): void
+    {
+        $store = $this->treeStore();
+        $keys = mustBe(Keys::class, $store->keys(), 'the collection-trees keys');
+        $paths = mustBe(IlluminateCollection::class, $store->paths(), 'the collection-trees paths');
+
+        foreach ($paths->keys() as $key) {
+            $keys->forget($key);
+        }
+
+        $keys->cache();
     }
 
     /**
