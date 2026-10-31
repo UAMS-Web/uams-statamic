@@ -24,7 +24,7 @@ function writeStub(name) {
     const stub = join(root, isWindows ? `${name}.cmd` : name)
 
     writeFileSync(stub, isWindows
-        ? `@node "%~dp0stub.mjs" ${name} %*\r\n@exit /b %errorlevel%\r\n`
+        ? `@node "%~dp0stub.mjs" ${name} %*\r\n`
         : `#!/bin/sh\nexec node "$(dirname "$0")/stub.mjs" ${name} "$@"\n`)
     chmodSync(stub, 0o755)
 
