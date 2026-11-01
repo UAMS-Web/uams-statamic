@@ -453,7 +453,7 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
         $page->wait(0.2);
     }
 
-    expect($page->script('(() => window.__typeaheadRequests.join(","))()'))->toBe('/!/search/suggestions?q=card&index=people')
+    expect($page->script('(() => window.__typeaheadRequests.join(","))()'))->toBe('/!/search/suggestions?q=card&index=people&site=default')
         ->and($state('d.open'))->toBe('true')
         ->and($attr('aria-expanded'))->toBe('true')
         ->and($page->script('(() => document.querySelectorAll("#site-search-suggestions [role=option]").length)()'))->toBe(3)

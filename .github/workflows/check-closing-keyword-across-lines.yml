@@ -27,8 +27,8 @@ name: Check closing keywords across lines
 # that switch is off for months at a time. The job is one checkout, one API read and one Node
 # script with no dependencies.
 #
-# The job name, `Closing keywords`, is the context the shared required-checks ruleset names,
-# the same in every repository, so keep it for when this repository adopts that ruleset.
+# The job name, `Closing keywords`, is a required status check context in the repository's
+# ruleset, the same in every repository. Renaming it means changing the ruleset.
 
 on:
   pull_request:
