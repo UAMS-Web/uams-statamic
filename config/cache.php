@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\ContentRoot;
 use Illuminate\Support\Str;
 
 // Per-worker cache isolation for parallel testing (paratest). Each worker process
@@ -19,8 +20,12 @@ use Illuminate\Support\Str;
 // Stache index mid-test. A pid cannot be shared by two live processes, which is
 // the same rule tests/Support/ThrowawayRoot.php applies to fixture roots (UAMS-Web/uams-statamic-archive#1960).
 // The seed snapshot is unaffected: workers copy it from `framework/stache-seed`,
-// and `test:seed-stache` still clears everything under the shared `data/`.
-$fileCachePath = storage_path('framework/cache/data'.(($token = env('TEST_TOKEN')) ? '/'.$token.'-'.getmypid() : ''));
+// and `test:seed-stache` still clears everything under the test environment's `data/`.
+//
+// The test environment has a root of its own (UAMS-Web/uams-statamic#408). The Stache
+// indexes the content mirror there, by absolute path, so sharing a root with local runs
+// would hand them those paths. See ContentRoot::fileCachePath().
+$fileCachePath = ContentRoot::fileCachePath(env('APP_ENV')).(($token = env('TEST_TOKEN')) ? '/'.$token.'-'.getmypid() : '');
 
 return [
 

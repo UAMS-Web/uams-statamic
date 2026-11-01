@@ -97,7 +97,7 @@
 	{{ if $block_valid }}
 		{{# Horizontal Position #}}
 
-			{{ if image_anchor == 'left '}}
+			{{ if image_anchor == 'left' }}
 				{{ $side_by_side_fit_horizontal = '0' }}
 			{{ elseif image_anchor == 'right' }}
 				{{ $side_by_side_fit_horizontal = '100' }}
@@ -107,7 +107,7 @@
 
 		{{# Vertical Position #}}
 
-			{{ if image_crop == 'top '}}
+			{{ if image_crop == 'top' }}
 				{{ $side_by_side_fit_vertical = '0' }}
 			{{ elseif image_crop == 'bottom' }}
 				{{ $side_by_side_fit_vertical = '100' }}

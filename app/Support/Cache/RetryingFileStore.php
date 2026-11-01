@@ -13,7 +13,7 @@ use Statamic\Extensions\FileStore;
  *
  * Extends Statamic's file store (not Laravel's) so it keeps Statamic's `path()`
  * override — the one that maps `stache::keys/*` to the readable
- * `storage/framework/cache/data/<TEST_TOKEN>-<pid>/stache/keys/*` path where the Stache
+ * `storage/framework/testing/cache/data/<TEST_TOKEN>-<pid>/stache/keys/*` path where the Stache
  * key index lives. On paratest under Windows, `file_put_contents` on that file
  * intermittently throws `ErrorException: ... Permission denied` — the OS / Windows
  * Defender briefly holds a handle on the file being rewritten. It is a
