@@ -322,7 +322,7 @@ jobs:
           # imagick: SvgRasterizerTest self-skips without it, and the app runs
           # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
           # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
           # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
@@ -642,7 +642,7 @@ jobs:
           # imagick: SvgRasterizerTest self-skips without it, and the app runs
           # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
           # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
           # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
@@ -981,7 +981,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1061,7 +1061,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1132,7 +1132,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: pcov
           tools: composer:v2
 
@@ -1223,7 +1223,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1280,7 +1280,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1458,7 +1458,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1727,7 +1727,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
