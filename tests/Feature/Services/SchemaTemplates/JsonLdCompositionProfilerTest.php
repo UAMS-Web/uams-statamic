@@ -17,8 +17,10 @@ covers(JsonLdCompositionProfiler::class);
  *
  * Every log call is captured and compared whole with `toBe`, so a renamed
  * key, a dropped counter, a missing `round()` or an extra line fails. Each
- * recorder is also run with profiling disabled, with no `request` bound, and
- * with no bag on the request, the three cases in which it writes nothing.
+ * recorder is also run with profiling disabled and with no `request` bound,
+ * the two cases in which every recorder writes nothing. With no bag on the
+ * request, `recordBucketSample()` and `recordAntlersParseSample()` write
+ * nothing, while `recordAugmentUncachedSample()` starts a bag of its own.
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/JsonLdCompositionProfilerTest.php
  */
