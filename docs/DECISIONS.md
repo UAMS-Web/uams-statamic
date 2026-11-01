@@ -3669,15 +3669,6 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #162 (the full argument and the recovered prior art), #475 (the build), #161 (independent: a scope names an index handle, so an engine change touches the registry alone).
 
-## 2026-11-01: The site-search split: entries and index definitions stay in the application, and the tag becomes `aether_search` (UAMS-Web/aether-search#3, #477)
-
-**Decision.** Site search moves to `UAMS-Web/aether-search` on these lines. **Scope entries:** the add-on holds the registry mechanism and the application's config file supplies the handles and labels. **Index definitions:** `config/statamic/search.php` stays whole in the application, and the add-on checks each scope against it. **Classes:** the tag and the suggestions controller move, with a seam for the private-entry rule and result documents, and the application keeps the rule in `HidePrivateSearchResults`, the exclusion list in `ExcludeNonSearchableCollections` and the knowledge-base scope. **Tag handle:** `site_search_scope` is renamed `aether_search`, so the application's views change with the move: 8 occurrences in 3 files (`search/index`, `errors/_recovery_aids`, `layout/header/navbar/_resource-nav`). This refines the 2026-11-01 #162 entry: the registry's mechanism is in the add-on and its entries are a config file, which is still code rather than a Control Panel field.
-
-**Why.** Handles such as `clinical_locations` and labels such as "News" would make a public package unusable by any other host. Of the 57 indexes, 7 serve `/search`, those 7 carry UAMS fields and transformers, and Statamic reads one key, `statamic.search.indexes`, so a second source would add an order hazard. `SiteSearchScope` has no `App\` import, and the suggestions endpoint is the logic worth sharing; the private-entry rule depends on `ProtectEntry` and `PrivateEntryAccess`. The tag takes the add-on's name so a reader of a template can tell where it comes from.
-
-**Rejected.** *Entries hardcoded in the add-on*: UAMS handles in a public package. *The add-on merging its 7 indexes at boot*: two sources for one key. *Moving the tag alone*: leaves the suggestions logic in the application. *Keeping `site_search_scope`*: no view churn, at the cost of a name that does not say where the tag lives.
-
-**Residual.** Whether the `/search` views and the type-ahead script move is open.
 ## 2026-11-01: The root site's search scope reads "This site" (#475)
 
 **Decision.** On the root site, the one scope offered reads "This site" and searches every site. Sub-sites keep "This site" and "All of <root site's name>". This amends the root row in #413's table, which #468 shipped as "All of <root site's name>". The label change is built in #475.
@@ -3687,3 +3678,23 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Keep "All of <root site's name>" on the root*: literally accurate, but it differs from WordPress, and on the root it stands alone, so "All" contrasts with nothing.
 
 **Residual.** Whether "This site" on a parent sub-site covers its children is a separate open question and is not settled here.
+
+## 2026-11-01: The site-search split: entries and index definitions stay in the application, and the tag becomes `aether_search` (UAMS-Web/aether-search#3, #477)
+
+**Decision.** Site search moves to `UAMS-Web/aether-search` on these lines. **Scope entries:** the add-on holds the registry mechanism and the application's config file supplies the handles and labels. **Index definitions:** `config/statamic/search.php` stays whole in the application, and the add-on checks each scope against it. **Classes:** the tag and the suggestions controller move, with a seam for the private-entry rule and result documents, and the application keeps the rule in `HidePrivateSearchResults`, the exclusion list in `ExcludeNonSearchableCollections` and the knowledge-base scope. **Tag handle:** `site_search_scope` is renamed `aether_search`, so the application's views change with the move: 8 occurrences in 3 files (`search/index`, `errors/_recovery_aids`, `layout/header/navbar/_resource-nav`). This refines the 2026-11-01 #162 entry: the registry's mechanism is in the add-on and its entries are a config file, which is still code rather than a Control Panel field.
+
+**Why.** Handles such as `clinical_locations` and labels such as "News" would make a public package unusable by any other host. Of the 57 indexes, 7 serve `/search`, those 7 carry UAMS fields and transformers, and Statamic reads one key, `statamic.search.indexes`, so a second source would add an order hazard. `SiteSearchScope` has no `App\` import, and the suggestions endpoint is the logic worth sharing; the private-entry rule depends on `ProtectEntry` and `PrivateEntryAccess`. The tag takes the add-on's name so a reader of a template can tell where it comes from.
+
+**Rejected.** *Entries hardcoded in the add-on*: UAMS handles in a public package. *The add-on merging its 7 indexes at boot*: two sources for one key. *Moving the tag alone*: leaves the suggestions logic in the application. *Keeping `site_search_scope`*: no view churn, at the cost of a name that does not say where the tag lives.
+
+**Residual.** Whether the `/search` views and the type-ahead script move is open.
+
+## 2026-11-01: A site's search tier follows its `subject` field (#480)
+
+**Decision.** A site is a search tier when its `subject`, read through `value()`, is `root` or `major_entity`, and it has descendants. "This site" on a tier covers its whole subtree. Any other site searches itself, and is offered "All of <nearest tier>" when that tier is not the root, then "All of <root site's name>". This settles the residual in the entry above. The resolvers live in the application, cached, and reach the add-on through the seam from the entry before it. #480 builds them.
+
+**Why.** `UAMS-Web/UAMSWP-Search#47` gives WordPress readers this step, and the app already holds the data: the origin tree in `uams_multisite_settings` and a `subject` field editors set for this structure. Through `value()` there are 20 tiers, and `medicine` covers 38 sites, `health` 28 and `inside` 53. Reading `value()` in the resolvers alone puts `inside` under the rule without changing where breadcrumbs stop. Origin and `subject` ignore addresses, so #259 cannot disturb the tiers.
+
+**Rejected.** *Stay flat*: 35 `medicine` sites would jump from one site to all 255, which WordPress readers do not. *Tiers by URL path*: cheaper, but a URL shape would decide the search hierarchy, `academic_affairs` would lump 23 sites and `inside_medicine` would lose its tier, and a site moved to its own domain under #259 would lose its nesting. Origin and path parents agree on all 255 sites today, so that risk is future rather than present.
+
+**Residual.** An editor changing `subject` changes the search scope, as it already changes the header. The cache's invalidation is designed in #480. The site-name length on the row is untested: the longest name is 96 characters.
