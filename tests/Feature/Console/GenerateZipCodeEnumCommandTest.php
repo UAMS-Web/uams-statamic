@@ -100,7 +100,7 @@ it('reports the exact path the generator wrote', function (): void {
 
     // Artisan::call() keeps the output for reading after the run, when the path is known
     expect(Artisan::call('generate:zip-enum'))->toBe(0)
-        ->and(Artisan::output())->toContain('Wrote '.$written->path."\n");
+        ->and(Artisan::output())->toContain('Wrote '.$written->path.PHP_EOL);
 });
 
 it('turns a generator failure into an error and exit code 1', function (): void {
