@@ -37,7 +37,7 @@ final class BrowserSubmodules
     public const array REQUIRED = ['content', 'users', 'resources/forms'];
 
     /**
-     * Armed once per process. The check is a handful of directory reads, but
+     * Armed once per process. The check is a handful of file checks, but
      * the requirement is that it fires before the first browser test, not that
      * it re-runs for each of them.
      */
@@ -88,39 +88,36 @@ final class BrowserSubmodules
     /**
      * The required submodules that are not initialized under a root.
      *
-     * Git leaves an uninitialized submodule's mount point as an empty directory,
-     * or leaves no directory at all when the checkout never created one, so a
-     * directory holding nothing is the signature of an absent submodule.
+     * `git submodule update --init` leaves a `.git` entry in the mount point, and
+     * every route to a working checkout runs it, so that entry is the test rather
+     * than whether the directory holds anything. A mount point can hold files with
+     * no submodule behind it: `composer install` run first has `statamic:install`
+     * scaffold `.gitkeep` files in `content/`, which then makes the init refuse the
+     * non-empty directory (#383), and a killed run can strand app output there.
      *
      * @param  string  $root  Checkout root to probe
      * @return list<string> The checkout-relative paths that are absent
      */
     public static function missing(string $root): array
     {
-        // Keep the paths whose mount point is absent or empty
+        // Keep the paths whose mount point has no `.git` entry
         return array_values(array_filter(
             self::REQUIRED,
-            static fn (string $path): bool => ! self::isPopulated($root.'/'.$path),
+            static fn (string $path): bool => ! self::isInitialized($root.'/'.$path),
         ));
     }
 
     /**
-     * Whether a directory exists and holds at least one entry.
+     * Whether a mount point carries a submodule's `.git` entry.
+     *
+     * A file in a submodule checkout, and a directory where git has not absorbed
+     * the submodule's repository into the superproject.
      *
      * @param  string  $directory  The mount point to inspect
-     * @return bool Whether it is populated
+     * @return bool Whether a submodule is initialized there
      */
-    private static function isPopulated(string $directory): bool
+    private static function isInitialized(string $directory): bool
     {
-        // A missing mount point is an absent submodule
-        if (! is_dir($directory)) {
-            return false;
-        }
-
-        // `scandir()` returns false on failure, which is not a populated directory
-        $entries = scandir($directory);
-
-        // Check whether anything besides the two dot entries is there
-        return is_array($entries) && array_diff($entries, ['.', '..']) !== [];
+        return file_exists($directory.'/.git');
     }
 }
