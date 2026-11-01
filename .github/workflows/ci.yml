@@ -1521,7 +1521,7 @@ jobs:
       # Fails on a file under a PSR-4 root that declares a class but none matching
       # its path: an inline class in a Pest test file, or a misnamed one in `app/`.
       # Pest loads such a class only because the file happens to run, and Composer
-      # drops it from the optimized classmap with a warning that fails nothing
+      # drops it from the optimized class map with a warning that fails nothing
       # (#322). It does NOT report a second class beside one that matches: Composer
       # drops that class silently. `--dev` is required: with no `vendor/` Composer
       # treats the install as non-dev and skips `autoload-dev`, so `tests/` is never

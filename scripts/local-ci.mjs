@@ -1835,7 +1835,7 @@ function main() {
                 return validated
             }
             // PARITY: the same job's "Run PSR-4 class check" step. Fails on a file
-            // that declares a class but none matching its PSR-4 path (#322); a second
+            // declaring a class but none matching its PSR-4 path (#322); a second
             // class beside a matching one is not reported. `--dev` keeps `autoload-dev`
             // in the scan on the remote job, which has no `vendor/`.
             step('JOB validate - PSR-4 class check')
