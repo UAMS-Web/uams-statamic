@@ -574,7 +574,7 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
             expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
             expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
             expect(job, id).toContain('      fail-fast: false\n')
-            expect(job, id).not.toContain('continue-on-error')
+            expect(job, id).not.toMatch(/^ +continue-on-error:/m)
         }
     })
 
