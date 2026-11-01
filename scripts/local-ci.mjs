@@ -26,7 +26,7 @@
 //     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
 //
 // The jobs run as a cost-ordered CHAIN, shortest
-// -> longest: isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
+// -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
 // LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
@@ -126,8 +126,8 @@
 //     composer-validate composer validate --no-check-publish --no-check-all (the
 //                       lock-hash freshness gate), then composer dump-autoload
 //                       --optimize --dev --strict-psr --dry-run --no-scripts (a
-//                       class whose file does not match its PSR-4 path, #322);
-//                       needs neither composer install nor the framework
+//                       file with no class matching its PSR-4 path, #322); needs
+//                       neither composer install nor the framework
 //     toolchain pins    PHP 8.4, Node 22
 //
 // This script intentionally does NOT replicate CI-only infra that does not affect
@@ -206,7 +206,9 @@ export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spe
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
 
-// PARITY: the cost-ordered chain, shortest -> longest. A job runs only if every
+// PARITY: the cost-ordered chain, shortest -> longest, except `validate`, which
+// stays second although its PSR-4 class check can cost more than the jobs after it
+// (docs/DECISIONS.md). A job runs only if every
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
@@ -1832,9 +1834,10 @@ function main() {
             if (validated !== 0) {
                 return validated
             }
-            // PARITY: the same job's "Run PSR-4 class check" step. Fails on a class
-            // whose file does not match its PSR-4 path (#322). `--dev` keeps
-            // `autoload-dev` in the scan on the remote job, which has no `vendor/`.
+            // PARITY: the same job's "Run PSR-4 class check" step. Fails on a file
+            // that declares a class but none matching its PSR-4 path (#322); a second
+            // class beside a matching one is not reported. `--dev` keeps `autoload-dev`
+            // in the scan on the remote job, which has no `vendor/`.
             step('JOB validate - PSR-4 class check')
             return run(composer, ['dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'], worktreePath)
         },

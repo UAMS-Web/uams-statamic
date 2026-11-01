@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Assets;
 use Tests\Support\Doubles\AssetsFileSizeScopeProbe;
 
 /**
@@ -14,9 +13,12 @@ use Tests\Support\Doubles\AssetsFileSizeScopeProbe;
  *
  * @command  php artisan test --compact tests/Unit/Fieldtypes/AssetsFileSizeScopeWiringTest.php
  */
+/**
+ * The probe that exposes the protected producer methods. They take $config
+ * directly, so no Field is needed.
+ */
 function assetsFileSizeFieldtype(): AssetsFileSizeScopeProbe
 {
-    // Expose the protected producer methods (they take $config directly, so no Field is needed).
     return new AssetsFileSizeScopeProbe;
 }
 

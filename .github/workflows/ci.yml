@@ -1473,9 +1473,8 @@ jobs:
     # Local-chain position: second. `composer validate` measured ~1.5s against the
     # isolation guard's ~0.8s. The PSR-4 class check added in #322 scans `vendor/`
     # on a local run and took 23s on a loaded Windows machine, so the job is no
-    # longer second by cost; it stays here because it needs no install and fails
-    # before the later jobs spend real time. Here every job runs in parallel and
-    # nothing is gated.
+    # longer second by cost, and it stays second as recorded in docs/DECISIONS.md.
+    # Here every job runs in parallel and nothing is gated.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when `composer.lock` no longer matches `composer.json` —
@@ -1518,14 +1517,16 @@ jobs:
       - name: Run composer validate
         run: composer validate --no-check-publish --no-check-all
 
-      # Fails on a class whose file does not match its PSR-4 path: an inline class
-      # in a test file, or a misnamed one in `app/`. Pest loads such a class only
-      # because the file happens to run, and Composer drops it from the optimized
-      # classmap with a warning that fails nothing (#322). `--dev` is required:
-      # with no `vendor/` Composer treats the install as non-dev and skips
-      # `autoload-dev`, so `tests/` is never scanned and the check passes on
-      # anything. `--dry-run` writes no autoload files.
       # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      # Fails on a file under a PSR-4 root that declares a class but none matching
+      # its path: an inline class in a Pest test file, or a misnamed one in `app/`.
+      # Pest loads such a class only because the file happens to run, and Composer
+      # drops it from the optimized classmap with a warning that fails nothing
+      # (#322). It does NOT report a second class beside one that matches: Composer
+      # drops that class silently. `--dev` is required: with no `vendor/` Composer
+      # treats the install as non-dev and skips `autoload-dev`, so `tests/` is never
+      # scanned and the check passes on anything. `--dry-run` writes no autoload
+      # files.
       - name: Run PSR-4 class check
         run: composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts
 

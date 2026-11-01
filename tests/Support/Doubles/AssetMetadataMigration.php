@@ -11,7 +11,7 @@ use Illuminate\Database\Migrations\Migration;
  *
  * The base {@see Migration} declares neither
  * `up()` nor `down()`, so this names the pair the anonymous migration exposes.
- * It is referenced only from `@return` / `@var` annotations — never implemented
+ * It is referenced only from `@return` / `@var` annotations, never implemented
  * or instantiated at runtime.
  */
 interface AssetMetadataMigration
