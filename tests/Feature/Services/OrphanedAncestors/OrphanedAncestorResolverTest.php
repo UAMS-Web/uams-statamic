@@ -121,8 +121,6 @@ function orphanEntry(array $ancestors, string $siteUrl = 'https://site.test', ?s
  */
 function expectResolvesToNull(Entry $entry): void
 {
-    $outcome = 'unset';
-
     try {
         $outcome = (new OrphanedAncestorResolver)->resolve($entry);
     } catch (Throwable $e) {
@@ -378,7 +376,6 @@ it('stops the walk cleanly when a mid-chain page has no parent', function () {
     $anc->shouldReceive('get')->with('title')->andReturn('Draft');
     EntryFacade::shouldReceive('find')->with('anc')->andReturn($anc);
 
-    $outcome = 'unset';
     try {
         $outcome = (new OrphanedAncestorResolver)->resolve($entry)?->redirectUrl;
     } catch (Throwable $e) {
