@@ -614,7 +614,8 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // new total.
         const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
         const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
-        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+        // Windows runs the band whole, so the report's total depends on the leg.
+        const reportTotal = report.match(/^ {6}SHARD_TOTAL: \$\{\{ matrix\.os == 'windows-latest' && 1 \|\| (\d+) \}\}$/m)
 
         expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
         expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
