@@ -104,8 +104,9 @@ it('clamps a later attempt to what is left of the retry window', function (): vo
     expect($attemptBudgets)->toBe($strictlyDraining);
 
     // The invariant that makes the documented ~2x bound true: no attempt may be
-    // handed more than the window it is running inside.
-    expect(max($attemptBudgets))->toBeLessThanOrEqual(3_000);
+    // handed more than the window it is running inside. The list drains, so the first
+    // budget is the largest.
+    expect($attemptBudgets[0])->toBeLessThanOrEqual(3_000);
 });
 
 it('still retries an attempt that fails its expectation', function (): void {
