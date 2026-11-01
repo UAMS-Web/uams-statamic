@@ -153,12 +153,14 @@ it('re-throws a failing test with the diagnosis, keeping the original as previou
     try {
         $original = tornDiagnosisParseFailure($probe['file']);
 
-        expect(fn () => (fn () => $this->onNotSuccessfulTest($original))->call($this))
-            ->toThrow(function (Throwable $rethrown) use ($original): void {
-                expect($rethrown)->toBeInstanceOf(RuntimeException::class)
-                    ->and($rethrown->getMessage())->toContain('is torn')
-                    ->and($rethrown->getPrevious())->toBe($original);
-            });
+        $rethrown = mustBe(
+            RuntimeException::class,
+            throwableFrom(fn () => (fn () => $this->onNotSuccessfulTest($original))->call($this)),
+            'the re-thrown failure'
+        );
+
+        expect($rethrown->getMessage())->toContain('is torn')
+            ->and($rethrown->getPrevious())->toBe($original);
     } finally {
         (new Filesystem)->deleteDirectory($probe['directory']);
     }

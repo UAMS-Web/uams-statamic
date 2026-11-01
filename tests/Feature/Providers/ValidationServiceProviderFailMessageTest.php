@@ -6,6 +6,9 @@ use App\Providers\ValidationServiceProvider;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\HtmlString;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 /**
  * A rule that fails with whatever message the test set.
