@@ -19,17 +19,19 @@ use Closure;
  * (e.g., Cyrillic, Arabic), numbers, special characters or other punctuation not
  * explicitly allowed.
  *
- * The regular expression pattern is /^((?:[a-zA-Z\x{00C0}-\x{017F}\.){0,2}[a-zA-Z\x{00C0}-\x{017F}]+(?:[\s\-'][a-zA-Z\x{00C0}-\x{017F}]+)*)$/uD
+ * The regular expression pattern is /^((?:[a-zA-Z\x{00C0}-\x{017F}]\.\s?){0,2}[a-zA-Z\x{00C0}-\x{017F}]+(?:[\s\-'][a-zA-Z\x{00C0}-\x{017F}]+)*)$/uD
  *
  * This pattern allows:
  *   - English letters (a-z, A-Z),
  *   - Diacritics (Unicode range \x{00C0}-\x{017F}, covering characters like é, ü,
  *     and ç),
- *   - Periods (.) only as part of initials (e.g., `J.R.`), limited to up to two
- *     initials,
+ *   - Periods (.) only in up to two initials opening the name, each a letter
+ *     followed by a period and an optional space (e.g., `J. Smith`, `J.R. Smith`,
+ *     `J.R.Smith`),
  *   - Spaces (\s), hyphens (-), and apostrophes (') for name components,
  *   - But rejects non-Latin letters (e.g., Cyrillic, Arabic), numbers, special
- *     symbols or periods outside initials (e.g., `John.Doe`).
+ *     symbols, periods outside opening initials (e.g., `John.Doe`, `.Smith`,
+ *     `Smith Jr.`) and initials with no name after them (e.g., `J.R.`).
  *
  * The 'u' modifier ensures Unicode support for \x{} escapes.
  *
@@ -53,7 +55,7 @@ class Name extends BaseValidationRule
         // Check if the value matches the allowed name format
         if (
             ! \preg_match(
-                '/^((?:[a-zA-Z\x{00C0}-\x{017F}\.]){0,2}[a-zA-Z\x{00C0}-\x{017F}]+(?:[\s\-\'][a-zA-Z\x{00C0}-\x{017F}]+)*)$/uD',
+                '/^((?:[a-zA-Z\x{00C0}-\x{017F}]\.\s?){0,2}[a-zA-Z\x{00C0}-\x{017F}]+(?:[\s\-\'][a-zA-Z\x{00C0}-\x{017F}]+)*)$/uD',
                 $value
             )
         ) {
