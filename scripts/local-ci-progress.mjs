@@ -3,19 +3,20 @@
  * local-ci-progress.mjs — report which stage a local-CI run is in, and how far into it.
  *
  * `scripts/local-ci.mjs` streams its output but publishes no machine-readable progress, and its
- * `phpunit` job routinely runs 20 minutes. Redirect a run to a log file and point this at it to
+ * `pest` job routinely runs 20 minutes. Redirect a run to a log file and point this at it to
  * get a periodic one-line report — the agent arms it under the harness `Monitor` tool so each
  * line arrives as a notification.
  *
  *   node scripts/local-ci.mjs --branch <b> > ci.log 2>&1 &
  *   node scripts/local-ci-progress.mjs --log ci.log --worktree ../uams-statamic-ci
  *
- * The `phpunit` job runs six sub-phases whose progress signals differ, so it is reported per
+ * The `pest` job runs several sub-phases whose progress signals differ, so it is reported per
  * sub-phase rather than as one misleading bar:
  *
  *   - parallel suite — paratest streams dots with no total, so only an emitted-test count is real.
  *   - serial tail    — plain Pest prints one `PASS <TestClass>` line per file, so N/total is real.
- *   - the two skip-baseline checks (UAMS-Web/uams-statamic-archive#1744) are near-instant and need no progress of their own.
+ *   - every other sub-phase (the Stache seed, the route cache, the skip baselines, the slowest
+ *     class) has no progress figure, so it is reported by name.
  *
  * Counting `PASS` lines against the *whole* suite is the trap this exists to avoid: the parallel
  * phase prints none, so a run whose parallel phase had already finished reads as barely started.
@@ -59,7 +60,7 @@ function parseArgs(argv) {
         worktree: '../uams-statamic-ci',
         interval: 600,
         idleInterval: 3600,
-        // A phpunit band writes progress far more often than this; 15 minutes of
+        // A pest band writes progress far more often than this; 15 minutes of
         // total silence means the run is gone, not slow.
         stallAfter: 900,
         once: false,
@@ -369,11 +370,11 @@ export function buildReport(logPath, options, state) {
     const position = configured.indexOf(stage) + 1;
     const where = `stage=${stage} (${position > 0 ? position : '?'} of ${configured.length || '?'})`;
 
-    if (stage !== 'phpunit') {
+    if (stage !== 'pest') {
         return `HEARTBEAT  ${name}  ${where}  no per-item progress from this stage  elapsed ${human(elapsed)}`;
     }
 
-    const subPhase = lastJobLine.split('==> JOB phpunit - ')[1]?.trim() ?? '';
+    const subPhase = lastJobLine.split('==> JOB pest - ')[1]?.trim() ?? '';
     const after = text.slice(text.lastIndexOf(lastJobLine) + lastJobLine.length);
 
     if (subPhase.includes('serial tail')) {
@@ -383,13 +384,13 @@ export function buildReport(logPath, options, state) {
             ? `${done}/${total} classes (${Math.floor((done * 100) / total)}%)`
             : `${done} classes done`;
 
-        return `HEARTBEAT  ${name}  ${where} sub-phase='serial tail' (4 of 6 — parallel suite already done)  ${progress}  elapsed ${human(elapsed)}`;
+        return `HEARTBEAT  ${name}  ${where} sub-phase='serial tail'  ${progress}  elapsed ${human(elapsed)}`;
     }
 
     if (subPhase.includes('parallel suite')) {
         const dots = (after.match(/\./g) ?? []).length;
 
-        return `HEARTBEAT  ${name}  ${where} sub-phase='parallel suite' (3 of 6)  ~${dots} tests emitted (paratest streams no total)  elapsed ${human(elapsed)}`;
+        return `HEARTBEAT  ${name}  ${where} sub-phase='parallel suite'  ~${dots} tests emitted (paratest streams no total)  elapsed ${human(elapsed)}`;
     }
 
     return `HEARTBEAT  ${name}  ${where} sub-phase='${subPhase}'  elapsed ${human(elapsed)}`;
