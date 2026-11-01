@@ -4,15 +4,20 @@
 	@set page.article.reusable_content
 #}}
 
-{{# The entry can have either blueprint, so render whichever field it has. #}}
+{{#
+	The entry can have either blueprint, so render whichever field it has. The loop
+	keeps the entry's own values, such as its computeds, in reach of the inner partials.
+#}}
 {{ reusable_content_entry :entry="content" }}
-	{{ if reusable_sets }}
-		{{ reusable_sets scope="block" }}
-			{{ partial src="sets/{type}" }}
-		{{ /reusable_sets }}
-	{{ elseif reusable_blocks }}
-		{{ reusable_blocks scope="block" }}
-			{{ partial src="page_builder/{type}" }}
-		{{ /reusable_blocks }}
-	{{ /if }}
+	{{ content }}
+		{{ if reusable_sets }}
+			{{ reusable_sets scope="block" }}
+				{{ partial src="sets/{type}" }}
+			{{ /reusable_sets }}
+		{{ elseif reusable_blocks }}
+			{{ reusable_blocks scope="block" }}
+				{{ partial src="page_builder/{type}" }}
+			{{ /reusable_blocks }}
+		{{ /if }}
+	{{ /content }}
 {{ /reusable_content_entry }}

@@ -5,24 +5,28 @@
 #}}
 
 {{#
-	The entry can have either blueprint, so render whichever field it has. Bard content
-	has no block of its own, so it gets the wrapper a page block has. It has no heading
-	to label the wrapper, and the empty `block_id` stops it taking the previous block's.
+	The entry can have either blueprint, so render whichever field it has. The loop
+	keeps the entry's own values, such as its `side_by_side_alignments`, in reach of the
+	inner partials. Bard content has no block of its own, so it gets the wrapper a page
+	block has. It has no heading to label the wrapper, and the empty `block_id` stops
+	it taking the previous block's.
 #}}
 {{ reusable_content_entry :entry="content" }}
-	{{ if reusable_blocks }}
-		{{ reusable_blocks scope="block" }}
-			{{ partial src="page_builder/{type}" }}
-		{{ /reusable_blocks }}
-	{{ elseif reusable_sets }}
-		{{ partial:page_builder/uamsweb_block block_id="" block_class="content-block" }}
-			{{ partial:page_builder/components/container_row }}
-				<div class="module-body">
-					{{ reusable_sets scope="block" }}
-						{{ partial src="sets/{type}" }}
-					{{ /reusable_sets }}
-				</div>
-			{{ /partial:page_builder/components/container_row }}
-		{{ /partial:page_builder/uamsweb_block }}
-	{{ /if }}
+	{{ content }}
+		{{ if reusable_blocks }}
+			{{ reusable_blocks scope="block" }}
+				{{ partial src="page_builder/{type}" }}
+			{{ /reusable_blocks }}
+		{{ elseif reusable_sets }}
+			{{ partial:page_builder/uamsweb_block block_id="" block_class="content-block" }}
+				{{ partial:page_builder/components/container_row }}
+					<div class="module-body">
+						{{ reusable_sets scope="block" }}
+							{{ partial src="sets/{type}" }}
+						{{ /reusable_sets }}
+					</div>
+				{{ /partial:page_builder/components/container_row }}
+			{{ /partial:page_builder/uamsweb_block }}
+		{{ /if }}
+	{{ /content }}
 {{ /reusable_content_entry }}

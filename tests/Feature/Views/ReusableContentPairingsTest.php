@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
+use Illuminate\View\FileViewFinder;
 use Statamic\Entries\Collection;
 use Statamic\Entries\Entry as EntryInstance;
 use Statamic\Facades\Antlers;
@@ -62,7 +64,7 @@ function saveReusableFixture(string $collection, string $blueprint, string $id, 
     /** @var EntryInstance $entry */
     $entry = $entry->published($published);
     /** @var EntryInstance $entry */
-    $entry = $entry->data(['title' => $id] + $data);
+    $entry = $entry->data($data + ['title' => $id]);
     $entry->save();
 
     return $entry;
@@ -135,6 +137,13 @@ function renderPageReferencing(string $kind, string $entryId): string
             'enabled' => true,
             'content' => [$entryId],
         ],
+        [
+            'id' => 'after-block',
+            'type' => 'uamsweb_block_content',
+            'enabled' => true,
+            'block_heading' => 'After block heading',
+            'body' => reusableBardValue('AfterBlockBody'),
+        ],
     ]]);
 
     /** @var array<string, mixed> $values */
@@ -148,6 +157,18 @@ function renderPageReferencing(string $kind, string $entryId): string
 }
 
 beforeEach(function (): void {
+    // A stand-in for the real block, which renders nothing without an asset, that reports
+    // what a template inside the entry can read.
+    $this->probeViews = storage_path('framework/testing/reusable-probe-'.uniqid());
+    File::ensureDirectoryExists($this->probeViews.'/page_builder');
+    File::put(
+        $this->probeViews.'/page_builder/_uamsweb_block_image_side_by_side.antlers.html',
+        '[{{ title }}:{{ side_by_side_alignments[block:id] }}]',
+    );
+    /** @var FileViewFinder $finder */
+    $finder = View::getFinder();
+    $finder->prependLocation($this->probeViews);
+
     foreach (['pages', 'reusable_content'] as $handle) {
         /** @var Collection $collection */
         $collection = CollectionFacade::make($handle);
@@ -171,6 +192,10 @@ beforeEach(function (): void {
     saveReusableFixture('reusable_content', 'reusable_content_landing_page', 'empty-landing-entry', []);
 });
 
+afterEach(function (): void {
+    File::deleteDirectory($this->probeViews);
+});
+
 it('renders a basic entry on a Bard page as bare sets', function (): void {
     expect(renderPageReferencing('bard', 'basic-entry'))
         ->toContain(REUSABLE_BARD_TEXT)
@@ -181,7 +206,7 @@ it('renders a landing entry on a landing page with no second wrapper', function 
     $html = renderPageReferencing('landing', 'landing-entry');
 
     expect($html)->toContain(REUSABLE_BLOCK_HEADING)
-        ->and(substr_count($html, 'uams-module'))->toBe(2);
+        ->and(substr_count($html, 'uams-module'))->toBe(3);
 });
 
 it('renders a landing entry on a Bard page and does not throw', function (): void {
@@ -194,7 +219,7 @@ it('renders a basic entry on a landing page inside the normal block layout', fun
     $html = renderPageReferencing('landing', 'basic-entry');
 
     expect($html)->toContain(REUSABLE_BARD_TEXT)
-        ->and(substr_count($html, 'uams-module'))->toBe(2)
+        ->and(substr_count($html, 'uams-module'))->toBe(3)
         ->and(preg_match(
             '/<section\s[^>]*uams-module alignfull[^>]*content-block[^>]*>\s*<div\s+class="container-fluid"\s*>\s*<div\s+class="row"\s*>\s*<div class="module-body">\s*<p>'.REUSABLE_BARD_TEXT.'/',
             $html,
@@ -205,7 +230,8 @@ it('gives a basic entry on a landing page no id of its own or from the block bef
     $html = renderPageReferencing('landing', 'basic-entry');
 
     expect(substr_count($html, ' id="module-page-block"'))->toBe(1)
-        ->and(substr_count($html, 'aria-labelledby='))->toBe(1);
+        ->and(substr_count($html, ' id="module-after-block"'))->toBe(1)
+        ->and(substr_count($html, 'aria-labelledby='))->toBe(2);
 });
 
 it('keeps an empty entry nested in another entry from reading the one around it', function (): void {
@@ -225,14 +251,42 @@ it('renders nothing for a draft entry', function (string $kind): void {
         'content' => reusableBardValue(REUSABLE_BARD_TEXT),
     ], false);
 
-    expect(renderPageReferencing($kind, 'draft-entry'))->not->toContain(REUSABLE_BARD_TEXT);
+    $html = renderPageReferencing($kind, 'draft-entry');
+
+    expect($html)->not->toContain(REUSABLE_BARD_TEXT)
+        ->and(substr_count($html, 'PageSiblingText'))->toBe(1);
+})->with(['bard', 'landing']);
+
+it('ignores data the entry stores outside its blueprint', function (string $kind): void {
+    saveReusableFixture('reusable_content', 'reusable_content_landing_page', 'stale-entry', [
+        'content' => reusableBardValue(REUSABLE_BARD_TEXT),
+    ]);
+
+    $html = renderPageReferencing($kind, 'stale-entry');
+
+    expect($html)->not->toContain(REUSABLE_BARD_TEXT)
+        ->and(substr_count($html, 'PageSiblingText'))->toBe(1);
+})->with(['bard', 'landing']);
+
+it('gives a block in the entry the values of the entry, not of the page', function (string $kind): void {
+    saveReusableFixture('reusable_content', 'reusable_content_landing_page', 'alternating-entry', [
+        'title' => 'Entry title',
+        'page_builder' => [
+            ['id' => 'first', 'type' => 'uamsweb_block_image_side_by_side', 'enabled' => true, 'image_position' => 'auto_default_left'],
+            ['id' => 'second', 'type' => 'uamsweb_block_image_side_by_side', 'enabled' => true, 'image_position' => 'auto_default_left'],
+        ],
+    ]);
+
+    expect(renderPageReferencing($kind, 'alternating-entry'))
+        ->toContain('[Entry title:left]')
+        ->toContain('[Entry title:right]');
 })->with(['bard', 'landing']);
 
 it('renders nothing for an entry with neither field', function (string $kind, string $entryId): void {
     $html = renderPageReferencing($kind, $entryId);
 
     expect(substr_count($html, 'PageSiblingText'))->toBe(1)
-        ->and(substr_count($html, 'uams-module'))->toBe($kind === 'bard' ? 0 : 1)
+        ->and(substr_count($html, 'uams-module'))->toBe($kind === 'bard' ? 0 : 2)
         ->and($html)->not->toContain(REUSABLE_BLOCK_HEADING);
 })->with([
     'a basic entry on a Bard page' => ['bard', 'empty-basic-entry'],
