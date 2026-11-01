@@ -7,6 +7,13 @@ use PHPUnit\Framework\Assert;
 use Statamic\Fields\Value;
 use Statamic\Tags\Context;
 use Statamic\Tags\Parameters;
+use Tests\Support\Doubles\EnumCaseBlankProbe;
+use Tests\Support\Doubles\EnumCaseIntProbe;
+use Tests\Support\Doubles\EnumCaseProbeBroken;
+use Tests\Support\Doubles\EnumCaseProbeInfo;
+use Tests\Support\Doubles\EnumCaseProbeOther;
+use Tests\Support\Doubles\EnumCasePureProbe;
+use Tests\Support\Doubles\EnumCaseStringProbe;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -261,127 +268,11 @@ function enumCaseTag_pickFirstAttributePublicProperty(
 | Probe enums and attributes
 |--------------------------------------------------------------------------
 |
-| The app's own enums exercise the happy paths above. These small probes reach
-| what they cannot: a pure enum, an int-backed enum with negative and zero
-| values, an attribute that refuses to instantiate, and methods that are
-| private, static, variadic, by-reference or throwing.
+| The app's own enums exercise the happy paths above. The EnumCase probes in
+| tests/Support/Doubles reach what they cannot: a pure enum, an int-backed enum
+| with negative and zero values, an attribute that refuses to instantiate, and
+| methods that are private, static, variadic, by-reference or throwing.
 */
-
-#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
-final class EnumCaseProbeInfo
-{
-    public function __construct(public string $label, public ?string $note = null, protected string $secret = 'hidden') {}
-}
-
-#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
-final class EnumCaseProbeOther
-{
-    public function __construct(public string $label, public ?string $note = 'other note') {}
-}
-
-#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
-final class EnumCaseProbeBroken
-{
-    public string $label = 'never read';
-
-    public function __construct()
-    {
-        throw new RuntimeException('This attribute cannot be instantiated.');
-    }
-}
-
-enum EnumCaseIntProbe: int
-{
-    #[EnumCaseProbeBroken]
-    #[EnumCaseProbeInfo(label: 'Seven')]
-    #[EnumCaseProbeOther(label: 'Other seven')]
-    case Seven = 7;
-
-    case MinusTwo = -2;
-
-    case Zero = 0;
-
-    public function greet(string $greeting = 'Hello', string $punctuation = '!'): string
-    {
-        return $greeting.' '.$this->name.$punctuation;
-    }
-
-    public function fails(): string
-    {
-        throw new RuntimeException('This method always fails.');
-    }
-
-    public static function make(): self
-    {
-        return self::Seven;
-    }
-
-    public function sum(int ...$numbers): int
-    {
-        return array_sum($numbers);
-    }
-
-    /**
-     * Returns a value so that calling it would be visible.
-     *
-     * @param  list<int>  $into
-     */
-    public function fill(array &$into): int
-    {
-        $into[] = $this->value;
-
-        return \count($into);
-    }
-
-    /**
-     * One of the magic methods an enum may declare; the tag must refuse it.
-     */
-    public function __invoke(): string
-    {
-        return 'invoked';
-    }
-
-    /**
-     * Routes a call to an inaccessible method here, so calling the private hidden()
-     * from outside would succeed rather than throw.
-     *
-     * @param  array<int, mixed>  $arguments
-     */
-    public function __call(string $name, array $arguments): string
-    {
-        return 'via __call('.$name.')';
-    }
-
-    /**
-     * Unused on purpose: only its visibility matters to the tag.
-     */
-    private function hidden(): string // @phpstan-ignore method.unused
-    {
-        return 'hidden';
-    }
-}
-
-enum EnumCaseStringProbe: string
-{
-    case Alpha = 'a';
-
-    case Beta = 'B-1';
-}
-
-enum EnumCasePureProbe
-{
-    case Solo;
-
-    // A float NAN stringifies to 'NAN', a legal case name.
-    case NAN;
-}
-
-enum EnumCaseBlankProbe: string
-{
-    case Blank = '';
-
-    case Filled = 'x';
-}
 
 /**
  * Run the tag over params built directly, without Parameters::make().
