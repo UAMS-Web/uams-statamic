@@ -444,7 +444,14 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
     // Typing reaches the component through x-model and @input, and the debounced request
     // fires against the index of the page's active tab
     $page->type('#site-search-q', 'card');
-    $page->wait(0.6);
+
+    for ($waited = 0.0; $waited <= 15.0; $waited += 0.2) {
+        if ($page->script('(() => document.querySelectorAll("#site-search-suggestions [role=option]").length)()') === 3) {
+            break;
+        }
+
+        $page->wait(0.2);
+    }
 
     expect($page->script('(() => window.__typeaheadRequests.join(","))()'))->toBe('/!/search/suggestions?q=card&index=people')
         ->and($state('d.open'))->toBe('true')
