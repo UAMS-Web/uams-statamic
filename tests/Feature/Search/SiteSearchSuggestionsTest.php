@@ -297,7 +297,7 @@ it('queries the index of the page tab, and falls back to default for anything el
 it('answers a query that is not valid UTF-8 with nothing, rather than failing to encode it', function (): void {
     $recorded = mockSuggestionsIndex([]);
 
-    expect(suggestionsFor('ÿÿ'))->toBe(['query' => '', 'index' => 'default', 'results' => []])
+    expect(suggestionsFor("\xFF\xFF"))->toBe(['query' => '', 'index' => 'default', 'results' => []])
         ->and($recorded)->not->toHaveKey('query');
 });
 
