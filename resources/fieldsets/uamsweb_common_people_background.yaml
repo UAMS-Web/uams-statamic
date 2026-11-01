@@ -639,18 +639,52 @@ fields:
   -
     handle: member_of
     field:
-      type: terms_search_index
-      search_index: membership_organizations
+      type: grid
+      mode: stacked
       display: 'Professional Memberships'
+      add_row: 'Add Membership'
       instructions: |-
-        Use this field to identify organizations, professional societies, or formal groups where this person holds an active membership.
+        Use this field to identify organizations, professional societies, or formal groups where this person holds an active membership, and the level held.
 
         **What to include:** Professional associations (e.g., American Medical Association, IEEE), non-profit boards, or specialized committees.
 
         **What to avoid:** Do not use this field for the person's primary employer or institutional department.
 
-        **Selection:** You may select multiple organizations. If an organization is missing from the list, please contact the UAMS Web Services team to have the entity added to the list of options.
-      taxonomies:
-        - membership_organizations
-      create: false
+        **Selection:** You may add multiple organizations. If an organization is missing from the list, please contact the UAMS Web Services team to have the entity added to the list of options.
       localizable: false
+      fields:
+        -
+          handle: organization
+          field:
+            type: terms_search_index
+            search_index: membership_organizations
+            display: Organization
+            taxonomies:
+              - membership_organizations
+            max_items: 1
+            create: true
+            validate:
+              - required
+            localizable: false
+        -
+          handle: membership_level
+          field:
+            type: select
+            display: 'Membership Level'
+            options:
+              -
+                key: member
+                value: Member
+              -
+                key: fellow
+                value: Fellow
+              -
+                key: emeritus_fellow
+                value: 'Emeritus Fellow'
+            default: member
+            max_items: 1
+            multiple: false
+            clearable: false
+            validate:
+              - required
+            localizable: false

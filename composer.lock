@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "70f837a2ef0be9f34ff4262b12d5263e",
+    "content-hash": "ff62384001508be8085958ed31e790a4",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10938,16 +10938,16 @@
         },
         {
             "name": "uams-web/wordpress-importer",
-            "version": "v0.30.0",
+            "version": "v0.31.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/wordpress-importer.git",
-                "reference": "2c156b44d31ba7089435b630ae7b362c45c9e8ee"
+                "reference": "9bbaf2ff89af3ca97c0a234b755a2545f7a39009"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/wordpress-importer/zipball/2c156b44d31ba7089435b630ae7b362c45c9e8ee",
-                "reference": "2c156b44d31ba7089435b630ae7b362c45c9e8ee",
+                "url": "https://api.github.com/repos/UAMS-Web/wordpress-importer/zipball/9bbaf2ff89af3ca97c0a234b755a2545f7a39009",
+                "reference": "9bbaf2ff89af3ca97c0a234b755a2545f7a39009",
                 "shasum": ""
             },
             "require": {
@@ -11057,7 +11057,7 @@
                 "issues": "https://github.com/UAMS-Web/wordpress-importer/issues",
                 "source": "https://github.com/UAMS-Web/wordpress-importer"
             },
-            "time": "2026-10-27T14:38:36+00:00"
+            "time": "2026-10-30T13:17:36+00:00"
         },
         {
             "name": "uams-web/wordpress-wxr-cleanup",
