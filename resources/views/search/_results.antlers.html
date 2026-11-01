@@ -15,6 +15,11 @@
 	                    unified `default` index, offered from a scoped empty state
 	                    (UAMS-Web/uams-statamic-archive#1510). Built by the caller with the query already
 	                    `urlencode`d, so it is safe in an href.
+	@param search_site  Optional. The `site` of the search: `*` for every site, or a site
+	                    handle. Defaults to the current site (UAMS-Web/uams-statamic#413).
+	@param wider_scope_url    Optional. A `/search` url re-running the query at the wider
+	                    scope, offered from the empty state. Safe in an href, as above.
+	@param wider_scope_label  Optional. Names the wider scope in that link, already escaped.
 #}}
 
 {{# Every listing hides the private entries this reader may not open (UAMS-Web/uams-statamic-archive#2634), the rule
@@ -23,11 +28,12 @@
 {{ if query_scope }}
 	{{ $result_scopes = $result_scopes + '|' + query_scope }}
 {{ /if }}
-{{ search:results :index="index" :query_scope="$result_scopes" :scope_root="scope_root" as="results" paginate="10" }}
+{{ $result_site = search_site ? search_site : site:handle }}
+{{ search:results :index="index" :site="$result_site" :query_scope="$result_scopes" :scope_root="scope_root" as="results" paginate="10" }}
 	{{ if no_results }}
 		{{# No matches for this query and type; nudge the reader to broaden it, with a
 		    link to the unified index when this search was scoped (UAMS-Web/uams-statamic-archive#1510). #}}
-		<p class="search-results-empty text-muted">No results found. Try a different search term{{ if index != 'default' && all_results_url }} or <a href="{{ all_results_url }}">search all results</a>{{ /if }}.</p>
+		<p class="search-results-empty text-muted">No results found. Try a different search term{{ if index != 'default' && all_results_url }} or <a href="{{ all_results_url }}">search all results</a>{{ /if }}{{ if wider_scope_url }} or <a href="{{ wider_scope_url }}">search {{ wider_scope_label }}</a>{{ /if }}.</p>
 	{{ else }}
 		{{# One full-width result per row (not a grid): the native cards fill their
 		    container because this list is deliberately not a `.card-list`. No ItemList
