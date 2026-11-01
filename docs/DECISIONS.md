@@ -3623,6 +3623,30 @@ The serial checks stay in `pest-serial` rather than moving to `pest-report`: the
 
 **Companion.** #387, branch `387-shard-pest-job`; #384's `## Findings` for the measurements. `.github/workflows/ci.yml` (the three jobs, the header's `PARITY` map and `JOB FAN-OUT` note); `.github/pest-shards.json` (the fallback timings, from the spike); `scripts/merge-shard-reports.php` and `tests/Feature/MergeShardReportsTest.php`; `scripts/local-ci.chain.test.mjs` (the three CI jobs map to the local `pest` key, the one allowed edge, the shard matrix against its totals, the shard command against the local one, and the serial job's setup against the shards'); `scripts/local-ci.route-cache-order.test.mjs` (seed-before-route-cache pinned per job); `scripts/local-ci.mjs` (comments only).
 
+## 2026-10-28: A redirect rule's host is chosen from a domain list in the Control Panel (#325)
+
+**Decision.** The `host` on a `redirect_domains` entry stops being free text and becomes a choice from a domain list kept as a collection. Creating a domain record needs a narrower permission than publishing a redirect entry.
+
+**Why.** The field is the input to the trusted-host list. With a domain list, an address becomes trusted only when someone creates its domain record on purpose, and a misspelled host on a rule can no longer add one. Once #299 lets marketing requesters work in `redirect_domains`, the people who can publish a rule are a wider group than the people who should add a trusted address. The narrower permission is the reason for the choice: with one permission for both, the list would only prevent typos. The list keeps the property from UAMS-Web/uams-statamic-archive#2873 that a new domain needs no deploy. A collection rather than a taxonomy leaves room for settings that belong to a domain, such as the whole-domain toggle or a default target; a taxonomy would add only listing filters.
+
+The existing hostname pattern and normalization stay the only check that a host is a real domain UAMS owns. None of the options verifies ownership.
+
+**Rejected.** *Free text*: any published rule can add a trusted address, including through a typo that still matches the hostname pattern. *Fixed options in the blueprint*: a new domain would need a YAML edit and a deploy, the option UAMS-Web/uams-statamic-archive#2873 rejected.
+
+**Companion.** #325 (the decision and its comparison). The build is UAMS-Web/statamic-redirects#24, because #397 moves the redirect domains into that add-on, and UAMS-Web/wordpress-importer#347 for what the importer writes. Both are blocked by #325, and the first by #398.
+
+## 2026-10-30: Marketing URL requests are made in the Control Panel, and Statamic builds the tagged URL (#301)
+
+**Decision.** Four decisions, the first three made on 2026-10-28 and the last on 2026-10-30. **First:** a vanity URL request is made by a Control Panel user, as the workflow from #299 with extra required fields. **Second:** the lookup data behind tagged URLs is modeled in the Control Panel, and a submission produces the tagged URL from the choices made. **Third:** the Creative Services job number is checked by format automatically and confirmed by the approver, there are no other eligibility conditions for now, and a request that fails is offered a `go.uams.edu` short code. **Fourth:** a request for a tagged URL alone uses the same Control Panel request and approval, with the vanity fields left out.
+
+**Why.** Requiring a job number already narrows requesters to Creative Services and Communications staff, a small group who can hold Control Panel accounts, so a public intake would mostly admit requests that fail, and it would add a public write surface the application has been closing (UAMS-Web/uams-statamic-archive#863). Tagged URLs are put together by hand in a spreadsheet after each submission; building them in Statamic retires it. That data is large: 265 lookup tables, a cascade from marketing channel down through placement with generic fallbacks, and 18 `utm_*` parameters. About half of past requests are for a tagged URL with no vanity URL, and one workflow gives every tagged URL a stored, approved record, which is what lets the spreadsheet go.
+
+The builder's lookup lists are this site's content and live in `UAMS-Web/uams-statamic-content`, not in the add-on, whose repository is public.
+
+**Rejected.** *A public intake that creates pending requests only (#155)*: it matches today's audience, which the job number requirement no longer serves, so #155 stays deferred with this as the reason. *Carrying only the redirect on the request, or collecting the tag inputs and still building the URL by hand*: both keep the spreadsheet, and the second costs most of the form work too. *Looking the job number up in the Creative Services ticketing system*: it needs an integration with a system whose API has not been examined, for a check the approver can make. *A Control Panel builder with no approval*: it skips the approver for half of requests and leaves no reviewed record of them. *A public builder page that stores nothing*: it publishes the lookup lists and keeps no record of the URLs it builds. *Leaving tagged-only requests to the builder follow-up*: that ticket needs the answer to design the form.
+
+**Companion.** #301 (the decisions, the residual and the eligibility conditions). The build is in `UAMS-Web/statamic-redirects`, where #397 moves this workflow: UAMS-Web/statamic-redirects#11, UAMS-Web/statamic-redirects#12 and UAMS-Web/statamic-redirects#13 (the permissions), UAMS-Web/statamic-redirects#15, UAMS-Web/statamic-redirects#16 and UAMS-Web/statamic-redirects#17 (back-halves), UAMS-Web/statamic-redirects#18 (tagged-only requests), UAMS-Web/statamic-redirects#25 (the job number) and UAMS-Web/statamic-redirects#26 (the builder). UAMS-Web/uams-statamic-content#89 loads the lookup lists.
+
 ## 2026-10-31: `validate` stays second in the chain after gaining the PSR-4 class check (#322)
 
 **Decision.** The `composer-validate` job gains a second step, `composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts`, and `validate` stays second in the local chain. This amends the 2026-07-30 entry, whose position rested on a ~1.5s measurement: with `vendor/` present the new step scans every package, and it took 23s on a loaded Windows machine.
@@ -3632,3 +3656,57 @@ The serial checks stay in `pest-serial` rather than moving to `pest-report`: the
 **Rejected.** *A separate job*: one more remote job for a single command. *Dropping `--dev`*: with no `vendor/`, Composer treats the install as non-dev and skips `autoload-dev`, so the check passes with `tests/` unread. A planted violation showed that: it exited 0 without `--dev` and 1 with it.
 
 **Residual.** The check does not report a second class in a file that also holds a class matching its path, because Composer drops that class without recording a violation. A planted second class exited 0.
+
+## 2026-11-01: `/search` scopes stay in code, and a site shows only the tabs it can fill (#162)
+
+**Decision.** No-go on CP-configurable search scopes, which closes the residual the 2026-07-13 `/search` entry deferred to #162. One code registry of scopes (curated label, index handle, collections covered, with "All results" as a scope over `default`) replaces the six copies of the list. Under "This site" a page shows "All results" and each scope with a collection the current site carries. Under "All sites" it shows every scope. Labels do not change. The build is #475.
+
+**Why.** A search of both trackers found no ticket where an editor asks for this control, and the list changes only when an index does, which is a code change anyway. `UAMS-Web/UAMSWP-Search#50` copies these labels onto WordPress, so an editable label would drift from it. A CP field would also store index handles in content while #161 may change what an index is. What readers meet is a different problem: `clinical_expertise`, `clinical_locations` and `clinical_resources` are on 1 of 255 sites and `people` and `posts` on 244 (`Collection::sites()`, 2026-11-01), so on 253 sub-sites three of the six tabs cannot return anything under "This site", the sub-site default since #468. The sites differ in a way the collection settings already state, so no field is needed to state it again.
+
+**Rejected.** *No CP and no change*: the empty tabs and the six copies both remain. *One CP grid for all sites*: control nobody has asked for, a render-time guard against a stored handle whose index has gone (`InvalidArgumentException`, a 500), labels free to drift from WordPress, and the empty tabs remain unless the tabs are derived anyway. It is the fallback if an editor request appears. *A CP grid per site*: the same costs across 255 hand-kept lists. *The `search_settings` `collections` global from `feature/search-m`*: never read by anything on that branch, and already rejected on 2026-07-13; the recovered files are on #162.
+
+**Residual.** The demand finding is bounded: one of the queries returned 42 hits, of which 20 numbers were seen and their titles were not read, and no search analytics exist yet (#411). The 253 is derived from the collection settings and has not been run, because local content holds no entries in those three collections. Where the #416 page-size setting lives is not settled here.
+
+**Companion.** #162 (the full argument and the recovered prior art), #475 (the build), #161 (independent: a scope names an index handle, so an engine change touches the registry alone).
+
+## 2026-11-01: The root site's search scope reads "This site" (#475)
+
+**Decision.** On the root site, the one scope offered reads "This site" and searches every site. Sub-sites keep "This site" and "All of <root site's name>". This amends the root row in #413's table, which #468 shipped as "All of <root site's name>". The label change is built in #475.
+
+**Why.** `UAMS-Web/UAMSWP-Search#47` decided this case for the root of a WordPress subdirectory network: a visitor sees the parent as the site they are on, so "This site" means what they expect, and the real name is needed only where there is a parent to tell apart. #413 said its labels follow #47, so its table and its stated intent disagreed, and readers move between the two platforms.
+
+**Rejected.** *Keep "All of <root site's name>" on the root*: literally accurate, but it differs from WordPress, and on the root it stands alone, so "All" contrasts with nothing.
+
+**Residual.** Whether "This site" on a parent sub-site covers its children is a separate open question and is not settled here.
+
+## 2026-11-01: The site-search split: entries and index definitions stay in the application, and the tag becomes `aether_search` (UAMS-Web/aether-search#3, #477)
+
+**Decision.** Site search moves to `UAMS-Web/aether-search` on these lines. **Scope entries:** the add-on holds the registry mechanism and the application's config file supplies the handles and labels. **Index definitions:** `config/statamic/search.php` stays whole in the application, and the add-on checks each scope against it. **Classes:** the tag and the suggestions controller move, with a seam for the private-entry rule and result documents, and the application keeps the rule in `HidePrivateSearchResults`, the exclusion list in `ExcludeNonSearchableCollections` and the knowledge-base scope. **Tag handle:** `site_search_scope` is renamed `aether_search`, so the application's views change with the move: 8 occurrences in 3 files (`search/index`, `errors/_recovery_aids`, `layout/header/navbar/_resource-nav`). This refines the 2026-11-01 #162 entry: the registry's mechanism is in the add-on and its entries are a config file, which is still code rather than a Control Panel field.
+
+**Why.** Handles such as `clinical_locations` and labels such as "News" would make a public package unusable by any other host. Of the 57 indexes, 7 serve `/search`, those 7 carry UAMS fields and transformers, and Statamic reads one key, `statamic.search.indexes`, so a second source would add an order hazard. `SiteSearchScope` has no `App\` import, and the suggestions endpoint is the logic worth sharing; the private-entry rule depends on `ProtectEntry` and `PrivateEntryAccess`. The tag takes the add-on's name so a reader of a template can tell where it comes from.
+
+**Rejected.** *Entries hardcoded in the add-on*: UAMS handles in a public package. *The add-on merging its 7 indexes at boot*: two sources for one key. *Moving the tag alone*: leaves the suggestions logic in the application. *Keeping `site_search_scope`*: no view churn, at the cost of a name that does not say where the tag lives.
+
+**Residual.** Whether the `/search` views and the type-ahead script move is open.
+
+## 2026-11-01: A site's search tier follows its `subject` field (#480)
+
+**Decision.** A site is a search tier when its `subject`, read through `value()`, is `root` or `major_entity`, and it has descendants. "This site" on a tier covers its whole subtree. Any other site searches itself, and is offered "All of <nearest tier>" when that tier is not the root, then "All of <root site's name>". This settles the residual in the entry above. The resolvers live in the application, cached, and reach the add-on through the seam from the entry before it. #480 builds them.
+
+**Why.** `UAMS-Web/UAMSWP-Search#47` gives WordPress readers this step, and the app already holds the data: the origin tree in `uams_multisite_settings` and a `subject` field editors set for this structure. Through `value()` there are 20 tiers, and `medicine` covers 38 sites, `health` 28 and `inside` 53. Reading `value()` in the resolvers alone puts `inside` under the rule without changing where breadcrumbs stop. Origin and `subject` ignore addresses, so #259 cannot disturb the tiers.
+
+**Rejected.** *Stay flat*: the 37 sites below `medicine` would jump from one site to all 255, which WordPress readers do not. *Tiers by URL path*: cheaper, but a URL shape would decide the search hierarchy, `academic_affairs` would lump 23 sites and `inside_medicine` would lose its tier, and a site moved to its own domain under #259 would lose its nesting. Origin and path parents agree on all 255 sites today, so that risk is future rather than present.
+
+**Residual.** An editor changing `subject` changes the search scope, as it already changes the header. The cache's invalidation is designed in #480. The site-name length on the row is untested: the longest name is 96 characters.
+
+## 2026-11-01: The `/search` shell and generic cards move to `aether-search`, with a scoped mode (#477)
+
+**Decision.** The add-on ships the shell, the listing, the result row and the generic cards. The application overrides only the 6 type cards, through `resources/views/vendor/<namespace>/cards/`. The add-on's shell gains a generic scoped-subtree mode, so knowledge-base mode is settings (the private-rule scope and the knowledge-base scope names), not a shell override. The first build keeps behavior unchanged. This settles the residual in the 2026-11-01 split entry.
+
+**Why.** It gives any host a working page and keeps the UAMS markup in UAMS's cards. Run in a scratch copy of `statamic-addon-template` on Statamic 6.38.0, Windows 11, 13 of 13: a card overridden at the vendor path wins for its type while the add-on serves the others in the same render, a same-named view elsewhere does not override, an unmapped type gets the generic card, and the shell wraps itself in a host partial named by a setting. The real views rendered there with 6 stub partials and the real tag. By reading the tests, not running them, 46 of the 88 cases on this surface would move, against 11 if the views stayed.
+
+**Corrections to the split's measurements.** The packet behind the split entry said the views could not render in the add-on's own test host, and that was never run. Run, they do. It also said 32 render tests stay in the application: 32 is the case count of `SiteSearchTest`, of which 20 render, 9 are configuration and 3 are source pins. By reading, 47 of the 88 render a page or listing.
+
+**Rejected.** *Views stay in the application*: the add-on would ship logic and every host would write its own page. It stays the fallback if the scoped mode proves too much, and that switch is raised as a fork first. *The application overrides the whole shell*: the shell carries 33 knowledge-base lines, so this looks cheap, but this application would then run none of the add-on's default shell, the shell tests moved there would say nothing about production, and two shells would drift. *All views move, type cards included*: the type cards call this application's theme and content model.
+
+**Residual.** Not measured: a real `composer` install, a result row from a real index, published views, the production view cache, the add-on's JavaScript in this application's CSP build, and a host without Bootstrap. The shell and cards use Bootstrap class names. The type-ahead script's home and the settings that name host partials are criteria on `UAMS-Web/aether-search#3`.
