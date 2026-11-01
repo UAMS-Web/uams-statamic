@@ -2133,9 +2133,8 @@ function postCommitStatus(repoRoot, branch, failed, results, phpVersion) {
         return
     }
 
-    // The status belongs on the PULL REQUEST'S HEAD, not on the merged state
-    // this run validated — that merge commit exists only in the CI worktree and
-    // is not a commit anyone can see.
+    // The status belongs on the branch tip this run validated. The run checks that
+    // commit out and performs no merge, so this is the commit the result is about.
     const sha = capture(git, ['-C', repoRoot, 'rev-parse', '--verify', `refs/remotes/origin/${branch}`], repoRoot, { ignoreStderr: true })
 
     if (!sha) {
