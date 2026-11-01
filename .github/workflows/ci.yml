@@ -340,7 +340,9 @@ jobs:
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
           # forbids; matching the local environment restores the four tests.
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=${{ runner.os == 'Windows' && 'off' || 'tracing' }}, zend.assertions=1, pcre.jit=0
+          # CLI OPcache stays off on Windows (#348): a long run there ended in an access
+          # violation with it on, JIT or no JIT.
+          ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -666,7 +668,9 @@ jobs:
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
           # forbids; matching the local environment restores the four tests.
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=${{ runner.os == 'Windows' && 'off' || 'tracing' }}, zend.assertions=1, pcre.jit=0
+          # CLI OPcache stays off on Windows (#348): a long run there ended in an access
+          # violation with it on, JIT or no JIT.
+          ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -1264,6 +1268,13 @@ jobs:
 
       - name: Run Composer post-autoload-dump scripts
         run: composer run-script post-autoload-dump --no-interaction
+
+      # The dump scripts above clear the real-time facade files, and each analysis worker
+      # boots the application. Two workers writing one file race on Windows, where `rename`
+      # over a file another process holds is refused (#348), so one boot writes them first.
+      - name: Write the real-time facades before the workers boot
+        if: runner.os == 'Windows'
+        run: php artisan about
 
       # PARITY: mirrored by the phpstan job in scripts/local-ci.mjs
       - name: Run Larastan
