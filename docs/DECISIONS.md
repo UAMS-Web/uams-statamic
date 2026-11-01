@@ -3678,3 +3678,12 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Entries hardcoded in the add-on*: UAMS handles in a public package. *The add-on merging its 7 indexes at boot*: two sources for one key. *Moving the tag alone*: leaves the suggestions logic in the application. *Keeping `site_search_scope`*: no view churn, at the cost of a name that does not say where the tag lives.
 
 **Residual.** Whether the `/search` views and the type-ahead script move is open.
+## 2026-11-01: The root site's search scope reads "This site" (#475)
+
+**Decision.** On the root site, the one scope offered reads "This site" and searches every site. Sub-sites keep "This site" and "All of <root site's name>". This amends the root row in #413's table, which #468 shipped as "All of <root site's name>". The label change is built in #475.
+
+**Why.** `UAMS-Web/UAMSWP-Search#47` decided this case for the root of a WordPress subdirectory network: a visitor sees the parent as the site they are on, so "This site" means what they expect, and the real name is needed only where there is a parent to tell apart. #413 said its labels follow #47, so its table and its stated intent disagreed, and readers move between the two platforms.
+
+**Rejected.** *Keep "All of <root site's name>" on the root*: literally accurate, but it differs from WordPress, and on the root it stands alone, so "All" contrasts with nothing.
+
+**Residual.** Whether "This site" on a parent sub-site covers its children is a separate open question and is not settled here.
