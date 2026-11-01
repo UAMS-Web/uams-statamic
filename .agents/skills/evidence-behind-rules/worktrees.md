@@ -246,7 +246,7 @@ The list the script runs, and the reasoning for each step:
 cd ../uams-statamic-a
 composer install                                  # no-op when vendor/ matches composer.lock
 npm ci                                            # ONLY if package-lock.json moved, see below
-git submodule update --init content users resources/forms public/assets app/private/assets
+git submodule update --init <each path in SUBMODULES, scripts/worktree-slots.mjs>
 php artisan statamic:stache:clear                 # content is invisible to tests until this runs
 DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache   # only when the mirror predates content/
 ```
@@ -300,9 +300,9 @@ git worktree add --detach ../uams-statamic-a origin/main
 
 cd ../uams-statamic-a
 
-# 2. All five submodules: content, the login users AND the forms live here. This runs BEFORE the
+# 2. Every submodule in SUBMODULES (scripts/worktree-slots.mjs): the content, the login users and the forms live here. This runs BEFORE the
 #    installs, and the order is load-bearing, see the note below.
-git submodule update --init content users resources/forms public/assets app/private/assets
+git submodule update --init <each path in SUBMODULES, scripts/worktree-slots.mjs>
 
 # 3. Dependencies (reads your global Composer github-oauth PAT for the private packages).
 composer install
