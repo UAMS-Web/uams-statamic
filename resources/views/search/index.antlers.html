@@ -76,6 +76,15 @@
 {{ $scope_query = $scope_param ? ( '&amp;scope=' + $scope_param ) : '' }}
 {{ $search_site = ($search_scope == 'all') ? '*' : site:handle }}
 
+{{# Knowledge-base search has no scope choice, whatever the URL says. Its search bar
+    posts to the root `/search` from every site, so it searches every site and the
+    subtree query scope is what bounds it. #}}
+{{ if $is_kb_search }}
+	{{ $search_site = '*' }}
+	{{ $scope_param = '' }}
+	{{ $scope_query = '' }}
+{{ /if }}
+
 {{ partial:layout/article }}
 	{{ partial:layout/entry-content content_width="false" }}
 
@@ -202,7 +211,7 @@
 			{{# Scope links (UAMS-Web/uams-statamic#413): plain links like the tabs, each
 			    keeping the query and the type and dropping `page`. The root site's name
 			    is configuration, so it is escaped on its way into the label. #}}
-			<nav class="site-search-tabs site-search-scopes mx-auto mb-3" style="max-width: 46rem;" aria-label="Choose where to search">
+			<nav class="site-search-scopes mx-auto mb-3" style="max-width: 46rem;" aria-label="Choose where to search">
 				<ul class="nav nav-pills site-search-tabs-list">
 					{{ site_search_scope:options :active="$search_scope" }}
 						<li class="nav-item">
@@ -262,7 +271,7 @@
 			{{# The wider scope, offered from the empty state on "This site". #}}
 			{{ $wider_scope_url = '' }}
 			{{ $wider_scope_label = '' }}
-			{{ if $search_scope == 'site' }}
+			{{ if $search_scope == 'site' && ! $is_kb_search }}
 				{{ $wider_scope_url = $search_path + '?q=' + $q_url + '&amp;index=' + $search_index + '&amp;scope=all' }}
 				{{ $root_site_name = {site_search_scope:root_name} }}
 				{{ $wider_scope_label = 'all of ' + ($root_site_name | sanitize) }}
@@ -274,7 +283,7 @@
 						{{ if $is_kb_search }}
 							{{# Scope KB search to the subtree's published articles via the
 							    registered query scope, rooted at the submitted entry id. #}}
-							{{ partial:search/results :index="$search_index" query_scope="knowledge_base_subtree_articles" :scope_root="$kb_scope" :all_results_url="$all_results_url" }}
+							{{ partial:search/results :index="$search_index" :search_site="$search_site" query_scope="knowledge_base_subtree_articles" :scope_root="$kb_scope" :all_results_url="$all_results_url" }}
 						{{ else }}
 							{{ partial:search/results :index="$search_index" :search_site="$search_site" :all_results_url="$all_results_url" :wider_scope_url="$wider_scope_url" :wider_scope_label="$wider_scope_label" }}
 						{{ /if }}
