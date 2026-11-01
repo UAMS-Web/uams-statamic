@@ -92,9 +92,9 @@ it('clamps a later attempt to what is left of the retry window', function (): vo
     // here, so this is the assertion that reds on a revert.
     expect($attemptBudgets[0])->toBeGreaterThan(2_000);
 
-    // Both checks below read the whole list once, never once per attempt. How many
-    // attempts fit the window depends on machine load, so a per-attempt assertion
-    // moves the band's assertion total between two runs of one tree (#335).
+    // Neither check below asserts once per attempt. How many attempts fit the window
+    // depends on machine load, so a per-attempt assertion moves the band's assertion
+    // total between two runs of one tree (#335).
 
     // Each later attempt gets strictly less, because the window is draining: that
     // draining IS the clamp. A repeated or rising budget breaks the match.

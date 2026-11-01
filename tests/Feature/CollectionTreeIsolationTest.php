@@ -238,6 +238,7 @@ it('leaves no throwaway tree key for the next test', function (): void {
 
 it('leaves no uri row for an entry an earlier test created and deleted', function (): void {
     $checked = 0;
+    $leaked = [];
 
     foreach (Collection::all() as $collection) {
         $collection = mustBe(StatamicCollection::class, $collection, 'a collection');
@@ -250,10 +251,16 @@ it('leaves no uri row for an entry an earlier test created and deleted', functio
 
         $checked++;
 
-        expect(array_key_exists(TREE_ISOLATION_TRANSIENT_ID, $cached))->toBeFalse();
+        if (array_key_exists(TREE_ISOLATION_TRANSIENT_ID, $cached)) {
+            $leaked[] = $handle;
+        }
     }
 
     // Every structured collection's index is cached by the base, so a sweep that
     // read none has checked nothing.
     expect($checked)->toBeGreaterThan(0);
+
+    // Asserted once over the whole sweep: which indexes are cached depends on what the
+    // worker ran first, so a per-index assertion moves the band's total (#335).
+    expect($leaked)->toBe([]);
 })->depends('it creates and deletes a pages entry inside the base');

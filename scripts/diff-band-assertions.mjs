@@ -6,9 +6,10 @@
  * stays put, and the total alone says nothing about where. Each `<testcase>` in a report
  * carries its own count, so comparing the reports test by test names the source.
  *
- * REFUSES A REPORT WITH NO TESTCASES. An unreadable report and two identical reports
- * would otherwise both print nothing, so a parse that finds no testcase exits 2 and is
- * never reported as a match.
+ * REFUSES WHAT IT CANNOT COMPARE. An unreadable report and two identical reports would
+ * otherwise both print nothing, so a report with no testcases, with a testcase it cannot
+ * read, or with one test listed twice exits 2 and is never reported as a match. Exit 1
+ * means only that two readable reports differ.
  *
  * Usage:  node scripts/diff-band-assertions.mjs <first junit.xml> <second junit.xml>
  * Output: one line per differing test, `<first> -> <second>  <class> :: <name>`, then a
@@ -39,7 +40,11 @@ export function assertionsByTest(xml) {
 
         const key = `${owner} :: ${name}`
 
-        counts.set(key, (counts.get(key) ?? 0) + Number(assertions))
+        if (counts.has(key)) {
+            throw new Error(`the report lists one test twice: ${key}`)
+        }
+
+        counts.set(key, Number(assertions))
     }
 
     return counts
@@ -86,7 +91,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         process.exit(2)
     }
 
-    const [first, second] = paths.map((path) => assertionsByTest(readFileSync(path, 'utf8')))
+    let first
+    let second
+
+    try {
+        ;[first, second] = paths.map((path) => assertionsByTest(readFileSync(path, 'utf8')))
+    } catch (error) {
+        console.error(`A report could not be read: ${error.message}`)
+        process.exit(2)
+    }
 
     if (first.size === 0 || second.size === 0) {
         console.error('A report holds no testcases, so nothing was compared.')

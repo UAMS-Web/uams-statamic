@@ -44,6 +44,10 @@ describe('assertionsByTest', () => {
     it('throws on a testcase it cannot read rather than counting it as zero', () => {
         expect(() => assertionsByTest('<testcase name="it runs" class="Tests\\A"/>')).toThrow('assertions')
     })
+
+    it('throws on a test listed twice, because a sum would hide a lost test', () => {
+        expect(() => assertionsByTest(report([['Tests\\A', 'it runs', 2], ['Tests\\A', 'it runs', 2]]))).toThrow('twice')
+    })
 })
 
 describe('assertionDifferences', () => {
@@ -110,6 +114,19 @@ describe('the command', () => {
 
         expect(result.status).toBe(2)
         expect(result.stderr).toContain('no testcases')
+    })
+
+    it('exits 2 on a report it cannot read, because 1 means the tests differ', () => {
+        const result = run('<testcase name="it runs" class="Tests\\A"/>', report([['Tests\\A', 'it runs', 1]]))
+
+        expect(result.status).toBe(2)
+        expect(result.stderr).toContain('could not be read')
+    })
+
+    it('exits 2 when an argument is a directory', () => {
+        const result = spawnSync(process.execPath, [script, directory, directory], { encoding: 'utf8' })
+
+        expect(result.status).toBe(2)
     })
 
     it('exits 2 when a report is missing', () => {
