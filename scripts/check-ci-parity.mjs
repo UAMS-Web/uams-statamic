@@ -47,12 +47,25 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { isMainModule } from './gate-process.mjs';
 
 /** A real one-sided change. Distinct from 1, which node itself returns when it cannot run this file. */
 export const VIOLATION = 2;
 
 export const CI_FILE = '.github/workflows/ci.yml';
 export const SCRIPT_FILE = 'scripts/local-ci.mjs';
+
+// The steps `scripts/local-ci.mjs` calls rather than holds (#295). Each marks its
+// mirrored code with one `PARITY:` line closed by `PARITY-END`, since none has
+// the runner-body shape the regions below are otherwise derived from. They count
+// as the script side of the comparison, or moving a step out of the runner would
+// have moved it out of this gate.
+export const GATE_STEP_FILES = Object.freeze([
+    'scripts/gate-browser.mjs',
+    'scripts/gate-pest.mjs',
+    'scripts/gate-pint.mjs',
+    'scripts/gate-rector.mjs',
+]);
 
 const RUNNER_OPEN = /^ {8}'?([a-z][a-z-]*)'?: \(\) => \{$/;
 const RUNNER_CLOSE = /^ {8}\},?$/;
@@ -221,14 +234,15 @@ export function touchesRegion(touched, regions) {
  */
 export function evaluate({
     ciDiff = '', scriptDiff = '', ciSource = '', scriptSource = '',
-    ciSourceOld = '', scriptSourceOld = '',
+    ciSourceOld = '', scriptSourceOld = '', gateSteps = [],
 }) {
     const inRegion = (diff, source, sourceOld, kind) => diff !== '' && (
         touchesRegion(touchedLines(diff), parityRegions(source, kind))
         || touchesRegion(touchedLinesOld(diff), parityRegions(sourceOld, kind))
     );
     const ciInRegion = inRegion(ciDiff, ciSource, ciSourceOld, 'yml');
-    const scriptInRegion = inRegion(scriptDiff, scriptSource, scriptSourceOld, 'mjs');
+    const scriptInRegion = inRegion(scriptDiff, scriptSource, scriptSourceOld, 'mjs')
+        || gateSteps.some(({ diff, source, sourceOld }) => inRegion(diff, source, sourceOld, 'mjs'));
     return { fire: ciInRegion !== scriptInRegion, ciInRegion, scriptInRegion };
 }
 
@@ -252,7 +266,8 @@ export function main() {
     const staged = git(['diff', '--cached', '--name-only']).split('\n');
     const ciStaged = staged.includes(CI_FILE);
     const scriptStaged = staged.includes(SCRIPT_FILE);
-    if (!ciStaged && !scriptStaged) return 0;
+    const stagedSteps = GATE_STEP_FILES.filter((f) => staged.includes(f));
+    if (!ciStaged && !scriptStaged && stagedSteps.length === 0) return 0;
 
     // Region extents are read from the INDEX, not the working tree: the commit
     // records the index, so a marker moved-but-not-staged must not shift the
@@ -269,6 +284,12 @@ export function main() {
         } catch { return ''; }
     };
     const diffOf = (f) => git(['diff', '--cached', '--unified=0', '--', f]);
+    // A step file staged for deletion has no index entry to read.
+    const atOrEmpty = (f) => {
+        try {
+            return execFileSync('git', ['show', `:${f}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        } catch { return ''; }
+    };
 
     const { fire, ciInRegion, scriptInRegion } = evaluate({
         ciDiff: ciStaged ? diffOf(CI_FILE) : '',
@@ -277,11 +298,13 @@ export function main() {
         scriptSource: scriptStaged ? at(SCRIPT_FILE) : '',
         ciSourceOld: ciStaged ? atHead(CI_FILE) : '',
         scriptSourceOld: scriptStaged ? atHead(SCRIPT_FILE) : '',
+        gateSteps: stagedSteps.map((f) => ({ diff: diffOf(f), source: atOrEmpty(f), sourceOld: atHead(f) })),
     });
     if (!fire) return 0;
 
-    const inOne = ciInRegion ? CI_FILE : SCRIPT_FILE;
-    const other = ciInRegion ? SCRIPT_FILE : CI_FILE;
+    const scriptSide = stagedSteps.length > 0 && !scriptStaged ? stagedSteps.join(', ') : SCRIPT_FILE;
+    const inOne = ciInRegion ? CI_FILE : scriptSide;
+    const other = ciInRegion ? `${SCRIPT_FILE} or a gate step script` : CI_FILE;
     console.error('');
     console.error('CI parity gate: a staged change lands in a mirrored region of');
     console.error(`    ${inOne}`);
@@ -298,4 +321,4 @@ export function main() {
     return VIOLATION;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main());
+if (isMainModule(import.meta.url)) process.exit(main());
