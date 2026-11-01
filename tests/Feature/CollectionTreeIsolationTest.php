@@ -195,13 +195,20 @@ it('saves an existing pages entry inside the base, writing its tree only to the 
 
     expect(treeIsolationCachedExpertiseUri())->toBe('/expertise');
 
+    // A blank tree is filled in entry-index order, and its root is whichever entry comes
+    // first. That order differs between a snapshot and a cold rebuild (#466), so this
+    // test authors the tree that makes the expertise entry the root.
+    $tree = treeIsolationCollection('pages')->structure()->in('health');
+    $tree->tree([['entry' => TREE_ISOLATION_EXPERTISE_ID]]);
+    $tree->save();
+
     $entry = mustBe(StatamicEntry::class, Entry::find(TREE_ISOLATION_EXPERTISE_ID), 'the expertise entry');
 
     expect($entry->save())->toBeTrue();
 
     // The hazard UAMS-Web/uams-statamic-archive#3227 exists for: with the committed tree hidden, the save writes the
-    // URI of a blank tree into the shared index. The case after this one asserts that
-    // the base puts the committed value back before the next test reads it.
+    // URI of the throwaway tree into the shared index. The case after this one asserts
+    // that the base puts the committed value back before the next test reads it.
     expect(treeIsolationCachedExpertiseUri())->toBe('/')
         ->and(file_get_contents($committedTree))->toBe($committedTreeBefore);
 });
