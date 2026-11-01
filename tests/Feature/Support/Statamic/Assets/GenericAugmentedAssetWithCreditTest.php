@@ -2,11 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Services\SchemaTemplates\SchemaThingFromRelationshipResolver;
 use App\Support\Statamic\Assets\Concerns\ComputesAssetCreditText;
 use App\Support\Statamic\Assets\Concerns\ComputesAssetIptcDigitalSourceValues;
 use App\Support\Statamic\Assets\GenericAugmentedAssetWithCredit;
+use App\Support\Statamic\Assets\Logos\AugmentedAsset as LogosAugmentedAsset;
+use App\Support\Statamic\Assets\LogosUnrestricted\AugmentedAsset as LogosUnrestrictedAugmentedAsset;
+use App\Support\Statamic\Assets\NewsReleases\AugmentedAsset as NewsReleasesAugmentedAsset;
 use Statamic\Assets\Asset as StatamicAsset;
 use Statamic\Assets\AssetContainer as StatamicAssetContainer;
+use Statamic\Assets\AugmentedAsset as StatamicAugmentedAsset;
+use Statamic\Facades\Antlers;
 use Statamic\Facades\AssetContainer;
 use Tests\TestCase;
 
@@ -39,25 +45,76 @@ function genericCreditAsset(array $data): StatamicAsset
     return $asset;
 }
 
-it('computes the credit line from the creator and the creator organization', function (array $data, ?string $expected): void {
-    $augmented = new GenericAugmentedAssetWithCredit(genericCreditAsset($data));
+it('augments the credit line from the creator and the creator organization', function (string $augmentedClass, array $data, ?string $expected): void {
+    /** @var class-string<StatamicAugmentedAsset> $augmentedClass */
+    $augmented = new $augmentedClass(genericCreditAsset($data));
 
-    $creditText = (fn (): ?string => $this->credit_text())->call($augmented);
-
-    expect($creditText)->toBe($expected);
+    expect($augmented->get('credit_text')->value())->toBe($expected);
 })->with([
+    'the generic fallback' => [GenericAugmentedAssetWithCredit::class],
+    'logos' => [LogosAugmentedAsset::class],
+    'unrestricted logos' => [LogosUnrestrictedAugmentedAsset::class],
+    'news releases' => [NewsReleasesAugmentedAsset::class],
+])->with([
     'both' => [['creator' => 'Ann Lee', 'creator_organization' => 'UAMS'], 'Ann Lee / UAMS'],
     'the creator alone' => [['creator' => 'Ann Lee'], 'Ann Lee'],
     'the organization alone' => [['creator_organization' => 'UAMS'], 'UAMS'],
     'neither' => [[], null],
 ]);
 
-it('does not yet reach the credit line through augmentation', function (): void {
-    // Statamic dispatches `credit_text` to a `creditText()` method; fixing that is #323
-    $augmented = new GenericAugmentedAssetWithCredit(genericCreditAsset(['creator' => 'Ann Lee', 'creator_organization' => 'UAMS']));
+it('lists `credit_text` once', function (string $augmentedClass): void {
+    /** @var class-string<GenericAugmentedAssetWithCredit|LogosAugmentedAsset|LogosUnrestrictedAugmentedAsset|NewsReleasesAugmentedAsset> $augmentedClass */
+    $keys = (new $augmentedClass(genericCreditAsset(['alt' => 'A photo'])))->keys();
 
-    expect($augmented->get('credit_text')->value())->toBeNull();
-});
+    // A stored key is listed by the parent, so this asset shows only the de-duplication
+    $keysWithStoredValue = (new $augmentedClass(genericCreditAsset(['credit_text' => 'stale'])))->keys();
+
+    expect(array_count_values($keys))->toHaveKey('credit_text', 1)
+        ->and(array_count_values($keysWithStoredValue))->toHaveKey('credit_text', 1);
+})->with([
+    'the generic fallback' => [GenericAugmentedAssetWithCredit::class],
+    'logos' => [LogosAugmentedAsset::class],
+    'unrestricted logos' => [LogosUnrestrictedAugmentedAsset::class],
+    'news releases' => [NewsReleasesAugmentedAsset::class],
+]);
+
+it('renders `credit_text` through Antlers inside an asset tag pair', function (string $augmentedClass): void {
+    /** @var class-string<GenericAugmentedAssetWithCredit|LogosAugmentedAsset|LogosUnrestrictedAugmentedAsset|NewsReleasesAugmentedAsset> $augmentedClass */
+    $augmented = new $augmentedClass(genericCreditAsset(['creator' => 'Ann Lee', 'creator_organization' => 'UAMS']));
+
+    expect((string) Antlers::parse('{{ a }}{{ credit_text }}{{ /a }}|{{ a:credit_text }}', ['a' => $augmented->all()], true))
+        ->toBe('Ann Lee / UAMS|Ann Lee / UAMS');
+})->with([
+    'the generic fallback' => [GenericAugmentedAssetWithCredit::class],
+    'logos' => [LogosAugmentedAsset::class],
+    'unrestricted logos' => [LogosUnrestrictedAugmentedAsset::class],
+    'news releases' => [NewsReleasesAugmentedAsset::class],
+]);
+
+it('emits `creditText` on a MediaObject schema node only for an asset with a credit', function (array $data, ?string $expected): void {
+    // The real `MediaObject Type Base` template maps `creditText` to `{{ credit_text }}`
+    $asset = Mockery::mock(genericCreditAsset($data))->makePartial();
+    $asset->shouldReceive('absoluteUrl')->andReturn('https://cdn.example/probe.jpg');
+
+    $resolved = app(SchemaThingFromRelationshipResolver::class)->resolve(
+        ['gallery' => [$asset]],
+        ['mode' => 'assets', 'current_field' => 'gallery', 'schema_object' => '496550bb-510f-487c-8723-616f583c844a'],
+    );
+
+    /** @var list<array<string, mixed>> $nodes */
+    $nodes = json_decode($resolved, true, 512, JSON_THROW_ON_ERROR);
+
+    expect($nodes)->toHaveCount(1);
+
+    if ($expected === null) {
+        expect($nodes[0])->not->toHaveKey('creditText');
+    } else {
+        expect($nodes[0])->toHaveKey('creditText', $expected);
+    }
+})->with([
+    'a creator and an organization' => [['creator' => 'Ann Lee', 'creator_organization' => 'UAMS'], 'Ann Lee / UAMS'],
+    'neither' => [[], null],
+]);
 
 it('lists the computed digital source keys after the asset\'s own keys, once each', function (): void {
     // `digital_source_type_value` is also stored on this asset, so it must not be listed twice

@@ -23,10 +23,10 @@
 //               mutate-ignore and lone-CR guards and the release-notes generator suite
 //     isolation php scripts/check-parallel-safe-tests.php (parallel-safety guard)
 //               + .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
-//     validate  composer validate (composer.json <-> composer.lock freshness)
+//     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
 //
 // The jobs run as a cost-ordered CHAIN, shortest
-// -> longest: isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
+// -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
 // LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
@@ -124,8 +124,10 @@
 //                       depended on somebody REMEMBERING to ask for it.
 //     encoding-guard    the vendored check-double-encoding.mjs invocation
 //     composer-validate composer validate --no-check-publish --no-check-all (the
-//                       lock-hash freshness gate; needs neither composer install
-//                       nor the framework, so it runs on the two files alone)
+//                       lock-hash freshness gate), then composer dump-autoload
+//                       --optimize --dev --strict-psr --dry-run --no-scripts (a
+//                       file with no class matching its PSR-4 path, #322); needs
+//                       neither composer install nor the framework
 //     toolchain pins    PHP 8.4, Node 22
 //
 // This script intentionally does NOT replicate CI-only infra that does not affect
@@ -178,24 +180,35 @@
 // away — a silent clean fixes one run and hides an accumulating leak.
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, copyFileSync, readFileSync, readdirSync, realpathSync, writeFileSync, rmSync, mkdirSync, mkdtempSync } from 'node:fs'
+import { existsSync, copyFileSync, readFileSync, readdirSync, realpathSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
 import { join, dirname, basename, isAbsolute, relative } from 'node:path'
-import { homedir, tmpdir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import process from 'node:process'
+import { gateBrowser } from './gate-browser.mjs'
+import { clearFileCaches, clearRuntimeCaches, contentLitter, driftLabel, gatePest, KNOWN_CONTENT_LITTER, worktreeDriftEntries } from './gate-pest.mjs'
+import { chunkByArgLength, gatePint } from './gate-pint.mjs'
+import {
+    capture, captureResult, green, herdMacBin, red, resolveGit, resolveNpm, resolveNpx, resolvePhp,
+    resolveTool, run, step, warn, withPhpMemoryLimit, yellow,
+} from './gate-process.mjs'
+import { gateRector } from './gate-rector.mjs'
 import { GATE_SUBMODULES, patchedPackages, patchStaleReason, readPatchLockHash } from './gate-slot.mjs'
 import { bandFromJunit, bandLine } from './local-ci-bands.mjs'
 import { primaryCheckout } from './repo-root.mjs'
-import { isExecutable, needsShell, which, winQuote } from './spawn-helpers.mjs'
+import { which } from './spawn-helpers.mjs'
 
 const isWindows = process.platform === 'win32'
 const isMacOS = process.platform === 'darwin'
+
+export { chunkByArgLength, contentLitter, driftLabel, KNOWN_CONTENT_LITTER, resolveTool, withPhpMemoryLimit, worktreeDriftEntries }
 
 export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spell', 'phpstan', 'encoding', 'no-emoji', 'content-pointer', 'isolation', 'validate', 'browser']
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
 
-// PARITY: the cost-ordered chain, shortest -> longest. A job runs only if every
+// PARITY: the cost-ordered chain, shortest -> longest, except `validate`, which
+// stays second although its PSR-4 class check can cost more than the jobs after it
+// (docs/DECISIONS.md). A job runs only if every
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
@@ -290,23 +303,6 @@ export function canReuseBuildOutput(results) {
     return results.get('build') === 0
 }
 
-// CI's setup-php leaves PHP's memory_limit at its -1 (unlimited) default, so the
-// remote suite has no ceiling. A local CLI does: Herd's PHP caps it (2G here), which
-// the full framework-booting suite blows past mid-run as the content set grows (a
-// fatal OOM, not a test failure). Raise the limit for every PHP process the runner
-// starts, and forward it to the paratest workers, to keep parity with CI. Override with
-// LOCAL_CI_PHP_MEMORY_LIMIT (any PHP ini shorthand, e.g. `8G` or `-1` for unlimited).
-const PHP_MEMORY_LIMIT = process.env.LOCAL_CI_PHP_MEMORY_LIMIT || '4G'
-
-// Prefix a PHP argument list with the runner's memory limit. Every PHP process the
-// runner starts goes through this (UAMS-Web/uams-statamic-archive#3212), not only the test runners: a PHP whose
-// own memory_limit is low (128M with no php.ini) fatals the mutate-ignore auditor
-// on `token_get_all()` with exit 255, which fails the encoding job for a reason
-// that has nothing to do with the branch. CI runs every step unlimited, so a limit
-// on each process is the parity, and no job is better served by the CLI default.
-export function withPhpMemoryLimit(args, limit = PHP_MEMORY_LIMIT) {
-    return ['-d', `memory_limit=${limit}`, ...args]
-}
 
 // --- mutation-tooling smoke (UAMS-Web/uams-statamic-archive#1731) ----------------------------------------
 //
@@ -377,100 +373,6 @@ export function mutateSmokeVerdict(driver, plain) {
     }
 
     return { ok: true }
-}
-
-// --- console helpers -------------------------------------------------------
-
-const useColor = process.stdout.isTTY && !process.env.NO_COLOR
-const paint = (code, text) => (useColor ? `\x1b[${code}m${text}\x1b[0m` : text)
-const cyan = (t) => paint('36', t)
-const green = (t) => paint('32', t)
-const red = (t) => paint('31', t)
-const yellow = (t) => paint('33', t)
-
-function step(message) {
-    console.log('')
-    console.log(cyan(`==> ${message}`))
-}
-
-function warn(message) {
-    console.error(yellow(`WARNING: ${message}`))
-}
-
-// --- process execution -----------------------------------------------------
-
-// `winQuote`, `needsShell` and `which` live in ./spawn-helpers.mjs — shared with
-// worktree-slots.mjs, because the CVE-2024-27980 shim rule they encode is one a
-// second copy would drift on silently (UAMS-Web/uams-statamic-archive#1948).
-
-// Run a command, streaming its output to the console. Returns the exit code.
-function run(exe, args, cwd, extraEnv) {
-    const shell = needsShell(exe)
-    const res = spawnSync(
-        shell ? winQuote(exe) : exe,
-        shell ? args.map(winQuote) : args,
-        { cwd, stdio: 'inherit', shell, ...(extraEnv ? { env: { ...process.env, ...extraEnv } } : {}) },
-    )
-    if (res.error) {
-        throw res.error
-    }
-    return res.status ?? 1
-}
-
-// Run a command and capture its trimmed stdout (exit status is not asserted, so
-// a probe like the optional token read can fail softly). `ignoreStderr` discards
-// stderr — mirrors the PowerShell `2>$null` on that same token read.
-function capture(exe, args, cwd, { ignoreStderr = false } = {}) {
-    return captureResult(exe, args, cwd, { ignoreStderr }).stdout.trim()
-}
-
-// The same spawn, returning the RAW stdout alongside the exit status.
-//
-// Two callers need what `capture()` discards. A NUL-delimited record stream must
-// not be trimmed: `git status --porcelain -z` writes ` M path` for a worktree-only
-// modification, and trimming eats the leading status column — the path then loses
-// its first character, and a short enough record is dropped entirely, which reads
-// as a clean worktree. And a probe whose *absence of output* means "nothing wrong"
-// has to distinguish that from a probe that failed: without the status, a git that
-// exited non-zero printing nothing is byte-identical to a clean answer.
-function captureResult(exe, args, cwd, { ignoreStderr = false } = {}) {
-    const shell = needsShell(exe)
-    const res = spawnSync(
-        shell ? winQuote(exe) : exe,
-        shell ? args.map(winQuote) : args,
-        { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', ignoreStderr ? 'ignore' : 'inherit'], shell },
-    )
-    if (res.error) {
-        throw res.error
-    }
-    return { stdout: res.stdout ?? '', status: res.status ?? 1 }
-}
-
-// Split a list of file-path args into batches whose joined length stays under
-// `maxLen`, so a spawned command line never exceeds the OS limit (Windows
-// CreateProcess caps the whole command at ~32 KB). A single path longer than
-// `maxLen` still goes out alone — there is nothing else to do, and no real repo
-// path is that long. Order is preserved and the concatenation of the chunks
-// equals the input, so running a per-file tool (Pint) chunk-by-chunk yields the
-// same result as one invocation over the whole list.
-export function chunkByArgLength(files, maxLen) {
-    const chunks = []
-    let current = []
-    let length = 0
-    for (const file of files) {
-        const cost = file.length + 1 // + a separator/quoting byte of slack
-        if (current.length > 0 && length + cost > maxLen) {
-            chunks.push(current)
-            current = []
-            length = 0
-        }
-        current.push(file)
-        length += cost
-    }
-    if (current.length > 0) {
-        chunks.push(current)
-    }
-    return chunks
 }
 
 
@@ -614,7 +516,7 @@ export const EXECUTING_RUNNER_SOURCE = readFileSync(EXECUTING_RUNNER_PATH, 'utf8
 // a static local import or re-export the list does not name (`import ... from './x'`,
 // `import './x'`, `export ... from './x'`), so a new helper cannot reopen the gap that
 // way. A dynamic `import('./x')` is not scanned; none of these files uses one.
-export const RUNNER_HELPER_MODULES = Object.freeze(['gate-slot.mjs', 'local-ci-bands.mjs', 'repo-root.mjs', 'spawn-helpers.mjs'])
+export const RUNNER_HELPER_MODULES = Object.freeze(['gate-browser.mjs', 'gate-pest.mjs', 'gate-pint.mjs', 'gate-process.mjs', 'gate-rector.mjs', 'gate-slot.mjs', 'local-ci-bands.mjs', 'repo-root.mjs', 'spawn-helpers.mjs'])
 
 // Captured at module load beside the runner's own source, for the same reason (UAMS-Web/uams-statamic-archive#2856):
 // a checkout can replace these files when the runner sits inside the worktree it
@@ -753,56 +655,6 @@ export function handoffArgv(argv, worktreePath) {
     return [...forwarded, '--worktree-path', worktreePath]
 }
 
-// UAMS-Web/uams-statamic-archive#1889 — parse `git status --porcelain -z` into one entry per differing path.
-//
-// `-z` rather than the default: porcelain v1 quotes and C-escapes any path with a
-// space, a quote or a non-ASCII byte, so reading the default form correctly means
-// reversing that escaping first. The NUL-separated form has no quoting at all, which
-// removes the whole class of parse bug from a check whose output is a list of paths.
-//
-// Each entry is `XY <path>`; a rename or copy adds a SECOND field holding the
-// origin path. Consuming that field here is what stops it being read as a further
-// entry with two characters sliced off the front of its path.
-export function worktreeDriftEntries(porcelain) {
-    const fields = porcelain.split('\0').filter((field) => field !== '')
-    const entries = []
-
-    for (let i = 0; i < fields.length; i++) {
-        const field = fields[i]
-        // Shorter than `XY p` is not an entry git wrote; skipping beats slicing a
-        // path out of something that is not one.
-        if (field.length < 4) {
-            continue
-        }
-        const status = field.slice(0, 2)
-        entries.push({
-            status,
-            path: field.slice(3),
-            origin: /[RC]/.test(status) ? (fields[++i] ?? null) : null,
-        })
-    }
-
-    return entries
-}
-
-// UAMS-Web/uams-statamic-archive#1889 — say what a status code means for the run, not what it means to git.
-//
-// The reader's question is always "why would this change what was validated",
-// and `??` is the one that has to be spelled out: a file the commit DELETED
-// survives on disk as untracked, so it reads as an addition while being the exact
-// residue this check exists to catch.
-export function driftLabel(status) {
-    if (status === '??') {
-        return 'on disk but absent from the validated commit (a surviving deletion, or stray scratch)'
-    }
-    if (status.includes('D')) {
-        return 'tracked by the validated commit but missing from the worktree'
-    }
-    if (status.includes('M') || status.includes('T')) {
-        return 'content differs from the validated commit'
-    }
-    return 'differs from the validated commit'
-}
 
 // UAMS-Web/uams-statamic-archive#1873 — split what the suite just wrote into the content/ submodule from what
 // was already sitting there.
@@ -1012,7 +864,6 @@ export function acquireWorktreeLock(worktreePath, branch) {
     throw new Error('unreachable: lock acquisition fell through')
 }
 
-export const KNOWN_CONTENT_LITTER = []
 
 /**
  * The clause a first-boot failure carries when `content/` changed revision during
@@ -1033,22 +884,6 @@ export function contentMoveNote(before, after) {
     }
 
     return `the first app boot after content/ moved ${before.slice(0, 9)} -> ${after.slice(0, 9)} in this run`
-}
-
-/**
- * Split what the suite just wrote into the content/ submodule from what was
- * already there, holding known debt aside.
- */
-export function contentLitter(before, after) {
-    const existing = new Set(before.map((entry) => entry.path))
-    const fresh = after.filter((entry) => !existing.has(entry.path))
-    const isKnown = (entry) => KNOWN_CONTENT_LITTER.some((prefix) => entry.path.startsWith(prefix))
-
-    return {
-        introduced: fresh.filter((entry) => !isKnown(entry)),
-        known: fresh.filter(isKnown),
-        preexisting: after.filter((entry) => existing.has(entry.path)),
-    }
 }
 
 
@@ -1083,38 +918,6 @@ function assertExit(code, what) {
 
 // --- toolchain discovery ---------------------------------------------------
 
-// Resolve a toolchain binary to an absolute path so a missing or misconfigured
-// tool fails here with an actionable message — never as a path-not-found error
-// deep inside a job. Order: explicit override path(s), then a version-pinned Herd
-// binary where one exists, then the command on PATH.
-export function resolveTool({ name, candidates = [], onPath, hint, envVar }) {
-    for (const [index, candidate] of candidates.entries()) {
-        if (! candidate || ! existsSync(candidate)) {
-            continue
-        }
-
-        // Existence is not the question — `spawnSync` needs something the OS will RUN. An
-        // override pointing at a file that exists but cannot be executed used to be accepted
-        // here and fail much later as a bare `EACCES` (POSIX) or `EFTYPE` (a `.phar` on
-        // Windows), which reads as "the tool is broken" rather than "this variable is wrong".
-        // Refuse it where the choice was made, and name the thing that made it (UAMS-Web/uams-statamic-archive#2335).
-        if (! isExecutable(candidate)) {
-            const chose = index === 0 && envVar ? `$${envVar}` : 'this candidate path'
-
-            throw new Error(
-                `Required tool '${name}' resolved to '${candidate}', which this OS cannot execute `
-                + `(${chose}). ${hint}`
-            )
-        }
-
-        return candidate
-    }
-    const found = which(onPath)
-    if (found) {
-        return found
-    }
-    throw new Error(`Required tool '${name}' was not found. ${hint}`)
-}
 
 /**
  * Ask the resolved PHP for its version, and refuse to continue if it could not answer.
@@ -1365,13 +1168,7 @@ function main() {
     const opts = parseArgs(process.argv.slice(2))
 
     // git is the one tool needed before anything else (to find the repo root).
-    const git = resolveTool({
-        name: 'git',
-        candidates: [process.env.LOCAL_CI_GIT],
-        onPath: 'git',
-        hint: 'Install git or set $LOCAL_CI_GIT to its path.',
-        envVar: 'LOCAL_CI_GIT',
-    })
+    const git = resolveGit()
 
     // The PRIMARY checkout, not the worktree this was invoked from (UAMS-Web/uams-statamic-archive#1953). The
     // default below is a SIBLING of the repo root, so resolving `--show-toplevel`
@@ -1706,21 +1503,15 @@ function main() {
 
     step('Resolving local toolchain')
 
-    const herdMacBin = isMacOS ? join(homedir(), 'Library', 'Application Support', 'Herd', 'bin') : null
+    const herdBin = herdMacBin()
 
-    const php = resolveTool({
-        name: 'PHP 8.4',
-        candidates: [process.env.LOCAL_CI_PHP, herdMacBin && join(herdMacBin, 'php84')],
-        onPath: 'php',
-        hint: 'Install PHP 8.4 — via Laravel Herd (https://herd.laravel.com) — or set $LOCAL_CI_PHP to its path.',
-        envVar: 'LOCAL_CI_PHP',
-    })
+    const php = resolvePhp()
     // Every PHP process carries the runner's memory limit (UAMS-Web/uams-statamic-archive#3212); see withPhpMemoryLimit().
     const runPhp = (args, cwd, extraEnv) => run(php, withPhpMemoryLimit(args), cwd, extraEnv)
     const capturePhp = (args, cwd) => capture(php, withPhpMemoryLimit(args), cwd)
     const composer = resolveTool({
         name: 'Composer',
-        candidates: [process.env.LOCAL_CI_COMPOSER, herdMacBin && join(herdMacBin, 'composer')],
+        candidates: [process.env.LOCAL_CI_COMPOSER, herdBin && join(herdBin, 'composer')],
         onPath: 'composer',
         hint: 'Install Composer (bundled with Laravel Herd) or set $LOCAL_CI_COMPOSER to its path.',
         envVar: 'LOCAL_CI_COMPOSER',
@@ -1779,23 +1570,11 @@ function main() {
         console.log(`Python:    ${python}`)
     }
     if (jobs.includes('build') || jobs.includes('browser') || jobs.includes('js') || jobs.includes('spell')) {
-        npm = resolveTool({
-            name: 'npm',
-            candidates: [process.env.LOCAL_CI_NPM],
-            onPath: 'npm',
-            hint: 'Install Node 22 (which bundles npm) or set $LOCAL_CI_NPM to its path.',
-            envVar: 'LOCAL_CI_NPM',
-        })
+        npm = resolveNpm()
         assertNpmFloor(npm, repoRoot)
     }
     if (jobs.includes('browser')) {
-        npx = resolveTool({
-            name: 'npx',
-            candidates: [process.env.LOCAL_CI_NPX],
-            onPath: 'npx',
-            hint: 'Install Node 22 (which bundles npx) or set $LOCAL_CI_NPX to its path.',
-            envVar: 'LOCAL_CI_NPX',
-        })
+        npx = resolveNpx()
         console.log(`npx:       ${npx}`)
     }
 
@@ -1963,7 +1742,7 @@ function main() {
     // after the install, where booting is safe again.
     if (needsFramework && worktreeExists && !opts.noReset) {
         step('Clearing reused-worktree file caches before the first app boot')
-        run(git, ['-C', worktreePath, 'clean', '-xdf', 'storage/framework', 'bootstrap/cache'], repoRoot)
+        clearFileCaches(git, worktreePath, repoRoot)
     } else if (contentMove && opts.noReset) {
         warn(`--no-reset keeps this worktree's Stache cache, and content/ moved in this run (${contentMove}); the first boot may read an index built for the old revision.`)
     }
@@ -2012,8 +1791,7 @@ function main() {
         step('Resetting reused-worktree runtime state (caches, Stache)')
         // storage/framework was already cleaned before the first boot (UAMS-Web/uams-statamic-archive#2832);
         // these two boot the app, which is safe once that stale cache is gone.
-        runPhp(['artisan', 'optimize:clear'], worktreePath)
-        runPhp(['artisan', 'statamic:stache:clear'], worktreePath)
+        clearRuntimeCaches(php, worktreePath)
     }
 
     // --- run jobs -----------------------------------------------------------
@@ -2052,7 +1830,16 @@ function main() {
             // Reads composer.json + composer.lock only — no install, no vendor/,
             // no network or private-package auth (verified with the network off).
             step('JOB validate - composer validate')
-            return run(composer, ['validate', '--no-check-publish', '--no-check-all'], worktreePath)
+            const validated = run(composer, ['validate', '--no-check-publish', '--no-check-all'], worktreePath)
+            if (validated !== 0) {
+                return validated
+            }
+            // PARITY: the same job's "Run PSR-4 class check" step. Fails on a file
+            // declaring a class but none matching its PSR-4 path (#322); a second
+            // class beside a matching one is not reported. `--dev` keeps `autoload-dev`
+            // in the scan on the remote job, which has no `vendor/`.
+            step('JOB validate - PSR-4 class check')
+            return run(composer, ['dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'], worktreePath)
         },
         'no-emoji': () => {
             // PARITY: the no-emoji-guard job's "Run no-emoji guard" step in ci.yml.
@@ -2205,88 +1992,12 @@ function main() {
             return b1 !== 0 ? b1 : b2
         },
         pint: () => {
-            // PARITY: the pint job's "Determine changed PHP files" + "Run Pint on
-            // changed files" steps in ci.yml.
-            //
-            // Diff against the REMOTE-TRACKING base (origin/<base>), matching ci.yml's
-            // pull_request path (base="origin/${{ github.base_ref }}"). `--fetch`
-            // updates origin/<base> but never moves the local <base> branch ref, so
-            // after a run of `gh pr merge`s a local main that lags origin would
-            // otherwise balloon `<base>...HEAD` with already-merged commits and report a
-            // false FAIL (UAMS-Web/uams-statamic-archive#1079). Fall back to the local ref when the remote-tracking
-            // ref doesn't resolve (a purely local base).
-            //
-            // A BARE `pint --test` IS NOT A SUBSTITUTE FOR THIS, AND ITS `0 dirty` IS
-            // NOT EVIDENCE THE TREE IS CLEAN (UAMS-Web/uams-statamic-archive#2341). Pint's own finder does not
-            // descend into dot-directories; the git pathspec below does. Measured with
-            // both arms at one moment, with two tracked files dirty on disk:
-            //
-            //   vendor/bin/pint --test                  "result":"passed"  exit 0
-            //   vendor/bin/pint --test <those paths>    "result":"fail"    exit 1
-            //
-            // The explicit arm failing at the same instant is what makes the bare run's
-            // `passed` readable as blindness rather than cleanliness. So this job sees
-            // `.cursor/*.php` and a whole-tree sweep does not — which is why a sweep, if
-            // one is ever wanted, must enumerate with `git ls-files -- '*.php'` rather
-            // than by letting Pint find its own files.
-            const remoteBase = `origin/${opts.baseRef}`
-            const diffBase = capture(git, ['-C', worktreePath, 'rev-parse', '--verify', '--quiet', `${remoteBase}^{commit}`], repoRoot, { ignoreStderr: true })
-                ? remoteBase
-                : opts.baseRef
-            step(`JOB pint - diffing .php files vs ${diffBase}`)
-            const changed = capture(git, ['-C', worktreePath, 'diff', '--name-only', '--diff-filter=ACMR', `${diffBase}...HEAD`, '--', '*.php'], repoRoot)
-                .split('\n')
-                .map((f) => f.trim())
-                .filter(Boolean)
-            if (changed.length === 0) {
-                console.log('No PHP files changed vs base; skipping Pint (CI does the same).')
-                return 0
-            }
-            console.log(`Changed PHP files: ${changed.length}`)
-            // Chunk the path list so a large diff never overflows the Windows command
-            // line (UAMS-Web/uams-statamic-archive#1079). ci.yml passes the whole list at once (its Ubuntu runner
-            // allows a ~2 MB command line; a 300+ file diff exceeds Windows' ~32 KB
-            // cap). Pint checks each file independently, so per-chunk codes aggregate.
-            let pintCode = 0
-            for (const chunk of chunkByArgLength(changed, 8000)) {
-                const code = runPhp(['vendor/bin/pint', '--test', ...chunk], worktreePath)
-                if (code !== 0) {
-                    pintCode = code
-                }
-            }
-            return pintCode
+            // PARITY: the pint job in ci.yml; the step is scripts/gate-pint.mjs.
+            return gatePint({ tree: worktreePath, php, git, repoRoot, baseRef: opts.baseRef })
         },
         rector: () => {
-            // PARITY: the rector job's "Run Rector (gating profile, dry-run)" step in
-            // ci.yml. Runs the DEFAULT profile — the gating one — so this asserts the
-            // same zero baseline the remote job does; `rector-sweep.php` is deliberately
-            // not run here (its extra rules are judgment calls, UAMS-Web/uams-statamic-archive#1720).
-            //
-            // The private temp dir is load-bearing, not hygiene. Rector's file cache
-            // (sys_get_temp_dir()/rector_cached_files) does NOT key on the active rule
-            // set, so a warm cache written by a different profile makes a later run
-            // silently UNDER-report — measured while building UAMS-Web/uams-statamic-archive#1720: 124 files cold
-            // versus 92 warm. Under-reporting is a false GREEN, so a gate reusing a warm
-            // cache can pass on a backlog it never re-analyzed. That risk is sharper
-            // here than on CI: a runner starts clean, but this script reuses a
-            // long-lived worktree on a developer machine where `composer refactor`,
-            // another worktree's run, or a previous sweep may have warmed the shared
-            // directory already. A fresh dir starts empty, so no `--clear-cache` (which
-            // would race a concurrent Rector process) is needed. PHP reads TMPDIR on
-            // macOS/Linux but TMP/TEMP on Windows, so all three are set — matching
-            // tests/Feature/RectorProfileSplitTest.php.
-            step('JOB rector - rector --dry-run (gating profile)')
-            const rectorTmp = mkdtempSync(join(tmpdir(), 'local-ci-rector-'))
-            try {
-                return runPhp(['vendor/bin/rector', '--dry-run', '--no-progress-bar'], worktreePath, {
-                    TMPDIR: rectorTmp,
-                    TMP: rectorTmp,
-                    TEMP: rectorTmp,
-                })
-            } finally {
-                // Best-effort cleanup; a leftover temp dir is harmless.
-                rmSync(rectorTmp, { recursive: true, force: true })
-            }
+            // PARITY: the rector job in ci.yml; the step is scripts/gate-rector.mjs.
+            return gateRector({ tree: worktreePath, php })
         },
         mutate: () => {
             // PARITY: the mutate job's "Run the mutation-tooling smoke" step in ci.yml.
@@ -2349,346 +2060,14 @@ function main() {
             return run(composer, ['stan'], worktreePath)
         },
         pest: () => {
-            // UAMS-Web/uams-statamic-archive#1873 — snapshot each gate submodule before the bands so litter THIS
-            // run created is distinguishable from a worktree that arrived dirty.
-            // Returns null only when there is genuinely no submodule to read, which
-            // switches the check off rather than failing a run that legitimately has
-            // none.
-            //
-            // Keyed on the submodule being ON DISK, NOT on `--skip-submodule`. That
-            // flag means "content/ is already materialized, don't re-init it" — the
-            // multi-worktree recipe in the local-ci skill stages every submodule
-            // serially and then fans out WITH the flag — so treating it as "no
-            // content/" would switch the gate off for precisely the concurrent runs
-            // that do have content and do run the bands. An initialized submodule
-            // leaves a `<name>/.git` gitdir file; an uninitialized one leaves
-            // nothing, which is the fact worth reading.
-            //
-            // `users/` is probed the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the suite
-            // writes there through the file user driver, and a tracked seed account a
-            // test deletes or rewrites stays that way in this reused worktree —
-            // `submodule update --init` on an unchanged gitlink restores nothing —
-            // while `git ls-files` keeps listing it, so nothing else would notice.
-            // Test-CREATED accounts never show here: the allowlist ignores them, and
-            // `--untracked-files=all` lists untracked, not ignored.
-            // PARITY: mirrored by the "Check the suite left content/, users/ and resources/forms/ clean"
-            // step in ci.yml.
-            const submoduleStatus = (name) => {
-                if (!existsSync(join(worktreePath, name, '.git'))) {
-                    return null
-                }
-                // captureResult for the same reason UAMS-Web/uams-statamic-archive#1889 uses it: a `git` that failed
-                // printing nothing is otherwise indistinguishable from a clean tree,
-                // and a check that silently verifies nothing is the bug it guards.
-                const probe = captureResult(
-                    git,
-                    ['-C', join(worktreePath, name), 'status', '--porcelain', '-z', '--untracked-files=all'],
-                    repoRoot,
-                )
-                if (probe.status !== 0) {
-                    throw new Error(
-                        `\`git status\` in ${join(worktreePath, name)} exited ${probe.status}, so the suite's `
-                        + `effect on the ${name} submodule could not be checked.`,
-                    )
-                }
-                return worktreeDriftEntries(probe.stdout)
-            }
-
-            const litterBefore = Object.fromEntries(GATE_SUBMODULES.map((name) => [name, submoduleStatus(name)]))
-
-            // PARITY: the pest job's two run steps in ci.yml — the parallel pass
-            // (excluding the serial group) then the serial tail. The per-worker
-            // isolated cache (config/cache.php) plus the per-process stache warm in
-            // tests/CreatesApplication.php remove the need for a separate stache:warm
-            // step. Two local-only `-d` additions (CI runs memory unlimited, so there
-            // is nothing to mirror): `-d pcov.enabled=0` keeps the run coverage-free,
-            // and `-d memory_limit=${PHP_MEMORY_LIMIT}` raises the ceiling. The parallel
-            // pass forwards the limit to the paratest workers via `--passthru-php` —
-            // they run as their own PHP processes at the system CLI memory_limit
-            // otherwise (~2G on Herd), which the growing content set now OOMs mid-run;
-            // the single-process serial tail takes it directly.
-            // Build the Stache seed once before the parallel suite so each of the
-            // ~12 paratest workers copies it into its own per-worker cache instead
-            // of running statamic:stache:warm: 12 concurrent warms saturate the
-            // disk (~168s each vs 21s alone), the dominant parallel cost (UAMS-Web/uams-statamic-archive#1537).
-            // DB_DATABASE=:memory: mirrors phpunit.xml: the warm probes the DB for
-            // computed-field indexes, so it needs a connectable database (a fresh
-            // worktree has no sqlite file, like a fresh CI checkout).
-            // PARITY: mirrors the "Build Stache seed (testing env)" step in ci.yml.
-            step('JOB pest - build Stache seed (testing env)')
-            const seedCode = runPhp(['artisan', 'test:seed-stache'], worktreePath, { APP_ENV: 'testing', DB_DATABASE: ':memory:' })
-            // Build the route cache in the testing env before the suite so the URL
-            // generator uses the compiled O(1) RouteCollection instead of scanning
-            // the full table. mitydigital/sitemapamic registers one sitemap route
-            // per site (255 on this multisite), and uncached URL generation scales
-            // with route count — ~2x slower on the render-heavy suite (UAMS-Web/uams-statamic-archive#1537).
-            // Built as APP_ENV=testing so an env-conditional route (e.g. the
-            // local-only dev preview route) is baked exactly as the tests expect;
-            // a non-zero here also surfaces a route the prod deploy's route:cache
-            // could not serialize. Cleared after the tail so a cached table never
-            // leaks into a reused worktree.
-            // Built AFTER the Stache seed (UAMS-Web/uams-statamic-archive#3106): routes/web.php registers each
-            // site's feed.xml only when `Collection::findByHandle('posts')` resolves
-            // as the route file loads. Compiled against the cold Stache the chain
-            // leaves behind, that read comes up empty and the table omits all 244
-            // feed routes, so two PostsFeedRouteTest cases 404 on a --jobs pest run
-            // and pass in the full chain, where earlier jobs have warmed it.
-            // PARITY: mirrors the "Build route cache (testing env)" + "Clear route
-            // cache" steps in the pest job in ci.yml.
-            step('JOB pest - build route cache (testing env)')
-            const cacheCode = runPhp(['artisan', 'route:cache'], worktreePath, { APP_ENV: 'testing' })
-            // Two shared locks would otherwise 503 a front-end request whenever a
-            // sibling worker holds them, and phpunit.xml disables both: Statamic's
-            // static-cache per-URL lock (via the NullCacher) and the Stache warming
-            // lock, a flock over the single, non-tokenized
-            // storage/statamic/stache-locks held for the duration of a warm or a
-            // Duplicates::find() (UAMS-Web/uams-statamic-archive#1689). The seed step above makes a warm the
-            // fallback rather than the norm here, which narrows that window
-            // without closing it.
-            // NO --tia HERE, DELIBERATELY (UAMS-Web/uams-statamic-archive#1717). Pest 5's test-impact-analysis
-            // engine replays cached results instead of executing tests it believes
-            // a change cannot reach. It is excluded from BOTH bands below for three
-            // independent reasons, any one of which is disqualifying:
-            //
-            //   1. No coverage driver. Tia builds its graph from coverage, and both
-            //      pest calls below pass `-d pcov.enabled=0` (ci.yml pins
-            //      `coverage: none`). With no driver it records zero edges, and a
-            //      graph with no edges marks nothing affected -- so every run
-            //      replays and reports a green suite having executed nothing. Pest
-            //      5.0.1 does not warn about this.
-            //   2. No persistent cache. Tia's graph lives at tests/.pest/tia/,
-            //      which #192 pins via `pest()->tia()->directory()` instead of the
-            //      default ~/.pest/tia/<key>/. That default keys on the normalized
-            //      remote URL with the folder name in front, and in a linked
-            //      worktree `Storage::rawOriginUrl()` does `is_file()` on `.git` (a
-            //      FILE there, not a directory) and falls back to a path-derived
-            //      key -- so per-worktree isolation used to be an accident of that
-            //      implementation rather than a design. It is now by construction,
-            //      but the directory is git-ignored and this runner builds a fresh
-            //      sibling worktree, so nothing survives between runs regardless.
-            //   3. The content/ blind spot. `.gitmodules` sets `ignore = dirty` on
-            //      the content submodule, so `git status --porcelain` -- Tia's
-            //      exact change detection -- reports nothing when content changes,
-            //      and a submodule path is a directory, which Tia's watch-pattern
-            //      fallback drops anyway. Reproduced: with one content entry added,
-            //      --tia returned `2 passed, 2 replayed` (exit 0) where --no-tia
-            //      returned `1 failed` (exit 1).
-            //
-            // Tia IS available locally, opt-in, behind a guard that refuses to run
-            // under conditions 1 and 3: `composer test:tia`
-            // (scripts/check-tia-safe.php). The gate deliberately does not use it --
-            // an exhaustive run is the whole point.
-            // PARITY: mirrors the pest job's note in ci.yml.
-            // --log-junit feeds the skip-baseline check below; it changes nothing
-            // about what runs.
-            // PARITY: mirrors the "Run Pest (parallel shard...)" step in ci.yml.
-            // CI runs the same command four times with `--shard=<i>/4` and merges
-            // the four reports in its `pest-report` job before the band checks
-            // (#387); this runner runs the band whole, so it has nothing to shard
-            // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
-            // differ only by --shard.
-            step('JOB pest - parallel suite (excluding serial group)')
-            const parallelReport = join(worktreePath, 'junit-parallel.xml')
-            const serialReport = join(worktreePath, 'junit-serial.xml')
-            // The runner reuses its worktree between runs, so a report left by the
-            // previous one would let a band that died before writing its own read
-            // as verified against stale results — the exact silence this check
-            // removes. CI checks out fresh, so it has nothing to mirror here.
-            rmSync(parallelReport, { force: true })
-            rmSync(serialReport, { force: true })
-            const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], worktreePath)
-            step('JOB pest - serial tail (group=serial)')
-            const serialCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], worktreePath)
-
-            // UAMS-Web/uams-statamic-archive#1744 — a band that silently skips tests would otherwise report PASS
-            // having tested less than it should have. Only meaningful when the band
-            // itself ran; a band that failed already fails the job, and its report
-            // would be incomplete.
-            // PARITY: mirrors the "Check skip baseline" steps in ci.yml.
-            //
-            // The guard lives in the *worktree*, i.e. in the branch under test, so a
-            // branch predating UAMS-Web/uams-statamic-archive#1744 does not carry it. The runner validates arbitrary
-            // branches (including older ones), so a missing guard is skipped with a
-            // notice rather than failing a branch for not having been written yet.
-            let baselineCode = 0
-            const skipGuard = join(worktreePath, 'scripts', 'check-skip-baseline.php')
-            if (!existsSync(skipGuard)) {
-                console.log('Skip baseline: guard not present on this branch (pre-#1744) — not checked.')
-            } else {
-                if (parallelCode === 0) {
-                    step('JOB pest - skip baseline (parallel band)')
-                    baselineCode = runPhp(['scripts/check-skip-baseline.php', `--report=${parallelReport}`, '--band=parallel'], worktreePath)
-                }
-                if (baselineCode === 0 && serialCode === 0) {
-                    step('JOB pest - skip baseline (serial band)')
-                    baselineCode = runPhp(['scripts/check-skip-baseline.php', `--report=${serialReport}`, '--band=serial'], worktreePath)
-                }
-            }
-
-            // UAMS-Web/uams-statamic-archive#1890 — nothing pinned what the parallel band COSTS, so a change that
-            // reclaimed it passed in silence: the UAMS-Web/uams-statamic-archive#1348 route-count tax (UAMS-Web/uams-statamic-archive#1521 →
-            // UAMS-Web/uams-statamic-archive#1573) and the class that grew to 1085.3s of a 1306s band (UAMS-Web/uams-statamic-archive#1797) were
-            // both found by hand, long after the fact. This reads the same reports
-            // the skip guard does, so it needs no extra run. It judges the costliest
-            // class by its share of the band's summed class time, which a loaded
-            // host inflates uniformly and so cannot move (UAMS-Web/uams-statamic-archive#2530).
-            // PARITY: mirrors the "Check slowest class" steps in ci.yml.
-            //
-            // Absent-on-older-branches, for the same reason as the skip guard above:
-            // this runner validates arbitrary branches, and one predating UAMS-Web/uams-statamic-archive#1890 is
-            // passed with a notice rather than failed for not carrying it yet.
-            let slowestCode = 0
-            const slowestGuard = join(worktreePath, 'scripts', 'check-slowest-class.php')
-            if (!existsSync(slowestGuard)) {
-                console.log('Slowest class: guard not present on this branch (pre-#1890) — not checked.')
-            } else {
-                if (parallelCode === 0) {
-                    step('JOB pest - slowest class (parallel band)')
-                    slowestCode = runPhp(['scripts/check-slowest-class.php', `--report=${parallelReport}`, '--band=parallel'], worktreePath)
-                }
-                if (slowestCode === 0 && serialCode === 0) {
-                    step('JOB pest - slowest class (serial band)')
-                    slowestCode = runPhp(['scripts/check-slowest-class.php', `--report=${serialReport}`, '--band=serial'], worktreePath)
-                }
-            }
-
-            // UAMS-Web/uams-statamic-archive#3018 - is the content mirror band lock still held now that the suite
-            // has finished? Every test process holds it shared, and a child a test
-            // spawns inherits that descriptor and keeps the lock after both bands
-            // exit, so every later `test:seed-stache` in this tree is refused with
-            // nothing naming a lock or a process. Runs only here, after the serial
-            // tail: a live band legitimately holds the lock, so the probe must
-            // never run between bands. Unconditional, like the litter check below,
-            // because a failed band can leave a child behind as easily as a
-            // passing one.
-            // PARITY: mirrors the "Check the content mirror band lock was released"
-            // step in ci.yml.
-            //
-            // Absent-on-older-branches, as for the guards above.
-            let bandLockCode = 0
-            const bandLockGuard = join(worktreePath, 'scripts', 'check-band-lock-released.php')
-            if (!existsSync(bandLockGuard)) {
-                console.log('Band lock: guard not present on this branch (pre-#3018) - not checked.')
-            } else {
-                step('JOB pest - content mirror band lock released')
-                bandLockCode = runPhp(['scripts/check-band-lock-released.php'], worktreePath)
-            }
-
-            step('JOB pest - clear route cache')
-            runPhp(['artisan', 'route:clear'], worktreePath)
-
-            // UAMS-Web/uams-statamic-archive#1873 — did the suite write into a live gate submodule?
-            // Unconditional: a band that FAILED is exactly the case where cleanup
-            // did not run, so suppressing the check on failure would hide the
-            // litter in the one run most likely to have produced it.
-            // PARITY: mirrored by the "Check the suite left content/, users/ and resources/forms/ clean"
-            // step in ci.yml.
-            //
-            // The remedy differs per submodule, because the writers do. content/ is
-            // written through the Stache, and a store re-root is the fix. users/ is
-            // written by the file user driver, and what shows here is not a created
-            // account (those are ignored by the allowlist) but damage to a tracked
-            // seed account — a test that deleted every user, or rewrote one — which
-            // afterEach should never have needed to undo.
-            const litterRemedy = {
-                content: 'A test persisted a fixture into the live submodule. Cleanup that runs in `afterEach` cannot\n'
-                    + 'survive a band killed at its bound or a fatal, so the file is stranded and every later run —\n'
-                    + 'and every `statamic:stache:warm` — reads it as real content (UAMS-Web/uams-statamic-archive#1845).\n'
-                    + '  Put the test on `Tests\\Support\\CollectionTreeIsolatedTestCase`, which re-roots the\n'
-                    + '  collection-trees store at a throwaway directory so its writes land in\n'
-                    + '  storage/framework/testing/ instead of the live submodule.',
-                users: 'A test deleted or rewrote a TRACKED account in the live users/ submodule — the seed accounts the\n'
-                    + 'Control Panel login and slot provisioning depend on (UAMS-Web/uams-statamic-archive#2454). This worktree is reused, and\n'
-                    + '`submodule update --init` on an unchanged gitlink restores nothing, so the damage persists\n'
-                    + 'into every later run while `git ls-files` keeps listing the file (UAMS-Web/uams-statamic-archive#2477).\n'
-                    + '  Delete only what the test created, by the email it chose, and never `User::all()` in bulk;\n'
-                    + '  or re-root the users store the way `Tests\\Support\\BrowserWriteIsolation` does.',
-                'resources/forms': 'A test saved a form into the live forms submodule (UAMS-Web/uams-statamic-archive#2818). Point `statamic.forms.forms` at a\n'
-                    + 'throwaway directory for the test, the way the tests under tests/Feature/Forms/ do.',
-            }
-            let litterCode = 0
-            for (const name of GATE_SUBMODULES) {
-                const before = litterBefore[name]
-                if (before === null) {
-                    console.log(`${name}/ litter: no submodule to check on this run.`)
-                    continue
-                }
-                const { introduced, known, preexisting } = contentLitter(before, submoduleStatus(name))
-
-                if (known.length > 0) {
-                    warn(`${name}/ carries ${known.length} known write${known.length > 1 ? 's' : ''} this gate does not yet fail on (see KNOWN_CONTENT_LITTER):`)
-                    for (const entry of known) {
-                        console.error(`  ${entry.status} ${entry.path}`)
-                    }
-                }
-
-                if (preexisting.length > 0) {
-                    warn(`${name}/ arrived dirty (${preexisting.length} path${preexisting.length > 1 ? 's' : ''}); not attributed to this run:`)
-                    for (const entry of preexisting) {
-                        console.error(`  ${entry.status} ${entry.path}`)
-                    }
-                }
-
-                if (introduced.length > 0) {
-                    litterCode = 1
-                    console.error(red(`The suite wrote into the ${name}/ submodule (${introduced.length} path${introduced.length > 1 ? 's' : ''}):`))
-                    for (const entry of introduced) {
-                        console.error(red(`  ${entry.status} ${entry.path}${entry.origin ? ` (from ${entry.origin})` : ''}`))
-                        console.error(`       ${driftLabel(entry.status)}`)
-                    }
-                    console.error(
-                        `${litterRemedy[name]}\n`
-                        + `  Restore the submodule with: git -C ${join(worktreePath, name)} checkout -- .`,
-                    )
-                } else {
-                    // Say so out loud: a check whose only output is silence cannot be
-                    // told apart from one that never ran.
-                    console.log(`${name}/ litter: none — the suite left the submodule as it found it.`)
-                }
-            }
-
-            return cacheCode !== 0 ? cacheCode : (seedCode !== 0 ? seedCode : (parallelCode !== 0 ? parallelCode : (serialCode !== 0 ? serialCode : (baselineCode !== 0 ? baselineCode : (slowestCode !== 0 ? slowestCode : (bandLockCode !== 0 ? bandLockCode : litterCode))))))
+            // PARITY: the pest and pest-serial jobs in ci.yml; the step is scripts/gate-pest.mjs.
+            // Already reset above, for phpstan and browser as well, so the step does not repeat it.
+            return gatePest({ tree: worktreePath, php, git, repoRoot, reset: false })
         },
         browser: () => {
-            // `--with-deps` (used in ci.yml on the Linux runner) is omitted here: it
-            // only installs Linux system libraries and is a no-op on macOS and Windows.
-            step('JOB browser - installing Playwright Chromium')
-            run(npx, ['playwright', 'install', 'chromium'], worktreePath)
-
-            // The suite needs BOTH bundles on disk: the front-end theme smokes (KB
-            // rating active-state, the uams_2020 runtime-JS smoke) load the compiled
-            // `public/build`, and the CP smokes load `public/vendor/app`.
-            //
-            // ci.yml gets a FRESH RUNNER per job, so its browser job must always build
-            // them itself. This runner is the opposite: every job shares ONE worktree,
-            // so in a full run the `build` job has already produced exactly these two
-            // bundles with byte-identical commands, and repeating them is duplicated
-            // cost for nothing (UAMS-Web/uams-statamic-archive#1727).
-            //
-            // Skip only when `build` actually ran AND exited 0 in THIS invocation.
-            // `results` holds only jobs already executed this run, so a `--jobs
-            // browser`-only run (or any selection omitting `build`) reads undefined
-            // and still builds — which is what keeps a standalone browser run honest.
-            // A `build` that FAILED cannot reach here at all: the chain marks the run
-            // broken and skips every later job, browser included.
+            // PARITY: the browser job in ci.yml; the step is scripts/gate-browser.mjs.
             const reusePriorBuild = canReuseBuildOutput(results)
-            let bf = 0
-            let bc = 0
-
-            if (reusePriorBuild) {
-                step("JOB browser - reusing this run's `build` output (npm run build + cp:build already done in this worktree)")
-            } else {
-                step('JOB browser - npm run build')
-                bf = run(npm, ['run', 'build'], worktreePath)
-                step('JOB browser - npm run cp:build')
-                bc = run(npm, ['run', 'cp:build'], worktreePath)
-            }
-
-            // PARITY: the browser job's "Run CP browser smokes" step in ci.yml.
-            // tests/Browser holds the CP smokes and the axe-core accessibility gate (UAMS-Web/uams-statamic-archive#1046).
-            step('JOB browser - pest tests/Browser')
-            const bt = runPhp(['vendor/bin/pest', 'tests/Browser'], worktreePath)
-            return bf !== 0 ? bf : (bc !== 0 ? bc : bt)
+            return gateBrowser({ tree: worktreePath, npm, npx, php, reuseBuild: reusePriorBuild })
         },
     }
 
@@ -2754,9 +2133,8 @@ function postCommitStatus(repoRoot, branch, failed, results, phpVersion) {
         return
     }
 
-    // The status belongs on the PULL REQUEST'S HEAD, not on the merged state
-    // this run validated — that merge commit exists only in the CI worktree and
-    // is not a commit anyone can see.
+    // The status belongs on the branch tip this run validated. The run checks that
+    // commit out and performs no merge, so this is the commit the result is about.
     const sha = capture(git, ['-C', repoRoot, 'rev-parse', '--verify', `refs/remotes/origin/${branch}`], repoRoot, { ignoreStderr: true })
 
     if (!sha) {

@@ -53,33 +53,22 @@ final class SchemaObjectFragmentBuilder
     /**
      * Coerce the `properties` tag parameter to an array (associative map).
      *
-     * Accepts a PHP/Statamic associative array or a JSON object string.
+     * Accepts a PHP/Statamic associative array or a JSON object string. A list
+     * (or a JSON object with numeric keys) keeps its integer keys, which
+     * {@see normalizedPropertiesForFragment()} skips.
      *
      * @param  mixed  $properties  Bound array or JSON string
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public static function coercePropertiesToArray(mixed $properties): array
     {
-        // Check for null or empty input
-        if ($properties === null) {
-            return [];
-        }
-
-        // Decode a JSON object string when provided
+        // Decode a JSON object string when provided (json_decode() skips
+        // surrounding whitespace and reads a blank string as null)
         if (\is_string($properties)) {
-            // Trim whitespace from the JSON string
-            $trimmed = trim($properties);
-
-            // Check if the trimmed string is empty
-            if ($trimmed === '') {
-                // Return an empty array to signal unusable properties
-                return [];
-            }
-
             // Attempt to decode JSON into an associative array
             /** @var array<string, mixed>|mixed $decoded */
             $decoded = json_decode(
-                $trimmed,
+                $properties,
                 true
             );
 
@@ -89,18 +78,16 @@ final class SchemaObjectFragmentBuilder
                 return [];
             }
 
-            /** @var array<string, mixed> $decoded */
             return $decoded;
         }
 
-        // Accept only array maps at the top level
+        // Accept only array maps at the top level (null included)
         if (! \is_array($properties)) {
             // Return an empty array to signal unusable properties
             return [];
         }
 
         // Return the properties as-is
-        /** @var array<string, mixed> $properties */
         return $properties;
     }
 
@@ -121,6 +108,11 @@ final class SchemaObjectFragmentBuilder
 
         // Walk each top-level property
         foreach ($raw as $key => $value) {
+            // Skip list positions: a property needs a name (a JSON list decodes to int keys)
+            if (! \is_string($key)) {
+                continue;
+            }
+
             // Normalize the property name
             $keyString = trim($key);
             // Skip empty or reserved top-level `@type`
@@ -243,12 +235,6 @@ final class SchemaObjectFragmentBuilder
             return self::normalizeJsonLdValue($value->value());
         }
 
-        // Check if the value is explicitly null
-        if ($value === null) {
-            // Return null to signal omitted value
-            return null;
-        }
-
         // Check if the value is a boolean
         if (\is_bool($value)) {
             // Return the boolean value as-is
@@ -279,19 +265,13 @@ final class SchemaObjectFragmentBuilder
             return $text;
         }
 
-        // Refuse unexpected object types
+        // Refuse null and unexpected object types
         if (! \is_array($value)) {
             // Return null to signal omitted value
             return null;
         }
 
-        // Normalize empty lists as omitted
-        if ($value === []) {
-            // Return null to signal omitted value
-            return null;
-        }
-
-        // Normalize JSON lists
+        // Normalize JSON lists (an empty list normalizes to null below)
         if (array_is_list($value)) {
             // Initialize an empty list
             $list = [];

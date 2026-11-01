@@ -25,10 +25,10 @@ const offsetOf = (fragment) => {
 
 const SUBMODULE_STEP = "step('Initializing content/, users/ and resources/forms/ submodules')"
 const EARLY_CLEAR_STEP = "step('Clearing reused-worktree file caches before the first app boot')"
-const EARLY_CLEAR_RUN = "run(git, ['-C', worktreePath, 'clean', '-xdf', 'storage/framework', 'bootstrap/cache'], repoRoot)"
+const EARLY_CLEAR_RUN = 'clearFileCaches(git, worktreePath, repoRoot)'
 const KEY_GENERATE = "runPhp(['artisan', 'key:generate'], worktreePath)"
 const POST_AUTOLOAD_DUMP = "run(composer, ['run-script', 'post-autoload-dump', '--no-interaction'], worktreePath)"
-const ARTISAN_RESET = "runPhp(['artisan', 'statamic:stache:clear'], worktreePath)"
+const ARTISAN_RESET = 'clearRuntimeCaches(php, worktreePath)'
 
 describe('the reused-worktree cache clear runs before the first app boot', () => {
     it('sits after the submodule step and before both boots in the install sequence', () => {

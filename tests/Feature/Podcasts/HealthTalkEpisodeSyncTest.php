@@ -20,7 +20,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View as IlluminateView;
 use PHPUnit\Framework\Assert;
-use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Statamic\Auth\File\User as FileUser;
 use Statamic\Entries\Collection as StatamicCollection;
@@ -33,6 +32,8 @@ use Statamic\Fields\Blueprint;
 use Statamic\Globals\GlobalSet as StatamicGlobalSet;
 use Statamic\Globals\Variables;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use Tests\Support\Doubles\HealthTalkFakeSource;
+use Tests\Support\Doubles\HealthTalkRecordingLogger;
 use Tests\Support\StacheIsolatedTestCase;
 
 use function Pest\Laravel\actingAs;
@@ -63,39 +64,6 @@ uses(StacheIsolatedTestCase::class);
 const HEALTH_TALK_FIXTURES = __DIR__.'/../../Fixtures/HealthTalk';
 const HEALTH_TALK_FEED_URL = 'https://support.doctorpodcasting.com/podcastfeed/287';
 const HEALTH_TALK_ALL_IDS = ['69402', '69184', '68170', '43833', '41530'];
-
-/**
- * A logger that keeps every record, so a test can read the transitions.
- */
-final class HealthTalkRecordingLogger extends AbstractLogger
-{
-    /**
-     * @var list<array{level: string, message: string, context: array<mixed>}>
-     */
-    public array $records = [];
-
-    /**
-     * @param  array<mixed>  $context
-     */
-    #[Override]
-    public function log(mixed $level, string|Stringable $message, array $context = []): void
-    {
-        $this->records[] = ['level' => is_string($level) ? $level : '', 'message' => (string) $message, 'context' => $context];
-    }
-
-    /**
-     * Records whose context names this direction.
-     *
-     * @return list<array{level: string, message: string, context: array<mixed>}>
-     */
-    public function transitions(string $direction): array
-    {
-        return array_values(array_filter(
-            $this->records,
-            static fn (array $record): bool => ($record['context']['direction'] ?? null) === $direction
-        ));
-    }
-}
 
 beforeEach(function (): void {
     config()->set('uams_health_talk.source.pause_ms', 0);
@@ -205,33 +173,6 @@ function healthTalkFeed(array $keep = HEALTH_TALK_ALL_IDS, ?Closure $edit = null
     Assert::assertIsString($xml);
 
     return $xml;
-}
-
-/**
- * What the faked source serves. One stub reads it, because `Http::fake()` appends
- * stubs and the first one registered keeps answering.
- */
-final class HealthTalkFakeSource
-{
-    public static string $feed = '';
-
-    public static int $feedStatus = 200;
-
-    public static ?Throwable $failure = null;
-
-    /**
-     * Item ids whose page returns a 500.
-     *
-     * @var list<string>
-     */
-    public static array $failingPages = [];
-
-    /**
-     * Item page bodies that replace the fixture, by item id.
-     *
-     * @var array<int|string, string>
-     */
-    public static array $pages = [];
 }
 
 /**

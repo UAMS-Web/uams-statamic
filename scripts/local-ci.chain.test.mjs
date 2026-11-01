@@ -399,6 +399,15 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
         expect(script).toMatch(/'validate', '--no-check-publish', '--no-check-all'/)
     })
+
+    it('runs the PSR-4 class check with --dev in both files', () => {
+        // Without `--dev`, a tree with no `vendor/` is treated as a non-dev install,
+        // `autoload-dev` is skipped, and the check passes with `tests/` unread (#322).
+        expect(workflow).toMatch(/composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts/)
+
+        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+        expect(script).toMatch(/'dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'/)
+    })
 })
 
 // UAMS-Web/uams-statamic-archive#2989: the header comment's `--jobs` usage text is the list a person copies
@@ -590,9 +599,9 @@ describe('the sharded pest job in ci.yml (#387)', () => {
             .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
             .split(' ')
 
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], worktreePath\)/)
-        expect(localCall, 'no parallel band call in scripts/local-ci.mjs').not.toBeNull()
+        const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
+        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree\)/)
+        expect(localCall, 'no parallel band call in scripts/gate-pest.mjs').not.toBeNull()
         const local = ['php', ...[...localCall[1].matchAll(/'([^']*)'|`[^`]*`|(parallelReport)/g)]
             .filter((m) => m[0].startsWith("'") || m[2])
             .map((m) => (m[2] ? 'junit-parallel.xml' : m[1]))]
