@@ -36,12 +36,12 @@ use Tests\TestCase;
  * that never reaches teardown is the case being asserted rather than a case being
  * assumed.
  *
- * Runs in the `serial` group: `begin()` re-roots process-wide Stache stores and
- * the blueprint repository, which any concurrent test in this process would see.
+ * `begin()` re-roots process-wide Stache stores and the blueprint repository, which
+ * only a test in the same process could see, and a process runs one test at a time.
  *
  * @command  php artisan test --compact tests/Feature/BrowserWriteIsolationTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(TestCase::class);
 
 const BROWSER_ISOLATION_HANDLE = 'zz_isolation_probe_smoke';
 

@@ -39,8 +39,8 @@ use Tests\TestCase;
  *  2. a save that opts back in still writes the YAML, so the version-controlled
  *     dual-write production depends on is demonstrably intact.
  *
- * Runs in the `serial` group: it snapshots a directory every worker shares and
- * flips `Asset::$skipYamlSync`, a `public static`, for the duration of a test.
+ * The snapshot reads a directory every worker shares, and only serial tests write
+ * there. `Asset::$skipYamlSync` is static, so it holds per process (#385).
  *
  * Since UAMS-Web/uams-statamic-archive#1916 that directory is the disposable `content/` mirror rather than the
  * submodule, and the path is a config key rather than a `base_path()` literal —
@@ -51,7 +51,7 @@ use Tests\TestCase;
  *
  * @command  php artisan test --compact tests/Feature/Assets/AssetMetadataYamlSyncIsolationTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(TestCase::class);
 
 /**
  * Filename => content hash for every file in the real asset-metadata directory.

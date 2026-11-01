@@ -95,4 +95,4 @@ it('renders the index listing categories aggregated across the microsites', func
     /** @var string $categoryUrl */
     $categoryUrl = $category->url();
     $test->get($categoryUrl)->assertOk();
-})->group('serial');
+});

@@ -33,21 +33,9 @@ use function Pest\Laravel\withoutVite;
  * a 404, collisions within an overlapping validity window are rejected, and every
  * endpoint is gated by the `create marketing redirects` permission.
  */
-// Gated to the single-process serial tail. NOT for the cross-worker reason
-// UAMS-Web/uams-statamic-archive#1596 recorded — that diagnosis ("the two views momentarily disagree across
-// workers"; "in isolation that query is a harmless no-op and the file passes
-// 22/22") was refuted in UAMS-Web/uams-statamic-archive#1851: on a developer checkout with `content/`
-// initialized, this file failed 22/22 in a SINGLE process with no parallelism at
-// all. The disagreement was neither momentary nor cross-worker — it was the
-// steady state of `StacheIsolatedTestCase`, whose Blink memo kept serving the
-// real collection handles while every per-handle lookup returned null. That is
-// fixed in the base class, not here.
-//
-// The gate is kept deliberately, on its own merits: these cases save Statamic
-// file users and roles, which land outside the throwaway Stache root, so running
-// them alongside the parallel workers is a shared-state hazard independent of the
-// resolved defect.
-uses(StacheIsolatedTestCase::class)->group('serial');
+// Runs in the parallel band (#385). Every Stache store, users included, is re-rooted
+// into this process's throwaway directory, and roles go to a per-test path below.
+uses(StacheIsolatedTestCase::class);
 
 /**
  * Resolve a Control Panel route to its URL string.

@@ -430,7 +430,7 @@ it('reads the AC fallback from the Find-a-Doc global when no override is given',
     } finally {
         $variables->set('location_ac_appointments_primary', $original);
     }
-})->group('serial');
+});
 
 // globalPhone(): the `?->inDefaultSite()` null-safe and the `instanceof` guard —
 // an absent global (fresh install / uninitialized content) must resolve to null,

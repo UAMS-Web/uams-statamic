@@ -143,7 +143,7 @@ it('keeps a form\'s sites and site overrides through a save', function (): void 
     expect(data_get($saved, 'sites'))->toBe(['health'])
         ->and(data_get($saved, 'site_overrides.0.site'))->toBe('health')
         ->and(data_get($saved, 'site_overrides.0.title'))->toBe('Health Probe');
-})->group('serial');
+});
 
 /**
  * The columns of the grid a field carries, located by the field's handle in the contents.
@@ -324,4 +324,4 @@ it('saves a site override row\'s app columns as it saves a base row\'s', functio
     expect($override)->toHaveKeys(['enabled', 'to_type', 'from_name', 'message', 'conditional_logic'])
         ->and(array_diff_key($override, ['markdown' => true, 'attachments' => true]))->toBe($base)
         ->and([$override['markdown'] ?? null, $override['attachments'] ?? null])->toBe([false, false]);
-})->group('serial');
+});
