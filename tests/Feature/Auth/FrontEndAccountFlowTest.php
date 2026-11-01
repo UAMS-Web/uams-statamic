@@ -181,7 +181,7 @@ it('rate limits repeated failed sign-ins', function (): void {
     member('grace@example.com', 'correct-horse-battery');
 
     $statuses = [];
-    foreach (range(1, 12) as $attempt) {
+    for ($attempt = 1; $attempt <= 12; $attempt++) {
         $statuses[] = $this->post(route('statamic.login'), [
             'email' => 'grace@example.com',
             'password' => 'not-the-password',

@@ -254,18 +254,7 @@ it('summarizes an all-closed temporary change as "Closed"', function (): void {
 });
 
 it('trims surrounding whitespace from the notice title', function (): void {
-    $html = renderHoursNotice([
-        [
-            'type' => 'holiday',
-            'title' => '   Juneteenth   ',
-            'rules' => [
-                ['date' => '2026-06-19', 'through' => null, 'service_mode' => 'in_person', 'status' => 'closed'],
-            ],
-        ],
-    ]);
-
-    // 2026-06-19 is before the pinned today (2026-07-11) — expired, so no notice.
-    // Use a future single-day holiday to assert the trimmed title instead.
+    // A future single-day holiday, because an expired one renders no notice to read.
     $future = renderHoursNotice([
         [
             'type' => 'holiday',

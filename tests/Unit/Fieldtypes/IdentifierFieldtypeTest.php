@@ -78,7 +78,7 @@ it('migrates every mask preset to declarative config — no JS-snippet eval keys
         }
     };
 
-    foreach ($fieldtype->presetsForTest() as $handle => $preset) {
+    foreach ($fieldtype->presetsForTest() as $preset) {
         $config = $preset['config_defaults'];
 
         // The eval'd `prepareChar` JS-snippet key is gone everywhere (replaced by prepare_case).

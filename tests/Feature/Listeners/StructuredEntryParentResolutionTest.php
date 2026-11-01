@@ -74,7 +74,7 @@ function structuredNewEntry(mixed $parentField): Entry&MockInterface
 /**
  * An existing entry in the `default` site, and the structure that holds it.
  */
-function structuredExistingEntry(string $collection): Entry&MockInterface
+function structuredExistingEntry(): Entry&MockInterface
 {
     $entry = Mockery::mock(Entry::class);
     $entry->shouldReceive('id')->andReturn('existing-entry');
@@ -135,7 +135,7 @@ it('gives a new entry no parent when its parent id is empty', function (string $
 })->with('structured entry validators');
 
 it('logs and gives no parent when the site has no tree', function (string $listenerClass, string $collection): void {
-    $entry = structuredExistingEntry($collection);
+    $entry = structuredExistingEntry();
 
     $structure = Mockery::mock(Structure::class);
     $structure->shouldReceive('in')->with('default')->andReturn(null);
@@ -147,7 +147,7 @@ it('logs and gives no parent when the site has no tree', function (string $liste
 })->with('structured entry validators');
 
 it('logs and gives no parent when the entry is not in the tree', function (string $listenerClass, string $collection): void {
-    $entry = structuredExistingEntry($collection);
+    $entry = structuredExistingEntry();
     structuredTreeFor($collection)->shouldReceive('find')->with('existing-entry')->andReturn(null);
 
     Log::shouldReceive('warning')->once()->with(structuredLogPrefix($listenerClass).'Entry not found in tree', ['entry_id' => 'existing-entry']);
@@ -156,7 +156,7 @@ it('logs and gives no parent when the entry is not in the tree', function (strin
 })->with('structured entry validators');
 
 it('logs and gives no parent when the parent page has no entry', function (string $listenerClass, string $collection): void {
-    $entry = structuredExistingEntry($collection);
+    $entry = structuredExistingEntry();
 
     $parentPage = Mockery::mock(Page::class);
     $parentPage->shouldReceive('isRoot')->andReturn(false);
