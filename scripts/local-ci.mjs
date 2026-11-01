@@ -203,7 +203,6 @@ export { chunkByArgLength, contentLitter, driftLabel, KNOWN_CONTENT_LITTER, reso
 export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spell', 'phpstan', 'encoding', 'no-emoji', 'content-pointer', 'isolation', 'validate', 'browser']
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
-
 // PARITY: the cost-ordered chain, shortest -> longest. A job runs only if every
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
@@ -299,7 +298,6 @@ export function canReuseBuildOutput(results) {
     return results.get('build') === 0
 }
 
-
 // --- mutation-tooling smoke (UAMS-Web/uams-statamic-archive#1731) ----------------------------------------
 //
 // WHY THIS CLASS: the smoke needs a subject that is small, pure, fully covered,
@@ -370,7 +368,6 @@ export function mutateSmokeVerdict(driver, plain) {
 
     return { ok: true }
 }
-
 
 /** Where a worktree records the patch-set hash it last applied, under vendor/. */
 export const PATCH_STAMP_FILE = '.local-ci-patches-hash'
@@ -651,7 +648,6 @@ export function handoffArgv(argv, worktreePath) {
     return [...forwarded, '--worktree-path', worktreePath]
 }
 
-
 // UAMS-Web/uams-statamic-archive#1873 — split what the suite just wrote into the content/ submodule from what
 // was already sitting there.
 //
@@ -860,7 +856,6 @@ export function acquireWorktreeLock(worktreePath, branch) {
     throw new Error('unreachable: lock acquisition fell through')
 }
 
-
 /**
  * The clause a first-boot failure carries when `content/` changed revision during
  * this run (UAMS-Web/uams-statamic-archive#2832), or null when it did not or either revision is unknown.
@@ -881,7 +876,6 @@ export function contentMoveNote(before, after) {
 
     return `the first app boot after content/ moved ${before.slice(0, 9)} -> ${after.slice(0, 9)} in this run`
 }
-
 
 // UAMS-Web/uams-statamic-archive#1743 — flatten patches.lock.json into `package: description` lines so the run
 // output NAMES what the branch DECLARES. Absence then shows up as a missing line
@@ -913,7 +907,6 @@ function assertExit(code, what) {
 }
 
 // --- toolchain discovery ---------------------------------------------------
-
 
 /**
  * Ask the resolved PHP for its version, and refuse to continue if it could not answer.
