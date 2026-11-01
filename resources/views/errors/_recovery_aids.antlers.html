@@ -15,7 +15,7 @@
     lands the caret here for keyboard/screen-reader users. #}}
 <section class="error-search mb-4" aria-labelledby="error-search-heading">
 	<h2 id="error-search-heading" class="h4">Search the site</h2>
-	<form action="/search" method="get" role="search" aria-label="Search the site" style="max-width: 40rem;">
+	<form action="{{ site_search_scope:path }}" method="get" role="search" aria-label="Search the site" style="max-width: 40rem;">
 		<label class="sr-only" for="error-search-q">Search</label>
 		<div class="form-row">
 			<div class="col-12 col-sm mb-2 mb-sm-0">

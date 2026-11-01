@@ -254,7 +254,7 @@ $source = <<<PHP
 Existing strings stay as they are: don't convert one form to another as a drive-by change.
 `implode()` is still the call for joining a list.
 
-#2567 dropped the old rule that required `sprintf()` or concatenation over double-quoted
+UAMS-Web/uams-statamic-archive#2567 dropped the old rule that required `sprintf()` or concatenation over double-quoted
 interpolation. The enum generators under `app/Services/EnumGeneration/` are the heredoc case.
 
 ## 8. Imports: FQCN + ordered groups
