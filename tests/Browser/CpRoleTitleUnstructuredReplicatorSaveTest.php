@@ -188,10 +188,20 @@ it('keeps a row added to each of the four unstructured replicators through a Con
     roleTitleAddRow($page, 'Add Reference Webpage', 1);
 
     $page->click('#field_base_job_title___cp_role_title_unstructured_isco_08_0_code-major_group');
-    $page->wait(0.5);
-    $chosen = $page->script('(() => { const option = [...document.querySelectorAll("[role=option]")]'
-        .'.find((e) => e.textContent.trim() === "2 Professionals");'
-        .' if (! option) { return false; } option.click(); return true; })()');
+    $chosen = false;
+
+    for ($waited = 0.0; $waited <= 15.0; $waited += 0.2) {
+        $chosen = $page->script('(() => { const option = [...document.querySelectorAll("[role=option]")]'
+            .'.find((e) => e.textContent.trim() === "2 Professionals");'
+            .' if (! option) { return false; } option.click(); return true; })()');
+
+        if ($chosen === true) {
+            break;
+        }
+
+        $page->wait(0.2);
+    }
+
     expect($chosen)->toBeTrue('the ISCO-08 major group option');
     $page->wait(0.5);
     $page->type('#field_base_job_title___cp_role_title_unstructured_onet_soc_0_code', '29-1141.00');

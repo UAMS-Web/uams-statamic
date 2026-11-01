@@ -39,6 +39,15 @@ use Statamic\Facades\Stache;
 const SXS_VISIBILITY_COLLECTION = 'sxs_visibility';
 
 /**
+ * How long the shown fields get to settle, counted in sleeps, so the real wait grows
+ * with the time each read takes on a slow machine. A remote run missed the earlier 8
+ * seconds once (#386), and this file took 454 seconds on Windows 11 with 94 other PHP
+ * processes running. Fields that settle return on the next read, so only a real miss
+ * spends the whole wait.
+ */
+const SXS_SETTLE_SECONDS = 30.0;
+
+/**
  * Every field in the block whose visibility depends on a condition.
  *
  * @var list<string>
@@ -146,6 +155,10 @@ function sxsRenderedFields($page): array
  * re-evaluate reactively after a click or a keystroke, so a single read could race
  * the update; a miss still fails after the bound, with the two sets in the message.
  *
+ * A miss also reports what the two inputs that drive conditions hold, because the two
+ * causes need different fixes: an empty input means a typed value was lost, and a
+ * filled one means the conditions never caught up with it.
+ *
  * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
  * @param  list<string>  $expected
  */
@@ -153,7 +166,7 @@ function sxsAssertVisible($page, array $expected, string $when): void
 {
     $visible = [];
 
-    for ($waited = 0.0; $waited <= 8.0; $waited += 0.2) {
+    for ($waited = 0.0; $waited <= SXS_SETTLE_SECONDS; $waited += 0.2) {
         $visible = sxsVisibleFields($page);
 
         if ($visible === $expected) {
@@ -161,6 +174,14 @@ function sxsAssertVisible($page, array $expected, string $when): void
         }
 
         $page->wait(0.2);
+    }
+
+    if ($visible !== $expected) {
+        $inputs = $page->script('(() => JSON.stringify(["button_text", "speaker_name"].map((handle) => {'
+            .' const input = document.getElementById("field_base_" + handle);'
+            .' return handle + "=" + (input ? JSON.stringify(input.value) : "absent"); })))()');
+
+        $when .= ', after '.SXS_SETTLE_SECONDS.'s, inputs '.(is_string($inputs) ? $inputs : 'unread');
     }
 
     expect($visible)->toBe($expected, $when);

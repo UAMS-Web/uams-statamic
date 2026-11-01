@@ -236,10 +236,8 @@ it('clears a stale destination rather than counting its leftovers', function ():
 });
 
 /**
- * The per-worker cache directory carries a committed `.gitignore`. Clearing the
- * directory must not take it: dropping a tracked file dirties the working tree of
- * any persistent checkout the suite runs in, and `git status` noise is exactly
- * what hides a real stray file.
+ * Clearing the cache directory keeps a `.gitignore` that is in it. The real test
+ * cache root has carried none since UAMS-Web/uams-statamic#408; this one is planted.
  */
 it('preserves the tracked .gitignore when it clears the cache directory', function (): void {
     $files = new Filesystem;

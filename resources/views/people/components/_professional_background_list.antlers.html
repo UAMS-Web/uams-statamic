@@ -60,14 +60,14 @@
 						{{ $item_date_prepend = "Completed" }}
 
 					{{ elseif variant == "member_of" }}
-						{{ $item_heading = name }}
+						{{ $item_heading = ( organization.schema_object.name ?? organization.name ) | membership_heading(membership_level.value) }}{{# The level reads before the organization unless it is Member (UAMS-Web/uams-statamic#306). #}}
 						{{ $item_subtitle = null }}
 						{{ $item_location = null }}
-						{{ $item_notes = description }}
+						{{ $item_notes = organization.description }}
 						{{ $item_date = null }}
 						{{ $item_date_prepend = null }}
 
-					{{ /if }}
+					{{ /if }}{{# A membership whose organization was deleted has no heading and renders no card. The guard shares these lines so no other variant's output changes. #}}{{ unless variant == "member_of" && ! $item_heading }}
 					{{
 						partial:people/components/professional_background_item
 						:item_heading="$item_heading"
@@ -76,7 +76,7 @@
 						:item_notes="$item_notes"
 						:item_date="$item_date"
 						:item_date_prepend="$item_date_prepend"
-					}}
+					}}{{ /unless }}
 				{{ /activity_items }}
 			{{ /partial:page_builder/components/card_list }}
 		</div>
