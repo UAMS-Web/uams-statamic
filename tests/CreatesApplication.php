@@ -461,12 +461,10 @@ trait CreatesApplication
     }
 
     /**
-     * Empty the per-worker cache directory, preserving its tracked `.gitignore`.
+     * Empty the per-worker cache directory, preserving a `.gitignore` if it has one.
      *
-     * `deleteDirectory()` takes the `.gitignore` with it. That file is committed,
-     * so dropping it dirties the working tree of any persistent checkout the suite
-     * runs in — and `git status` noise is exactly what hides a real stray file.
-     * `SeedTestStache` preserves it the same way for the same reason.
+     * Nothing under the test cache root is tracked since UAMS-Web/uams-statamic#408,
+     * so a real worker directory has no `.gitignore` to preserve.
      */
     private function resetCacheDirectory(Filesystem $files, string $cacheDirectory): void
     {

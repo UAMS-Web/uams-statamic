@@ -187,9 +187,7 @@ it('warms once and writes a fresh, non-empty Stache snapshot', function (): void
         ->and(File::allFiles($seedDir))->not->toBeEmpty()
         ->and(File::exists($seedDir.'/stale-seed-marker.txt'))->toBeFalse()
         ->and(File::exists($seedDir.'/stale-cache-marker.txt'))->toBeFalse()
-        // The command wipes the cache dir but must restore its tracked
-        // `.gitignore`, so the seed build never dirties the working tree.
-        ->and(File::exists($cacheDir.'/.gitignore'))->toBeTrue();
+        ->and(File::exists($cacheDir.'/stale-cache-marker.txt'))->toBeFalse();
 
     // The single-flight lock is released once the build finishes, so the next
     // seed is not locked out by the last one. Asserted here rather than in its
