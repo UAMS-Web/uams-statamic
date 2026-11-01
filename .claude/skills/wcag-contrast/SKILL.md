@@ -61,7 +61,7 @@ The OKLCH to sRGB path uses the standard OKLab matrices; out-of-gamut channels a
 
 ## Notes for this project
 
-- The worked example above is the GPS fieldtype label bug (#961).
+- The worked example above is the GPS fieldtype label bug (UAMS-Web/uams-statamic-archive#961).
 - The CP dark-mode field card background is `dark:bg-gray-850`, which resolves to the theme's
   `zinc-850` = `oklch(0.236 0.006 286.015)`. Readable dark-mode text on it uses the core `gray`
   scale: `dark:text-gray-300` (about 11:1) or `dark:text-gray-200` (about 13:1), matching the

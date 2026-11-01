@@ -23,10 +23,10 @@
 //               mutate-ignore and lone-CR guards and the release-notes generator suite
 //     isolation php scripts/check-parallel-safe-tests.php (parallel-safety guard)
 //               + .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
-//     validate  composer validate (composer.json <-> composer.lock freshness)
+//     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
 //
 // The jobs run as a cost-ordered CHAIN, shortest
-// -> longest: isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
+// -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
 // LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
@@ -124,8 +124,10 @@
 //                       depended on somebody REMEMBERING to ask for it.
 //     encoding-guard    the vendored check-double-encoding.mjs invocation
 //     composer-validate composer validate --no-check-publish --no-check-all (the
-//                       lock-hash freshness gate; needs neither composer install
-//                       nor the framework, so it runs on the two files alone)
+//                       lock-hash freshness gate), then composer dump-autoload
+//                       --optimize --dev --strict-psr --dry-run --no-scripts (a
+//                       file with no class matching its PSR-4 path, #322); needs
+//                       neither composer install nor the framework
 //     toolchain pins    PHP 8.4, Node 22
 //
 // This script intentionally does NOT replicate CI-only infra that does not affect
@@ -203,8 +205,9 @@ export { chunkByArgLength, contentLitter, driftLabel, KNOWN_CONTENT_LITTER, reso
 export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spell', 'phpstan', 'encoding', 'no-emoji', 'content-pointer', 'isolation', 'validate', 'browser']
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
-
-// PARITY: the cost-ordered chain, shortest -> longest. A job runs only if every
+// PARITY: the cost-ordered chain, shortest -> longest, except `validate`, which
+// stays second although its PSR-4 class check can cost more than the jobs after it
+// (docs/DECISIONS.md). A job runs only if every
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
@@ -299,7 +302,6 @@ export function canReuseBuildOutput(results) {
     return results.get('build') === 0
 }
 
-
 // --- mutation-tooling smoke (UAMS-Web/uams-statamic-archive#1731) ----------------------------------------
 //
 // WHY THIS CLASS: the smoke needs a subject that is small, pure, fully covered,
@@ -370,7 +372,6 @@ export function mutateSmokeVerdict(driver, plain) {
 
     return { ok: true }
 }
-
 
 /** Where a worktree records the patch-set hash it last applied, under vendor/. */
 export const PATCH_STAMP_FILE = '.local-ci-patches-hash'
@@ -651,7 +652,6 @@ export function handoffArgv(argv, worktreePath) {
     return [...forwarded, '--worktree-path', worktreePath]
 }
 
-
 // UAMS-Web/uams-statamic-archive#1873 — split what the suite just wrote into the content/ submodule from what
 // was already sitting there.
 //
@@ -860,7 +860,6 @@ export function acquireWorktreeLock(worktreePath, branch) {
     throw new Error('unreachable: lock acquisition fell through')
 }
 
-
 /**
  * The clause a first-boot failure carries when `content/` changed revision during
  * this run (UAMS-Web/uams-statamic-archive#2832), or null when it did not or either revision is unknown.
@@ -881,7 +880,6 @@ export function contentMoveNote(before, after) {
 
     return `the first app boot after content/ moved ${before.slice(0, 9)} -> ${after.slice(0, 9)} in this run`
 }
-
 
 // UAMS-Web/uams-statamic-archive#1743 — flatten patches.lock.json into `package: description` lines so the run
 // output NAMES what the branch DECLARES. Absence then shows up as a missing line
@@ -913,7 +911,6 @@ function assertExit(code, what) {
 }
 
 // --- toolchain discovery ---------------------------------------------------
-
 
 /**
  * Ask the resolved PHP for its version, and refuse to continue if it could not answer.
@@ -1826,7 +1823,16 @@ function main() {
             // Reads composer.json + composer.lock only — no install, no vendor/,
             // no network or private-package auth (verified with the network off).
             step('JOB validate - composer validate')
-            return run(composer, ['validate', '--no-check-publish', '--no-check-all'], worktreePath)
+            const validated = run(composer, ['validate', '--no-check-publish', '--no-check-all'], worktreePath)
+            if (validated !== 0) {
+                return validated
+            }
+            // PARITY: the same job's "Run PSR-4 class check" step. Fails on a file
+            // declaring a class but none matching its PSR-4 path (#322); a second
+            // class beside a matching one is not reported. `--dev` keeps `autoload-dev`
+            // in the scan on the remote job, which has no `vendor/`.
+            step('JOB validate - PSR-4 class check')
+            return run(composer, ['dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'], worktreePath)
         },
         'no-emoji': () => {
             // PARITY: the no-emoji-guard job's "Run no-emoji guard" step in ci.yml.

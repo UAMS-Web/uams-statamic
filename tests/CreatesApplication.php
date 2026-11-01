@@ -388,7 +388,7 @@ trait CreatesApplication
      * built by `test:seed-stache`. Called only when {@see stacheSnapshotIsUsable()}
      * confirmed a snapshot exists.
      *
-     * The pre-run warm writes the default `storage/framework/cache/data`,
+     * The pre-run warm writes the default `storage/framework/testing/cache/data`,
      * but each paratest worker reads a per-worker `data/<TEST_TOKEN>-<pid>` dir it never
      * populated — the path mismatch behind the UAMS-Web/uams-statamic-archive#728 "the pre-run warm doesn't
      * help the parallel job" note. Copying the snapshot into the worker's own
@@ -461,12 +461,10 @@ trait CreatesApplication
     }
 
     /**
-     * Empty the per-worker cache directory, preserving its tracked `.gitignore`.
+     * Empty the per-worker cache directory, preserving a `.gitignore` if it has one.
      *
-     * `deleteDirectory()` takes the `.gitignore` with it. That file is committed,
-     * so dropping it dirties the working tree of any persistent checkout the suite
-     * runs in — and `git status` noise is exactly what hides a real stray file.
-     * `SeedTestStache` preserves it the same way for the same reason.
+     * Nothing under the test cache root is tracked since UAMS-Web/uams-statamic#408,
+     * so a real worker directory has no `.gitignore` to preserve.
      */
     private function resetCacheDirectory(Filesystem $files, string $cacheDirectory): void
     {
