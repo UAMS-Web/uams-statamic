@@ -81,7 +81,9 @@ class SiteSearchScope extends Tags
      */
     public function site(): string
     {
-        return $this->currentSite()->handle();
+        $handle = $this->currentSite()->handle();
+
+        return is_string($handle) ? $handle : '';
     }
 
     /**

@@ -131,7 +131,7 @@ function suggestionsFor(mixed $query, mixed $index = null): array
  * Call the endpoint at `?q=kirk` with these parameters, as a page on a `people` collection
  * across a root site and one sub-site would, and return its decoded body.
  *
- * @param  array<string, mixed>  $parameters  Query parameters, such as `site` and `scope`.
+ * @param  array<array-key, mixed>  $parameters  Query parameters, such as `site` and `scope`.
  * @return array<string, mixed>
  */
 function multisiteSuggestionsFor(array $parameters): array
@@ -457,7 +457,7 @@ it('wires the search input as an ARIA combobox bound to the type-ahead component
 });
 
 it('tells the type-ahead which site the page belongs to', function (): void {
-    expect(renderSearchPageForTypeahead(['q' => 'kirk']))->toContain('data-site="'.Site::current()->handle().'"');
+    expect(renderSearchPageForTypeahead(['q' => 'kirk']))->toContain('data-site="default"');
 });
 
 it('leaves knowledge-base search as a plain field, since it is scoped to one subtree', function (): void {
