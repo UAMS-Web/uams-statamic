@@ -11,7 +11,10 @@ covers(SchemaTemplateEmitContextRuntimeStack::class);
 /**
  * Pins the LIFO behavior of SchemaTemplateEmitContextRuntimeStack.
  *
- * The stack is process-wide static state, so each example empties it first.
+ * The stack is process-wide static state, so each example empties it first and
+ * leaves it empty: `SchemaCountry` prefers this stack to its own Antlers scope, so
+ * a context left here decides what a later test in the same worker sees
+ * (UAMS-Web/uams-statamic#442).
  * Every call runs with warnings and notices raised as exceptions, because
  * `phpunit.xml` does not fail a test on a warning: without that, a `peek()`
  * that read past an empty stack would return null and pass.
@@ -63,6 +66,9 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
+    (new ReflectionClass(SchemaTemplateEmitContextRuntimeStack::class))
+        ->setStaticPropertyValue('stack', []);
+
     restore_error_handler();
 });
 
