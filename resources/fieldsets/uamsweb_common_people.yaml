@@ -11,7 +11,9 @@ fields:
 
         The display order of the items in the person's name is based on the order of the selected items here. You may click and drag to rearrange the selected items in this field.
 
-        If this person's profile is displayed in a clinical context, then the displayed credentials will be limited to those that allow the person to practice their form of healthcare in the state.
+        Every selected credential appears after the person's name wherever the name is displayed.
+
+        Do not select a fellowship designation here. Record a fellowship under Professional Memberships, or under Certifications when it is earned by examination or training.
       taxonomies:
         - credentials
       create: false
