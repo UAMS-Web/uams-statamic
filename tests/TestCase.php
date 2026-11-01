@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use App\Models\Asset;
+use App\Services\SchemaTemplates\SchemaTemplateEmitContextRuntimeStack;
 use App\Support\ContentMirror;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -210,11 +211,20 @@ abstract class TestCase extends BaseTestCase
      * assignment in one parse bleeds into a later omitted-parameter parse (the
      * UAMS-Web/uams-statamic-archive#1567 leak that survives `resetState()`). Zeroing it is the piece
      * `resetState()` misses.
+     *
+     * The emit context stack is the app's own static of the same kind. Production
+     * pops it in a `finally`, so only a test can leave a context behind, and the
+     * schema tags prefer that context to the one in their own Antlers scope
+     * (UAMS-Web/uams-statamic#442).
      */
     private function resetAntlersRuntimeState(): void
     {
         StateManager::resetState();
         GlobalRuntimeState::$activeTracerCount = 0;
+
+        while (SchemaTemplateEmitContextRuntimeStack::peek() !== null) {
+            SchemaTemplateEmitContextRuntimeStack::pop();
+        }
     }
 
     /**
