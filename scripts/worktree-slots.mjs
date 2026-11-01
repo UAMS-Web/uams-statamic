@@ -1741,8 +1741,8 @@ function commandRefresh(repoRoot, name) {
         run('git', ['-C', path, 'submodule', 'update', '--init', ...expected.submodules], path);
     }
 
-    // A content change is invisible to tests until the Stache re-indexes, so both arms of a probe
-    // would pass and prove nothing.
+    // Clears the local Stache only: this runs outside the test environment, whose cache has its own
+    // root. Tests see a content change through the mirror rebuild below, which wipes that cache.
     run('php', ['artisan', 'statamic:stache:clear'], path);
 
     // The submodule update above moves `content/` but not the test-environment copy every content
