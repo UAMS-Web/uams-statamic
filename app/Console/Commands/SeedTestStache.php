@@ -42,7 +42,7 @@ use Symfony\Component\Finder\SplFileInfo;
  * Stache index reads as a starved collection rather than as a miss. Nothing has to
  * detect that, because the tokenized path is a *subdirectory* of the token-less
  * one: this command runs with `TEST_TOKEN` unset, so `cache.stores.file.path`
- * resolves to `storage/framework/cache/data` and the delete takes every
+ * resolves to `storage/framework/testing/cache/data` and the delete takes every
  * `data/<token>` tree with it. `CreatesApplication::seedStacheFromSnapshot()` then
  * resets each worker's dir again before copying and verifies the file count, so a
  * partial cache cannot survive a band start twice over. Keep the paths nested if
