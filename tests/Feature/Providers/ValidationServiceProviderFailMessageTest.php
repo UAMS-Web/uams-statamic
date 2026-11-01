@@ -3,28 +3,12 @@
 declare(strict_types=1);
 
 use App\Providers\ValidationServiceProvider;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\HtmlString;
+use Tests\Support\FailMessageProbeRule;
 use Tests\TestCase;
 
 uses(TestCase::class);
-
-/**
- * A rule that fails with whatever message the test set.
- */
-final class FailMessageProbeRule implements ValidationRule
-{
-    public static mixed $message = null;
-
-    public function validate(string $attribute, mixed $value, Closure $fail): void
-    {
-        /** @var Closure(mixed): void $failWithAnything */
-        $failWithAnything = $fail;
-
-        $failWithAnything(self::$message);
-    }
-}
 
 // Laravel's interface says a fail message is a string, but rules here pass what `__()` returns,
 // and that is an array for a translation group. These reach every arm of the provider's coercion.
