@@ -3656,3 +3656,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *A separate job*: one more remote job for a single command. *Dropping `--dev`*: with no `vendor/`, Composer treats the install as non-dev and skips `autoload-dev`, so the check passes with `tests/` unread. A planted violation showed that: it exited 0 without `--dev` and 1 with it.
 
 **Residual.** The check does not report a second class in a file that also holds a class matching its path, because Composer drops that class without recording a violation. A planted second class exited 0.
+
+## 2026-11-01: `/search` scopes stay in code, and a site shows only the tabs it can fill (#162)
+
+**Decision.** No-go on CP-configurable search scopes, which closes the residual the 2026-07-13 `/search` entry deferred to #162. One code registry of scopes (curated label, index handle, collections covered, with "All results" as a scope over `default`) replaces the six copies of the list. Under "This site" a page shows "All results" and each scope with a collection the current site carries. Under "All sites" it shows every scope. Labels do not change. The build is #475.
+
+**Why.** A search of both trackers found no ticket where an editor asks for this control, and the list changes only when an index does, which is a code change anyway. `UAMS-Web/UAMSWP-Search#50` copies these labels onto WordPress, so an editable label would drift from it. A CP field would also store index handles in content while #161 may change what an index is. What readers meet is a different problem: `clinical_expertise`, `clinical_locations` and `clinical_resources` are on 1 of 255 sites and `people` and `posts` on 244 (`Collection::sites()`, 2026-11-01), so on 253 sub-sites three of the six tabs cannot return anything under "This site", the sub-site default since #468. The sites differ in a way the collection settings already state, so no field is needed to state it again.
+
+**Rejected.** *No CP and no change*: the empty tabs and the six copies both remain. *One CP grid for all sites*: control nobody has asked for, a render-time guard against a stored handle whose index has gone (`InvalidArgumentException`, a 500), labels free to drift from WordPress, and the empty tabs remain unless the tabs are derived anyway. It is the fallback if an editor request appears. *A CP grid per site*: the same costs across 255 hand-kept lists. *The `search_settings` `collections` global from `feature/search-m`*: never read by anything on that branch, and already rejected on 2026-07-13; the recovered files are on #162.
+
+**Residual.** The demand finding is bounded: one of the queries returned 42 hits, of which 20 numbers were seen and their titles were not read, and no search analytics exist yet (#411). The 253 is derived from the collection settings and has not been run, because local content holds no entries in those three collections. Where the #416 page-size setting lives is not settled here.
+
+**Companion.** #162 (the full argument and the recovered prior art), #475 (the build), #161 (independent: a scope names an index handle, so an engine change touches the registry alone).
