@@ -31,8 +31,8 @@ name: Check attribution footer
 # cannot fix it. The skip is inside the step rather than a job-level `if`, so
 # the step can print why it skipped.
 #
-# The job name, `Attribution footer`, is the context the shared required-checks ruleset names,
-# the same in every repository, so keep it for when this repository adopts that ruleset.
+# The job name, `Attribution footer`, is a required status check context in the repository's
+# ruleset, the same in every repository. Renaming it means changing the ruleset.
 
 on:
   pull_request:

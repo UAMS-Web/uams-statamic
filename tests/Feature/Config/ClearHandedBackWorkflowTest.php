@@ -18,7 +18,7 @@ use Symfony\Component\Yaml\Yaml;
  *   pull request is skipped rather than spending a runner. An `edited` event
  *   clears it only when the body changed and the sender is not a bot, so a
  *   title-only edit, or a bot rewriting the body, leaves it in place.
- * - It is not gated on `RUN_REMOTE_CI`, unlike every job in `ci.yml`. That
+ * - It is not gated on `RUN_REMOTE_CI`, unlike the jobs `ci.yml` aggregates. That
  *   switch is off for months at a time, and gating on it would bring back the
  *   missed removal for exactly that long.
  *

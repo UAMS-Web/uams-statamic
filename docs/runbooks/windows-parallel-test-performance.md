@@ -76,7 +76,7 @@ warm + boot = 95% of the cost. `stache-warm` is I/O-bound — 12 workers reading
 ## Caveats
 
 - **Per-machine, does not travel via git.** This is a local Defender setting; each developer must apply it on their own Windows machine. It is not something the repo can enforce.
-- **Irrelevant to CI.** GitHub Actions runs on Linux (no Defender), and remote CI is disabled anyway — local CI on Windows is the gate this helps.
+- **Irrelevant to remote CI.** GitHub Actions runs on Linux (no Defender), so this helps only a local run on Windows.
 - **An AV-coverage tradeoff.** You are excluding an entire dev tree from real-time scanning. That is a security posture decision for your own machine.
 - **Only ~24%.** The majority of the slowness is inherent (UAMS-Web/uams-statamic-archive#1537); do not expect this exclusion alone to make the suite fast.
 
