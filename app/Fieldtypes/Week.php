@@ -23,6 +23,13 @@ class Week extends Fieldtype
     use Input;
 
     /**
+     * A YYYY-Www week from 01 to 53, capturing the year and the week.
+     *
+     * Whether week 53 exists in a given ISO year is not checked.
+     */
+    private const string WEEK_FORMAT = '/^(\d{4})-W(0[1-9]|[1-4]\d|5[0-3])$/';
+
+    /**
      * The display title of the fieldtype in the Control Panel.
      *
      * @var string The display title of the fieldtype in the Control Panel.
@@ -96,11 +103,11 @@ class Week extends Fieldtype
             ],
             'min' => [
                 'instructions' => 'Set the minimum allowed week. Format: YYYY-Www (e.g., 2020-W01 for week 1 of 2020).',
-                'validate' => ['regex:/^\d{4}-W\d{2}$/'],
+                'validate' => ['regex:'.self::WEEK_FORMAT],
             ],
             'max' => [
                 'instructions' => 'Set the maximum allowed week. Format: YYYY-Www (e.g., 2030-W52 for week 52 of 2030).',
-                'validate' => ['regex:/^\d{4}-W\d{2}$/'],
+                'validate' => ['regex:'.self::WEEK_FORMAT],
             ],
             'calculation_type' => [
                 'default' => 'text',
@@ -190,7 +197,7 @@ class Week extends Fieldtype
         $rules = [];
 
         // Add ISO week format validation
-        $rules[] = 'regex:/^\d{4}-W\d{2}$/';
+        $rules[] = 'regex:'.self::WEEK_FORMAT;
 
         // ---
         // Add min week constraint if set
@@ -362,7 +369,7 @@ class Week extends Fieldtype
         // Check if week matches ISO format pattern
         if (
             \preg_match(
-                '/^(\d{4})-W(\d{2})$/',
+                self::WEEK_FORMAT,
                 $week,
                 $matches
             )
