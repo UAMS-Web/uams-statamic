@@ -12,7 +12,16 @@ use App\Services\IptcDigitalSourceValueResolver;
 trait ComputesAssetIptcDigitalSourceValues
 {
     /**
-     * Merge computed digital source keys into augmented asset key listings.
+     * Computed credit keys, from `ComputesAssetCreditText`.
+     *
+     * The two traits share this class's one `keys()`, so this trait lists both sets.
+     *
+     * @return list<string>
+     */
+    abstract protected function creditTextKeys(): array;
+
+    /**
+     * Merge computed credit and digital source keys into augmented asset key listings.
      *
      * @return array<int, string>
      */
@@ -58,6 +67,7 @@ trait ComputesAssetIptcDigitalSourceValues
             array_unique(
                 [
                     ...$normalizedParentKeys,
+                    ...$this->creditTextKeys(),
                     ...$computedKeys,
                 ]
             )
@@ -72,7 +82,7 @@ trait ComputesAssetIptcDigitalSourceValues
             $parentKeys
         );
 
-        // Return merged key list with computed digital source keys included
+        // Return merged key list with the computed keys included
         return $mergedKeys;
     }
 
