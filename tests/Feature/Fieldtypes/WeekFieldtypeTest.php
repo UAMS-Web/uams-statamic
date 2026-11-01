@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Fieldtypes\Week;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
+use Statamic\Fields\Fields;
 use Tests\TestCase;
 
 /**
@@ -97,13 +98,13 @@ it('pins every config field override exactly', function (): void {
         'min' => [
             'instructions' => 'Set the minimum allowed week. Format: YYYY-Www (e.g., 2020-W01 for week 1 of 2020).',
             'validate' => [
-                'regex:/^\\d{4}-W\\d{2}$/',
+                'regex:/^(\\d{4})-W(0[1-9]|[1-4]\\d|5[0-3])$/',
             ],
         ],
         'max' => [
             'instructions' => 'Set the maximum allowed week. Format: YYYY-Www (e.g., 2030-W52 for week 52 of 2030).',
             'validate' => [
-                'regex:/^\\d{4}-W\\d{2}$/',
+                'regex:/^(\\d{4})-W(0[1-9]|[1-4]\\d|5[0-3])$/',
             ],
         ],
         'calculation_type' => [
@@ -165,7 +166,7 @@ it('pins every hidden config field handle exactly', function (): void {
 });
 
 it('only checks the YYYY-Www format when no bound is configured', function (): void {
-    expect(weekFieldtype()->rules())->toBe(['regex:/^\d{4}-W\d{2}$/'])
+    expect(weekFieldtype()->rules())->toBe(['regex:/^(\d{4})-W(0[1-9]|[1-4]\d|5[0-3])$/'])
         ->and(weekErrors([], '2024-W05'))->toBe([])
         ->and(weekErrors([], '2024-W5'))->toBe(['The week field format is invalid.']);
 });
@@ -261,7 +262,7 @@ it('compares each year and week part as an integer', function (array $config, st
     'a letter year in the value, below the minimum' => [['min' => '2020-W01'], 'abc-W05', ['The week field format is invalid.', 'The week must be after or equal to Week 01, 2020.']],
     'a letter year in the minimum' => [['min' => 'abc-W01'], '2020-W05', []],
     'a letter week in the value, below the minimum' => [['min' => '2020-W01'], '2020-Wab', ['The week field format is invalid.', 'The week must be after or equal to Week 01, 2020.']],
-    'a letter week in the maximum, equal to a zero value week' => [['max' => '2020-Wab'], '2020-W00', []],
+    'a letter week in the maximum, equal to a zero value week' => [['max' => '2020-Wab'], '2020-W00', ['The week field format is invalid.']],
     'a letter year in the value, equal to a zero maximum year' => [['max' => '0-W01'], 'abc-W01', ['The week field format is invalid.']],
     'a letter year in the maximum, below a numeric value year in the same week' => [['max' => 'abc-W01'], '2020-W01', ['The week must be before or equal to abc-W01.']],
     'a letter week in the minimum' => [['min' => '2020-Wab'], '2020-W05', []],
@@ -269,10 +270,34 @@ it('compares each year and week part as an integer', function (array $config, st
     'a letter week in the maximum, below a numeric value week' => [['max' => '2020-Wab'], '2020-W05', ['The week must be before or equal to 2020-Wab.']],
 ]);
 
+it('accepts a config bound or submitted value only from week 01 to week 53', function (string $week, bool $valid): void {
+    foreach (['min', 'max'] as $bound) {
+        $fields = mustBe(Fields::class, (new Week)->configFields()->addValues([$bound => $week]), 'the config fields');
+
+        expect(rescue(fn () => $fields->validate(), false, false) !== false)->toBe($valid);
+    }
+
+    expect(weekErrors([], $week))->toBe($valid ? [] : ['The week field format is invalid.']);
+})->with([
+    'a zero week' => ['2024-W00', false],
+    'the first week' => ['2024-W01', true],
+    'the ninth week' => ['2024-W09', true],
+    'the tenth week' => ['2024-W10', true],
+    'the nineteenth week' => ['2024-W19', true],
+    'the forty-ninth week' => ['2024-W49', true],
+    'the fiftieth week' => ['2024-W50', true],
+    'the last week' => ['2024-W53', true],
+    'the week after the last' => ['2024-W54', false],
+    'a week far above 53' => ['2024-W99', false],
+]);
+
 it('formats a YYYY-Www week as Week xx, yyyy and leaves anything else unchanged', function (string $week, string $display): void {
     expect(weekCall('formatWeekForDisplay', [$week]))->toBe($display);
 })->with([
     'a valid week' => ['2024-W09', 'Week 09, 2024'],
+    'the last week' => ['2024-W53', 'Week 53, 2024'],
+    'the week after the last' => ['2024-W54', '2024-W54'],
+    'a zero week' => ['2024-W00', '2024-W00'],
     'a single-digit week' => ['2024-W9', '2024-W9'],
     'a trailing character' => ['2024-W09x', '2024-W09x'],
     'a leading character' => ['x2024-W09', 'x2024-W09'],
