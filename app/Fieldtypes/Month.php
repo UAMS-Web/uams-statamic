@@ -23,6 +23,11 @@ class Month extends Fieldtype
     use Input;
 
     /**
+     * A YYYY-MM month from 01 to 12, capturing the year and the month.
+     */
+    private const string MONTH_FORMAT = '/^(\d{4})-(0[1-9]|1[0-2])$/';
+
+    /**
      * The display title of the fieldtype in the Control Panel.
      *
      * @var string The display title of the fieldtype in the Control Panel.
@@ -98,11 +103,11 @@ class Month extends Fieldtype
             ],
             'min' => [
                 'instructions' => 'Set the minimum allowed month. Format: YYYY-MM (e.g., 2020-01 for January 2020).',
-                'validate' => ['regex:/^\d{4}-\d{2}$/'],
+                'validate' => ['regex:'.self::MONTH_FORMAT],
             ],
             'max' => [
                 'instructions' => 'Set the maximum allowed month. Format: YYYY-MM (e.g., 2030-12 for December 2030).',
-                'validate' => ['regex:/^\d{4}-\d{2}$/'],
+                'validate' => ['regex:'.self::MONTH_FORMAT],
             ],
             'calculation_type' => [
                 'default' => 'text',
@@ -193,7 +198,7 @@ class Month extends Fieldtype
         $rules = [];
 
         // Add YYYY-MM format validation
-        $rules[] = 'regex:/^\d{4}-\d{2}$/';
+        $rules[] = 'regex:'.self::MONTH_FORMAT;
 
         // Get the minimum month configuration value
         $min = $this->config('min');
@@ -362,7 +367,7 @@ class Month extends Fieldtype
         // Check if the month string matches the YYYY-MM format
         if (
             \preg_match(
-                '/^(\d{4})-(\d{2})$/',
+                self::MONTH_FORMAT,
                 $month,
                 $matches
             )
@@ -373,9 +378,7 @@ class Month extends Fieldtype
             // Extract the year from the matches
             $year = $matches[1];
 
-            // Get the full month name from the first day of the matched month. A month
-            // number of 0 or above 12 rolls into an earlier or later year; only the
-            // month name is used.
+            // Get the full month name from the first day of the matched month
             $monthName = (new \DateTimeImmutable)
                 ->setDate(
                     (int) $year,

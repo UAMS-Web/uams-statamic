@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { worktreeFromLog, runHasStalled, parseSummary, summaryVerdict, buildReport } from './local-ci-progress.mjs'
@@ -171,5 +171,80 @@ describe('parseSummary and buildReport', () => {
 
         expect(line).toContain('stage=content-pointer (4 of 14)')
         expect(line).not.toContain('COMPLETE')
+    })
+
+    describe('the sub-phases of the pest job', () => {
+        const cyan = (text) => `${esc}[36m${text}${esc}[39m`
+
+        const pestLog = (worktree, ...lines) => [
+            `Worktree:  ${worktree}`,
+            `Jobs:      ${CHAIN.join(', ')}`,
+            cyan('==> JOB encoding - cp1252 double-encoding guard'),
+            ...lines,
+        ].join('\n')
+
+        /** A worktree holding the given number of serial-group test files, and one other. */
+        const withSerialTests = (count, callback) => {
+            const worktree = mkdtempSync(join(tmpdir(), 'local-ci-progress-worktree-'))
+            const directory = join(worktree, 'tests', 'Feature')
+            mkdirSync(directory, { recursive: true })
+            writeFileSync(join(directory, 'PlainTest.php'), '<?php\n')
+
+            for (let index = 0; index < count; index += 1) {
+                writeFileSync(join(directory, `Serial${index}Test.php`), "<?php\n\nuses()->group('serial');\n")
+            }
+
+            try {
+                return callback(worktree)
+            } finally {
+                rmSync(worktree, { recursive: true, force: true })
+            }
+        }
+
+        it('reports the parallel suite with an emitted-test count', () => {
+            const line = report(pestLog(
+                '/tmp/uams-statamic-ci',
+                cyan('==> JOB pest - parallel suite (excluding serial group)'),
+                '.......',
+                '....',
+            ))
+
+            expect(line).toContain("stage=pest (13 of 14) sub-phase='parallel suite'  ~11 tests emitted")
+        })
+
+        it('reports the serial tail with a done and total class count', () => {
+            const line = withSerialTests(4, (worktree) => report(pestLog(
+                worktree,
+                cyan('==> JOB pest - parallel suite (excluding serial group)'),
+                '.......',
+                cyan('==> JOB pest - serial tail (group=serial)'),
+                `  ${green('PASS')}  Tests\\Feature\\Serial0Test`,
+                `  ${red('FAIL')}  Tests\\Feature\\Serial1Test`,
+                `  ${green('PASS')}  Tests\\Feature\\Serial2Test`,
+            )))
+
+            expect(line).toContain("stage=pest (13 of 14) sub-phase='serial tail'  3/4 classes (75%)")
+        })
+
+        it.each([
+            ['build Stache seed (testing env)'],
+            ['build route cache (testing env)'],
+            ['skip baseline (parallel band)'],
+            ['skip baseline (serial band)'],
+            ['slowest class (parallel band)'],
+            ['slowest class (serial band)'],
+        ])('names the %s sub-phase', (subPhase) => {
+            const line = report(pestLog('/tmp/uams-statamic-ci', cyan(`==> JOB pest - ${subPhase}`)))
+
+            expect(line).toContain(`stage=pest (13 of 14) sub-phase='${subPhase}'`)
+            expect(line).not.toContain('no per-item progress')
+        })
+
+        it('reports no per-item progress from a stage other than pest', () => {
+            const line = report(pestLog('/tmp/uams-statamic-ci'))
+
+            expect(line).toContain('no per-item progress from this stage')
+            expect(line).not.toContain('sub-phase=')
+        })
     })
 })
