@@ -563,6 +563,21 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         expect(compare(replaced, allow)).toEqual(['.github/workflows/ci.yml: job `browser` is not in the `needs:` list of the `CI` job, so nothing requires it'])
     })
 
+    it('reads every job on all three operating systems (#348)', () => {
+        const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        const onOneRunner = new Set(['ci', 'submodule-access'])
+        const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
+        expect(ids.length).toBeGreaterThan(0)
+
+        for (const id of ids) {
+            const job = jobText(workflow, id)
+            expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
+            expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
+            expect(job, id).toContain('      fail-fast: false\n')
+            expect(job, id).not.toContain('continue-on-error')
+        }
+    })
+
     it('runs whatever the needed jobs did, and never carries the `RUN_REMOTE_CI` gate', () => {
         expect(ci).toContain('    name: CI\n')
         expect(ci).toContain('    if: always()\n')

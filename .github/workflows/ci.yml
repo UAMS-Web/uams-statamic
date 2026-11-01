@@ -981,7 +981,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
           coverage: none
           tools: composer:v2
 
@@ -1280,7 +1280,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
           coverage: none
           tools: composer:v2
 
@@ -1341,6 +1341,13 @@ jobs:
     # Composer, or content submodule.
     steps:
       - uses: actions/checkout@v7
+
+      # scripts/worktree-slots.test.mjs spawns `php`, which only the Linux image ships.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -1720,7 +1727,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: imagick
+          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick
           coverage: none
           tools: composer:v2
 
