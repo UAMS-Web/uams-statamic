@@ -29,7 +29,7 @@
 // -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
-// LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
+// LOCAL ONLY: ci.yml fans its jobs out in parallel (#373),
 // because one machine runs them serially whatever the graph says and stopping early
 // saves your own time rather than a metered budget.
 // Run one job (e.g. `--jobs pest`) to bypass the chain.
@@ -136,16 +136,12 @@
 //
 // The remote `RUN_REMOTE_CI` budget kill-switch (UAMS-Web/uams-statamic-archive#980) does NOT apply here: this
 // runner has no concept of the toggle and always runs the requested jobs. That is
-// the point — when remote CI is switched off (Actions budget exhausted), this is
-// the validation path. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
+// the point — when remote CI is switched off, this can still validate a branch. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
 // gates, with no behavioral mirror needed in this script.
 //
-// A green run here is mergeable because no ruleset on `main` requires a status
-// check, NOT because `main` is unprotected: two organization rulesets refuse
-// deletion, force-pushes and direct pushes, and require a pull request, which a
-// merge is. See docs/runbooks/branch-protection.md and UAMS-Web/uams-statamic-archive#2016. Adding a required
-// check while remote CI is off would leave it pending forever and deadlock merges,
-// which no amount of local green can clear.
+// A green run here does not make a branch mergeable: a ruleset on `main` requires the
+// remote `CI`, `Attribution footer` and `Closing keywords` checks (#337), and no local
+// run can report them. See docs/runbooks/branch-protection.md.
 //
 // RUNNER HANDOFF (UAMS-Web/uams-statamic-archive#1882) — this script is invoked from the checkout it lives in,
 // not from the branch it validates, so a PR that ADDS, REMOVES or CHANGES a chain
@@ -211,8 +207,8 @@ const VALID_JOBS = [...ALL_JOBS, 'all']
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
-// bypass the chain. This ORDER is local only: ci.yml declares no `needs:` and runs
-// its jobs in parallel (#373). Module-scoped and exported so the parity test can
+// bypass the chain. This ORDER is local only: ci.yml runs its jobs in parallel
+// (#373). Module-scoped and exported so the parity test can
 // compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
 export const CHAIN = ['isolation', 'validate', 'no-emoji', 'content-pointer', 'encoding', 'spell', 'js', 'build', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']
 // PARITY-END: the chain itself only. What follows is unrelated (UAMS-Web/uams-statamic-archive#2376).

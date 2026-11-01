@@ -15,6 +15,8 @@ The `pull_request` rule's parameters are `required_approving_review_count: 0`, `
 
 Both rulesets have `bypass_actors: []`, and both target `refs/heads/main` with nothing excluded.
 
+A third ruleset, the repository ruleset `main: required checks`, reaches this repository alone and requires the status checks `CI`, `Attribution footer` and `Closing keywords` (#337). It comes from the `code-quality` skill's `required-checks-ruleset.json`, applied with `apply-required-checks-ruleset.mjs`. The two organization rulesets above are unchanged.
+
 **Classic branch protection is gone.** `GET .../branches/main/protection` answers `404 Branch not protected`, while `GET .../branches/main` still reports `protected: true` because the rulesets apply. Neither reading alone describes the enforcement, so read the rulesets.
 
 The refusal of a direct push is GitHub's documented effect of the `pull_request` rule. It was not measured here by attempting a push to `main`.
@@ -62,7 +64,7 @@ This procedure has not been run since the rulesets replaced classic protection.
 
 ## The failure this guards against
 
-`RUN_REMOTE_CI` is currently `false`, so every `ci.yml` job reports `skipped`. Nothing blocks a merge because **no ruleset requires a status check**, not because `main` is unprotected. If a required status check is ever added while remote CI is off, it does not block anything: a job skipped by its `if:` reports success to a required check, so every merge passes the check with nothing run, and the gate only looks satisfied. A check stays pending only when its whole workflow never runs, for example under a path filter or `[skip ci]`. Adding one reopens UAMS-Web/uams-statamic-archive#2016 (UAMS-Web/uams-statamic-archive#3166). See the [`local-ci`](../../.claude/skills/local-ci/SKILL.md) skill's `RUN_REMOTE_CI` section.
+No organization or repository variable named `RUN_REMOTE_CI` reaches this repository (read 2026-11-01), so every `ci.yml` job runs. A job skipped by its `if:` reports success to a required check, so a ruleset naming those jobs would pass with nothing run once the switch was set to `false`. The ruleset therefore names only the aggregate `CI` job, which carries no such gate and fails on a skipped job: with the switch off every merge is held rather than waved through. A check stays pending only when its whole workflow never runs, for example under a path filter or `[skip ci]`, so a head commit carrying `[skip ci]` cannot merge.
 
 ## History
 

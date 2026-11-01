@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { compare, controlFailures, parseWorkflow, readRepository } from '../.claude/skills/code-quality/scripts/check-aggregate-needs.mjs'
 import {
     ALL_JOBS,
     CHAIN,
@@ -27,8 +28,9 @@ import {
 // parallel, because GitHub does not meter the standard runners they use for a
 // public repository; the local runner keeps its cost-ordered chain because one
 // machine runs the jobs serially whatever any graph says. So these cases pin the
-// SET, and pin that ci.yml stays unchained apart from the one edge #387 added
-// (`pest-report` reads the `pest` shards' output), rather than comparing two
+// SET, and pin that ci.yml stays unchained apart from the edge #387 added
+// (`pest-report` reads the `pest` shards' output) and the aggregate `ci` job, which
+// orders nothing (#337), rather than comparing two
 // orders that no longer both exist.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -63,9 +65,10 @@ const JOB_KEYS = {
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
 // (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
-// gains its own job with #256. The first case in the parity block below pins that each
+// gains its own job with #256. `ci` only reads the other jobs' results (#337). The first
+// case in the parity block below pins that each
 // still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
-const REMOTE_ONLY = new Set(['submodule-access', 'synced-files'])
+const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'synced-files'])
 
 /**
  * Read the `jobs:` ids and their `needs:` edges out of ci.yml.
@@ -130,8 +133,8 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // Each listed job must exist, so a rename cannot leave a stale exemption
         // pointing at nothing while the renamed job slips past this guard unseen.
         // The "outside the chain" half of this case retired with #373: no job in
-        // ci.yml carries an edge any more, and the unchained case below asserts
-        // that for every job at once rather than for these two.
+        // ci.yml carries an ordering edge any more, and the unchained case below
+        // asserts that for every job at once rather than for these.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
         }
@@ -165,7 +168,9 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect(control.get('beta').needs).toEqual(['alpha'])
         expect(control.get('alpha').needs).toBeNull()
 
-        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id, job]) => [id, job.needs])
+        // `ci` needs every job and orders none of them: it runs last and reads their
+        // results. The aggregate's own block below holds that list.
+        const chained = [...allJobs].filter(([id, job]) => id !== 'ci' && job.needs !== null).map(([id, job]) => [id, job.needs])
         expect(chained).toEqual([['pest-report', ['pest']]])
     })
 
@@ -537,6 +542,44 @@ function jobText(yaml, id) {
 
     return [lines[start], ...(end === -1 ? rest : rest.slice(0, end))].join('\n')
 }
+
+describe('the aggregate `CI` job in ci.yml (#337)', () => {
+    const ci = jobText(workflow, 'ci')
+
+    it('leaves no job out of its `needs:`, read by the check the shared template ships', () => {
+        expect(controlFailures()).toEqual([])
+
+        const { workflows, allow, error } = readRepository(repoRoot)
+        expect(error).toBeUndefined()
+        expect(compare(workflows, allow)).toEqual([])
+    })
+
+    it('reports a job missing from its `needs:`, so the case above can fail', () => {
+        const { workflows, allow } = readRepository(repoRoot)
+        const planted = workflow.replace(/(\n {4}needs: \[[^\]]*), browser\]/, '$1]')
+        expect(planted).not.toBe(workflow)
+
+        const replaced = workflows.map((entry) => (entry.file === '.github/workflows/ci.yml' ? { file: entry.file, ...parseWorkflow(planted) } : entry))
+        expect(compare(replaced, allow)).toEqual(['.github/workflows/ci.yml: job `browser` is not in the `needs:` list of the `CI` job, so nothing requires it'])
+    })
+
+    it('runs whatever the needed jobs did, and never carries the `RUN_REMOTE_CI` gate', () => {
+        expect(ci).toContain('    name: CI\n')
+        expect(ci).toContain('    if: always()\n')
+        expect(ci).not.toContain('RUN_REMOTE_CI')
+    })
+
+    const bashRuns = spawnSync('bash', ['-c', 'exit 0']).status === 0
+    const resultsStep = ci.split('run: |\n')[1].replace(/^ {10}/gm, '').replace(/^\n+$/, '')
+    const stepStatus = (results) => spawnSync('bash', ['-c', resultsStep], { env: { ...process.env, RESULTS: results } }).status
+
+    it.skipIf(!bashRuns)('passes only when every needed job succeeded', () => {
+        expect(stepStatus('success success success')).toBe(0)
+        expect(stepStatus('success failure success')).toBe(1)
+        expect(stepStatus('success skipped success')).toBe(1)
+        expect(stepStatus('cancelled success')).toBe(1)
+    })
+})
 
 describe('the sharded pest job in ci.yml (#387)', () => {
     const pest = jobText(workflow, 'pest')

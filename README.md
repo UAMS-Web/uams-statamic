@@ -152,6 +152,10 @@ Working copies and revision history are stored under `storage/statamic/revisions
 - **They survive a deploy only if `storage/` does.** Both deploy scripts above pull into the same directory, so `storage/` stays in place. A deploy that builds each release in a fresh directory (zero-downtime deployment) must share `storage/statamic/revisions` across releases, or every pending change is lost on the next deploy.
 - **They are not in the content repository's history.** Include `storage/statamic/revisions` in the server's backups; nothing else holds a change that is waiting to be published.
 
+## Continuous integration
+
+Remote CI runs on every pull request and on every push to `main`. A ruleset on `main` requires three checks: `CI`, which fails unless every job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) succeeded, plus `Attribution footer` and `Closing keywords`. All three run on Linux only until UAMS-Web/uams-statamic#348 adds Windows and macOS. [`docs/runbooks/branch-protection.md`](docs/runbooks/branch-protection.md) records what `main` enforces.
+
 ## License
 
 This repository is released under the [MIT License](LICENSE), copyright University of Arkansas for Medical Sciences.
