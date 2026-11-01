@@ -25,7 +25,8 @@ permissions:
 # shared by every UAMS-Web repo), not per repo. When that budget is exhausted,
 # every job here fails instantly on a billing error. To stop burning the queue
 # until the monthly reset, set an Actions variable `RUN_REMOTE_CI` to `false`;
-# every job below except the manual-run-only `submodule-access` is gated on
+# every job below except the manual-run-only `submodule-access` and the aggregate
+# `ci` is gated on
 # `if: vars.RUN_REMOTE_CI != 'false'`, so they report `skipped` and consume zero
 # runner minutes. Unset (or any value other
 # than `false`) = CI runs exactly as before — the default is always-on.
@@ -83,10 +84,10 @@ permissions:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
-# JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, neither
-# to order the work. `pest-report` merges the reports of the four `pest` shards, so
-# it cannot start before them (#387). `ci` runs last and only reads the results of
-# the others (#337). Otherwise one job's
+# JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
+# because it reads what the jobs it names leave behind. `pest-report` merges the
+# reports of the four `pest` shards (#387), and `ci` reads the result of every job
+# (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first.
 # Until #373 these ran as a strict sequential chain, cost-ordered shortest to
@@ -180,8 +181,8 @@ jobs:
     #   pull request or a push never runs it.
     # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
     #   manual run reaches this step at once instead of after phpstan.
-    # - Nothing `needs:` it, so it cannot skip or hold up any gate job. Since
-    #   #373 the only `needs:` edge in this file is `pest-report` on `pest`.
+    # - Nothing `needs:` it, the aggregate `ci` job included, so it cannot skip
+    #   or hold up any gate job.
     # - Re-run it by hand whenever a private submodule is added. The token is
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
@@ -213,8 +214,8 @@ jobs:
     # Fails, naming the file, when a rule or skill the sync manages was edited
     # by hand rather than in UAMS-Web/uams-claude-skills.
     #
-    # It needs nothing and nothing needs it, which since #373 is true of every
-    # job here, so it cannot skip or hold up a gate job and reports beside them.
+    # It needs nothing, so no other job can skip it. The aggregate `ci` job needs
+    # it, so a failure here holds a merge.
     #
     # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
     # own synced-files job arrives with the shared runner in #256. Until then
@@ -845,7 +846,7 @@ jobs:
     # band with a whole-band baseline and the second divides by a quarter of the
     # band, so neither runs in a shard.
     #
-    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # One of the two `needs:` lists in this file, and the reason it is allowed: this job
     # reads the shards' output, so it cannot run before them. It skips when any
     # shard fails, as the checks below skipped in the single job when the band
     # failed; the failed shard already fails the run.
@@ -1788,14 +1789,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # PARITY: no counterpart in scripts/local-ci.mjs, whose chain stops at the first failure
-      # and so has no set of results to read. The chain test names this job in REMOTE_ONLY.
+      # REMOTE-ONLY: scripts/local-ci.mjs stops at the first failure, so it has no set of
+      # results to read. The chain test names this job in REMOTE_ONLY.
       # `skipped` and `cancelled` fail as well as `failure`: a job that did not run proved nothing.
+      # An empty list fails too, or a broken expression above would pass with nothing read.
       - name: Every needed job succeeded
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
           echo "Needed job results: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "::error::No needed job results to read"
+            exit 1
+          fi
           for result in $RESULTS; do
             if [ "$result" != "success" ]; then
               echo "::error::A needed job reported $result"

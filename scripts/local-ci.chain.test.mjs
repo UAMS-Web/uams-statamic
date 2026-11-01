@@ -133,7 +133,7 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // Each listed job must exist, so a rename cannot leave a stale exemption
         // pointing at nothing while the renamed job slips past this guard unseen.
         // The "outside the chain" half of this case retired with #373: no job in
-        // ci.yml carries an ordering edge any more, and the unchained case below
+        // ci.yml carries a cost edge any more, and the unchained case below
         // asserts that for every job at once rather than for these.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
@@ -569,6 +569,10 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         expect(ci).not.toContain('RUN_REMOTE_CI')
     })
 
+    it('hands the step every needed job\'s result', () => {
+        expect(ci).toContain("RESULTS: ${{ join(needs.*.result, ' ') }}\n")
+    })
+
     const bashRuns = spawnSync('bash', ['-c', 'exit 0']).status === 0
     const resultsStep = ci.split('run: |\n')[1].replace(/^ {10}/gm, '').replace(/^\n+$/, '')
     const stepStatus = (results) => spawnSync('bash', ['-c', resultsStep], { env: { ...process.env, RESULTS: results } }).status
@@ -578,6 +582,7 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         expect(stepStatus('success failure success')).toBe(1)
         expect(stepStatus('success skipped success')).toBe(1)
         expect(stepStatus('cancelled success')).toBe(1)
+        expect(stepStatus('')).toBe(1)
     })
 })
 

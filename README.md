@@ -154,7 +154,7 @@ Working copies and revision history are stored under `storage/statamic/revisions
 
 ## Continuous integration
 
-Remote CI runs on every pull request and on every push to `main`. A ruleset on `main` requires three checks: `CI`, which fails unless every job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) succeeded, plus `Attribution footer` and `Closing keywords`. All three run on Linux only until UAMS-Web/uams-statamic#348 adds Windows and macOS. [`docs/runbooks/branch-protection.md`](docs/runbooks/branch-protection.md) records what `main` enforces.
+Remote CI runs on every pull request and on every push to `main`. A ruleset on `main` requires three checks: `CI`, which fails unless every other job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) succeeded (the manual-only `submodule-access` aside), plus `Attribution footer` and `Closing keywords`. All three run on Linux only until UAMS-Web/uams-statamic#348 adds Windows and macOS. [`docs/runbooks/branch-protection.md`](docs/runbooks/branch-protection.md) records what `main` enforces.
 
 ## License
 

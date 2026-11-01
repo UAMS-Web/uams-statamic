@@ -136,7 +136,7 @@
 //
 // The remote `RUN_REMOTE_CI` budget kill-switch (UAMS-Web/uams-statamic-archive#980) does NOT apply here: this
 // runner has no concept of the toggle and always runs the requested jobs. That is
-// the point — when remote CI is switched off, this can still validate a branch. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
+// the point: when remote CI is switched off, this can still validate a branch. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
 // gates, with no behavioral mirror needed in this script.
 //
 // A green run here does not make a branch mergeable: a ruleset on `main` requires the
@@ -207,9 +207,8 @@ const VALID_JOBS = [...ALL_JOBS, 'all']
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
-// bypass the chain. This ORDER is local only: ci.yml runs its jobs in parallel
-// (#373). Module-scoped and exported so the parity test can
-// compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
+// bypass the chain. This ORDER is local only: ci.yml runs its jobs in parallel (#373).
+// Module-scoped and exported so the parity test can compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
 export const CHAIN = ['isolation', 'validate', 'no-emoji', 'content-pointer', 'encoding', 'spell', 'js', 'build', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']
 // PARITY-END: the chain itself only. What follows is unrelated (UAMS-Web/uams-statamic-archive#2376).
 
