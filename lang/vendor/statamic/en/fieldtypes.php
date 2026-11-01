@@ -268,13 +268,6 @@ return [
 
     'isco_08.validation.not_array' => 'The ISCO-08 field must be an object.',
     'isco_08.validation.required_major' => 'Select a major group.',
-    'isco_08.validation.invalid_major' => 'The selected major group is not a valid ISCO-08 code.',
-    'isco_08.validation.required_sub_major' => 'Select a sub-major group or choose None.',
-    'isco_08.validation.invalid_sub_major' => 'The selected sub-major group does not belong to this major group.',
-    'isco_08.validation.required_minor' => 'Select a minor group or choose None.',
-    'isco_08.validation.invalid_minor' => 'The selected minor group does not belong to this sub-major group.',
-    'isco_08.validation.required_unit' => 'Select a unit group or choose None.',
-    'isco_08.validation.invalid_unit' => 'The selected unit group does not belong to this minor group.',
 
     /*
      * Schema.org Type fieldtype (`App\Fieldtypes\SchemaType`,
