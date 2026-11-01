@@ -294,6 +294,13 @@ it('queries the index of the page tab, and falls back to default for anything el
     'an array' => [['people'], 'default'],
 ]);
 
+it('answers a query that is not valid UTF-8 with nothing, rather than failing to encode it', function (): void {
+    $recorded = mockSuggestionsIndex([]);
+
+    expect(suggestionsFor('ÿÿ'))->toBe(['query' => '', 'index' => 'default', 'results' => []])
+        ->and($recorded)->not->toHaveKey('query');
+});
+
 it('searches only the sub-site at This site', function (array $parameters): void {
     useTwoSuggestionSites();
     $recorded = mockSuggestionsIndex([]);

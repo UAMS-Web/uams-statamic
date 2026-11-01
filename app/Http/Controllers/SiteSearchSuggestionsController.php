@@ -99,7 +99,7 @@ final class SiteSearchSuggestionsController
     public function __invoke(Request $request): JsonResponse
     {
         $raw = $request->query('q');
-        $query = \is_string($raw) ? trim($raw) : '';
+        $query = \is_string($raw) && mb_check_encoding($raw, 'UTF-8') ? trim($raw) : '';
         $length = mb_strlen($query);
 
         $requestedIndex = $request->query('index');
@@ -158,7 +158,7 @@ final class SiteSearchSuggestionsController
         /** @var QueryBuilder $builder */
         $builder = $index->search($query);
 
-        if ($site instanceof SiteInstance && Site::hasMultiple()) {
+        if ($site instanceof SiteInstance) {
             $builder->whereIn('site', [$site->handle()]);
         }
 
