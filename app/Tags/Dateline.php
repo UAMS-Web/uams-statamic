@@ -506,9 +506,6 @@ class Dateline extends Tags
                 true
             );
 
-        // Default result to false before evaluating explicit and fallback cases
-        $normalizedResult = false;
-
         // Check if either explicit true condition is matched
         if (
             $isExplicitTrueValue
@@ -520,7 +517,7 @@ class Dateline extends Tags
             $isExplicitFalseValue
             || $isExplicitFalseStringValue
         ) {
-            // Keep normalized result false for explicit false values
+            // Set normalized result to false for explicit false values
             $normalizedResult = false;
         } else {
             // Fall back to PHP truthy/falsey evaluation for all other values

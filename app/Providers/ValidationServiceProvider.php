@@ -686,9 +686,6 @@ class ValidationServiceProvider extends ServiceProvider
         // Handle display name parameter
         // ---
 
-        // Initialize display name variable
-        $displayName = null;
-
         // Check if third parameter is a string (display name)
         if (\is_string($parameterMapOrDisplayName)) {
             // Store the display name string
@@ -740,22 +737,10 @@ class ValidationServiceProvider extends ServiceProvider
                     $fail = function ($message) use ($attribute, $validator, &$hasErrors): void {
                         /** @var \Illuminate\Validation\Validator $validator */
 
-                        // Coerce the fail message to a string. ValidationRule
-                        // implementations pass either a string or a Stringable
-                        // translation object here; cast non-scalar Stringables
-                        // and fall back to an empty string for anything else.
-                        if (is_string($message)) {
-                            $messageString = $message;
-                        } elseif (is_scalar($message) || $message instanceof \Stringable) {
-                            $messageString = (string) $message;
-                        } else {
-                            $messageString = '';
-                        }
-
                         // Add validation error to validator
                         $validator->errors()->add(
                             $attribute,
-                            $messageString
+                            self::failMessageString($message)
                         );
 
                         // Set error flag to true
@@ -925,6 +910,28 @@ class ValidationServiceProvider extends ServiceProvider
                 );
             }
         );
+    }
+
+    /**
+     * Coerce what a rule passed to its fail callback to a string.
+     *
+     * Laravel's interface says the message is a string, but the rules here pass what
+     * `__()` returns, which is an array for a translation group. Scalars and Stringables
+     * are cast, and anything else becomes an empty string.
+     *
+     * @param  mixed  $message  The message the rule passed
+     */
+    private static function failMessageString(mixed $message): string
+    {
+        if (is_string($message)) {
+            return $message;
+        }
+
+        if (is_scalar($message) || $message instanceof \Stringable) {
+            return (string) $message;
+        }
+
+        return '';
     }
 
     /**

@@ -114,7 +114,7 @@ it('stores the value alongside the outcome', function (): void {
 it('retains a bounded number of runs', function (): void {
     $store = new RunStore;
 
-    foreach (range(1, RunStore::RETAINED_RUNS + 4) as $i) {
+    for ($i = 0; $i < RunStore::RETAINED_RUNS + 4; $i++) {
         $store->record(['entry:a:body.0' => ProbeOutcome::Healthy]);
     }
 
@@ -128,7 +128,7 @@ it('drops a pruned run occurrences with it', function (): void {
 
     $first = $store->record(['entry:a:body.0' => ProbeOutcome::Healthy]);
 
-    foreach (range(1, RunStore::RETAINED_RUNS + 2) as $i) {
+    for ($i = 0; $i < RunStore::RETAINED_RUNS + 2; $i++) {
         $store->record(['entry:a:body.0' => ProbeOutcome::Healthy]);
     }
 

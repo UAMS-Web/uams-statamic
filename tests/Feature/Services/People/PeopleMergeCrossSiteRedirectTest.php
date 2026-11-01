@@ -188,7 +188,7 @@ it('serves a people-merge redirect on the non-default site the loser was reachab
 it('does not place a non-default-site redirect on the default localization', function (): void {
     [$default, $other] = pmcsTwoSites();
 
-    $survivor = pmcsMakePerson('surv', 'jane', ['bio' => 'A'], $default);
+    pmcsMakePerson('surv', 'jane', ['bio' => 'A'], $default);
     $loser = pmcsMakePerson('lose', 'jane-old', ['bio' => 'B'], $other);
     /** @var string $loserUrl */
     $loserUrl = $loser->url();

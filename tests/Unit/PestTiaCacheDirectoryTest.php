@@ -72,7 +72,10 @@ beforeEach(function (): void {
 afterEach(function (): void {
     Storage::useDirectory($this->configuredDirectory);
 
-    foreach ($this->fixtureRoots as $root) {
+    /** @var list<string> $fixtureRoots */
+    $fixtureRoots = $this->fixtureRoots;
+
+    foreach ($fixtureRoots as $root) {
         @unlink($root.DIRECTORY_SEPARATOR.'.git'.DIRECTORY_SEPARATOR.'config');
         @rmdir($root.DIRECTORY_SEPARATOR.'.git');
         @rmdir($root);
@@ -92,7 +95,9 @@ it('resolves the Tia cache inside the project root, at the configured relative p
 });
 
 it('gives two checkouts whose folder names slugify alike their own cache directories', function (): void {
-    [$a, $b] = $this->fixtureRoots;
+    /** @var array{string, string} $fixtureRoots */
+    $fixtureRoots = $this->fixtureRoots;
+    [$a, $b] = $fixtureRoots;
 
     // The isolation property itself. Both roots share a slug AND an origin, so this is
     // the pair that collapses without the configuration.
@@ -100,7 +105,9 @@ it('gives two checkouts whose folder names slugify alike their own cache directo
 });
 
 it('is sensitive to the configuration: clearing it breaks both properties', function (): void {
-    [$a, $b] = $this->fixtureRoots;
+    /** @var array{string, string} $fixtureRoots */
+    $fixtureRoots = $this->fixtureRoots;
+    [$a, $b] = $fixtureRoots;
 
     // Default keying only reaches projectKey() when a home directory resolves. Without
     // one `tempDir()` returns `$root/.pest/tia` — per-root, so BOTH assertions below

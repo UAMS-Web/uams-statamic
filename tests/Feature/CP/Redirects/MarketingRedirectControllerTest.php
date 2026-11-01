@@ -588,7 +588,7 @@ it('renders the pending queue payload with per-row action URLs and self-review f
         'valid_from' => '2026-08-01',
         'valid_until' => '2026-08-31',
     ]);
-    $otherId = marketingRedirectStorePending(marketingRedirectSuperUser(), ['source' => '/other', 'destination' => '/other-dest']);
+    marketingRedirectStorePending(marketingRedirectSuperUser(), ['source' => '/other', 'destination' => '/other-dest']);
 
     // An approved request must NOT appear in the queue.
     $approvedId = marketingRedirectStorePending(marketingRedirectSuperUser());

@@ -177,7 +177,7 @@ it('runs the pest job checkout step, unchanged, in a manual-run-only job of ci.y
         ->and($manual)->not->toHaveKeys(['env', 'defaults', 'container', 'continue-on-error']);
 
     // Outside the chain: no other job may wait on it.
-    foreach ($jobs as $id => $job) {
+    foreach ($jobs as $job) {
         $needs = is_array($job) ? ($job['needs'] ?? []) : [];
 
         expect((array) $needs)->not->toContain('submodule-access');
