@@ -22,6 +22,13 @@ use App\Models\Asset;
  * documents, where `ExistsAsFile::writeFile()` deletes the committed file
  * rather than merely writing to the wrong place. One function, two callers.
  *
+ * **The file cache moves with the content (UAMS-Web/uams-statamic#408).** The Stache
+ * records each item's absolute path in that cache, so a store shared by the two
+ * environments hands a local run the mirror's paths: a run outside the tests then
+ * reads `storage/framework/testing/content-mirror` while writing to `content/`.
+ * {@see self::fileCachePath()} is decided here, on the same input as {@see self::path()},
+ * so a change to one cannot leave the other behind.
+ *
  * **The environment is an argument, not a lookup.** Its first callers are config
  * files, which run before the container can answer `app()->environment()` — that
  * reads `config('app.env')`, which is the very thing being loaded. They pass
@@ -54,5 +61,20 @@ final class ContentRoot
         return $environment === 'testing'
             ? storage_path('framework/testing/content-mirror')
             : base_path('content');
+    }
+
+    /**
+     * The directory the file cache store keeps its data under.
+     *
+     * Absolute, with no trailing separator, so `config/cache.php` can append a
+     * worker's own segment. The argument is the same one {@see self::path()} takes.
+     *
+     * @param  string|bool|null  $environment  The app environment: `env('APP_ENV')`
+     *                                         from a config file,
+     *                                         `config('app.env')` at runtime
+     */
+    public static function fileCachePath(string|bool|null $environment): string
+    {
+        return storage_path($environment === 'testing' ? 'framework/testing/cache/data' : 'framework/cache/data');
     }
 }

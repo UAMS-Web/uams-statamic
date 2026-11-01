@@ -22,6 +22,7 @@ use Statamic\Query\ItemQueryBuilder;
 use Statamic\Search\Index;
 use Statamic\Search\QueryBuilder as SearchQueryBuilder;
 use Statamic\Search\Result;
+use Tests\Support\Doubles\RecordingCallerSearchScope;
 use Tests\Support\StacheIsolatedTestCase;
 
 use function Pest\Laravel\actingAs;
@@ -132,27 +133,6 @@ function actAsPublisherOf(string $collection): void
     $user->save();
 
     actingAs($user);
-}
-
-/**
- * A caller scope that records it ran and keeps every hit, standing in for the
- * knowledge-base subtree scope the listing's other caller passes.
- */
-final class RecordingCallerSearchScope extends Statamic\Query\Scopes\Scope
-{
-    /**
-     * Whether the scope has been applied since the last reset.
-     */
-    public static bool $applied = false;
-
-    /**
-     * @param  mixed  $query  The search query builder
-     * @param  mixed  $values  The tag parameters
-     */
-    public function apply(mixed $query, mixed $values): void
-    {
-        self::$applied = true;
-    }
 }
 
 beforeEach(function (): void {

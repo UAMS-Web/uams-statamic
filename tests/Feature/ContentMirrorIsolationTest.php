@@ -111,7 +111,7 @@ it('still reads real content through the mirror', function (): void {
     // UAMS-Web/uams-statamic-archive#1994 removed one trigger (a Stache-isolated test's own `Cache::flush()`
     // reaching the worker's shared store). It did not remove this one:
     // `SeedTestStacheCommandTest` sorts immediately before this file and runs the
-    // real `test:seed-stache`, whose wipe of `storage/framework/cache/data` is
+    // real `test:seed-stache`, whose wipe of `storage/framework/testing/cache/data` is
     // deliberately un-tokenized so it heals a hard-killed band (UAMS-Web/uams-statamic-archive#1876). Emptying
     // that cache is legitimate; what follows it is not. The FIRST Stache rebuild
     // after the cache is emptied returns ONE entry per collection and caches it as
