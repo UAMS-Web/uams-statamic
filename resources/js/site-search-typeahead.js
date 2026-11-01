@@ -129,12 +129,18 @@ export function statusText(count) {
  * @param {string} query  The query.
  * @param {string} index  The index handle.
  * @param {AbortSignal} [signal]  Cancels a request a newer keystroke superseded.
+ * @param {object} [where]  Which sites the page searches.
+ * @param {string} [where.site]  The handle of the site the page belongs to.
+ * @param {string} [where.scope]  The `scope` value; empty at the default scope.
  * @returns {Promise<Array<{title: string, url: string, type: string}>|null>} The suggestions, or null.
  */
-export async function fetchSuggestions(fetchImpl, query, index, signal) {
+export async function fetchSuggestions(fetchImpl, query, index, signal, { site = '', scope = '' } = {}) {
+	const siteParam = site === '' ? '' : `&site=${encodeURIComponent(site)}`;
+	const scopeParam = scope === '' ? '' : `&scope=${encodeURIComponent(scope)}`;
+
 	try {
 		const response = await fetchImpl(
-			`${ENDPOINT}?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`,
+			`${ENDPOINT}?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}${siteParam}${scopeParam}`,
 			{
 				headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 				credentials: 'same-origin',
@@ -163,6 +169,7 @@ export async function fetchSuggestions(fetchImpl, query, index, signal) {
  * @param {number} [deps.debounceMs]  Defaults to {@link DEBOUNCE_MS}.
  * @param {string} [deps.index]  The index handle; otherwise read from the element's `data-index`.
  * @param {string} [deps.path]  The search path; otherwise read from `data-search-path`.
+ * @param {string} [deps.site]  The site handle; otherwise read from `data-site`.
  * @param {string} [deps.scope]  The `scope` value; otherwise read from `data-scope`.
  * @returns {object} The component definition.
  */
@@ -186,6 +193,7 @@ export function createSiteSearchTypeahead(deps = {}) {
 		query: '',
 		index: deps.index ?? 'default',
 		path: deps.path ?? '/search',
+		site: deps.site ?? '',
 		scope: deps.scope ?? '',
 		results: [],
 		answeredQuery: '',
@@ -209,6 +217,11 @@ export function createSiteSearchTypeahead(deps = {}) {
 			const path = this.$el?.dataset?.searchPath;
 			if (deps.path === undefined && typeof path === 'string' && path !== '') {
 				this.path = path;
+			}
+
+			const site = this.$el?.dataset?.site;
+			if (deps.site === undefined && typeof site === 'string') {
+				this.site = site;
 			}
 
 			const scope = this.$el?.dataset?.scope;
@@ -263,7 +276,7 @@ export function createSiteSearchTypeahead(deps = {}) {
 			controller?.abort();
 			controller = typeof AbortController === 'function' ? new AbortController() : null;
 
-			const results = await fetchSuggestions(fetchImpl, query, this.index, controller?.signal);
+			const results = await fetchSuggestions(fetchImpl, query, this.index, controller?.signal, { site: this.site, scope: this.scope });
 
 			// Aborted, failed, or the reader has typed on since; nothing to show for this query
 			if (results === null || this.query.trim() !== query) {

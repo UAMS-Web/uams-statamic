@@ -152,7 +152,7 @@ it('keeps the chosen scope in the tabs, the form and the type-ahead links on a s
         ->toContain('href="/health/search?q=kirk&amp;index=people&amp;scope=all"')
         ->toContain('action="/health/search"')
         ->toContain('<input type="hidden" name="scope" value="all">')
-        ->toContain('data-search-path="/health/search" data-scope="all"');
+        ->toContain('data-search-path="/health/search" data-site="health" data-scope="all"');
 });
 
 it('falls back to the default for a scope the site does not offer', function (array $scope): void {

@@ -39,13 +39,23 @@ class SiteSearchScope extends Tags
      */
     public function active(): string
     {
-        if ($this->onRootSite()) {
+        return self::resolve($this->currentSite(), $this->parameters()->get('requested'));
+    }
+
+    /**
+     * Resolve a requested scope on a site, so the page and the suggestions it asks
+     * for (UAMS-Web/uams-statamic#467) cannot disagree about what a site offers.
+     *
+     * @param  SiteObject  $site  The site the search page belongs to
+     * @param  mixed  $requested  The raw `scope` value, of any type
+     */
+    public static function resolve(SiteObject $site, mixed $requested): string
+    {
+        if ($site->handle() === self::rootSite()->handle()) {
             return self::ALL_SITES;
         }
 
-        return $this->parameters()->get('requested') === self::ALL_SITES
-            ? self::ALL_SITES
-            : self::THIS_SITE;
+        return $requested === self::ALL_SITES ? self::ALL_SITES : self::THIS_SITE;
     }
 
     /**
@@ -67,11 +77,21 @@ class SiteSearchScope extends Tags
     }
 
     /**
+     * The current site's handle, which the type-ahead sends with each request.
+     */
+    public function site(): string
+    {
+        $handle = $this->currentSite()->handle();
+
+        return is_string($handle) ? $handle : '';
+    }
+
+    /**
      * The root site's name, as configured.
      */
     public function rootName(): string
     {
-        $name = $this->rootSite()->name();
+        $name = self::rootSite()->name();
 
         return is_string($name) ? $name : '';
     }
@@ -117,7 +137,7 @@ class SiteSearchScope extends Tags
      */
     private function onRootSite(): bool
     {
-        return $this->currentSite()->handle() === $this->rootSite()->handle();
+        return $this->currentSite()->handle() === self::rootSite()->handle();
     }
 
     /**
@@ -134,7 +154,7 @@ class SiteSearchScope extends Tags
     /**
      * The root site.
      */
-    private function rootSite(): SiteObject
+    private static function rootSite(): SiteObject
     {
         /** @var SiteObject $site */
         $site = Site::default();
