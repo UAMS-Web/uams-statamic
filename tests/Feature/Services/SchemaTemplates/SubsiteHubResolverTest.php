@@ -7,6 +7,7 @@ use App\Support\ContentAncestorIds;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Facades\Entry;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\Doubles\AncestorExposingSubsiteHubResolver;
 use Tests\TestCase;
 
 /**
@@ -145,18 +146,6 @@ it('skips a stale ancestor id whose entry no longer resolves', function () {
 
     expect($resolver->resolve($page)?->id())->toBe('aoe-1');
 });
-
-/**
- * A resolver that exposes its real ancestor walk.
- */
-final class AncestorExposingSubsiteHubResolver extends SubsiteHubResolver
-{
-    /** @return list<int|string> */
-    public function ancestorsOf(int|string $entryId): array
-    {
-        return $this->ancestorIds($entryId);
-    }
-}
 
 function resolverExposingAncestors(): AncestorExposingSubsiteHubResolver
 {
