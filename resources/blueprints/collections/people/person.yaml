@@ -802,7 +802,6 @@ tabs:
             handle: member_of
             field: uamsweb_common_people_background.member_of
             config:
-              create: true
               localizable: false
   resident_role:
     display: 'Resident Role'
