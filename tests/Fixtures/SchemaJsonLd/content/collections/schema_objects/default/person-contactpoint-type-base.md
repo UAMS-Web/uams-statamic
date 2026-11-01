@@ -46,19 +46,25 @@ schema:
           value:
             code: |-
               {{ if member_of && ( member_of | is_iterable ) }}
-                  [{{ member_of }}
-                      {{ if index > 0 }},{{ /if }}
+                  [{{ $member_need_comma = false }}{{ member_of }}
+                      {{# A row whose organization was deleted emits nothing, so the comma cannot key on `index`. #}}
+                      {{ if organization }}
+                      {{ if $member_need_comma }},{{ /if }}{{ $member_need_comma = true }}
 
                       {{#
                           Get `schema_object` field value if it exists.
                           Otherwise, fall back to "Membership Organization Base (Organization)" `schema_objects` collection entry.
                       #}}
-                      {{ $member_org_schema = schema_object ? (schema_object | raw) : 'b755acff-0495-4ede-8701-966efa5f68a0' }}
-                      {{
-                          schema_template_node
-                          :id="$member_org_schema"
-                          :instance_index="index"
-                      }}
+                      {{# Every level is an affiliation with the organization itself, so no Role here. #}}
+                      {{ organization }}
+                          {{ $member_org_schema = schema_object ? (schema_object | raw) : 'b755acff-0495-4ede-8701-966efa5f68a0' }}
+                          {{
+                              schema_template_node
+                              :id="$member_org_schema"
+                              :instance_index="index"
+                          }}
+                      {{ /organization }}
+                      {{ /if }}
                   {{ /member_of }}]
               {{ /if }}
             mode: html
@@ -981,18 +987,32 @@ schema:
           value:
             code: |-
               {{ if member_of && ( member_of | is_iterable ) }}
-                  [{{ member_of }}
-                      {{ if index > 0 }},{{ /if }}
+                  [{{ $member_need_comma = false }}{{ member_of }}
+                      {{# A row whose organization was deleted emits nothing, so the comma cannot key on `index`. #}}
+                      {{ if organization }}
+                      {{ if $member_need_comma }},{{ /if }}{{ $member_need_comma = true }}
 
                       {{#
                           Get `schema_object` field value if it exists.
                           Otherwise, fall back to "Membership Organization Base (Organization)" `schema_objects` collection entry.
                       #}}
-                      {{
-                          schema_template_node
-                          id="{{ schema_object ?? 'b755acff-0495-4ede-8701-966efa5f68a0' }}"
-                          :instance_index="index"
-                      }}
+                      {{ if membership_level.value && membership_level.value != 'member' }}
+                          {{# A level above Member is carried as a Role around the organization. #}}
+                          {{
+                              schema_template_node
+                              id="a7d3f1c8-52e6-4b0f-9c14-6e8b2d70f3a1"
+                              :instance_index="index"
+                          }}
+                      {{ else }}
+                          {{ organization }}
+                              {{
+                                  schema_template_node
+                                  id="{{ schema_object ?? 'b755acff-0495-4ede-8701-966efa5f68a0' }}"
+                                  :instance_index="index"
+                              }}
+                          {{ /organization }}
+                      {{ /if }}
+                      {{ /if }}
                   {{ /member_of }}]
               {{ /if }}
             mode: html

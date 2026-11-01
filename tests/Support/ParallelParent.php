@@ -32,7 +32,7 @@ use Tests\CreatesApplication;
  * rather than the `TEST_TOKEN` environment variable that `config/cache.php`
  * reads. paratest sets that variable only in worker subprocesses. So the
  * parent's application resolves `cache.stores.file.path` to the **shared,
- * non-tokenized** `storage/framework/cache/data`, and seeding it there wipes and
+ * non-tokenized** `storage/framework/testing/cache/data`, and seeding it there wipes and
  * rebuilds a directory that per-worker isolation was designed to keep nobody
  * sharing.
  *

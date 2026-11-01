@@ -42,7 +42,7 @@ use Symfony\Component\Finder\SplFileInfo;
  * Stache index reads as a starved collection rather than as a miss. Nothing has to
  * detect that, because the tokenized path is a *subdirectory* of the token-less
  * one: this command runs with `TEST_TOKEN` unset, so `cache.stores.file.path`
- * resolves to `storage/framework/cache/data` and the delete takes every
+ * resolves to `storage/framework/testing/cache/data` and the delete takes every
  * `data/<token>` tree with it. `CreatesApplication::seedStacheFromSnapshot()` then
  * resets each worker's dir again before copying and verifies the file count, so a
  * partial cache cannot survive a band start twice over. Keep the paths nested if
@@ -185,15 +185,8 @@ class SeedTestStache extends Command
         $cacheDir = Config::string('cache.stores.file.path');
         $seedDir = storage_path('framework/stache-seed');
 
-        // Wipe the cache dir, then restore its tracked `.gitignore` verbatim, so a
-        // seed build clears stale entries without dirtying the working tree.
-        $gitignore = $cacheDir.DIRECTORY_SEPARATOR.'.gitignore';
-        $gitignoreContents = $files->exists($gitignore) ? $files->get($gitignore) : null;
         $files->deleteDirectory($cacheDir);
         $files->ensureDirectoryExists($cacheDir);
-        if ($gitignoreContents !== null) {
-            $files->put($gitignore, $gitignoreContents);
-        }
 
         $files->deleteDirectory($seedDir);
 
@@ -218,15 +211,12 @@ class SeedTestStache extends Command
         //
         // Check every file the copy was asked for against the destination, rather
         // than comparing the two directories' file counts after the fact (UAMS-Web/uams-statamic-archive#1978).
-        // The cache dir is shared and un-tokenized, so *any* other app boot in this
-        // checkout writes into it — a bare `php artisan inspire` alongside a seed
+        // The cache dir is shared and un-tokenized, so *any* other test-environment boot
+        // in this checkout writes into it — a bare `php artisan inspire` alongside a seed
         // build adds `entries_by_schema_type/<hash>` — and a live recount then read
         // that as a short copy and deleted a complete snapshot. Capturing the source
         // list up front is also the stricter test: it names which files are missing
         // instead of trusting two totals to agree.
-        //
-        // `allFiles()` ignores dotfiles, so the `.gitignore` restored above is
-        // excluded from the expected set and its absence in the seed is not a miss.
         $expected = array_map(
             static fn (SplFileInfo $file): string => $file->getRelativePathname(),
             $files->allFiles($cacheDir)

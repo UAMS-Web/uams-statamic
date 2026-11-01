@@ -28,3 +28,18 @@ it('resolves the content submodule for any non-testing environment', function (s
     'null' => [null],
     'bool true' => [true],
 ]);
+
+it('roots the file cache under the test storage when the environment is testing', function (): void {
+    expect(ContentRoot::fileCachePath('testing'))->toBe(
+        storage_path('framework/testing/cache/data')
+    );
+});
+
+it('keeps the default file cache for any non-testing environment', function (string|bool|null $environment): void {
+    expect(ContentRoot::fileCachePath($environment))->toBe(storage_path('framework/cache/data'));
+})->with([
+    'production' => ['production'],
+    'local' => ['local'],
+    'null' => [null],
+    'bool true' => [true],
+]);
