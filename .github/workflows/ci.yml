@@ -77,7 +77,7 @@ permissions:
 #   content-pointer-guard -> "Run content pointer guard"
 #   encoding-guard -> "Run encoding guard"
 #   test-isolation-guard -> "Run test isolation guard" + "Run global test symbol check"
-#   composer-validate -> "Run composer validate"
+#   composer-validate -> "Run composer validate" + "Run PSR-4 class check"
 #   browser        -> "Run CP browser smokes + accessibility gate" (mirrored as
 #                     `--jobs browser`, and part of local-ci's default `all` set
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
@@ -1470,11 +1470,12 @@ jobs:
   composer-validate:
     name: Composer validate (composer.lock freshness)
     runs-on: ubuntu-latest
-    # Local-chain cost rank: second. Measured locally at ~1.5s against the
-    # isolation guard's ~0.8s, so shortest -> longest puts it there rather than at
-    # the head; either way it precedes the first job that costs real time
-    # (encoding-guard runs `composer install`), which is the saving that matters
-    # locally. Here every job runs in parallel and nothing is gated.
+    # Local-chain position: second. `composer validate` measured ~1.5s against the
+    # isolation guard's ~0.8s. The PSR-4 class check added in #322 scans `vendor/`
+    # on a local run and took 23s on a loaded Windows machine, so the job is no
+    # longer second by cost; it stays here because it needs no install and fails
+    # before the later jobs spend real time. Here every job runs in parallel and
+    # nothing is gated.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails the build when `composer.lock` no longer matches `composer.json` —
@@ -1484,8 +1485,10 @@ jobs:
     # Nothing breaks outright, but every `composer install` on every machine then
     # warns "The lock file is not up to date with the latest changes in
     # composer.json" forever, and warning noise is how real warnings get ignored.
-    # Dependency-free: composer reads the two files directly, so this needs no
-    # `composer install`, no content submodule, and no framework boot.
+    # The second step fails on a class whose file does not match its PSR-4 path.
+    # Dependency-free: composer reads the two files and scans the source trees
+    # directly, so this needs no `composer install`, no content submodule, and no
+    # framework boot.
     steps:
       - uses: actions/checkout@v7
 
@@ -1514,6 +1517,17 @@ jobs:
       # PARITY: mirrored by the validate job in scripts/local-ci.mjs
       - name: Run composer validate
         run: composer validate --no-check-publish --no-check-all
+
+      # Fails on a class whose file does not match its PSR-4 path: an inline class
+      # in a test file, or a misnamed one in `app/`. Pest loads such a class only
+      # because the file happens to run, and Composer drops it from the optimized
+      # classmap with a warning that fails nothing (#322). `--dev` is required:
+      # with no `vendor/` Composer treats the install as non-dev and skips
+      # `autoload-dev`, so `tests/` is never scanned and the check passes on
+      # anything. `--dry-run` writes no autoload files.
+      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      - name: Run PSR-4 class check
+        run: composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts
 
   no-emoji-guard:
     name: No-emoji guard (durable records)

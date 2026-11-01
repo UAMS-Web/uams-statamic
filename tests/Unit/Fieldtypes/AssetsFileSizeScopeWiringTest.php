@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Fieldtypes\Assets;
+use Tests\Support\Doubles\AssetsFileSizeScopeProbe;
 
 /**
  * Producer side of the UAMS-Web/uams-statamic-archive#490 file-size scope: the Assets fieldtype derives the
@@ -13,33 +14,6 @@ use App\Fieldtypes\Assets;
  *
  * @command  php artisan test --compact tests/Unit/Fieldtypes/AssetsFileSizeScopeWiringTest.php
  */
-/**
- * Exposes the protected file-size scope producers of the Assets fieldtype so the
- * test can drive them with a plain $config array (no Field needed).
- */
-class AssetsFileSizeScopeProbe extends Assets
-{
-    /**
-     * @param  array<string, mixed>  $config
-     * @return array<int, string>
-     */
-    public function encodeForTest(array $config): array
-    {
-        return $this->encodedFileSizeScopeHandles($config);
-    }
-
-    /**
-     * @param  array<string, mixed>  $config
-     * @return array<string, mixed>
-     */
-    public function applyForTest(array $config): array
-    {
-        $this->applyFileSizeQueryScopeToConfig($config);
-
-        return $config;
-    }
-}
-
 function assetsFileSizeFieldtype(): AssetsFileSizeScopeProbe
 {
     // Expose the protected producer methods (they take $config directly, so no Field is needed).
