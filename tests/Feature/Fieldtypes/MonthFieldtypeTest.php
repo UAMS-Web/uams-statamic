@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Fieldtypes\Month;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
+use Statamic\Fields\Fields;
 use Tests\TestCase;
 
 /**
@@ -81,13 +82,13 @@ it('pins every config field override exactly', function (): void {
         'min' => [
             'instructions' => 'Set the minimum allowed month. Format: YYYY-MM (e.g., 2020-01 for January 2020).',
             'validate' => [
-                'regex:/^\\d{4}-\\d{2}$/',
+                'regex:/^(\\d{4})-(0[1-9]|1[0-2])$/',
             ],
         ],
         'max' => [
             'instructions' => 'Set the maximum allowed month. Format: YYYY-MM (e.g., 2030-12 for December 2030).',
             'validate' => [
-                'regex:/^\\d{4}-\\d{2}$/',
+                'regex:/^(\\d{4})-(0[1-9]|1[0-2])$/',
             ],
         ],
         'calculation_type' => [
@@ -164,7 +165,7 @@ function monthErrors(array $config, mixed $value): array
 }
 
 it('only checks the YYYY-MM format when no bound is configured', function (): void {
-    expect(monthFieldtype()->rules())->toBe(['regex:/^\d{4}-\d{2}$/'])
+    expect(monthFieldtype()->rules())->toBe(['regex:/^(\d{4})-(0[1-9]|1[0-2])$/'])
         ->and(monthErrors([], '2024-05'))->toBe([])
         ->and(monthErrors([], '2024-5'))->toBe(['The month field format is invalid.']);
 });
@@ -218,11 +219,31 @@ it('formats a YYYY-MM month as Month yyyy and leaves anything else unchanged', f
     expect($format->invoke(monthFieldtype(), $month))->toBe($display);
 })->with([
     'a valid month' => ['2024-09', 'September 2024'],
-    'a month above 12, which names the following January' => ['2024-13', 'January 2024'],
-    'a zero month, which names the previous December' => ['2024-00', 'December 2024'],
+    'the first month' => ['2024-01', 'January 2024'],
+    'the last month' => ['2024-12', 'December 2024'],
+    'a month above 12' => ['2024-13', '2024-13'],
+    'a zero month' => ['2024-00', '2024-00'],
     'a single-digit month' => ['2024-9', '2024-9'],
     'a trailing character' => ['2024-09x', '2024-09x'],
     'a leading character' => ['x2024-09', 'x2024-09'],
+]);
+
+it('accepts a config bound or submitted value only from month 01 to month 12', function (string $month, bool $valid): void {
+    foreach (['min', 'max'] as $bound) {
+        $fields = mustBe(Fields::class, (new Month)->configFields()->addValues([$bound => $month]), 'the config fields');
+
+        expect(rescue(fn () => $fields->validate(), false, false) !== false)->toBe($valid);
+    }
+
+    expect(monthErrors([], $month))->toBe($valid ? [] : ['The month field format is invalid.']);
+})->with([
+    'a zero month' => ['2024-00', false],
+    'the first month' => ['2024-01', true],
+    'the ninth month' => ['2024-09', true],
+    'the tenth month' => ['2024-10', true],
+    'the last month' => ['2024-12', true],
+    'the month after the last' => ['2024-13', false],
+    'a month far above 12' => ['2024-99', false],
 ]);
 
 it('ignores a bound that is not YYYY-MM', function (): void {
@@ -268,5 +289,5 @@ it('compares each year and month part as an integer', function (array $config, s
     'a letter month in the value, below the minimum' => [['min' => '2020-01'], '2020-abc', ['The month field format is invalid.', 'The month must be after or equal to January 2020.']],
     'a letter month in the minimum' => [['min' => '2020-abc'], '2020-05', []],
     'a letter month in the value, equal to a zero maximum month' => [['max' => '2020-00'], '2020-abc', ['The month field format is invalid.']],
-    'a symbol month in the maximum, equal to a zero value month' => [['max' => '2020-!x'], '2020-00', []],
+    'a symbol month in the maximum, equal to a zero value month' => [['max' => '2020-!x'], '2020-00', ['The month field format is invalid.']],
 ]);
