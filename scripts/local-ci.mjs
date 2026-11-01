@@ -20,7 +20,7 @@
 //     no-emoji  the durable-record glyph guard (.claude/, docs/, README.md)
 //     content-pointer  refuses a submodule pointer that is not on its repository's main
 //     encoding  the vendored cp1252 double-encoding guard, then the decision-log order,
-//               mutate-ignore and lone-CR guards and the release-notes generator suite
+//               mutate-ignore, lone-CR and handed-back workflow guards and the release-notes generator suite
 //     isolation php scripts/check-parallel-safe-tests.php (parallel-safety guard)
 //               + .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
 //     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
@@ -1958,6 +1958,18 @@ function main() {
 
             if (loneCr !== 0) {
                 return loneCr
+            }
+
+            // PARITY: the encoding-guard job's "Run handed-back workflow drift check" step in
+            // ci.yml. Fails when .github/workflows/clear-handed-back.yml differs from the shared
+            // template in any byte but its line endings, or is missing. It reads two tracked
+            // files, so it belongs with the file-content guards above. Returned as-is so the
+            // exit 2 it gives when it cannot run fails the job as well.
+            step('JOB encoding - handed-back workflow drift check')
+            const handedBackWorkflow = run(node, ['.claude/skills/handed-back-label/scripts/check-handed-back-workflow.mjs'], worktreePath)
+
+            if (handedBackWorkflow !== 0) {
+                return handedBackWorkflow
             }
 
             // PARITY: the encoding-guard job's "Run release-notes generator suite" step in

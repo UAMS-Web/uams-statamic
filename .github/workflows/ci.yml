@@ -1725,6 +1725,12 @@ jobs:
       - name: Run lone-CR guard
         run: node scripts/check-lone-cr.mjs
 
+      # Fails when clear-handed-back.yml differs from the shared template in any byte but
+      # its line endings, or is missing. Exits 2 when it cannot run, which fails the step too.
+      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      - name: Run handed-back workflow drift check
+        run: node .claude/skills/handed-back-label/scripts/check-handed-back-workflow.mjs
+
       # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
       # Runs the unittest suite the shared `writing-release-notes` skill ships beside
       # `gen_release_notes.py` (UAMS-Web/uams-statamic-archive#2850). Nothing ran it, so release-notes coverage rested
