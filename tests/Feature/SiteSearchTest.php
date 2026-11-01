@@ -35,17 +35,17 @@ it('wires the /search form to the launch index handles and escapes the reflected
     $page = File::get(resource_path('views/search/index.antlers.html'));
 
     expect($page)
-        // Form submits back to /search (GET).
-        ->toContain('action="/search"')
+        // Form submits back to this site's search page (GET).
+        ->toContain('action="{{ $search_path }}"')
         ->toContain('name="q"')
         ->toContain('name="index"')
         // The typed tabs (UAMS-Web/uams-statamic-archive#1524) offer the six launch scopes as links.
-        ->toContain('index=default"')
-        ->toContain('index=people"')
-        ->toContain('index=clinical_expertise"')
-        ->toContain('index=clinical_locations"')
-        ->toContain('index=clinical_resources"')
-        ->toContain('index=posts"')
+        ->toContain('index=default{{ $scope_query }}"')
+        ->toContain('index=people{{ $scope_query }}"')
+        ->toContain('index=clinical_expertise{{ $scope_query }}"')
+        ->toContain('index=clinical_locations{{ $scope_query }}"')
+        ->toContain('index=clinical_resources{{ $scope_query }}"')
+        ->toContain('index=posts{{ $scope_query }}"')
         ->toContain('All results')
         ->toContain('Clinical Areas of Expertise')
         ->toContain('News')

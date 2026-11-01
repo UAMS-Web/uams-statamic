@@ -221,7 +221,7 @@ it('gates resource content on hide_resource_nav and the hamburger on hide_primar
     // control is a link to /search (UAMS-Web/uams-statamic-archive#890), no longer a tray toggle.
     $contentGuardOpen = strpos($src, '{{ unless hide_resource_nav }}');
     /** @var int<0, max> $searchToggle */
-    $searchToggle = strpos($src, 'href="/search"');
+    $searchToggle = strpos($src, 'href="{{ site_search_scope:path }}"');
     /** @var int<0, max> $contentGuardClose */
     $contentGuardClose = $contentGuardOpen === false ? false : strpos($src, '{{ /unless }}', $contentGuardOpen);
 
