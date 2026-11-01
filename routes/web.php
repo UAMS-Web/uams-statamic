@@ -146,7 +146,7 @@ Site::all()
     ->each(fn ($prefix) => Route::statamic($prefix.'/search', 'search/index', $siteSearchRouteData));
 
 // Type-ahead suggestions for the /search input (UAMS-Web/uams-statamic-archive#1506): a short JSON list from the
-// unified `default` index, same site and status rules as the page. Registered before
+// unified `default` index, same site scope and status rules as the page. Registered before
 // the `{entry}/{section}` wildcard below; the `/!/` prefix keeps it clear of entry URIs.
 Route::get('/!/search/suggestions', SiteSearchSuggestionsController::class)
     ->middleware('throttle:site-search-suggestions')

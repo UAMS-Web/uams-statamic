@@ -346,6 +346,32 @@ describe('the component', () => {
 		expect(component.options.at(-1).url).toBe('/health/search?q=card&index=people&scope=all');
 	});
 
+	it('asks for the sites the page searches', async () => {
+		const fetchImpl = fetchReturning(SUGGESTIONS);
+		const component = createSiteSearchTypeahead({ fetchImpl, navigate: vi.fn(), site: 'health', scope: 'all' });
+
+		await component.load('card');
+
+		expect(fetchImpl.mock.calls[0][0]).toBe('/!/search/suggestions?q=card&index=default&site=health&scope=all');
+	});
+
+	it('leaves out a site and scope the page does not have', async () => {
+		const fetchImpl = fetchReturning(SUGGESTIONS);
+
+		await fetchSuggestions(fetchImpl, 'card', 'default');
+
+		expect(fetchImpl.mock.calls[0][0]).toBe('/!/search/suggestions?q=card&index=default');
+	});
+
+	it('reads the site from the element', () => {
+		const component = createSiteSearchTypeahead({ fetchImpl: fetchReturning([]), navigate: vi.fn() });
+		component.$el = { dataset: { site: 'health' } };
+
+		component.init();
+
+		expect(component.site).toBe('health');
+	});
+
 	it('reads the search page and scope from the element', () => {
 		const component = createSiteSearchTypeahead({ fetchImpl: vi.fn(), navigate: vi.fn(), debounceMs: DEBOUNCE_MS });
 		component.$el = { dataset: { searchPath: '/health/search', scope: 'all' } };
