@@ -246,7 +246,7 @@ jobs:
         run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
 
   pest:
-    name: Pest (parallel band, shard ${{ matrix.shard }} of 4, ${{ matrix.os }})
+    name: Pest (parallel band, shard ${{ matrix.shard }} of ${{ matrix.os == 'windows-latest' && 1 || 4 }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     # The parallel band runs as four shards, one runner each (#387). Run whole on
     # one runner it was the longest job in this file by far: about 22 minutes of
@@ -277,6 +277,12 @@ jobs:
         # two together, and `pest-report` passes the same total to the merge.
         shard: [1, 2, 3, 4]
         os: [ubuntu-latest, windows-latest, macos-latest]
+        # Windows runs the band whole (#348). `--shard` hands the class list to every
+        # worker on its command line, past what a Windows process accepts.
+        exclude:
+          - { os: windows-latest, shard: 2 }
+          - { os: windows-latest, shard: 3 }
+          - { os: windows-latest, shard: 4 }
     env:
       SHARD_TOTAL: 4
     steps:
@@ -322,7 +328,7 @@ jobs:
           # imagick: SvgRasterizerTest self-skips without it, and the app runs
           # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
           # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
           # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
@@ -334,7 +340,7 @@ jobs:
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
           # forbids; matching the local environment restores the four tests.
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=${{ runner.os == 'Windows' && 'off' || 'tracing' }}, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -495,9 +501,15 @@ jobs:
       # how they run. --log-junit feeds `pest-report`, which merges the four shards'
       # reports before the skip-baseline and slowest-class checks read them.
       - name: Run Pest (parallel shard, excluding the serial group)
+        if: runner.os != 'Windows'
         env:
           SHARD: ${{ matrix.shard }}
         run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --shard="$SHARD/$SHARD_TOTAL" --display-all-issues --log-junit "junit-parallel-$SHARD.xml"
+
+      # PARITY: mirrored by scripts/gate-pest.mjs.
+      - name: Run Pest (whole parallel band on Windows)
+        if: runner.os == 'Windows'
+        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --display-all-issues --log-junit junit-parallel-1.xml
 
       # Only a shard whose band passed uploads, and `pest-report` needs all four,
       # so a failed shard leaves the report job skipped rather than merging an
@@ -642,7 +654,7 @@ jobs:
           # imagick: SvgRasterizerTest self-skips without it, and the app runs
           # IMAGE_MANIPULATION_DRIVER=imagick — so without it CI both misses that
           # coverage and skips 2 more than tests/skip-baseline.json records (UAMS-Web/uams-statamic-archive#1744).
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
           # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
@@ -654,7 +666,7 @@ jobs:
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
           # forbids; matching the local environment restores the four tests.
-          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=64M, opcache.jit=${{ runner.os == 'Windows' && 'off' || 'tracing' }}, zend.assertions=1, pcre.jit=0
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -874,7 +886,7 @@ jobs:
     needs: pest
     if: vars.RUN_REMOTE_CI != 'false'
     env:
-      SHARD_TOTAL: 4
+      SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 1 || 4 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -981,7 +993,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1061,7 +1073,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1132,7 +1144,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: pcov
           tools: composer:v2
 
@@ -1223,7 +1235,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1280,7 +1292,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1458,7 +1470,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
@@ -1727,7 +1739,7 @@ jobs:
           # `ext-imagick` is a declared platform requirement in composer.json, so
           # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
           # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
 
