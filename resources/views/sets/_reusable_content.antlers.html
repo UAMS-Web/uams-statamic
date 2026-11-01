@@ -4,10 +4,15 @@
 	@set page.article.reusable_content
 #}}
 
-{{# Get the reusable content entry from the content field #}}
-{{ content }}
-	{{# Render the content field (Bard) from the reusable content entry inline #}}
-	{{ content scope="block" }}
-		{{ partial src="sets/{type}" }}
-	{{ /content }}
-{{ /content }}
+{{# The entry can have either blueprint, so render whichever field it has. #}}
+{{ reusable_content_entry :entry="content" }}
+	{{ if reusable_sets }}
+		{{ reusable_sets scope="block" }}
+			{{ partial src="sets/{type}" }}
+		{{ /reusable_sets }}
+	{{ elseif reusable_blocks }}
+		{{ reusable_blocks scope="block" }}
+			{{ partial src="page_builder/{type}" }}
+		{{ /reusable_blocks }}
+	{{ /if }}
+{{ /reusable_content_entry }}
