@@ -232,6 +232,35 @@ it('accepts a name of letters, accented letters, spaces, hyphens and apostrophes
     'apostrophe' => ["O'Brien"],
     'hyphen' => ['Mary-Jane'],
     'space' => ['Ann Marie'],
+    'hyphen and apostrophe' => ["Jean-Luc O'Connor"],
+]);
+
+it('accepts up to two initials opening a name', function (string $value): void {
+    expect(checkedIdentifierMessages(new Name, $value))->toBe([]);
+})->with([
+    'one initial' => ['J. Smith'],
+    'two initials' => ['J.R. Smith'],
+    'two initials and no space' => ['J.R.Smith'],
+    'one initial and no space' => ['J.Smith'],
+    'a space between initials' => ['J. R. Smith'],
+    'accented initial' => ['É. Smith'],
+    'before a compound name' => ["J.R. O'Connor-Smith"],
+]);
+
+it('rejects a period that is not part of an opening initial', function (string $value): void {
+    expect(checkedIdentifierMessages(new Name, $value))->toBe([__('statamic::validation.name')]);
+})->with([
+    'leading period' => ['.Smith'],
+    'two leading periods' => ['..Smith'],
+    'doubled period' => ['J..Smith'],
+    'trailing suffix' => ['Smith Jr.'],
+    'between names' => ['John.Doe'],
+    'after two letters' => ['Jo. Smith'],
+    'three initials' => ['J.R.T. Smith'],
+    'initials alone' => ['J.R.'],
+    'space before the period' => ['J . Smith'],
+    'two spaces after the initial' => ['J.  Smith'],
+    'mid name' => ['Smith J. Jones'],
 ]);
 
 it('rejects a name with a digit, an outer space or a doubled separator', function (string $value): void {

@@ -111,7 +111,7 @@ const ALLOWLIST = [
     // filesystem, or when the mirror path becomes per-worker (#255, UAMS-Web/uams-statamic-archive#2919).
     'tests/Unit/Support/ContentRootTest.php' => [
         'rules' => ['B'],
-        'reason' => 'Asserts the fixed testing mirror path as a string; no filesystem access.',
+        'reason' => 'Asserts the fixed testing mirror and file cache paths as strings; no filesystem access.',
     ],
 ];
 
