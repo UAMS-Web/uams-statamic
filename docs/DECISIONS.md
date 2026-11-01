@@ -3668,3 +3668,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The demand finding is bounded: one of the queries returned 42 hits, of which 20 numbers were seen and their titles were not read, and no search analytics exist yet (#411). The 253 is derived from the collection settings and has not been run, because local content holds no entries in those three collections. Where the #416 page-size setting lives is not settled here.
 
 **Companion.** #162 (the full argument and the recovered prior art), #475 (the build), #161 (independent: a scope names an index handle, so an engine change touches the registry alone).
+
+## 2026-11-01: The root site's search scope reads "This site" (#475)
+
+**Decision.** On the root site, the one scope offered reads "This site" and searches every site. Sub-sites keep "This site" and "All of <root site's name>". This amends the root row in #413's table, which #468 shipped as "All of <root site's name>". The label change is built in #475.
+
+**Why.** `UAMS-Web/UAMSWP-Search#47` decided this case for the root of a WordPress subdirectory network: a visitor sees the parent as the site they are on, so "This site" means what they expect, and the real name is needed only where there is a parent to tell apart. #413 said its labels follow #47, so its table and its stated intent disagreed, and readers move between the two platforms.
+
+**Rejected.** *Keep "All of <root site's name>" on the root*: literally accurate, but it differs from WordPress, and on the root it stands alone, so "All" contrasts with nothing.
+
+**Residual.** Whether "This site" on a parent sub-site covers its children is a separate open question and is not settled here.
