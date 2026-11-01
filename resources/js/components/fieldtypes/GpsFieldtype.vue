@@ -114,6 +114,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { parseCoordinates } from '../../lib/parse-coordinates';
 import { resultToStoredCoordinate } from '../../lib/nominatim';
 import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import { subfieldId } from './partials/subfieldId.js';
 
 // Leaflet's default marker resolves its image URLs relative to the CSS, which
 // breaks under a bundler. Point the default icon at the bundled asset URLs.
@@ -165,16 +166,16 @@ export default {
 			return this.value?.lat != null && this.value?.lng != null;
 		},
 		latId() {
-			return `field_${this.handle}_lat`;
+			return subfieldId(this.id, this.handle, 'lat');
 		},
 		lngId() {
-			return `field_${this.handle}_lng`;
+			return subfieldId(this.id, this.handle, 'lng');
 		},
 		pasteId() {
-			return `field_${this.handle}_paste`;
+			return subfieldId(this.id, this.handle, 'paste');
 		},
 		searchId() {
-			return `field_${this.handle}_address_search`;
+			return subfieldId(this.id, this.handle, 'address_search');
 		},
 		addressSearchEnabled() {
 			return this.meta?.addressSearchEnabled ?? false;

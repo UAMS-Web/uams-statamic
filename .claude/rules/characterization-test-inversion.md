@@ -1,3 +1,7 @@
+---
+paths:
+  - "tests/**"
+---
 <!--
   Synced from UAMS-Web/uams-claude-skills: shared/.claude/rules/characterization-test-inversion.md
   Edit it there, not here; the next sync overwrites this copy.
@@ -19,7 +23,7 @@ So: when a characterization test in this host will be inverted by a ticket in a 
  */
 ```
 
-In `uams-statamic` the sibling package is `wordpress-importer`, and the form is `@invertsOn UAMS-Web/wordpress-importer#494`.
+In `uams-statamic` the sibling package is `wordpress-importer`, and the form is `@invertsOn UAMS-Web/wordpress-importer-archive#494`.
 
 History: [the introduction](../history/characterization-test-inversion.md).
 
@@ -34,7 +38,7 @@ History: [the introduction](../history/characterization-test-inversion.md).
 
    **So sort a hit by what it pins, a gap or a contract, never by the word.** A test whose docblock says it locks "the observable contract" a consumer relies on through a refactor is the clearest contract case. It must never carry `@invertsOn`, and neither should anything else whose job is to keep a refactor behavior-preserving.
 
-   In `uams-statamic`, [`tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php`](../../tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php) is the clearest contract case: its docblock says it locks "the observable contract the Control Panel relies on" through the `#873` decomposition of the `Input` trait, so a change to the grouping should make it fail.
+   In `uams-statamic`, [`tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php`](../../tests/Feature/Fieldtypes/Traits/InputConfigFieldSectionsTest.php) is the clearest contract case: its docblock says it locks "the observable contract the Control Panel relies on" through the `UAMS-Web/uams-statamic-archive#873` decomposition of the `Input` trait, so a change to the grouping should make it fail.
 
    **`grep -ril characterization tests/` therefore returns more files than this rule governs, and it is expected to.** Read each hit's docblock: a test that says it passes either way, that was generated from current output, or that locks a contract through a refactor is the broad kind and is finished. Only a test whose docblock names a defect it is waiting on belongs to this rule. That question has an answer for a file added tomorrow, which a list of today's filenames does not, which is why this step names a criterion and not a census.
 
@@ -56,4 +60,4 @@ For `uams-statamic` that consumer is `wordpress-importer`'s `writing-release-not
 
 This rule owns **when a test in this host carries the tag and what it means**. It does not own the release-time grep, where its output lands, or which changes count as breaking: those belong to the sibling package's release-notes skill and its decision log, and restating them here would be two copies to drift apart. The tag's definition is stated identically in `wordpress-importer`'s `tests/CLAUDE.md`; if the two ever disagree, that file is the original.
 
-_Refs: `UAMS-Web/uams-statamic#2080` (this rule), `UAMS-Web/wordpress-importer#614` (the convention and its decision record), `UAMS-Web/wordpress-importer#494` (the fix that inverted the one live instance), `#2025` (the adopting ticket that paid for it)._
+_Refs: `UAMS-Web/uams-statamic-archive#2080` (this rule), `UAMS-Web/wordpress-importer-archive#614` (the convention and its decision record), `UAMS-Web/wordpress-importer-archive#494` (the fix that inverted the one live instance), `UAMS-Web/uams-statamic-archive#2025` (the adopting ticket that paid for it)._

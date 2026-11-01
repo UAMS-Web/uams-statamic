@@ -12,6 +12,7 @@ use Mockery\LegacyMockInterface;
 use Statamic\Contracts\Assets\Asset as AssetContract;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Asset;
+use Tests\Support\Doubles\TableImporterRecordingEntry;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
@@ -329,24 +330,6 @@ it('pads short rows to the first row\'s width and turns each cell into trimmed t
         ],
     ]);
 });
-
-/**
- * An entry that records its quiet saves instead of writing to the Stache.
- *
- * A named class rather than a Mockery mock: the listener serializes the whole event to build its
- * repeat key, and a mock refuses `__sleep()` while an anonymous class cannot be serialized at all.
- */
-final class TableImporterRecordingEntry extends Entry
-{
-    public int $quietSaves = 0;
-
-    public function saveQuietly(): bool
-    {
-        $this->quietSaves++;
-
-        return true;
-    }
-}
 
 it('writes the table onto the entry and saves it quietly', function () {
     tableImporterAsset('onto-entry.csv');
