@@ -20,6 +20,13 @@ concurrency:
 permissions:
   contents: read
 
+# Every `run:` step is bash on all three operating systems (#348), so one script
+# serves each leg. Named, bash also runs with `-eo pipefail`, which the Linux default
+# does not set.
+defaults:
+  run:
+    shell: bash
+
 # RUN_REMOTE_CI — budget kill-switch (UAMS-Web/uams-statamic-archive#980).
 # GitHub Actions minutes are billed at the *organization* level (a single pool
 # shared by every UAMS-Web repo), not per repo. When that budget is exhausted,
@@ -207,7 +214,11 @@ jobs:
 
   synced-files:
     name: Synced files (no hand-edited rules or skills)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     timeout-minutes: 10
     # Adopted from the shared code-quality skill's templates/ci.yml (UAMS-Web/uams-statamic-archive#3084,
     # UAMS-Web/uams-claude-skills#155); the job id and name match the template.
@@ -235,8 +246,8 @@ jobs:
         run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
 
   pest:
-    name: Pest (parallel band, shard ${{ matrix.shard }} of 4)
-    runs-on: ubuntu-latest
+    name: Pest (parallel band, shard ${{ matrix.shard }} of 4, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     # The parallel band runs as four shards, one runner each (#387). Run whole on
     # one runner it was the longest job in this file by far: about 22 minutes of
     # band plus setup against about 4 for the serial tail, so it decided the
@@ -265,6 +276,7 @@ jobs:
         # 1 to SHARD_TOTAL below. scripts/local-ci.chain.test.mjs holds the
         # two together, and `pest-report` passes the same total to the merge.
         shard: [1, 2, 3, 4]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       SHARD_TOTAL: 4
     steps:
@@ -493,7 +505,7 @@ jobs:
       - name: Upload the shard's report, listing and timings note
         uses: actions/upload-artifact@v7
         with:
-          name: pest-shard-${{ matrix.shard }}
+          name: pest-shard-${{ matrix.os }}-${{ matrix.shard }}
           path: |
             junit-parallel-${{ matrix.shard }}.xml
             pest-list-${{ matrix.shard }}.txt
@@ -576,7 +588,11 @@ jobs:
 
   pest-serial:
     name: Pest (serial group)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # The serial group, beside the parallel band's shards rather than after them
     # (#387): the two share nothing at run time, since each job has its own
     # checkout, seed and route cache. Its setup is the shards' setup, step for
@@ -837,7 +853,11 @@ jobs:
 
   pest-report:
     name: Pest (parallel band report)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Merges the four shards' reports into the one parallel band report the two
     # band checks read, and refuses a band the shards did not run exactly once
     # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
@@ -869,7 +889,7 @@ jobs:
       - name: Download the shards' reports
         uses: actions/download-artifact@v8
         with:
-          pattern: pest-shard-*
+          pattern: pest-shard-${{ matrix.os }}-*
           path: shards
           merge-multiple: true
 
@@ -923,7 +943,7 @@ jobs:
       # cache is empty for long enough to matter.
       # REMOTE-ONLY: the local runner does not shard.
       - name: Save shard timings for later runs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
         uses: actions/cache/save@v6
         with:
           path: tests/.pest/shards.json
@@ -932,7 +952,7 @@ jobs:
       - name: Upload the band report and timings
         uses: actions/upload-artifact@v7
         with:
-          name: pest-parallel-band
+          name: pest-parallel-band-${{ matrix.os }}
           path: |
             junit-parallel.xml
             tests/.pest/shards.json
@@ -941,7 +961,11 @@ jobs:
 
   pint:
     name: Pint (changed files)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the Vite build.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1014,7 +1038,11 @@ jobs:
 
   rector:
     name: Rector (gating profile)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after Pint. Pint MUST come first there, because the two tools
     # rewrite the same files, and rector.php sets `removeUnusedImports: false`
     # because Rector's remover is not `{@see}`-aware, leaving Pint the sole owner
@@ -1074,7 +1102,11 @@ jobs:
 
   mutate:
     name: Mutation tooling smoke
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after Rector. Cheap (~9s of work) so it sits ahead
     # of the two 2-min+ jobs there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1170,7 +1202,11 @@ jobs:
 
   phpstan:
     name: Larastan (PHPStan)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the mutation smoke; the two 2-min+ jobs come last there.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1223,7 +1259,11 @@ jobs:
 
   build:
     name: Vite build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the JS unit tests.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1288,7 +1328,11 @@ jobs:
 
   js:
     name: JS unit tests (Vitest)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1322,7 +1366,11 @@ jobs:
 
   spell:
     name: Spell check (cspell)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the encoding guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1360,7 +1408,11 @@ jobs:
 
   browser:
     name: CP browser smoke (Pest + Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: LAST, the most expensive job. Here it runs in
     # parallel with the rest.
     # Runs on every PR, like every other job here. The `browser-tests` label gate
@@ -1476,7 +1528,11 @@ jobs:
 
   composer-validate:
     name: Composer validate (composer.lock freshness)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain position: second. `composer validate` measured ~1.5s against the
     # isolation guard's ~0.8s. The PSR-4 class check added in #322 scans `vendor/`
     # on a local run and took 23s on a loaded Windows machine, so the job is no
@@ -1539,7 +1595,11 @@ jobs:
 
   no-emoji-guard:
     name: No-emoji guard (durable records)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the composer.lock validation and BEFORE the
     # encoding guard, which is the first job that costs real time (it runs
     # `composer install`). This one is a pure file scan needing only Node, so
@@ -1571,7 +1631,11 @@ jobs:
 
   content-pointer-guard:
     name: Submodule pointer guard (each on its main)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the no-emoji guard and BEFORE the encoding
     # guard, the first job that runs `composer install`. It needs only git and Node.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1628,7 +1692,11 @@ jobs:
 
   encoding-guard:
     name: Encoding guard (Windows-1252 double-encoding)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # Local-chain cost rank: after the content pointer guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1744,7 +1812,11 @@ jobs:
 
   test-isolation-guard:
     name: Test isolation guard (parallel-safety)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     # First (fastest) link in scripts/local-ci.mjs's cost-ordered chain, where a
     # failure here skips, and never bills, the entire rest of the pipeline. Here
     # it runs in parallel with every other job; see the fan-out note in the header.
