@@ -58,7 +58,6 @@ use App\Rules\OtherCertificationTerm;
 use App\Rules\Pmid;
 use App\Rules\ProfessionalDevelopmentActivitiesTerm;
 use App\Rules\PubmedAuthorId;
-use App\Rules\QuizAnswerValidation;
 use App\Rules\ResearcherId;
 use App\Rules\RssFeedUrl;
 use App\Rules\RxCui;
@@ -521,10 +520,6 @@ class ValidationServiceProvider extends ServiceProvider
         $this->registerCustomRule(
             'identifier_regex',
             IdentifierRegex::class
-        );
-        $this->registerCustomRule(
-            'quiz_answer_validation',
-            QuizAnswerValidation::class
         );
         $this->registerCustomRule(
             'subfields_all',

@@ -164,3 +164,21 @@ it('saves each form setting and shows it again when the form is reopened', funct
             ->where('values.email.0.to', 'team@example.test')
             ->etc());
 });
+
+it('offers the quiz settings on the form settings screen while scoring is on', function (): void {
+    $form = makeForm('form_settings_quiz_probe');
+    $form->title('Quiz probe');
+    $form->save();
+
+    actingAs(formSettingsAddOnCpSuperUser());
+
+    // The confirmation's page picker lists the `pages` collection, which the
+    // isolated Stache starts without
+    Collection::make('pages')->save();
+
+    get(formSettingsAddOnCpRoute('forms.edit', ['form' => 'form_settings_quiz_probe']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('blueprint', fn (mixed $blueprint): bool => str_contains((string) json_encode($blueprint), '"quiz_grading"'))
+            ->etc());
+});
