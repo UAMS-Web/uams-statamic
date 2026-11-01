@@ -35,4 +35,13 @@ Recorded for UAMS-Web/uams-statamic-archive#3235. Three full chains with all 14 
 
 - Compare like with like: the same commit or tree, the same interpreter version, and the rest of the checklist in [`measurement-parity`](../../.claude/rules/measurement-parity.md).
 - A different version on the `under PHP` line means the figures are a new baseline, not a regression or an improvement against this one.
-- Test counts should match exactly. A small assertion difference at an identical test count is the conditional-assertion drift that rule describes; a difference of tens needs a per-test comparison of the two JUnit reports before it is attributed to anything.
+- Test counts must match exactly.
+- Assertion totals are compared within a bound of 2. The one conditional source known is [`tests/Feature/TestBootstrapCostTest.php`](../../tests/Feature/TestBootstrapCostTest.php), which contributes 4 assertions when its worker found a snapshot at boot and 2 when it did not. A seeded band normally takes the first branch.
+- A larger difference at an identical test count is not noise. Name the tests before attributing it to anything: `node scripts/diff-band-assertions.mjs <first junit.xml> <second junit.xml>` prints every test whose count differs and exits 1 when any does.
+- This baseline predates #335, which took `PestBrowserRetryPatchTest`'s clamp test from three assertions per retry attempt to five in total. A chain compared against the figures above is lower by that difference: 41 assertions at the 15 attempts an unloaded machine fits.
+
+### What moved the total before #335
+
+Measured on Windows 11 with PHP 8.4.27 at `a73ab11aa`, three parallel bands on a loaded machine: 13,915 tests each, and 39,132, 39,135 and 39,132 assertions. One test of the 13,915 differed: `it clamps a later attempt to what is left of the retry window` reported 40, 43 and 40. It asserted once per attempt of a time-bound retry loop, three assertions an attempt, and load decides how many attempts fit in the window.
+
+The 12-assertion gap this drift was first reported at (36,919 and 36,907 at one tree, macOS) equals 4 attempts at that rate. It was not reproduced on macOS, so that attribution is arithmetic, not a measurement.

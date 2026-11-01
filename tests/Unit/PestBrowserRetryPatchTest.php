@@ -92,17 +92,20 @@ it('clamps a later attempt to what is left of the retry window', function (): vo
     // here, so this is the assertion that reds on a revert.
     expect($attemptBudgets[0])->toBeGreaterThan(2_000);
 
-    // Each later attempt gets strictly less, because the window is draining — that
-    // draining IS the clamp.
-    foreach (array_slice($attemptBudgets, 1) as $index => $budget) {
-        expect($budget)->toBeLessThan($attemptBudgets[$index]);
-    }
+    // Both checks below read the whole list once, never once per attempt. How many
+    // attempts fit the window depends on machine load, so a per-attempt assertion
+    // moves the band's assertion total between two runs of one tree (#335).
+
+    // Each later attempt gets strictly less, because the window is draining: that
+    // draining IS the clamp. A repeated or rising budget breaks the match.
+    $strictlyDraining = array_values(array_unique($attemptBudgets));
+    rsort($strictlyDraining);
+
+    expect($attemptBudgets)->toBe($strictlyDraining);
 
     // The invariant that makes the documented ~2x bound true: no attempt may be
     // handed more than the window it is running inside.
-    foreach ($attemptBudgets as $budget) {
-        expect($budget)->toBeLessThanOrEqual(3_000);
-    }
+    expect(max($attemptBudgets))->toBeLessThanOrEqual(3_000);
 });
 
 it('still retries an attempt that fails its expectation', function (): void {
