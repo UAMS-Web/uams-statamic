@@ -31,4 +31,21 @@ return [
 
     'quiz_scoring' => (bool) env('FORM_SETTINGS_QUIZ_SCORING', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Features
+    |--------------------------------------------------------------------------
+    |
+    | Turns on submission data, which the add-on leaves off: the `_*` metadata
+    | saved with each submission and the submitter's request context carried
+    | to queued notification emails, which the `ip`, `referrer`, `get_param`
+    | and `global_origin` tags read (#265). The add-on reads each other switch
+    | as on when its key is missing, so this list holds only this one.
+    |
+    */
+
+    'features' => [
+        'submission_data' => (bool) env('FORM_SETTINGS_SUBMISSION_DATA', true),
+    ],
+
 ];
