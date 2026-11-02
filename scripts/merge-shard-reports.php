@@ -6,13 +6,13 @@ declare(strict_types=1);
  * Merge the parallel band's shard reports into one band report, and refuse a
  * set of shards that did not run the band exactly once (#387).
  *
- * The `pest` job in ci.yml runs the parallel band as four shard jobs, each on
- * its own runner: `--shard=<i>/4`, or on Windows a configuration listing the
- * shard's files (#504). Two checks read the band as a whole:
+ * The `pest` job in ci.yml runs the parallel band as shard jobs, each on its own
+ * runner, four on Linux and macOS and six on Windows (#516): `--shard=<i>/<total>`,
+ * or on Windows a configuration listing the shard's files (#504). Two checks read the band as a whole:
  * `check-skip-baseline.php` compares the band's skip count with a baseline for
  * the WHOLE band, and `check-slowest-class.php` judges a class by its share of
  * the WHOLE band's time. Fed one shard's report, the first passes or fails on a
- * count it was never meant to see, and the second divides by a quarter of the
+ * count it was never meant to see, and the second divides by a fraction of the
  * band. So the shards upload their reports, and the `pest-report` job merges them
  * here before either check runs.
  *

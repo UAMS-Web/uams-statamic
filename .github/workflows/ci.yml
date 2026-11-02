@@ -264,17 +264,17 @@ jobs:
     # shard job took 453s and 506s in two runs of the #384 spike, where the whole
     # band's job took about 1662s on main.
     #
-    # Pest assigns test CLASSES to shards (`--shard=<i>/4`), from the per-class
+    # Pest assigns test CLASSES to shards (`--shard=<i>/<total>`), from the per-class
     # timings in tests/.pest/shards.json when that file exists. Every shard here
     # reads the same copy (see "Place shard timings") and lists the band's tests,
-    # and `pest-report` merges the four reports, refuses a band no shard ran whole,
+    # and `pest-report` merges each leg's reports, refuses a band no shard ran whole,
     # and runs the two checks that judge the band as a whole. The serial group runs
     # beside the shards as `pest-serial`.
     #
-    # Each shard repeats the full setup below, about half a minute per runner.
-    # That repeated setup is why four shards and not more: past four, the setup
-    # and the longest single class decide the job's length, not the share of the
-    # band (#384).
+    # Each shard repeats the full setup below, about half a minute per runner on
+    # Linux. That repeated setup is why Linux and macOS run four shards and not
+    # more: past four, the setup and the longest single class decide the job's
+    # length, not the share of the band (#384).
     #
     # Windows is the exception, at six (#516). Its band takes about twice
     # Ubuntu's time, and its setup about 200s. On #514's run four Windows shards
@@ -955,8 +955,8 @@ jobs:
     # band checks read, and refuses a band the shards did not run exactly once
     # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
     # the whole band, and the slowest class is judged by its share of the whole
-    # band's time. Fed one shard's report, the first compares a quarter of the
-    # band with a whole-band baseline and the second divides by a quarter of the
+    # band's time. Fed one shard's report, the first compares a fraction of the
+    # band with a whole-band baseline and the second divides by a fraction of the
     # band, so neither runs in a shard.
     #
     # One of the two `needs:` lists in this file, and the reason it is allowed: this job

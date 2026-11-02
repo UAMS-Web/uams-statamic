@@ -730,7 +730,7 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         if (totals === null || totals['windows-latest'] !== 6) {
             failures.push('the Windows shards do not read a total of six')
         }
-        if (!pestJob.includes('          PREFIX: pest-shard-timings-${{ matrix.os }}-\n') || !pestJob.includes('--prefix="$PREFIX"')) {
+        if (!pestJob.includes('          PREFIX: pest-shard-timings-${{ matrix.os }}-\n') || !pestJob.includes('actions/caches?key=$PREFIX&') || !pestJob.includes('--prefix="$PREFIX"')) {
             failures.push('the shards do not restore timings saved by their own operating system')
         }
         if (!reportJob.includes('          key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}\n')) {
