@@ -236,8 +236,8 @@ it('keeps a private entry out of the rendered results listing, alongside a calle
     RecordingCallerSearchScope::$applied = false;
 
     $html = (string) Antlers::parse(
-        '{{ partial:search/results index="default" :query_scope="caller_scope" }}',
-        ['caller_scope' => $callerScope]
+        '{{ partial:aether-search::listing/results index="default" :query_scope="caller_scope" :always_scope="always_scope" }}',
+        ['caller_scope' => $callerScope, 'always_scope' => config('aether-search.always_scope')]
     );
 
     expect($html)->toContain('Leonard McCoy')

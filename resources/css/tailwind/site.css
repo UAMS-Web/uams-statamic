@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @source "../views";
+@source "../../../vendor/uams-web/aether-search/resources/views";
 @source "../../content";
 
 /* Safelist classes used dynamically in Antlers */

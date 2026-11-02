@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\SiteSearchSuggestionsController;
 use App\Search\AreaOfExpertiseSectionDocument;
 use Illuminate\Http\Request;
 use Statamic\Entries\Entry as StatamicEntry;
@@ -13,6 +12,7 @@ use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Search\Result;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Search\Http\Controllers\SuggestionsController;
 
 uses(StacheIsolatedTestCase::class);
 
@@ -119,7 +119,7 @@ function suggestionsFor(mixed $query, mixed $index = null): array
 {
     $request = Request::create('/!/search/suggestions', 'GET', array_filter(['q' => $query, 'index' => $index], fn (mixed $value): bool => $value !== null));
 
-    $response = app(SiteSearchSuggestionsController::class)($request);
+    $response = app(SuggestionsController::class)($request);
 
     /** @var array<string, mixed> $body */
     $body = mustBeArray($response->getData(true), 'the suggestions body');
@@ -138,7 +138,7 @@ function multisiteSuggestionsFor(array $parameters): array
 {
     $request = Request::create('/!/search/suggestions', 'GET', ['q' => 'kirk'] + $parameters);
 
-    $response = app(SiteSearchSuggestionsController::class)($request);
+    $response = app(SuggestionsController::class)($request);
 
     /** @var array<string, mixed> $body */
     $body = mustBeArray($response->getData(true), 'the suggestions body');
@@ -240,7 +240,7 @@ it('asks the unified default index for published items, limited to the flyout si
         ->and($recorded)->not->toHaveKey('whereIn.site')
         // Twice the flyout size, so hits dropped after the query do not leave it short
         ->and($recorded['limit'])->toBe(16)
-        ->and(SiteSearchSuggestionsController::LIMIT)->toBe(8);
+        ->and(SuggestionsController::LIMIT)->toBe(8);
 });
 
 it('shapes each hit as title, url and type, labeling it as the results page does', function (): void {
@@ -274,7 +274,7 @@ it('queries nothing for a short, overlong or non-string query', function (mixed 
     'empty' => [''],
     'one character' => ['c'],
     'whitespace around one character' => ['  c  '],
-    'over the maximum' => [str_repeat('a', SiteSearchSuggestionsController::MAX_QUERY_LENGTH + 1)],
+    'over the maximum' => [str_repeat('a', SuggestionsController::MAX_QUERY_LENGTH + 1)],
     'an array' => [['cardiology']],
 ]);
 
@@ -316,7 +316,7 @@ it('searches only the sub-site at This site', function (array $parameters): void
 ]);
 
 it('searches every site for all UAMS websites, and this site when no engine is configured', function (mixed $engine, bool $everySite): void {
-    config(['services.google_search.engine_id' => $engine]);
+    config(['aether-search.external.providers.google.engine_id' => $engine]);
     useTwoSuggestionSites();
     $recorded = mockSuggestionsIndex([]);
 
@@ -424,20 +424,24 @@ it('fills the flyout past dropped hits, and stops at its size', function (): voi
 
     $titles = array_column(mustBeArray(suggestionsFor('pa')['results'], 'results'), 'title');
 
-    expect($titles)->toHaveCount(SiteSearchSuggestionsController::LIMIT)
+    expect($titles)->toHaveCount(SuggestionsController::LIMIT)
         ->and($titles[0])->toBe('Page 1');
 });
 
 it('labels each collection exactly as the results page row does', function (string $collection, string $label): void {
     // The two lists are written in two languages; this keeps them from drifting.
-    $row = (string) view('search/_result', ['collection' => $collection, 'title' => 'T', 'url' => '/t'])->render();
+    $row = (string) view('aether-search::listing/_result', ['collection' => $collection, 'title' => 'T', 'url' => '/t'])->render();
 
     expect($row)->toContain('<p class="search-result-type text-uppercase text-muted small mb-1">'.$label.'</p>');
-})->with(array_map(
-    fn (string $collection, string $label): array => [$collection, $label],
-    array_keys(SiteSearchSuggestionsController::TYPE_LABELS),
-    array_values(SiteSearchSuggestionsController::TYPE_LABELS),
-));
+})->with([
+    ['clinical_expertise', 'Area of Expertise'],
+    ['people', 'Person'],
+    ['posts', 'News'],
+    ['clinical_locations', 'Clinical Location'],
+    ['clinical_resources', 'Clinical Resource'],
+    ['knowledge_bases', 'Knowledge Base'],
+    ['pages', 'Page'],
+]);
 
 it('serves the endpoint as JSON behind its rate limiter', function (): void {
     $response = $this->get('/!/search/suggestions?q=c');
@@ -447,7 +451,7 @@ it('serves the endpoint as JSON behind its rate limiter', function (): void {
 
     $route = mustExist(app('router')->getRoutes()->getByName('site-search.suggestions'), 'the suggestions route');
 
-    expect($route->gatherMiddleware())->toContain('throttle:site-search-suggestions');
+    expect($route->gatherMiddleware())->toContain('throttle:aether-search-suggestions');
 });
 
 /**
@@ -457,7 +461,7 @@ it('serves the endpoint as JSON behind its rate limiter', function (): void {
  */
 function renderSearchPageForTypeahead(array $get): string
 {
-    return (string) view('search/index', ['get' => $get])->render();
+    return renderAetherSearchPage($get);
 }
 
 it('wires the search input as an ARIA combobox bound to the type-ahead component', function (): void {

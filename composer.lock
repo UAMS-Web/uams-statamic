@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7fb05a7c4a592099a91bf243e93ac4d7",
+    "content-hash": "ba972a090ad3c67cd67b3451b5461d55",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10938,6 +10938,75 @@
                 "source": "https://github.com/UAMS-Web/aether-multisite-forms"
             },
             "time": "2026-11-01T21:03:19+00:00"
+        },
+        {
+            "name": "uams-web/aether-search",
+            "version": "v0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-search.git",
+                "reference": "53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b",
+                "reference": "53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\Search\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Search",
+                    "description": "Search for Statamic sites."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\Search\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "Search for Statamic sites, part of the Aether ecosystem of UAMS Statamic add-ons.",
+            "homepage": "https://github.com/UAMS-Web/aether-search",
+            "keywords": [
+                "search",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-search/issues",
+                "source": "https://github.com/UAMS-Web/aether-search"
+            },
+            "time": "2026-11-02T04:01:02+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer",

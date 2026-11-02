@@ -58,37 +58,39 @@ it('submits the KB search bar to /search scoped by index and the current entry i
 });
 
 it('switches the /search page into subtree-scoped KB mode', function (): void {
-    $page = File::get(resource_path('views/search/index.antlers.html'));
+    $page = File::get(base_path('vendor/uams-web/aether-search/resources/views/index.antlers.html'));
 
     expect($page)
         // The KB index is honored only alongside a scope root.
-        ->toContain("get:index == 'knowledge_bases' && \$kb_scope")
-        ->toContain('$is_kb_search')
-        // The scope root is array-guarded, then sanitized before it is reflected.
-        ->toContain('$raw_kb_scope | is_array')
-        ->toContain('$raw_kb_scope | sanitize')
+        ->toContain('aether_search:is_scoped')
         // Results run through the registered subtree scope, rooted at the entry id.
-        ->toContain('query_scope="knowledge_base_subtree_articles"')
-        ->toContain(':scope_root="$kb_scope"')
-        // A one-click broaden to the whole site: the cascade-escaped query is decoded,
-        // then url-encoded for the href (UAMS-Web/uams-statamic-archive#1510).
-        ->toContain('Search the whole site')
-        ->toContain('$q | decode | urlencode')
-        ->toContain('/search?q={{ $q_url }}');
+        ->toContain(':query_scope="$cfg.scoped_query_scope"')
+        ->toContain(':scope_root="$scope_root"')
+        // A one-click broaden to the whole site: the sanitized query is decoded, then
+        // url-encoded for the href (UAMS-Web/uams-statamic-archive#1510).
+        ->toContain('$q | decode | urlencode');
+
+    // Knowledge-base mode is these settings, with no override of the add-on's page.
+    expect(config('aether-search.scoped'))->toMatchArray([
+        'index' => 'knowledge_bases',
+        'parameter' => 'kb_scope',
+        'query_scope' => 'knowledge_base_subtree_articles',
+        'broaden_label' => 'Search the whole site',
+    ])->and(File::exists(resource_path('views/vendor/aether-search/index.antlers.html')))->toBeFalse();
 });
 
 it('threads the scope_root param through the shared results listing', function (): void {
-    expect(File::get(resource_path('views/search/_results.antlers.html')))
+    expect(File::get(base_path('vendor/uams-web/aether-search/resources/views/listing/_results.antlers.html')))
         ->toContain(':scope_root="scope_root"');
 });
 
 it('renders KB mode without the type filter and preserves the subtree scope', function (): void {
     // Inject the KB-mode cascade with no query, so search:results short-circuits and
     // no index build is needed; the form still renders in KB mode.
-    $html = (string) view('search/index', ['get' => [
+    $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => 'kb-123',
-    ]])->render();
+    ]);
 
     expect($html)
         // The subtree root is carried as a hidden field so a refined query stays scoped.
@@ -106,10 +108,10 @@ it('escapes a hostile scope root rather than reflecting it as live markup', func
     // default, so it must be escaped to avoid attribute-injection.
     $payload = '"><script>alert(1)</script>';
 
-    $html = (string) view('search/index', ['get' => [
+    $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => $payload,
-    ]])->render();
+    ]);
 
     expect($html)
         ->not->toContain('<script>alert(1)</script>')
@@ -120,10 +122,10 @@ it('fails closed to non-KB search on an array-valued kb_scope instead of crashin
     // A tampered `?kb_scope[]=x` arrives as an array; piping it through `sanitize`
     // would throw an uncaught TypeError (HTTP 500). It must be coerced to '' so the
     // page falls back to ordinary site search rather than 500ing.
-    $html = (string) view('search/index', ['get' => [
+    $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => ['x'],
-    ]])->render();
+    ]);
 
     // Renders the ordinary typed tabs (UAMS-Web/uams-statamic-archive#1524), not KB mode.
     expect($html)->toContain('class="site-search-tabs');
@@ -133,7 +135,7 @@ it('fails closed to non-KB search on an array-valued kb_scope instead of crashin
 it('keeps the type filter and no KB scope in ordinary site search', function (): void {
     // With no KB params, the page renders the normal type-filter dropdown and no
     // KB-scope field — a regression guard on the KB branch not leaking into default mode.
-    $html = (string) view('search/index', ['get' => []])->render();
+    $html = renderAetherSearchPage([]);
 
     expect($html)->toContain('class="site-search-tabs');
     expect($html)->not->toContain('name="kb_scope"');

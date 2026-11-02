@@ -49,7 +49,7 @@ function nonFormAlpineSurfaces(): array
             'resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html',
         ],
         'calculator' => ['resources/views/sets/_calculator.antlers.html'],
-        'siteSearchTypeahead' => ['resources/views/search/index.antlers.html'],
+        'siteSearchTypeahead' => ['vendor/uams-web/aether-search/resources/views/index.antlers.html'],
     ];
 }
 
@@ -70,7 +70,8 @@ function alpineComponentIsDeclaredIn(string $source, string $component): bool
 }
 
 /**
- * Every view under `resources/views` that declares `$component`, sorted.
+ * Every view that declares `$component`, sorted: this application's, and the search
+ * add-on's, whose page declares `siteSearchTypeahead`.
  *
  * @return list<string>
  */
@@ -78,7 +79,12 @@ function viewsDeclaringAlpineComponent(string $component): array
 {
     $found = [];
 
-    foreach (File::allFiles(base_path('resources/views')) as $file) {
+    $views = [
+        ...File::allFiles(base_path('resources/views')),
+        ...File::allFiles(base_path('vendor/uams-web/aether-search/resources/views')),
+    ];
+
+    foreach ($views as $file) {
         /** @var SplFileInfo $file */
         if (! alpineComponentIsDeclaredIn($file->getContents(), $component)) {
             continue;
