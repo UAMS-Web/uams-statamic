@@ -61,10 +61,7 @@ function saveVessel(string $id, array $data = []): EntryItem
  */
 function getVesselEditPage(string $id): TestResponse
 {
-    $url = cp_route('collections.entries.edit', ['vessels', $id]);
-    assert(is_string($url));
-
-    return get($url);
+    return get(mustBeString(cp_route('collections.entries.edit', ['vessels', $id]), 'the edit page URL'));
 }
 
 beforeEach(function (): void {
@@ -94,8 +91,7 @@ beforeEach(function (): void {
     saveVessel('enterprise');
     saveVessel('reliant');
 
-    $user = User::make();
-    assert($user instanceof Statamic\Auth\File\User);
+    $user = mustBe(Statamic\Auth\File\User::class, User::make(), 'the test user');
     $user->id('kirk');
     $user->email('kirk@enterprise.test');
     $user->makeSuper();
@@ -114,14 +110,12 @@ it('offers a computed collection to the Control Panel as entry ids', function ()
 
     /** @var BlueprintItem $blueprint */
     $blueprint = $enterprise->blueprint();
-    $field = $blueprint->field('escorts');
-    assert($field instanceof Field);
+    $field = mustBe(Field::class, $blueprint->field('escorts'), 'the escorts field');
     $field->setValue($enterprise->value('escorts'));
 
     /** @var Field $processed */
     $processed = $field->preProcess();
-    $fieldtype = $processed->fieldtype();
-    assert($fieldtype instanceof Entries);
+    $fieldtype = mustBe(Entries::class, $processed->fieldtype(), 'the escorts fieldtype');
 
     /** @var array<int, string> $ids */
     $ids = $processed->value();
@@ -139,8 +133,7 @@ it('keeps stored ids and an empty value as they were', function (mixed $stored, 
 ]);
 
 it('writes no computed field to the content file when the entry saves', function (): void {
-    $url = cp_route('collections.entries.update', ['vessels', 'enterprise']);
-    assert(is_string($url));
+    $url = mustBeString(cp_route('collections.entries.update', ['vessels', 'enterprise']), 'the update URL');
 
     patchJson($url, [
         'title' => 'Enterprise-A',
@@ -151,9 +144,7 @@ it('writes no computed field to the content file when the entry saves', function
 
     /** @var EntryItem $enterprise */
     $enterprise = Entry::find('enterprise');
-    $path = $enterprise->path();
-    assert(is_string($path));
-    $contents = File::get($path);
+    $contents = File::get(mustBeString($enterprise->path(), 'the entry path'));
 
     expect($contents)->toContain('Enterprise-A')
         ->not->toContain('escorts')
