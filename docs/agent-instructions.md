@@ -36,7 +36,7 @@ This repository **keeps** its own [`scripts/local-ci.mjs`](../scripts/local-ci.m
 
 ## Pre-merge check
 
-A green chain is not a merge decision. Before merging any pull request, work the check in [`.claude/rules/pre-merge-check.md`](../.claude/rules/pre-merge-check.md): reading the remote checks is one step of it, not the whole of it. It composes with [`local-ci`](../.claude/skills/local-ci/SKILL.md) (which owns the chain and the verdict comment), [`sync-pr-branch`](../.claude/rules/sync-pr-branch.md) (bringing the branch current), [`closing-a-ticket`](../.claude/rules/closing-a-ticket.md) (what outlives a green build), and [`adversarial-review`](../.claude/rules/adversarial-review.md) (which the merge-time pass narrows rather than repeats).
+A green chain is not a merge decision. Before merging any pull request, work the check in [`.claude/rules/pre-merge-check.md`](../.claude/rules/pre-merge-check.md): reading the remote checks is one step of it, not the whole of it. It composes with [`local-ci`](../.claude/skills/local-ci/SKILL.md) (which owns the merge procedure in Mode A, reading those checks, and the verdict comment), [`sync-pr-branch`](../.claude/rules/sync-pr-branch.md) (bringing the branch current), [`closing-a-ticket`](../.claude/rules/closing-a-ticket.md) (what outlives a green build), and [`adversarial-review`](../.claude/rules/adversarial-review.md) (which the merge-time pass narrows rather than repeats).
 
 History: [Pre-merge check (project rule)](../.claude/history/AGENTS.md#pre-merge-check-project-rule).
 
