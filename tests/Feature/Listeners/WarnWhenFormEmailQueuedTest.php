@@ -9,7 +9,7 @@ use Statamic\Facades\Form as FormFacade;
 use Statamic\Facades\Site;
 use Statamic\Forms\SendEmail;
 use Tests\TestCase;
-use UAMSWeb\FormSettings\Jobs\SendFormNotification;
+use UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -26,7 +26,7 @@ function warnFormEmailMakeSendEmailJob(): SendEmail
     // Build the *configured* send-email job so this test tracks
     // config('statamic.forms.send_email_job') instead of hard-coding a class;
     // the guard matches on the configured class, which UAMS-Web/uams-statamic-archive#213 repointed to a
-    // SendEmail subclass (UAMSWeb\FormSettings\Jobs\SendFormNotification).
+    // SendEmail subclass (UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification).
     /** @var class-string<SendEmail> $jobClass */
     $jobClass = config('statamic.forms.send_email_job');
 

@@ -107,7 +107,7 @@ return [
     |     `@alpinejs/csp` instead of the standard Alpine 3 build, so every `x-*`
     |     attribute is evaluated by an AST interpreter rather than compiled
     |     through `new Function()`. Public-form field conditions moved with it:
-    |     `UAMSWeb\AlpineCspForms\JsDrivers\AlpineCsp` (the uams-web/statamic-alpine-csp-forms
+    |     `UAMSWeb\Aether\Forms\AlpineCsp\JsDrivers\AlpineCsp` (the uams-web/aether-alpine-csp-forms
     |     add-on, UAMS-Web/uams-statamic-archive#3073; selected with `js="alpine_csp"`) emits
     |     a `$showField(...)` magic call in place of Statamic's
     |     `Statamic.$conditions.showField(...)`, which the CSP build rejects as a

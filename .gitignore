@@ -58,14 +58,19 @@ yarn-error.log
 /public/vendor/statamic-admin-bar
 /public/vendor/statamic-bard-texstyle
 
-# uams-web/statamic-alpine-csp-forms published assets (UAMS-Web/uams-statamic-archive#3073)
-/public/vendor/statamic-alpine-csp-forms
+# uams-web/aether-alpine-csp-forms published assets (UAMS-Web/uams-statamic-archive#3073)
+/public/vendor/aether-alpine-csp-forms
 /storage/antlers
 
-# uams-web/statamic-multisite-forms published assets (UAMS-Web/uams-statamic-archive#3066)
-/public/vendor/statamic-multisite-forms
+# uams-web/aether-multisite-forms published assets (UAMS-Web/uams-statamic-archive#3066)
+/public/vendor/aether-multisite-forms
 
-# uams-web/statamic-form-settings published assets (#263)
+# uams-web/aether-form-settings published assets (#263)
+/public/vendor/aether-form-settings
+
+# Where those add-ons published before their rename (#435); an existing checkout still has them
+/public/vendor/statamic-alpine-csp-forms
+/public/vendor/statamic-multisite-forms
 /public/vendor/statamic-form-settings
 
 # Pest browser-test failure screenshots (issue UAMS-Web/uams-statamic-archive#852)

@@ -58,7 +58,7 @@ function writeRebuildSweepFixture(string $viewsDir): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Conditional rebuild sweep fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Conditional rebuild sweep fixture</h1>',
         (string) View::make('rebuild_sweep::form')->render(),
         '</body></html>',

@@ -23,7 +23,7 @@ use function Pest\Laravel\withoutVite;
 
 /**
  * Proves the Control Panel form settings screen, now served by the
- * `uams-web/statamic-form-settings` add-on, saves each setting and shows it again
+ * `uams-web/aether-form-settings` add-on, saves each setting and shows it again
  * when the form is reopened (#263).
  *
  * One setting is taken from each area the add-on adds: notifications, the

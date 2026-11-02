@@ -27,7 +27,7 @@
  * Validator no longer runs on public pages, and the CP supplies its own `add`,
  * so the shim served neither path and was removed with this change.
  *
- * @see vendor/uams-web/statamic-alpine-csp-forms/resources/js/conditions/validator.js
+ * @see vendor/uams-web/aether-alpine-csp-forms/resources/js/conditions/validator.js
  *      getCustomCondition(), which reads that registry
  * @see https://statamic.dev/conditional-fields#custom-logic
  */

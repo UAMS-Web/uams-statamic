@@ -61,7 +61,7 @@ function writeReplicatorRebuildGapsFixture(string $viewsDir): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Replicator rebuild gaps fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Replicator rebuild gaps fixture</h1>',
         (string) View::make('replicator_rebuild_gaps_browser::form')->render(),
         '</body></html>',

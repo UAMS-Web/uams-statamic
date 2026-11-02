@@ -50,7 +50,7 @@ function writeNonFormControlsFixture(string $bodyHtml): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Non-form Alpine controls fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Non-form Alpine controls fixture</h1>',
         $bodyHtml,
         '</body></html>',

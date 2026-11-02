@@ -8,8 +8,8 @@ use Statamic\Contracts\Forms\Submission;
 use Statamic\Facades\Site;
 use Statamic\Sites\Site as StatamicSite;
 use Tests\TestCase;
-use UAMSWeb\FormSettings\Contracts\SubmissionContext;
-use UAMSWeb\FormSettings\Jobs\SendFormNotification;
+use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
+use UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification;
 
 /**
  * Proves the site's submission context hands the form settings add-on's notification

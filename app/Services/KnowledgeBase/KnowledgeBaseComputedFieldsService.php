@@ -12,7 +12,7 @@ use Statamic\Fields\Blueprint;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Structures\Page;
 use Statamic\Structures\Pages;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\FieldDefaultHelper;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\FieldDefaultHelper;
 
 /**
  * Registers and resolves knowledge_bases collection computed fields from the root

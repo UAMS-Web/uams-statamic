@@ -31,7 +31,7 @@
  *
  * 4. TEMPLATE INTEGRATION
  *    - Form templates use: {{ form:create :in="form" js="alpine_csp" }}
- *      (the uams-web/statamic-alpine-csp-forms add-on; see 6 below)
+ *      (the uams-web/aether-alpine-csp-forms add-on; see 6 below)
  *    - Field templates use: <template x-if="{{ show_field }}">
  *    - Field inputs use: x-model="form.{{ handle }}"
  *
@@ -48,14 +48,14 @@
  *      'unsafe-eval'. Its interpreter resolves identifiers only from the
  *      Alpine scope stack, so the stock driver's
  *      Statamic.$conditions.showField(...) throws on every field.
- *    - The uams-web/statamic-alpine-csp-forms add-on (UAMS-Web/uams-statamic-archive#3073) owns both halves:
+ *    - The uams-web/aether-alpine-csp-forms add-on (UAMS-Web/uams-statamic-archive#3073) owns both halves:
  *      its `alpine_csp` driver emits $showField(...) instead, and its
  *      front-end script, loaded by the layout ahead of this bundle, registers
  *      the magic on `alpine:init`, which is why `window.Alpine` is set below
  *      before `Alpine.start()`.
  *
  * Files Involved:
- * - vendor/uams-web/statamic-alpine-csp-forms: the driver and the evaluator
+ * - vendor/uams-web/aether-alpine-csp-forms: the driver and the evaluator
  * - resources/js/conditions/: custom conditions the evaluator reads from
  *   window.StatamicCustomConditions
  * - resources/views/vendor/statamic/forms/fields.antlers.html: Uses x-if="{{ show_field }}"

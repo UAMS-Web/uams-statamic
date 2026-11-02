@@ -6,7 +6,7 @@ namespace App\Listeners;
 
 use Illuminate\Queue\Events\JobQueued;
 use Illuminate\Support\Facades\Log;
-use UAMSWeb\FormSettings\Jobs\SendFormNotification;
+use UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification;
 
 /**
  * Warns when a form-notification email is queued asynchronously *without* the submitter's

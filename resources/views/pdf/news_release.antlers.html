@@ -46,8 +46,8 @@
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-fontawesome-entry.js']) }}
 
 		{{# Load the layout assets #}}
-		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073): the uams-web/statamic-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init`. As a classic deferred script ahead of the module bundle it runs first, in document order. #}}
-		<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script>
+		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073): the uams-web/aether-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init`. As a classic deferred script ahead of the module bundle it runs first, in document order. #}}
+		<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script>
 		{{ vite :src="( $vite_layout_assets | join('|') )"}}
 	</head>
 	<body class="pdf-generator-body pdf-generator-news-release-body">
