@@ -165,6 +165,7 @@ it('reports nothing rendered for a provider whose section fields are all empty',
         'bio_clinical' => [],
         'clinical_focus' => [],
         'certifications' => [],
+        'member_of' => [],
         'awards' => [],
         'expertise' => [],
         'clinical_locations' => [],
@@ -177,7 +178,7 @@ it('reports nothing rendered for a provider whose section fields are all empty',
 
 it('reports a rendered body for each Bard and replicator section in turn', function (string $handle): void {
     expect(resolvesProfileBody([$handle => [['type' => 'paragraph']]]))->toBeTrue();
-})->with(['bio', 'bio_clinical', 'clinical_focus', 'certifications', 'awards']);
+})->with(['bio', 'bio_clinical', 'clinical_focus', 'certifications', 'member_of', 'awards']);
 
 it('reports nothing rendered for a replicator holding only disabled sets', function (string $handle): void {
     // `Replicator::performAugmentation()` rejects every set flagged `enabled: false`,

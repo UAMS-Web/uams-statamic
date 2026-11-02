@@ -67,7 +67,7 @@ return [
     // `post_tags` (UAMS-Web/uams-statamic-archive#2532), `knowledge_base_tags` (UAMS-Web/uams-statamic-archive#2534) and the Logo List
     // groupings, `logos_item_categories` (UAMS-Web/uams-statamic-archive#1863) and `logos_item_labels`
     // (UAMS-Web/uams-statamic-archive#2533), are structured collections. The importer writes tags and labels
-    // as terms until UAMS-Web/wordpress-importer#1220 lands.
+    // as terms until UAMS-Web/wordpress-importer-archive#1220 lands.
     'import_tags' => filter_var(
         env(
             'WORDPRESS_IMPORT_TAGS',
@@ -88,7 +88,7 @@ return [
     // multisite networks, each issuing its own key from its own admin page, so a
     // configuration able to address them all would hold 26 live credentials on disk
     // for a job that reads one network at a time. Recorded upstream in that
-    // package's `docs/DECISIONS.md` (UAMS-Web/wordpress-importer#982).
+    // package's `docs/DECISIONS.md` (UAMS-Web/wordpress-importer-archive#982).
     //
     // Do not re-add `base_url` or `secret` here. A key read by nothing is
     // indistinguishable from one read by something, and someone setting it would

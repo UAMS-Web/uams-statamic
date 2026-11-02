@@ -43,6 +43,17 @@ return [
         'posts' => 'News',
     ],
 
+    // The collections each tab covers, so "This site" shows a tab only on a site that
+    // carries one of them (#475). Each list matches the `collection:` searchables of the
+    // tab's index in `config/statamic/search.php`, and a test holds the two together.
+    'tab_collections' => [
+        'people' => ['people'],
+        'clinical_expertise' => ['clinical_expertise'],
+        'clinical_locations' => ['clinical_locations'],
+        'clinical_resources' => ['clinical_resources'],
+        'posts' => ['posts'],
+    ],
+
     'labels' => [
         'clinical_expertise_section' => 'Area of Expertise',
         'clinical_expertise' => 'Area of Expertise',
