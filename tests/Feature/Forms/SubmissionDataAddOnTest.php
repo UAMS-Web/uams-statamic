@@ -206,3 +206,13 @@ it('saves a submission with none of the added metadata and no error when the swi
         }
     }
 });
+
+it('lists every switch the add-on defines, so each still reads its environment variable', function (): void {
+    // The site's `features` array replaces the add-on's whole array, so a switch left out of it is always on
+    $addOnConfig = require base_path('vendor/uams-web/aether-form-settings/config/aether-form-settings.php');
+    $addOnFeatures = mustBeArray(mustBeArray($addOnConfig, 'add-on config')['features'] ?? null, 'add-on features');
+    $siteFeatures = mustBeArray(config('aether-form-settings.features'), 'site features');
+
+    expect(array_keys($siteFeatures))
+        ->toEqualCanonicalizing(array_keys($addOnFeatures));
+});
