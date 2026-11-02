@@ -80,6 +80,22 @@ it('compares times to the fraction of a second', function () use ($select): void
     expect($select($entries, '2026-11-02T02:10:00Z')->getOutput())->toBe('pest-shard-timings-100-1');
 });
 
+it('counts an entry created at the very start as before it', function () use ($select): void {
+    $entries = [
+        'pest-shard-timings-100-1' => '2026-11-02T01:00:00Z',
+        'pest-shard-timings-200-1' => '2026-11-02T02:10:00Z',
+    ];
+
+    expect($select($entries, '2026-11-02T02:10:00Z')->getOutput())->toBe('pest-shard-timings-200-1');
+});
+
+it('fails, naming the entry, when an entry has an unreadable creation time', function () use ($select): void {
+    $process = $select(['pest-shard-timings-100-1' => 'not a time'], '2026-11-02T02:10:00Z');
+
+    expect($process->getExitCode())->toBe(2)
+        ->and($process->getErrorOutput())->toContain('cache entry pest-shard-timings-100-1 has an unreadable created_at');
+});
+
 it('breaks a tie on time by key, so the order of the listing never decides', function () use ($select): void {
     $entries = [
         'pest-shard-timings-100-1' => '2026-11-02T02:00:00Z',

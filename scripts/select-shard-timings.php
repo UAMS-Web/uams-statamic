@@ -12,9 +12,10 @@ declare(strict_types=1);
  * run. Run #41440485266 on #514 failed that way: shard 1 read one entry, shards 2 to 4
  * another.
  *
- * Every shard now runs this over the same listing rule and the same run start time,
- * and restores the exact key it prints: the newest entry created at or before the run
- * started. An entry saved after the run started cannot be chosen, so a save that lands
+ * Every shard now runs this over the same listing rule and the same start time, that
+ * of the run's first attempt (so a shard re-run alone with "Re-run failed jobs" agrees
+ * with the shards that passed in attempt 1), and restores the exact key it prints: the
+ * newest entry created at or before that start. An entry saved after the run started cannot be chosen, so a save that lands
  * between two shards' starts no longer changes the answer, and every shard prints the
  * same key. When no entry qualifies it prints nothing, and every shard falls back to
  * the committed `.github/pest-shards.json` alike.
