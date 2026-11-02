@@ -56,6 +56,8 @@ function saveFormScoringForm(string $handle, array $fields, string $message = ''
 
     $form = makeForm($handle);
     $form->title('Scoring probe');
+    // Keep submissions out of storage/forms
+    $form->store(false);
     $form->set('confirmation_settings_default', [
         'confirmation_type' => 'message',
         'confirmation_message' => $message,
@@ -75,7 +77,7 @@ function formScoringQuizField(): array
         'display' => 'Capital of France?',
         'question_fieldtype' => 'radio',
         'options' => [
-            ['label' => 'Paris', 'is_correct' => true],
+            ['label' => 'Paris', 'is_correct' => true, 'answer_explanation' => 'Seat of government since 1944'],
             ['label' => 'London', 'is_correct' => false],
         ],
     ];
@@ -156,10 +158,16 @@ it('renders the quiz and likert_scale fieldtypes on a public form', function ():
 
     $html = renderFormScoringForm($handle);
 
-    // Each question's own controls, and no answer key on the page
+    // The quiz draws its two answers by label, without the answer key: the raw grid would
+    // carry list indices as values and could print the explanation
     expect($html)->toContain('name="q1"')
-        ->and($html)->toContain('Paris')
-        ->and($html)->toContain('London')
-        ->and($html)->toContain('name="q2"')
-        ->and($html)->not->toContain('is_correct');
+        ->and($html)->toContain('value="Paris"')
+        ->and($html)->toContain('value="London"')
+        ->and($html)->not->toContain('value="0"')
+        ->and($html)->not->toContain('Seat of government');
+
+    // The scale draws its five points as radios, not the text input of the fallback view
+    expect($html)->toContain('name="q2"')
+        ->and($html)->toContain('Very Satisfied')
+        ->and(substr_count($html, 'type="radio"'))->toBe(7);
 });
