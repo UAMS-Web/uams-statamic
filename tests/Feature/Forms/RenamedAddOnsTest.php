@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Support\Forms\FormRequestSubmissionContext;
 use Statamic\Facades\Addon;
 use Tests\TestCase;
 use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
+use UAMSWeb\Aether\Forms\Settings\Support\FormRequestSubmissionContext;
 
 /**
  * Proves the application reaches the add-ons under their `aether` names (#435).
@@ -18,7 +18,7 @@ use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
  */
 uses(TestCase::class);
 
-it('resolves a contract in an add-on\'s renamed namespace to the application\'s binding', function (): void {
+it('resolves a contract in an add-on\'s renamed namespace to the binding its submission data switch makes', function (): void {
     expect(app()->bound(SubmissionContext::class))->toBeTrue()
         ->and(get_class(app(SubmissionContext::class)))->toBe(FormRequestSubmissionContext::class);
 });

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Support\Forms\FormRequestContext;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Forms\Settings\Support\FormRequestContext;
 
 /**
  * Emulates Gravity Forms {referrer} merge tag.

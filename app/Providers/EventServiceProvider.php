@@ -7,8 +7,6 @@ namespace App\Providers;
 use App\Events\TriggerActivated;
 use App\Listeners\AppendOrphanBanner;
 use App\Listeners\AppendPublishDependencyBanner;
-use App\Listeners\AppendSubmissionMetadata;
-use App\Listeners\CaptureFormRequestContext;
 use App\Listeners\CaptureRedirectOnEntryDelete;
 use App\Listeners\DeleteYamlAssetMetadata;
 use App\Listeners\DeriveSpotlightTitleAndSlug;
@@ -49,9 +47,7 @@ use App\Listeners\ValidateClinicalLocationsTree;
 use App\Listeners\ValidateKnowledgeBaseEntry;
 use App\Listeners\ValidateKnowledgeBaseTree;
 use App\Listeners\ValidateSpecialInterestsScope;
-use App\Listeners\WarnWhenFormEmailQueued;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as BaseServiceProvider;
-use Illuminate\Queue\Events\JobQueued;
 use Statamic\Events\AssetDeleting;
 use Statamic\Events\AssetReuploaded;
 use Statamic\Events\AssetUploaded;
@@ -67,7 +63,6 @@ use Statamic\Events\FormSubmitted;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\ResponseCreated;
 use Statamic\Events\RevisionSaving;
-use Statamic\Events\SubmissionCreating;
 use Statamic\Events\TermSaved;
 use Statamic\Events\TermSaving;
 
@@ -220,23 +215,13 @@ class EventServiceProvider extends BaseServiceProvider
             PreventDeletingMounts::class,
         ],
 
-        // Refuse a submission its choice limits reject, then capture the
-        // submitter's request context for the form emails. The form-level
-        // restrictions gate is the form settings add-on's, which registers it
-        // itself, so it runs after these (#263)
+        // Refuse a submission its choice limits reject. The form settings add-on
+        // registers its own listeners: its restrictions gate and, with its
+        // submission data switch on, the request-context capture, the submission
+        // metadata and the queued-email warning, which it registers after the
+        // application's providers so they run after this (#263, #265)
         FormSubmitted::class => [
             EnforceChoiceSubmissionLimits::class,
-            CaptureFormRequestContext::class,
-        ],
-
-        // Record the submission's metadata before it is saved
-        SubmissionCreating::class => [
-            AppendSubmissionMetadata::class,
-        ],
-
-        // Warn when a form email is pushed to a real (non-sync) queue
-        JobQueued::class => [
-            WarnWhenFormEmailQueued::class,
         ],
 
         // Re-stamp mounted knowledge base URIs when the pages structure is reordered

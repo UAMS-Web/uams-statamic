@@ -3739,6 +3739,22 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #348. `.github/workflows/ci.yml`, `tests/skip-baseline.json`, `scripts/check-skip-baseline.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/gate-pint.mjs`, and the passages in `AGENTS.md` and `README.md`.
 
+## 2026-11-01: Public field conditions stay on Statamic's evaluator (UAMS-Web/uams-statamic#189)
+
+**Decision.** The retire direction recorded on #189 is confirmed. Public forms use the evaluator in Statamic's `helpers.js`, the `$showField` magic in `uams-web/aether-alpine-csp-forms` forwards to it, and the watches on the upstream chain are removed.
+
+**Why.** Re-measured against the installed `statamic/cms` `v6.37.0`, `helpers.js` is 24,804 bytes raw and 8,026 gzipped and contains no `eval(`. The trade was one cached 30 KB asset against an owned evaluator exposed to silent divergence from the Control Panel's, and the asset is now about a quarter of that size. It still carries the WebAuthn client, which public pages do not use.
+
+**Rejected.** *Keeping the owned evaluator*: the case for it was the payload, which has shrunk, and test coverage that existed only because of the fork.
+
+**Accepted cost.** Every public page loads the WebAuthn client until upstream stops shipping it there (UAMS-Web/uams-statamic-archive#1979).
+
+**Verified.** Measured on Windows 11 with Playwright's Chromium and `bypassCSP` off, on the fixture from `tests/Browser/CspPublicFormConditionsTest.php` under a `<meta>` policy with no `'unsafe-eval'`: an `eval()` in a page script raised `EvalError`, the condition that should pass rendered, the one that should fail did not, and no page error fired. An `eval()` appended to `helpers.js` as a control did raise a page error. This was a one-off on the fixture, whose `equals` condition is the operator of the two live conditional fields, and not a live page.
+
+**Residual.** None from the browser suite: #502 (by #506) runs the same fixture under a `<meta>` policy with `bypassCSP` off, so the check above now runs on every pull request.
+
+**Companion.** #189. The enforce flip itself is #33.
+
 ## 2026-11-02: Windows shards the Pest band four ways, from a file list per shard (#504)
 
 **Decision.** The Windows leg runs the parallel band as four shards on four runners, like Linux and macOS. Each Windows shard lists its tests in one process with `pest --list-tests --exclude-group=serial --shard=<i>/4`, `scripts/pest-shard-config.php` writes a copy of `phpunit.xml` whose only suite names that shard's files, and the band runs `pest --parallel --configuration=<that copy>`. `pest-report` reads four shards on every leg. This supersedes the 2026-11-01 entry's "Windows runs the Pest band whole" and its rejected *Shards on Windows with a shorter filter*.
@@ -3750,3 +3766,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The two-run timing comparison #504 asks for is recorded on #504 once remote CI has run.
 
 **Companion.** #504. `.github/workflows/ci.yml`, `scripts/pest-shard-config.php`, `tests/Feature/PestShardConfigTest.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/merge-shard-reports.php`.
+
+## 2026-11-02: Each operating system balances its Pest shards on its own timings, and Windows runs six (#516)
+
+**Decision.** Every leg of `pest-report` saves its merged per-class timings on a push to `main`, under `pest-shard-timings-<os>-<run id>-<attempt>`, and each `pest` shard chooses among its own operating system's entries by the rule #519 set (the newest entry created at or before the run's first attempt started), through `scripts/select-shard-timings.php --prefix`. With no cache entry, a shard reads `.github/pest-shards.<os>.json` where one is committed (Windows) and `.github/pest-shards.json` otherwise. The Windows leg runs the parallel band as six shards; Linux and macOS stay at four. This changes the 2026-10-28 entry's single timings source, and the 2026-11-02 entry's four Windows shards.
+
+**Why.** Only the Ubuntu leg saved timings, and a Windows runner cannot restore an entry a Linux runner saved (`enableCrossOsArchive` is off), so every Windows shard fell back to the committed `.github/pest-shards.json`, whose source is the #384 spike. On #514's run 41440485266 the four Windows shards read that file in both attempts and took 822, 1,194, 705 and 1,300 seconds, then 1,120, 1,216, 1,281 and 1,316 on the same partition: runner variance is large. Each shard's test step was 0.26 times its summed Windows class time (0.255 to 0.265 across the four), with about 205s of setup. On that model Windows timings alone give a longest shard of about 1,238s at four shards and 895s at six. The longest Windows job outside the band, the browser smoke, took 988s to 1,788s across three runs. The floor is the largest Windows class, 644s, plus setup: about 853s, which a seventh shard would barely improve on. The measurements and commands are on #516.
+
+**Rejected.** *Six Windows shards on the shared timings*: predicted at 1,045s with the longest shard 1.17 times the mean, above the 988s browser smoke. *Windows timings at four shards*: predicted at 1,238s, above it too. *Six shards on every leg*: Linux and macOS shards were not the longest jobs, so the extra runners would add setup for no gain.
+
+**Residual.** The 0.26 ratio was measured at four shards; six shards have fewer classes per worker. The two consecutive pull request runs #516 asks for settle it. Until a `main` push saves per-OS entries, every shard reads a committed file. Runner variance on the same partition reached 1.9 times for one shard on #514's run, so a single run can miss the target either way.
+
+**Companion.** #516. `.github/workflows/ci.yml`, `.github/pest-shards.windows-latest.json`, `scripts/select-shard-timings.php`, `tests/Feature/SelectShardTimingsTest.php`, `scripts/local-ci.chain.test.mjs`, `tests/Feature/MergeShardReportsTest.php`.

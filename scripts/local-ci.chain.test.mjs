@@ -607,25 +607,56 @@ describe('the sharded pest job in ci.yml (#387)', () => {
     const pest = jobText(workflow, 'pest')
     const report = jobText(workflow, 'pest-report')
 
-    it('runs one shard per number from 1 to the total it and the merge both read', () => {
+    // The shard numbers each leg runs: the `shard:` list on every leg, plus the
+    // `include` entries that name a leg and a shard number of their own.
+    const shardsPerLeg = (job) => {
+        const list = job.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
+        const legs = job.match(/^ {8}os: \[([a-z, -]+)\]$/m)
+        if (list === null || legs === null) {
+            return null
+        }
+        const result = Object.fromEntries(legs[1].split(',').map((os) => [os.trim(), list[1].split(',').map((n) => Number(n.trim()))]))
+        for (const [, os, shard] of job.matchAll(/^ {10}- os: ([a-z-]+)\n {12}shard: (\d+)$/gm)) {
+            result[os].push(Number(shard))
+        }
+        return result
+    }
+
+    // The total each leg reads, from `SHARD_TOTAL: ${{ matrix.os == '<os>' && <n> || <m> }}`
+    // or a plain number.
+    const totalsPerLeg = (job, legs) => {
+        const line = job.match(/^ {6}SHARD_TOTAL: (.+)$/m)
+        if (line === null) {
+            return null
+        }
+        const plain = line[1].match(/^(\d+)$/)
+        const split = line[1].match(/^\$\{\{ matrix\.os == '([a-z-]+)' && (\d+) \|\| (\d+) \}\}$/)
+        if (plain === null && split === null) {
+            return null
+        }
+        return Object.fromEntries(legs.map((os) => [os, plain !== null ? Number(plain[1]) : Number(os === split[1] ? split[2] : split[3])]))
+    }
+
+    it('runs one shard per number from 1 to the total it and the merge both read, on every leg', () => {
         // The matrix, the total each shard passes to --shard and the total the
-        // merge expects are three separate literals. A shard added to the matrix
-        // without the totals runs a fifth of a band the merge never asks for; a
-        // total raised without the matrix leaves a quarter of the classes without a shard,
+        // merge expects are three separate settings. A shard added to the matrix
+        // without the totals runs a fraction of a band the merge never asks for; a
+        // total raised without the matrix leaves part of the classes without a shard,
         // which the merge then refuses as missing inputs only if it is told the
         // new total.
-        const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
-        const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
-        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+        const shards = shardsPerLeg(pest)
+        expect(shards, 'the pest job has no `shard:` or `os:` matrix line').not.toBeNull()
+        const legs = Object.keys(shards)
+        const pestTotals = totalsPerLeg(pest, legs)
+        const reportTotals = totalsPerLeg(report, legs)
+        expect(pestTotals, 'the pest job sets no SHARD_TOTAL this test can read').not.toBeNull()
+        expect(reportTotals, 'pest-report sets no SHARD_TOTAL this test can read').not.toBeNull()
 
-        expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
-        expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
-        expect(reportTotal, 'pest-report sets no SHARD_TOTAL').not.toBeNull()
-
-        const total = Number(pestTotal[1])
-        const shards = matrix[1].split(',').map((n) => Number(n.trim()))
-        expect(shards).toEqual(Array.from({ length: total }, (_, i) => i + 1))
-        expect(Number(reportTotal[1])).toBe(total)
+        for (const os of legs) {
+            expect(shards[os].sort((a, b) => a - b), os).toEqual(Array.from({ length: pestTotals[os] }, (_, i) => i + 1))
+            expect(reportTotals[os], os).toBe(pestTotals[os])
+        }
+        expect(pest).toContain("    name: Pest (parallel band, shard ${{ matrix.shard }} of ${{ matrix.os == 'windows-latest' && 6 || 4 }}, ${{ matrix.os }})\n")
         expect(report).toContain('--total="$SHARD_TOTAL"')
         // Two steps select the shard: the run elsewhere, and the listing on Windows (#504).
         expect(pest.split('--shard="$SHARD/$SHARD_TOTAL"')).toHaveLength(3)
@@ -680,5 +711,64 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         expect([...remotes[0], '--stop-on-failure']).not.toEqual(local)
         expect(remotes[0]).toEqual(local)
         expect(remotes[1]).toEqual(local)
+    })
+
+    // What #516 changed about the Windows leg, as a list of what is missing, so
+    // the old shape can be fed through the same check and shown to fail.
+    const windowsShapeFailures = (pestJob, reportJob) => {
+        const failures = []
+        const shards = shardsPerLeg(pestJob)
+        if (shards === null || shards['windows-latest']?.length !== 6) {
+            failures.push('the Windows leg does not run six shards')
+        }
+        for (const os of ['ubuntu-latest', 'macos-latest']) {
+            if (shards === null || shards[os]?.length !== 4) {
+                failures.push(`${os} does not run four shards`)
+            }
+        }
+        const totals = shards === null ? null : totalsPerLeg(pestJob, Object.keys(shards))
+        if (totals === null || totals['windows-latest'] !== 6) {
+            failures.push('the Windows shards do not read a total of six')
+        }
+        if (!pestJob.includes('          PREFIX: pest-shard-timings-${{ matrix.os }}-\n') || !pestJob.includes('actions/caches?key=$PREFIX&') || !pestJob.includes('--prefix="$PREFIX"')) {
+            failures.push('the shards do not restore timings saved by their own operating system')
+        }
+        if (!reportJob.includes('          key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}\n')) {
+            failures.push('pest-report does not save timings under its own operating system')
+        }
+        if (reportJob.includes("matrix.os == 'ubuntu-latest'")) {
+            failures.push('pest-report saves timings from one operating system only')
+        }
+        return failures
+    }
+
+    it('runs the Windows leg in six shards balanced on Windows timings (#516)', () => {
+        expect(windowsShapeFailures(pest, report)).toEqual([])
+
+        // The committed fallback a Windows shard reads when the cache has no Windows entry.
+        const fallback = JSON.parse(readFileSync(join(repoRoot, '.github', 'pest-shards.windows-latest.json'), 'utf8'))
+        expect(Object.keys(fallback.timings).length).toBeGreaterThan(1000)
+        expect(pest).toContain('            committed=".github/pest-shards.$MATRIX_OS.json"\n')
+    })
+
+    it('reports the Windows leg going back to the old four-way split on Ubuntu timings', () => {
+        // The shape before #516, rebuilt from this file, so the check above can fail.
+        const oldPest = pest
+            .replace(/\n {8}include:\n {10}- os: windows-latest\n {12}shard: 5\n {10}- os: windows-latest\n {12}shard: 6\n/, '\n')
+            .replace(/SHARD_TOTAL: .+/, 'SHARD_TOTAL: 4')
+            .replace('PREFIX: pest-shard-timings-${{ matrix.os }}-', 'PREFIX: pest-shard-timings-')
+        const oldReport = report
+            .replace('key: pest-shard-timings-${{ matrix.os }}-', 'key: pest-shard-timings-')
+            .replace("if: github.event_name == 'push' && github.ref == 'refs/heads/main'\n", "if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'\n")
+        expect(oldPest).not.toBe(pest)
+        expect(oldReport).not.toBe(report)
+
+        expect(windowsShapeFailures(oldPest, oldReport)).toEqual([
+            'the Windows leg does not run six shards',
+            'the Windows shards do not read a total of six',
+            'the shards do not restore timings saved by their own operating system',
+            'pest-report does not save timings under its own operating system',
+            'pest-report saves timings from one operating system only',
+        ])
     })
 })
