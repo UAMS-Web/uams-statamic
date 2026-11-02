@@ -1177,9 +1177,9 @@ class RoleTitle extends Fieldtype
                 $merged[$checkboxSubfieldKey] = [];
             }
 
-            foreach ($defaults as $optionKey => $falseDefault) {
+            foreach (\array_keys($defaults) as $optionKey) {
                 $merged[$checkboxSubfieldKey][$optionKey] = (bool) (
-                    $merged[$checkboxSubfieldKey][$optionKey] ?? $falseDefault
+                    $merged[$checkboxSubfieldKey][$optionKey] ?? $defaults[$optionKey]
                 );
             }
         }

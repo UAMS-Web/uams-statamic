@@ -1127,25 +1127,25 @@ describe('pinnedDependencyNotice', () => {
         // The check silently skipping is the failure this exists to prevent, so an unconfigured
         // machine has to say so rather than print a clean table.
         expect(pinnedDependencyNotice({ version: 'v0.16.0' })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream distance unmeasured (UAMS_WORDPRESS_IMPORTER_CLONE unset)',
+            'aether-wordpress-importer pinned v0.16.0 - upstream distance unmeasured (UAMS_WORDPRESS_IMPORTER_CLONE unset)',
         )
     })
 
     it('distinguishes an unreadable clone from an unset one', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/nope' })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream distance unreadable in /nope',
+            'aether-wordpress-importer pinned v0.16.0 - upstream distance unreadable in /nope',
         )
     })
 
     it('reports the distance when the clone answers', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 139 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +139',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +139',
         )
     })
 
     it('reads a pin level with upstream as level, not as +0', () => {
         expect(pinnedDependencyNotice({ version: 'v0.17.0', clone: '/c', ahead: 0 })).toBe(
-            'wordpress-importer pinned v0.17.0 - upstream main level',
+            'aether-wordpress-importer pinned v0.17.0 - upstream main level',
         )
     })
 
@@ -1153,13 +1153,13 @@ describe('pinnedDependencyNotice', () => {
         // An unqualified number from an un-fetched clone is the same class of claim this notice
         // exists to make impossible.
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 139, staleDays: 6 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +139, clone fetched 6d ago',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +139, clone fetched 6d ago',
         )
     })
 
     it('does not qualify a clone fetched within the day', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 2, staleDays: 0 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +2',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +2',
         )
     })
 })
@@ -1506,21 +1506,21 @@ describe('vendor source checkouts that block composer install (#2691)', () => {
             stampComposerHash: 'b'.repeat(64),
             patchHash: 'c'.repeat(64),
             stampPatchHash: 'c'.repeat(64),
-            vendorCheckouts: [{ path: 'vendor/uams-web/wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false }],
+            vendorCheckouts: [{ path: 'vendor/uams-web/aether-wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false }],
         })
 
         expect(reasons).toEqual([
-            "vendor/uams-web/wordpress-importer: source checkout on branch 'importer-1234', which no remote carries - `composer install` will refuse it",
+            "vendor/uams-web/aether-wordpress-importer: source checkout on branch 'importer-1234', which no remote carries - `composer install` will refuse it",
         ])
     })
 
     it('names the directory and every recovery step when refresh refuses', () => {
         const text = vendorCheckoutRecovery('uams-statamic', [
-            { path: 'vendor/uams-web/wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false },
+            { path: 'vendor/uams-web/aether-wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false },
         ])
 
         expect(text).toMatch(/refusing to refresh uams-statamic before `composer install`/)
-        expect(text).toMatch(/vendor\/uams-web\/wordpress-importer: source checkout on branch 'importer-1234'/)
+        expect(text).toMatch(/vendor\/uams-web\/aether-wordpress-importer: source checkout on branch 'importer-1234'/)
         expect(text).toMatch(/move each directory above out of vendor\//)
         expect(text).toMatch(/re-run `node scripts\/worktree-slots\.mjs refresh <tree>`/)
         expect(text).toMatch(/test ! -e <dir>\/\.git/)

@@ -552,7 +552,7 @@ final class ZipCodeEnumGenerator
 
                         // Process the JSON file in chunks. The chunk size only sets how
                         // many results are handed over at a time, so it changes no output.
-                        $parseSuccess = $this->parseLargeJsonFileInChunks(
+                        $this->parseLargeJsonFileInChunks(
                             $tempFile,
                             $chunkProcessor,
                             // @pest-mutate-ignore: IncrementInteger, DecrementInteger
@@ -619,7 +619,6 @@ final class ZipCodeEnumGenerator
             unset(
                 $stateZipData,
                 $chunkProcessor,
-                $parseSuccess,
                 $tempFile,
                 $headers,
                 $success,

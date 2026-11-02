@@ -23,7 +23,7 @@ use function Pest\Laravel\withoutVite;
 
 /**
  * Proves the Control Panel form settings screen, now served by the
- * `uams-web/statamic-form-settings` add-on, saves each setting and shows it again
+ * `uams-web/aether-form-settings` add-on, saves each setting and shows it again
  * when the form is reopened (#263).
  *
  * One setting is taken from each area the add-on adds: notifications, the
@@ -162,5 +162,41 @@ it('saves each form setting and shows it again when the form is reopened', funct
             ->where('values.require_login_message', 'Please log in to submit.')
             ->where('values.confirmation_settings_default.confirmation_message', fn (mixed $message): bool => str_contains((string) json_encode($message), 'Thanks for writing.'))
             ->where('values.email.0.to', 'team@example.test')
+            ->etc());
+});
+
+it('keeps the Attributes button in the Article Bard toolbar of the form settings screen', function (): void {
+    $form = makeForm('form_settings_toolbar_probe');
+    $form->title('Toolbar probe');
+    $form->save();
+
+    actingAs(formSettingsAddOnCpSuperUser());
+
+    // The confirmation's page picker lists the `pages` collection, which the
+    // isolated Stache starts without
+    Collection::make('pages')->save();
+
+    get(formSettingsAddOnCpRoute('forms.edit', ['form' => 'form_settings_toolbar_probe']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('blueprint', fn (mixed $blueprint): bool => str_contains((string) json_encode($blueprint), '"bts_attributes"'))
+            ->etc());
+});
+
+it('offers the quiz settings on the form settings screen while scoring is on', function (): void {
+    $form = makeForm('form_settings_quiz_probe');
+    $form->title('Quiz probe');
+    $form->save();
+
+    actingAs(formSettingsAddOnCpSuperUser());
+
+    // The confirmation's page picker lists the `pages` collection, which the
+    // isolated Stache starts without
+    Collection::make('pages')->save();
+
+    get(formSettingsAddOnCpRoute('forms.edit', ['form' => 'form_settings_quiz_probe']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('blueprint', fn (mixed $blueprint): bool => str_contains((string) json_encode($blueprint), '"quiz_grading"'))
             ->etc());
 });

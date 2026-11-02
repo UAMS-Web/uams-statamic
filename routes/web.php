@@ -122,8 +122,10 @@ Route::get('entries/{entry}', [FrontendController::class, 'route'])
 // before the `{entry}/{section}` wildcard below so it is never shadowed. Being a
 // routeless view (no entry), it has no nav breadcrumb chain, so `breadcrumb_leaf`
 // supplies the trailing "Search" crumb (the reusable hook for any routeless view).
+// Every sub-site gets the same page under its own prefix (UAMS-Web/uams-statamic#413),
+// because the current site comes from the URL and "This site" needs a URL to mean it.
 // ---
-Route::statamic('/search', 'search/index', [
+$siteSearchRouteData = [
     'title' => 'Search',
     'breadcrumb_leaf' => 'Search',
     // Routeless views have no `published` in the cascade, which the shared
@@ -133,10 +135,18 @@ Route::statamic('/search', 'search/index', [
     // below it are inert without that data), so /search has a page title like any
     // ordinary entry.
     'title_options' => 'normal',
-]);
+];
+
+Route::statamic('/search', 'search/index', $siteSearchRouteData);
+
+Site::all()
+    ->map(fn ($site) => URL::makeRelative($site->url()))
+    ->reject(fn ($prefix) => $prefix === '/')
+    ->unique()
+    ->each(fn ($prefix) => Route::statamic($prefix.'/search', 'search/index', $siteSearchRouteData));
 
 // Type-ahead suggestions for the /search input (UAMS-Web/uams-statamic-archive#1506): a short JSON list from the
-// unified `default` index, same site and status rules as the page. Registered before
+// unified `default` index, same site scope and status rules as the page. Registered before
 // the `{entry}/{section}` wildcard below; the `/!/` prefix keeps it clear of entry URIs.
 Route::get('/!/search/suggestions', SiteSearchSuggestionsController::class)
     ->middleware('throttle:site-search-suggestions')

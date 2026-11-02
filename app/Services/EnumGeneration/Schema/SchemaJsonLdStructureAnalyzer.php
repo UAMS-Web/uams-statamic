@@ -698,7 +698,6 @@ final class SchemaJsonLdStructureAnalyzer
         }
 
         if (is_array($v)) {
-            $isList = array_is_list($v);
             $trimmed = [];
             $i = 0;
             foreach ($v as $k => $item) {

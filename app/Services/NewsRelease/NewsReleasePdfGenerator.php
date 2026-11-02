@@ -137,11 +137,6 @@ class NewsReleasePdfGenerator
         /** @var SiteContract $entrySite */
         Site::setCurrent($entrySite->handle());
 
-        // Initialize HTML output before try/finally. The try either assigns it or throws,
-        // so this starting value is never returned.
-        // @pest-mutate-ignore: EmptyStringToNotEmpty
-        $html = '';
-
         // Attempt to render the press release HTML
         try {
             // Merge cascade (globals, site, now) with augmented entry fields

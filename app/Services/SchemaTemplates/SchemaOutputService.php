@@ -745,7 +745,7 @@ class SchemaOutputService
             );
         }
 
-        foreach ($graph as $i => &$root) {
+        foreach ($graph as &$root) {
             $this->inflateBareAtIdMissingFullRecursive(
                 $root,
                 $fullIdsPresent,
@@ -760,7 +760,6 @@ class SchemaOutputService
 
         unset(
             $fullIdsPresent,
-            $i,
             $root
         );
     }

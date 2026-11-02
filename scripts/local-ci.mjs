@@ -29,7 +29,7 @@
 // -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
-// LOCAL ONLY: ci.yml declares no `needs:` and fans its jobs out in parallel (#373),
+// LOCAL ONLY: ci.yml fans its jobs out in parallel (#373),
 // because one machine runs them serially whatever the graph says and stopping early
 // saves your own time rather than a metered budget.
 // Run one job (e.g. `--jobs pest`) to bypass the chain.
@@ -136,16 +136,12 @@
 //
 // The remote `RUN_REMOTE_CI` budget kill-switch (UAMS-Web/uams-statamic-archive#980) does NOT apply here: this
 // runner has no concept of the toggle and always runs the requested jobs. That is
-// the point — when remote CI is switched off (Actions budget exhausted), this is
-// the validation path. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
+// the point: when remote CI is switched off, this can still validate a branch. So flipping RUN_REMOTE_CI changes only ci.yml's job `if:`
 // gates, with no behavioral mirror needed in this script.
 //
-// A green run here is mergeable because no ruleset on `main` requires a status
-// check, NOT because `main` is unprotected: two organization rulesets refuse
-// deletion, force-pushes and direct pushes, and require a pull request, which a
-// merge is. See docs/runbooks/branch-protection.md and UAMS-Web/uams-statamic-archive#2016. Adding a required
-// check while remote CI is off would leave it pending forever and deadlock merges,
-// which no amount of local green can clear.
+// A green run here does not make a branch mergeable: a ruleset on `main` requires the
+// remote `CI`, `Attribution footer` and `Closing keywords` checks (#337), and no local
+// run can report them. See docs/runbooks/branch-protection.md.
 //
 // RUNNER HANDOFF (UAMS-Web/uams-statamic-archive#1882) — this script is invoked from the checkout it lives in,
 // not from the branch it validates, so a PR that ADDS, REMOVES or CHANGES a chain
@@ -205,16 +201,14 @@ export { chunkByArgLength, contentLitter, driftLabel, KNOWN_CONTENT_LITTER, reso
 export const ALL_JOBS = ['pest', 'pint', 'rector', 'mutate', 'build', 'js', 'spell', 'phpstan', 'encoding', 'no-emoji', 'content-pointer', 'isolation', 'validate', 'browser']
 const VALID_JOBS = [...ALL_JOBS, 'all']
 
-
 // PARITY: the cost-ordered chain, shortest -> longest, except `validate`, which
 // stays second although its PSR-4 class check can cost more than the jobs after it
 // (docs/DECISIONS.md). A job runs only if every
 // earlier selected job passed; the moment one fails, the rest are SKIPPED (not
 // run), so a failure never pays for the more-expensive jobs after it. `browser`
 // runs last, as the most expensive link. Run a single job (e.g. `--jobs pest`) to
-// bypass the chain. This ORDER is local only: ci.yml declares no `needs:` and runs
-// its jobs in parallel (#373). Module-scoped and exported so the parity test can
-// compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
+// bypass the chain. This ORDER is local only: ci.yml runs its jobs in parallel (#373).
+// Module-scoped and exported so the parity test can compare this SET against the jobs ci.yml declares (UAMS-Web/uams-statamic-archive#1735).
 export const CHAIN = ['isolation', 'validate', 'no-emoji', 'content-pointer', 'encoding', 'spell', 'js', 'build', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']
 // PARITY-END: the chain itself only. What follows is unrelated (UAMS-Web/uams-statamic-archive#2376).
 
@@ -303,7 +297,6 @@ export function canReuseBuildOutput(results) {
     return results.get('build') === 0
 }
 
-
 // --- mutation-tooling smoke (UAMS-Web/uams-statamic-archive#1731) ----------------------------------------
 //
 // WHY THIS CLASS: the smoke needs a subject that is small, pure, fully covered,
@@ -374,7 +367,6 @@ export function mutateSmokeVerdict(driver, plain) {
 
     return { ok: true }
 }
-
 
 /** Where a worktree records the patch-set hash it last applied, under vendor/. */
 export const PATCH_STAMP_FILE = '.local-ci-patches-hash'
@@ -655,7 +647,6 @@ export function handoffArgv(argv, worktreePath) {
     return [...forwarded, '--worktree-path', worktreePath]
 }
 
-
 // UAMS-Web/uams-statamic-archive#1873 — split what the suite just wrote into the content/ submodule from what
 // was already sitting there.
 //
@@ -864,7 +855,6 @@ export function acquireWorktreeLock(worktreePath, branch) {
     throw new Error('unreachable: lock acquisition fell through')
 }
 
-
 /**
  * The clause a first-boot failure carries when `content/` changed revision during
  * this run (UAMS-Web/uams-statamic-archive#2832), or null when it did not or either revision is unknown.
@@ -885,7 +875,6 @@ export function contentMoveNote(before, after) {
 
     return `the first app boot after content/ moved ${before.slice(0, 9)} -> ${after.slice(0, 9)} in this run`
 }
-
 
 // UAMS-Web/uams-statamic-archive#1743 — flatten patches.lock.json into `package: description` lines so the run
 // output NAMES what the branch DECLARES. Absence then shows up as a missing line
@@ -917,7 +906,6 @@ function assertExit(code, what) {
 }
 
 // --- toolchain discovery ---------------------------------------------------
-
 
 /**
  * Ask the resolved PHP for its version, and refuse to continue if it could not answer.

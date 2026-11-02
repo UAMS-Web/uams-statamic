@@ -110,7 +110,6 @@ Current state of the tree, kept in sync with the templates. If you change attrib
 | `hidden.antlers.html` | — | none (`<input type=hidden>` is not user-editable by definition) |
 | `html.antlers.html` | — | none (no form controls) |
 | `integer.antlers.html` | — | `readonly` |
-| `likert_scale.antlers.html` | — | `disabled` on every option radio (single-row group and every matrix-row group) |
 | `list.antlers.html` | — | `readonly` on each text input; add/remove buttons are hidden via `{{ unless visibility == 'read_only' }}` |
 | `name.antlers.html` | — | `readonly` on each subfield text input |
 | `option.antlers.html` | — | `disabled` on the drop-down `<select>`, every radio, and every checkbox. The hidden `[line_total]` input has no editable control. |

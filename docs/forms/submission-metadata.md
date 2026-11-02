@@ -34,7 +34,7 @@ Statamic forms POST to the `/!/forms/<handle>` endpoint, so the request URL is t
 
 The submit endpoint sits under the default site's `/` prefix, so `Site::current()` during the submit request is the default site whatever page the form was on. Before [#3068](https://github.com/UAMS-Web/uams-statamic-archive/issues/3068) the three `_site_*` fields read it, and a submission from a page on `/health` recorded `default`.
 
-The site now comes from [`uams-web/statamic-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), which records the site of the submitting page under `_site`: the site whose URL the Referer falls under, or the default site when the Referer is missing or matches no site. `_site_handle`, `_site_name` and `_site_url` describe the site `_site` names, so the two records always agree. A submission saved outside the submit route carries no `_site`; the listener then names the site the same way the add-on does for that request.
+The site now comes from [`uams-web/aether-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), which records the site of the submitting page under `_site`: the site whose URL the Referer falls under, or the default site when the Referer is missing or matches no site. `_site_handle`, `_site_name` and `_site_url` describe the site `_site` names, so the two records always agree. A submission saved outside the submit route carries no `_site`; the listener then names the site the same way the add-on does for that request.
 
 The request context the notification job carries to a queue worker (`CaptureFormRequestContext`, read by `{{ global_origin }}`) takes its site from the same place.
 

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Search\AreaOfExpertiseSectionDocument;
 use App\Support\Entries\PrivateEntryAccess;
+use App\Tags\SiteSearchScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Statamic\Contracts\Search\Result;
@@ -22,9 +23,17 @@ use Statamic\Sites\Site as SiteInstance;
  *
  * Answers the question the `/search` page's `{{ search:results }}` tag answers for
  * the same index (the page's active type tab, or the unified `default` index), the
- * current site and published items, but returns a short JSON list the input's
- * flyout renders as the reader types. It does not replace the page: selecting "See
- * all results", or submitting the form, still lands on `/search`.
+ * same sites and published items, but returns a short JSON list the input's flyout
+ * renders as the reader types. It does not replace the page: selecting "See all
+ * results", or submitting the form, still lands on `/search`. Google's results have
+ * no type-ahead, so "All UAMS websites" suggests this site's content on every site.
+ *
+ * The route is one root path, so the current site is always the root site, and the
+ * page says which site it belongs to through `?site=` and `?scope=`
+ * (UAMS-Web/uams-statamic#467). {@see SiteSearchScope::resolve()} decides what those
+ * mean, as it does for the page. A value naming no site is read as the root site,
+ * which is what a request without one is. No value can name a set of sites, so the
+ * answer is one site or every site, and both are on offer from any page.
  *
  * The index, site and status constraints mirror `Statamic\Search\Tags::results()`.
  * A `private` entry is dropped unless the reader may see it, as `ProtectEntry`
@@ -83,15 +92,15 @@ final class SiteSearchSuggestionsController
 
     /**
      * Return up to {@see LIMIT} suggestions for `?q=`, from `?index=` when it is one of
-     * {@see INDEXES}.
+     * {@see INDEXES}, over the sites `?site=` and `?scope=` choose.
      *
-     * @param  Request  $request  The incoming request, carrying `q` and optionally `index`
+     * @param  Request  $request  The incoming request, carrying `q` and optionally `index`, `site` and `scope`
      * @return JsonResponse `{ query, index, results: [{ title, url, type }] }`
      */
     public function __invoke(Request $request): JsonResponse
     {
         $raw = $request->query('q');
-        $query = \is_string($raw) ? trim($raw) : '';
+        $query = \is_string($raw) && mb_check_encoding($raw, 'UTF-8') ? trim($raw) : '';
         $length = mb_strlen($query);
 
         $requestedIndex = $request->query('index');
@@ -100,7 +109,10 @@ final class SiteSearchSuggestionsController
         $suggestions = [];
 
         if ($length >= self::MIN_QUERY_LENGTH && $length <= self::MAX_QUERY_LENGTH) {
-            $suggestions = $this->suggest($query, $index);
+            $site = $this->searchPageSite($request->query('site'));
+            $everySite = SiteSearchScope::resolve($site, $request->query('scope')) !== SiteSearchScope::THIS_SITE;
+
+            $suggestions = $this->suggest($query, $index, $everySite ? null : $site);
         }
 
         return new JsonResponse([
@@ -111,14 +123,34 @@ final class SiteSearchSuggestionsController
     }
 
     /**
+     * The site whose search page is asking, or the current site for a value naming none.
+     *
+     * @param  mixed  $handle  The raw `site` value, of any type
+     */
+    private function searchPageSite(mixed $handle): SiteInstance
+    {
+        $site = \is_string($handle) ? Site::get($handle) : null;
+
+        if ($site instanceof SiteInstance) {
+            return $site;
+        }
+
+        /** @var SiteInstance $current */
+        $current = Site::current();
+
+        return $current;
+    }
+
+    /**
      * Run the query against the index and shape each hit for the flyout.
      *
      * Asks for twice {@see LIMIT} and trims after shaping, so a dropped hit (private,
      * or without a URL) does not leave the flyout short while more matches exist.
      *
+     * @param  SiteInstance|null  $site  The one site to search, or null for every site
      * @return list<array{title: string, url: string, type: string}>
      */
-    private function suggest(string $query, string $handle): array
+    private function suggest(string $query, string $handle, ?SiteInstance $site): array
     {
         /** @var Index $index */
         $index = Search::index($handle);
@@ -127,9 +159,7 @@ final class SiteSearchSuggestionsController
         /** @var QueryBuilder $builder */
         $builder = $index->search($query);
 
-        if (Site::hasMultiple()) {
-            /** @var SiteInstance $site */
-            $site = Site::current();
+        if ($site instanceof SiteInstance) {
             $builder->whereIn('site', [$site->handle()]);
         }
 

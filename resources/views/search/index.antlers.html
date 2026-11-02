@@ -5,7 +5,11 @@
 	       below with pagination. Each tab is a plain link to `/search?q=…&index=…`,
 	       so switching type re-runs the query server-side on reload with no
 	       JavaScript, and every tab URL is shareable. The header search icon submits
-	       `q` (+ an optional `index` type).
+	       `q` (+ an optional `index` type). Each site has this page under its own
+	       prefix, and scope links (UAMS-Web/uams-statamic#413) beside the tabs choose
+	       between this site and all of them; see `App\Tags\SiteSearchScope`. The
+	       "All UAMS websites" scope (UAMS-Web/uams-statamic#412) shows Google's results
+	       instead of the site's own, without the type tabs.
 	       The knowledge-base search bar (UAMS-Web/uams-statamic-archive#506) submits `q` plus `index=knowledge_bases`
 	       and a `kb_scope` entry id, switching this page into a subtree-scoped KB mode:
 	       the type filter is replaced by hidden scope fields and results run through the
@@ -64,6 +68,26 @@
 {{ /if }}
 {{ $is_kb_search = ($search_index == 'knowledge_bases') }}
 
+{{# How widely to search (UAMS-Web/uams-statamic#413). `$search_scope` is one of the
+    fixed scope values, never the raw `get:scope`, and `$scope_query` is the `&scope=`
+    pair for a link, empty at the default scope. A link back to this page goes to
+    `$search_path`, so it stays on the site the reader is on. #}}
+{{ $search_path = {site_search_scope:path} }}
+{{ $search_scope = {site_search_scope:active :requested="get:scope"} }}
+{{ $scope_param = {site_search_scope:param :active="$search_scope"} }}
+{{ $scope_query = $scope_param ? ( '&amp;scope=' + $scope_param ) : '' }}
+{{ $search_site = ($search_scope == 'all') ? '*' : site:handle }}
+
+{{# Knowledge-base search has no scope choice, whatever the URL says. Its search bar
+    posts to the root `/search` from every site, so it searches every site and the
+    subtree query scope is what bounds it. #}}
+{{ if $is_kb_search }}
+	{{ $search_site = '*' }}
+	{{ $scope_param = '' }}
+	{{ $scope_query = '' }}
+{{ /if }}
+{{ $is_google_search = ($search_scope == 'google' && ! $is_kb_search) }}
+
 {{ partial:layout/article }}
 	{{ partial:layout/entry-content content_width="false" }}
 
@@ -72,7 +96,7 @@
 		    stretch edge to edge in the full-width entry-content, and laid out as a
 		    `form-row`: the field and the button read as one bar on `md`+ but stack
 		    onto their own rows on narrow viewports. #}}
-		<form action="/search" method="get" role="search" class="site-search-form mx-auto mb-3" style="max-width: 46rem;">
+		<form action="{{ $search_path }}" method="get" role="search" class="site-search-form mx-auto mb-3" style="max-width: 46rem;">
 			{{# A visible label names the field for every reader (UAMS-Web/uams-statamic-archive#1510), where the
 			    placeholder alone disappears as soon as anything is typed. #}}
 			<label for="site-search-q" class="site-search-label font-weight-bold">{{ if $is_kb_search }}Search this knowledge base{{ else }}Search UAMS{{ /if }}</label>
@@ -99,10 +123,13 @@
 						    Without JavaScript this is the same plain field, and submitting the
 						    form still lands on /search. `data-index` is the validated active tab
 						    (never the raw `get:index`), so suggestions come from the index the
-						    page itself searches. Every binding names a property or
+						    page itself searches, and `data-site` and `data-scope` keep them to
+						    the sites it searches. On the Google scope the page shows no index
+						    of its own, so they come from this site's content on every site.
+						    Every binding names a property or
 						    method, never an inline expression, because the site runs the
 						    @alpinejs/csp build. #}}
-						<div class="site-search-typeahead position-relative" x-data="siteSearchTypeahead" data-index="{{ $search_index }}" @click.outside="close" @focusout="onFocusOut">
+						<div class="site-search-typeahead position-relative" x-data="siteSearchTypeahead" data-index="{{ $search_index }}" data-search-path="{{ $search_path }}" data-site="{{ site_search_scope:site }}" data-scope="{{ $scope_param }}" @click.outside="close" @focusout="onFocusOut">
 							<input
 								type="search"
 								class="form-control form-control-lg"
@@ -162,6 +189,9 @@
 					    `$search_index` is one of the validated launch handles above, never
 					    the raw `get:index`, so it is safe to reflect unescaped. #}}
 					<input type="hidden" name="index" value="{{ $search_index }}">
+					{{ if $scope_param }}
+						<input type="hidden" name="scope" value="{{ $scope_param }}">
+					{{ /if }}
 				{{ /if }}
 				<div class="col-12 col-md-auto">
 					{{# `text-nowrap`: UAMS-Web/uams-statamic-archive#815's contract is that the button never wraps. #}}
@@ -184,28 +214,42 @@
 		    which is already scoped to one subtree. #}}
 		{{ unless $is_kb_search }}
 			{{ $tab_query = $q ? ( 'q=' + $q_url + '&amp;' ) : '' }}
+			{{# Scope links (UAMS-Web/uams-statamic#413): plain links like the tabs, each
+			    keeping the query and the type and dropping `page`. The root site's name
+			    is configuration, so it is escaped on its way into the label. #}}
+			<nav class="site-search-scopes mx-auto mb-3" style="max-width: 46rem;" aria-label="Choose where to search">
+				<ul class="nav nav-pills site-search-tabs-list">
+					{{ site_search_scope:options :active="$search_scope" }}
+						<li class="nav-item">
+							<a class="nav-link{{ if is_active }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index={{ $search_index }}{{ if param }}&amp;scope={{ param }}{{ /if }}"{{ if is_active }} aria-current="page"{{ /if }}>{{ label | sanitize }}</a>
+						</li>
+					{{ /site_search_scope:options }}
+				</ul>
+			</nav>
+			{{ unless $is_google_search }}
 			<nav class="site-search-tabs mx-auto mb-4" style="max-width: 46rem;" aria-label="Filter results by type">
 				<ul class="nav nav-pills site-search-tabs-list">
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'default' }} active{{ /if }}" href="/search?{{ $tab_query }}index=default"{{ if $search_index == 'default' }} aria-current="page"{{ /if }}>All results</a>
+						<a class="nav-link{{ if $search_index == 'default' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=default{{ $scope_query }}"{{ if $search_index == 'default' }} aria-current="page"{{ /if }}>All results</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'people' }} active{{ /if }}" href="/search?{{ $tab_query }}index=people"{{ if $search_index == 'people' }} aria-current="page"{{ /if }}>People</a>
+						<a class="nav-link{{ if $search_index == 'people' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=people{{ $scope_query }}"{{ if $search_index == 'people' }} aria-current="page"{{ /if }}>People</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'clinical_expertise' }} active{{ /if }}" href="/search?{{ $tab_query }}index=clinical_expertise"{{ if $search_index == 'clinical_expertise' }} aria-current="page"{{ /if }}>Clinical Areas of Expertise</a>
+						<a class="nav-link{{ if $search_index == 'clinical_expertise' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=clinical_expertise{{ $scope_query }}"{{ if $search_index == 'clinical_expertise' }} aria-current="page"{{ /if }}>Clinical Areas of Expertise</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'clinical_locations' }} active{{ /if }}" href="/search?{{ $tab_query }}index=clinical_locations"{{ if $search_index == 'clinical_locations' }} aria-current="page"{{ /if }}>Clinical Locations</a>
+						<a class="nav-link{{ if $search_index == 'clinical_locations' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=clinical_locations{{ $scope_query }}"{{ if $search_index == 'clinical_locations' }} aria-current="page"{{ /if }}>Clinical Locations</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'clinical_resources' }} active{{ /if }}" href="/search?{{ $tab_query }}index=clinical_resources"{{ if $search_index == 'clinical_resources' }} aria-current="page"{{ /if }}>Clinical Resources</a>
+						<a class="nav-link{{ if $search_index == 'clinical_resources' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=clinical_resources{{ $scope_query }}"{{ if $search_index == 'clinical_resources' }} aria-current="page"{{ /if }}>Clinical Resources</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link{{ if $search_index == 'posts' }} active{{ /if }}" href="/search?{{ $tab_query }}index=posts"{{ if $search_index == 'posts' }} aria-current="page"{{ /if }}>News</a>
+						<a class="nav-link{{ if $search_index == 'posts' }} active{{ /if }}" href="{{ $search_path }}?{{ $tab_query }}index=posts{{ $scope_query }}"{{ if $search_index == 'posts' }} aria-current="page"{{ /if }}>News</a>
 					</li>
 				</ul>
 			</nav>
+			{{ /unless }}
 		{{ /unless }}
 
 		{{# In KB mode, tell the reader the search is scoped and offer a one-click
@@ -231,7 +275,15 @@
 			{{ $results_heading = 'Search results for &ldquo;' + $results_query + '&rdquo;' }}
 			{{# Offered from a scoped empty state (UAMS-Web/uams-statamic-archive#1510), with the same decoded and
 			    encoded query as the tab links; `&amp;` separates the params. #}}
-			{{ $all_results_url = '/search?q=' + $q_url + '&amp;index=default' }}
+			{{ $all_results_url = $search_path + '?q=' + $q_url + '&amp;index=default' + $scope_query }}
+			{{# The wider scope, offered from the empty state on "This site". #}}
+			{{ $wider_scope_url = '' }}
+			{{ $wider_scope_label = '' }}
+			{{ if $search_scope == 'site' && ! $is_kb_search }}
+				{{ $wider_scope_url = $search_path + '?q=' + $q_url + '&amp;index=' + $search_index + '&amp;scope=all' }}
+				{{ $root_site_name = {site_search_scope:root_name} }}
+				{{ $wider_scope_label = 'all of ' + ($root_site_name | sanitize) }}
+			{{ /if }}
 			{{ partial:page_builder/uamsweb_block block_class="site-search-results" background_color="bg-gray" }}
 				{{ partial:page_builder/components/container_row }}
 					{{ partial:page_builder/components/block_header :heading="$results_heading" }}
@@ -239,9 +291,11 @@
 						{{ if $is_kb_search }}
 							{{# Scope KB search to the subtree's published articles via the
 							    registered query scope, rooted at the submitted entry id. #}}
-							{{ partial:search/results :index="$search_index" query_scope="knowledge_base_subtree_articles" :scope_root="$kb_scope" :all_results_url="$all_results_url" }}
+							{{ partial:search/results :index="$search_index" :search_site="$search_site" query_scope="knowledge_base_subtree_articles" :scope_root="$kb_scope" :all_results_url="$all_results_url" }}
+						{{ elseif $is_google_search }}
+							{{ partial:search/google_results }}
 						{{ else }}
-							{{ partial:search/results :index="$search_index" :all_results_url="$all_results_url" }}
+							{{ partial:search/results :index="$search_index" :search_site="$search_site" :all_results_url="$all_results_url" :wider_scope_url="$wider_scope_url" :wider_scope_label="$wider_scope_label" }}
 						{{ /if }}
 					</div>
 				{{ /partial:page_builder/components/container_row }}
@@ -250,7 +304,7 @@
 			{{# Pre-query prompt, shown before the reader has searched: it names what the
 			    search covers, so the tabs above read as choices rather than as results
 			    (UAMS-Web/uams-statamic-archive#1510). #}}
-			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
+			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search || $is_google_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
 		{{ /if }}
 
 	{{ /partial:layout/entry-content }}

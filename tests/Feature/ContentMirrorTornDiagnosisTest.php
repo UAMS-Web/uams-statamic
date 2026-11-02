@@ -153,15 +153,11 @@ it('re-throws a failing test with the diagnosis, keeping the original as previou
     try {
         $original = tornDiagnosisParseFailure($probe['file']);
 
-        $thrown = null;
-
-        try {
-            (fn () => $this->onNotSuccessfulTest($original))->call($this);
-        } catch (RuntimeException $exception) {
-            $thrown = $exception;
-        }
-
-        $rethrown = mustBe(RuntimeException::class, $thrown, 'the re-thrown failure');
+        $rethrown = mustBe(
+            RuntimeException::class,
+            throwableFrom(fn () => (fn () => $this->onNotSuccessfulTest($original))->call($this)),
+            'the re-thrown failure'
+        );
 
         expect($rethrown->getMessage())->toContain('is torn')
             ->and($rethrown->getPrevious())->toBe($original);

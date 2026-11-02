@@ -8,8 +8,8 @@ use Statamic\Contracts\Forms\Submission;
 use Statamic\Events\SubmissionCreating;
 use Statamic\Facades\Site;
 use Statamic\Sites\Site as StatamicSite;
-use UAMSWeb\MultisiteForms\Forms\RecordSubmitSite;
-use UAMSWeb\MultisiteForms\Sites\RequestSite;
+use UAMSWeb\Aether\Forms\Multisite\Forms\RecordSubmitSite;
+use UAMSWeb\Aether\Forms\Multisite\Sites\RequestSite;
 
 /**
  * Auto-appends contextual `_*` metadata to every public-form submission (UAMS-Web/uams-statamic-archive#207).

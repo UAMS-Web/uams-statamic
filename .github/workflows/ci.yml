@@ -25,7 +25,8 @@ permissions:
 # shared by every UAMS-Web repo), not per repo. When that budget is exhausted,
 # every job here fails instantly on a billing error. To stop burning the queue
 # until the monthly reset, set an Actions variable `RUN_REMOTE_CI` to `false`;
-# every job below except the manual-run-only `submodule-access` is gated on
+# every job below except the manual-run-only `submodule-access` and the aggregate
+# `ci` is gated on
 # `if: vars.RUN_REMOTE_CI != 'false'`, so they report `skipped` and consume zero
 # runner minutes. Unset (or any value other
 # than `false`) = CI runs exactly as before — the default is always-on.
@@ -34,28 +35,28 @@ permissions:
 #     org-wide budget); a REPO variable overrides the org value for this repo.
 #   - `vars` cannot gate the `on:` triggers, only `if:` — the workflow still
 #     evaluates per event, but skipped jobs are never dispatched to a runner.
-#   - Skipped jobs do not block merges because no ruleset on `main` requires a
-#     status check, NOT because `main` is unprotected. Since 2026-10-05 two
-#     organization rulesets govern it, with no bypass list: one refuses
-#     deletion and force-pushes, the other requires a pull request, so a
-#     direct push is refused as well (docs/runbooks/branch-protection.md,
-#     UAMS-Web/uams-statamic-archive#2016). Revisit before adding a required status check: a job skipped
-#     by its `if:` reports SUCCESS to a required check, so requiring one of
-#     these jobs while `RUN_REMOTE_CI` is `false` lets every merge through with
-#     nothing run. A check stays pending only when its whole workflow never
-#     runs (a path filter, `[skip ci]`). Decide what the check must mean with
-#     the kill switch off before adding it; see UAMS-Web/uams-statamic-archive#980, UAMS-Web/uams-statamic-archive#2016 and UAMS-Web/uams-statamic-archive#3166.
-#   - While off, validate branches with `scripts/local-ci.mjs` (no Actions
-#     minutes). Flip in Settings -> Secrets and variables -> Actions -> Variables.
+#   - A ruleset on `main` requires `CI`, `Attribution footer` and `Closing
+#     keywords` (#337, docs/runbooks/branch-protection.md). A job skipped by its
+#     `if:` reports success to a required check, which is why the ruleset names
+#     the aggregate `CI` job at the end of this file and none of the jobs it reads.
+#     `CI` carries no `RUN_REMOTE_CI` gate and fails on a skipped job, so setting
+#     the variable to `false` fails `CI` and holds every merge, rather than letting
+#     each one through with nothing run. A check stays pending only when its whole
+#     workflow never runs (a path filter, `[skip ci]`), so a head commit carrying
+#     `[skip ci]` cannot merge either.
+#   - While off, `scripts/local-ci.mjs` still validates a branch (no Actions
+#     minutes), but a green local run cannot satisfy `CI`. Flip in Settings ->
+#     Secrets and variables -> Actions -> Variables.
 #   - An ORG variable whose visibility is "private repositories" does NOT reach
 #     this repository, which is public. Measured 2026-10-27, the hour it was made
 #     public: the org's `RUN_REMOTE_CI=false` read as 1 org variable from the
 #     private `uams-statamic-archive` and 0 from here, and the full chain started
 #     on every open pull request. To switch THIS repository off, set a REPO
-#     variable; the org value cannot do it.
+#     variable; the org value cannot do it. Read 2026-11-01: 0 organization and
+#     0 repository variables reach this repository, so every job runs.
 #
 # PARITY: `scripts/local-ci.mjs` reproduces every job below (all but the
-# REMOTE-ONLY `submodule-access` and `synced-files`, noted further down) for local runs (no
+# REMOTE-ONLY `submodule-access`, `synced-files` and `ci`, noted further down) for local runs (no
 # Docker, no act, no Actions minutes) — used when GitHub Actions budget is out.
 # The two are kept in lockstep BY HAND: when you add, remove, or change a job's
 # command here, mirror it in the script (and vice versa). The parity-critical
@@ -83,9 +84,10 @@ permissions:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
-# JOB FAN-OUT: every job below runs in parallel. One job declares `needs:`, and
-# only on the job whose output it reads: `pest-report` merges the reports of the
-# four `pest` shards, so it cannot start before them (#387). Otherwise one job's
+# JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
+# because it reads what the jobs it names leave behind. `pest-report` merges the
+# reports of the four `pest` shards (#387), and `ci` reads the result of every job
+# (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first.
 # Until #373 these ran as a strict sequential chain, cost-ordered shortest to
@@ -102,8 +104,8 @@ permissions:
 # whatever any graph says, and stopping early saves the developer's own wall-clock
 # rather than a budget. So the parity contract below covers each job's COMMAND and
 # the SET of jobs, never the order they run in; `scripts/local-ci.chain.test.mjs`
-# asserts that set, and asserts that the only `needs:` edge here is
-# `pest-report` on `pest`.
+# asserts that set, and asserts that the only `needs:` edges here are `pest-report`
+# on `pest` and the aggregate `ci` job's.
 # LOCAL-ONLY (intentionally no job here): `local-ci.mjs` resets a REUSED worktree's
 # runtime state (storage/framework, bootstrap caches, Stache) before the framework
 # jobs. There is no counterpart here on purpose — every CI run starts from a fresh
@@ -137,6 +139,11 @@ permissions:
 # two tests deleted by UAMS-Web/uams-statamic-archive#1847 ran and passed in a reusing run that was validating
 # their absence. No counterpart here because every CI run is a fresh checkout, which
 # cannot carry residue from a previous one. See UAMS-Web/uams-statamic-archive#1889.
+# REMOTE-ONLY (intentionally no job in local-ci.mjs): `ci` is the aggregate the ruleset
+# on `main` requires, and it does nothing but read the other jobs' results (#337).
+# EVERY JOB ADDED HERE GOES IN ITS `needs:` IN THE SAME CHANGE, or no check requires it;
+# `scripts/local-ci.chain.test.mjs` fails until it does. `submodule-access` alone stays
+# out, named with its reason in `.github/aggregate-needs-allow.json`.
 # REMOTE-ONLY (no job in local-ci.mjs until #256): `synced-files` runs the shared
 # check that a synced rule or skill was not edited by hand. See UAMS-Web/uams-statamic-archive#3084.
 # REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
@@ -174,8 +181,8 @@ jobs:
     #   pull request or a push never runs it.
     # - Deliberately NOT gated on RUN_REMOTE_CI, and needs no other job, so a
     #   manual run reaches this step at once instead of after phpstan.
-    # - Nothing `needs:` it, so it cannot skip or hold up any gate job. Since
-    #   #373 the only `needs:` edge in this file is `pest-report` on `pest`.
+    # - Nothing `needs:` it, the aggregate `ci` job included, so it cannot skip
+    #   or hold up any gate job.
     # - Re-run it by hand whenever a private submodule is added. The token is
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
@@ -207,8 +214,8 @@ jobs:
     # Fails, naming the file, when a rule or skill the sync manages was edited
     # by hand rather than in UAMS-Web/uams-claude-skills.
     #
-    # It needs nothing and nothing needs it, which since #373 is true of every
-    # job here, so it cannot skip or hold up a gate job and reports beside them.
+    # It needs nothing, so no other job can skip it. The aggregate `ci` job needs
+    # it, so a failure here holds a merge.
     #
     # REMOTE-ONLY for now (no job in scripts/local-ci.mjs): the local runner's
     # own synced-files job arrives with the shared runner in #256. Until then
@@ -839,7 +846,7 @@ jobs:
     # band with a whole-band baseline and the second divides by a quarter of the
     # band, so neither runs in a shard.
     #
-    # The one `needs:` edge in this file, and the reason it is allowed: this job
+    # One of the two `needs:` lists in this file, and the reason it is allowed: this job
     # reads the shards' output, so it cannot run before them. It skips when any
     # shard fails, as the checks below skipped in the single job when the band
     # failed; the failed shard already fails the run.
@@ -1768,3 +1775,36 @@ jobs:
       # PARITY: mirrored by the isolation job in scripts/local-ci.mjs
       - name: Run global test symbol check
         run: php .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
+
+  # The merge gate (#337). The ruleset on `main` requires this job's name and none of
+  # the names above, so renaming a job never touches the ruleset, and the job set
+  # lives in this one list. `submodule-access` is out because it runs only on a
+  # manual run and would skip here on every pull request. No `RUN_REMOTE_CI` gate,
+  # deliberately: with the switch off this job fails, where a gated one would skip and
+  # a skip counts as success on a required check.
+  ci:
+    name: CI
+    needs: [synced-files, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, pint, rector, mutate, phpstan, pest, pest-report, pest-serial, browser]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # REMOTE-ONLY: scripts/local-ci.mjs stops at the first failure, so it has no set of
+      # results to read. The chain test names this job in REMOTE_ONLY.
+      # `skipped` and `cancelled` fail as well as `failure`: a job that did not run proved nothing.
+      # An empty list fails too, or a broken expression above would pass with nothing read.
+      - name: Every needed job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Needed job results: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "::error::No needed job results to read"
+            exit 1
+          fi
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A needed job reported $result"
+              exit 1
+            fi
+          done

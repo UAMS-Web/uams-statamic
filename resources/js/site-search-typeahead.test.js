@@ -77,6 +77,8 @@ describe('allResultsUrl and statusText', () => {
 	it('encodes the query the way a form submission would reach /search', () => {
 		expect(allResultsUrl("O'Brien & co")).toBe("/search?q=O'Brien%20%26%20co&index=default");
 		expect(allResultsUrl('card', 'people')).toBe('/search?q=card&index=people');
+		expect(allResultsUrl('card', 'people', { path: '/health/search', scope: 'all' })).toBe('/health/search?q=card&index=people&scope=all');
+		expect(allResultsUrl('card', 'people', { path: '/health/search', scope: '' })).toBe('/health/search?q=card&index=people');
 	});
 
 	it('announces the count, singular and plural, and the empty case', () => {
@@ -335,6 +337,48 @@ describe('the component', () => {
 
 		component.onFocusOut({ relatedTarget: { id: 'search-button' } });
 		expect(component.open).toBe(false);
+	});
+
+	it('links to the search page and scope the reader is on', async () => {
+		const component = createSiteSearchTypeahead({ fetchImpl: fetchReturning(SUGGESTIONS), navigate: vi.fn(), debounceMs: DEBOUNCE_MS, index: 'people', path: '/health/search', scope: 'all' });
+		await typeAndSettle(component, 'card');
+
+		expect(component.options.at(-1).url).toBe('/health/search?q=card&index=people&scope=all');
+	});
+
+	it('asks for the sites the page searches', async () => {
+		const fetchImpl = fetchReturning(SUGGESTIONS);
+		const component = createSiteSearchTypeahead({ fetchImpl, navigate: vi.fn(), site: 'health', scope: 'all' });
+
+		await component.load('card');
+
+		expect(fetchImpl.mock.calls[0][0]).toBe('/!/search/suggestions?q=card&index=default&site=health&scope=all');
+	});
+
+	it('leaves out a site and scope the page does not have', async () => {
+		const fetchImpl = fetchReturning(SUGGESTIONS);
+
+		await fetchSuggestions(fetchImpl, 'card', 'default');
+
+		expect(fetchImpl.mock.calls[0][0]).toBe('/!/search/suggestions?q=card&index=default');
+	});
+
+	it('reads the site from the element', () => {
+		const component = createSiteSearchTypeahead({ fetchImpl: fetchReturning([]), navigate: vi.fn() });
+		component.$el = { dataset: { site: 'health' } };
+
+		component.init();
+
+		expect(component.site).toBe('health');
+	});
+
+	it('reads the search page and scope from the element', () => {
+		const component = createSiteSearchTypeahead({ fetchImpl: vi.fn(), navigate: vi.fn(), debounceMs: DEBOUNCE_MS });
+		component.$el = { dataset: { searchPath: '/health/search', scope: 'all' } };
+		component.init();
+
+		expect(component.path).toBe('/health/search');
+		expect(component.scope).toBe('all');
 	});
 
 	it('asks for and links to the index the page searches', async () => {

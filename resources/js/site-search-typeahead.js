@@ -38,14 +38,19 @@ export const ENDPOINT = '/!/search/suggestions';
 export const LISTBOX_ID = 'site-search-suggestions';
 
 /**
- * The `/search` URL for a query on an index, as the form would submit it.
+ * The search page URL for a query on an index, as the form would submit it.
  *
  * @param {string} query  The query.
  * @param {string} [index]  The index handle; `default` is "All results".
+ * @param {object} [target]  Where the page is.
+ * @param {string} [target.path]  The current site's search path.
+ * @param {string} [target.scope]  The `scope` value; empty at the default scope.
  * @returns {string} The results page URL.
  */
-export function allResultsUrl(query, index = 'default') {
-	return `/search?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`;
+export function allResultsUrl(query, index = 'default', { path = '/search', scope = '' } = {}) {
+	const url = `${path}?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`;
+
+	return scope === '' ? url : `${url}&scope=${encodeURIComponent(scope)}`;
 }
 
 /**
@@ -71,7 +76,7 @@ export function isNavigableUrl(url) {
  *   option and the all-results option carry, since the CSP build cannot evaluate a
  *   class object in the markup.
  */
-export function buildOptions(results, query, activeIndex, index = 'default') {
+export function buildOptions(results, query, activeIndex, index = 'default', target = {}) {
 	const options = results.map((result, position) => ({
 		key: `result-${position}-${result.url}`,
 		id: `${LISTBOX_ID}-option-${position}`,
@@ -86,7 +91,7 @@ export function buildOptions(results, query, activeIndex, index = 'default') {
 		id: `${LISTBOX_ID}-option-all`,
 		title: `See all results for “${query}”`,
 		type: '',
-		url: allResultsUrl(query, index),
+		url: allResultsUrl(query, index, target),
 		isAll: true,
 	});
 
@@ -124,12 +129,18 @@ export function statusText(count) {
  * @param {string} query  The query.
  * @param {string} index  The index handle.
  * @param {AbortSignal} [signal]  Cancels a request a newer keystroke superseded.
+ * @param {object} [where]  Which sites the page searches.
+ * @param {string} [where.site]  The handle of the site the page belongs to.
+ * @param {string} [where.scope]  The `scope` value; empty at the default scope.
  * @returns {Promise<Array<{title: string, url: string, type: string}>|null>} The suggestions, or null.
  */
-export async function fetchSuggestions(fetchImpl, query, index, signal) {
+export async function fetchSuggestions(fetchImpl, query, index, signal, { site = '', scope = '' } = {}) {
+	const siteParam = site === '' ? '' : `&site=${encodeURIComponent(site)}`;
+	const scopeParam = scope === '' ? '' : `&scope=${encodeURIComponent(scope)}`;
+
 	try {
 		const response = await fetchImpl(
-			`${ENDPOINT}?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`,
+			`${ENDPOINT}?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}${siteParam}${scopeParam}`,
 			{
 				headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 				credentials: 'same-origin',
@@ -157,6 +168,9 @@ export async function fetchSuggestions(fetchImpl, query, index, signal) {
  * @param {Function} [deps.navigate]  Defaults to `window.location.assign`.
  * @param {number} [deps.debounceMs]  Defaults to {@link DEBOUNCE_MS}.
  * @param {string} [deps.index]  The index handle; otherwise read from the element's `data-index`.
+ * @param {string} [deps.path]  The search path; otherwise read from `data-search-path`.
+ * @param {string} [deps.site]  The site handle; otherwise read from `data-site`.
+ * @param {string} [deps.scope]  The `scope` value; otherwise read from `data-scope`.
  * @returns {object} The component definition.
  */
 export function createSiteSearchTypeahead(deps = {}) {
@@ -178,6 +192,9 @@ export function createSiteSearchTypeahead(deps = {}) {
 	return {
 		query: '',
 		index: deps.index ?? 'default',
+		path: deps.path ?? '/search',
+		site: deps.site ?? '',
+		scope: deps.scope ?? '',
 		results: [],
 		answeredQuery: '',
 		open: false,
@@ -185,7 +202,7 @@ export function createSiteSearchTypeahead(deps = {}) {
 		status: '',
 		listboxId: LISTBOX_ID,
 
-		/** Seed the query from the input's server-rendered value, and the index from `data-index`. */
+		/** Seed the query from the input's server-rendered value, and the rest from the element's data attributes. */
 		init() {
 			const input = this.$refs?.input;
 			if (input && typeof input.value === 'string') {
@@ -196,11 +213,26 @@ export function createSiteSearchTypeahead(deps = {}) {
 			if (deps.index === undefined && typeof index === 'string' && index !== '') {
 				this.index = index;
 			}
+
+			const path = this.$el?.dataset?.searchPath;
+			if (deps.path === undefined && typeof path === 'string' && path !== '') {
+				this.path = path;
+			}
+
+			const site = this.$el?.dataset?.site;
+			if (deps.site === undefined && typeof site === 'string') {
+				this.site = site;
+			}
+
+			const scope = this.$el?.dataset?.scope;
+			if (deps.scope === undefined && typeof scope === 'string') {
+				this.scope = scope;
+			}
 		},
 
 		/** @returns {Array<object>} The rendered options. */
 		get options() {
-			return buildOptions(this.results, this.answeredQuery, this.activeIndex, this.index);
+			return buildOptions(this.results, this.answeredQuery, this.activeIndex, this.index, { path: this.path, scope: this.scope });
 		},
 
 		/** @returns {string} `aria-expanded` for the input. */
@@ -244,7 +276,7 @@ export function createSiteSearchTypeahead(deps = {}) {
 			controller?.abort();
 			controller = typeof AbortController === 'function' ? new AbortController() : null;
 
-			const results = await fetchSuggestions(fetchImpl, query, this.index, controller?.signal);
+			const results = await fetchSuggestions(fetchImpl, query, this.index, controller?.signal, { site: this.site, scope: this.scope });
 
 			// Aborted, failed, or the reader has typed on since; nothing to show for this query
 			if (results === null || this.query.trim() !== query) {

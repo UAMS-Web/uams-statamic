@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 use Statamic\Contracts\Forms\Submission;
 use Statamic\Fields\Field;
 use Statamic\Forms\Form;
-use UAMSWeb\FormSettings\Support\FormRestrictions;
+use UAMSWeb\Aether\Forms\Settings\Support\FormRestrictions;
 
 /**
  * Evaluates per-choice submission limits for a form's choice fields — the Statamic analog of

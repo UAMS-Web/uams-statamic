@@ -312,9 +312,7 @@ final class PersonNameDisplayFormats
                     $patternId,
                     $withSuffix
                 );
-                // Every pattern id pushed here has a rank, so the default is never used
-                // @pest-mutate-ignore: DecrementInteger, IncrementInteger
-                $rank = self::PATTERN_DEDUPE_RANK[$patternId] ?? 1;
+                $rank = self::PATTERN_DEDUPE_RANK[$patternId];
                 $candidates[] = [
                     'key' => $key,
                     'label' => $label,

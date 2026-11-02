@@ -57,6 +57,11 @@ return [
         'token' => env('GITHUB_TOKEN'),
     ],
 
+    'google_search' => [
+        // Programmable Search Engine ID. With none, /search does not offer "All UAMS websites".
+        'engine_id' => env('GOOGLE_SEARCH_ENGINE_ID'),
+    ],
+
     // Google Business Information API `categories.list` (`gbp:check-categories --api`,
     // UAMS-Web/uams-statamic-archive#2617). The refresh token is issued for the `business.manage` scope; an access
     // token is minted from it on each run and never stored.

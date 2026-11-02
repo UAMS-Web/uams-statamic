@@ -131,9 +131,6 @@ class GlobalOrigin extends Tags
                 return [];
             }
 
-            // Initialize an empty array to store the final ordered list of ancestor sites
-            $origins = [];
-
             // Start with the current global set object to traverse its origin chain
             $current = $global;
 

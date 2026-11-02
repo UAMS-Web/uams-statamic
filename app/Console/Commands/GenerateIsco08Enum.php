@@ -68,8 +68,6 @@ class GenerateIsco08Enum extends Command
                 if ($definitions === null) {
                     return 1;
                 }
-            } else {
-                $definitions = null;
             }
 
             if ($index !== null) {
@@ -77,8 +75,6 @@ class GenerateIsco08Enum extends Command
                 if ($index === null) {
                     return 1;
                 }
-            } else {
-                $index = null;
             }
         }
 

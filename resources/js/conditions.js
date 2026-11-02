@@ -18,17 +18,12 @@
  * WHY registerCustomCondition() INSTEAD OF Statamic.$conditions.add() ONLY
  *
  * `Statamic.$conditions.add` exists only in the Control Panel, where the CP
- * bootstraps it over the Vuex store. Public pages have no `Statamic` global at
- * all since UAMS-Web/uams-statamic-archive#1956 dropped the vendor bundle, so registration also writes
- * `window.StatamicCustomConditions` — the registry our own evaluator reads.
+ * bootstraps it over the Vuex store. On public pages `helpers.js` defines only
+ * `showField()`, so registration also writes `window.StatamicCustomConditions`,
+ * and the add-on's `$showField` magic answers `$conditions.get()` from it.
  *
- * Until UAMS-Web/uams-statamic-archive#1956 a `frontendShowFieldPatch.js` shimmed `add`/`get` onto
- * `Statamic.$conditions` so the VENDOR Validator could dispatch to these. That
- * Validator no longer runs on public pages, and the CP supplies its own `add`,
- * so the shim served neither path and was removed with this change.
- *
- * @see vendor/uams-web/statamic-alpine-csp-forms/resources/js/conditions/validator.js
- *      getCustomCondition(), which reads that registry
+ * @see vendor/uams-web/aether-alpine-csp-forms/resources/js/conditions/showFieldMagic.js
+ *      the `get()` that reads that registry
  * @see https://statamic.dev/conditional-fields#custom-logic
  */
 
