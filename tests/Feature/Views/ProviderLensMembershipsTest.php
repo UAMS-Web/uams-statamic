@@ -14,7 +14,7 @@ uses(TestCase::class);
 /**
  * Professional memberships on the clinical provider lens (UAMS-Web/uams-statamic#307): the
  * Credentials section lists `member_of` after the certifications, with each level in words,
- * so a fellowship such as FAAOS reads below the name rather than in it. A provider with no
+ * so a fellowship reads below the name rather than as letters after it. A provider with no
  * memberships shows no membership heading, and the certifications list is unchanged.
  *
  * Rendered as the lens partial with a synthetic scope, the rows augmented through the people
@@ -90,13 +90,13 @@ const PROVIDER_LENS_FELLOW = 'content="Fellow of the American Academy of Orthopa
 const PROVIDER_LENS_BOARD = 'content="Board Certification in Orthopaedic Surgery"';
 
 /**
- * One AAOS fellowship, as stored.
+ * One fellowship of the American Academy of Orthopaedic Surgeons, as stored.
  *
  * @return list<array<string, mixed>>
  */
 function providerLensMembershipsFellowship(): array
 {
-    return [['id' => 'aaos', 'organization' => 'american-academy-of-orthopaedic-surgeons', 'membership_level' => 'fellow']];
+    return [['id' => 'fellowship', 'organization' => 'american-academy-of-orthopaedic-surgeons', 'membership_level' => 'fellow']];
 }
 
 it('lists a fellowship in words in the Credentials section', function (): void {
