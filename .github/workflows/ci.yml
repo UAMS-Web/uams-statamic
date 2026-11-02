@@ -98,7 +98,7 @@ defaults:
 # in four shards, CLI OPcache stays off, and Larastan's facades are written first.
 # JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
 # because it reads what the jobs it names leave behind. `pest-report` merges the
-# reports of the four `pest` shards (#387), and `ci` reads the result of every job
+# reports of the `pest` shards (#387), and `ci` reads the result of every job
 # (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first.
@@ -518,7 +518,7 @@ jobs:
         if: runner.os == 'Windows'
         run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --display-all-issues --log-junit junit-parallel-1.xml
 
-      # Only a shard whose band passed uploads, and `pest-report` needs all four,
+      # Only a shard whose band passed uploads, and `pest-report` needs all of them,
       # so a failed shard leaves the report job skipped rather than merging an
       # incomplete band.
       - name: Upload the shard's report, listing and timings note
@@ -879,7 +879,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    # Merges the four shards' reports into the one parallel band report the two
+    # Merges each leg's shard reports into the one parallel band report the two
     # band checks read, and refuses a band the shards did not run exactly once
     # (#387). Both checks judge the WHOLE band: the skip baseline is a count for
     # the whole band, and the slowest class is judged by its share of the whole
@@ -1045,13 +1045,15 @@ jobs:
           echo "Changed PHP files: ${files:-<none>}"
 
       # PARITY: mirrored by scripts/gate-pint.mjs (same
-      # diff-filter=ACMR, origin/<base>...HEAD, *.php scope). This step passes
-      # the whole changed-file list as one argv because the Ubuntu runner allows
-      # a ~2 MB command line; local-ci.mjs additionally chunks the list so a
-      # large diff can't overflow Windows' ~32 KB cap (UAMS-Web/uams-statamic-archive#1079).
+      # diff-filter=ACMR, origin/<base>...HEAD, *.php scope). The list is chunked
+      # on every leg so a large diff can't overflow Windows' ~32 KB command line
+      # (UAMS-Web/uams-statamic-archive#1079, #348). xargs runs every chunk and
+      # exits non-zero when any of them failed.
       - name: Run Pint on changed files
         if: steps.changed.outputs.files != ''
-        run: vendor/bin/pint --test ${{ steps.changed.outputs.files }}
+        env:
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
+        run: printf '%s' "$CHANGED_FILES" | xargs -n 200 vendor/bin/pint --test
 
       - name: Skip notice
         if: steps.changed.outputs.files == ''

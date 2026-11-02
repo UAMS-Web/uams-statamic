@@ -17,6 +17,12 @@
     "bands": {
         "parallel": {
             "expected": 3,
+            "platforms": {
+                "Windows": {
+                    "expected": 15,
+                    "why": "Measured on the windows-latest band of run 41364357633 (#348). Thirteen cases cannot run on Windows and carry skipOnWindows: twelve in WatchUpstreamWorkflowTest, which runs the upstream watcher against a POSIX stub, and the symlink case in DeclinedBoostSkillsTest. Linux and macOS run all thirteen, so the shared number stays 3 and they stay covered there."
+                }
+            },
             "why": "Two SchemaThingFromRelationship cases skip on a missing subject_matter::cellulitis term. One StoredSvgHazardScanTest case skips because CI checks out only the content/ and users/ submodules, not the binary-heavy public/assets one it scans (#1739) — the scanner's own detection logic is covered unconditionally by tests/Unit/Support/Imaging/SvgHazardScannerTest.php, so only the corpus sweep depends on that submodule. The three RegistrantRecordsAreGitIgnoredTest cases are deliberately NOT in this count: both gates check out the users/ submodule since #2477, so they run, and a gate that stops checking it out shows up here as three unexpected skips rather than as a silent pass."
         },
         "serial": {

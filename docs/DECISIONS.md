@@ -3724,3 +3724,17 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The `submodule-access` job stays outside `CI`, named with its reason in `.github/aggregate-needs-allow.json`, because it runs only on a manual run.
 
 **Companion.** #337. `.github/workflows/ci.yml`, `.github/aggregate-needs-allow.json`, `scripts/local-ci.chain.test.mjs`, and the passages in `AGENTS.md`, `README.md`, `.github/pull_request_template.md`, `.claude/skills/local-ci/SKILL.md`, `docs/agent-instructions.md`, `docs/runbooks/branch-protection.md` and `scripts/local-ci.mjs` that described the private posture. #486 rewrites the merge procedure itself.
+
+## 2026-11-01: `CI` runs on Linux, Windows and macOS, and Windows runs the Pest band whole (#348)
+
+**Decision.** Every job in `.github/workflows/ci.yml` but `submodule-access` and the aggregate `ci` runs on `ubuntu-latest`, `windows-latest` and `macos-latest`, with `fail-fast: false`, in bash on all three. `CI` needs every leg. Windows differs in three ways: the parallel band runs whole instead of in four shards, CLI OPcache is off, and one boot writes the real-time facades before Larastan's workers start. `tests/skip-baseline.json` gains a per-platform count, 15 on Windows against the shared 3.
+
+**Why.** Both are live development platforms and nothing ran on either before a merge, the accepted cost of the #337 entry. Each Windows difference answers a measured failure. `pest --shard` hands every worker the class list on its command line, past the Windows limit, and the worker dies on `assert(isset($getopt['phpunit-argv']))` in `vendor/pestphp/pest/bin/worker.php`. With CLI OPcache on, the band and the serial group ended in access violations (`0xC0000005`) with the JIT off as well; with it off, both ran to the end on run 41364357633. The cause is inferred from that one change and was not reproduced on one test file on Windows 11. Two Larastan workers writing one facade file are refused by `rename` on Windows. Thirteen tests cannot run on Windows and carry `skipOnWindows`; Linux and macOS still run them.
+
+**Wall clock.** Run 41364357633, measured from each leg's first job start to its last job end: Linux 13.9 minutes over 19 jobs, macOS 15.7 minutes over 19, Windows 71 minutes over 16, of which the whole band was 71 and its Pest run 68. With the legs in parallel, a pull request now waits for the Windows band, against about 14 minutes on Linux alone.
+
+**Rejected.** *Raising the shared skip baseline*: it would stop Linux and macOS noticing a lost test. *`continue-on-error` on a leg, or fewer jobs on one*: the ticket forbids the first, and narrowing a leg is a later decision now that the timings are known. *Shards on Windows with a shorter filter*: Pest builds the filter, so that is a change to a dependency.
+
+**Residual.** One failed Windows job skips `pest-report` on all three legs, because `needs: pest` covers the whole matrix, and on `main` that also skips saving the timings. The `Attribution footer` and `Closing keywords` checks read text and stay on Linux.
+
+**Companion.** #348. `.github/workflows/ci.yml`, `tests/skip-baseline.json`, `scripts/check-skip-baseline.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/gate-pint.mjs`, and the passages in `AGENTS.md` and `README.md`.
