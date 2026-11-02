@@ -95,8 +95,9 @@ defaults:
 # THREE LEGS (#348): every job but `submodule-access` and the aggregate `ci` runs on
 # ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
 # failure does not cancel the others, and `ci` needs them all. Windows differs in
-# three places, each marked where it stands: the `pest` band runs whole instead of
-# in four shards, CLI OPcache stays off, and Larastan's facades are written first.
+# three places, each marked where it stands: each `pest` shard runs from a list of
+# its test files instead of `--shard` (#504), CLI OPcache stays off, and Larastan's
+# facades are written first.
 # JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
 # because it reads what the jobs it names leave behind. `pest-report` merges the
 # reports of the `pest` shards (#387), and `ci` reads the result of every job
@@ -252,7 +253,7 @@ jobs:
         run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
 
   pest:
-    name: Pest (parallel band, shard ${{ matrix.shard }} of ${{ matrix.os == 'windows-latest' && 1 || 4 }}, ${{ matrix.os }})
+    name: Pest (parallel band, shard ${{ matrix.shard }} of 4, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     # The parallel band runs as four shards, one runner each (#387). Run whole on
     # one runner it was the longest job in this file by far: about 22 minutes of
@@ -283,12 +284,6 @@ jobs:
         # two together, and `pest-report` passes the same total to the merge.
         shard: [1, 2, 3, 4]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        # Windows runs the band whole (#348). `--shard` hands the class list to every
-        # worker on its command line, past what a Windows process accepts.
-        exclude:
-          - { os: windows-latest, shard: 2 }
-          - { os: windows-latest, shard: 3 }
-          - { os: windows-latest, shard: 4 }
     # `actions: read` lets "Choose shard timings" list the timings cache entries and
     # read when this run first started (#519); a job-level block replaces the
     # top-level one, so `contents: read` is restated.
@@ -531,17 +526,40 @@ jobs:
       # PARITY: mirrored by scripts/gate-pest.mjs.
       # --shard selects this job's share of the classes, and changes nothing about
       # how they run. --log-junit feeds `pest-report`, which merges the four shards'
-      # reports before the skip-baseline and slowest-class checks read them.
+      # reports before the skip-baseline and slowest-class checks read them. On
+      # Windows the shard is selected by a configuration instead, in the steps
+      # below (#504).
       - name: Run Pest (parallel shard, excluding the serial group)
         if: runner.os != 'Windows'
         env:
           SHARD: ${{ matrix.shard }}
         run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --shard="$SHARD/$SHARD_TOTAL" --display-all-issues --log-junit "junit-parallel-$SHARD.xml"
 
-      # PARITY: mirrored by scripts/gate-pest.mjs.
-      - name: Run Pest (whole parallel band on Windows)
+      # Windows cannot pass `--shard` to the workers (#504): Pest turns the shard's
+      # classes into a --filter of about 9,000 characters, paratest starts each
+      # worker through cmd.exe, and cmd.exe refuses a command past 8,191. So the
+      # shard is listed in this one process, where the same partition applies, and
+      # handed to the workers as a configuration that names its files.
+      # scripts/pest-shard-config.php fails on an empty listing or a class with no
+      # file, and `pest-report` still checks the four shards ran every class once.
+      - name: List this shard's tests on Windows
         if: runner.os == 'Windows'
-        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --display-all-issues --log-junit junit-parallel-1.xml
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: php -d pcov.enabled=0 vendor/bin/pest --list-tests --exclude-group=serial --shard="$SHARD/$SHARD_TOTAL" > "pest-shard-list-$SHARD.txt"
+
+      - name: Write this shard's configuration on Windows
+        if: runner.os == 'Windows'
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: php scripts/pest-shard-config.php --listing="pest-shard-list-$SHARD.txt" --out="phpunit.shard-$SHARD.xml"
+
+      # PARITY: mirrored by scripts/gate-pest.mjs, less the configuration.
+      - name: Run Pest (parallel shard on Windows, from its file list)
+        if: runner.os == 'Windows'
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: php -d pcov.enabled=0 vendor/bin/pest --parallel --exclude-group=serial --configuration="phpunit.shard-$SHARD.xml" --display-all-issues --log-junit "junit-parallel-$SHARD.xml"
 
       # Only a shard whose band passed uploads, and `pest-report` needs all of them,
       # so a failed shard leaves the report job skipped rather than merging an
@@ -920,7 +938,7 @@ jobs:
     needs: pest
     if: vars.RUN_REMOTE_CI != 'false'
     env:
-      SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 1 || 4 }}
+      SHARD_TOTAL: 4
     steps:
       - uses: actions/checkout@v7
 

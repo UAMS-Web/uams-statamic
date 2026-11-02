@@ -118,3 +118,6 @@ yarn-error.log
 # cache lands beside the imported module wherever that is (UAMS-Web/uams-statamic-archive#2527).
 __pycache__/
 *.pyc
+# Per-shard PHPUnit configurations and listings the Windows `pest` shards write (#504)
+/phpunit.shard-*.xml
+/pest-shard-list-*.txt
