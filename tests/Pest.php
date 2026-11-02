@@ -152,3 +152,6 @@ require_once __DIR__.'/Support/TypeNarrowing.php';
 // Shared runningUnderMutate() helper: the typed `--mutate` check the mutation-hardened
 // suites use to pad a mutant child's timeout (#255).
 require_once __DIR__.'/Support/MutateRun.php';
+
+// Renders the add-on's search page for a query string, on the request it reads.
+require_once __DIR__.'/Support/AetherSearchPage.php';

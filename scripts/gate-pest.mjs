@@ -283,11 +283,13 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // --log-junit feeds the skip-baseline check below; it changes nothing
     // about what runs.
     // Mirrors the "Run Pest (parallel shard...)" step in ci.yml.
-    // CI runs the same command four times with `--shard=<i>/4` and merges
+    // CI runs the same command as four shards, with `--shard=<i>/4` or, on
+    // Windows, a per-shard `--configuration` (#504), and merges
     // the four reports in its `pest-report` job before the band checks
     // (#387); this runner runs the band whole, so it has nothing to shard
     // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
-    // differ only by --shard, and on Windows not at all (#348).
+    // differ only by --shard, and on Windows only by the shard's
+    // --configuration (#504).
     step('JOB pest - parallel suite (excluding serial group)')
     const parallelReport = join(tree, 'junit-parallel.xml')
     const serialReport = join(tree, 'junit-serial.xml')
