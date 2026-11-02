@@ -24,6 +24,10 @@ use Statamic\Fields\BlueprintRepository;
  | `layout.antlers.html` does (#189), so it needs neither the `content/`
  | submodule nor Statamic front-end routing.
  |
+ | This proves the `@alpinejs/csp` build, not a Content Security Policy:
+ | `pest-plugin-browser` opens every page with `bypassCSP`, so no policy applies
+ | here (#502).
+ |
  | @command vendor/bin/pest tests/Browser/CspPublicFormConditionsTest.php
  */
 

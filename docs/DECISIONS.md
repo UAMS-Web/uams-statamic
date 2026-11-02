@@ -3724,3 +3724,19 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The `submodule-access` job stays outside `CI`, named with its reason in `.github/aggregate-needs-allow.json`, because it runs only on a manual run.
 
 **Companion.** #337. `.github/workflows/ci.yml`, `.github/aggregate-needs-allow.json`, `scripts/local-ci.chain.test.mjs`, and the passages in `AGENTS.md`, `README.md`, `.github/pull_request_template.md`, `.claude/skills/local-ci/SKILL.md`, `docs/agent-instructions.md`, `docs/runbooks/branch-protection.md` and `scripts/local-ci.mjs` that described the private posture. #486 rewrites the merge procedure itself.
+
+## 2026-11-01 — Public field conditions stay on Statamic's evaluator (UAMS-Web/uams-statamic#189)
+
+**Decision.** The retire direction recorded on #189 is confirmed. Public forms use the evaluator in Statamic's `helpers.js`, the `$showField` magic in `uams-web/aether-alpine-csp-forms` forwards to it, and the watches on the upstream chain are removed.
+
+**Why.** Re-measured against the installed `statamic/cms` `v6.37.0`, `helpers.js` is 24,804 bytes raw and 8,026 gzipped and contains no `eval(`. The trade was one cached 30 KB asset against an owned evaluator exposed to silent divergence from the Control Panel's, and the asset is now about a quarter of that size. It still carries the WebAuthn client, which public pages do not use.
+
+**Rejected.** *Keeping the owned evaluator*: the case for it was the payload, which has shrunk, and test coverage that existed only because of the fork.
+
+**Accepted cost.** Every public page loads the WebAuthn client until upstream stops shipping it there (UAMS-Web/uams-statamic-archive#1979).
+
+**Verified.** Measured on Windows 11 with Playwright's Chromium and `bypassCSP` off, on the fixture from `tests/Browser/CspPublicFormConditionsTest.php` under a `<meta>` policy with no `'unsafe-eval'`: an `eval()` in a page script raised `EvalError`, the condition that should pass rendered, the one that should fail did not, and no page error fired. An `eval()` appended to `helpers.js` as a control did raise a page error. This was a one-off on the fixture, whose `equals` condition is the operator of the two live conditional fields, and not a live page.
+
+**Residual.** `pest-plugin-browser` sets `bypassCSP`, so the browser suite cannot itself enforce a policy (#502).
+
+**Companion.** #189. The enforce flip itself is #33.
