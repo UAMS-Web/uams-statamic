@@ -121,8 +121,6 @@ it('coerces a non-string scalar mapped node id to a string', function () {
         'main_content_entry_by_subtype' => ['Hospital' => 12345],
     ];
 
-    $result = null;
-
     try {
         $result = resolveMainContent([], [], $level, [], 'Hospital');
     } catch (Throwable $e) {

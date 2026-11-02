@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Statamic\Forms\Exporters\CsvExporter;
 use Statamic\Forms\Exporters\JsonExporter;
-use UAMSWeb\FormSettings\Jobs\SendFormNotification;
+use UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification;
 
 return [
 

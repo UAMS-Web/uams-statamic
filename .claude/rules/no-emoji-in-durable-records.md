@@ -105,11 +105,11 @@ History: [no-emoji-in-durable-records.md § How to apply](../history/no-emoji-in
 
 - **Third-party and fixture files.** `vendor/`, and test fixtures that reproduce someone else's data, are not this repository's prose. Do not sweep them, and do not "fix" a fixture: its content is the test.
 
-- **No file is exempt by name.** The only exemption, two `afk-waves` tracking files whose glyphs were cell values against a legend the same file defined (#2234), went with that skill. Should a glyph ever be table data again, the exemption is an exact path, never a pattern: a pattern over `.claude/reference/`, or over table syntax, would exempt files nobody has looked at, and an enforcement gap that reopens quietly is what this rule exists to close. [`scripts/check-no-emoji.mjs`](../../scripts/check-no-emoji.mjs) holds the list, which is empty.
+- **No file is exempt by name.** The only exemption, two `afk-waves` tracking files whose glyphs were cell values against a legend the same file defined (UAMS-Web/uams-statamic-archive#2234), went with that skill. Should a glyph ever be table data again, the exemption is an exact path, never a pattern: a pattern over `.claude/reference/`, or over table syntax, would exempt files nobody has looked at, and an enforcement gap that reopens quietly is what this rule exists to close. [`scripts/check-no-emoji.mjs`](../../scripts/check-no-emoji.mjs) holds the list, which is empty.
 
 ## Enforcement in this repository
 
-CI runs [`scripts/check-no-emoji.mjs`](../../scripts/check-no-emoji.mjs) over `.claude/`, `docs/` and `README.md` and fails the build on any emoji code point (#2234). `app/`, `tests/` and `resources/` are deliberately not scanned: the rule does not reach source files here, and whether it should is a separate scope question. The script decodes UTF-8 natively, so the `perl -ne` decoding trap above cannot arise in it; it excludes `U+2122` and `U+00AE` by name, because they sit inside the ranges and are legitimate test data in entity-encoding and sanitizer fixtures. It takes no file argument, so it does not read a draft that is not in the tree.
+CI runs [`scripts/check-no-emoji.mjs`](../../scripts/check-no-emoji.mjs) over `.claude/`, `docs/` and `README.md` and fails the build on any emoji code point (UAMS-Web/uams-statamic-archive#2234). `app/`, `tests/` and `resources/` are deliberately not scanned: the rule does not reach source files here, and whether it should is a separate scope question. The script decodes UTF-8 natively, so the `perl -ne` decoding trap above cannot arise in it; it excludes `U+2122` and `U+00AE` by name, because they sit inside the ranges and are legitimate test data in entity-encoding and sanitizer fixtures. It takes no file argument, so it does not read a draft that is not in the tree.
 
 ## The conflict this rule creates, where a release path exists
 
@@ -123,7 +123,7 @@ Adopting this rule therefore required a decision on the release path, and the op
 
 **Rejected: carving the release callout out permanently.** It would have cost nothing to implement and it fails on its own terms. A rule with an unstated exception is one people learn to skip, and this exception could not have stayed unstated: it would have had to be repeated wherever the release vocabulary appears. The rule's own rationale is that the glyph is not encodable in `cp1252` and kills tooling that touches it; that argument applies to a generator writing to a redirected stdout at least as strongly as to an author typing prose, so exempting the one place the emission is automatic inverts the reason for the rule. The callout is also this rule's own worked example: the `--breaking` run that died under a Windows code page died on that glyph.
 
-**Already-published release notes keep their glyph.** This decision governs what is written from here; rewriting published artifacts is a separate act and is not licensed by it (`UAMS-Web/uams-statamic#2190`).
+**Already-published release notes keep their glyph.** This decision governs what is written from here; rewriting published artifacts is a separate act and is not licensed by it (`UAMS-Web/uams-statamic-archive#2190`).
 
 ## The second conflict: the check mark in a pull-request verification list
 
@@ -148,7 +148,7 @@ Adopting this rule therefore required a decision on the release path, and the op
 - **An audit expects ZERO.** A superseded form of this guidance told a sweep of pull-request bodies to expect exactly one hit each and to investigate only a *second* one. Once the footer was retired that guidance inverted: it made a body still carrying `U+1F916` the expected case, so a sweep run against it would report clean over the very thing the rule bans. Any occurrence is a violation.
 - **A workflow enforces it on every pull request.** The `check-attribution-footer` workflow and its script ship in the `writing-pull-requests` skill (`templates/` and `scripts/`), which a repository copies once to `.github/workflows/`. It fails a body carrying `U+1F916` or a session link.
 
-Decided on #2321. The rejected alternatives are recorded in [`docs/DECISIONS.md`](../../docs/DECISIONS.md).
+Decided on UAMS-Web/uams-statamic-archive#2321. The rejected alternatives are recorded in [`docs/DECISIONS.md`](../../docs/DECISIONS.md).
 
 ## The DRY line
 

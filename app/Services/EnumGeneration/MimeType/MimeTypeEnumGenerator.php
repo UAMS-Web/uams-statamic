@@ -63,9 +63,6 @@ final class MimeTypeEnumGenerator
         // Compose timestamped output path without mutating global timezone
         $outputPath = GeneratorUtils::makeTimestampedEnumPath('MimeType');
 
-        // Initialize records array
-        $records = [];
-
         // Fetch from mime-db (primary source)
         $mimeDbRecords = $this->fetchMimeDbRecords();
 
@@ -865,12 +862,6 @@ final class MimeTypeEnumGenerator
         // Update records with extensions from IANA detail pages
         // ---
 
-        // Initialize counter for tracking updated records
-        $updatedCount = 0;
-
-        // Initialize counter for tracking processed records
-        $processedCount = 0;
-
         // Loop through records to fetch extensions from IANA detail pages
         foreach ($records as $index => $record) {
             // Extract MIME type from the record
@@ -943,13 +934,7 @@ final class MimeTypeEnumGenerator
 
                 // Update record with merged extensions
                 $records[$index]['extensions'] = $allExtensions;
-
-                // Increment counter for updated records
-                $updatedCount++;
             }
-
-            // Increment counter for processed records
-            $processedCount++;
 
             // Clean up variables to free up memory
             unset(
@@ -967,12 +952,6 @@ final class MimeTypeEnumGenerator
             // Encourage GC during large loops
             gc_collect_cycles();
         }
-
-        // Clean up variables to free up memory
-        unset(
-            $updatedCount,
-            $processedCount
-        );
 
         // Return records with extensions added
         return $records;
@@ -1014,9 +993,6 @@ final class MimeTypeEnumGenerator
             }
         }
 
-        // Initialize counter for tracking updated records
-        $updatedCount = 0;
-
         // Loop through records to add Apache extensions
         foreach ($records as $index => $record) {
             // Extract MIME type from the record
@@ -1041,9 +1017,6 @@ final class MimeTypeEnumGenerator
                 // Update record with merged extensions
                 $records[$index]['extensions'] = $allExtensions;
 
-                // Increment counter for updated records
-                $updatedCount++;
-
                 // Clean up variables to free up memory
                 unset(
                     $apacheExtensions,
@@ -1061,8 +1034,7 @@ final class MimeTypeEnumGenerator
         // Clean up variables to free up memory
         unset(
             $apacheRecords,
-            $apacheMimeTypeMap,
-            $updatedCount
+            $apacheMimeTypeMap
         );
 
         // Return records with Apache extensions added

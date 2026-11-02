@@ -11,7 +11,6 @@ use App\Http\Controllers\KnowledgeBase\ArticleViewController;
 use App\Http\Controllers\People\PeopleLensController;
 use App\Http\Controllers\Seo\RobotsController;
 use App\Http\Controllers\Seo\SitemapIndexController;
-use App\Http\Controllers\SiteSearchSuggestionsController;
 use App\Http\Middleware\RedirectGuestToLogin;
 use App\Providers\AppServiceProvider;
 use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
@@ -115,32 +114,6 @@ Route::get('entries/{entry}', [FrontendController::class, 'route'])
     ->defaults('data', [
         'title' => 'Entry',
     ]);
-
-// ---
-// Site-search page (UAMS-Web/uams-statamic-archive#815 / UAMS-Web/uams-statamic-archive#56): renders the `/search` view — a relevance-ranked
-// result list with a type-filter dropdown over the local search indexes. Registered
-// before the `{entry}/{section}` wildcard below so it is never shadowed. Being a
-// routeless view (no entry), it has no nav breadcrumb chain, so `breadcrumb_leaf`
-// supplies the trailing "Search" crumb (the reusable hook for any routeless view).
-// ---
-Route::statamic('/search', 'search/index', [
-    'title' => 'Search',
-    'breadcrumb_leaf' => 'Search',
-    // Routeless views have no `published` in the cascade, which the shared
-    // `layout/article` reads as a draft (`status-draft`); this page is live.
-    'published' => true,
-    // Render the standard page-header `h1` (the cover-image / entry-meta partials
-    // below it are inert without that data), so /search has a page title like any
-    // ordinary entry.
-    'title_options' => 'normal',
-]);
-
-// Type-ahead suggestions for the /search input (UAMS-Web/uams-statamic-archive#1506): a short JSON list from the
-// unified `default` index, same site and status rules as the page. Registered before
-// the `{entry}/{section}` wildcard below; the `/!/` prefix keeps it clear of entry URIs.
-Route::get('/!/search/suggestions', SiteSearchSuggestionsController::class)
-    ->middleware('throttle:site-search-suggestions')
-    ->name('site-search.suggestions');
 
 // Area-of-Expertise virtual subpages (UAMS-Web/uams-statamic-archive#1058). One wildcard route renders each
 // relationship-derived section of a `clinical_expertise` entry at its own SEO URL

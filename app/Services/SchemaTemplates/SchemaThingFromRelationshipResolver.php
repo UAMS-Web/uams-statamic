@@ -2512,9 +2512,6 @@ class SchemaThingFromRelationshipResolver
         string $field,
         string $expected
     ): bool {
-        // Resolve default-locale term data accessor when the entity is a term
-        $localized = null;
-
         // Use default-locale data for taxonomy term roots (accept contract for unit-test doubles)
         if (
             $entity instanceof TermContract

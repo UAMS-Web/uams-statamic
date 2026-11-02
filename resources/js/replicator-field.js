@@ -34,7 +34,7 @@
  * `init()` before walking its children, so seeding here is early enough; a DOM scan on the same
  * hook would race the `<template x-if>` wrappers, whose contents are not in the DOM yet.
  *
- * `UAMSWeb\AlpineCspForms\JsDrivers\AlpineCsp::addToRenderableFieldAttributes()` (in the alpine-csp-forms add-on) binds each subfield's
+ * `UAMSWeb\Aether\Forms\AlpineCsp\JsDrivers\AlpineCsp::addToRenderableFieldAttributes()` (in the alpine-csp-forms add-on) binds each subfield's
  * `x-model` to its bare handle so writes land on these properties. The input's `name` keeps the
  * bracketed `parent[index][child]` shape, so submission is unaffected — and because the scope is
  * keyed by bare handle, it survives both `addSet()` (which rewrites indices in the cloned markup)

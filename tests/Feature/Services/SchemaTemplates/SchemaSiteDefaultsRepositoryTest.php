@@ -154,7 +154,7 @@ it('creates the directory with mode 0755 and writes YAML inlined below four leve
     $dir = dirname(schemaSiteDefaultsFile());
 
     // 0755, less the process umask. Windows has no POSIX mode to set, and PHP
-    // reports every directory there as 0777, so the mode is checked elsewhere.
+    // reports every directory there as 0777, so the mode is asserted on macOS.
     if (PHP_OS_FAMILY !== 'Windows') {
         expect(fileperms($dir) & 0777)->toBe(0755 & ~umask());
     }

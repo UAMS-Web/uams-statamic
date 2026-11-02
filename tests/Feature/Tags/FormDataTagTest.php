@@ -23,7 +23,7 @@ function formDataTagFormsDir(?string $value = null): string
         $dir = $value;
     }
 
-    return is_string($dir) ? $dir : '';
+    return $dir;
 }
 
 /**

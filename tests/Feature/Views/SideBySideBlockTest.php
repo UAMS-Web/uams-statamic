@@ -715,3 +715,29 @@ it('zig-zags a run of auto blocks end-to-end through the resolver and partial (#
 
     expect(renderedImageSides($html))->toBe(['left', 'right', 'left']);
 });
+
+// ---------------------------------------------------------------------------
+// Image fit (#388)
+// ---------------------------------------------------------------------------
+
+it('turns the image anchor and crop into the Glide fit (#388)', function (string $anchor, string $crop, string $fit): void {
+    $html = renderSideBySide([sideBySideBlock([
+        'image_anchor' => $anchor,
+        'image_crop' => $crop,
+        'text_layout' => 'body-only',
+        'body_body_only' => 'Body',
+    ])]);
+
+    // Every breakpoint shares one fit, so all fourteen URLs have to carry it
+    expect(substr_count($html, 'fit='.$fit.'&'))->toBe(14);
+})->with([
+    'left, top' => ['left', 'top', 'crop-0-0'],
+    'left, center' => ['left', 'center', 'crop-0-50'],
+    'left, bottom' => ['left', 'bottom', 'crop-0-100'],
+    'center, top' => ['center', 'top', 'crop-50-0'],
+    'center, center' => ['center', 'center', 'crop-50-50'],
+    'center, bottom' => ['center', 'bottom', 'crop-50-100'],
+    'right, top' => ['right', 'top', 'crop-100-0'],
+    'right, center' => ['right', 'center', 'crop-100-50'],
+    'right, bottom' => ['right', 'bottom', 'crop-100-100'],
+]);

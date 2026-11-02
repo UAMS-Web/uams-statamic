@@ -14,8 +14,7 @@ uses(TestCase::class);
  * (extended at UAMS-Web/uams-statamic-archive#1344) exceeds that cap on a typical machine, and because the
  * local-CI runner chain-gates `phpunit` on `larastan`, the timeout does not just
  * mislabel `larastan` — it silently *skips* `phpunit`, the load-bearing job.
- * Remote CI is disabled org-wide, so local CI is the only gate; a job that can
- * silently not run is a real hole. Disabling the cap in the `config` block
+ * A job that can silently not run is a real hole. Disabling the cap in the `config` block
  * applies it uniformly wherever `composer stan` runs (shell, `local-ci.mjs`).
  *
  * No mutable App\ PHP surface under test — this asserts a `composer.json`

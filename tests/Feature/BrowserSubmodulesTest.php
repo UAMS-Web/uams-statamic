@@ -74,3 +74,39 @@ it('names only the submodule that is absent', function () use (&$root): void {
         ->and($thrown?->getMessage())->toContain('needs the users submodule, which is not initialized')
         ->and($thrown?->getMessage())->toEndWith('Run: git submodule update --init users');
 });
+
+it('names a content mount point holding only the files statamic:install scaffolds', function () use (&$root): void {
+    /** @var string $root */
+    // Running `composer install` before the submodule init leaves this tree, and
+    // the init then refuses the non-empty directory, so `content` is never cloned.
+    File::deleteDirectory($root.'/content');
+
+    foreach (['assets', 'collections', 'globals', 'navigation', 'taxonomies'] as $directory) {
+        File::ensureDirectoryExists($root.'/content/'.$directory);
+        File::put($root.'/content/'.$directory.'/.gitkeep', '');
+    }
+
+    $thrown = throwableFrom(fn () => BrowserSubmodules::assertPresent($root));
+
+    expect(BrowserSubmodules::missing($root))->toBe(['content'])
+        ->and($thrown?->getMessage())->toContain('needs the content submodule, which is not initialized')
+        ->and($thrown?->getMessage())->toEndWith('Run: git submodule update --init content');
+});
+
+it('names a mount point holding only output an earlier run stranded', function () use (&$root): void {
+    /** @var string $root */
+    // Real files rather than placeholders, so this is what a test for `.gitkeep`
+    // alone would pass, and what `scripts/local-ci.mjs` clears as app output.
+    File::delete($root.'/users/.git');
+    File::put($root.'/users/stranded.yaml', "email: stranded@example.com\n");
+
+    expect(BrowserSubmodules::missing($root))->toBe(['users']);
+});
+
+it('accepts a submodule whose git directory is a directory rather than a gitlink file', function () use (&$root): void {
+    /** @var string $root */
+    File::delete($root.'/users/.git');
+    File::ensureDirectoryExists($root.'/users/.git');
+
+    expect(BrowserSubmodules::missing($root))->toBe([]);
+});

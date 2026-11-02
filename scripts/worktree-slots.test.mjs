@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
@@ -9,6 +9,9 @@ import {
     contentMirrorProbe,
     contentMirrorReason,
     contentMirrorStateOf,
+    pinnedBrowserVersion,
+    puppeteerBrowserNotice,
+    puppeteerBrowserStateOf,
     refreshOutcome,
     baseState,
     checkVerdictLine,
@@ -1127,25 +1130,25 @@ describe('pinnedDependencyNotice', () => {
         // The check silently skipping is the failure this exists to prevent, so an unconfigured
         // machine has to say so rather than print a clean table.
         expect(pinnedDependencyNotice({ version: 'v0.16.0' })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream distance unmeasured (UAMS_WORDPRESS_IMPORTER_CLONE unset)',
+            'aether-wordpress-importer pinned v0.16.0 - upstream distance unmeasured (UAMS_WORDPRESS_IMPORTER_CLONE unset)',
         )
     })
 
     it('distinguishes an unreadable clone from an unset one', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/nope' })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream distance unreadable in /nope',
+            'aether-wordpress-importer pinned v0.16.0 - upstream distance unreadable in /nope',
         )
     })
 
     it('reports the distance when the clone answers', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 139 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +139',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +139',
         )
     })
 
     it('reads a pin level with upstream as level, not as +0', () => {
         expect(pinnedDependencyNotice({ version: 'v0.17.0', clone: '/c', ahead: 0 })).toBe(
-            'wordpress-importer pinned v0.17.0 - upstream main level',
+            'aether-wordpress-importer pinned v0.17.0 - upstream main level',
         )
     })
 
@@ -1153,13 +1156,13 @@ describe('pinnedDependencyNotice', () => {
         // An unqualified number from an un-fetched clone is the same class of claim this notice
         // exists to make impossible.
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 139, staleDays: 6 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +139, clone fetched 6d ago',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +139, clone fetched 6d ago',
         )
     })
 
     it('does not qualify a clone fetched within the day', () => {
         expect(pinnedDependencyNotice({ version: 'v0.16.0', clone: '/c', ahead: 2, staleDays: 0 })).toBe(
-            'wordpress-importer pinned v0.16.0 - upstream main +2',
+            'aether-wordpress-importer pinned v0.16.0 - upstream main +2',
         )
     })
 })
@@ -1412,7 +1415,8 @@ describe('vendor source checkouts that block composer install (#2691)', () => {
      * carries, and a source checkout on a branch no remote carries.
      */
     function fixtureTree() {
-        const root = mkdtempSync(join(tmpdir(), 'wts-vendor-git-'))
+        // The real path: a Windows runner's temp directory is an 8.3 short name, and git reports the long one.
+        const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'wts-vendor-git-')))
         const upstream = join(root, 'upstream.git')
         const seed = join(root, 'seed')
         const tree = join(root, 'tree')
@@ -1506,21 +1510,21 @@ describe('vendor source checkouts that block composer install (#2691)', () => {
             stampComposerHash: 'b'.repeat(64),
             patchHash: 'c'.repeat(64),
             stampPatchHash: 'c'.repeat(64),
-            vendorCheckouts: [{ path: 'vendor/uams-web/wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false }],
+            vendorCheckouts: [{ path: 'vendor/uams-web/aether-wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false }],
         })
 
         expect(reasons).toEqual([
-            "vendor/uams-web/wordpress-importer: source checkout on branch 'importer-1234', which no remote carries - `composer install` will refuse it",
+            "vendor/uams-web/aether-wordpress-importer: source checkout on branch 'importer-1234', which no remote carries - `composer install` will refuse it",
         ])
     })
 
     it('names the directory and every recovery step when refresh refuses', () => {
         const text = vendorCheckoutRecovery('uams-statamic', [
-            { path: 'vendor/uams-web/wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false },
+            { path: 'vendor/uams-web/aether-wordpress-importer', branch: 'importer-1234', blocking: true, unreadable: false },
         ])
 
         expect(text).toMatch(/refusing to refresh uams-statamic before `composer install`/)
-        expect(text).toMatch(/vendor\/uams-web\/wordpress-importer: source checkout on branch 'importer-1234'/)
+        expect(text).toMatch(/vendor\/uams-web\/aether-wordpress-importer: source checkout on branch 'importer-1234'/)
         expect(text).toMatch(/move each directory above out of vendor\//)
         expect(text).toMatch(/re-run `node scripts\/worktree-slots\.mjs refresh <tree>`/)
         expect(text).toMatch(/test ! -e <dir>\/\.git/)
@@ -1771,5 +1775,122 @@ describe('fetching origin when submodule.recurse is set globally (#289)', () => 
         } finally {
             rmSync(root, { recursive: true, force: true })
         }
+    })
+})
+
+describe('the Puppeteer browser notice (UAMS-Web/uams-statamic#457)', () => {
+    const revisions = "export const PUPPETEER_REVISIONS = Object.freeze({\n    chrome: '155.0.8059.79',\n    'chrome-headless-shell': '155.0.8059.79',\n    firefox: 'stable_150.0',\n});\n"
+
+    /** A tree and a Puppeteer cache on disk, holding the given cached folder names. */
+    const fixture = (cached, source = revisions) => {
+        const root = mkdtempSync(join(tmpdir(), 'puppeteer-browser-'))
+        const pin = join(root, 'tree', 'node_modules', 'puppeteer-core', 'lib', 'puppeteer')
+
+        mkdirSync(pin, { recursive: true })
+
+        if (source !== null) {
+            writeFileSync(join(pin, 'revisions.js'), source)
+        }
+
+        for (const name of cached) {
+            mkdirSync(join(root, 'cache', 'chrome-headless-shell', name), { recursive: true })
+        }
+
+        return { root, tree: join(root, 'tree'), env: { PUPPETEER_CACHE_DIR: join(root, 'cache') } }
+    }
+
+    it('reads the pinned version from the installed Puppeteer, in the file Puppeteer keeps it in', () => {
+        const installed = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../node_modules/puppeteer-core/lib/puppeteer/revisions.js'), 'utf8')
+
+        expect(pinnedBrowserVersion(installed)).toMatch(/^\d+\.\d+\.\d+\.\d+$/)
+    })
+
+    it('reads the headless shell rather than the full browser beside it', () => {
+        expect(pinnedBrowserVersion(revisions.replace("chrome: '155.0.8059.79'", "chrome: '1.1.1.1'"))).toBe('155.0.8059.79')
+    })
+
+    it('finds no version in text that does not pin one', () => {
+        expect(pinnedBrowserVersion("chrome: '155.0.8059.79'")).toBeNull()
+        expect(pinnedBrowserVersion(null)).toBeNull()
+    })
+
+    it('reports the pinned build as installed on any platform folder', () => {
+        const { root, tree, env } = fixture(['win64-155.0.8059.79'])
+
+        expect(puppeteerBrowserStateOf(tree, env)).toEqual({ version: '155.0.8059.79', installed: true })
+        rmSync(root, { recursive: true, force: true })
+    })
+
+    it('reports a cache that holds only another version as missing', () => {
+        const { root, tree, env } = fixture(['win64-154.0.1.1'])
+
+        expect(puppeteerBrowserStateOf(tree, env)).toEqual({ version: '155.0.8059.79', installed: false })
+        rmSync(root, { recursive: true, force: true })
+    })
+
+    it('reports a machine with no cache as missing', () => {
+        const { root, tree } = fixture([])
+
+        expect(puppeteerBrowserStateOf(tree, { PUPPETEER_CACHE_DIR: join(root, 'absent') })).toEqual({ version: '155.0.8059.79', installed: false })
+        rmSync(root, { recursive: true, force: true })
+    })
+
+    it('falls back to the cache under the home directory, as Puppeteer does', () => {
+        const { root, tree } = fixture([])
+        const shell = join(root, 'home', '.cache', 'puppeteer', 'chrome-headless-shell', 'mac_arm-155.0.8059.79')
+
+        mkdirSync(shell, { recursive: true })
+
+        expect(puppeteerBrowserStateOf(tree, {}, join(root, 'home')).installed).toBe(true)
+        rmSync(root, { recursive: true, force: true })
+    })
+
+    it('reports an unreadable pin as unknown rather than installed', () => {
+        const { root, tree, env } = fixture(['win64-155.0.8059.79'], null)
+
+        expect(puppeteerBrowserStateOf(tree, env)).toEqual({ version: null, installed: false })
+        rmSync(root, { recursive: true, force: true })
+    })
+
+    it('names the missing version and the command that installs it', () => {
+        const notice = puppeteerBrowserNotice({ version: '155.0.8059.79', installed: false })
+
+        expect(notice).toContain('155.0.8059.79')
+        expect(notice).toContain('npx --no-install puppeteer browsers install chrome-headless-shell')
+    })
+
+    it('says nothing for an installed browser or a tree it did not probe', () => {
+        expect(puppeteerBrowserNotice({ version: '155.0.8059.79', installed: true })).toBeNull()
+        expect(puppeteerBrowserNotice(null)).toBeNull()
+        expect(puppeteerBrowserNotice(undefined)).toBeNull()
+    })
+
+    it('says so when it could not read the version', () => {
+        expect(puppeteerBrowserNotice({ version: null, installed: false })).toContain('could not read')
+    })
+
+    describe('through judgeTree', () => {
+        const root = '/Users/x/Herd/uams-statamic'
+        const missing = { version: '155.0.8059.79', installed: false }
+        const probe = { lockHash: 'abc', stampHash: 'abc', composerHash: 'def', stampComposerHash: 'def', submodules: [], puppeteerBrowser: missing }
+
+        it('names a missing browser on a slot and on the primary, without counting it as drift', () => {
+            for (const tree of [`${root}-a`, root]) {
+                const { drift, notices } = judgeTree(tree, root, probe)
+
+                expect(notices).toHaveLength(1)
+                expect(notices[0]).toContain('155.0.8059.79')
+                expect(drift.join()).not.toContain('Puppeteer')
+            }
+        })
+
+        it('leaves the runner tree and an ephemeral tree out of it', () => {
+            expect(judgeTree(`${root}-ci`, root, probe).notices).toEqual([])
+            expect(judgeTree(`${root}/.claude/worktrees/probe`, root, probe).notices).toEqual([])
+        })
+
+        it('adds nothing when the browser is installed', () => {
+            expect(judgeTree(`${root}-a`, root, { ...probe, puppeteerBrowser: { ...missing, installed: true } }).notices).toEqual([])
+        })
     })
 })

@@ -22,7 +22,7 @@ to: '{{ config:forms.recipients.institutional_relations }}'
 
 ## Giving a site its own recipients
 
-A form shared by several sites can send a site's submissions somewhere else. Since [#3066](https://github.com/UAMS-Web/uams-statamic-archive/issues/3066) the site runs [`uams-web/statamic-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), whose Sites section on a form's settings holds one override row per site. A row's Email replaces the form's whole email list for submissions made on that site; a site with no row, or a row whose Email is empty, uses the form's own list. A site that should also reach the form's own recipients lists them in its row too, because the two lists are not merged.
+A form shared by several sites can send a site's submissions somewhere else. Since [#3066](https://github.com/UAMS-Web/uams-statamic-archive/issues/3066) the site runs [`uams-web/aether-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), whose Sites section on a form's settings holds one override row per site. A row's Email replaces the form's whole email list for submissions made on that site; a site with no row, or a row whose Email is empty, uses the form's own list. A site that should also reach the form's own recipients lists them in its row too, because the two lists are not merged.
 
 Name a row's recipients with a role key, as the form's own rows do (the decision is recorded in [`docs/DECISIONS.md`](../DECISIONS.md) under UAMS-Web/uams-statamic-archive#3066):
 

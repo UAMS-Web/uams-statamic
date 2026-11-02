@@ -13,7 +13,7 @@ use Statamic\Fields\Value;
  * Renders one submitted form field as the escaped HTML a notification email shows for it (UAMS-Web/uams-statamic-archive#3149).
  *
  * It mirrors the branches of the automagic email view, `automagic-email.antlers.html` in
- * `uams-web/statamic-form-settings`, so the `{{ all_fields }}` table shows a field exactly as
+ * `uams-web/aether-form-settings`, so the `{{ all_fields }}` table shows a field exactly as
  * the field list does: assets as their URLs, option fields as their labels, replicators as their labelled set
  * blocks (UAMS-Web/uams-statamic-archive#2055), other arrays as JSON, and text with its line breaks kept. An asset whose
  * container has no public URL shows its path, where the template showed nothing.
@@ -22,7 +22,7 @@ use Statamic\Fields\Value;
  * value carrying markup or Antlers syntax reaches the recipient as text and is never parsed.
  *
  * The `{{ submission:<handle> }}` merge tags are rendered by the add-on's own copy of this
- * class, `UAMSWeb\FormSettings\Support\SubmittedFieldDisplay`, so a change here reaches
+ * class, `UAMSWeb\Aether\Forms\Settings\Support\SubmittedFieldDisplay`, so a change here reaches
  * `{{ all_fields }}` only.
  */
 final class SubmittedFieldDisplay

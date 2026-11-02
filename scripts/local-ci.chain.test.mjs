@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { compare, controlFailures, parseWorkflow, readRepository } from '../.claude/skills/code-quality/scripts/check-aggregate-needs.mjs'
 import {
     ALL_JOBS,
     CHAIN,
@@ -27,8 +28,9 @@ import {
 // parallel, because GitHub does not meter the standard runners they use for a
 // public repository; the local runner keeps its cost-ordered chain because one
 // machine runs the jobs serially whatever any graph says. So these cases pin the
-// SET, and pin that ci.yml stays unchained apart from the one edge #387 added
-// (`pest-report` reads the `pest` shards' output), rather than comparing two
+// SET, and pin that ci.yml stays unchained apart from the edge #387 added
+// (`pest-report` reads the `pest` shards' output) and the aggregate `ci` job, which
+// orders nothing (#337), rather than comparing two
 // orders that no longer both exist.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -63,9 +65,10 @@ const JOB_KEYS = {
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
 // (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
-// gains its own job with #256. The first case in the parity block below pins that each
+// gains its own job with #256. `ci` only reads the other jobs' results (#337). The first
+// case in the parity block below pins that each
 // still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
-const REMOTE_ONLY = new Set(['submodule-access', 'synced-files'])
+const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'synced-files'])
 
 /**
  * Read the `jobs:` ids and their `needs:` edges out of ci.yml.
@@ -130,8 +133,8 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         // Each listed job must exist, so a rename cannot leave a stale exemption
         // pointing at nothing while the renamed job slips past this guard unseen.
         // The "outside the chain" half of this case retired with #373: no job in
-        // ci.yml carries an edge any more, and the unchained case below asserts
-        // that for every job at once rather than for these two.
+        // ci.yml carries a cost edge any more, and the unchained case below
+        // asserts that for every job at once rather than for these.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
         }
@@ -165,7 +168,9 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect(control.get('beta').needs).toEqual(['alpha'])
         expect(control.get('alpha').needs).toBeNull()
 
-        const chained = [...allJobs].filter(([, job]) => job.needs !== null).map(([id, job]) => [id, job.needs])
+        // `ci` needs every job and orders none of them: it runs last and reads their
+        // results. The aggregate's own block below holds that list.
+        const chained = [...allJobs].filter(([id, job]) => id !== 'ci' && job.needs !== null).map(([id, job]) => [id, job.needs])
         expect(chained).toEqual([['pest-report', ['pest']]])
     })
 
@@ -538,31 +543,123 @@ function jobText(yaml, id) {
     return [lines[start], ...(end === -1 ? rest : rest.slice(0, end))].join('\n')
 }
 
+describe('the aggregate `CI` job in ci.yml (#337)', () => {
+    const ci = jobText(workflow, 'ci')
+
+    it('leaves no job out of its `needs:`, read by the check the shared template ships', () => {
+        expect(controlFailures()).toEqual([])
+
+        const { workflows, allow, error } = readRepository(repoRoot)
+        expect(error).toBeUndefined()
+        expect(compare(workflows, allow)).toEqual([])
+    })
+
+    it('reports a job missing from its `needs:`, so the case above can fail', () => {
+        const { workflows, allow } = readRepository(repoRoot)
+        const planted = workflow.replace(/(\n {4}needs: \[[^\]]*), browser\]/, '$1]')
+        expect(planted).not.toBe(workflow)
+
+        const replaced = workflows.map((entry) => (entry.file === '.github/workflows/ci.yml' ? { file: entry.file, ...parseWorkflow(planted) } : entry))
+        expect(compare(replaced, allow)).toEqual(['.github/workflows/ci.yml: job `browser` is not in the `needs:` list of the `CI` job, so nothing requires it'])
+    })
+
+    it('reads every job on all three operating systems (#348)', () => {
+        const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        const onOneRunner = new Set(['ci', 'submodule-access'])
+        const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
+        expect(ids.length).toBeGreaterThan(0)
+
+        for (const id of ids) {
+            const job = jobText(workflow, id)
+            expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
+            expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
+            expect(job, id).toContain('      fail-fast: false\n')
+            // No leg leaves the matrix: Windows shards the band too (#504).
+            expect(job.includes('exclude:'), id).toBe(false)
+            expect(job, id).not.toMatch(/^ +continue-on-error:/m)
+        }
+    })
+
+    it('runs whatever the needed jobs did, and never carries the `RUN_REMOTE_CI` gate', () => {
+        expect(ci).toContain('    name: CI\n')
+        expect(ci).toContain('    if: always()\n')
+        expect(ci).not.toContain('RUN_REMOTE_CI')
+    })
+
+    it('hands the step every needed job\'s result', () => {
+        expect(ci).toContain("RESULTS: ${{ join(needs.*.result, ' ') }}\n")
+    })
+
+    const bashRuns = spawnSync('bash', ['-c', 'exit 0']).status === 0
+    const resultsStep = ci.split('run: |\n')[1].replace(/^ {10}/gm, '').replace(/^\n+$/, '')
+    const stepStatus = (results) => spawnSync('bash', ['-c', resultsStep], { env: { ...process.env, RESULTS: results } }).status
+
+    it.skipIf(!bashRuns)('passes only when every needed job succeeded', () => {
+        expect(stepStatus('success success success')).toBe(0)
+        expect(stepStatus('success failure success')).toBe(1)
+        expect(stepStatus('success skipped success')).toBe(1)
+        expect(stepStatus('cancelled success')).toBe(1)
+        expect(stepStatus('')).toBe(1)
+    })
+})
+
 describe('the sharded pest job in ci.yml (#387)', () => {
     const pest = jobText(workflow, 'pest')
     const report = jobText(workflow, 'pest-report')
 
-    it('runs one shard per number from 1 to the total it and the merge both read', () => {
+    // The shard numbers each leg runs: the `shard:` list on every leg, plus the
+    // `include` entries that name a leg and a shard number of their own.
+    const shardsPerLeg = (job) => {
+        const list = job.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
+        const legs = job.match(/^ {8}os: \[([a-z, -]+)\]$/m)
+        if (list === null || legs === null) {
+            return null
+        }
+        const result = Object.fromEntries(legs[1].split(',').map((os) => [os.trim(), list[1].split(',').map((n) => Number(n.trim()))]))
+        for (const [, os, shard] of job.matchAll(/^ {10}- os: ([a-z-]+)\n {12}shard: (\d+)$/gm)) {
+            result[os].push(Number(shard))
+        }
+        return result
+    }
+
+    // The total each leg reads, from `SHARD_TOTAL: ${{ matrix.os == '<os>' && <n> || <m> }}`
+    // or a plain number.
+    const totalsPerLeg = (job, legs) => {
+        const line = job.match(/^ {6}SHARD_TOTAL: (.+)$/m)
+        if (line === null) {
+            return null
+        }
+        const plain = line[1].match(/^(\d+)$/)
+        const split = line[1].match(/^\$\{\{ matrix\.os == '([a-z-]+)' && (\d+) \|\| (\d+) \}\}$/)
+        if (plain === null && split === null) {
+            return null
+        }
+        return Object.fromEntries(legs.map((os) => [os, plain !== null ? Number(plain[1]) : Number(os === split[1] ? split[2] : split[3])]))
+    }
+
+    it('runs one shard per number from 1 to the total it and the merge both read, on every leg', () => {
         // The matrix, the total each shard passes to --shard and the total the
-        // merge expects are three separate literals. A shard added to the matrix
-        // without the totals runs a fifth of a band the merge never asks for; a
-        // total raised without the matrix leaves a quarter of the classes without a shard,
+        // merge expects are three separate settings. A shard added to the matrix
+        // without the totals runs a fraction of a band the merge never asks for; a
+        // total raised without the matrix leaves part of the classes without a shard,
         // which the merge then refuses as missing inputs only if it is told the
         // new total.
-        const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
-        const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
-        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+        const shards = shardsPerLeg(pest)
+        expect(shards, 'the pest job has no `shard:` or `os:` matrix line').not.toBeNull()
+        const legs = Object.keys(shards)
+        const pestTotals = totalsPerLeg(pest, legs)
+        const reportTotals = totalsPerLeg(report, legs)
+        expect(pestTotals, 'the pest job sets no SHARD_TOTAL this test can read').not.toBeNull()
+        expect(reportTotals, 'pest-report sets no SHARD_TOTAL this test can read').not.toBeNull()
 
-        expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
-        expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
-        expect(reportTotal, 'pest-report sets no SHARD_TOTAL').not.toBeNull()
-
-        const total = Number(pestTotal[1])
-        const shards = matrix[1].split(',').map((n) => Number(n.trim()))
-        expect(shards).toEqual(Array.from({ length: total }, (_, i) => i + 1))
-        expect(Number(reportTotal[1])).toBe(total)
+        for (const os of legs) {
+            expect(shards[os].sort((a, b) => a - b), os).toEqual(Array.from({ length: pestTotals[os] }, (_, i) => i + 1))
+            expect(reportTotals[os], os).toBe(pestTotals[os])
+        }
+        expect(pest).toContain("    name: Pest (parallel band, shard ${{ matrix.shard }} of ${{ matrix.os == 'windows-latest' && 6 || 4 }}, ${{ matrix.os }})\n")
         expect(report).toContain('--total="$SHARD_TOTAL"')
-        expect(pest).toContain('--shard="$SHARD/$SHARD_TOTAL"')
+        // Two steps select the shard: the run elsewhere, and the listing on Windows (#504).
+        expect(pest.split('--shard="$SHARD/$SHARD_TOTAL"')).toHaveLength(3)
     })
 
     it('gives the serial group the shards\' setup, step for step', () => {
@@ -592,12 +689,15 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // once the shard selector and the per-shard report name are taken out,
         // the shard's flags must be the local runner's parallel-band flags, less
         // the memory passthru the local runner adds for a developer machine.
-        const runLine = pest.match(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/m)
-        expect(runLine, 'no parallel shard run step in the pest job').not.toBeNull()
-        const remote = runLine[1]
+        // Two steps run the band: the shard, and the Windows shard from its file
+        // list (#504). Each is held.
+        const runLines = [...pest.matchAll(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/gm)]
+        expect(runLines, 'the pest job should run the shard and the Windows shard').toHaveLength(2)
+        const remotes = runLines.map((line) => line[1]
             .replace(' --shard="$SHARD/$SHARD_TOTAL"', '')
+            .replace(' --configuration="phpunit.shard-$SHARD.xml"', '')
             .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
-            .split(' ')
+            .split(' '))
 
         const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
         const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree\)/)
@@ -608,7 +708,67 @@ describe('the sharded pest job in ci.yml (#387)', () => {
 
         // A control: a drifted flag must make the two differ, or the comparison
         // proves nothing.
-        expect([...remote, '--stop-on-failure']).not.toEqual(local)
-        expect(remote).toEqual(local)
+        expect([...remotes[0], '--stop-on-failure']).not.toEqual(local)
+        expect(remotes[0]).toEqual(local)
+        expect(remotes[1]).toEqual(local)
+    })
+
+    // What #516 changed about the Windows leg, as a list of what is missing, so
+    // the old shape can be fed through the same check and shown to fail.
+    const windowsShapeFailures = (pestJob, reportJob) => {
+        const failures = []
+        const shards = shardsPerLeg(pestJob)
+        if (shards === null || shards['windows-latest']?.length !== 6) {
+            failures.push('the Windows leg does not run six shards')
+        }
+        for (const os of ['ubuntu-latest', 'macos-latest']) {
+            if (shards === null || shards[os]?.length !== 4) {
+                failures.push(`${os} does not run four shards`)
+            }
+        }
+        const totals = shards === null ? null : totalsPerLeg(pestJob, Object.keys(shards))
+        if (totals === null || totals['windows-latest'] !== 6) {
+            failures.push('the Windows shards do not read a total of six')
+        }
+        if (!pestJob.includes('          PREFIX: pest-shard-timings-${{ matrix.os }}-\n') || !pestJob.includes('actions/caches?key=$PREFIX&') || !pestJob.includes('--prefix="$PREFIX"')) {
+            failures.push('the shards do not restore timings saved by their own operating system')
+        }
+        if (!reportJob.includes('          key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}\n')) {
+            failures.push('pest-report does not save timings under its own operating system')
+        }
+        if (reportJob.includes("matrix.os == 'ubuntu-latest'")) {
+            failures.push('pest-report saves timings from one operating system only')
+        }
+        return failures
+    }
+
+    it('runs the Windows leg in six shards balanced on Windows timings (#516)', () => {
+        expect(windowsShapeFailures(pest, report)).toEqual([])
+
+        // The committed fallback a Windows shard reads when the cache has no Windows entry.
+        const fallback = JSON.parse(readFileSync(join(repoRoot, '.github', 'pest-shards.windows-latest.json'), 'utf8'))
+        expect(Object.keys(fallback.timings).length).toBeGreaterThan(1000)
+        expect(pest).toContain('            committed=".github/pest-shards.$MATRIX_OS.json"\n')
+    })
+
+    it('reports the Windows leg going back to the old four-way split on Ubuntu timings', () => {
+        // The shape before #516, rebuilt from this file, so the check above can fail.
+        const oldPest = pest
+            .replace(/\n {8}include:\n {10}- os: windows-latest\n {12}shard: 5\n {10}- os: windows-latest\n {12}shard: 6\n/, '\n')
+            .replace(/SHARD_TOTAL: .+/, 'SHARD_TOTAL: 4')
+            .replace('PREFIX: pest-shard-timings-${{ matrix.os }}-', 'PREFIX: pest-shard-timings-')
+        const oldReport = report
+            .replace('key: pest-shard-timings-${{ matrix.os }}-', 'key: pest-shard-timings-')
+            .replace("if: github.event_name == 'push' && github.ref == 'refs/heads/main'\n", "if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'\n")
+        expect(oldPest).not.toBe(pest)
+        expect(oldReport).not.toBe(report)
+
+        expect(windowsShapeFailures(oldPest, oldReport)).toEqual([
+            'the Windows leg does not run six shards',
+            'the Windows shards do not read a total of six',
+            'the shards do not restore timings saved by their own operating system',
+            'pest-report does not save timings under its own operating system',
+            'pest-report saves timings from one operating system only',
+        ])
     })
 })

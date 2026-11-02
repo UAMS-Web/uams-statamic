@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Tiptap\SetMarkupNonce;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\BardParser;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Tiptap\SetMarkupNonce;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\BardParser;
 
 /**
- * @covers \UAMSWeb\WordPressImporter\Services\WordPressImport\Tiptap\Nodes\Set
+ * @covers \UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Tiptap\Nodes\Set
  *
  * Pins that the importer no longer trusts `data-set-*` markup arriving in
  * WordPress post content (UAMS-Web/uams-statamic-archive#1742, fixed in UAMS-Web/wordpress-importer#494).

@@ -167,7 +167,7 @@ Per session, in order — steps 1 and 2 cannot be pre-baked:
 5. `composer config --global preferred-install source`, then `composer install --no-scripts --prefer-source`, `php artisan key:generate`, `composer run-script post-autoload-dump`.
 5. `DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache` before any test run.
 
-`php artisan tinker --execute 'echo Statamic\Facades\Collection::all()->count();'` returning non-zero is the success signal — it reported **19** on 2026-07-31 under `--no-dev`, with `clinical_*`, `calculators`, and `facilities` among the resolved handles. `vendor/uams-web/wordpress-importer` installs correctly, so the private-package path works end to end.
+`php artisan tinker --execute 'echo Statamic\Facades\Collection::all()->count();'` returning non-zero is the success signal — it reported **19** on 2026-07-31 under `--no-dev`, with `clinical_*`, `calculators`, and `facilities` among the resolved handles. `vendor/uams-web/aether-wordpress-importer` installs correctly, so the private-package path works end to end.
 
 **What a cloud session can and cannot do with the app:** it boots, resolves collections and entries, and renders — enough to inspect behavior or reproduce a report. It cannot run a test, Larastan, or Rector, because `--no-dev` is the only install that completes — but it *can* run Pint; see "Running the formatting check anyway" above.
 

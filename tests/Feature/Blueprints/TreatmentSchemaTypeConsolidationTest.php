@@ -61,7 +61,7 @@ it('gates dependent fields off the resolved schema_type path, never the removed 
     // schema_drug_query), never a removed discriminator handle.
     /** @var Collection<string, Field> $fields */
     $fields = $this->fields;
-    foreach ($fields->all() as $handle => $field) {
+    foreach ($fields->all() as $field) {
         foreach (['if', 'if_any', 'unless', 'unless_any'] as $key) {
             /** @var array<array-key, mixed> $conditions */
             $conditions = $field->config()[$key] ?? [];

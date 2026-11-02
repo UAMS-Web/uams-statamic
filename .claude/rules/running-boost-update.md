@@ -21,7 +21,7 @@
 
 A tracked `120000` entry is checked out as a **plain text file** wherever `core.symlinks=false`, which git sets automatically on a default Windows clone, so the harness finds a file where it expects a directory and the skill vanishes from that session's listing, silently, on one platform. `--ignore-skills`, run on the same tree, touches only the guidelines file(s): no skill directory, no symlink, no `infer-conventions`.
 
-This was characterized in `uams-statamic` from a run on current `main` (#2319, 2026-09-15): bare `boost:update` symlinked `pest-testing` and `tailwindcss-development`, which is the regression [`tests/Feature/Config/SkillMirrorsTest.php`](../../tests/Feature/Config/SkillMirrorsTest.php) exists to gate (#2169, #2170). `--ignore-skills` on the same tree touched only `CLAUDE.md` and `AGENTS.md`. Since #2539 Boost writes only `AGENTS.md` (`config/boost.php` points Claude Code's `guidelines_path` there), and `CLAUDE.md` merely imports it.
+This was characterized in `uams-statamic` from a run on current `main` (UAMS-Web/uams-statamic-archive#2319, 2026-09-15): bare `boost:update` symlinked `pest-testing` and `tailwindcss-development`, the regression a `SkillMirrorsTest` then gated (UAMS-Web/uams-statamic-archive#2169, UAMS-Web/uams-statamic-archive#2170). UAMS-Web/uams-statamic-archive#2847 retired the `.ai/skills/` mirror, and that test and `scripts/sync-skills.mjs` with it, so no custom skill there is single-sourced for Boost to symlink. `--ignore-skills` on the same tree touched only `CLAUDE.md` and `AGENTS.md`. Since UAMS-Web/uams-statamic-archive#2539 Boost writes only `AGENTS.md` (`config/boost.php` points Claude Code's `guidelines_path` there), and `CLAUDE.md` merely imports it.
 
 History: [Why this is a standing order](../history/running-boost-update.md#why-this-is-a-standing-order).
 
@@ -33,12 +33,12 @@ History: [Why this is a standing order](../history/running-boost-update.md#why-t
 - **`boost.skills.exclude` is not the control.** It is undocumented (absent from Boost's own config stub), and its `reject()` runs before the user-skills merge, so it structurally cannot suppress anything under `.ai/skills/`. `--ignore-skills` is the only instrument that holds.
 - **`infer-conventions` is declined.** It records findings into `.ai/rules` through an MCP tool, opening a second authoring route beside the repository's hand-written `.claude/rules/` corpus, where each rule carries its own measured evidence. `--ignore-skills` declines it by default.
 
-- In `uams-statamic`, the absence of `infer-conventions` and of any skill symlink is gated by `SkillMirrorsTest`, and `boost.skills.exclude` is additionally the instrument #2320 removes.
+- In `uams-statamic`, the absence of `infer-conventions` is gated by [`tests/Feature/Config/DeclinedBoostSkillsTest.php`](../../tests/Feature/Config/DeclinedBoostSkillsTest.php) (UAMS-Web/uams-statamic-archive#2869), and `config/boost.php` sets no `skills.exclude`, so `--ignore-skills` is the only control there (UAMS-Web/uams-statamic-archive#2320).
 
 ## The DRY line
 
 This file owns **how `boost:update` is run**. It composes with [`closing-a-ticket`](closing-a-ticket.md) (keep a diff scoped to its ticket).
 
-The skill-mirror invariant it protects (real directories, never symlinks, byte-identical to `.ai/skills/`) is owned and enforced by `SkillMirrorsTest` and `scripts/sync-skills.mjs`; the decision record is in [`docs/DECISIONS.md`](../../docs/DECISIONS.md).
+The invariant it protects (each synced skill a real directory, never a symlink, byte-identical to what the sync wrote) is enforced by the synced-files check, `check-synced-files.mjs`, which fails a managed file that is missing, is not a regular file, or differs from its hash in `.claude/sync-manifest.jsonc`; `DeclinedBoostSkillsTest` keeps `infer-conventions` out of the skill trees. The decision record is in [`docs/DECISIONS.md`](../../docs/DECISIONS.md).
 
-_Refs: #2319 (this rule and its characterizing run), #2168 (the churn, reverted twice), #2169 / #2170 (the symlink regression), #2320 (the move that makes `--ignore-skills` the only remaining control)._
+_Refs: UAMS-Web/uams-statamic-archive#2319 (this rule and its characterizing run), UAMS-Web/uams-statamic-archive#2168 (the churn, reverted twice), UAMS-Web/uams-statamic-archive#2169 / UAMS-Web/uams-statamic-archive#2170 (the symlink regression), UAMS-Web/uams-statamic-archive#2320 (the move that makes `--ignore-skills` the only remaining control)._

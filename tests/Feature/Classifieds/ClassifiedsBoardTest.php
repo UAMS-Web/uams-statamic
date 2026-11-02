@@ -21,7 +21,7 @@ use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class)->group('serial');
 
 /**
  * The classifieds board that replaces WP Adverts on Inside UAMS (UAMS-Web/uams-statamic-archive#2096): the
@@ -33,6 +33,12 @@ uses(TestCase::class);
  * tests self-skip where it is absent. Fixture listings are saved into the real
  * collection with a slug prefix and deleted by that prefix before and after
  * each test (the PostsInPostCategoryBySlugScopeTest pattern).
+ *
+ * Serial, not parallel: this file asserts on every live listing, and
+ * ClassifiedsPostingTest and ClassifiedsPostingImagesTest save live listings into the
+ * content mirror every worker shares. A worker that builds its Stache cold reads such
+ * a listing and keeps it in its index after the file is deleted, so the board shows a
+ * listing this file never made (#473).
  *
  * @command  php artisan test --compact tests/Feature/Classifieds/ClassifiedsBoardTest.php
  */

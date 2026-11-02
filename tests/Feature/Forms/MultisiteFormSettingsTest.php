@@ -17,13 +17,13 @@ use Statamic\Fields\Fields;
 use Statamic\Forms\Form;
 use Tests\Support\ThrowawayRoot;
 use Tests\TestCase;
-use UAMSWeb\FormSettings\CpForms\FormConfigurationSectionLocator;
-use UAMSWeb\FormSettings\Http\Controllers\FormsController;
+use UAMSWeb\Aether\Forms\Settings\CpForms\FormConfigurationSectionLocator;
+use UAMSWeb\Aether\Forms\Settings\Http\Controllers\FormsController;
 
 uses(TestCase::class);
 
 /**
- * The `uams-web/statamic-multisite-forms` Sites section reaches the app's form
+ * The `uams-web/aether-multisite-forms` Sites section reaches the app's form
  * settings screen and its values survive a save through the app's controller
  * (UAMS-Web/uams-statamic-archive#3066).
  *

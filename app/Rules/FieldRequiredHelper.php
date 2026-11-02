@@ -6,7 +6,7 @@ namespace App\Rules;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
-use UAMSWeb\FormSettings\Support\ConditionalLogicEvaluator;
+use UAMSWeb\Aether\Forms\Settings\Support\ConditionalLogicEvaluator;
 
 /**
  * Helper for determining whether a field is required for the current request

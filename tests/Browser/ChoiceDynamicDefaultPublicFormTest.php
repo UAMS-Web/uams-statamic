@@ -52,7 +52,7 @@ function writeChoiceDynamicDefaultBrowserFixture(string $viewsDir): void
     File::put(choiceDynamicDefaultBrowserFixturePath(), implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Choice dynamic default fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Choice dynamic default fixture</h1>',
         (string) View::make('choice_dynamic_default_browser::form')->render(),
         '</body></html>',

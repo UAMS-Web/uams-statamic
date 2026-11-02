@@ -1,0 +1,3 @@
+{
+    "submodule-access": "runs only on workflow_dispatch, so it skips on every pull request; the aggregate would fail on the skip"
+}

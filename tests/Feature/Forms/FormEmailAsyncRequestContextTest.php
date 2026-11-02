@@ -39,9 +39,9 @@ use function Pest\Laravel\withServerVariables;
  *
  * It also asserts the captured context never leaks into the submission record or `{{ all_fields }}`.
  *
- * @covers \App\Support\Forms\FormRequestContext
- * @covers \App\Listeners\CaptureFormRequestContext
- * @covers \UAMSWeb\FormSettings\Jobs\SendFormNotification
+ * @covers \UAMSWeb\Aether\Forms\Settings\Support\FormRequestContext
+ * @covers \UAMSWeb\Aether\Forms\Settings\Listeners\CaptureFormRequestContext
+ * @covers \UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification
  * @covers \App\Tags\Ip
  * @covers \App\Tags\Referrer
  * @covers \App\Tags\GetParam

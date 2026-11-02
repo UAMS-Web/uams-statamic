@@ -12,7 +12,8 @@
 7. Run `composer install`
 8. Run `php please make:user`
 9. Run `npm i` && `npm run dev:with-cp`
-10. Go to http://uams-statamic.test/ and click "Generate App Key"
+10. Run `npx --no-install puppeteer browsers install chrome-headless-shell`. News release PDFs need this browser, and `npm` does not download it because `.npmrc` sets `ignore-scripts=true`. Without it a published `news_release` saves with no PDF and the reason is only in `storage/logs/laravel.log`. `node scripts/worktree-slots.mjs status` names the browser when it is missing.
+11. Go to http://uams-statamic.test/ and click "Generate App Key"
 
 ## Statamic vendor patch workflow
 
@@ -151,6 +152,10 @@ Working copies and revision history are stored under `storage/statamic/revisions
 
 - **They survive a deploy only if `storage/` does.** Both deploy scripts above pull into the same directory, so `storage/` stays in place. A deploy that builds each release in a fresh directory (zero-downtime deployment) must share `storage/statamic/revisions` across releases, or every pending change is lost on the next deploy.
 - **They are not in the content repository's history.** Include `storage/statamic/revisions` in the server's backups; nothing else holds a change that is waiting to be published.
+
+## Continuous integration
+
+Remote CI runs on every pull request and on every push to `main`. A ruleset on `main` requires three checks: `CI`, which fails unless every other job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) succeeded (the manual-only `submodule-access` aside), plus `Attribution footer` and `Closing keywords`. `CI` runs its jobs on Linux, Windows and macOS; the other two read text and run on Linux. [`docs/runbooks/branch-protection.md`](docs/runbooks/branch-protection.md) records what `main` enforces.
 
 ## License
 

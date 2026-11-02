@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\SiteSearchSuggestionsController;
 use App\Search\AreaOfExpertiseSectionDocument;
 use Illuminate\Http\Request;
 use Statamic\Entries\Entry as StatamicEntry;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Search;
+use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Search\Result;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Search\Http\Controllers\SuggestionsController;
 
 uses(StacheIsolatedTestCase::class);
 
@@ -118,12 +119,73 @@ function suggestionsFor(mixed $query, mixed $index = null): array
 {
     $request = Request::create('/!/search/suggestions', 'GET', array_filter(['q' => $query, 'index' => $index], fn (mixed $value): bool => $value !== null));
 
-    $response = app(SiteSearchSuggestionsController::class)($request);
+    $response = app(SuggestionsController::class)($request);
 
     /** @var array<string, mixed> $body */
     $body = mustBeArray($response->getData(true), 'the suggestions body');
 
     return $body;
+}
+
+/**
+ * Call the endpoint at `?q=kirk` with these parameters, as a page on a `people` collection
+ * across a root site and one sub-site would, and return its decoded body.
+ *
+ * @param  array<array-key, mixed>  $parameters  Query parameters, such as `site` and `scope`.
+ * @return array<string, mixed>
+ */
+function multisiteSuggestionsFor(array $parameters): array
+{
+    $request = Request::create('/!/search/suggestions', 'GET', ['q' => 'kirk'] + $parameters);
+
+    $response = app(SuggestionsController::class)($request);
+
+    /** @var array<string, mixed> $body */
+    $body = mustBeArray($response->getData(true), 'the suggestions body');
+
+    return $body;
+}
+
+/**
+ * Give the test a root site and one sub-site, both carrying `people`.
+ */
+function useTwoSuggestionSites(): void
+{
+    Site::setSites([
+        'default' => ['name' => 'Starfleet Academy', 'url' => '/', 'locale' => 'en_US'],
+        'second' => ['name' => 'Second', 'url' => '/second/', 'locale' => 'en_US'],
+    ]);
+
+    $collection = Collection::make('people');
+    $collection->routes('/people/{slug}');
+    $collection->sites(['default', 'second']);
+    $collection->save();
+}
+
+/**
+ * Save a published `people` entry on a site.
+ *
+ * @param  string|null  $title  Null for a localization that inherits it.
+ * @param  string|null  $visibility  A `status_and_visibility` value, such as `private`.
+ * @param  StatamicEntry|null  $origin  The entry this one localizes.
+ */
+function siteSuggestionEntry(string $site, string $slug, ?string $title, ?string $visibility = null, ?StatamicEntry $origin = null): StatamicEntry
+{
+    /** @var StatamicEntry $entry */
+    $entry = Entry::make();
+    $entry->collection('people');
+    $entry->locale($site);
+    $entry->slug($slug);
+    $entry->published(true);
+    $entry->data(array_filter(['title' => $title, 'status_and_visibility' => $visibility]));
+
+    if ($origin instanceof StatamicEntry) {
+        $entry->origin($origin);
+    }
+
+    $entry->saveQuietly();
+
+    return $entry;
 }
 
 /**
@@ -174,11 +236,11 @@ it('asks the unified default index for published items, limited to the flyout si
     expect($recorded['index'])->toBe('default')
         ->and($recorded['query'])->toBe('cardiology')
         ->and($recorded['where.status'])->toBe('published')
-        // This install has many sites, so the current one is named, as the results tag names it
-        ->and($recorded['whereIn.site'] ?? null)->toBe(['default'])
+        // A request naming no site is the root site's, and its one scope is every site
+        ->and($recorded)->not->toHaveKey('whereIn.site')
         // Twice the flyout size, so hits dropped after the query do not leave it short
         ->and($recorded['limit'])->toBe(16)
-        ->and(SiteSearchSuggestionsController::LIMIT)->toBe(8);
+        ->and(SuggestionsController::LIMIT)->toBe(8);
 });
 
 it('shapes each hit as title, url and type, labeling it as the results page does', function (): void {
@@ -212,7 +274,7 @@ it('queries nothing for a short, overlong or non-string query', function (mixed 
     'empty' => [''],
     'one character' => ['c'],
     'whitespace around one character' => ['  c  '],
-    'over the maximum' => [str_repeat('a', SiteSearchSuggestionsController::MAX_QUERY_LENGTH + 1)],
+    'over the maximum' => [str_repeat('a', SuggestionsController::MAX_QUERY_LENGTH + 1)],
     'an array' => [['cardiology']],
 ]);
 
@@ -230,6 +292,90 @@ it('queries the index of the page tab, and falls back to default for anything el
     'knowledge bases, which the type-ahead is not offered on' => ['knowledge_bases', 'default'],
     'an unconfigured handle' => ['users', 'default'],
     'an array' => [['people'], 'default'],
+]);
+
+it('answers a query that is not valid UTF-8 with nothing, rather than failing to encode it', function (): void {
+    $recorded = mockSuggestionsIndex([]);
+
+    expect(suggestionsFor("\xFF\xFF"))->toBe(['query' => '', 'index' => 'default', 'results' => []])
+        ->and($recorded)->not->toHaveKey('query');
+});
+
+it('searches only the sub-site at This site', function (array $parameters): void {
+    useTwoSuggestionSites();
+    $recorded = mockSuggestionsIndex([]);
+
+    multisiteSuggestionsFor($parameters);
+
+    expect($recorded['whereIn.site'] ?? null)->toBe(['second']);
+})->with([
+    'no scope' => [['site' => 'second']],
+    'the site scope by name' => [['site' => 'second', 'scope' => 'site']],
+    'an unknown scope' => [['site' => 'second', 'scope' => 'bridge']],
+    'an array scope' => [['site' => 'second', 'scope' => ['all']]],
+]);
+
+it('searches every site for all UAMS websites, and this site when no engine is configured', function (mixed $engine, bool $everySite): void {
+    config(['aether-search.external.providers.google.engine_id' => $engine]);
+    useTwoSuggestionSites();
+    $recorded = mockSuggestionsIndex([]);
+
+    multisiteSuggestionsFor(['site' => 'second', 'scope' => 'google']);
+
+    expect(isset($recorded['whereIn.site']))->toBe(! $everySite);
+})->with([
+    'configured' => ['engine:one', true],
+    'not configured' => [null, false],
+]);
+
+it('searches every site where the page would', function (array $parameters): void {
+    useTwoSuggestionSites();
+    $recorded = mockSuggestionsIndex([]);
+
+    multisiteSuggestionsFor($parameters);
+
+    expect($recorded)->not->toHaveKey('whereIn.site')
+        ->and($recorded['where.status'] ?? null)->toBe('published');
+})->with([
+    'the wide scope on a sub-site' => [['site' => 'second', 'scope' => 'all']],
+    'the wide scope on the root site' => [['site' => 'default', 'scope' => 'all']],
+    'the root site, whose one scope is every site' => [['site' => 'default']],
+    'the root site asking for less than it offers' => [['site' => 'default', 'scope' => 'site']],
+    'no site at all, which is the root site' => [[]],
+    'a site that does not exist' => [['site' => 'bridge']],
+    'the every-site wildcard, which names no site' => [['site' => '*']],
+    'an array of sites' => [['site' => ['second', 'default']]],
+]);
+
+it('links each hit at the wide scope to its own site', function (): void {
+    useTwoSuggestionSites();
+    mockSuggestionsIndex([
+        new Result(siteSuggestionEntry('default', 'james-kirk', 'James Kirk'), 'entry'),
+        new Result(siteSuggestionEntry('second', 'hikaru-sulu', 'Hikaru Sulu'), 'entry'),
+    ]);
+
+    expect(multisiteSuggestionsFor(['site' => 'second', 'scope' => 'all'])['results'])->toBe([
+        ['title' => 'James Kirk', 'url' => '/people/james-kirk', 'type' => 'Person'],
+        ['title' => 'Hikaru Sulu', 'url' => '/second/people/hikaru-sulu', 'type' => 'Person'],
+    ]);
+});
+
+it('hides a private entry at either scope, and a localization that inherits it', function (array $parameters): void {
+    useTwoSuggestionSites();
+    $private = siteSuggestionEntry('default', 'janice-rand', 'Janice Rand', 'private');
+
+    mockSuggestionsIndex([
+        new Result($private, 'entry'),
+        new Result(siteSuggestionEntry('second', 'janice-rand', null, null, $private), 'entry'),
+        new Result(siteSuggestionEntry('second', 'leonard-mccoy', 'Leonard McCoy'), 'entry'),
+    ]);
+
+    expect(multisiteSuggestionsFor($parameters)['results'])->toBe([
+        ['title' => 'Leonard McCoy', 'url' => '/second/people/leonard-mccoy', 'type' => 'Person'],
+    ]);
+})->with([
+    'this site' => [['site' => 'second']],
+    'every site' => [['site' => 'second', 'scope' => 'all']],
 ]);
 
 it('drops a private entry for a guest, as its own URL would 404', function (): void {
@@ -255,6 +401,14 @@ it('offers a private entry to a super user, who may open it', function (): void 
     expect(array_column(mustBeArray(suggestionsFor('ja')['results'], 'results'), 'title'))->toBe(['Janice Rand']);
 });
 
+it('drops a section subpage whose Area of Expertise no longer exists', function (): void {
+    mockSuggestionsIndex([
+        new Result(new AreaOfExpertiseSectionDocument('no-such-entry', 'providers', 'Gone: Providers', '/gone/providers', 'default'), 'clinical_expertise_section'),
+    ]);
+
+    expect(suggestionsFor('go')['results'])->toBe([]);
+});
+
 it('drops the section subpages of a private Area of Expertise', function (): void {
     $private = savedSuggestionEntry('clinical_expertise', 'classified-medicine', 'Classified Medicine', 'private');
     $public = savedSuggestionEntry('clinical_expertise', 'cardiology', 'Cardiology');
@@ -278,20 +432,24 @@ it('fills the flyout past dropped hits, and stops at its size', function (): voi
 
     $titles = array_column(mustBeArray(suggestionsFor('pa')['results'], 'results'), 'title');
 
-    expect($titles)->toHaveCount(SiteSearchSuggestionsController::LIMIT)
+    expect($titles)->toHaveCount(SuggestionsController::LIMIT)
         ->and($titles[0])->toBe('Page 1');
 });
 
 it('labels each collection exactly as the results page row does', function (string $collection, string $label): void {
-    // The two lists are written in two languages; this keeps them from drifting.
-    $row = (string) view('search/_result', ['collection' => $collection, 'title' => 'T', 'url' => '/t'])->render();
+    // The flyout and the row both read `aether-search.labels`; this pins what the row shows.
+    $row = (string) view('aether-search::listing/_result', ['collection' => $collection, 'title' => 'T', 'url' => '/t'])->render();
 
     expect($row)->toContain('<p class="search-result-type text-uppercase text-muted small mb-1">'.$label.'</p>');
-})->with(array_map(
-    fn (string $collection, string $label): array => [$collection, $label],
-    array_keys(SiteSearchSuggestionsController::TYPE_LABELS),
-    array_values(SiteSearchSuggestionsController::TYPE_LABELS),
-));
+})->with([
+    ['clinical_expertise', 'Area of Expertise'],
+    ['people', 'Person'],
+    ['posts', 'News'],
+    ['clinical_locations', 'Clinical Location'],
+    ['clinical_resources', 'Clinical Resource'],
+    ['knowledge_bases', 'Knowledge Base'],
+    ['pages', 'Page'],
+]);
 
 it('serves the endpoint as JSON behind its rate limiter', function (): void {
     $response = $this->get('/!/search/suggestions?q=c');
@@ -301,7 +459,7 @@ it('serves the endpoint as JSON behind its rate limiter', function (): void {
 
     $route = mustExist(app('router')->getRoutes()->getByName('site-search.suggestions'), 'the suggestions route');
 
-    expect($route->gatherMiddleware())->toContain('throttle:site-search-suggestions');
+    expect($route->gatherMiddleware())->toContain('throttle:aether-search-suggestions');
 });
 
 /**
@@ -311,7 +469,9 @@ it('serves the endpoint as JSON behind its rate limiter', function (): void {
  */
 function renderSearchPageForTypeahead(array $get): string
 {
-    return (string) view('search/index', ['get' => $get])->render();
+    stubEmptySearchIndex();
+
+    return renderAetherSearchPage($get);
 }
 
 it('wires the search input as an ARIA combobox bound to the type-ahead component', function (): void {
@@ -328,6 +488,10 @@ it('wires the search input as an ARIA combobox bound to the type-ahead component
         ->toContain('<form action="/search" method="get"')
         ->toContain('name="q"')
         ->toContain('value="heart"');
+});
+
+it('tells the type-ahead which site the page belongs to', function (): void {
+    expect(renderSearchPageForTypeahead(['q' => 'kirk']))->toContain('data-site="default"');
 });
 
 it('leaves knowledge-base search as a plain field, since it is scoped to one subtree', function (): void {

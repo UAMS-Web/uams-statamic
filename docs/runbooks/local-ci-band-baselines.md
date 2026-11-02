@@ -29,10 +29,27 @@ Recorded for UAMS-Web/uams-statamic-archive#3235. Three full chains with all 14 
 
 **The 8.4.27 row is the baseline.** Its two samples produced byte-identical per-test tables (`classname`, `name`, `assertions` from `junit-parallel.xml`, sorted), both summing to 36,638.
 
-**The 10-assertion difference against 8.4.25 is unattributed.** Every test count matches; only the parallel assertion total moved. The 8.4.25 side has one sample, cannot be resampled (that interpreter is no longer installed), and its per-test table was overwritten by the next chain. So it is a candidate runtime effect, not a demonstrated one. The conditional assertions in [`tests/Feature/TestBootstrapCostTest.php`](../../tests/Feature/TestBootstrapCostTest.php) do not explain it: that test contributed 4 assertions in both 8.4.27 runs, which bounds its swing at 2.
+**The 10-assertion difference against 8.4.25 is unattributed.** A candidate found later: before #335, `CollectionTreeIsolationTest` moved by exactly 10 with worker state. No per-test table exists for that run, so this is a question and not an attribution. Every test count matches; only the parallel assertion total moved. The 8.4.25 side has one sample, cannot be resampled (that interpreter is no longer installed), and its per-test table was overwritten by the next chain. So it is a candidate runtime effect, not a demonstrated one. The conditional assertions in [`tests/Feature/TestBootstrapCostTest.php`](../../tests/Feature/TestBootstrapCostTest.php) do not explain it: that test contributed 4 assertions in both 8.4.27 runs, which bounds its swing at 2.
 
 ## Comparing a new chain against this baseline
 
 - Compare like with like: the same commit or tree, the same interpreter version, and the rest of the checklist in [`measurement-parity`](../../.claude/rules/measurement-parity.md).
 - A different version on the `under PHP` line means the figures are a new baseline, not a regression or an improvement against this one.
-- Test counts should match exactly. A small assertion difference at an identical test count is the conditional-assertion drift that rule describes; a difference of tens needs a per-test comparison of the two JUnit reports before it is attributed to anything.
+- Test counts must match exactly.
+- Assertion totals on one machine are compared within a bound of 2. The one source known to vary by run is the first test in [`tests/Feature/TestBootstrapCostTest.php`](../../tests/Feature/TestBootstrapCostTest.php), which contributes 4 assertions when its worker found a snapshot at boot and 2 when it did not. A seeded band normally takes the first branch. Between machines a few tests branch on the coverage driver or the operating system, so a cross-machine total is not held to this bound.
+- A larger difference at an identical test count is not noise. Name the tests before attributing it to anything: `node scripts/diff-band-assertions.mjs <first junit.xml> <second junit.xml>` prints every test whose count differs and exits 1 when any does.
+- This baseline predates #335, which fixed the counts of two tests. The clamp test in `PestBrowserRetryPatchTest` went from three assertions per retry attempt to 5, and `it leaves no uri row for an entry an earlier test created and deleted` went from one per cached index to 2. A chain compared against the figures above is lower by those differences, whose sizes the baseline's per-test table would give: 46 to 5 and 32 to 2 at the counts measured below.
+- `StacheSnapshotCopyVerificationTest`, which `measurement-parity` names as conditional, has no conditional assertion at this revision.
+
+### What moved the total before #335
+
+Measured on Windows 11 with PHP 8.4.27 at `a73ab11aa`, three parallel bands (`--exclude-group=serial`) on a loaded machine: 13,915 tests each, 4 of them failing and 16 skipped in every band, and 39,132, 39,135 and 39,132 assertions. The serial band was not measured.
+
+- `it clamps a later attempt to what is left of the retry window` reported 40, 43 and 40, the one test that differed between those bands. It asserted once per attempt of a time-bound retry loop, three assertions an attempt, and load decides how many attempts fit in the window. Alone on the same machine it reported 46 five times and 43 once.
+- `it leaves no uri row for an entry an earlier test created and deleted` reported 32 in all three bands, and 22 when run alone or after a test that does not flush the cache. It asserted once per cached `uri` index, and what the worker ran first decides how many are cached. Run after `tests/Feature/Auth/FrontEndAccountFlowTest.php`, which calls `Cache::flush()`, it reported 32. The bands never showed it move, so a three-band comparison alone would not have found it.
+
+The 12-assertion gap this drift was first reported at (36,919 and 36,907 at one tree, macOS) equals 4 retry attempts. The ticket's third total, 36,908, is 11 and 1 from those and is not a multiple of 3, so the clamp test alone does not explain that row. None of this was reproduced on macOS, so these attributions are arithmetic, not measurements.
+
+### The spread after #335
+
+Measured on Windows 11 with PHP 8.4.27 with both tests fixed, three parallel bands (`--exclude-group=serial`) on the same loaded machine, durations 3,246s to 4,346s: 13,915 tests each, 4 failing and 16 skipped in every band, and 39,067 assertions in all three. `node scripts/diff-band-assertions.mjs` reported no test differing in any of the three pairs, and against the before-change bands it named the clamp test, so it can report a difference. The clamp test reported 5 and the uri-row test 2 in every band. The bound of 2 is kept for the `TestBootstrapCostTest` branch above, which did not fire in these three. The serial band and macOS were not run.

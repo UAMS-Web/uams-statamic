@@ -283,12 +283,6 @@ class Checkboxes extends BaseCheckboxes
         // Initialize rules array
         $rules = [];
 
-        // Check if value is not an array
-        if (! \is_array($value)) {
-            // Convert value to an array if it is not an array
-            $value = $value === null ? [] : [$value];
-        }
-
         // Determine the selection limit mode from config
         $selectionLimit = $config['selection_limit'] ?? null;
 

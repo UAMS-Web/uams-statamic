@@ -10,7 +10,7 @@ use Statamic\Events\FormSubmitted;
 use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Forms\Form;
-use UAMSWeb\FormSettings\Listeners\EnforceFormRestrictions;
+use UAMSWeb\Aether\Forms\Settings\Listeners\EnforceFormRestrictions;
 
 /**
  * Rejects a form submission server-side when it selects a choice that has reached its per-choice

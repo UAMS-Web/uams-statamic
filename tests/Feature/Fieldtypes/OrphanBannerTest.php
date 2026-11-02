@@ -77,8 +77,6 @@ it('shows no banner and never resolves without an entry parent', function (): vo
 
 it('renders no banner and never dereferences when no field is bound', function (): void {
     // The null-safe field() access must survive a fieldtype with no bound field.
-    $outcome = 'unset';
-
     try {
         $outcome = (new OrphanBanner)->preload();
     } catch (Throwable $e) {

@@ -18,7 +18,7 @@ The convention is already enforced. [`cspell.json`](../../cspell.json) sets `"la
 
 ## Why this is a standing order
 
-**Because each addition is individually defensible and the aggregate is not.** A word is added because it is genuinely needed at one site, and thereafter the gate cannot enforce the convention for that word *anywhere*, including in prose nobody has written yet. The cost is paid by a later reader, not by the author. Repeated, it replaces the convention with its opposite: `wordpress-importer`'s dictionary had absorbed ten British spellings before the convention was written down, and `uams-statamic`'s review of four entries (#2318) found two that had been absorbed for reasons that looked like the carve-out and were not.
+**Because each addition is individually defensible and the aggregate is not.** A word is added because it is genuinely needed at one site, and thereafter the gate cannot enforce the convention for that word *anywhere*, including in prose nobody has written yet. The cost is paid by a later reader, not by the author. Repeated, it replaces the convention with its opposite: `wordpress-importer`'s dictionary had absorbed ten British spellings before the convention was written down, and `uams-statamic`'s review of four entries (UAMS-Web/uams-statamic-archive#2318) found two that had been absorbed for reasons that looked like the carve-out and were not.
 
 **And the entry carries no trace of its reasoning.** A long sorted word list makes every line look alike: a proper noun, a package name, a British spelling somebody allowed once, and a genuine misspelling are indistinguishable. Reviewing one means reconstructing why it was added.
 
@@ -86,7 +86,7 @@ A British spelling that stands in a first-party file is not automatically wrong,
 
    ```
    the leading run of `#` lines    the header, and the ONLY comment region
-   a `#` line below the header     a STRAY -- the #1922 defect, and
+   a `#` line below the header     a STRAY -- the UAMS-Web/uams-statamic-archive#1922 defect, and
                                    scripts/project-words-sorted.test.mjs fails on it
    ```
 
@@ -96,7 +96,7 @@ A British spelling that stands in a first-party file is not automatically wrong,
 
 6. **`project-words.txt` is read by the `spell` job on every branch**, so an edit to it is felt by every open pull request. Say what you changed when handing over.
 
-   [`scripts/project-words-sorted.test.mjs`](../../scripts/project-words-sorted.test.mjs) gates the sorted order (#2284), and names the line on either mistake.
+   [`scripts/project-words-sorted.test.mjs`](../../scripts/project-words-sorted.test.mjs) gates the sorted order (UAMS-Web/uams-statamic-archive#2284), and names the line on either mistake.
 
 ## What this does not cover
 
@@ -110,6 +110,6 @@ This file is the standing statement of **which English this repository writes, a
 
 Which files the `spell` job actually reads belongs to the [`local-ci`](../../.claude/skills/local-ci/SKILL.md) skill and to the runner.
 
-The sorted-order invariant and its rationale belong to [`scripts/project-words-sorted.test.mjs`](../../scripts/project-words-sorted.test.mjs) and #2284.
+The sorted-order invariant and its rationale belong to [`scripts/project-words-sorted.test.mjs`](../../scripts/project-words-sorted.test.mjs) and UAMS-Web/uams-statamic-archive#2284.
 
-_Refs: #2325 (this rule), #2318 (the two entries that prompted it), #1018 and #1311 (cspell adoption and the dictionary's move out of `.vscode/settings.json`), #1922 and #2284 (the comment-stray and sorted-order guards)._
+_Refs: UAMS-Web/uams-statamic-archive#2325 (this rule), UAMS-Web/uams-statamic-archive#2318 (the two entries that prompted it), UAMS-Web/uams-statamic-archive#1018 and UAMS-Web/uams-statamic-archive#1311 (cspell adoption and the dictionary's move out of `.vscode/settings.json`), UAMS-Web/uams-statamic-archive#1922 and UAMS-Web/uams-statamic-archive#2284 (the comment-stray and sorted-order guards)._

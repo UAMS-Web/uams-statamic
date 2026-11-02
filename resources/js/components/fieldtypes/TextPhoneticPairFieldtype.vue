@@ -12,8 +12,8 @@
 				:pair="current"
 				:text-label="resolvedTextLabel"
 				:phonetic-label="resolvedPhoneticLabel"
-				:text-id="'field_'+handle+'_tp_text'"
-				:pho-id="'field_'+handle+'_tp_pho'"
+				:text-id="elementId('tp_text')"
+				:pho-id="elementId('tp_pho')"
 				:text-name="handle+'[text]'"
 				:pho-name="handle+'[phonetic_text]'"
 				:quote-straight-on-text="quoteStraightOnText"
@@ -36,6 +36,7 @@ import { publishContextKey } from '@statamic/cms/ui';
 import PhoneticTextInstructions from './partials/PhoneticTextInstructions.vue';
 import TextPhoneticPairInput from './partials/TextPhoneticPair.vue';
 import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import { subfieldId } from './partials/subfieldId.js';
 
 function emptyPair() {
 	return { text: '', phonetic_text: '' };
@@ -117,6 +118,10 @@ export default {
 		}
 	},
 	methods: {
+		/** The id of one control here, carrying the publish container (#336). */
+		elementId(control) {
+			return subfieldId(this.id, this.handle, control);
+		},
 		errs(subPath) {
 			const errs =
 				this.publishContext?.errors &&

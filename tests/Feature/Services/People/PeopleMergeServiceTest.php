@@ -326,7 +326,6 @@ it('honors the multisite rule: a redirect is created for each site the loser was
 
     $result = pmService()->merge(['surv', 'lose'], 'surv', []);
 
-    $sources = collect($result->redirects)->pluck('source')->all();
     $sites = collect($result->redirects)->pluck('site')->unique()->values()->all();
 
     // A redirect exists for both the default-site URL and the other-site URL.

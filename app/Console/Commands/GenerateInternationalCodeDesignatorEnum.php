@@ -94,7 +94,7 @@ class GenerateInternationalCodeDesignatorEnum extends Command
         $out .= $this->buildIcdInfoAttributeClass();
 
         // Enum docblock and opening
-        $out .= $this->buildEnumDocblock(\count($records), $generatedAt);
+        $out .= $this->buildEnumDocblock($generatedAt);
         $out .= "enum InternationalCodeDesignator: string\n";
         $out .= "{\n";
 
@@ -154,10 +154,9 @@ class GenerateInternationalCodeDesignatorEnum extends Command
     /**
      * Build the enum docblock (class-level).
      *
-     * @param  int  $count  Number of enum cases
      * @param  string  $generatedAt  Date the enum was generated (YYYY-MM-DD)
      */
-    private function buildEnumDocblock(int $count, string $generatedAt): string
+    private function buildEnumDocblock(string $generatedAt): string
     {
         $out = "/**\n";
         $out .= " * ISO 6523 International Code Designator (ICD) code list.\n";
@@ -178,7 +177,6 @@ class GenerateInternationalCodeDesignatorEnum extends Command
         $out .= " */\n";
 
         unset(
-            $count,
             $generatedAt
         );
 

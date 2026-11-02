@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;
 
@@ -133,14 +134,10 @@ function runAssignAuthor(array $env = [], array $files = []): array
     chmod($directory.'/bin/gh', 0755);
 
     // A native Windows jq ends each line with CRLF, which the runner's Linux jq
-    // never does, so the carriage return lands inside the next argument. Its
-    // --binary flag keeps LF; the wrapper drops the stub directory from PATH to
-    // reach the real jq.
+    // never does, so the carriage return lands inside the next argument. The
+    // stub runs the real jq with --binary, which keeps LF.
     if (PHP_OS_FAMILY === 'Windows') {
-        file_put_contents($directory.'/bin/jq', <<<'SH'
-            #!/bin/bash
-            PATH="${PATH#*:}" exec jq --binary "$@"
-            SH);
+        file_put_contents($directory.'/bin/jq', assignAuthorJqStub(assignAuthorRealJq()));
         chmod($directory.'/bin/jq', 0755);
     }
 
@@ -181,6 +178,32 @@ function runAssignAuthor(array $env = [], array $files = []): array
 }
 
 /**
+ * The absolute path of the real `jq`, as `bash` names it.
+ *
+ * @throws ProcessFailedException When no `jq` is on PATH
+ */
+function assignAuthorRealJq(): string
+{
+    /** @var string|null $path */
+    static $path = null;
+
+    return $path ??= trim((new Process(['bash', '-c', 'command -v jq']))->mustRun()->getOutput());
+}
+
+/**
+ * The script that stands in for `jq` on Windows.
+ *
+ * It runs the real `jq` by absolute path, so nothing in it reads PATH and the
+ * shape of the temporary directory cannot change which `jq` it reaches.
+ *
+ * @param  string  $jq  Absolute path of the real `jq`
+ */
+function assignAuthorJqStub(string $jq): string
+{
+    return "#!/bin/bash\nexec '".str_replace("'", "'\\''", $jq)."' --binary \"\$@\"\n";
+}
+
+/**
  * The stub-log line an assignment of one number writes.
  */
 function assignAuthorPatch(string $number): string
@@ -206,6 +229,22 @@ function assignAuthorClosing(array $issues, ?int $totalCount = null): string
         'nodes' => $nodes,
     ]]]]]);
 }
+
+it('reaches the real jq with LF endings whatever shape the stub directory has', function (string $stubDirectory): void {
+    $script = tempnam(sys_get_temp_dir(), 'jq-stub');
+    file_put_contents((string) $script, assignAuthorJqStub(assignAuthorRealJq()));
+
+    // No entry on this PATH holds a jq, so only the stub's own path can reach one
+    $process = new Process(['bash', (string) $script, '-n', '"a","b"'], null, ['PATH' => $stubDirectory.':/usr/bin']);
+    $process->run();
+    unlink((string) $script);
+
+    expect($process->getExitCode())->toBe(0)
+        ->and($process->getOutput())->toBe("\"a\"\n\"b\"\n");
+})->with([
+    'a drive-prefixed path' => 'C:\Temp\assign-author-test/bin',
+    'an MSYS path' => '/tmp/assign-author-test/bin',
+])->skip(PHP_OS_FAMILY !== 'Windows', 'The stub exists only on Windows.');
 
 it('triggers on a pull request opening or closing and on nothing else', function (): void {
     expect(assignAuthorWorkflow()['on'] ?? null)->toBe(['pull_request' => ['types' => ['opened', 'closed']]]);

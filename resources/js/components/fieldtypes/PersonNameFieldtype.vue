@@ -9,8 +9,8 @@
 				:pair="current.first_name"
 				:text-label="__('statamic::fieldtypes.person_name.field.first_name_text')"
 				:phonetic-label="__('statamic::fieldtypes.person_name.field.first_name_phonetic_text')"
-				:text-id="'field_'+handle+'_fn_text'"
-				:pho-id="'field_'+handle+'_fn_pho'"
+				:text-id="elementId('fn_text')"
+				:pho-id="elementId('fn_pho')"
 				:text-name="handle+'[first_name][text]'"
 				:pho-name="handle+'[first_name][phonetic_text]'"
 				:text-required="mustRequireText"
@@ -41,8 +41,8 @@
 						:pair="current.middle_name"
 						:text-label="__('statamic::fieldtypes.person_name.field.middle_name_text')"
 						:phonetic-label="__('statamic::fieldtypes.person_name.field.middle_name_phonetic_text')"
-						:text-id="'field_'+handle+'_mn_text'"
-						:pho-id="'field_'+handle+'_mn_pho'"
+						:text-id="elementId('mn_text')"
+						:pho-id="elementId('mn_pho')"
 						:text-name="handle+'[middle_name][text]'"
 						:pho-name="handle+'[middle_name][phonetic_text]'"
 						:text-required="mustRequireText"
@@ -76,8 +76,8 @@
 							:pair="current.nickname"
 							:text-label="__('statamic::fieldtypes.person_name.field.nickname_text')"
 							:phonetic-label="__('statamic::fieldtypes.person_name.field.nickname_phonetic_text')"
-							:text-id="'field_'+handle+'_nick_text'"
-							:pho-id="'field_'+handle+'_nick_pho'"
+							:text-id="elementId('nick_text')"
+							:pho-id="elementId('nick_pho')"
 							:text-name="handle+'[nickname][text]'"
 							:pho-name="handle+'[nickname][phonetic_text]'"
 							:quote-straight-on-text="true"
@@ -99,8 +99,8 @@
 				:pair="current.last_name"
 				:text-label="__('statamic::fieldtypes.person_name.field.last_name_text')"
 				:phonetic-label="__('statamic::fieldtypes.person_name.field.last_name_phonetic_text')"
-				:text-id="'field_'+handle+'_ln_text'"
-				:pho-id="'field_'+handle+'_ln_pho'"
+				:text-id="elementId('ln_text')"
+				:pho-id="elementId('ln_pho')"
 				:text-name="handle+'[last_name][text]'"
 				:pho-name="handle+'[last_name][phonetic_text]'"
 				:text-required="mustRequireText"
@@ -129,11 +129,11 @@
 				>
 					<Label
 						class="mb-1 block"
-						:for="'field_'+handle+'_gen'"
+						:for="elementId('gen')"
 						:required="generationalSuffixLabelRequired"
 					>{{ __('statamic::fieldtypes.person_name.field.generational_suffix') }}</Label>
 					<PersonNameGenerationalSuffix
-						:id="'field_'+handle+'_gen'"
+						:id="elementId('gen')"
 						:model-value="current.generational_suffix"
 						:options="suffixOptions"
 						:read-only="isReadOnly"
@@ -157,7 +157,7 @@
 					:required="fieldMarkedRequired"
 				>
 					<PersonNameDisplayFormatSelect
-						:id="'field_'+handle+'_df'"
+						:id="elementId('df')"
 						:model-value="current.display_format"
 						:name-state="current"
 						:include-nickname="includeNickname"
@@ -189,6 +189,7 @@ import PersonNameGenerationalSuffix from './person-name/PersonNameGenerationalSu
 import PhoneticTextInstructions from './partials/PhoneticTextInstructions.vue';
 import TextPhoneticPair from './partials/TextPhoneticPair.vue';
 import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import { subfieldId } from './partials/subfieldId.js';
 
 function emptyPersonName() {
 	return {
@@ -308,6 +309,10 @@ export default {
 		}
 	},
 	methods: {
+		/** The id of one control here, carrying the publish container (#336). */
+		elementId(control) {
+			return subfieldId(this.id, this.handle, control);
+		},
 		errs(subPath) {
 			const errs =
 				this.publishContext?.errors &&

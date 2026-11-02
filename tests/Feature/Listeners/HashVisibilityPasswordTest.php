@@ -10,7 +10,7 @@ use Statamic\Events\EntrySaving;
 use Statamic\Facades\Entry;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
 
 uses(TestCase::class);
 

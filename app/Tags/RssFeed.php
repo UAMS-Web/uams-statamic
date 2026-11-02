@@ -346,15 +346,6 @@ class RssFeed extends Tags
                 // Initialize authors array
                 $authors = [];
 
-                // Initialize dc namespace variable for RSS feeds (used later for metadata)
-                $dcNamespace = null;
-
-                // ---
-                // Initialize dc namespace children variable for RSS feeds (used later for
-                // metadata)
-                // ---
-                $dc = null;
-
                 // Extract authors
                 if ($isAtom) {
                     // ---

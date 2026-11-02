@@ -9,8 +9,8 @@
 
   Before opening: run `npm run spell` if you touched prose or identifiers, run
   `composer mutate-ignore` if you added or changed a `@pest-mutate-ignore` annotation, and open as a
-  DRAFT unless the branch is ready for local CI (remote CI is disabled — see the `local-ci`
-  skill). Docs-only PRs open ready.
+  DRAFT unless the branch is ready to merge once its required remote checks pass. Docs-only
+  PRs open ready.
 
   Closing multiple issues? Repeat the keyword — `Closes #1, Closes #2.` A comma-separated
   list links only the FIRST issue.

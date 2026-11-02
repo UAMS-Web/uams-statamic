@@ -21,8 +21,6 @@ Every change starts as an issue, is built on a branch linked to that issue, and 
    The link shows the branch, and later its pull requests, on the issue.
 3. **Open a pull request from the branch to `main`.** It carries the full description: what changed, why, and how it was verified. Its test plan is run on the local environment, and its boxes are checked before review.
 
-   If the branch adds or changes a `@pest-mutate-ignore` annotation, run `composer mutate-ignore` before opening it. It runs both annotation checks from local CI's `encoding` job on the PHP files the branch changed under `app/` and `tests/`: the text check, and the breadth check, which fails an annotation that removes more than one mutant of a mutator it names or none at all. It exits non-zero when either flags.
-
 ## Test plans
 
 Every pull request ends with a `## Test plan` checklist. Its first line names the environment it was run on, and every item is something a reviewer can check there:

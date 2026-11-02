@@ -236,8 +236,7 @@ it('goes on to the next sibling after a node it skips', function (array $skipped
     // is still reached.
     $p = uniqid('kbt-sibling-');
     kbTreeEntries(["$p-faq" => ['faq'], "$p-article" => ['article', 'Sibling Article']]);
-    /** @var LegacyMockInterface $log */
-    $log = Log::spy();
+    Log::spy();
 
     $skipped = array_map(fn (mixed $value): mixed => \is_string($value) ? str_replace('PREFIX', $p, $value) : $value, $skipped);
 
