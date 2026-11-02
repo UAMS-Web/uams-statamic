@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support\Doubles;
 
+use App\Services\EntryValidation\EntryValidator;
 use App\Widgets\IncompletePublishedEntries;
 use Illuminate\Support\MessageBag;
 use Statamic\Entries\Entry as StatamicEntry;
@@ -65,7 +66,7 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeSanitizeMalformedReplicatorValues(Blueprint $blueprint, array $values): array
     {
-        return $this->sanitizeMalformedReplicatorValues($blueprint, $values);
+        return app(EntryValidator::class)->sanitizeMalformedReplicatorValues($blueprint, $values);
     }
 
     /**
@@ -75,7 +76,7 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeEvaluateCondition(string $fieldHandle, string $rhs, array $values): bool
     {
-        return $this->evaluateCondition($fieldHandle, $rhs, $values);
+        return app(EntryValidator::class)->evaluateCondition($fieldHandle, $rhs, $values);
     }
 
     /**
@@ -83,7 +84,7 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeFieldHandle(Field $field): string
     {
-        return $this->fieldHandle($field);
+        return app(EntryValidator::class)->fieldHandle($field);
     }
 
     /**
@@ -93,7 +94,7 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeFieldPassesConditions(Field $field, array $values): bool
     {
-        return $this->fieldPassesConditions($field, $values);
+        return app(EntryValidator::class)->fieldPassesConditions($field, $values);
     }
 
     /**
@@ -104,7 +105,7 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeFilterReplicatorRowsToVisibleFields(array $rows, Field $field): array
     {
-        return $this->filterReplicatorRowsToVisibleFields($rows, $field);
+        return app(EntryValidator::class)->filterReplicatorRowsToVisibleFields($rows, $field);
     }
 
     /**
@@ -114,6 +115,6 @@ class IncompletePublishedEntriesWidgetTestDouble extends IncompletePublishedEntr
      */
     public function exposeExtractEntryValuesForValidation(StatamicEntry $entry): array
     {
-        return $this->extractEntryValuesForValidation($entry);
+        return app(EntryValidator::class)->extractValues($entry);
     }
 }

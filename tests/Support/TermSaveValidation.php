@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use App\Services\EntryValidation\EntryValidator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Statamic\Fields\Blueprint;
@@ -11,7 +12,6 @@ use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Statamic\Fields\Validator;
 use Statamic\Taxonomies\LocalizedTerm;
-use Tests\Support\Doubles\IncompletePublishedEntriesWidgetTestDouble;
 
 /**
  * Validates a committed taxonomy term the way the Control Panel term editor saves it.
@@ -46,13 +46,13 @@ final class TermSaveValidation
         $values = [...$preProcessed->all(), 'title' => $term->title(), 'slug' => $term->slug()];
 
         // Leave out every field the editor would hide by its display condition
-        $widget = new IncompletePublishedEntriesWidgetTestDouble;
+        $validator = app(EntryValidator::class);
 
         /** @var Collection<string, Field> $fields */
         $fields = $blueprint->fields()->all();
 
         foreach ($fields as $handle => $field) {
-            if (! $widget->exposeFieldPassesConditions($field, $values)) {
+            if (! $validator->fieldPassesConditions($field, $values)) {
                 unset($values[$handle]);
             }
         }
