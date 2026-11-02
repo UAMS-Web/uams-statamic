@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Jobs\RefreshProviderEligibilityForDatedLocations;
 use App\Jobs\UnpublishExpiredClassifieds;
+use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
@@ -28,6 +29,17 @@ beforeEach(function (): void {
     Queue::fake();
 });
 
+/**
+ * Read the seconds a job's `UniqueFor` attribute gives its lock.
+ *
+ * @param  object  $job  The job under test.
+ * @return int The attribute's seconds.
+ */
+function uniqueLockSeconds(object $job): int
+{
+    return (new ReflectionClass($job))->getAttributes(UniqueFor::class)[0]->newInstance()->uniqueFor;
+}
+
 dataset('unique jobs', [
     'expired classifieds' => [fn (): UnpublishExpiredClassifieds => new UnpublishExpiredClassifieds],
     'dated locations' => [fn (): RefreshProviderEligibilityForDatedLocations => new RefreshProviderEligibilityForDatedLocations],
@@ -36,7 +48,7 @@ dataset('unique jobs', [
 it('drops a second dispatch while the lock is held', function (UnpublishExpiredClassifieds|RefreshProviderEligibilityForDatedLocations $job): void {
     $job::dispatch();
 
-    $this->travel($job->uniqueFor - 1)->seconds();
+    $this->travel(uniqueLockSeconds($job) - 1)->seconds();
 
     $job::dispatch();
 
@@ -46,7 +58,7 @@ it('drops a second dispatch while the lock is held', function (UnpublishExpiredC
 it('accepts a dispatch once the lock from a lost run has expired', function (UnpublishExpiredClassifieds|RefreshProviderEligibilityForDatedLocations $job): void {
     $job::dispatch();
 
-    $this->travel($job->uniqueFor + 1)->seconds();
+    $this->travel(uniqueLockSeconds($job) + 1)->seconds();
 
     $job::dispatch();
 
@@ -54,5 +66,5 @@ it('accepts a dispatch once the lock from a lost run has expired', function (Unp
 })->with('unique jobs');
 
 it('outlasts the time the queue gives a run', function (UnpublishExpiredClassifieds|RefreshProviderEligibilityForDatedLocations $job): void {
-    expect($job->uniqueFor)->toBeGreaterThan(config()->integer('queue.connections.database.retry_after'));
+    expect(uniqueLockSeconds($job))->toBeGreaterThan(config()->integer('queue.connections.database.retry_after'));
 })->with('unique jobs');
