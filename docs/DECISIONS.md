@@ -3754,6 +3754,7 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** None from the browser suite: #502 (by #506) runs the same fixture under a `<meta>` policy with `bypassCSP` off, so the check above now runs on every pull request.
 
 **Companion.** #189. The enforce flip itself is #33.
+
 ## 2026-11-02: Windows shards the Pest band four ways, from a file list per shard (#504)
 
 **Decision.** The Windows leg runs the parallel band as four shards on four runners, like Linux and macOS. Each Windows shard lists its tests in one process with `pest --list-tests --exclude-group=serial --shard=<i>/4`, `scripts/pest-shard-config.php` writes a copy of `phpunit.xml` whose only suite names that shard's files, and the band runs `pest --parallel --configuration=<that copy>`. `pest-report` reads four shards on every leg. This supersedes the 2026-11-01 entry's "Windows runs the Pest band whole" and its rejected *Shards on Windows with a shorter filter*.
