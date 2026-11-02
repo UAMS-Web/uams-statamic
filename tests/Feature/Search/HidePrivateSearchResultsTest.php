@@ -285,7 +285,7 @@ it('labels a real entry hit by its collection and finds its type card', function
 
     // On a hit `collection` is the Collection object, not its handle
     $tag = new AetherSearch;
-    $tag->setParameters(['collection' => $public->collection()]);
+    $tag->setContext([])->setParameters(['collection' => $public->collection()]);
 
     expect($tag->card())->toBe('aether-search::cards/people');
 });
