@@ -574,8 +574,8 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
             expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
             expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
             expect(job, id).toContain('      fail-fast: false\n')
-            // Only the Windows shards the whole band stands in for may leave the matrix.
-            expect(job.includes('exclude:'), id).toBe(id === 'pest')
+            // No leg leaves the matrix: Windows shards the band too (#504).
+            expect(job.includes('exclude:'), id).toBe(false)
             expect(job, id).not.toMatch(/^ +continue-on-error:/m)
         }
     })
@@ -616,8 +616,7 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // new total.
         const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
         const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
-        // Windows runs the band whole, so the report's total depends on the leg.
-        const reportTotal = report.match(/^ {6}SHARD_TOTAL: \$\{\{ matrix\.os == 'windows-latest' && 1 \|\| (\d+) \}\}$/m)
+        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
 
         expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
         expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
@@ -628,7 +627,8 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         expect(shards).toEqual(Array.from({ length: total }, (_, i) => i + 1))
         expect(Number(reportTotal[1])).toBe(total)
         expect(report).toContain('--total="$SHARD_TOTAL"')
-        expect(pest).toContain('--shard="$SHARD/$SHARD_TOTAL"')
+        // Two steps select the shard: the run elsewhere, and the listing on Windows (#504).
+        expect(pest.split('--shard="$SHARD/$SHARD_TOTAL"')).toHaveLength(3)
     })
 
     it('gives the serial group the shards\' setup, step for step', () => {
@@ -658,13 +658,14 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // once the shard selector and the per-shard report name are taken out,
         // the shard's flags must be the local runner's parallel-band flags, less
         // the memory passthru the local runner adds for a developer machine.
-        // Two steps run the band, the shard and the whole Windows band (#348), and each is held.
+        // Two steps run the band: the shard, and the Windows shard from its file
+        // list (#504). Each is held.
         const runLines = [...pest.matchAll(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/gm)]
-        expect(runLines, 'the pest job should run the shard and the whole Windows band').toHaveLength(2)
+        expect(runLines, 'the pest job should run the shard and the Windows shard').toHaveLength(2)
         const remotes = runLines.map((line) => line[1]
             .replace(' --shard="$SHARD/$SHARD_TOTAL"', '')
+            .replace(' --configuration="phpunit.shard-$SHARD.xml"', '')
             .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
-            .replace('junit-parallel-1.xml', 'junit-parallel.xml')
             .split(' '))
 
         const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
