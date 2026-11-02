@@ -3780,6 +3780,7 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** No real query log exists, so the no-results rate is unmeasured. Concurrency, result hydration and the production host are not measured, and each changes latency. Whether the results layer swaps drivers without a UI rewrite is the spike's to confirm.
 
 **Companion.** #161, the measurements and the comparison; #511, the Loupe spike.
+
 ## 2026-11-02: Each operating system balances its Pest shards on its own timings, and Windows runs six (#516)
 
 **Decision.** Every leg of `pest-report` saves its merged per-class timings on a push to `main`, under `pest-shard-timings-<os>-<run id>-<attempt>`, and each `pest` shard chooses among its own operating system's entries by the rule #519 set (the newest entry created at or before the run's first attempt started), through `scripts/select-shard-timings.php --prefix`. With no cache entry, a shard reads `.github/pest-shards.<os>.json` where one is committed (Windows) and `.github/pest-shards.json` otherwise. The Windows leg runs the parallel band as six shards; Linux and macOS stay at four. This changes the 2026-10-28 entry's single timings source, and the 2026-11-02 entry's four Windows shards.
