@@ -13,11 +13,11 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/UAMS-Web/wordpress-importer.git"
+            "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git"
         },
         {
             "type": "vcs",
-            "url": "https://github.com/UAMS-Web/wordpress-wxr-cleanup.git"
+            "url": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup.git"
         }
     ],
     "require": {
@@ -47,10 +47,10 @@
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
         "studio1902/statamic-peak-tools": "9.2.3",
-        "uams-web/statamic-alpine-csp-forms": "^0.1.0",
-        "uams-web/statamic-form-settings": "^0.3",
-        "uams-web/statamic-multisite-forms": "^0.6",
-        "uams-web/wordpress-importer": "^0.31"
+        "uams-web/aether-alpine-csp-forms": "^0.3",
+        "uams-web/aether-form-settings": "^0.4",
+        "uams-web/aether-multisite-forms": "^0.7",
+        "uams-web/aether-wordpress-importer": "^0.32"
     },
     "require-dev": {
         "brianium/paratest": "^7.23",
@@ -83,7 +83,7 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/",
-            "UAMSWeb\\WordPressImporter\\Tests\\": "vendor/uams-web/wordpress-importer/tests/"
+            "UAMSWeb\\Aether\\WordPressImporter\\Tests\\": "vendor/uams-web/aether-wordpress-importer/tests/"
         }
     },
     "scripts": {

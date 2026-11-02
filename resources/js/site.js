@@ -12,16 +12,15 @@
  *    - Enables real-time form field updates without page refresh
  *    - Handles x-model, x-if, and other reactive directives
  *
- * 2. THE CONDITIONS EVALUATOR (UAMS-Web/uams-statamic-archive#1956)
- *    - resources/js/conditions/ owns the field-conditions evaluator outright:
- *      * showField(conditions, values, fieldPath) - Evaluates field conditions
- *      * It ships inside THIS bundle, so nothing loads from vendor at runtime.
+ * 2. THE CONDITIONS EVALUATOR (#189)
+ *    - Statamic's helpers.js defines the field-conditions evaluator:
+ *      * Statamic.$conditions.showField(conditions, values, fieldPath)
+ *      * layout.antlers.html loads it as a script tag ahead of this bundle.
  *    - Alpine.js and the evaluator work together:
  *      * Alpine.js handles DOM reactivity and user interactions
  *      * the evaluator answers "should this field be visible right now"
- *    - It replaced Statamic's helpers.js, which layout.antlers.html used to load
- *      as a script tag. That bundle decided every comparison with eval(), the
- *      last 'unsafe-eval' consumer on a public page and so the blocker on #33.
+ *    - Since statamic/cms v6.35.1 it uses no eval(), so it no longer stands in
+ *      the way of #33. The Control Panel uses the same evaluator.
  *
  * 3. CONDITIONAL FORM FIELD FLOW
  *    - User interacts with form field (e.g., selects dropdown option)
@@ -31,7 +30,7 @@
  *
  * 4. TEMPLATE INTEGRATION
  *    - Form templates use: {{ form:create :in="form" js="alpine_csp" }}
- *      (the uams-web/statamic-alpine-csp-forms add-on; see 6 below)
+ *      (the uams-web/aether-alpine-csp-forms add-on; see 6 below)
  *    - Field templates use: <template x-if="{{ show_field }}">
  *    - Field inputs use: x-model="form.{{ handle }}"
  *
@@ -48,15 +47,16 @@
  *      'unsafe-eval'. Its interpreter resolves identifiers only from the
  *      Alpine scope stack, so the stock driver's
  *      Statamic.$conditions.showField(...) throws on every field.
- *    - The uams-web/statamic-alpine-csp-forms add-on (UAMS-Web/uams-statamic-archive#3073) owns both halves:
+ *    - The uams-web/aether-alpine-csp-forms add-on (UAMS-Web/uams-statamic-archive#3073) owns both halves:
  *      its `alpine_csp` driver emits $showField(...) instead, and its
  *      front-end script, loaded by the layout ahead of this bundle, registers
  *      the magic on `alpine:init`, which is why `window.Alpine` is set below
  *      before `Alpine.start()`.
  *
  * Files Involved:
- * - vendor/uams-web/statamic-alpine-csp-forms: the driver and the evaluator
- * - resources/js/conditions/: custom conditions the evaluator reads from
+ * - vendor/statamic/cms: helpers.js, the evaluator
+ * - vendor/uams-web/aether-alpine-csp-forms: the driver and the $showField magic
+ * - resources/js/conditions/: custom conditions the magic answers from
  *   window.StatamicCustomConditions
  * - resources/views/vendor/statamic/forms/fields.antlers.html: Uses x-if="{{ show_field }}"
  * - resources/views/vendor/statamic/forms/fields/*.antlers.html: Use x-model="form.{{ handle }}"

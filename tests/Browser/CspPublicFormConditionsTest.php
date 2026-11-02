@@ -19,14 +19,10 @@ use Statamic\Fields\BlueprintRepository;
  | inert inside its <template> and never reaches the DOM. A document-level
  | assertion cannot see that; `assertSee` can.
  |
- | The fixture is a static public HTML file loading the alpine-csp-forms
- | add-on's published script and then the compiled `site.js`, as
- | `layout.antlers.html` does since UAMS-Web/uams-statamic-archive#3073, so it needs neither the `content/`
- | submodule nor Statamic front-end routing. It used to load Statamic's
- | `helpers.js` alongside it; UAMS-Web/uams-statamic-archive#1956 replaced that bundle's `eval()`-based
- | evaluator with one of our own (now the add-on's, UAMS-Web/uams-statamic-archive#3073), so the tag is
- | gone from both the layout and this fixture — and these tests are now also the
- | end-to-end proof that conditional fields still activate without it.
+ | The fixture is a static public HTML file loading Statamic's `helpers.js`, the
+ | alpine-csp-forms add-on's published script and then the compiled `site.js`, as
+ | `layout.antlers.html` does (#189), so it needs neither the `content/`
+ | submodule nor Statamic front-end routing.
  |
  | @command vendor/bin/pest tests/Browser/CspPublicFormConditionsTest.php
  */
@@ -66,14 +62,9 @@ function writeCspConditionsFixture(string $js, string $viewsDir): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>CSP conditions fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>CSP conditions fixture</h1>',
         (string) View::make('csp_conditions_browser::form')->render(),
-        // No `helpers.js`, exactly as the layout no longer loads it (UAMS-Web/uams-statamic-archive#1956).
-        // The absence is the assertion rather than an omission: the evaluator
-        // ships inside the site module above, so a passing run here is
-        // evidence the conditions path needs no vendor bundle — and therefore
-        // no `'unsafe-eval'` — at all.
         '</body></html>',
     ]));
 

@@ -35,7 +35,7 @@ use Statamic\Query\Builder as QueryBuilder;
 use Statamic\Sites\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Statamic;
-use UAMSWeb\FormSettings\Contracts\SubmissionContext;
+use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
 
 // Added by studio1902/statamic-peak
 
