@@ -229,6 +229,46 @@ it('refuses shards that listed different tests', function () use ($band, $writeS
     }
 });
 
+it('holds the Windows leg\'s six shards to the band once each (#516)', function () use ($band, $writeShard, $makeDir, $cleanUp, $merge): void {
+    // Six shards, as on the Windows leg: three ran a class each and three ran nothing
+    $shards = [
+        1 => ['Tests\Feature\AlphaTest' => $band['Tests\Feature\AlphaTest']],
+        2 => ['Tests\Feature\BetaTest' => $band['Tests\Feature\BetaTest']],
+        3 => ['Tests\Unit\GammaTest' => $band['Tests\Unit\GammaTest']],
+        4 => [],
+        5 => [],
+        6 => [],
+    ];
+    $run = function (array $ran, int $total) use ($band, $writeShard, $makeDir, $cleanUp, $merge): Process {
+        $dir = $makeDir();
+
+        try {
+            foreach ($ran as $index => $classes) {
+                $writeShard($dir, (int) $index, (array) $classes, $band);
+            }
+
+            return $merge($dir, $total);
+        } finally {
+            $cleanUp($dir);
+        }
+    };
+
+    $whole = $run($shards, 6);
+    $twice = $run(array_replace($shards, [6 => ['Tests\Feature\BetaTest' => $band['Tests\Feature\BetaTest']]]), 6);
+    $none = $run(array_replace($shards, [2 => []]), 6);
+    // A Windows leg back at four shards, merged against the total of six
+    $fourOfSix = $run(array_slice($shards, 0, 4, true), 6);
+
+    expect($whole->getExitCode())->toBe(0)
+        ->and($whole->getOutput())->toContain('6 shards ran 6 cases in 3 classes')
+        ->and($twice->getExitCode())->toBe(1)
+        ->and($twice->getErrorOutput())->toContain('Tests\Feature\BetaTest :: it three (shards 2 and 6)')
+        ->and($none->getExitCode())->toBe(1)
+        ->and($none->getErrorOutput())->toContain('Tests\Feature\BetaTest: listed 1, ran 0')
+        ->and($fourOfSix->getExitCode())->toBe(1)
+        ->and($fourOfSix->getErrorOutput())->toContain('shard 5/6: no readable junit-parallel-5.xml');
+});
+
 it('refuses a usage error with exit 2', function () use ($script): void {
     $process = new Process([PHP_BINARY, $script, '--total=4']);
     $process->run();

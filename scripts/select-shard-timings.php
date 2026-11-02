@@ -18,10 +18,15 @@ declare(strict_types=1);
  * newest entry created at or before that start. An entry saved after the run started cannot be chosen, so a save that lands
  * between two shards' starts no longer changes the answer, and every shard prints the
  * same key. When no entry qualifies it prints nothing, and every shard falls back to
- * the committed `.github/pest-shards.json` alike.
+ * the same committed file alike.
+ *
+ * Each operating system saves its timings under its own prefix, such as
+ * `pest-shard-timings-windows-latest-` (#516), and `--prefix` names the one to choose
+ * from, so a shard never chooses another operating system's entry. It defaults to
+ * `pest-shard-timings-`, every entry.
  *
  * Usage:
- *   php scripts/select-shard-timings.php --caches=<file> --started=<ISO 8601 time>
+ *   php scripts/select-shard-timings.php --caches=<file> --started=<ISO 8601 time> [--prefix=<key prefix>]
  *
  * `--caches` is the JSON body of `GET /repos/{owner}/{repo}/actions/caches`. Exits 0
  * and prints the chosen key (or nothing) on success, and exits 2 naming the problem
@@ -41,12 +46,13 @@ function selectShardTimingsFail(string $message): never
 }
 
 /**
- * The newest key with the timings prefix created at or before the run started.
+ * The newest key with the prefix created at or before the run started.
  *
  * @param  list<array<string, mixed>>  $caches  The `actions_caches` entries.
+ * @param  string  $prefix  The key prefix an entry must start with.
  * @return string|null The chosen key, or null when no entry qualifies.
  */
-function selectShardTimingsKey(array $caches, DateTimeImmutable $started): ?string
+function selectShardTimingsKey(array $caches, DateTimeImmutable $started, string $prefix): ?string
 {
     $chosenKey = null;
     $chosenAt = null;
@@ -55,7 +61,7 @@ function selectShardTimingsKey(array $caches, DateTimeImmutable $started): ?stri
         $key = $cache['key'] ?? null;
         $createdAt = $cache['created_at'] ?? null;
 
-        if (! is_string($key) || ! str_starts_with($key, SHARD_TIMINGS_PREFIX) || ! is_string($createdAt)) {
+        if (! is_string($key) || ! str_starts_with($key, $prefix) || ! is_string($createdAt)) {
             continue;
         }
 
@@ -79,12 +85,17 @@ function selectShardTimingsKey(array $caches, DateTimeImmutable $started): ?stri
     return $chosenKey;
 }
 
-$options = getopt('', ['caches:', 'started:']);
+$options = getopt('', ['caches:', 'started:', 'prefix:']);
 $cachesPath = $options['caches'] ?? null;
 $startedText = $options['started'] ?? null;
+$prefix = $options['prefix'] ?? SHARD_TIMINGS_PREFIX;
 
 if (! is_string($cachesPath) || $cachesPath === '' || ! is_string($startedText) || $startedText === '') {
-    selectShardTimingsFail('usage: --caches=<file> --started=<ISO 8601 time>');
+    selectShardTimingsFail('usage: --caches=<file> --started=<ISO 8601 time> [--prefix=<key prefix>]');
+}
+
+if (! is_string($prefix) || ! str_starts_with($prefix, SHARD_TIMINGS_PREFIX)) {
+    selectShardTimingsFail('--prefix must start with '.SHARD_TIMINGS_PREFIX);
 }
 
 $json = is_file($cachesPath) ? file_get_contents($cachesPath) : false;
@@ -108,4 +119,4 @@ try {
 /** @var list<array<string, mixed>> $caches */
 $caches = array_values(array_filter($listing['actions_caches'], is_array(...)));
 
-echo selectShardTimingsKey($caches, $started) ?? '';
+echo selectShardTimingsKey($caches, $started, $prefix) ?? '';

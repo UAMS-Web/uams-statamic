@@ -74,6 +74,24 @@ function seedCpSuperUser(string $email, string $password)
 }
 
 /**
+ * The `localStorage` key Statamic's LicensingAlert component reads when it mounts.
+ * It holds the time in milliseconds until which the alert stays closed.
+ */
+const CP_LICENSING_ALERT_SNOOZE_KEY = 'statamic.snooze_license_banner';
+
+/**
+ * The script that snoozes the licensing alert for a day, through the key its Snooze
+ * button writes (the button itself snoozes a day on a test domain). Run it on any Control Panel origin page before the page that would show the
+ * alert loads, because the alert reads the key only once, when it mounts.
+ *
+ * @return string JavaScript for `$page->script()`.
+ */
+function cpLicensingAlertSnoozeScript(): string
+{
+    return 'localStorage.setItem('.json_encode(CP_LICENSING_ALERT_SNOOZE_KEY).', String(Date.now() + 86400000))';
+}
+
+/**
  * Drive the real CP login form and land on the dashboard. Returns the page so
  * the caller can navigate on to the surface under test.
  *
@@ -93,6 +111,11 @@ function seedCpSuperUser(string $email, string $password)
  *  2. Redirect timing. press()/click() does not await the submit round-trip +
  *     redirect, and assertPathIs() reads the URL synchronously, so asserting the
  *     dashboard immediately races the redirect. cpReachedPath() waits for it.
+ *
+ * It also snoozes Statamic's trial-mode licensing alert before logging in, so no
+ * Control Panel page this browser opens afterwards shows it (#507). The alert is
+ * a modal that opens several seconds after a page loads; a fill() made while it
+ * is open reports success and types into nothing, because focus is in the modal.
  *
  * Returns the page object this helper owns — the one visit() handed back —
  * rather than whatever the trailing assertion returns.
@@ -115,6 +138,9 @@ function seedCpSuperUser(string $email, string $password)
 function loginToCp(string $email, string $password): PendingAwaitablePage
 {
     $page = visit('/cp/auth/login');
+
+    // Snooze the licensing alert before any Control Panel page mounts it (#507)
+    $page->script(cpLicensingAlertSnoozeScript());
 
     for ($attempt = 1; $attempt <= 3; $attempt++) {
         $page->fill('input[name="email"]', $email)
