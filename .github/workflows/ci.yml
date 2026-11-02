@@ -70,7 +70,8 @@ defaults:
 # surface is each job's final run step, flagged inline with `# PARITY:` below:
 #   pest        -> "Run Pest (parallel shard, excluding the serial group)"
 #                     (the local command plus `--shard`: CI splits the band
-#                     four ways, the local runner runs it whole; #387)
+#                     four ways, six on Windows, the local runner runs it
+#                     whole; #387, #516)
 #   pest-serial -> "Run Pest (serial tail for the serial group)"
 #   pest-report -> no counterpart: it merges the shards' reports, and its two
 #                     band checks are the local pest job's parallel-band checks
@@ -252,9 +253,10 @@ jobs:
         run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
 
   pest:
-    name: Pest (parallel band, shard ${{ matrix.shard }} of 4, ${{ matrix.os }})
+    name: Pest (parallel band, shard ${{ matrix.shard }} of ${{ matrix.os == 'windows-latest' && 6 || 4 }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # The parallel band runs as four shards, one runner each (#387). Run whole on
+    # The parallel band runs as four shards, one runner each (#387), and six on
+    # Windows (#516). Run whole on
     # one runner it was the longest job in this file by far: about 22 minutes of
     # band plus setup against about 4 for the serial tail, so it decided the
     # workflow's wall-clock alone. Split four ways on recorded timings, the longest
@@ -273,18 +275,33 @@ jobs:
     # and the longest single class decide the job's length, not the share of the
     # band (#384).
     #
+    # Windows is the exception, at six (#516). Its band takes about twice
+    # Ubuntu's time, and its setup about 200s. On #514's run four Windows shards
+    # took up to 1,316s, against 988s to 1,788s for the longest Windows job
+    # outside the band, and six balanced on Windows timings are predicted at
+    # about 895s. The floor is the largest Windows class (644s) plus setup,
+    # about 853s, so a seventh shard would save about 40s more.
+    #
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     strategy:
       # Every shard runs to its end, so one shard's failure does not hide another's.
       fail-fast: false
       matrix:
-        # 1 to SHARD_TOTAL below. scripts/local-ci.chain.test.mjs holds the
-        # two together, and `pest-report` passes the same total to the merge.
+        # 1 to SHARD_TOTAL below on each leg. Each `include` entry changes a value
+        # of every combination above, so it adds a combination of its own:
+        # shards 5 and 6 on Windows only. scripts/local-ci.chain.test.mjs holds
+        # the matrix and the totals together, and `pest-report` passes the same
+        # total to the merge.
         shard: [1, 2, 3, 4]
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            shard: 5
+          - os: windows-latest
+            shard: 6
     env:
-      SHARD_TOTAL: 4
+      SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 6 || 4 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -431,8 +448,15 @@ jobs:
       # `pest-report`); a pull request reads the newest one main wrote, since a
       # branch can read its base branch's cache. Restored by prefix only: the
       # exact key below is never written, so the newest saved entry always wins.
-      # With no entry yet (a new repository, or an evicted cache) the committed
-      # copy in .github/pest-shards.json is used instead.
+      #
+      # Each operating system reads its own timings (#516). A Windows runner
+      # cannot restore an entry a Linux runner saved (`enableCrossOsArchive` is
+      # off), so while only the Ubuntu leg saved, every Windows shard fell back to
+      # the committed file ("Cache not found" on #514's run 41440485266).
+      #
+      # With no entry yet (a new repository, or an evicted cache) a committed copy
+      # is used instead: .github/pest-shards.<os>.json where one exists, and
+      # .github/pest-shards.json otherwise.
       #
       # REMOTE-ONLY: the local runner runs the parallel band whole, so it reads
       # no timings.
@@ -442,24 +466,27 @@ jobs:
         with:
           path: tests/.pest/shards.json
           key: pest-shard-timings-never-written
-          restore-keys: pest-shard-timings-
+          restore-keys: pest-shard-timings-${{ matrix.os }}-
 
       # Logs which timings this shard read, and records their source and hash for
-      # `pest-report`. Every shard partitions the band from its own copy, so four
+      # `pest-report`. Every shard partitions the band from its own copy, so
       # shards that read different copies (a main push saving new timings between
       # two shards' restores) can run a class twice or not at all; `pest-report`
-      # refuses that by comparing the four notes.
+      # refuses that by comparing the notes.
       - name: Place shard timings
         env:
           SHARD: ${{ matrix.shard }}
           MATCHED_KEY: ${{ steps.shard-timings.outputs.cache-matched-key }}
+          MATRIX_OS: ${{ matrix.os }}
         run: |
           if [ -n "$MATCHED_KEY" ] && [ -s tests/.pest/shards.json ]; then
             source="cache entry $MATCHED_KEY"
           else
+            committed=".github/pest-shards.$MATRIX_OS.json"
+            [ -f "$committed" ] || committed=".github/pest-shards.json"
             mkdir -p tests/.pest
-            cp .github/pest-shards.json tests/.pest/shards.json
-            source="committed .github/pest-shards.json"
+            cp "$committed" tests/.pest/shards.json
+            source="committed $committed"
           fi
           note="source=$source sha256=$(sha256sum tests/.pest/shards.json | cut -d' ' -f1)"
           echo "Shard timings: $note"
@@ -516,7 +543,7 @@ jobs:
       # shard is listed in this one process, where the same partition applies, and
       # handed to the workers as a configuration that names its files.
       # scripts/pest-shard-config.php fails on an empty listing or a class with no
-      # file, and `pest-report` still checks the four shards ran every class once.
+      # file, and `pest-report` still checks the shards ran every class once.
       - name: List this shard's tests on Windows
         if: runner.os == 'Windows'
         env:
@@ -913,7 +940,7 @@ jobs:
     needs: pest
     if: vars.RUN_REMOTE_CI != 'false'
     env:
-      SHARD_TOTAL: 4
+      SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 6 || 4 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -975,18 +1002,19 @@ jobs:
         run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
 
       # The timings a pull request's shards read: written on each push to main,
-      # under a key unique to the run, and read back by prefix (see "Restore shard
-      # timings"). Never written by a pull request, so a branch cannot change the
-      # partition another branch reads. The committed fallback,
-      # .github/pest-shards.json, is refreshed by hand from this artifact when the
-      # cache is empty for long enough to matter.
+      # by each leg under a key naming its operating system and unique to the run,
+      # and read back by that prefix (see "Restore shard timings", #516). Never
+      # written by a pull request, so a branch cannot change the partition another
+      # branch reads. The committed fallbacks, .github/pest-shards.json and
+      # .github/pest-shards.windows-latest.json, are refreshed by hand from this
+      # artifact when the cache is empty for long enough to matter.
       # REMOTE-ONLY: the local runner does not shard.
       - name: Save shard timings for later runs
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v6
         with:
           path: tests/.pest/shards.json
-          key: pest-shard-timings-${{ github.run_id }}-${{ github.run_attempt }}
+          key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload the band report and timings
         uses: actions/upload-artifact@v7
