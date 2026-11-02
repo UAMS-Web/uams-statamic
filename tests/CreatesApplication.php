@@ -461,22 +461,12 @@ trait CreatesApplication
     }
 
     /**
-     * Empty the per-worker cache directory, preserving a `.gitignore` if it has one.
-     *
-     * Nothing under the test cache root is tracked since UAMS-Web/uams-statamic#408,
-     * so a real worker directory has no `.gitignore` to preserve.
+     * Empty the per-worker cache directory.
      */
     private function resetCacheDirectory(Filesystem $files, string $cacheDirectory): void
     {
-        $gitignore = $cacheDirectory.DIRECTORY_SEPARATOR.'.gitignore';
-        $contents = $files->exists($gitignore) ? $files->get($gitignore) : null;
-
         $files->deleteDirectory($cacheDirectory);
         $files->ensureDirectoryExists($cacheDirectory);
-
-        if ($contents !== null) {
-            $files->put($gitignore, $contents);
-        }
     }
 
     /**
