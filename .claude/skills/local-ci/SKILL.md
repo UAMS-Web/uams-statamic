@@ -1,7 +1,7 @@
 ---
 name: local-ci
 description: >-
-  Run the project's GitHub Actions CI (.github/workflows/ci.yml) locally against any branch using scripts/local-ci.mjs, a cross-platform Node script that checks the branch out into an isolated git worktree and runs the jobs (pest, pint, phpstan, build, js, encoding) with the local PHP 8.4 / Composer / Node 22 toolchain — no Docker, no act, no GitHub Actions minutes. Invoked bare, it runs the full autonomous PR pipeline: arm scripts/watch-github.mjs to watch the five UAMS Statamic repos for PRs opening ready, flipping draft → ready, or flipping ready → draft; seed the queue with existing open ready PRs; bring each PR into compliance with the writing-pull-requests skill; resolve companion PRs and merge order; then validate, comment the verdict green or red, and merge on green one PR at a time, remedying and re-running on any failure. Given a branch, it just validates that branch. Activate when the user runs "/local-ci", is out of GitHub Actions budget, wants to validate a PR/branch before pushing, asks to "run CI locally", "watch for PRs and merge them", "check this branch without using Actions minutes", or "test a different branch without switching off my current one". The worktree keeps the active checkout untouched.
+  Run the project's GitHub Actions CI (.github/workflows/ci.yml) locally against any branch using scripts/local-ci.mjs, a cross-platform Node script that checks the branch out into an isolated git worktree and runs the jobs (pest, pint, phpstan, build, js, encoding) with the local PHP 8.4 / Composer / Node 22 toolchain — no Docker, no act, no GitHub Actions minutes. Invoked bare, it runs the full autonomous PR pipeline: arm scripts/watch-github.mjs to watch the five UAMS Statamic repos for PRs opening ready, flipping draft → ready, or flipping ready → draft; seed the queue with existing open ready PRs; bring each PR into compliance with the writing-pull-requests skill; resolve companion PRs and merge order; then update a branch that is behind, read the required remote checks, comment the verdict green or red, and merge on green one PR at a time, handing back anything else. Given a branch, it just validates that branch. Activate when the user runs "/local-ci", is out of GitHub Actions budget, wants to validate a PR/branch before pushing, asks to "run CI locally", "watch for PRs and merge them", "check this branch without using Actions minutes", or "test a different branch without switching off my current one". The worktree keeps the active checkout untouched.
 ---
 
 # Run CI locally (worktree, no Docker)
@@ -10,16 +10,15 @@ description: >-
 
 | Invocation | Mode | What happens |
 |---|---|---|
-| `/local-ci` (bare), or "watch for PRs and merge them" | **Autonomous PR pipeline** | Arm the watcher, seed the queue from existing open PRs, then review → validate → comment → merge each PR one at a time, indefinitely. |
+| `/local-ci` (bare), or "watch for PRs and merge them" | **Autonomous PR pipeline** | Arm the watcher, seed the queue from existing open PRs, then review → update → read the required checks → comment → merge each PR one at a time, indefinitely. |
 | `/local-ci <branch>`, "run CI on this branch", "validate before pushing" | **One-off validation** | Run `scripts/local-ci.mjs` against the named branch and report. No queue, no merging. |
 
 Mode A is the rest of this section; everything from *Turning remote CI off* down is the underlying runner both modes share.
 
 ## Mode A — the autonomous PR pipeline
 
-**Out of date since #337.** The local chain no longer gates a merge: `main` requires the remote `CI`, `Attribution footer` and `Closing keywords` checks. #486 rewrites this mode; until then, read those checks before any merge decision.
 
-**Standing authorization.** Bare `/local-ci` is a standing instruction to *merge on green* without asking again per PR — that is the point of the mode. It does not extend to force-pushing over a branch you did not author, closing PRs, or merging a PR whose validation is red or skipped.
+**Standing authorization.** Bare `/local-ci` is a standing instruction to *merge on green* without asking again per PR — that is the point of the mode. *Green* means the required remote checks, read as section 4 says; a green local run is not it. The authorization does not extend to force-pushing over a branch you did not author, closing PRs, or merging a PR whose required checks are red, skipped or missing.
 
 **Claim a slot.** The pipeline is long-lived and edits branches to remedy failures, so it collides with any other session on the primary checkout. Claim a free slot first — `node scripts/worktree-slots.mjs status`, then work in `../uams-statamic-a` or `-b` — per the [`worktrees`](../../rules/worktrees.md) rule; only take an ephemeral worktree when both slots are held. The runner builds its *own* sibling worktree for each validation regardless — that is separate and unaffected, and since UAMS-Web/uams-statamic-archive#1953 it resolves to a sibling of the **primary** no matter which tree you drive it from.
 
@@ -61,34 +60,31 @@ For each PR entering the queue, review it against the [`writing-pull-requests`](
 
 Then read the body for **companion PRs and merge order** — the `## Companion PRs` section and any explicit "Merge order" block. Treat a cross-repo companion set as **one queue unit**, ordered internally as the bodies specify; never merge half a pair. If a body's stated ordering rests on a premise you can check, **check it** — a body written from memory can assert an ordering step the repo's actual merge settings make unnecessary or wrong, and shipping a wrong instruction is worse than shipping none.
 
-### 4. Validate — what "run local CI" means per repo
+### 4. Update the branch, then read the required checks
 
-`scripts/local-ci.mjs` mirrors the **app** repo's `ci.yml`. The five sibling repos have no CI workflow of their own, so "run local CI" resolves differently depending on what is in the queue:
+**A green local run does not make a pull request mergeable.** `main` requires `CI`, `Attribution footer` and `Closing keywords` (#337), and the decision reads those three on the head that will land. A ready pull request merges when all three are green and every test-plan item is satisfied, subject to the [`pre-merge-check`](../../rules/pre-merge-check.md) rule, which owns the rest of the decision. Anything else is handed back (section 6).
 
-- **An app PR (`uams-statamic`)** — run the runner against its branch. Scope `--jobs` by the diff per *Choosing what to run* below, or run `all`.
-- **An app PR with a content companion** — run the runner against the **app** branch. The `pest` job checks `content/` out at the app branch's gitlink, which is fetch-reachable even before the companion merges, so **one green app run validates the pair**. This is the app+companion integration test.
-- **A standalone sibling-repo PR with no app companion** — there is no local-CI surface to run. Say so plainly in the green comment rather than implying a suite ran; validate what is actually checkable (the diff is what it claims, YAML parses, a pure rename is a pure rename) and merge on that basis.
-
-Before the gating run, bring the branch current with `origin/main` per the [`sync-pr-branch`](../../rules/sync-pr-branch.md) rule. When re-validating a branch **after pushing a remedy**, pass `--fetch` so `origin/<branch>` is current — the runner then syncs the branch to it and prints the commit it validated (UAMS-Web/uams-statamic-archive#1746). `--fresh` does **not** address a stale commit; see *Reused-worktree hazards* below.
-
-**Report progress while it runs.** A full run is ~20 minutes, most of it in `pest`, and the runner publishes no machine-readable progress. Redirect it to a log and arm [`scripts/local-ci-progress.mjs`](../../../scripts/local-ci-progress.mjs) under `Monitor` alongside it:
+**First, update a branch that is behind `main`:**
 
 ```bash
-node scripts/local-ci.mjs --branch <branch> --jobs <jobs> > ci.log 2>&1 &
-node scripts/local-ci-progress.mjs --log ci.log --worktree ../uams-statamic-ci --interval 600
+gh api repos/{o}/{r}/compare/main...<head-sha> --jq '.behind_by'
+gh api -X PUT repos/{o}/{r}/pulls/<n>/update-branch -f expected_head_sha=<head-sha>
 ```
 
-It reports the current stage, and for `pest` the **sub-phase** — that job runs six (route cache, Stache seed, parallel suite, serial tail, then a skip-baseline check per band) whose progress signals differ. The parallel suite is paratest, which streams dots and **no** `PASS` lines; the serial tail is plain Pest, which prints one `PASS <TestClass>` line per file. Counting `PASS` lines against the whole suite is therefore wrong in a way that reads plausibly: a run whose parallel phase has already *finished* reports as barely started. The reporter counts against the serial group only (derived from the worktree, so it tracks the suite as it grows) and says which sub-phase the number belongs to. On a finished run it reports duration as birth→last-write, not "time since start" — the latter keeps climbing after the run ends and silently overstates. Idle ticks are throttled to `--idle-interval` (default hourly) so a drained queue stays quiet.
+A non-zero `behind_by` means update. `expected_head_sha` refuses the update if the head has moved since you read it, so a push is never overwritten. The call answers before the merge exists: read the head again, and treat every check from before the update as saying nothing about the new head. A conflict is refused, and that is a hand-back, since resolving it is the author's.
 
-**Health-check the run on a fixed cadence: T+5, T+10, T+20, then every 20 minutes.** The reporter above tells you what stage a *healthy* run is in; it cannot tell you the run died, and neither can the absence of a notification. Check explicitly at those marks, and confirm three separate things:
+**Then read the three checks on that head:**
 
-1. **A real run is alive** — `pgrep -f 'local-ci\.mjs --branch'`. Match the **invocation**, never a substring. `pgrep -f 'local-ci'` also matches `local-ci-progress.mjs`, every `until grep … ci.log` waiter, and the shell issuing the query — the same self-matching trap [`long-running-commands`](../../rules/long-running-commands.md) documents for `pkill`. Seven such matches once convinced a session that a run which had finished two hours earlier was still going, and both its status checks and its waiter agreed.
-2. **The log is advancing** — compare size or last-write time against the previous check. A live PID with a static log is a hang, not progress; a finished run's log stops growing while stray matches keep the PID check green.
-3. **It did not die at startup** — a zero-byte log a minute in means the run never began. Usual causes: the branch is already checked out elsewhere (`git worktree add` refuses), a conflicted merge was left in the tree, or an entry-guard no-op (invoking a runner copy through a symlinked path exits 0 having done nothing).
+```bash
+gh api repos/{o}/{r}/commits/<head-sha>/check-runs'?per_page=100' --jq '.total_count, (.check_runs | length), (.check_runs[] | select(.name == "CI" or .name == "Attribution footer" or .name == "Closing keywords") | [.name, .status, .conclusion] | @tsv)'
+```
 
-The cadence is chosen against the shape of a run: **T+5** catches a startup fault before it burns the window, **T+10** and **T+20** bracket the `build` → `phpstan` stretch, and the 20-minute repeat covers `pest`, which is most of the wall clock. Report the failure the moment a check fails rather than waiting for the next one.
+- **Green is all three `completed` and `success`.** A name that is missing is not green, and neither is `skipped` or `neutral`: GitHub counts those two as satisfying a required check, so the merge would go through on nothing having run.
+- **Compare the first two numbers.** The job count grows with the matrix, so a list shorter than `total_count` has been cut off and a missing name proves nothing until the next page is read.
+- **A name can appear twice on one head.** A body edit runs `Attribution footer` and `Closing keywords` again, and the older result stays listed, so read the newest by `completed_at`.
+- **A run still in progress is a wait, never a hand-back.** Since #348 that wait is about an hour, for the Windows band.
 
-**Reap a run's waiter when that run ends, not at session end.** A stranded `until … done` waiter polls a log that will never change again. They accumulate silently — four survived from UAMS-Web/uams-statamic-archive#1730, UAMS-Web/uams-statamic-archive#1714, UAMS-Web/uams-statamic-archive#1829 and UAMS-Web/uams-statamic-archive#1848 in a single session, which is precisely what made the broad pattern useless. `kill` by explicit PID once the run is reported, and re-check that zero remain.
+**The sibling repositories have no CI workflow of their own**, so a standalone sibling pull request has no required chain to read. Say so plainly in the verdict rather than implying a suite ran; validate what is actually checkable (the diff is what it claims, YAML parses, a pure rename is a pure rename) and merge on that basis. **An app pull request with a content companion** is read on the app branch: its `pest` jobs check `content/` out at the branch's gitlink, which is fetch-reachable before the companion merges, so one green app run validates the pair.
 
 ### 5. Comment the verdict, then merge on green
 
@@ -153,11 +149,41 @@ For a companion pair: merge the companion first, **verify the app's gitlink is n
 
 After each merge, refresh the primary checkout's `main` (`git -C <primary> pull --ff-only origin main`); a stray `M content` submodule drift there is expected and harmless.
 
-### 6. Red → comment, then remedy, re-run, repeat
+### 6. Red → comment and hand back
 
 **The verdict comment comes first** — section 5's obligation is not conditional on the outcome, and a red is the case where the comment is the only record the author gets. Name the failing job and quote its output, and post it with `scripts/post-verdict.mjs <n> verdict.md --hand-back` so the label lands with it. Then carry on below.
 
-A failure is not a stop — it is the next task. Diagnose, fix the real defect on the PR branch, push, and re-run the runner with `--fetch` (so the pushed fix is the commit validated — confirm via the `Validating:` line). Repeat until green, then merge. Three failure classes are **not** app-code bugs and must not be "fixed" by editing app code:
+A red ends the gate's turn on that pull request. The remedy is the author's and arrives as a push, which the watcher reports as `PUSH`; the checks then run on the new head and the pull request is read again. Never merge past a red, and never re-pick an unmoved head.
+
+Then take the next queue item. The pipeline runs one PR at a time, start to finish, and only then moves on.
+
+### What a local run is still for
+
+**A local run gates nothing.** It is how an author checks a branch before spending an hour of remote CI, how a red is reproduced on a machine someone can inspect, and how a job is run with nothing billed. Its verdict is evidence for the person running it, and the merge decision never reads it. The `/local-ci <branch>` mode is this and nothing more.
+
+Before a run whose result you will quote, bring the branch current with `origin/main` per the [`sync-pr-branch`](../../rules/sync-pr-branch.md) rule. When re-validating a branch **after pushing a remedy**, pass `--fetch` so `origin/<branch>` is current — the runner then syncs the branch to it and prints the commit it validated (UAMS-Web/uams-statamic-archive#1746). `--fresh` does **not** address a stale commit; see *Reused-worktree hazards* below.
+
+**Report progress while it runs.** A full run is ~20 minutes, most of it in `pest`, and the runner publishes no machine-readable progress. Redirect it to a log and arm [`scripts/local-ci-progress.mjs`](../../../scripts/local-ci-progress.mjs) under `Monitor` alongside it:
+
+```bash
+node scripts/local-ci.mjs --branch <branch> --jobs <jobs> > ci.log 2>&1 &
+node scripts/local-ci-progress.mjs --log ci.log --worktree ../uams-statamic-ci --interval 600
+```
+
+It reports the current stage, and for `pest` the **sub-phase** — that job runs six (route cache, Stache seed, parallel suite, serial tail, then a skip-baseline check per band) whose progress signals differ. The parallel suite is paratest, which streams dots and **no** `PASS` lines; the serial tail is plain Pest, which prints one `PASS <TestClass>` line per file. Counting `PASS` lines against the whole suite is therefore wrong in a way that reads plausibly: a run whose parallel phase has already *finished* reports as barely started. The reporter counts against the serial group only (derived from the worktree, so it tracks the suite as it grows) and says which sub-phase the number belongs to. On a finished run it reports duration as birth→last-write, not "time since start" — the latter keeps climbing after the run ends and silently overstates. Idle ticks are throttled to `--idle-interval` (default hourly) so a drained queue stays quiet.
+
+**Health-check the run on a fixed cadence: T+5, T+10, T+20, then every 20 minutes.** The reporter above tells you what stage a *healthy* run is in; it cannot tell you the run died, and neither can the absence of a notification. Check explicitly at those marks, and confirm three separate things:
+
+1. **A real run is alive** — `pgrep -f 'local-ci\.mjs --branch'`. Match the **invocation**, never a substring. `pgrep -f 'local-ci'` also matches `local-ci-progress.mjs`, every `until grep … ci.log` waiter, and the shell issuing the query — the same self-matching trap [`long-running-commands`](../../rules/long-running-commands.md) documents for `pkill`. Seven such matches once convinced a session that a run which had finished two hours earlier was still going, and both its status checks and its waiter agreed.
+2. **The log is advancing** — compare size or last-write time against the previous check. A live PID with a static log is a hang, not progress; a finished run's log stops growing while stray matches keep the PID check green.
+3. **It did not die at startup** — a zero-byte log a minute in means the run never began. Usual causes: the branch is already checked out elsewhere (`git worktree add` refuses), a conflicted merge was left in the tree, or an entry-guard no-op (invoking a runner copy through a symlinked path exits 0 having done nothing).
+
+The cadence is chosen against the shape of a run: **T+5** catches a startup fault before it burns the window, **T+10** and **T+20** bracket the `build` → `phpstan` stretch, and the 20-minute repeat covers `pest`, which is most of the wall clock. Report the failure the moment a check fails rather than waiting for the next one.
+
+**Reap a run's waiter when that run ends, not at session end.** A stranded `until … done` waiter polls a log that will never change again. They accumulate silently — four survived from UAMS-Web/uams-statamic-archive#1730, UAMS-Web/uams-statamic-archive#1714, UAMS-Web/uams-statamic-archive#1829 and UAMS-Web/uams-statamic-archive#1848 in a single session, which is precisely what made the broad pattern useless. `kill` by explicit PID once the run is reported, and re-check that zero remain.
+
+
+**When a local run fails, three classes are not app-code bugs** and must not be "fixed" by editing app code:
 
 - **`git worktree add failed (exit 128)` — the branch is already checked out elsewhere.** Git refuses to check one branch out into two worktrees, and it fails in seconds, before any job runs. Find which tree holds it, then pick the remedy by **what kind of tree that is** — the two are not interchangeable:
 
@@ -173,7 +199,6 @@ A failure is not a stop — it is the next task. Diagnose, fix the real defect o
 - **Stale `content/` pointer** — the companion content has not merged and the branch's gitlink predates it. See *Stale-submodule hazard* below for the signature and the confirmation procedure.
 - **Stale-commit validation** — the runner tested an older commit than the PR head. Confirm with `git -C <worktree> rev-parse HEAD` against the PR head before believing any result you are about to merge on.
 
-Then take the next queue item. The pipeline runs one PR at a time, start to finish, and only then moves on.
 
 ## Turning remote CI off when the budget is out (`RUN_REMOTE_CI`)
 
@@ -280,7 +305,7 @@ Recipes once the mapping is satisfied:
 
 ## More than one developer running the pipeline
 
-The pipeline has no lock. Two sessions watching the same repo see the same `READY`, validate the same branch — thirty minutes each, twice — and then race to merge, where the loser either hits a conflict or merges a branch the winner is still validating. Nothing in the runner prevents this, so the partition is a convention.
+The pipeline has no lock. Two sessions watching the same repo see the same `READY`, work the same branch and then race to merge, where the loser either hits a conflict or merges a branch the winner is still validating. Nothing in the runner prevents this, so the partition is a convention.
 
 **Partition by repository: one gate session per repo.** `--repos` scopes a watcher, and a repository watched by exactly one gate cannot be double-validated no matter who a pull request is assigned to.
 
@@ -361,7 +386,7 @@ The `pest` (and `browser`) jobs render first-party fixtures out of the private `
 - **The real fix lands in git, gated on the companion.** After the companion content PR merges to content `main`, bump the branch's `content/` gitlink to that commit and commit it — from the branch checkout: `git -C content fetch origin && git -C content checkout main && git -C content pull`, then `git add content && git commit`. Until the companion merges, the app branch is expected-red on both remote and local CI; that's dependency ordering, not a defect. Record the dependency in the PR body per the `writing-pull-requests` skill's **Submodule-pointer bumps** note.
 - **When the app branch has *already* bumped its gitlink to the companion branch's commit, no workaround is needed — just run the runner.** The `==> Initializing content/ and users/ submodules` step clones the content repo and checks the recorded gitlink out directly, and that clone reaches commits that live only on a companion **branch** — an unmerged companion commit is fetch-reachable, so it resolves. Confirm it in the runner output (`Submodule path 'content': checked out '<sha>'` naming the companion commit) and, if you want the stronger check, assert the companion's actual data landed in the worktree (the moved/added files exist under `<worktree>/content/`). This is the well-formed companion-pair case and it needs none of the `--skip-submodule` setup below. **It passes every job but one:** `content-pointer` refuses a gitlink that is not yet on content `main` (UAMS-Web/uams-statamic-archive#2965), so until the companion merges, run the chain without it, as the landing bullet below says. That setup is for the *other* case: the app branch's gitlink still points at an old content-`main` commit and you want to validate against the companion branch anyway.
 - **Run local CI green *before* the companion merges *without* bumping the gitlink — point content at the companion branch + `--skip-submodule`.** When you need `pest` green locally before the content PR merges and the gitlink is bumped, set the reused worktree's submodule to the companion branch and tell the runner to leave it alone. In the worktree (`../uams-statamic-ci` by default): `git -C content fetch origin <content-branch>:refs/remotes/origin/<content-branch>` → `git -C content checkout -b <content-branch> origin/<content-branch>` → `php artisan statamic:stache:clear` (so the Stache re-indexes the swapped-in content). Then run **`node scripts/local-ci.mjs --branch <branch> --skip-submodule`** — `--skip-submodule` is **required**: a normal run does `git submodule update --init`, which resets content back to the recorded gitlink and re-reds the tests. Caveats: `--fresh` removes the worktree and re-inits at the gitlink (undoing this — redo the setup after); `git -C content pull` refreshes it if the companion branch grows; and because the worktree's `content/` is an **independent clone** (measured on git 2.32.0.windows.2 — see the concurrent-runs note above), this does not disturb the primary checkout's content or the site Herd serves. Local-only: the branch's committed gitlink is unchanged, so remote CI and the eventual proper bump are unaffected.
-- **Landing a companion-bearing PR: validate the app PR, then merge companion → app.** When an app PR declares a **Companion PRs** section (e.g. a `UAMS-Web/uams-statamic-content` content PR its `content/` pointer targets, or a `wordpress-importer` PR), authorization to merge the app PR **extends to its companion PRs**: the cross-repo change is one logical unit, so no separate approval is needed for the companion. The app PR's **green local-CI run *is* the app+companion integration test**: the `pest` job checks out the companion content at the app's gitlink (fetch-reachable even before the companion merges), so a green app run proves the companion too. **That run leaves out `content-pointer`**, which refuses the same gitlink until the companion is on content `main` (UAMS-Web/uams-statamic-archive#2965) and, as the fourth link, would otherwise skip `pest`: pass `--jobs` with every other job in `CHAIN`. Safe order: **validate the app PR green on every job except `content-pointer` → merge the companion PR to its `main` → run `--jobs content-pointer`, which confirms the app's `content` gitlink is now an ancestor of content `main` → merge the app PR.** The content repo allows **merge commits only**, enforced by its merge settings since 2026-10-09 (UAMS-Web/uams-statamic-archive#2985), so an app pointer targeting the companion *branch tip* becomes an ancestor of content `main` on merge and **stays valid with no re-bump**. A companion squashed before that setting leaves the gitlink off `main` for good; the job then names the commit it landed as, and the app PR needs a re-bump and a full re-validation. The content repo is **`UAMS-Web/uams-statamic-content`** (not `content`); the app PR body's *Companion PRs → "Merge first"* line states the order.
+- **Landing a companion-bearing PR: validate the app PR, then merge companion → app.** When an app PR declares a **Companion PRs** section (e.g. a `UAMS-Web/uams-statamic-content` content PR its `content/` pointer targets, or a `wordpress-importer` PR), authorization to merge the app PR **extends to its companion PRs**: the cross-repo change is one logical unit, so no separate approval is needed for the companion. The app PR's **green required checks are the app+companion integration test**: the `pest` job checks out the companion content at the app's gitlink (fetch-reachable even before the companion merges), so a green app run proves the companion too. **That run leaves out `content-pointer`**, which refuses the same gitlink until the companion is on content `main` (UAMS-Web/uams-statamic-archive#2965) and, as the fourth link, would otherwise skip `pest`: pass `--jobs` with every other job in `CHAIN`. Safe order: **validate the app PR green on every job except `content-pointer` → merge the companion PR to its `main` → run `--jobs content-pointer`, which confirms the app's `content` gitlink is now an ancestor of content `main` → merge the app PR.** The content repo allows **merge commits only**, enforced by its merge settings since 2026-10-09 (UAMS-Web/uams-statamic-archive#2985), so an app pointer targeting the companion *branch tip* becomes an ancestor of content `main` on merge and **stays valid with no re-bump**. A companion squashed before that setting leaves the gitlink off `main` for good; the job then names the commit it landed as, and the app PR needs a re-bump and a full re-validation. The content repo is **`UAMS-Web/uams-statamic-content`** (not `content`); the app PR body's *Companion PRs → "Merge first"* line states the order.
 
 ## Keeping parity with remote CI
 
