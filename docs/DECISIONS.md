@@ -3724,3 +3724,45 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The `submodule-access` job stays outside `CI`, named with its reason in `.github/aggregate-needs-allow.json`, because it runs only on a manual run.
 
 **Companion.** #337. `.github/workflows/ci.yml`, `.github/aggregate-needs-allow.json`, `scripts/local-ci.chain.test.mjs`, and the passages in `AGENTS.md`, `README.md`, `.github/pull_request_template.md`, `.claude/skills/local-ci/SKILL.md`, `docs/agent-instructions.md`, `docs/runbooks/branch-protection.md` and `scripts/local-ci.mjs` that described the private posture. #486 rewrites the merge procedure itself.
+
+## 2026-11-01: `CI` runs on Linux, Windows and macOS, and Windows runs the Pest band whole (#348)
+
+**Decision.** Every job in `.github/workflows/ci.yml` but `submodule-access` and the aggregate `ci` runs on `ubuntu-latest`, `windows-latest` and `macos-latest`, with `fail-fast: false`, in bash on all three. `CI` needs every leg. Windows differs in three ways: the parallel band runs whole instead of in four shards, CLI OPcache is off, and one boot writes the real-time facades before Larastan's workers start. `tests/skip-baseline.json` gains a per-platform count, 15 on Windows against the shared 3.
+
+**Why.** Both are live development platforms and nothing ran on either before a merge, the accepted cost of the #337 entry. Each Windows difference answers a measured failure. `pest --shard` hands every worker the class list on its command line, past the Windows limit, and the worker dies on a failed assertion at line 82 of `vendor/pestphp/pest/bin/worker.php`. With CLI OPcache on, the band and the serial group ended in access violations (`0xC0000005`) with the JIT off as well; with it off, both ran to the end on run 41364357633. The cause is inferred from that one change and was not reproduced on one test file on Windows 11. Two Larastan workers writing one facade file are refused by `rename` on Windows. Thirteen tests cannot run on Windows and carry `skipOnWindows`; Linux and macOS still run them.
+
+**Wall clock.** Run 41372088216, all 59 jobs green. The longest job on each leg: Linux 13.9 minutes, the browser smoke; macOS 13.0 minutes, the browser smoke; Windows 58.6 minutes, the whole band. The whole workflow took 59.4 minutes against about 14 on Linux alone, so a pull request now waits for the Windows band. The same band took 71 minutes on run 41364357633, so it varies.
+
+**Rejected.** *Raising the shared skip baseline*: it would stop Linux and macOS noticing a lost test. *`continue-on-error` on a leg, or fewer jobs on one*: the ticket forbids the first, and narrowing a leg is a later decision now that the timings are known. *Shards on Windows with a shorter filter*: Pest builds the filter, so that is a change to a dependency.
+
+**Residual.** One failed Windows job skips `pest-report` on all three legs, because `needs: pest` covers the whole matrix, and on `main` that also skips saving the timings. The `Attribution footer` and `Closing keywords` checks read text and stay on Linux.
+
+**Companion.** #348. `.github/workflows/ci.yml`, `tests/skip-baseline.json`, `scripts/check-skip-baseline.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/gate-pint.mjs`, and the passages in `AGENTS.md` and `README.md`.
+
+## 2026-11-01: Public field conditions stay on Statamic's evaluator (UAMS-Web/uams-statamic#189)
+
+**Decision.** The retire direction recorded on #189 is confirmed. Public forms use the evaluator in Statamic's `helpers.js`, the `$showField` magic in `uams-web/aether-alpine-csp-forms` forwards to it, and the watches on the upstream chain are removed.
+
+**Why.** Re-measured against the installed `statamic/cms` `v6.37.0`, `helpers.js` is 24,804 bytes raw and 8,026 gzipped and contains no `eval(`. The trade was one cached 30 KB asset against an owned evaluator exposed to silent divergence from the Control Panel's, and the asset is now about a quarter of that size. It still carries the WebAuthn client, which public pages do not use.
+
+**Rejected.** *Keeping the owned evaluator*: the case for it was the payload, which has shrunk, and test coverage that existed only because of the fork.
+
+**Accepted cost.** Every public page loads the WebAuthn client until upstream stops shipping it there (UAMS-Web/uams-statamic-archive#1979).
+
+**Verified.** Measured on Windows 11 with Playwright's Chromium and `bypassCSP` off, on the fixture from `tests/Browser/CspPublicFormConditionsTest.php` under a `<meta>` policy with no `'unsafe-eval'`: an `eval()` in a page script raised `EvalError`, the condition that should pass rendered, the one that should fail did not, and no page error fired. An `eval()` appended to `helpers.js` as a control did raise a page error. This was a one-off on the fixture, whose `equals` condition is the operator of the two live conditional fields, and not a live page.
+
+**Residual.** None from the browser suite: #502 (by #506) runs the same fixture under a `<meta>` policy with `bypassCSP` off, so the check above now runs on every pull request.
+
+**Companion.** #189. The enforce flip itself is #33.
+
+## 2026-11-02: Windows shards the Pest band four ways, from a file list per shard (#504)
+
+**Decision.** The Windows leg runs the parallel band as four shards on four runners, like Linux and macOS. Each Windows shard lists its tests in one process with `pest --list-tests --exclude-group=serial --shard=<i>/4`, `scripts/pest-shard-config.php` writes a copy of `phpunit.xml` whose only suite names that shard's files, and the band runs `pest --parallel --configuration=<that copy>`. `pest-report` reads four shards on every leg. This supersedes the 2026-11-01 entry's "Windows runs the Pest band whole" and its rejected *Shards on Windows with a shorter filter*.
+
+**Why.** The Windows band ran 58.6 minutes against about 14 on the other legs, so every pull request waited for it. The limit `--shard` meets is not the process limit but `cmd.exe`'s: Symfony `Process` starts each paratest worker through it, a worker command of 8,037 characters starts and one of 8,038 does not (Windows 11), and the shard's filter is about 9,000 characters. Listing the shard needs no worker, and a worker given a configuration's path carries no class list, so no dependency changes. The four listings hold the same 13,628 tests in 1,102 classes as the whole band, with no class in two shards, and `pest-report` still refuses shards that did not run every class once.
+
+**Rejected.** *Patching Pest's filter or paratest's worker start*: a change to a dependency, which the 2026-11-01 entry rejected for this reason. *Splitting the band by directory or group*: it would not use the recorded per-class timings, so the shards would be uneven, and it would partition differently from the other legs.
+
+**Residual.** The two-run timing comparison #504 asks for is recorded on #504 once remote CI has run.
+
+**Companion.** #504. `.github/workflows/ci.yml`, `scripts/pest-shard-config.php`, `tests/Feature/PestShardConfigTest.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/merge-shard-reports.php`.

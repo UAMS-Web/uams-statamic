@@ -139,20 +139,23 @@ worker rendering the email later still resolves the four request-context tags to
 values. Three pieces cooperate:
 
 1. **Capture at submit time** —
-   [`app/Listeners/CaptureFormRequestContext`](../../app/Listeners/CaptureFormRequestContext.php)
+   the form settings add-on's `CaptureFormRequestContext` listener (in
+   [`uams-web/aether-form-settings`](../../vendor/uams-web/aether-form-settings/src/Listeners/CaptureFormRequestContext.php))
    listens for `Statamic\Events\FormSubmitted` (fired in `FormController::submit()` while the request
    is live) and snapshots `request()->ip()`, `request()->header('Referer')`, `request()->query()`,
-   and `Site::current()->handle()` into a
-   [`App\Support\Forms\FormRequestContext`](../../app/Support/Forms/FormRequestContext.php) value
-   object, stashed in a process-local map keyed by submission id. Like every listener, it is
-   registered once in `EventServiceProvider::$listen` (UAMS-Web/uams-statamic-archive#3240). It returns `void`: `FormSubmitted` halts on
-   the first non-null listener response, so returning nothing keeps the submission flowing.
+   and the submission's site handle into the add-on's `FormRequestContext` value object, stashed in a
+   process-local map keyed by submission id. The add-on registers it, along with the metadata listener
+   and the residual guard below, when its `features.submission_data` switch is on, which
+   [`config/aether-form-settings.php`](../../config/aether-form-settings.php) does (#265). The site is
+   named by the add-on's `SubmissionSite` contract, which the site binds to
+   [`MultisiteSubmissionSite`](../../app/Support/Forms/MultisiteSubmissionSite.php). It returns `void`:
+   `FormSubmitted` halts on the first non-null listener response, so returning nothing keeps the
+   submission flowing.
 2. **Carry it across the queue boundary** —
    [`SendFormNotification::__construct()`](../../vendor/uams-web/aether-form-settings/src/Jobs/SendFormNotification.php) runs in the
    live submit request (before the job is serialized) and asks the bound `SubmissionContext` for the
-   captured context. The site binds
-   [`FormRequestSubmissionContext`](../../app/Support/Forms/FormRequestSubmissionContext.php) (#263),
-   which reads the submission's stashed context with `FormRequestContext::peek()`, so every notification job of the submission gets it (the map holds only the latest submission); the job stores it as a plain array in a public `$requestContext`
+   captured context. With submission data on, the add-on binds its own `FormRequestSubmissionContext`
+   (#263, #265), which reads the submission's stashed context with `FormRequestContext::peek()`, so every notification job of the submission gets it (the map holds only the latest submission); the job stores it as a plain array in a public `$requestContext`
    property that serializes cleanly onto the queued job. This sidesteps the
    [`Submission::toArray()`](../../vendor/statamic/cms/src/Forms/Submission.php) limitation — that it
    augments **only blueprint-defined fields**, so a raw extra key stashed on the submission would be
@@ -174,12 +177,12 @@ values. Three pieces cooperate:
 The capture only happens for jobs dispatched through the form-submit flow. A send-email job queued
 async **without** captured context (dispatched outside that flow, or via a regression in the capture
 step) would still render the four tags wrong.
-[`app/Listeners/WarnWhenFormEmailQueued`](../../app/Listeners/WarnWhenFormEmailQueued.php) catches
+The add-on's `WarnWhenFormEmailQueued` listener catches
 exactly that: it listens for Laravel's `JobQueued` event — which fires **only** for a non-sync
 connection (`Statamic\Queue\SyncQueue::push()` never raises it) — and logs a warning **only** when
 the queued send-email job carries no captured context. A normally-submitted async job (the UAMS-Web/uams-statamic-archive#830 path)
-carries context and is silent. The listener is registered once in `EventServiceProvider::$listen`
-(UAMS-Web/uams-statamic-archive#3240).
+carries context and is silent. The add-on registers it with the other submission data listeners
+(#265).
 
 ## Adding new request-context-dependent tags going forward
 
@@ -188,8 +191,9 @@ A new tag that needs request data should:
 1. Read its value from `FormRequestContext::active()` first when a captured context is present, then
    fall back to `request()` / `Site::current()` for normal (non-email) template use — mirroring the
    four existing tags.
-2. Be captured: add the field to `FormRequestContext` (the value object, `capture()`, `toArray()`,
-   `fromArray()`) so it rides across the queue boundary on the job.
+2. Be captured: add the field to the add-on's `FormRequestContext` (the value object, `capture()`,
+   `toArray()`, `fromArray()`) in `uams-web/aether-form-settings`, so it rides across the queue
+   boundary on the job, and require the release that carries it.
 3. Be exercised in both `FormEmailMergeTagRenderingTest.php` (renders the tag) and
    `FormEmailAsyncRequestContextTest.php` (proves it survives a real worker), and added to the table
    above.

@@ -8,7 +8,7 @@ use App\Policies\CustomUserPolicy;
 use App\Policies\ScopedEntryPolicy;
 use App\Services\LinkHealth\LinkClassifier;
 use App\Services\Tables\TableCellSanitizer; // Added by studio1902/statamic-peak
-use App\Support\Forms\FormRequestSubmissionContext;
+use App\Support\Forms\MultisiteSubmissionSite;
 use App\Support\Imaging\BrandLogoRasterizer;
 use App\Support\Imaging\SvgRasterizer;
 use App\Support\People\PeopleEditingScope;
@@ -35,7 +35,7 @@ use Statamic\Query\Builder as QueryBuilder;
 use Statamic\Sites\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Statamic;
-use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
+use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionSite;
 
 // Added by studio1902/statamic-peak
 
@@ -78,11 +78,11 @@ class AppServiceProvider extends ServiceProvider
             ScopedEntryPolicy::class
         );
 
-        // Carry the submitter's request context onto the form settings add-on's
-        // queued notification job (UAMS-Web/uams-statamic-archive#830, #263)
+        // Name a submission's site as the multisite forms add-on records it, for the
+        // form settings add-on's submission metadata and request context (#265)
         $this->app->bind(
-            SubmissionContext::class,
-            FormRequestSubmissionContext::class
+            SubmissionSite::class,
+            MultisiteSubmissionSite::class
         );
 
         // Link-health classification needs two facts the container cannot infer: which hosts
@@ -273,14 +273,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for(
             'kb-engagement',
             fn (Request $request) => Limit::perMinute(60)->by($request->ip() ?: 'unknown')
-        );
-
-        // Rate limiter for the site-search type-ahead (UAMS-Web/uams-statamic-archive#1506). A reader types a few
-        // characters a second and the client debounces, so 120/min per client IP is
-        // well above real use while bounding a script that enumerates the index.
-        RateLimiter::for(
-            'site-search-suggestions',
-            fn (Request $request) => Limit::perMinute(120)->by($request->ip() ?: 'unknown')
         );
 
         // Rate limiters for posting and editing classified listings (UAMS-Web/uams-statamic-archive#2519). Each has

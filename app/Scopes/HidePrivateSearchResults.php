@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Scopes;
 
-use App\Http\Controllers\SiteSearchSuggestionsController;
 use App\Http\Middleware\ProtectEntry;
 use App\Search\AreaOfExpertiseSectionDocument;
+use App\Search\PrivateEntryVisibility;
 use App\Support\Entries\PrivateEntryAccess;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
@@ -22,10 +22,9 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * A `private` entry is still `published`, so `{{ search:results }}` lists it, while
  * {@see ProtectEntry} 404s it for anyone {@see PrivateEntryAccess::canView()} refuses.
  * This scope applies that same rule to the results query, so the page never offers a
- * title, URL or type the reader cannot open. It mirrors the type-ahead's
- * `SiteSearchSuggestionsController::visible()` ({@see SiteSearchSuggestionsController}),
- * so the two surfaces cannot disagree. An Area-of-Expertise section subpage is as
- * private as its Area of Expertise, as the type-ahead treats it.
+ * title, URL or type the reader cannot open. It mirrors {@see PrivateEntryVisibility},
+ * the type-ahead's rule, so the two surfaces cannot disagree. An Area-of-Expertise
+ * section subpage is as private as its Area of Expertise, as the type-ahead treats it.
  *
  * It runs as a `query_scope` on the search tag's query, whose conditions filter the
  * hits before pagination, so the page counts only what it lists. A reader who may
