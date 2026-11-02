@@ -139,17 +139,23 @@ it('keeps the current tab in a link to This site when the site shows it', functi
     expect(scopeLinkHref($html, 'This site'))->toBe('/medicine/search?q=kirk&amp;index=people');
 });
 
-it('falls back to All results on the page for a hidden or unknown tab', function (string $index): void {
-    $tabs = typeTabs(renderTabsSearch('medicine', ['index' => $index]));
+/**
+ * The handle of the type tab marked active in a rendered page, or null when none is.
+ */
+function activeTypeTab(string $html): ?string
+{
+    preg_match('#<nav class="site-search-tabs mx-auto.*?</nav>#s', $html, $nav);
+    preg_match('#<a class="nav-link active" href="[^"]*index=([a-z_]+)[^"]*"[^>]*aria-current="page">#', $nav[0] ?? '', $active);
 
-    expect($tabs)->toHaveKey('All results')
-        ->and($tabs)->not->toHaveKey('Clinical Locations');
+    return $active[1] ?? null;
+}
+
+it('falls back to All results, marked active, on the page for a hidden or unknown tab', function (string $index): void {
+    expect(activeTypeTab(renderTabsSearch('medicine', ['index' => $index])))->toBe('default');
 })->with(['hidden here' => ['clinical_locations'], 'unknown' => ['enterprise']]);
 
-it('marks All results active when the page falls back from a hidden tab', function (): void {
-    $html = renderTabsSearch('medicine', ['index' => 'clinical_locations']);
-
-    expect($html)->toMatch('#<a class="nav-link active" href="[^"]*index=default"[^>]*aria-current="page">All results</a>#');
+it('keeps a tab active under All sites on a site that hides it under This site', function (): void {
+    expect(activeTypeTab(renderTabsSearch('medicine', ['scope' => 'all', 'index' => 'clinical_locations'])))->toBe('clinical_locations');
 });
 
 it('serves a hidden or unknown tab on a sub-site as All results, with a 200', function (string $index): void {
@@ -157,6 +163,9 @@ it('serves a hidden or unknown tab on a sub-site as All results, with a 200', fu
         ContentSubmodule::reportMissing('the layout render');
     }
 
+    // Any index but `default` throws, as an unconfigured one does, so the 200 shows the
+    // page never asked for the requested index.
+    Search::shouldReceive('index')->with(Mockery::not('default'))->andThrow(new InvalidArgumentException('Index not configured.'));
     stubEmptySearchIndex();
 
     /** @var TestCase $test */
@@ -166,10 +175,10 @@ it('serves a hidden or unknown tab on a sub-site as All results, with a 200', fu
     $html = $test->get('/medicine/search?q=kirk&index='.$index)->assertOk()->getContent();
 
     expect(array_keys(typeTabs($html)))->toBe(['All results', 'People', 'News'])
-        ->and($html)->toMatch('#<a class="nav-link active" href="[^"]*index=default"[^>]*aria-current="page">All results</a>#');
+        ->and(activeTypeTab($html))->toBe('default');
 })->with(['hidden here' => ['clinical_locations'], 'unknown' => ['enterprise']]);
 
-it('answers the type-ahead from default for a tab the site hides, and from the tab where it shows', function (string $site, string $index, string $expected): void {
+it('answers the type-ahead from default for a tab the site hides, and from the tab where it shows', function (string $site, string $index, string $expected, ?string $scope = null): void {
     $recorded = new ArrayObject;
     Search::shouldReceive('index')->andReturnUsing(function (string $handle) use ($recorded): object {
         $recorded['index'] = $handle;
@@ -206,7 +215,7 @@ it('answers the type-ahead from default for a tab the site hides, and from the t
         return $index;
     });
 
-    $request = Request::create('/!/search/suggestions', 'GET', ['q' => 'kirk', 'site' => $site, 'index' => $index]);
+    $request = Request::create('/!/search/suggestions', 'GET', array_filter(['q' => 'kirk', 'site' => $site, 'index' => $index, 'scope' => $scope], fn (?string $value): bool => $value !== null));
     $response = app(SuggestionsController::class)($request);
 
     expect($response->getStatusCode())->toBe(200)
@@ -216,4 +225,5 @@ it('answers the type-ahead from default for a tab the site hides, and from the t
     'hidden on medicine' => ['medicine', 'clinical_locations', 'default'],
     'shown on health' => ['health', 'clinical_locations', 'clinical_locations'],
     'unknown' => ['medicine', 'enterprise', 'default'],
+    'hidden on medicine, but under All sites' => ['medicine', 'clinical_locations', 'clinical_locations', 'all'],
 ]);
