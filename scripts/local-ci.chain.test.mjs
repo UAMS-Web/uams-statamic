@@ -563,6 +563,23 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         expect(compare(replaced, allow)).toEqual(['.github/workflows/ci.yml: job `browser` is not in the `needs:` list of the `CI` job, so nothing requires it'])
     })
 
+    it('reads every job on all three operating systems (#348)', () => {
+        const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        const onOneRunner = new Set(['ci', 'submodule-access'])
+        const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
+        expect(ids.length).toBeGreaterThan(0)
+
+        for (const id of ids) {
+            const job = jobText(workflow, id)
+            expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
+            expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
+            expect(job, id).toContain('      fail-fast: false\n')
+            // Only the Windows shards the whole band stands in for may leave the matrix.
+            expect(job.includes('exclude:'), id).toBe(id === 'pest')
+            expect(job, id).not.toMatch(/^ +continue-on-error:/m)
+        }
+    })
+
     it('runs whatever the needed jobs did, and never carries the `RUN_REMOTE_CI` gate', () => {
         expect(ci).toContain('    name: CI\n')
         expect(ci).toContain('    if: always()\n')
@@ -599,7 +616,8 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // new total.
         const matrix = pest.match(/^ {8}shard: \[([0-9, ]+)\]$/m)
         const pestTotal = pest.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
-        const reportTotal = report.match(/^ {6}SHARD_TOTAL: (\d+)$/m)
+        // Windows runs the band whole, so the report's total depends on the leg.
+        const reportTotal = report.match(/^ {6}SHARD_TOTAL: \$\{\{ matrix\.os == 'windows-latest' && 1 \|\| (\d+) \}\}$/m)
 
         expect(matrix, 'the pest job has no `shard:` matrix line').not.toBeNull()
         expect(pestTotal, 'the pest job sets no SHARD_TOTAL').not.toBeNull()
@@ -640,12 +658,14 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         // once the shard selector and the per-shard report name are taken out,
         // the shard's flags must be the local runner's parallel-band flags, less
         // the memory passthru the local runner adds for a developer machine.
-        const runLine = pest.match(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/m)
-        expect(runLine, 'no parallel shard run step in the pest job').not.toBeNull()
-        const remote = runLine[1]
+        // Two steps run the band, the shard and the whole Windows band (#348), and each is held.
+        const runLines = [...pest.matchAll(/^ {8}run: (php -d pcov\.enabled=0 vendor\/bin\/pest --parallel .*)$/gm)]
+        expect(runLines, 'the pest job should run the shard and the whole Windows band').toHaveLength(2)
+        const remotes = runLines.map((line) => line[1]
             .replace(' --shard="$SHARD/$SHARD_TOTAL"', '')
             .replace('"junit-parallel-$SHARD.xml"', 'junit-parallel.xml')
-            .split(' ')
+            .replace('junit-parallel-1.xml', 'junit-parallel.xml')
+            .split(' '))
 
         const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
         const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree\)/)
@@ -656,7 +676,8 @@ describe('the sharded pest job in ci.yml (#387)', () => {
 
         // A control: a drifted flag must make the two differ, or the comparison
         // proves nothing.
-        expect([...remote, '--stop-on-failure']).not.toEqual(local)
-        expect(remote).toEqual(local)
+        expect([...remotes[0], '--stop-on-failure']).not.toEqual(local)
+        expect(remotes[0]).toEqual(local)
+        expect(remotes[1]).toEqual(local)
     })
 })

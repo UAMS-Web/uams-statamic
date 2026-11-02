@@ -287,7 +287,7 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // the four reports in its `pest-report` job before the band checks
     // (#387); this runner runs the band whole, so it has nothing to shard
     // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
-    // differ only by --shard.
+    // differ only by --shard, and on Windows not at all (#348).
     step('JOB pest - parallel suite (excluding serial group)')
     const parallelReport = join(tree, 'junit-parallel.xml')
     const serialReport = join(tree, 'junit-serial.xml')

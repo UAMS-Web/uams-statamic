@@ -48,7 +48,7 @@ export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) 
     const runPhp = phpRunner(php)
 
     // PARITY: the pint job's "Determine changed PHP files" + "Run Pint on changed
-    // files" steps in ci.yml.
+    // files" steps in ci.yml, which chunks its list too since #348.
     //
     // Diff against the REMOTE-TRACKING base (origin/<base>), matching ci.yml's
     // pull_request path (base="origin/${{ github.base_ref }}"). `--fetch`
