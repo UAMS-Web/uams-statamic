@@ -80,8 +80,8 @@ function seedCpSuperUser(string $email, string $password)
 const CP_LICENSING_ALERT_SNOOZE_KEY = 'statamic.snooze_license_banner';
 
 /**
- * The script that snoozes the licensing alert for a day, the way its Snooze button
- * does. Run it on any Control Panel origin page before the page that would show the
+ * The script that snoozes the licensing alert for a day, through the key its Snooze
+ * button writes (the button itself snoozes a day on a test domain). Run it on any Control Panel origin page before the page that would show the
  * alert loads, because the alert reads the key only once, when it mounts.
  *
  * @return string JavaScript for `$page->script()`.
