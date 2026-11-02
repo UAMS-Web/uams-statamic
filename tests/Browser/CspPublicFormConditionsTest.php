@@ -43,8 +43,13 @@ function cspConditionsFixturePath(): string
 
 /**
  * Write the fixture page for a given JS driver and return its public path.
+ *
+ * @param  string  $js  The form's JS driver.
+ * @param  string  $viewsDir  The directory holding the fixture's form view.
+ * @param  string  $beforeScripts  Markup placed ahead of the page's own scripts.
+ * @return string The fixture's public path.
  */
-function writeCspConditionsFixture(string $js, string $viewsDir): string
+function writeCspConditionsFixture(string $js, string $viewsDir, string $beforeScripts = ''): string
 {
     File::put(
         $viewsDir.'/form.antlers.html',
@@ -62,6 +67,7 @@ function writeCspConditionsFixture(string $js, string $viewsDir): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>CSP conditions fixture</title>',
+        $beforeScripts,
         '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>CSP conditions fixture</h1>',
         (string) View::make('csp_conditions_browser::form')->render(),
@@ -69,6 +75,36 @@ function writeCspConditionsFixture(string $js, string $viewsDir): string
     ]));
 
     return $fixture;
+}
+
+/**
+ * Build the markup that puts the site's script policy in force on the fixture.
+ *
+ * The policy is the `script-src` this application sends, so an `'unsafe-eval'`
+ * added to the config reaches this page, plus a nonce for the fixture's own
+ * inline script. The inline script runs as the page's own script, which is what
+ * a policy governs: `$page->script()` goes through `page.evaluate()`, which is
+ * exempt, so a probe sent that way reports `allowed` under any policy.
+ *
+ * @param  string  $pageScript  Extra script to run as the page's own, after the probe.
+ * @return string The meta tag and the nonced inline script.
+ */
+function cspEnforcedPolicyMarkup(string $pageScript = ''): string
+{
+    /** @var list<string> $sources */
+    $sources = config('security-headers.csp.directives.script-src');
+    $policy = 'script-src '.implode(' ', $sources)." 'nonce-csp-browser-probe'";
+
+    return '<meta http-equiv="Content-Security-Policy" content="'.e($policy).'">'
+        .'<script nonce="csp-browser-probe">'
+        .'window.__cspViolations = [];'
+        .'document.addEventListener("securitypolicyviolation", (event) => {'
+        .'window.__cspViolations.push(event.effectiveDirective + " " + event.blockedURI);'
+        .'});'
+        .'try { eval("1"); window.__cspEvalProbe = "allowed"; }'
+        .'catch (error) { window.__cspEvalProbe = error.name; }'
+        .$pageScript
+        .'</script>';
 }
 
 beforeEach(function () use (&$cspFormsDir, &$cspViewsDir): void {
@@ -181,4 +217,46 @@ it('is what makes the difference — the stock driver renders no fields at all',
     ), 'the browser JS error buffer');
 
     expect($messages)->toContain('Undefined variable: Statamic');
+});
+
+it('keeps a public form working with the policy in force', function () use (&$cspViewsDir): void {
+    writeCspConditionsFixture('alpine_csp', $cspViewsDir, cspEnforcedPolicyMarkup());
+
+    // Named here so a later plugin default cannot turn the policy off unseen
+    $page = visit('/__csp_conditions_fixture.html', ['bypassCSP' => false]);
+
+    // The control: the policy applied, read from a script the page itself ran
+    expect($page->script('window.__cspEvalProbe'))->toBe('EvalError');
+
+    // The form still rendered through its conditions
+    $page->assertSee('Passing Condition Field');
+    $page->assertDontSee('Failing Condition Field');
+
+    // Only the probe's own eval() was refused, so nothing else on the page needs it
+    expect($page->script('JSON.stringify(window.__cspViolations)'))->toBe('["script-src eval"]');
+
+    assertNoAppJavaScriptErrors($page);
+});
+
+it('reports a page script that needs unsafe-eval', function () use (&$cspViewsDir): void {
+    // A second refusal, as a script on a real page would cause, on top of the probe's
+    writeCspConditionsFixture(
+        'alpine_csp',
+        $cspViewsDir,
+        cspEnforcedPolicyMarkup('try { new Function("return 1")(); } catch (error) {}'),
+    );
+
+    $page = visit('/__csp_conditions_fixture.html', ['bypassCSP' => false]);
+
+    expect($page->script('JSON.stringify(window.__cspViolations)'))
+        ->toBe('["script-src eval","script-src eval"]');
+});
+
+it('leaves eval allowed only when the context bypasses the policy', function () use (&$cspViewsDir): void {
+    // The option the tests above set to false, so they are shown to depend on the policy
+    writeCspConditionsFixture('alpine_csp', $cspViewsDir, cspEnforcedPolicyMarkup());
+
+    $page = visit('/__csp_conditions_fixture.html', ['bypassCSP' => true]);
+
+    expect($page->script('window.__cspEvalProbe'))->toBe('allowed');
 });
