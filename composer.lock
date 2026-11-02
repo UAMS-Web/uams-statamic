@@ -10941,16 +10941,16 @@
         },
         {
             "name": "uams-web/aether-search",
-            "version": "v0.2.0",
+            "version": "v0.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-search.git",
-                "reference": "53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b"
+                "reference": "b52a7d2ca4826100007f2315e43910e094dfcaf9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b",
-                "reference": "53b1b0cd95d9ba920a6fbdfa84239233b1c5d60b",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/b52a7d2ca4826100007f2315e43910e094dfcaf9",
+                "reference": "b52a7d2ca4826100007f2315e43910e094dfcaf9",
                 "shasum": ""
             },
             "require": {
@@ -11006,7 +11006,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-search/issues",
                 "source": "https://github.com/UAMS-Web/aether-search"
             },
-            "time": "2026-11-02T04:01:02+00:00"
+            "time": "2026-11-02T11:28:15+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer",
