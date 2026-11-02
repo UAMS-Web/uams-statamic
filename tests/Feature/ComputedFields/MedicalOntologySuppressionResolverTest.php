@@ -50,7 +50,7 @@ beforeEach(function (): void {
  * Persist the Find-a-Doc settings global carrying the given removal rows.
  *
  * Passing no rows is the unconfigured state the feature ships in — nothing populates
- * `remove_ontology_criteria` on our side until `wordpress-importer#601` lands.
+ * `remove_ontology_criteria` on our side until `wordpress-importer-archive#601` lands.
  *
  * Typed loosely on purpose: the malformed-row case below feeds it editor data that is
  * not a row at all, which is exactly what the resolver has to survive.
