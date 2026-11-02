@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "58cd167294c1c270e91b3290472a63a0",
+    "content-hash": "cf0a05bfd89f8e7965efa064c2915adc",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10941,16 +10941,16 @@
         },
         {
             "name": "uams-web/aether-search",
-            "version": "v0.2.1",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-search.git",
-                "reference": "b52a7d2ca4826100007f2315e43910e094dfcaf9"
+                "reference": "85f9b24a9dd5f904a20aaf3304ef8e4a820eb1ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/b52a7d2ca4826100007f2315e43910e094dfcaf9",
-                "reference": "b52a7d2ca4826100007f2315e43910e094dfcaf9",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/85f9b24a9dd5f904a20aaf3304ef8e4a820eb1ea",
+                "reference": "85f9b24a9dd5f904a20aaf3304ef8e4a820eb1ea",
                 "shasum": ""
             },
             "require": {
@@ -11006,7 +11006,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-search/issues",
                 "source": "https://github.com/UAMS-Web/aether-search"
             },
-            "time": "2026-11-02T11:28:15+00:00"
+            "time": "2026-11-02T15:55:47+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer",

@@ -41,7 +41,7 @@ uses(StacheIsolatedTestCase::class);
  * pins the resolver with Mockery doubles — it proves the bulk query is *built*
  * correctly and cannot prove it *resolves* correctly, because no structure exists in
  * that test to resolve against. This one imports a WXR, lets `KbEntryCreator` build
- * the real tree, and asks the resolver the two questions `UAMS-Web/wordpress-importer#432`
+ * the real tree, and asks the resolver the two questions `UAMS-Web/wordpress-importer-archive#432`
  * could not ask in that repository: `App\` is not on its autoloader, so a test there
  * naming this class fails PHPStan outright and every call on it degrades to `mixed`.
  *
