@@ -117,6 +117,15 @@ it('loads the add-on script before the bundle that starts alpine', function (str
     expect(substr_count($template, $bundle))->toBe(1);
     expect(strpos($template, $script))->toBeLessThan((int) strpos($template, $bundle));
 
+    // ---
+    // `$showField` forwards to `Statamic.$conditions.showField()`, which `helpers.js`
+    // defines, so that tag comes first. Without it every conditional field shows (#189).
+    // ---
+    $evaluator = '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script>';
+
+    expect(substr_count($template, $evaluator))->toBe(1);
+    expect(strpos($template, $evaluator))->toBeLessThan((int) strpos($template, $script));
+
     // The bundle the tag precedes is the one carrying site.js.
     expect($template)->toContain("merge_array(['resources/js/site.js'])");
 })->with([

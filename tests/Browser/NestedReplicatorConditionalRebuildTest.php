@@ -61,7 +61,7 @@ function writeNestedReplicatorRebuildFixture(string $viewsDir): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Nested replicator rebuild fixture</title>',
-        '<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Nested replicator rebuild fixture</h1>',
         (string) View::make('nested_replicator_rebuild_browser::form')->render(),
         '</body></html>',

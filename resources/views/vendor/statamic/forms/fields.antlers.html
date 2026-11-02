@@ -28,9 +28,10 @@
 	`Undefined variable: Statamic` on every field. Modules may import freely;
 	attributes may not reference globals at all.
 
-	Statamic's own `helpers.js` is no longer loaded on public pages — its
-	evaluator used `eval()`, which is the very thing `'unsafe-eval'` had to stay
-	for. So `Statamic.$conditions` does not exist here at all any more.
+	The add-on's `$showField` magic moves that lookup into module scope and
+	forwards to `Statamic.$conditions.showField()`, defined by Statamic's
+	`helpers.js`, which the layout loads ahead of the add-on (#189). Since
+	`statamic/cms` v6.35.1 that evaluator uses no `eval()`.
 
 	## What works
 
@@ -39,15 +40,14 @@
 	  others are AND; `unless`/`hide_when` invert).
 	- **Operators**: `is` / `equals` / `==`, `isnt` / `not` / `!=`, `contains` /
 	  `includes`, `contains_any` / `includes_any`, `>`, `>=`, `<`, `<=`, and the
-	  special RHS `'empty'`. See the add-on's `resources/js/conditions/validator.js`
-	  and its constants parity test, which pins the vocabulary against Statamic's
-	  bundle so an upstream change cannot drift past.
+	  special RHS `'empty'`. The Control Panel and public pages share Statamic's
+	  evaluator, so the two cannot disagree.
 	- **Nested visibility**: a conditional field can itself be the source of
 	  another field's condition; both update reactively as the user types.
 	- **Custom conditions**: `if: { x: 'custom funcName:params' }` works when the
 	  function is registered via `registerCustomCondition` in
-	  `resources/js/conditions/`, which writes it to `window.StatamicCustomConditions`
-	  — the registry the evaluator reads directly.
+	  `resources/js/conditions/`, which writes it to `window.StatamicCustomConditions`,
+	  the registry the add-on's magic answers Statamic's lookups from.
 
 	## Known limits
 
