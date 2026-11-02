@@ -327,6 +327,11 @@ class SecurityHeaders
         foreach (array_unique($allowances) as $allowance) {
             $additions = (array) config('security-headers.csp.allowances.'.$allowance, []);
             foreach ($additions as $directive => $sources) {
+                // A directive configured as null stays omitted
+                if (array_key_exists($directive, $directives) && $directives[$directive] === null) {
+                    continue;
+                }
+
                 $directives[$directive] = [...(array) ($directives[$directive] ?? []), ...(array) $sources];
             }
         }

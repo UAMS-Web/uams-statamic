@@ -17,7 +17,8 @@ use function Pest\Laravel\get;
  * Registers a probe route wrapped in the middleware and asserts baseline,
  * CSP, and HSTS behavior against config/security-headers.php defaults.
  *
- * Mutation: 100% on App\Http\Middleware\SecurityHeaders (87 mutants, --covered-only).
+ * Mutation: 100% on App\Http\Middleware\SecurityHeaders (87 mutants, --covered-only),
+ * measured before allowOnThisResponse() was added.
  */
 uses(TestCase::class);
 
@@ -443,4 +444,20 @@ it('adds a named allowance to the response that takes it up, and to no other', f
         ->and(securityHeadersMiddlewareTestDirective($widened, 'frame-src'))->toContain('https://cse.google.com')
         ->and($plain)->not->toContain('https://cse.google.com')
         ->and($plain)->not->toContain("'unsafe-eval'");
+});
+
+it('leaves a directive configured as null omitted when an allowance names it', function (): void {
+    config(['security-headers.csp.directives.connect-src' => null]);
+
+    $request = Request::create('/__security_headers_allowance');
+    app()->instance('request', $request);
+
+    $response = app(SecurityHeaders::class)->handle($request, function (): Response {
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+
+        return new Response('ok');
+    });
+
+    expect((string) $response->headers->get('Content-Security-Policy-Report-Only'))
+        ->not->toContain('connect-src');
 });

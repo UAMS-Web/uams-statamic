@@ -124,7 +124,9 @@
 						    form still lands on /search. `data-index` is the validated active tab
 						    (never the raw `get:index`), so suggestions come from the index the
 						    page itself searches, and `data-site` and `data-scope` keep them to
-						    the sites it searches. Every binding names a property or
+						    the sites it searches. On the Google scope the page shows no index
+						    of its own, so they come from this site's content on every site.
+						    Every binding names a property or
 						    method, never an inline expression, because the site runs the
 						    @alpinejs/csp build. #}}
 						<div class="site-search-typeahead position-relative" x-data="siteSearchTypeahead" data-index="{{ $search_index }}" data-search-path="{{ $search_path }}" data-site="{{ site_search_scope:site }}" data-scope="{{ $scope_param }}" @click.outside="close" @focusout="onFocusOut">
@@ -302,7 +304,7 @@
 			{{# Pre-query prompt, shown before the reader has searched: it names what the
 			    search covers, so the tabs above read as choices rather than as results
 			    (UAMS-Web/uams-statamic-archive#1510). #}}
-			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
+			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search || $is_google_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
 		{{ /if }}
 
 	{{ /partial:layout/entry-content }}

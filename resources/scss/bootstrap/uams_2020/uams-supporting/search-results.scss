@@ -131,7 +131,7 @@ body.page-template-default.search {
     // Google's gray labels are too faint to read on the page's white.
     .gsc-control-cse .gsc-tabsArea .gsc-tabHeader,
     .gsc-control-cse .gsc-result-info {
-        color: var(--bs-body-color);
+        color: $body-color;
     }
 
     .gsc-control-cse .gs-result .gs-web-image-box,

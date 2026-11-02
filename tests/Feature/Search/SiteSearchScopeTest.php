@@ -15,6 +15,7 @@ use Statamic\Sites\Site as SiteObject;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
 
+// cspell:ignore gcse searchresults
 uses(TestCase::class);
 
 /**
@@ -31,7 +32,7 @@ uses(TestCase::class);
 /**
  * Render the search page as a reader on a site sees it.
  *
- * @param  array<string, mixed>  $get  The query string.
+ * @param  array<array-key, mixed>  $get  The query string.
  */
 function renderScopedSearch(string $site, array $get = []): string
 {
@@ -327,4 +328,20 @@ it('widens the content security policy for Google results and for no other searc
 
     expect($policyFor(['q' => 'kirk', 'scope' => 'google']))->toContain('https://cse.google.com')
         ->and($policyFor(['scope' => 'google']))->not->toContain('https://cse.google.com');
+});
+
+it('searches the site when the URL asks for Google and no engine is configured', function (): void {
+    config(['services.google_search.engine_id' => null]);
+
+    expect(searchThroughPage('health', ['q' => 'kirk', 'scope' => 'google'])['html'])
+        ->not->toContain('cse.google.com')
+        ->toContain('site-search-tabs mx-auto');
+});
+
+it('does not describe the type tabs before a Google search', function (): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+
+    expect(renderScopedSearch('health', ['scope' => 'google']))
+        ->toContain('Enter a search term above to get started.')
+        ->not->toContain('You can search people');
 });

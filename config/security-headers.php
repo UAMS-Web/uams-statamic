@@ -112,6 +112,8 @@ return [
     |     a `$showField(...)` magic call in place of Statamic's
     |     `Statamic.$conditions.showField(...)`, which the CSP build rejects as a
     |     window global. Nothing else in `resources/js/**` evaluates strings.
+    |     One response adds it back: Google's results take it up through
+    |     `allowances.google_search` below (UAMS-Web/uams-statamic#412).
     |   - style-src `'unsafe-inline'`: REMOVED. Inline <style> elements are now
     |     nonce-gated. Inline `style="..."` attributes are kept working via
     |     `style-src-attr 'unsafe-inline'`; hardening those (sweeping attribute
@@ -165,7 +167,8 @@ return [
         // ---
         // Sources added to one response, by name, when its render takes them up
         // through SecurityHeaders::allowOnThisResponse(). For a third-party script
-        // that only some renders load, so every other page stays narrower.
+        // that only some renders load, so every other page stays narrower. A
+        // directive set to null below stays omitted: nothing here brings it back.
         // ---
         'allowances' => [
             // Google's results for "All UAMS websites" on /search
