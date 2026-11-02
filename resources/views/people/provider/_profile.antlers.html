@@ -388,12 +388,14 @@
 {{ /partial:page_builder/uamsweb_block }}
 
 {{# Credentials a patient reads as clinical assurance. Education and training are the
-    academic lens's business; board certifications are the clinical one's. #}}
+    academic lens's business; board certifications and professional memberships are the
+    clinical one's, so a fellowship reads here in words rather than as letters after the
+    name (UAMS-Web/uams-statamic#304, UAMS-Web/uams-statamic#307). #}}
 {{
 	partial:page_builder/uamsweb_block
 	block_id="provider-credentials"
 	block_class="profile-credentials"
-	:when="certifications"
+	:when="certifications || member_of"
 }}
 	{{ partial:page_builder/components/container_row }}
 		{{
@@ -409,6 +411,13 @@
 					:activities_list="certifications | certifications_by_kind"
 					variant="certifications"
 					:when="certifications"
+				}}
+				{{
+					partial:people/components/professional_background_list
+					heading="Professional Memberships"
+					:activities_list="member_of"
+					variant="member_of"
+					:when="member_of"
 				}}
 			</div>
 		</div>
