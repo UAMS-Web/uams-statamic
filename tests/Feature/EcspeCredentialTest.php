@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Support\Collection;
 use Statamic\Facades\Term;
+use Statamic\Fields\Blueprint;
+use Statamic\Fields\Field;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\TermSaveValidation;
@@ -18,7 +20,7 @@ uses(TestCase::class);
  * `credentials` term, so it holds the full name rather than being empty.
  */
 
-// cspell:ignore ecspe
+// cspell:ignore ecds ecspe
 
 beforeEach(function (): void {
     $term = Term::find('credentials::ecspe');
@@ -50,13 +52,51 @@ it('presents the abbreviation nowhere in the term', function (): void {
         ->not->toContain('ECSPE');
 });
 
-it('saves in the Control Panel without validation errors', function (): void {
-    expect(TermSaveValidation::rejectedFields(mustBe(LocalizedTerm::class, $this->term, 'the ecspe term')))->toBe([]);
+it('asks for the website answer the term has never recorded', function (): void {
+    $term = mustBe(LocalizedTerm::class, $this->term, 'the ecspe term');
+
+    // UAMS-Web/uams-statamic#501 keeps the question required: the Control Panel refuses this save
+    expect(mustBe(Collection::class, $term->data(), 'the term data')->has('official_website_query'))->toBeFalse()
+        ->and(TermSaveValidation::rejectedFields($term))->toBe(['official_website_query']);
+});
+
+it('saves in the Control Panel once the website question is answered', function (bool $answer): void {
+    $term = mustBe(LocalizedTerm::class, $this->term, 'the ecspe term');
+
+    // Yes also shows the URL field, which then needs its own answer
+    expect(TermSaveValidation::rejectedFields($term, [
+        'official_website_query' => $answer,
+        'official_website' => $answer ? 'https://example.com/' : null,
+    ]))->toBe([]);
+})->with(['no' => false, 'yes' => true]);
+
+it('keeps the website question required on a credential', function (): void {
+    $term = mustBe(LocalizedTerm::class, $this->term, 'the ecspe term');
+    $blueprint = mustBe(Blueprint::class, $term->blueprint(), 'the term blueprint');
+
+    expect(mustBe(Field::class, $blueprint->field('official_website_query'), 'the website question')->rules())
+        ->toHaveKey('official_website_query')
+        ->official_website_query->toContain('required', 'sometimes');
+});
+
+it('leaves the website question out for a credential the editor hides it on', function (): void {
+    $term = Term::find('credentials::ecds');
+
+    // An Occupation is hidden by the custom condition, so its unanswered question is never rejected
+    expect(TermSaveValidation::rejectedFields(mustBe(LocalizedTerm::class, $term, 'the ecds term')))->toBe([]);
+});
+
+it('rejects an unanswered website question on a certification', function (): void {
+    $term = Term::find('certifications::american-academy-of-nurse-practitioners-certification-board-adult-gerontology-primary-care-nurse-practitioner');
+
+    // The certification field is shown unconditionally
+    expect(TermSaveValidation::rejectedFields(mustBe(LocalizedTerm::class, $term, 'a certification term'), ['official_website_query' => null]))
+        ->toContain('official_website_query');
 });
 
 it('reports a required field left empty, so a clean save is not a blind check', function (): void {
     $term = mustBe(LocalizedTerm::class, $this->term, 'the ecspe term');
 
     // A field the editor always shows, emptied, must be rejected
-    expect(TermSaveValidation::rejectedFields($term, ['full_name' => null]))->toBe(['full_name']);
+    expect(TermSaveValidation::rejectedFields($term, ['full_name' => null, 'official_website_query' => false]))->toBe(['full_name']);
 });
