@@ -65,26 +65,6 @@ function redirectResponseFieldConfig(string $path): array
 }
 
 /**
- * Snooze Statamic's trial-mode licensing alert when it opens, since it covers the publish form.
- *
- * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
- */
-function redirectResponseDismissLicensingAlert($page): void
-{
-    for ($waited = 0.0; $waited <= 10.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
-
-        if ($open === true) {
-            $page->click('Snooze');
-
-            break;
-        }
-
-        $page->wait(0.2);
-    }
-}
-
-/**
  * The selected option of each radio group on the page, in page order.
  *
  * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page showing the publish form.
@@ -170,13 +150,10 @@ it('shows the stored code and saves it back unchanged', function (string $code) 
 
     $page = loginToCp($email, $password)->navigate('/cp/collections/'.$collectionHandle.'/entries/'.$entryId);
     waitToSee($page, '301 Moved Permanently', 60.0);
-    redirectResponseDismissLicensingAlert($page);
 
     expect(redirectResponseSelectedCodes($page))->toBe([$code, $code]);
 
-    // Save without touching any field. The licensing alert can open late, so
-    // it is snoozed again first. The save shows as a new `updated_at`.
-    redirectResponseDismissLicensingAlert($page);
+    // Save without touching any field. The save shows as a new `updated_at`.
     $page->click('Save & Publish');
 
     $saved = null;
