@@ -12,7 +12,8 @@
 7. Run `composer install`
 8. Run `php please make:user`
 9. Run `npm i` && `npm run dev:with-cp`
-10. Go to http://uams-statamic.test/ and click "Generate App Key"
+10. Run `npx --no-install puppeteer browsers install chrome-headless-shell`. News release PDFs need this browser, and `npm` does not download it because `.npmrc` sets `ignore-scripts=true`. Without it a published `news_release` saves with no PDF and the reason is only in `storage/logs/laravel.log`. `node scripts/worktree-slots.mjs status` names the browser when it is missing.
+11. Go to http://uams-statamic.test/ and click "Generate App Key"
 
 ## Statamic vendor patch workflow
 

@@ -54,6 +54,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 // Imported, not re-derived: UAMS-Web/uams-statamic-archive#1743 solved this exact problem for the local-CI worktree, and two
@@ -292,7 +293,7 @@ export function expectationsFor(kind) {
  * @param  string  $treePath
  * @param  string  $repoRoot
  * @param  {{lockHash: ?string, stampHash: ?string, composerHash: ?string, stampComposerHash: ?string, submodules: array}}  $probe
- * @return {{kind: string, drift: array<int, string>}}
+ * @return {{kind: string, drift: array<int, string>, notices: array<int, string>}}
  */
 export function judgeTree(treePath, repoRoot, probe) {
     const kind = treeKind(treePath, repoRoot);
@@ -303,7 +304,9 @@ export function judgeTree(treePath, repoRoot, probe) {
     // Notices are reported and NOT counted toward `--check`. Folding them into `drift` would fault
     // a tree for a measurement that failed rather than for a state that is wrong; dropping them
     // would restore the silence UAMS-Web/uams-statamic-archive#2148 is about. They are a third category on purpose.
-    return { kind, drift: driftReasons({ ...probe, expected }), notices: notice ? [notice] : [] };
+    const notices = [notice, expected.checkInstall ? puppeteerBrowserNotice(probe.puppeteerBrowser) : null].filter(Boolean);
+
+    return { kind, drift: driftReasons({ ...probe, expected }), notices };
 }
 
 /**
@@ -662,6 +665,67 @@ export function contentMirrorReason(mirror) {
     return mirror.drifted
         ? `content mirror: built from a different content/, rebuild it with \`${CONTENT_MIRROR_SEED.command}\``
         : null;
+}
+
+/** The browser Puppeteer launches headless, which is also its folder in Puppeteer's cache. */
+const PUPPETEER_BROWSER = 'chrome-headless-shell';
+
+/** What installs that browser: `.npmrc` keeps `npm ci` from doing it (UAMS-Web/uams-statamic#457). */
+const PUPPETEER_BROWSER_INSTALL = `npx --no-install puppeteer browsers install ${PUPPETEER_BROWSER}`;
+
+/**
+ * The browser version the installed Puppeteer asks for, read from the source that pins it
+ * (UAMS-Web/uams-statamic#457). The file is an ES module, so it is read as text: `status` is
+ * synchronous, and importing a dependency would run its code in every tree.
+ *
+ * @param  ?string  $revisions  The text of Puppeteer's `revisions.js`
+ * @return ?string
+ */
+export function pinnedBrowserVersion(revisions) {
+    return revisions?.match(new RegExp(`['"]${PUPPETEER_BROWSER}['"]:\\s*['"]([^'"]+)['"]`))?.[1] ?? null;
+}
+
+/**
+ * Whether the browser the tree's Puppeteer asks for is in the machine's Puppeteer cache.
+ *
+ * `ignore-scripts=true` in `.npmrc` keeps Puppeteer's postinstall from running, so `npm ci` never
+ * downloads the browser. The cache is per machine and per user, not per tree, and resolves as
+ * Puppeteer's own `getConfiguration()` does. It holds `<browser>/<platform>-<version>`, and this
+ * checks that folder exists, so a download interrupted part way through still reads as installed.
+ *
+ * @param  string  $treePath
+ * @param  {{PUPPETEER_CACHE_DIR?: string}}  $env
+ * @param  string  $home
+ * @return {{version: ?string, installed: bool}}
+ */
+export function puppeteerBrowserStateOf(treePath, env = process.env, home = homedir()) {
+    const revisions = join(treePath, 'node_modules', 'puppeteer-core', 'lib', 'puppeteer', 'revisions.js');
+    const version = pinnedBrowserVersion(existsSync(revisions) ? readFileSync(revisions, 'utf8') : null);
+    const root = join(env.PUPPETEER_CACHE_DIR ?? join(home, '.cache', 'puppeteer'), PUPPETEER_BROWSER);
+
+    return {
+        version,
+        installed: version !== null && existsSync(root) && readdirSync(root).some((name) => name.endsWith(`-${version}`)),
+    };
+}
+
+/**
+ * Why a tree cannot render a news-release PDF, or null when it can (UAMS-Web/uams-statamic#457).
+ *
+ * A null state is a tree the probe was not run on. An unread version is reported rather than
+ * passed: a Puppeteer upgrade that moves the pin must not turn this check silently clean.
+ *
+ * @param  {{version: ?string, installed: bool}|null}  $browser
+ * @return ?string
+ */
+export function puppeteerBrowserNotice(browser) {
+    if (!browser || browser.installed) {
+        return null;
+    }
+
+    return browser.version === null
+        ? 'Puppeteer browser: could not read the version Puppeteer asks for'
+        : `Puppeteer browser: ${PUPPETEER_BROWSER} ${browser.version} is not installed, so news release PDFs fail; run \`${PUPPETEER_BROWSER_INSTALL}\``;
 }
 
 /**
@@ -1583,6 +1647,7 @@ function inspect(repoRoot) {
             // Only over an initialized `content/`: an absent one is already a submodule drift line,
             // and the walk would fail on a directory that is not there
             contentMirror: existsSync(join(tree.path, 'content', '.git')) ? contentMirrorStateOf(tree.path) : null,
+            puppeteerBrowser: puppeteerBrowserStateOf(tree.path),
         });
 
         return {

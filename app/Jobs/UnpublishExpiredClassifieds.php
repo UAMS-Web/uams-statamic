@@ -10,6 +10,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
@@ -44,10 +45,16 @@ use Symfony\Component\Mime\Exception\ExceptionInterface as MimeExceptionInterfac
  *
  * The job is unique while it is queued or running, so a second dispatch during a run is
  * dropped. Two runs reading the same listing before either saves would each send a notice.
+ * The lock expires after the {@see UniqueFor} attribute's seconds, so a run that never finished, such as
+ * one whose worker was killed, cannot block every later dispatch (#488).
  *
  * Dispatched by the schedule in `routes/console.php` on the UAMS-Web/uams-statamic-archive#1772 pattern that
  * {@see ScanLinkHealth} established, with the same caveat about queue connections.
+ *
+ * One hour is forty times the queue's default `retry_after` of 90 seconds, the longest a job can
+ * run on those settings before the queue hands it out again. No production run has been timed.
  */
+#[UniqueFor(3600)]
 final class UnpublishExpiredClassifieds implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;

@@ -3739,6 +3739,34 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #348. `.github/workflows/ci.yml`, `tests/skip-baseline.json`, `scripts/check-skip-baseline.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/gate-pint.mjs`, and the passages in `AGENTS.md` and `README.md`.
 
+## 2026-11-01: Public field conditions stay on Statamic's evaluator (UAMS-Web/uams-statamic#189)
+
+**Decision.** The retire direction recorded on #189 is confirmed. Public forms use the evaluator in Statamic's `helpers.js`, the `$showField` magic in `uams-web/aether-alpine-csp-forms` forwards to it, and the watches on the upstream chain are removed.
+
+**Why.** Re-measured against the installed `statamic/cms` `v6.37.0`, `helpers.js` is 24,804 bytes raw and 8,026 gzipped and contains no `eval(`. The trade was one cached 30 KB asset against an owned evaluator exposed to silent divergence from the Control Panel's, and the asset is now about a quarter of that size. It still carries the WebAuthn client, which public pages do not use.
+
+**Rejected.** *Keeping the owned evaluator*: the case for it was the payload, which has shrunk, and test coverage that existed only because of the fork.
+
+**Accepted cost.** Every public page loads the WebAuthn client until upstream stops shipping it there (UAMS-Web/uams-statamic-archive#1979).
+
+**Verified.** Measured on Windows 11 with Playwright's Chromium and `bypassCSP` off, on the fixture from `tests/Browser/CspPublicFormConditionsTest.php` under a `<meta>` policy with no `'unsafe-eval'`: an `eval()` in a page script raised `EvalError`, the condition that should pass rendered, the one that should fail did not, and no page error fired. An `eval()` appended to `helpers.js` as a control did raise a page error. This was a one-off on the fixture, whose `equals` condition is the operator of the two live conditional fields, and not a live page.
+
+**Residual.** None from the browser suite: #502 (by #506) runs the same fixture under a `<meta>` policy with `bypassCSP` off, so the check above now runs on every pull request.
+
+**Companion.** #189. The enforce flip itself is #33.
+
+## 2026-11-02: Windows shards the Pest band four ways, from a file list per shard (#504)
+
+**Decision.** The Windows leg runs the parallel band as four shards on four runners, like Linux and macOS. Each Windows shard lists its tests in one process with `pest --list-tests --exclude-group=serial --shard=<i>/4`, `scripts/pest-shard-config.php` writes a copy of `phpunit.xml` whose only suite names that shard's files, and the band runs `pest --parallel --configuration=<that copy>`. `pest-report` reads four shards on every leg. This supersedes the 2026-11-01 entry's "Windows runs the Pest band whole" and its rejected *Shards on Windows with a shorter filter*.
+
+**Why.** The Windows band ran 58.6 minutes against about 14 on the other legs, so every pull request waited for it. The limit `--shard` meets is not the process limit but `cmd.exe`'s: Symfony `Process` starts each paratest worker through it, a worker command of 8,037 characters starts and one of 8,038 does not (Windows 11), and the shard's filter is about 9,000 characters. Listing the shard needs no worker, and a worker given a configuration's path carries no class list, so no dependency changes. The four listings hold the same 13,628 tests in 1,102 classes as the whole band, with no class in two shards, and `pest-report` still refuses shards that did not run every class once.
+
+**Rejected.** *Patching Pest's filter or paratest's worker start*: a change to a dependency, which the 2026-11-01 entry rejected for this reason. *Splitting the band by directory or group*: it would not use the recorded per-class timings, so the shards would be uneven, and it would partition differently from the other legs.
+
+**Residual.** The two-run timing comparison #504 asks for is recorded on #504 once remote CI has run.
+
+**Companion.** #504. `.github/workflows/ci.yml`, `scripts/pest-shard-config.php`, `tests/Feature/PestShardConfigTest.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/merge-shard-reports.php`.
+
 ## 2026-11-02: Site search does not launch on the `local` driver; Loupe is spiked first (#161)
 
 **Decision.** The `local` (Comb) driver is not the launch engine. The next rung of #161's ladder, `daun/statamic-loupe`, is spiked at launch size with the 22 queries #161 measured, against a 400ms p95 gate. The spike's Composer requirement stays on its own branch until its result is known. If Loupe misses the gate, the spike reports its numbers and the choice returns to a person: no further rung is decided here.

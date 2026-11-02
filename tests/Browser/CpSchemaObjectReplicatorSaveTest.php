@@ -36,27 +36,6 @@ use Statamic\Facades\Stache;
 $collectionHandle = 'schema_object_replicator_save';
 
 /**
- * Snooze Statamic's trial-mode licensing alert when it opens. It is a modal
- * over the publish form, so every click behind it times out.
- *
- * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
- */
-function schemaObjectDismissLicensingAlert($page): void
-{
-    for ($waited = 0.0; $waited <= 3.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
-
-        if ($open === true) {
-            $page->click('Snooze');
-
-            break;
-        }
-
-        $page->wait(0.2);
-    }
-}
-
-/**
  * Open the replicator's set picker and choose the set shown as `$display`.
  *
  * The picker item is found by its exact text inside the open picker, since the
@@ -186,7 +165,6 @@ it('keeps a set from the range types and the antlers set through a Control Panel
         ->navigate('/cp/collections/'.$collectionHandle.'/entries/'.$entryId);
 
     waitToSee($page, 'Add Value', 60.0);
-    schemaObjectDismissLicensingAlert($page);
 
     // Add a range-type set and the antlers set through the set picker, and give the first a value
     schemaObjectAddSet($page, 'Text');
