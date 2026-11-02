@@ -21,7 +21,7 @@ uses(CollectionTreeIsolatedTestCase::class, RequiresContentSubmodule::class);
 /**
  * Coverage for UAMS-Web/uams-statamic-archive#2535: `faq_categories` was a flat taxonomy, and a flat term exists
  * on every site its taxonomy is enabled for, so the importer titled each term with
- * its site name. `UAMS-Web/wordpress-importer#1215` settled that FAQ categories
+ * its site name. `UAMS-Web/wordpress-importer-archive#1215` settled that FAQ categories
  * import as entries in a site-scoped collection, following UAMS-Web/uams-statamic-archive#1863, UAMS-Web/uams-statamic-archive#2532, UAMS-Web/uams-statamic-archive#2533 and
  * UAMS-Web/uams-statamic-archive#2534.
  *

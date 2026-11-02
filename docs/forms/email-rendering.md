@@ -92,7 +92,7 @@ the parent's address wiring:
 
 > **Companion — importer side.** 44 Gravity Forms notifications in the export corpus populate the
 > From-Name from a form field via the legacy `fromNameField` alias, which the importer currently
-> drops (UAMS-Web/wordpress-importer#34). Until that lands, the imported `from_name` is empty for that
+> drops (UAMS-Web/wordpress-importer-archive#34). Until that lands, the imported `from_name` is empty for that
 > subset and the bare-email fallback fires — render does the right thing, but there's nothing to render.
 
 ## How request context flows

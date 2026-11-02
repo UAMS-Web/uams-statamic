@@ -36,7 +36,7 @@ namespace App\Services;
  * but the importer's custom `set` node copies `data-set-attr-*` values from the
  * source HTML into `attrs.values` verbatim. Those values are therefore a
  * separate trust boundary that this allowlist does not cover — tracked as a
- * known gap in UAMS-Web/wordpress-importer#494 and pinned by
+ * known gap in UAMS-Web/wordpress-importer-archive#494 and pinned by
  * `tests/Unit/WordPressImport/BardParserSetAttributePassthroughTest.php`.
  *
  * Do not add XSS handling here, and do not read this class's presence as

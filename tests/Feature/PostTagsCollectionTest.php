@@ -12,7 +12,7 @@ uses(TestCase::class, RequiresContentSubmodule::class);
 /**
  * Coverage for UAMS-Web/uams-statamic-archive#2532: `post_tags` was a flat taxonomy, and a flat term exists on
  * every site its taxonomy is enabled for, so the importer had to prefix each title
- * with its site name. `UAMS-Web/wordpress-importer#1215` settled that tags import
+ * with its site name. `UAMS-Web/wordpress-importer-archive#1215` settled that tags import
  * as entries in a site-scoped collection, following UAMS-Web/uams-statamic-archive#1863.
  *
  * These assert the shipped configuration: a structured, non-propagating collection

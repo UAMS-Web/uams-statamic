@@ -15,7 +15,7 @@ use Statamic\Events\EntrySaving;
  * Control-Panel-typed password was written to the entry's YAML in plain text
  * with `is_password_hashed` left unset. The only reason password-protected
  * pages worked was the plain-text comparison fallback in the importer's
- * `PasswordVerifier`, which `UAMS-Web/wordpress-importer#5` removes. This
+ * `PasswordVerifier`, which `UAMS-Web/wordpress-importer-archive#5` removes. This
  * listener brings the Control Panel in line with what the WordPress importer's
  * `BaseEntryCreator` has always done — hash the value and set the flag in the
  * same write.

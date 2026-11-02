@@ -365,13 +365,13 @@ export function installStaleReason(lockHash, stampHash) {
  * returned separately from a `reason`. Faulting it would red `--check` permanently on a checkout
  * whose remote-tracking ref is merely stale — the UAMS-Web/uams-statamic-archive#1952 shape `expectationsFor` exists to prevent, arriving through
  * a new door — and staying silent is the opposite error, the one UAMS-Web/uams-statamic-archive#2148 is about. So it is neither
- * faulted nor hidden. `wordpress-importer#878` reached the same split on its own copy.
+ * faulted nor hidden. `wordpress-importer-archive#878` reached the same split on its own copy.
  *
  * ⚠ **The notice does not say WHY, because this cannot know why.** A missing `origin/main` and a
  * git invocation that simply failed both arrive as a null count and are indistinguishable here — an
  * extra field would not help, since the one this returns answers a different question. Naming a
  * cause the probe never checked is its own defect, and the sibling shipped it: see
- * `wordpress-importer#880`, where the message reads "no origin/main ref" on a repository where the
+ * `wordpress-importer-archive#880`, where the message reads "no origin/main ref" on a repository where the
  * ref exists.
  *
  * An absent probe is a third thing: a tree inspected before this check existed carries no `base`

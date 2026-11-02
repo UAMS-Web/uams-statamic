@@ -9,7 +9,7 @@ use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\BardPars
  * @covers \UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Tiptap\Nodes\Set
  *
  * Pins that the importer no longer trusts `data-set-*` markup arriving in
- * WordPress post content (UAMS-Web/uams-statamic-archive#1742, fixed in UAMS-Web/wordpress-importer#494).
+ * WordPress post content (UAMS-Web/uams-statamic-archive#1742, fixed in UAMS-Web/wordpress-importer-archive#494).
  *
  * {@see BardParserScriptStrippingTest} pins the node-and-mark allowlist. That
  * allowlist is real but narrower than it reads: `Tiptap\Core\Schema::apply()`
