@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -417,4 +418,27 @@ it('disables all headers via the master switch', function (): void {
     expect($response->headers->get('Referrer-Policy'))->toBeNull();
     expect($response->headers->get('Content-Security-Policy-Report-Only'))->toBeNull();
     expect($response->headers->get('Content-Security-Policy'))->toBeNull();
+});
+
+it('adds a named allowance to the response that takes it up, and to no other', function (): void {
+    $request = Request::create('/__security_headers_allowance');
+    app()->instance('request', $request);
+
+    $response = app(SecurityHeaders::class)->handle($request, function (): Response {
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+
+        return new Response('ok');
+    });
+
+    $widened = (string) $response->headers->get('Content-Security-Policy-Report-Only');
+    $plain = (string) get('/__security_headers_probe')->headers->get('Content-Security-Policy-Report-Only');
+
+    $scriptSrc = securityHeadersMiddlewareTestDirective($widened, 'script-src');
+
+    expect($scriptSrc)->toContain("'self'")
+        ->and($scriptSrc)->toContain("'nonce-")
+        ->and(substr_count($scriptSrc, 'https://cse.google.com'))->toBe(1)
+        ->and(securityHeadersMiddlewareTestDirective($widened, 'frame-src'))->toContain('https://cse.google.com')
+        ->and($plain)->not->toContain('https://cse.google.com');
 });

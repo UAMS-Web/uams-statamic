@@ -162,6 +162,32 @@ return [
             //
         ],
 
+        // ---
+        // Sources added to one response, by name, when its render takes them up
+        // through SecurityHeaders::allowOnThisResponse(). For a third-party script
+        // that only some renders load, so every other page stays narrower.
+        // ---
+        'allowances' => [
+            // Google's results for "All UAMS websites" on /search
+            // (UAMS-Web/uams-statamic#412): `cse.js` is nonce-tagged by our template,
+            // then loads its own scripts and stylesheets, which a nonce cannot cover.
+            'google_search' => [
+                'script-src' => [
+                    'https://cse.google.com',
+                    'https://www.google.com',
+                ],
+                'style-src' => [
+                    'https://www.google.com',
+                ],
+                'connect-src' => [
+                    'https://cse.google.com',
+                ],
+                'frame-src' => [
+                    'https://cse.google.com',
+                ],
+            ],
+        ],
+
         // CSP directive name => source expression list (null omits a directive)
         'directives' => [
             // Fallback for fetches that do not match a more specific directive

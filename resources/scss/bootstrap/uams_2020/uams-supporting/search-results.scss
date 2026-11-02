@@ -115,4 +115,31 @@ body.page-template-default.search {
     .site-search-suggestion-all {
         font-weight: 600;
     }
+
+    // Google's results (UAMS-Web/uams-statamic#412): the box takes the image's shape,
+    // and the image is scaled to fit it, so neither a wide nor a tall thumbnail leaves
+    // a gray band or runs over the text beside it.
+    .site-search-google {
+        .gs-web-image-box,
+        .gs-promotion-image-box {
+            background: none;
+            height: auto;
+            margin-right: 0.75rem;
+            max-width: 6rem;
+            overflow: hidden;
+            padding: 0;
+            width: auto;
+        }
+
+        img.gs-image {
+            display: block;
+            height: auto;
+            max-height: 6rem;
+            max-width: 100%;
+            min-height: 0;
+            min-width: 0;
+            object-fit: contain;
+            width: auto;
+        }
+    }
 }

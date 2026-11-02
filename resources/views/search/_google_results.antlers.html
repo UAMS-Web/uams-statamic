@@ -1,0 +1,12 @@
+{{#
+	@name  Google Results
+	@desc  Google's results for the "All UAMS websites" scope on `/search`
+	       (UAMS-Web/uams-statamic#412). Google's script reads the query from the page's
+	       own `q` parameter, so it gets what the reader typed, decoded by the URL rather
+	       than by this template. `site_search_scope:google_engine` also lets this
+	       response alone load that script.
+#}}
+{{ $google_engine = {site_search_scope:google_engine} }}
+<script async src="https://cse.google.com/cse.js?cx={{ $google_engine | urlencode }}" nonce="{{ csp_nonce }}"></script>
+<div class="site-search-google gcse-searchresults-only" data-queryParameterName="q"></div>
+<noscript><p class="text-center mb-0">Searching all UAMS websites needs JavaScript.</p></noscript>

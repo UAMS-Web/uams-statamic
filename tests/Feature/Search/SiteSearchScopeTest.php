@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Search;
@@ -244,4 +246,85 @@ it('resolves each site to its own search path', function (): void {
     Site::setCurrent('health');
 
     expect((string) Antlers::parse('{{ site_search_scope:path }}'))->toBe('/health/search');
+});
+
+it('offers all UAMS websites on every site once a Google search engine is configured', function (): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+
+    expect(scopeLinks(renderScopedSearch('default', ['q' => 'kirk'])))->toBe([
+        rootSiteLabel() => '/search?q=kirk&amp;index=default',
+        'All UAMS websites' => '/search?q=kirk&amp;index=default&amp;scope=google',
+    ])->and(scopeLinks(renderScopedSearch('health', ['q' => 'kirk'])))->toBe([
+        'This site' => '/health/search?q=kirk&amp;index=default',
+        rootSiteLabel() => '/health/search?q=kirk&amp;index=default&amp;scope=all',
+        'All UAMS websites' => '/health/search?q=kirk&amp;index=default&amp;scope=google',
+    ]);
+});
+
+it('does not offer all UAMS websites without an engine ID, even when the URL asks', function (mixed $engine): void {
+    config(['services.google_search.engine_id' => $engine]);
+
+    $html = renderScopedSearch('health', ['scope' => 'google']);
+
+    expect(scopeLinks($html))->not->toHaveKey('All UAMS websites')
+        ->and($html)->toMatch('#aria-current="page">This site</a>#')
+        ->and($html)->not->toContain('cse.google.com');
+})->with([
+    'none' => [null],
+    'empty' => [''],
+    'blank' => ['  '],
+]);
+
+it('shows Google results in place of the site results and hides the type tabs', function (): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+    Search::shouldReceive('index')->never();
+
+    $html = renderScopedSearch('health', ['q' => 'kirk', 'scope' => 'google']);
+
+    expect($html)
+        ->toContain('src="https://cse.google.com/cse.js?cx=engine%3Aone"')
+        ->toContain('class="site-search-google gcse-searchresults-only" data-queryParameterName="q"')
+        ->toContain('Search results for&nbsp;&ldquo;kirk&rdquo;')
+        ->toContain('<input type="hidden" name="scope" value="google">')
+        ->toMatch('#aria-current="page">All UAMS websites</a>#')
+        ->not->toContain('site-search-tabs mx-auto');
+});
+
+it('loads Google only on that scope, and only with a query to search', function (array $get): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+
+    expect(renderScopedSearch('health', $get))->not->toContain('cse.google.com');
+})->with([
+    'the scope with no query' => [['scope' => 'google']],
+    'an array query' => [['q' => ['kirk'], 'scope' => 'google']],
+    'knowledge-base search' => [['q' => 'kirk', 'scope' => 'google', 'index' => 'knowledge_bases', 'kb_scope' => 'root']],
+]);
+
+it('keeps Google out of the site scopes', function (string $scope): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+
+    expect(searchThroughPage('health', ['q' => 'kirk', 'scope' => $scope])['html'])
+        ->not->toContain('cse.google.com')
+        ->toContain('site-search-tabs mx-auto');
+})->with(['site', 'all']);
+
+it('widens the content security policy for Google results and for no other search', function (): void {
+    config(['services.google_search.engine_id' => 'engine:one']);
+
+    // The page's `get` values are not hydrated from a test request, so the render is
+    // run inside the middleware rather than through the route.
+    $policyFor = function (array $get): string {
+        $request = Request::create('/health/search', 'GET', $get);
+        app()->instance('request', $request);
+
+        $response = app(SecurityHeaders::class)->handle(
+            $request,
+            fn (): Response => new Response(renderScopedSearch('health', $get))
+        );
+
+        return (string) $response->headers->get('Content-Security-Policy-Report-Only');
+    };
+
+    expect($policyFor(['q' => 'kirk', 'scope' => 'google']))->toContain('https://cse.google.com')
+        ->and($policyFor(['scope' => 'google']))->not->toContain('https://cse.google.com');
 });

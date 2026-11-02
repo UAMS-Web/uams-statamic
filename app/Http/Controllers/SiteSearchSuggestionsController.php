@@ -109,7 +109,7 @@ final class SiteSearchSuggestionsController
 
         if ($length >= self::MIN_QUERY_LENGTH && $length <= self::MAX_QUERY_LENGTH) {
             $site = $this->searchPageSite($request->query('site'));
-            $everySite = SiteSearchScope::resolve($site, $request->query('scope')) === SiteSearchScope::ALL_SITES;
+            $everySite = SiteSearchScope::resolve($site, $request->query('scope')) !== SiteSearchScope::THIS_SITE;
 
             $suggestions = $this->suggest($query, $index, $everySite ? null : $site);
         }

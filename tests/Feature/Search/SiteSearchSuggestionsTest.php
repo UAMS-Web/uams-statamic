@@ -315,6 +315,19 @@ it('searches only the sub-site at This site', function (array $parameters): void
     'an array scope' => [['site' => 'second', 'scope' => ['all']]],
 ]);
 
+it('searches every site for all UAMS websites, and this site when no engine is configured', function (mixed $engine, bool $everySite): void {
+    config(['services.google_search.engine_id' => $engine]);
+    useTwoSuggestionSites();
+    $recorded = mockSuggestionsIndex([]);
+
+    multisiteSuggestionsFor(['site' => 'second', 'scope' => 'google']);
+
+    expect(isset($recorded['whereIn.site']))->toBe(! $everySite);
+})->with([
+    'configured' => ['engine:one', true],
+    'not configured' => [null, false],
+]);
+
 it('searches every site where the page would', function (array $parameters): void {
     useTwoSuggestionSites();
     $recorded = mockSuggestionsIndex([]);

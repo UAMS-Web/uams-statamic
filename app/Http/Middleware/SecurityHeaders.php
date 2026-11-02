@@ -26,6 +26,16 @@ class SecurityHeaders
     public const string NONCE_KEY = 'security-headers.csp-nonce';
 
     /**
+     * Request attribute listing the allowances this response takes up.
+     */
+    private const string ALLOWANCES_KEY = 'security-headers.csp-allowances';
+
+    /**
+     * The allowance for Google's search results.
+     */
+    public const string GOOGLE_SEARCH = 'google_search';
+
+    /**
      * The per-request CSP nonce, generated before the response renders.
      */
     private ?string $nonce = null;
@@ -72,6 +82,25 @@ class SecurityHeaders
         $this->applyCsp($request, $response);
 
         return $response;
+    }
+
+    /**
+     * Add an entry of `security-headers.csp.allowances` to this response's policy.
+     *
+     * For a third-party script only some renders need, so the policy of every
+     * other page stays as narrow as the configured directives.
+     *
+     * @param  string  $allowance  The entry's name.
+     */
+    public static function allowOnThisResponse(string $allowance): void
+    {
+        $attributes = request()->attributes;
+
+        /** @var list<string> $allowances */
+        $allowances = $attributes->get(self::ALLOWANCES_KEY, []);
+        $allowances[] = $allowance;
+
+        $attributes->set(self::ALLOWANCES_KEY, $allowances);
     }
 
     /**
@@ -248,7 +277,7 @@ class SecurityHeaders
         }
 
         // Build the semicolon-separated CSP policy string
-        $policy = $this->buildCspPolicy();
+        $policy = $this->buildCspPolicy($request);
 
         // Check if the policy has no directives
         if ($policy === '') {
@@ -273,9 +302,10 @@ class SecurityHeaders
     /**
      * Assemble a Content-Security-Policy value from config directives.
      *
+     * @param  Request  $request  The request, carrying any allowances it took up.
      * @return string Semicolon-separated CSP policy, or empty when no parts
      */
-    private function buildCspPolicy(): string
+    private function buildCspPolicy(Request $request): string
     {
         // Load directive map, nonce directive list, and report URI from config
         $directives = (array) config(
@@ -290,6 +320,16 @@ class SecurityHeaders
 
         // Initialize policy directive parts
         $parts = [];
+
+        // Widen the directives by whatever this response took up while rendering
+        /** @var list<string> $allowances */
+        $allowances = $request->attributes->get(self::ALLOWANCES_KEY, []);
+        foreach (array_unique($allowances) as $allowance) {
+            $additions = (array) config('security-headers.csp.allowances.'.$allowance, []);
+            foreach ($additions as $directive => $sources) {
+                $directives[$directive] = [...(array) ($directives[$directive] ?? []), ...(array) $sources];
+            }
+        }
 
         // Append each configured directive and its sources
         foreach ($directives as $directive => $sources) {
