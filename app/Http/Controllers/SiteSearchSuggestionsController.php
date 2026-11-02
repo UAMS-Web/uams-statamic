@@ -25,7 +25,8 @@ use Statamic\Sites\Site as SiteInstance;
  * the same index (the page's active type tab, or the unified `default` index), the
  * same sites and published items, but returns a short JSON list the input's flyout
  * renders as the reader types. It does not replace the page: selecting "See all
- * results", or submitting the form, still lands on `/search`.
+ * results", or submitting the form, still lands on `/search`. Google's results have
+ * no type-ahead, so "All UAMS websites" suggests this site's content on every site.
  *
  * The route is one root path, so the current site is always the root site, and the
  * page says which site it belongs to through `?site=` and `?scope=`
@@ -109,7 +110,7 @@ final class SiteSearchSuggestionsController
 
         if ($length >= self::MIN_QUERY_LENGTH && $length <= self::MAX_QUERY_LENGTH) {
             $site = $this->searchPageSite($request->query('site'));
-            $everySite = SiteSearchScope::resolve($site, $request->query('scope')) === SiteSearchScope::ALL_SITES;
+            $everySite = SiteSearchScope::resolve($site, $request->query('scope')) !== SiteSearchScope::THIS_SITE;
 
             $suggestions = $this->suggest($query, $index, $everySite ? null : $site);
         }

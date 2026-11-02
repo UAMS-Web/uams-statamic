@@ -112,6 +112,8 @@ return [
     |     a `$showField(...)` magic call in place of Statamic's
     |     `Statamic.$conditions.showField(...)`, which the CSP build rejects as a
     |     window global. Nothing else in `resources/js/**` evaluates strings.
+    |     One response adds it back: Google's results take it up through
+    |     `allowances.google_search` below (UAMS-Web/uams-statamic#412).
     |   - style-src `'unsafe-inline'`: REMOVED. Inline <style> elements are now
     |     nonce-gated. Inline `style="..."` attributes are kept working via
     |     `style-src-attr 'unsafe-inline'`; hardening those (sweeping attribute
@@ -160,6 +162,38 @@ return [
         // ---
         'exclude_paths' => [
             //
+        ],
+
+        // ---
+        // Sources added to one response, by name, when its render takes them up
+        // through SecurityHeaders::allowOnThisResponse(). For a third-party script
+        // that only some renders load, so every other page stays narrower. A
+        // directive set to null below stays omitted: nothing here brings it back.
+        // ---
+        'allowances' => [
+            // Google's results for "All UAMS websites" on /search
+            // (UAMS-Web/uams-statamic#412): `cse.js` is nonce-tagged by our template,
+            // then loads its own scripts and stylesheets, which a nonce cannot cover.
+            // Its element calls eval() for each result, so results fail without
+            // 'unsafe-eval' once the policy enforces. This response alone gets that.
+            // Its three inline <style> elements stay blocked: results render
+            // without them, and allowing them would mean dropping the nonce.
+            'google_search' => [
+                'script-src' => [
+                    "'unsafe-eval'",
+                    'https://cse.google.com',
+                    'https://www.google.com',
+                ],
+                'style-src' => [
+                    'https://www.google.com',
+                ],
+                'connect-src' => [
+                    'https://cse.google.com',
+                ],
+                'frame-src' => [
+                    'https://cse.google.com',
+                ],
+            ],
         ],
 
         // CSP directive name => source expression list (null omits a directive)

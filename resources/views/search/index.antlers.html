@@ -7,7 +7,9 @@
 	       JavaScript, and every tab URL is shareable. The header search icon submits
 	       `q` (+ an optional `index` type). Each site has this page under its own
 	       prefix, and scope links (UAMS-Web/uams-statamic#413) beside the tabs choose
-	       between this site and all of them; see `App\Tags\SiteSearchScope`.
+	       between this site and all of them; see `App\Tags\SiteSearchScope`. The
+	       "All UAMS websites" scope (UAMS-Web/uams-statamic#412) shows Google's results
+	       instead of the site's own, without the type tabs.
 	       The knowledge-base search bar (UAMS-Web/uams-statamic-archive#506) submits `q` plus `index=knowledge_bases`
 	       and a `kb_scope` entry id, switching this page into a subtree-scoped KB mode:
 	       the type filter is replaced by hidden scope fields and results run through the
@@ -84,6 +86,7 @@
 	{{ $scope_param = '' }}
 	{{ $scope_query = '' }}
 {{ /if }}
+{{ $is_google_search = ($search_scope == 'google' && ! $is_kb_search) }}
 
 {{ partial:layout/article }}
 	{{ partial:layout/entry-content content_width="false" }}
@@ -121,7 +124,9 @@
 						    form still lands on /search. `data-index` is the validated active tab
 						    (never the raw `get:index`), so suggestions come from the index the
 						    page itself searches, and `data-site` and `data-scope` keep them to
-						    the sites it searches. Every binding names a property or
+						    the sites it searches. On the Google scope the page shows no index
+						    of its own, so they come from this site's content on every site.
+						    Every binding names a property or
 						    method, never an inline expression, because the site runs the
 						    @alpinejs/csp build. #}}
 						<div class="site-search-typeahead position-relative" x-data="siteSearchTypeahead" data-index="{{ $search_index }}" data-search-path="{{ $search_path }}" data-site="{{ site_search_scope:site }}" data-scope="{{ $scope_param }}" @click.outside="close" @focusout="onFocusOut">
@@ -221,6 +226,7 @@
 					{{ /site_search_scope:options }}
 				</ul>
 			</nav>
+			{{ unless $is_google_search }}
 			<nav class="site-search-tabs mx-auto mb-4" style="max-width: 46rem;" aria-label="Filter results by type">
 				<ul class="nav nav-pills site-search-tabs-list">
 					<li class="nav-item">
@@ -243,6 +249,7 @@
 					</li>
 				</ul>
 			</nav>
+			{{ /unless }}
 		{{ /unless }}
 
 		{{# In KB mode, tell the reader the search is scoped and offer a one-click
@@ -285,6 +292,8 @@
 							{{# Scope KB search to the subtree's published articles via the
 							    registered query scope, rooted at the submitted entry id. #}}
 							{{ partial:search/results :index="$search_index" :search_site="$search_site" query_scope="knowledge_base_subtree_articles" :scope_root="$kb_scope" :all_results_url="$all_results_url" }}
+						{{ elseif $is_google_search }}
+							{{ partial:search/google_results }}
 						{{ else }}
 							{{ partial:search/results :index="$search_index" :search_site="$search_site" :all_results_url="$all_results_url" :wider_scope_url="$wider_scope_url" :wider_scope_label="$wider_scope_label" }}
 						{{ /if }}
@@ -295,7 +304,7 @@
 			{{# Pre-query prompt, shown before the reader has searched: it names what the
 			    search covers, so the tabs above read as choices rather than as results
 			    (UAMS-Web/uams-statamic-archive#1510). #}}
-			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
+			<p class="site-search-prompt text-muted text-center mb-0">Enter a search term above to get started.{{ unless $is_kb_search || $is_google_search }} You can search people, areas of expertise, clinical locations and resources, news, and pages across the site.{{ /unless }}</p>
 		{{ /if }}
 
 	{{ /partial:layout/entry-content }}
