@@ -22,8 +22,10 @@ final class TermSaveValidation
      * The fields the Control Panel term editor would reject on save.
      *
      * Rebuilt the way the editor submits: the stored values are pre-processed into
-     * the editor's shape, a field its display condition hides is left out, and the
-     * title and slug are added, then the whole blueprint validates them.
+     * the editor's shape, a field its display condition hides is left out, a field
+     * it shows with no answer stays as null so `required` applies even beside
+     * `sometimes`, and the title and slug are added, then the whole blueprint
+     * validates them.
      *
      * @param  array<string, mixed>  $overrides  Values replacing the stored ones before the save
      * @return list<string> The rejected field handles, sorted
