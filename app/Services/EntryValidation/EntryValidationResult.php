@@ -12,8 +12,10 @@ use Illuminate\Support\MessageBag;
  * `errors` holds the Control Panel's validation messages keyed by field handle,
  * and `attributes` the labels those messages name. `visibleFields` lists, in
  * blueprint order, the top-level field handles the blueprint's display conditions
- * show for the entry's current values; it is empty when the entry's data could
- * not be read at all, which is reported as a `__pre_process__` error.
+ * show for the entry's current values (a replicator counts only when its value
+ * is a list of rows, which its pre-processing always produces); it is empty when
+ * the entry's data could not be read at all, which is reported as a
+ * `__pre_process__` error.
  */
 final readonly class EntryValidationResult
 {

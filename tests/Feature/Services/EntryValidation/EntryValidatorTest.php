@@ -15,14 +15,12 @@ use Statamic\Fields\Fields;
 use Tests\Support\Doubles\IncompletePublishedEntriesWidgetTestDouble;
 use Tests\Support\StacheIsolatedTestCase;
 
-// Isolated Stache: every test persists a collection, its blueprint, and entries
+// The entry validation service on its own (#275): the errors it reports, the
+// fields it judges visible under the blueprint's display conditions, and the
+// widget output it feeds. Isolated Stache: every test persists a collection,
+// its blueprint, and entries.
 uses(StacheIsolatedTestCase::class);
 
-/**
- * The entry validation service on its own (#275): the errors it reports, the
- * fields it judges visible under the blueprint's display conditions, and its
- * agreement with the Incomplete Published Entries widget it was extracted from.
- */
 const ENTRY_VALIDATOR_COLLECTION = 'entry_validator_service';
 
 /**
@@ -62,36 +60,49 @@ function entryValidatorEntry(string $slug, array $data): StatamicEntry
 }
 
 /**
- * Validate an entry against its own blueprint through the service.
+ * The entry's own blueprint.
  */
-function entryValidatorResult(StatamicEntry $entry): EntryValidationResult
+function entryValidatorBlueprint(StatamicEntry $entry): StatamicBlueprint
 {
     $blueprint = $entry->blueprint();
     Assert::assertInstanceOf(StatamicBlueprint::class, $blueprint);
 
-    return app(EntryValidator::class)->validate($entry, $blueprint);
+    return $blueprint;
+}
+
+/**
+ * Validate an entry against its own blueprint through the service.
+ */
+function entryValidatorResult(StatamicEntry $entry): EntryValidationResult
+{
+    return app(EntryValidator::class)->validate($entry, entryValidatorBlueprint($entry));
 }
 
 /**
  * A blueprint whose `phone` is required only while `contact` is `phone`.
  *
+ * The `required` + `sometimes` pairing is how a blueprint here declares a field
+ * required only while visible (see docs/DECISIONS.md); without `sometimes`, the
+ * rule also fires on the hidden field, which a separate case pins.
+ *
+ * @param  list<string>  $rules
  * @return array<string, array<string, mixed>>
  */
-function entryValidatorConditionalFields(string $conditionKey): array
+function entryValidatorConditionalFields(string $conditionKey, array $rules = ['required', 'sometimes']): array
 {
     return [
         'contact' => ['type' => 'text'],
-        'phone' => ['type' => 'text', 'validate' => ['required'], $conditionKey => ['contact' => 'equals phone']],
+        'phone' => ['type' => 'text', 'validate' => $rules, $conditionKey => ['contact' => 'equals phone']],
     ];
 }
 
-it('does not report a field its if condition hides, though the field is required', function (): void {
+it('does not report a conditionally required field its if condition hides', function (): void {
     entryValidatorCollection(entryValidatorConditionalFields('if'));
 
     $result = entryValidatorResult(entryValidatorEntry('kirk', ['title' => 'James Kirk', 'contact' => 'email']));
 
-    expect($result->passes())->toBeTrue()
-        ->and($result->errors->keys())->toBe([])
+    expect($result->errors->keys())->toBe([])
+        ->and($result->passes())->toBeTrue()
         ->and($result->visibleFields)->toContain('contact')
         ->and($result->visibleFields)->not->toContain('phone');
 });
@@ -102,11 +113,11 @@ it('reports a conditionally required field once its if condition shows it', func
     $missing = entryValidatorResult(entryValidatorEntry('spock', ['title' => 'Spock', 'contact' => 'phone']));
     $filled = entryValidatorResult(entryValidatorEntry('mccoy', ['title' => 'Leonard McCoy', 'contact' => 'phone', 'phone' => '501-555-0100']));
 
-    expect($missing->passes())->toBeFalse()
-        ->and($missing->errors->keys())->toBe(['phone'])
+    expect($missing->errors->keys())->toBe(['phone'])
+        ->and($missing->passes())->toBeFalse()
         ->and($missing->attributes)->toHaveKey('phone')
         ->and($missing->visibleFields)->toContain('phone')
-        ->and($filled->passes())->toBeTrue()
+        ->and($filled->errors->keys())->toBe([])
         ->and($filled->visibleFields)->toContain('phone');
 });
 
@@ -117,10 +128,21 @@ it('applies an unless condition on both sides of it', function (): void {
     $hidden = entryValidatorResult(entryValidatorEntry('scott', ['title' => 'Montgomery Scott', 'contact' => 'phone']));
     $shown = entryValidatorResult(entryValidatorEntry('uhura', ['title' => 'Nyota Uhura', 'contact' => 'email']));
 
-    expect($hidden->passes())->toBeTrue()
+    expect($hidden->errors->keys())->toBe([])
         ->and($hidden->visibleFields)->not->toContain('phone')
         ->and($shown->errors->keys())->toBe(['phone'])
         ->and($shown->visibleFields)->toContain('phone');
+});
+
+it('still reports a hidden field whose rules require it without sometimes', function (): void {
+    // The value is left out, as the Control Panel leaves a hidden field out of its
+    // submission, but a bare `required` rejects an absent key all the same
+    entryValidatorCollection(entryValidatorConditionalFields('if', ['required']));
+
+    $result = entryValidatorResult(entryValidatorEntry('rand', ['title' => 'Janice Rand', 'contact' => 'email']));
+
+    expect($result->errors->keys())->toBe(['phone'])
+        ->and($result->visibleFields)->not->toContain('phone');
 });
 
 it('lists the visible fields in blueprint order', function (): void {
@@ -137,40 +159,39 @@ it('lists the visible fields in blueprint order', function (): void {
         ->toBe(['contact', 'email', 'notes']);
 });
 
-it('reports the same errors and labels as the widget, for a passing and a failing entry', function (): void {
+it('gives the widget the errors and labels it reports, for a failing and a passing entry', function (): void {
     entryValidatorCollection([
         'contact' => ['type' => 'text', 'display' => 'Contact method'],
-        'phone' => ['type' => 'text', 'display' => 'Phone', 'validate' => ['required'], 'if' => ['contact' => 'equals phone']],
+        'phone' => ['type' => 'text', 'display' => 'Phone', 'validate' => ['required', 'sometimes'], 'if' => ['contact' => 'equals phone']],
         'rank' => ['type' => 'text', 'display' => 'Rank', 'validate' => ['required']],
     ]);
 
     $widget = new IncompletePublishedEntriesWidgetTestDouble;
 
-    foreach ([
-        entryValidatorEntry('chekov', ['title' => 'Pavel Chekov', 'contact' => 'phone']),
-        entryValidatorEntry('chapel', ['title' => 'Christine Chapel', 'contact' => 'email', 'rank' => 'Nurse']),
-    ] as $entry) {
-        $blueprint = $entry->blueprint();
-        Assert::assertInstanceOf(StatamicBlueprint::class, $blueprint);
+    // Each case states its expected errors outright: the widget delegates to the
+    // service, so comparing the two to each other alone could not catch a change
+    $cases = [
+        'failing' => [entryValidatorEntry('chekov', ['title' => 'Pavel Chekov', 'contact' => 'phone']), ['phone', 'rank']],
+        'passing' => [entryValidatorEntry('chapel', ['title' => 'Christine Chapel', 'contact' => 'email', 'rank' => 'Nurse']), []],
+    ];
+
+    foreach ($cases as [$entry, $expectedErrors]) {
+        $blueprint = entryValidatorBlueprint($entry);
 
         $fromWidget = $widget->exposeValidateEntry($entry, $blueprint);
         $fromService = app(EntryValidator::class)->validate($entry, $blueprint);
 
-        expect($fromService->errors->toArray())->toBe($fromWidget['errors']->toArray())
-            ->and($fromService->attributes)->toBe($fromWidget['attributes']);
+        expect($fromService->errors->keys())->toBe($expectedErrors)
+            ->and($fromWidget['errors']->toArray())->toBe($fromService->errors->toArray())
+            ->and($fromWidget['attributes'])->toBe($fromService->attributes);
     }
-
-    // The two entries really do differ, so the agreement covers both outcomes
-    expect(entryValidatorResult(Entry::query()->where('slug', 'chekov')->first())->errors->keys())->toBe(['phone', 'rank'])
-        ->and(entryValidatorResult(Entry::query()->where('slug', 'chapel')->first())->passes())->toBeTrue();
 });
 
 it('reports unreadable entry data as a single error and no visible fields', function (): void {
     entryValidatorCollection(['rank' => ['type' => 'text', 'validate' => ['required']]]);
 
-    $entry = entryValidatorEntry('rand', ['title' => 'Janice Rand']);
-    $blueprint = $entry->blueprint();
-    Assert::assertInstanceOf(StatamicBlueprint::class, $blueprint);
+    $entry = entryValidatorEntry('leslie', ['title' => 'Leslie']);
+    $blueprint = entryValidatorBlueprint($entry);
 
     // The first fields() call, which sanitizes replicator values, succeeds; the
     // preProcess pass that follows throws, as malformed stored data does
@@ -185,6 +206,8 @@ it('reports unreadable entry data as a single error and no visible fields', func
 
         return $realFields;
     });
+
+    Assert::assertInstanceOf(StatamicBlueprint::class, $failing);
 
     $result = app(EntryValidator::class)->validate($entry, $failing);
 

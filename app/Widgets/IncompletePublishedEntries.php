@@ -16,8 +16,6 @@ use Statamic\Exceptions\BlueprintNotFoundException;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Facades\User as UserFacade;
 use Statamic\Fields\Blueprint;
-use Statamic\Fields\Field;
-use Statamic\Fields\Fields;
 use Statamic\Sites\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Widgets\Widget;
