@@ -3754,3 +3754,14 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** None from the browser suite: #502 (by #506) runs the same fixture under a `<meta>` policy with `bypassCSP` off, so the check above now runs on every pull request.
 
 **Companion.** #189. The enforce flip itself is #33.
+## 2026-11-02: Windows shards the Pest band four ways, from a file list per shard (#504)
+
+**Decision.** The Windows leg runs the parallel band as four shards on four runners, like Linux and macOS. Each Windows shard lists its tests in one process with `pest --list-tests --exclude-group=serial --shard=<i>/4`, `scripts/pest-shard-config.php` writes a copy of `phpunit.xml` whose only suite names that shard's files, and the band runs `pest --parallel --configuration=<that copy>`. `pest-report` reads four shards on every leg. This supersedes the 2026-11-01 entry's "Windows runs the Pest band whole" and its rejected *Shards on Windows with a shorter filter*.
+
+**Why.** The Windows band ran 58.6 minutes against about 14 on the other legs, so every pull request waited for it. The limit `--shard` meets is not the process limit but `cmd.exe`'s: Symfony `Process` starts each paratest worker through it, a worker command of 8,037 characters starts and one of 8,038 does not (Windows 11), and the shard's filter is about 9,000 characters. Listing the shard needs no worker, and a worker given a configuration's path carries no class list, so no dependency changes. The four listings hold the same 13,628 tests in 1,102 classes as the whole band, with no class in two shards, and `pest-report` still refuses shards that did not run every class once.
+
+**Rejected.** *Patching Pest's filter or paratest's worker start*: a change to a dependency, which the 2026-11-01 entry rejected for this reason. *Splitting the band by directory or group*: it would not use the recorded per-class timings, so the shards would be uneven, and it would partition differently from the other legs.
+
+**Residual.** The two-run timing comparison #504 asks for is recorded on #504 once remote CI has run.
+
+**Companion.** #504. `.github/workflows/ci.yml`, `scripts/pest-shard-config.php`, `tests/Feature/PestShardConfigTest.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/merge-shard-reports.php`.
