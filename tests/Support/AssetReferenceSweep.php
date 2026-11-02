@@ -20,7 +20,7 @@ use Statamic\Listeners\UpdateAssetReferences;
  * test in the process. This re-enables in a `finally`. `enable()` re-subscribes
  * through `subscribe()`, so it still honors `statamic.system.update_references`.
  *
- * The same pairing as `UAMSWeb\WordPressImporter\...\AssetReferenceUpdates`, kept
+ * The same pairing as `UAMSWeb\Aether\WordPressImporter\...\AssetReferenceUpdates`, kept
  * here so the tests do not depend on the importer package for it.
  */
 final class AssetReferenceSweep

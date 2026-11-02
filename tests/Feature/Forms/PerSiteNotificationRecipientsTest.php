@@ -24,7 +24,7 @@ uses(TestCase::class);
  * A site's `site_overrides` email row, written with config references, reaches
  * the app's notification job in place of the form's own list (UAMS-Web/uams-statamic-archive#3067).
  *
- * `uams-web/statamic-multisite-forms` hands core the form as the submitting site
+ * `uams-web/aether-multisite-forms` hands core the form as the submitting site
  * sees it, so core's `SendEmails` dispatches that site's email configs to
  * `SendFormNotification`. These submit over HTTP, naming the site the way a page
  * on it does (by the referrer), and read the addresses the array mailer

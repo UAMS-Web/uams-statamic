@@ -82,7 +82,7 @@ beforeEach(function () use (&$replicatorBrowserFormsDir, &$replicatorBrowserView
     File::put(
         $replicatorBrowserFixture,
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Replicator fixture</title>'
-        .'<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script></head>'
+        .'<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script></head>'
         .'<body><h1>Replicator fixture</h1>'.$formHtml.'</body></html>'
     );
 });

@@ -41,7 +41,7 @@ use function Pest\Laravel\withServerVariables;
  *
  * @covers \App\Support\Forms\FormRequestContext
  * @covers \App\Listeners\CaptureFormRequestContext
- * @covers \UAMSWeb\FormSettings\Jobs\SendFormNotification
+ * @covers \UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification
  * @covers \App\Tags\Ip
  * @covers \App\Tags\Referrer
  * @covers \App\Tags\GetParam

@@ -416,7 +416,7 @@ export function baseState(base) {
  * The remote refs read are the checkout's LOCAL remote-tracking refs; nothing is fetched. A branch
  * pushed since the last fetch therefore still reports as absent until the checkout is fetched.
  *
- * @param  string  $relativePath  e.g. `vendor/uams-web/wordpress-importer`
+ * @param  string  $relativePath  e.g. `vendor/uams-web/aether-wordpress-importer`
  * @param  ?string  $toplevel      `git rev-parse --show-toplevel` output, or null when it failed.
  * @param  string  $packagePath   The directory's absolute path, to compare against `$toplevel`.
  * @param  ?string  $branch        `git symbolic-ref --short -q HEAD`, or null when detached.
@@ -1409,7 +1409,7 @@ function submoduleStateOf(treePath) {
  * variable is a reported state, not a silent skip: the check going quiet is exactly the failure
  * this exists to prevent.
  */
-const PINNED_PACKAGE = 'uams-web/wordpress-importer';
+const PINNED_PACKAGE = 'uams-web/aether-wordpress-importer';
 const PINNED_CLONE_ENV = 'UAMS_WORDPRESS_IMPORTER_CLONE';
 
 /**
