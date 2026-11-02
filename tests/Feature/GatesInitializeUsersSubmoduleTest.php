@@ -170,10 +170,12 @@ it('runs the pest job checkout step, unchanged, in a manual-run-only job of ci.y
     $manualSteps = is_array($manual['steps'] ?? null) ? array_values($manual['steps']) : [];
     $pestSteps = is_array($pest['steps'] ?? null) ? array_values($pest['steps']) : [];
     $through = array_search($manualStep, $manualSteps, true);
+    $strategy = is_array($pest['strategy'] ?? null) ? $pest['strategy'] : [];
+    $matrix = is_array($strategy['matrix'] ?? null) ? $strategy['matrix'] : [];
 
     expect($through)->toBeInt()
         ->and(array_slice($manualSteps, 0, (int) $through + 1))->toBe(array_slice($pestSteps, 0, (int) $through + 1))
-        ->and($manual['runs-on'] ?? null)->toBe($pest['runs-on'] ?? null)
+        ->and($matrix['os'] ?? [])->toContain($manual['runs-on'] ?? null)
         ->and($manual)->not->toHaveKeys(['env', 'defaults', 'container', 'continue-on-error']);
 
     // Outside the chain: no other job may wait on it.

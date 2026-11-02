@@ -239,7 +239,7 @@ Each line below summarizes a standing rule for this repository. Its full text is
 - **[Supported development platforms](docs/agent-instructions.md#supported-development-platforms)**: macOS and Windows are both supported. Name the platform a claim was verified on, and write paths repo-relative.
 - **[Rector on changed paths](docs/agent-instructions.md#rector-on-changed-paths)**: after changing PHP under `app/`, run `vendor/bin/rector --dry-run` on the changed `app/` paths only, alongside Pint.
 - **[Closing a ticket](docs/agent-instructions.md#closing-a-ticket)**: never push to `main`; tick acceptance criteria as they are met, move the board card with the branch, and give residue its own ticket.
-- **[Local CI runner](docs/agent-instructions.md#local-ci-runner)**: this repository keeps its own `scripts/local-ci.mjs`, which no longer gates a merge: the required remote checks do. Do not adopt the shared runner.
+- **[Local CI runner](docs/agent-instructions.md#local-ci-runner)**: this repository keeps its own `scripts/local-ci.mjs`, which no longer gates a merge: the required remote checks do, on Linux, Windows and macOS. Do not adopt the shared runner.
 - **[Pre-merge check](docs/agent-instructions.md#pre-merge-check)**: a green chain is not a merge decision; work the check in `.claude/rules/pre-merge-check.md` before any merge.
 - **[WordPress source corpora](docs/agent-instructions.md#wordpress-source-corpora)**: ground importer, blueprint and migration claims in the local WordPress install and the exports corpus, per `docs/wordpress-source-corpora.md`.
 - **[Adversarial review](docs/agent-instructions.md#adversarial-review)**: review a non-trivial change adversarially, fix what it finds, then run the gate.
