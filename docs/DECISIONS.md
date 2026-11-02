@@ -3738,3 +3738,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** One failed Windows job skips `pest-report` on all three legs, because `needs: pest` covers the whole matrix, and on `main` that also skips saving the timings. The `Attribution footer` and `Closing keywords` checks read text and stay on Linux.
 
 **Companion.** #348. `.github/workflows/ci.yml`, `tests/skip-baseline.json`, `scripts/check-skip-baseline.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/gate-pint.mjs`, and the passages in `AGENTS.md` and `README.md`.
+
+## 2026-11-02: Site search does not launch on the `local` driver; Loupe is spiked first (#161)
+
+**Decision.** The `local` (Comb) driver is not the launch engine. The next rung of #161's ladder, `daun/statamic-loupe`, is spiked at launch size with the 22 queries #161 measured, against a 400ms p95 gate. A hosted engine (Meilisearch or Typesense) is the fallback only if Loupe misses that gate. The spike's Composer requirement stays on its own branch until its result is known.
+
+**Why.** Measured on Windows 11 with PHP 8.4, one process, Statamic's own `lookup` on the `default` index's configuration, over the WordPress exports' reader-facing rows (up to 45,133 documents; `clinical_*` entries are not in the exports). The p95 per lookup is 275ms at 6,500 documents, 650 to 780ms at 15,000 and 2.3 to 2.8s at 45,133. A `/search` page with hits runs two lookups, so it crosses 400ms at about 4,700 documents, interpolated, before results are hydrated. Six medical terms each misspelled by one letter (diabetes, mammogram, cardiology, oncology, pediatrics and neurology, each with a letter dropped or swapped; the exact strings are on #161) return nothing under any of nine setting variants. Memory (under 300MB against 2048M) and the index's size are not the limit. Writing the index rewrites the whole file per 100-document chunk, which took 65s at full size on its own, so a full rebuild exceeds #161's 60s threshold.
+
+**Rejected.** *Stay on `local`*: it fails the latency threshold at launch size and has no typo tolerance. *Go hosted directly*: it adds a server, environment and cost before the zero-server rung has been measured.
+
+**Residual.** No real query log exists, so the no-results rate is unmeasured. Concurrency, result hydration and the production host are not measured, and each changes latency. Whether the results layer swaps drivers without a UI rewrite is the spike's to confirm.
+
+**Companion.** #161, the measurements and the comparison; #511, the Loupe spike.
