@@ -73,7 +73,7 @@ Pin `php-stubs/wordpress-stubs` to 6.x (`^6.8`, as `uamswp-migration-api` does).
 
 Current majors: Rector 2 and PHPStan 2 run on PHP 7.4 or later; Larastan 3 needs PHP 8.2 and Laravel 11.15 or later; Pint needs PHP 8.3 or later; `szepeviktor/phpstan-wordpress` 2.x needs PHPStan 2.x (all from the packages' `composer.json` and READMEs, 2026-10-02). A repository on PHPStan 1.x upgrades PHPStan and the WordPress extension together.
 
-Do not pin `config.platform.php` to the supported floor to make Composer resolve for it: that stops the current Pint installing on a PHP 7.x or 8.2 plugin. The floor goes into `rector.php` (`withPhpVersion()`) and `phpstan.neon.dist` (`phpVersion`), which is what the tools read. A WordPress repository pins `config.platform.php` to the development PHP instead, `8.4.1`, which is what Pest 5 needs; that pin is the PHP the tools and tests run on, never the floor (the [`tests`](../tests/SKILL.md) skill, UAMS-Web/uams-claude-skills#124). A repository that already pins the platform for another reason, as `uamswp-migration-api` does at `8.2.30` for its test toolchain (D-019), keeps that pin until its adoption ticket moves it; Rector and PHPStan both read it when nothing more specific is set.
+Do not pin `config.platform.php` to the supported floor to make Composer resolve for it: that stops the current Pint installing on a PHP 7.x or 8.2 plugin. The floor goes into `rector.php` (`withPhpVersion()`) and `phpstan.neon.dist` (`phpVersion`), which is what the tools read. A WordPress repository pins `config.platform.php` to the development PHP instead, the latest 8.4 patch (`8.4.27` today, raised on each 8.4 security release; never below `8.4.1`, which Pest 5 needs); that pin is the PHP the tools and tests run on, never the floor (the [`tests`](../tests/SKILL.md) skill, UAMS-Web/uams-claude-skills#124). A repository that already pins the platform for another reason, as `uamswp-migration-api` does at `8.2.30` for its test toolchain (D-019), keeps that pin until its adoption ticket moves it; Rector and PHPStan both read it when nothing more specific is set.
 
 A repository with no `composer.json` gets one holding only development dependencies:
 
@@ -225,11 +225,56 @@ The job is for a repository that has Pest, the patched `pest-plugin-mutate` and 
 
 1. Copy the `mutate` job and the composite action's `coverage` input. An existing `.github/actions/setup/action.yml` gains the input by editing it; the default stays `none`, so the other jobs are unchanged.
 2. Keep `coverage: pcov` on the job's setup step. `--mutate` needs a coverage driver, and without one a run either stops with `Mutation testing requires code coverage to be enabled` or reports `0 Mutations for 0 Files created`; the [`pcov-setup`](../pcov-setup/SKILL.md) skill covers both and the per-machine install for a local run. PCOV is the driver here because it is purpose-built for coverage and much faster than Xdebug.
-3. Keep both steps. The first runs `composer mutate -- --min=100` and keeps the output in `mutate.log`; Pest fails the step on any survivor. The second runs the `pest-testing` skill's `check-mutation-run.php` against that log, and it fails a run that created no mutants, or that left any mutant untested, uncovered, pending or timed out, even when the first step passed. It runs with `if: always()`, so a failed first step still prints the log's own account.
-4. Fix a failure the way the `pest-testing` skill's mutation section describes: a survivor is killed with a test, deleted as dead code, or annotated with `@pest-mutate-ignore:<Mutator>` and a reason on the line above. An annotation that suppresses nothing, or everything, is the `mutate-ignore` job's business.
-5. A repository that gates its Actions jobs on `RUN_REMOTE_CI` adds the same `if:` to this job. It is the slowest job in the chain, hence its 45-minute timeout; raise it when a suite needs longer, and do not remove it.
+3. Set `MUTATE_PATHS` on the *Select the files to mutate* step to the paths the `mutate` script passes to `--path` (`src` for a Statamic add-on), space-separated.
+   - **On a pull request**, the step lists the PHP files under those paths that the pull request adds, changes or renames. It reads them from GitHub's merge commit against its first parent, which is why the checkout fetches two commits, so a later change on the base branch is not counted. The run step passes the list as `--path`, which replaces the script's own. A pull request that changes no such file skips the run and the check, and the job passes with the reason printed.
+   - **On a push**, the step selects everything and the job runs the full score.
+4. Keep the run step and the check step. The run step runs `composer mutate -- --min=100`, with `--path` on a pull request, and keeps the output in `mutate.log`; Pest fails the step on any survivor. The check step runs the `pest-testing` skill's `check-mutation-run.php` against that log, and fails a run that created no mutants, or that left any mutant untested, uncovered, pending or timed out, even when the run step passed. It runs with `if: always()` unless nothing was selected, so a failed run step still prints the log's own account.
+
+   One case passes with zero mutants: changed files that, mutated with PCOV loaded, produce none, such as an interface. Those files exist in the checkout and the coverage driver is there, which rules out the two setup failures zero mutants otherwise means, so the run step passes `--ignore-min-score-on-zero-mutations` on changed files and the check step accepts the zero with the reason printed. Zero mutants on a full run, or without PCOV, still fails.
+5. Fix a failure the way the `pest-testing` skill's mutation section describes: a survivor is killed with a test, deleted as dead code, or annotated with `@pest-mutate-ignore:<Mutator>` and a reason on the line above. An annotation that suppresses nothing, or everything, is the `mutate-ignore` job's business.
+6. A repository that gates its Actions jobs on `RUN_REMOTE_CI` adds the same `if:` to this job. It is the slowest job in the chain, hence its 45-minute timeout; raise it when a suite needs longer, and do not remove it.
+
+   **Measure it before relying on it.** Every run first runs the whole suite under PCOV for coverage, then runs tests once per mutant, so the time grows with the suite as well as with the change. On `UAMS-Web/wordpress-importer` (UAMS-Web/uams-claude-skills#406, 10,257 tests), one standard runner did not finish a pull request that changed one file:
+   - the coverage pass took 8.3 minutes and created 324 mutants;
+   - the 45-minute limit stopped it with 302 done;
+   - with a 120-minute limit, the runner lost contact at 47 minutes.
+
+   Pest's `--parallel` ran a different test workload there, so it is no remedy. A repository that large keeps its mutation run local until it has a runner that fits.
 
 The aggregate `CI` job lists `mutate` in its `needs:` like every other job, so the ruleset needs no entry for it.
+
+#### Adding the changed-tests report
+
+The `pest-testing` skill's `scripts/changed-tests-against-base.mjs` runs a pull request's changed test files against the base branch's source and reports per file (that skill's *Changed tests against base* says what the report means). It is not in the template: a repository adopts it in its own change. In `ci.yml`, a job such as:
+
+```yaml
+  changed-tests:
+    name: Changed tests against base
+    needs: composer-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Changed tests against base
+        run: node .claude/skills/pest-testing/scripts/changed-tests-against-base.mjs
+```
+
+- `fetch-depth: 0` is what makes the base branch present; without it the script fails, naming that cause.
+- **No `if:` on the job.** It reads `GITHUB_BASE_REF` and `GITHUB_EVENT_NAME` itself and reports a push as nothing to compare, so it succeeds on `main`. A job skipped by `if:` would count as a failure in the aggregate.
+- **No `${{ }}` expression in `run:`.** The base branch's name reaches the script through the environment, not through the command.
+- The job goes in the aggregate `CI` job's `needs:` like every other job. It always succeeds once its report is written, so it gates nothing but a comparison that could not run.
+- The report is written to the job summary as well as the log.
+
+In `local-ci.json`, where the runner gates jobs on the diff:
+
+```json
+{ "name": "changed-tests", "run": "node .claude/skills/pest-testing/scripts/changed-tests-against-base.mjs --base origin/main", "paths": ["tests/**"] }
+```
+
+`--base` names the same branch as `local-ci.json`'s `base`. The runner passes the PHP it resolved as `LOCAL_CI_PHP`, which the script uses. It installs dependencies in a scratch worktree on each run, so it is not quick: give it `paths` rather than `always`.
 
 ## Finding the starting static-analysis level
 

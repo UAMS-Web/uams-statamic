@@ -60,7 +60,7 @@ git checkout --detach origin/main
 `git status` misses empty directories: look for litter after an interrupted run. **Never delete the branch**, and never tear the slot down.
 
 - **Stale `storage/framework/testing/` is a false red** (`handle() on null` across isolated-Stache suites): run `node .claude/skills/pest-testing/scripts/clear-testing-litter.mjs` from the root before chasing content or trusting a `--mutate` score.
-- Release with `node scripts/worktree-slots.mjs release a --branch <N>-<slug>`; it refuses a dirty tree, and on a branch needs the branch named (a slot at rest needs none). Root `git status` hides `content` (and maybe `users`) submodule changes; `release` probes all five and refuses tracked changes only: untracked residue is yours to judge.
+- Release with `node scripts/worktree-slots.mjs release a --branch <N>-<slug>`; it refuses a dirty tree, and on a branch needs the branch named (a slot at rest needs none). Root `git status` hides `content` (and maybe `users`) submodule changes; `release` probes every submodule in `SUBMODULES` and refuses tracked changes only: untracked residue is yours to judge.
 - Keep remote branches too: PR file links use them.
 - **Release before handing off**: local CI checks the branch out by name, so a slot still on it fails the validator, and local CI cannot validate `main`.
 
@@ -73,7 +73,7 @@ cd ../uams-statamic-importer && git fetch origin && git checkout -b importer/<N>
 ```
 
 - **`vendor/uams-web/wordpress-importer` is invisible to `git status`**: `grep` your diff's token there before trusting a green; when done with a branch, `composer install` restores the pin (or say you did not).
-- **The runs mutate all five submodules** and restore little; a killed run empties assets. Diagnose with `git submodule foreach --quiet 'echo "== $sm_path"; git status --porcelain'`; recover with `git -C <submodule> restore --staged --worktree .` (read its `git status` first; if the change is yours, commit inside it and bump the pointer).
+- **The runs mutate every submodule in `SUBMODULES` (`scripts/worktree-slots.mjs`)** and restore little; a killed run empties assets. Diagnose with `git submodule foreach --quiet 'echo "== $sm_path"; git status --porcelain'`; recover with `git -C <submodule> restore --staged --worktree .` (read its `git status` first; if the change is yours, commit inside it and bump the pointer).
 
 ## The CI tree belongs to the runner
 
@@ -103,7 +103,7 @@ git -C "$TREE" rev-list --count HEAD..origin/main   # 0 = current, N = behind
 
 Here the guard is `node scripts/worktree-slots.mjs status --check` (`0` clean, `1` drift: script on the exit code; its verdict line is a fallback once a pipe loses it) and `refresh a` or `refresh primary` reconciles (never `release` or `provision` the primary). A clean `--check` from inside a stale tree proves nothing: run the primary's copy (`node ../<repo>/scripts/worktree-slots.mjs status --check`) or the `rev-list` probe.
 
-`refresh` also runs `git submodule update --init content users resources/forms public/assets app/private/assets`, `php artisan statamic:stache:clear` after any `content/` move, and `DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache` when the mirror predates `content/`. **A wall of `entryClass() on null` is a stale `content/`, not a broken branch.** `refresh` does not build assets: run `npm run build` before a bare `vendor/bin/pest tests/Browser`. Gitdir independence is measured on one git version only: keep the `local-ci` skill's staged-serially-then-fan-out habit.
+`refresh` also runs `git submodule update --init` over every path in `SUBMODULES` in `scripts/worktree-slots.mjs` (the one list; this rule does not repeat it), `php artisan statamic:stache:clear` after any `content/` move, and `DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache` when the mirror predates `content/`. **A wall of `entryClass() on null` is a stale `content/`, not a broken branch.** `refresh` does not build assets: run `npm run build` before a bare `vendor/bin/pest tests/Browser`. Gitdir independence is measured on one git version only: keep the `local-ci` skill's staged-serially-then-fan-out habit.
 
 ### Submodules in a linked worktree
 

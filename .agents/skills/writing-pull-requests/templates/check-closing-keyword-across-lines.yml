@@ -23,9 +23,14 @@ name: Check closing keywords across lines
 # the point: a body can take on the pair when the pull request opens and through any later
 # edit.
 #
-# Deliberately NOT gated on RUN_REMOTE_CI, for the same reason as `clear-handed-back.yml`:
-# that switch is off for months at a time. The job is one checkout, one API read and one Node
-# script with no dependencies.
+# Gated on RUN_REMOTE_CI like the rest of CI: the job carries
+# `if: vars.RUN_REMOTE_CI != 'false'`, so a private repository, where the variable is
+# `false`, skips it before a runner is dispatched and bills no minutes, and a public
+# repository, where the variable is unset, runs it as before. A skipped job reports
+# `skipped`, and GitHub counts a skipped required check as success, so a skipped run is
+# not a passing run: nothing has read the pull request while the switch is off. The gate
+# is in the template body, not the header, because a copy must match its template outside
+# the header.
 #
 # The job name, `Closing keywords`, is a required status check context in the repository's
 # ruleset, the same in every repository. Renaming it means changing the ruleset.
@@ -40,6 +45,7 @@ permissions: {}
 jobs:
   check:
     name: Closing keywords
+    if: vars.RUN_REMOTE_CI != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
