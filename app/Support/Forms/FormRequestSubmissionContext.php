@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Forms;
 
 use Statamic\Contracts\Forms\Submission;
-use UAMSWeb\FormSettings\Contracts\SubmissionContext;
+use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionContext;
 
 /**
  * The form settings add-on's submission context, backed by this site's

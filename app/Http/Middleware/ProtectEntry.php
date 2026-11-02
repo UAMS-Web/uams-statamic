@@ -12,7 +12,7 @@ use Statamic\Entries\Entry;
 use Statamic\Facades\Data;
 use Statamic\Structures\Page;
 use Symfony\Component\HttpFoundation\Response;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
 
 /**
  * Middleware to protect Statamic entries by status/visibility (UAMS-Web/uams-statamic-archive#223).

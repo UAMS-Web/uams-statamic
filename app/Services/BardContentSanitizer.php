@@ -21,7 +21,7 @@ namespace App\Services;
  * and it is not on the path that would stop them.
  *
  * The component that actually discards unsafe markup is
- * `UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\BardParser`,
+ * `UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\BardParser`,
  * whose Tiptap schema is an allowlist: `<script>`, `<iframe>`, event-handler
  * attributes and `javascript:`/`data:` hrefs are dropped at parse time because
  * the schema never declares them. That invariant is asserted by

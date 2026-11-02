@@ -107,11 +107,13 @@ return [
     |     `@alpinejs/csp` instead of the standard Alpine 3 build, so every `x-*`
     |     attribute is evaluated by an AST interpreter rather than compiled
     |     through `new Function()`. Public-form field conditions moved with it:
-    |     `UAMSWeb\AlpineCspForms\JsDrivers\AlpineCsp` (the uams-web/statamic-alpine-csp-forms
+    |     `UAMSWeb\Aether\Forms\AlpineCsp\JsDrivers\AlpineCsp` (the uams-web/aether-alpine-csp-forms
     |     add-on, UAMS-Web/uams-statamic-archive#3073; selected with `js="alpine_csp"`) emits
     |     a `$showField(...)` magic call in place of Statamic's
     |     `Statamic.$conditions.showField(...)`, which the CSP build rejects as a
-    |     window global. Nothing else in `resources/js/**` evaluates strings.
+    |     window global. The magic forwards to that function, which Statamic's
+    |     `helpers.js` defines without `eval()` since `statamic/cms` v6.35.1 (#189).
+    |     Nothing else in `resources/js/**` evaluates strings.
     |     One response adds it back: Google's results take it up through
     |     `allowances.google_search` below (UAMS-Web/uams-statamic#412).
     |   - style-src `'unsafe-inline'`: REMOVED. Inline <style> elements are now

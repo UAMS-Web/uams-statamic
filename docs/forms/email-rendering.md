@@ -40,9 +40,9 @@ the submit request. For our form volumes this is acceptable and is the deliberat
 ### The submit → email path
 
 1. [`FormController::submit()`](../../vendor/statamic/cms/src/Http/Controllers/FormController.php) — the web request. Validates, stores the submission, then **synchronously** dispatches `SendEmails` (it is *not* a `ShouldQueue` class).
-2. [`SendEmails::handle()`](../../vendor/statamic/cms/src/Forms/SendEmails.php) — builds one send-email job per configured notification and dispatches them with `Bus::chain(...)`. The job class is `statamic.forms.send_email_job` — this project points it at [`UAMSWeb\FormSettings\Jobs\SendFormNotification`](../../vendor/uams-web/statamic-form-settings/src/Jobs/SendFormNotification.php) instead of the vendor default.
-3. [`SendFormNotification::handle()`](../../vendor/uams-web/statamic-form-settings/src/Jobs/SendFormNotification.php): on `sync`, runs inline. It extends the vendor `SendEmail`, and before sending it skips a notification that is switched off or whose conditional logic does not match the submission, resolves the TO, CC, BCC and reply-to addresses (including recipient routing), and skips the send when no TO address resolves. It then sends `new FormNotificationEmail(...)` through `Mail::mailer(...)`. With the add-on's `notifications` feature switched off it sends exactly as the vendor job does.
-4. [`FormNotificationEmail::build()`](../../vendor/uams-web/statamic-form-settings/src/Mail/FormNotificationEmail.php) — extends the vendor [`Email`](../../vendor/statamic/cms/src/Forms/Email.php) to assemble the message (next section), additionally honoring `from_name` in the `From:` header.
+2. [`SendEmails::handle()`](../../vendor/statamic/cms/src/Forms/SendEmails.php) — builds one send-email job per configured notification and dispatches them with `Bus::chain(...)`. The job class is `statamic.forms.send_email_job` — this project points it at [`UAMSWeb\Aether\Forms\Settings\Jobs\SendFormNotification`](../../vendor/uams-web/aether-form-settings/src/Jobs/SendFormNotification.php) instead of the vendor default.
+3. [`SendFormNotification::handle()`](../../vendor/uams-web/aether-form-settings/src/Jobs/SendFormNotification.php): on `sync`, runs inline. It extends the vendor `SendEmail`, and before sending it skips a notification that is switched off or whose conditional logic does not match the submission, resolves the TO, CC, BCC and reply-to addresses (including recipient routing), and skips the send when no TO address resolves. It then sends `new FormNotificationEmail(...)` through `Mail::mailer(...)`. With the add-on's `notifications` feature switched off it sends exactly as the vendor job does.
+4. [`FormNotificationEmail::build()`](../../vendor/uams-web/aether-form-settings/src/Mail/FormNotificationEmail.php) — extends the vendor [`Email`](../../vendor/statamic/cms/src/Forms/Email.php) to assemble the message (next section), additionally honoring `from_name` in the `From:` header.
 
 ## Notification recipients
 
@@ -72,13 +72,13 @@ resolve at both evaluation points.
 
 ## The `from_name` display name
 
-The CP email grid exposes a `from_name` column (added in [`EmailGridBlueprintCustomizer`](../../vendor/uams-web/statamic-form-settings/src/CpForms/EmailGridBlueprintCustomizer.php))
+The CP email grid exposes a `from_name` column (added in [`EmailGridBlueprintCustomizer`](../../vendor/uams-web/aether-form-settings/src/CpForms/EmailGridBlueprintCustomizer.php))
 so editors can set the friendly sender name an inbox shows next to the address — Gravity Forms'
 `fromName`, often a field reference like `{Name (First):1.3}{Name (Last):1.6}`. The vendor `Email`
 mailable never reads it: its `addAddresses()` wires the `From:` header from the bare `from` address
 only, so the name was silently dropped (issue [#213](https://github.com/UAMS-Web/uams-statamic-archive/issues/213)).
 
-[`FormNotificationEmail`](../../vendor/uams-web/statamic-form-settings/src/Mail/FormNotificationEmail.php) layers the name on top of
+[`FormNotificationEmail`](../../vendor/uams-web/aether-form-settings/src/Mail/FormNotificationEmail.php) layers the name on top of
 the parent's address wiring:
 
 - `from_name` is a config key, so it is Antlers / merge-tag resolved by `parseConfig()` (which maps
@@ -148,7 +148,7 @@ values. Three pieces cooperate:
    registered once in `EventServiceProvider::$listen` (UAMS-Web/uams-statamic-archive#3240). It returns `void`: `FormSubmitted` halts on
    the first non-null listener response, so returning nothing keeps the submission flowing.
 2. **Carry it across the queue boundary** —
-   [`SendFormNotification::__construct()`](../../vendor/uams-web/statamic-form-settings/src/Jobs/SendFormNotification.php) runs in the
+   [`SendFormNotification::__construct()`](../../vendor/uams-web/aether-form-settings/src/Jobs/SendFormNotification.php) runs in the
    live submit request (before the job is serialized) and asks the bound `SubmissionContext` for the
    captured context. The site binds
    [`FormRequestSubmissionContext`](../../app/Support/Forms/FormRequestSubmissionContext.php) (#263),

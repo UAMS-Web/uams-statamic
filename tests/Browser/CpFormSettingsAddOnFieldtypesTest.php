@@ -25,7 +25,7 @@ function formSettingsAddOnRoutingRegistrations(string $directory): int
 }
 
 /*
- * Proves the Control Panel form settings screen renders the `uams-web/statamic-form-settings`
+ * Proves the Control Panel form settings screen renders the `uams-web/aether-form-settings`
  * add-on's own fieldtypes (#263).
  *
  * The site's CP bundle used to register those fieldtypes itself. They now ship in the add-on's
@@ -78,7 +78,7 @@ afterEach(function () use ($handle) {
 
 it('renders the add-on fieldtypes on the form settings screen', function () use ($handle) {
     // Only the add-on's bundle may register the routing fieldtype, or the button proves nothing
-    expect(formSettingsAddOnRoutingRegistrations(public_path('vendor/statamic-form-settings/build')))->toBeGreaterThan(0)
+    expect(formSettingsAddOnRoutingRegistrations(public_path('vendor/aether-form-settings/build')))->toBeGreaterThan(0)
         ->and(formSettingsAddOnRoutingRegistrations(public_path('vendor/app')))->toBe(0);
 
     $page = loginToCp($this->cpEmail, $this->cpPassword);

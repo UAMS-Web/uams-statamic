@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1e6179567a055346138f763be41527db",
+    "content-hash": "7fb05a7c4a592099a91bf243e93ac4d7",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10724,22 +10724,22 @@
             "time": "2025-12-02T11:56:42+00:00"
         },
         {
-            "name": "uams-web/statamic-alpine-csp-forms",
-            "version": "v0.1.0",
+            "name": "uams-web/aether-alpine-csp-forms",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/UAMS-Web/statamic-alpine-csp-forms.git",
-                "reference": "7913332bd32d37144ef97bbe8c4ab58773183e5d"
+                "url": "https://github.com/UAMS-Web/aether-alpine-csp-forms.git",
+                "reference": "8c57b2c58015e7ae82be3e6ee1e03a0d82131714"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/statamic-alpine-csp-forms/zipball/7913332bd32d37144ef97bbe8c4ab58773183e5d",
-                "reference": "7913332bd32d37144ef97bbe8c4ab58773183e5d",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-alpine-csp-forms/zipball/8c57b2c58015e7ae82be3e6ee1e03a0d82131714",
+                "reference": "8c57b2c58015e7ae82be3e6ee1e03a0d82131714",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.4",
-                "statamic/cms": "^6.35"
+                "statamic/cms": "^6.35.1"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -10755,7 +10755,7 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "UAMSWeb\\AlpineCspForms\\ServiceProvider"
+                        "UAMSWeb\\Aether\\Forms\\AlpineCsp\\ServiceProvider"
                     ]
                 },
                 "statamic": {
@@ -10766,7 +10766,7 @@
             },
             "autoload": {
                 "psr-4": {
-                    "UAMSWeb\\AlpineCspForms\\": "src/"
+                    "UAMSWeb\\Aether\\Forms\\AlpineCsp\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -10782,30 +10782,30 @@
                     "role": "Web Developer"
                 }
             ],
-            "description": "CSP-safe Alpine form JavaScript driver for Statamic public forms, with its browser-side field-conditions evaluator.",
-            "homepage": "https://github.com/UAMS-Web/statamic-alpine-csp-forms",
+            "description": "CSP-safe Alpine form JavaScript driver for Statamic public forms, with a $showField magic that forwards to Statamic's field-conditions evaluator.",
+            "homepage": "https://github.com/UAMS-Web/aether-alpine-csp-forms",
             "keywords": [
                 "statamic",
                 "statamic-addon"
             ],
             "support": {
-                "issues": "https://github.com/UAMS-Web/statamic-alpine-csp-forms/issues",
-                "source": "https://github.com/UAMS-Web/statamic-alpine-csp-forms"
+                "issues": "https://github.com/UAMS-Web/aether-alpine-csp-forms/issues",
+                "source": "https://github.com/UAMS-Web/aether-alpine-csp-forms"
             },
-            "time": "2026-10-15T15:20:03+00:00"
+            "time": "2026-11-01T16:00:09+00:00"
         },
         {
-            "name": "uams-web/statamic-form-settings",
-            "version": "v0.3.0",
+            "name": "uams-web/aether-form-settings",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-form-settings.git",
-                "reference": "540f23d2b3297959e24dd9673b749d437be71fae"
+                "reference": "1a20e3483b4505c813327d7fdc3f5a58fee282dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-form-settings/zipball/540f23d2b3297959e24dd9673b749d437be71fae",
-                "reference": "540f23d2b3297959e24dd9673b749d437be71fae",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-form-settings/zipball/1a20e3483b4505c813327d7fdc3f5a58fee282dd",
+                "reference": "1a20e3483b4505c813327d7fdc3f5a58fee282dd",
                 "shasum": ""
             },
             "require": {
@@ -10827,7 +10827,7 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "UAMSWeb\\FormSettings\\ServiceProvider"
+                        "UAMSWeb\\Aether\\Forms\\Settings\\ServiceProvider"
                     ]
                 },
                 "statamic": {
@@ -10838,7 +10838,7 @@
             },
             "autoload": {
                 "psr-4": {
-                    "UAMSWeb\\FormSettings\\": "src/"
+                    "UAMSWeb\\Aether\\Forms\\Settings\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -10855,30 +10855,29 @@
                 }
             ],
             "description": "Control Panel form settings for Statamic: notification routing and conditions, confirmations, submission restrictions, and quiz and survey scoring, each behind its own switch.",
-            "homepage": "https://github.com/UAMS-Web/statamic-form-settings",
+            "homepage": "https://github.com/UAMS-Web/aether-form-settings",
             "keywords": [
                 "statamic",
                 "statamic-addon"
             ],
             "support": {
-                "issues": "https://github.com/UAMS-Web/statamic-form-settings/issues",
-                "source": "https://github.com/UAMS-Web/statamic-form-settings"
+                "issues": "https://github.com/UAMS-Web/aether-form-settings/issues",
+                "source": "https://github.com/UAMS-Web/aether-form-settings"
             },
-            "abandoned": "uams-web/aether-form-settings",
-            "time": "2026-11-01T19:13:16+00:00"
+            "time": "2026-11-01T19:46:28+00:00"
         },
         {
-            "name": "uams-web/statamic-multisite-forms",
-            "version": "v0.6.1",
+            "name": "uams-web/aether-multisite-forms",
+            "version": "v0.7.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/UAMS-Web/statamic-multisite-forms.git",
-                "reference": "44fc03501446533d2b42a5e594982e346da8de11"
+                "url": "https://github.com/UAMS-Web/aether-multisite-forms.git",
+                "reference": "9a72eeb740d13f4d83b3efe40a012d4156facea4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/statamic-multisite-forms/zipball/44fc03501446533d2b42a5e594982e346da8de11",
-                "reference": "44fc03501446533d2b42a5e594982e346da8de11",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-multisite-forms/zipball/9a72eeb740d13f4d83b3efe40a012d4156facea4",
+                "reference": "9a72eeb740d13f4d83b3efe40a012d4156facea4",
                 "shasum": ""
             },
             "require": {
@@ -10899,7 +10898,7 @@
             "extra": {
                 "laravel": {
                     "providers": [
-                        "UAMSWeb\\MultisiteForms\\ServiceProvider"
+                        "UAMSWeb\\Aether\\Forms\\Multisite\\ServiceProvider"
                     ]
                 },
                 "statamic": {
@@ -10910,7 +10909,7 @@
             },
             "autoload": {
                 "psr-4": {
-                    "UAMSWeb\\MultisiteForms\\": "src/"
+                    "UAMSWeb\\Aether\\Forms\\Multisite\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -10927,7 +10926,7 @@
                 }
             ],
             "description": "Per-site forms for multisite Statamic: site assignment, per-site overrides, and site-separated submissions in flat files.",
-            "homepage": "https://github.com/UAMS-Web/statamic-multisite-forms",
+            "homepage": "https://github.com/UAMS-Web/aether-multisite-forms",
             "keywords": [
                 "Forms",
                 "multisite",
@@ -10935,23 +10934,23 @@
                 "statamic-addon"
             ],
             "support": {
-                "issues": "https://github.com/UAMS-Web/statamic-multisite-forms/issues",
-                "source": "https://github.com/UAMS-Web/statamic-multisite-forms"
+                "issues": "https://github.com/UAMS-Web/aether-multisite-forms/issues",
+                "source": "https://github.com/UAMS-Web/aether-multisite-forms"
             },
-            "time": "2026-10-14T15:13:38+00:00"
+            "time": "2026-11-01T21:03:19+00:00"
         },
         {
-            "name": "uams-web/wordpress-importer",
-            "version": "v0.31.2",
+            "name": "uams-web/aether-wordpress-importer",
+            "version": "v0.32.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/UAMS-Web/wordpress-importer.git",
-                "reference": "9bbaf2ff89af3ca97c0a234b755a2545f7a39009"
+                "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git",
+                "reference": "8c666bdf82bc2066b770458c7f282861fcab1509"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/wordpress-importer/zipball/9bbaf2ff89af3ca97c0a234b755a2545f7a39009",
-                "reference": "9bbaf2ff89af3ca97c0a234b755a2545f7a39009",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/8c666bdf82bc2066b770458c7f282861fcab1509",
+                "reference": "8c666bdf82bc2066b770458c7f282861fcab1509",
                 "shasum": ""
             },
             "require": {
@@ -10959,7 +10958,7 @@
                 "laravel/prompts": "^0.3",
                 "php": "^8.4",
                 "statamic/cms": "6.37.0",
-                "uams-web/wordpress-wxr-cleanup": "^1.0"
+                "uams-web/aether-wordpress-importer-cleanup": "^2.0"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -10983,18 +10982,18 @@
                 },
                 "laravel": {
                     "providers": [
-                        "UAMSWeb\\WordPressImporter\\ServiceProvider"
+                        "UAMSWeb\\Aether\\WordPressImporter\\ServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "UAMSWeb\\WordPressImporter\\": "src/"
+                    "UAMSWeb\\Aether\\WordPressImporter\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "UAMSWeb\\WordPressImporter\\Tests\\": "tests/"
+                    "UAMSWeb\\Aether\\WordPressImporter\\Tests\\": "tests/"
                 }
             },
             "scripts": {
@@ -11047,7 +11046,7 @@
                 }
             ],
             "description": "WordPress XML export importer for Statamic",
-            "homepage": "https://github.com/UAMS-Web/wordpress-importer",
+            "homepage": "https://github.com/UAMS-Web/aether-wordpress-importer",
             "keywords": [
                 "formidable forms",
                 "gravity forms",
@@ -11058,23 +11057,23 @@
                 "wordpress"
             ],
             "support": {
-                "issues": "https://github.com/UAMS-Web/wordpress-importer/issues",
-                "source": "https://github.com/UAMS-Web/wordpress-importer"
+                "issues": "https://github.com/UAMS-Web/aether-wordpress-importer/issues",
+                "source": "https://github.com/UAMS-Web/aether-wordpress-importer"
             },
-            "time": "2026-10-30T13:17:36+00:00"
+            "time": "2026-11-01T22:30:05+00:00"
         },
         {
-            "name": "uams-web/wordpress-wxr-cleanup",
-            "version": "v1.1.0",
+            "name": "uams-web/aether-wordpress-importer-cleanup",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/UAMS-Web/wordpress-wxr-cleanup.git",
-                "reference": "c353ba753372dfc0991f9b20f6a317d6e563d8a9"
+                "url": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup.git",
+                "reference": "45001fcfda7a239a50ddcf8c6f953772420ea36a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/wordpress-wxr-cleanup/zipball/c353ba753372dfc0991f9b20f6a317d6e563d8a9",
-                "reference": "c353ba753372dfc0991f9b20f6a317d6e563d8a9",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer-cleanup/zipball/45001fcfda7a239a50ddcf8c6f953772420ea36a",
+                "reference": "45001fcfda7a239a50ddcf8c6f953772420ea36a",
                 "shasum": ""
             },
             "require": {
@@ -11098,12 +11097,12 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "UamsWeb\\WxrCleanup\\": "src/"
+                    "UAMSWeb\\Aether\\WordPressImporter\\Cleanup\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "UamsWeb\\WxrCleanup\\Tests\\": "tests/"
+                    "UAMSWeb\\Aether\\WordPressImporter\\Cleanup\\Tests\\": "tests/"
                 }
             },
             "scripts": {
@@ -11137,10 +11136,10 @@
             ],
             "description": "Deterministic CLI tool to transform WordPress WXR exports — strips legacy <table> markup for Statamic import.",
             "support": {
-                "source": "https://github.com/UAMS-Web/wordpress-wxr-cleanup/tree/v1.1.0",
-                "issues": "https://github.com/UAMS-Web/wordpress-wxr-cleanup/issues"
+                "source": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup/tree/v2.0.0",
+                "issues": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup/issues"
             },
-            "time": "2026-10-26T19:27:04+00:00"
+            "time": "2026-11-01T10:53:08+00:00"
         },
         {
             "name": "ueberdosis/tiptap-php",
