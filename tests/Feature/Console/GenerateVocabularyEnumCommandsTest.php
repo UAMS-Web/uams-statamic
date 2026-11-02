@@ -168,8 +168,8 @@ it('writes the MIME type enum and reports its path', function (): void {
 
     expect($written[$path])->toContain('application/x-uams-probe')
         ->and($path)->toMatch('#/app/Enums/MimeType_generated_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.php$#')
-        ->and($output)->toStartWith("Reading MIME types from mime-db, IANA media types, and Apache MIME types...\n")
-        ->and($output)->toContain('Wrote '.$path."\n");
+        ->and($output)->toStartWith('Reading MIME types from mime-db, IANA media types, and Apache MIME types...'.PHP_EOL)
+        ->and(str_replace('\\', '/', $output))->toContain('Wrote '.$path.PHP_EOL);
 });
 
 it('turns a MIME type generator failure into an error and exit code 1', function (): void {

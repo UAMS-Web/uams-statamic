@@ -91,6 +91,11 @@ defaults:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
+# THREE LEGS (#348): every job but `submodule-access` and the aggregate `ci` runs on
+# ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
+# failure does not cancel the others, and `ci` needs them all. Windows differs in
+# three places, each marked where it stands: the `pest` band runs whole instead of
+# in four shards, CLI OPcache stays off, and Larastan's facades are written first.
 # JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
 # because it reads what the jobs it names leave behind. `pest-report` merges the
 # reports of the four `pest` shards (#387), and `ci` reads the result of every job
@@ -101,8 +106,8 @@ defaults:
 # longest, each job entered through `needs:` on the one before it, so an early
 # failure never billed Actions minutes for the expensive jobs behind it. That
 # protected a metered budget pooled across the whole organization. It does not
-# apply here: this repository is public and every job runs on `ubuntu-latest`, a
-# standard runner, which GitHub does not meter for a public repository. With
+# apply here: this repository is public and every job runs on a standard runner,
+# which GitHub does not meter for a public repository. With
 # nothing left to save the trade inverts, and wall-clock is the longest job rather
 # than the sum of all of them. Supersedes the 2026-07-15 entry in
 # docs/DECISIONS.md, which superseded the UAMS-Web/uams-statamic-archive#1543 spell-only gate.
