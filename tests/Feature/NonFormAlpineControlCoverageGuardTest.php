@@ -70,6 +70,19 @@ function alpineComponentIsDeclaredIn(string $source, string $component): bool
 }
 
 /**
+ * Every view this application serves: its own, and the search add-on's.
+ *
+ * @return list<SplFileInfo>
+ */
+function viewsServedByThisApplication(): array
+{
+    return [
+        ...File::allFiles(base_path('resources/views')),
+        ...File::allFiles(base_path('vendor/uams-web/aether-search/resources/views')),
+    ];
+}
+
+/**
  * Every view that declares `$component`, sorted: this application's, and the search
  * add-on's, whose page declares `siteSearchTypeahead`.
  *
@@ -79,12 +92,7 @@ function viewsDeclaringAlpineComponent(string $component): array
 {
     $found = [];
 
-    $views = [
-        ...File::allFiles(base_path('resources/views')),
-        ...File::allFiles(base_path('vendor/uams-web/aether-search/resources/views')),
-    ];
-
-    foreach ($views as $file) {
+    foreach (viewsServedByThisApplication() as $file) {
         /** @var SplFileInfo $file */
         if (! alpineComponentIsDeclaredIn($file->getContents(), $component)) {
             continue;
@@ -188,7 +196,7 @@ it('declares no inline x-data object literal anywhere in the view tree', functio
     // ---
     $offenders = [];
 
-    foreach (File::allFiles(base_path('resources/views')) as $file) {
+    foreach (viewsServedByThisApplication() as $file) {
         /** @var SplFileInfo $file */
         if (preg_match('/x-data\s*=\s*([\'"])\s*\{/', $file->getContents()) === 1) {
             // Normalized to forward slashes: `allFiles()` yields mixed separators on

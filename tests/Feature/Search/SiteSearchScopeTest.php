@@ -37,6 +37,7 @@ uses(TestCase::class);
 function renderScopedSearch(string $site, array $get = []): string
 {
     Site::setCurrent($site);
+    stubEmptySearchIndex();
 
     return renderAetherSearchPage($get);
 }
@@ -124,9 +125,9 @@ function searchThroughPage(string $site, array $get): array
     });
     Search::shouldReceive('index')->andReturn($index);
 
-    app()->instance('request', Request::create('/search', 'GET', $get));
+    Site::setCurrent($site);
 
-    return ['html' => renderScopedSearch($site, $get), 'sites' => array_values($sites->getArrayCopy())];
+    return ['html' => renderAetherSearchPage($get), 'sites' => array_values($sites->getArrayCopy())];
 }
 
 it('offers only all of the root site on the root site, as the default', function (): void {

@@ -331,16 +331,11 @@ it('fails closed on an array-valued query instead of crashing with a 500', funct
 });
 
 it('escapes a hostile query rather than reflecting it as live markup', function (): void {
-    // A full HTTP `?q=` request does not populate the Antlers `get` cascade under
-    // the test harness, so render the page view with a hostile query injected into
-    // `get` directly. This targets the template's own `| sanitize` on the reflected
-    // query (the input value and the results heading) rather than relying on the
-    // cascade's implicit sanitization — so it goes red if `| sanitize` is dropped.
-    // The request query is empty, so `search:results` short-circuits to no-results
-    // and no index build is needed.
+    // The query reaches the page through the tag, which sanitizes it, and this holds
+    // the input value and the results heading to that.
     $payload = '<script>alert(1)</script>';
 
-    $html = renderAetherSearchPage(['q' => $payload]);
+    $html = renderSiteSearch(['q' => $payload]);
 
     // The raw payload must never appear; it is reflected HTML-escaped instead.
     expect($html)
@@ -349,26 +344,15 @@ it('escapes a hostile query rather than reflecting it as live markup', function 
 });
 
 /**
- * Render the /search view with `$get` injected into the Antlers `get` cascade (a full
- * HTTP request does not populate it under the harness; see the hostile-query test).
+ * Render the /search view for a query string, finding nothing.
  *
  * @param  array<string, mixed>  $get
  */
 function renderSiteSearch(array $get): string
 {
-    return renderAetherSearchPage($get);
-}
-
-/**
- * Render the /search view for a query that finds nothing.
- *
- * @param  array<string, mixed>  $get
- */
-function renderSiteSearchWithNoHits(array $get): string
-{
     stubEmptySearchIndex();
 
-    return renderSiteSearch($get);
+    return renderAetherSearchPage($get);
 }
 
 /**
@@ -401,7 +385,7 @@ it('renders one link per launch scope, each carrying the encoded query (#1524)',
 });
 
 it('marks exactly the resolved scope as the current tab (#1524)', function (?string $requested, string $active, string $label): void {
-    $html = renderSiteSearchWithNoHits(array_filter(['q' => 'heart', 'index' => $requested]));
+    $html = renderSiteSearch(array_filter(['q' => 'heart', 'index' => $requested]));
     $tabs = siteSearchTabs($html);
 
     expect(substr_count($tabs, 'aria-current="page"'))->toBe(1)
@@ -452,7 +436,7 @@ it('dispatches the query to the index the selected tab names (#1524)', function 
         ->with($expected)
         ->andThrow(new RuntimeException('dispatched to '.$expected));
 
-    expect(fn (): string => renderSiteSearch(array_filter(['q' => 'heart', 'index' => $requested])))
+    expect(fn (): string => renderAetherSearchPage(array_filter(['q' => 'heart', 'index' => $requested])))
         ->toThrow('dispatched to '.$expected);
 })->with([
     'no index' => [null, 'default'],
@@ -548,7 +532,7 @@ it('escapes an Area-of-Expertise section title in the compact card (#1527, #1510
 });
 
 it('links a scoped empty result to the same query across all results (#1510)', function (): void {
-    $html = renderSiteSearchWithNoHits(['q' => 'heart & soul', 'index' => 'people']);
+    $html = renderSiteSearch(['q' => 'heart & soul', 'index' => 'people']);
 
     expect($html)->toContain('or <a href="/search?q=heart+%26+soul&amp;index=default">search all results</a>.');
 });
@@ -556,8 +540,8 @@ it('links a scoped empty result to the same query across all results (#1510)', f
 it('decodes the cascade-escaped query before encoding it into every link (#1510)', function (string $query, string $encoded): void {
     // The tag sanitizes the query, so encoding that form directly would turn `O'Brien`
     // into `O%26%23039%3BBrien` as it did on the live page.
-    $html = renderSiteSearchWithNoHits(['q' => $query, 'index' => 'people']);
-    $kb = renderSiteSearchWithNoHits(['q' => $query, 'index' => 'knowledge_bases', 'kb_scope' => 'abc']);
+    $html = renderSiteSearch(['q' => $query, 'index' => 'people']);
+    $kb = renderSiteSearch(['q' => $query, 'index' => 'knowledge_bases', 'kb_scope' => 'abc']);
 
     expect(siteSearchTabs($html))->toContain('href="/search?q='.$encoded.'&amp;index=default"');
     expect($html)->toContain('<a href="/search?q='.$encoded.'&amp;index=default">search all results</a>');
@@ -570,7 +554,7 @@ it('decodes the cascade-escaped query before encoding it into every link (#1510)
 ]);
 
 it('offers no all-results link when the search was already unscoped (#1510)', function (): void {
-    $html = renderSiteSearchWithNoHits(['q' => 'heart', 'index' => 'default']);
+    $html = renderSiteSearch(['q' => 'heart', 'index' => 'default']);
 
     expect($html)
         ->toContain('No results found. Try a different search term.')

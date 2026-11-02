@@ -87,6 +87,8 @@ it('threads the scope_root param through the shared results listing', function (
 it('renders KB mode without the type filter and preserves the subtree scope', function (): void {
     // Inject the KB-mode cascade with no query, so search:results short-circuits and
     // no index build is needed; the form still renders in KB mode.
+    stubEmptySearchIndex();
+
     $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => 'kb-123',
@@ -108,6 +110,8 @@ it('escapes a hostile scope root rather than reflecting it as live markup', func
     // default, so it must be escaped to avoid attribute-injection.
     $payload = '"><script>alert(1)</script>';
 
+    stubEmptySearchIndex();
+
     $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => $payload,
@@ -122,6 +126,8 @@ it('fails closed to non-KB search on an array-valued kb_scope instead of crashin
     // A tampered `?kb_scope[]=x` arrives as an array; piping it through `sanitize`
     // would throw an uncaught TypeError (HTTP 500). It must be coerced to '' so the
     // page falls back to ordinary site search rather than 500ing.
+    stubEmptySearchIndex();
+
     $html = renderAetherSearchPage([
         'index' => 'knowledge_bases',
         'kb_scope' => ['x'],

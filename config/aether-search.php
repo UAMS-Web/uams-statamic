@@ -9,8 +9,9 @@ declare(strict_types=1);
 |
 | What the `uams-web/aether-search` add-on needs from this application: the type
 | tabs, the result labels, the host frames, knowledge-base search as the scoped
-| mode, the private-entry query scope and Google's results. Composer's merge is
-| top-level only, so each key set here replaces the add-on's default whole.
+| mode, the private-entry query scope and Google's results. Laravel merges this
+| file over the add-on's at the top level only, so each key set here replaces
+| the add-on's default whole.
 |
 | A tab other than `default` must be an index in `config/statamic/search.php`.
 | The seams the add-on calls back into are bound in `SearchServiceProvider`, and

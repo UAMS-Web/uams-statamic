@@ -401,6 +401,14 @@ it('offers a private entry to a super user, who may open it', function (): void 
     expect(array_column(mustBeArray(suggestionsFor('ja')['results'], 'results'), 'title'))->toBe(['Janice Rand']);
 });
 
+it('drops a section subpage whose Area of Expertise no longer exists', function (): void {
+    mockSuggestionsIndex([
+        new Result(new AreaOfExpertiseSectionDocument('no-such-entry', 'providers', 'Gone: Providers', '/gone/providers', 'default'), 'clinical_expertise_section'),
+    ]);
+
+    expect(suggestionsFor('go')['results'])->toBe([]);
+});
+
 it('drops the section subpages of a private Area of Expertise', function (): void {
     $private = savedSuggestionEntry('clinical_expertise', 'classified-medicine', 'Classified Medicine', 'private');
     $public = savedSuggestionEntry('clinical_expertise', 'cardiology', 'Cardiology');
@@ -429,7 +437,7 @@ it('fills the flyout past dropped hits, and stops at its size', function (): voi
 });
 
 it('labels each collection exactly as the results page row does', function (string $collection, string $label): void {
-    // The two lists are written in two languages; this keeps them from drifting.
+    // The flyout and the row both read `aether-search.labels`; this pins what the row shows.
     $row = (string) view('aether-search::listing/_result', ['collection' => $collection, 'title' => 'T', 'url' => '/t'])->render();
 
     expect($row)->toContain('<p class="search-result-type text-uppercase text-muted small mb-1">'.$label.'</p>');
@@ -461,6 +469,8 @@ it('serves the endpoint as JSON behind its rate limiter', function (): void {
  */
 function renderSearchPageForTypeahead(array $get): string
 {
+    stubEmptySearchIndex();
+
     return renderAetherSearchPage($get);
 }
 
