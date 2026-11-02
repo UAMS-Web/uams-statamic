@@ -76,10 +76,10 @@ function alpineComponentIsDeclaredIn(string $source, string $component): bool
  */
 function viewsServedByThisApplication(): array
 {
-    return [
+    return array_values([
         ...File::allFiles(base_path('resources/views')),
         ...File::allFiles(base_path('vendor/uams-web/aether-search/resources/views')),
-    ];
+    ]);
 }
 
 /**
