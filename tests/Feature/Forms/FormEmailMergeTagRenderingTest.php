@@ -215,9 +215,9 @@ it('renders every merge tag in a synchronous notification email', function () us
 
     // The quiz/survey scoring tags (UAMS-Web/uams-statamic-archive#209, UAMS-Web/uams-statamic-archive#210) resolve against the submission but
     // render empty for this non-quiz/non-survey probe form — it has no quiz or
-    // survey fields to score (see App\Tags\Quiz: "non-quiz forms are unaffected").
+    // survey fields to score (the tags come from the form settings add-on).
     // Their real scored output through the same confirmation/notification render
-    // context is proven by QuizSurveyConfirmationRenderTest; here we only prove
+    // context is proven by FormScoringAddOnTest; here we only prove
     // they resolve in the synchronous notification pipeline without leaking Antlers.
     expect($body)->toContain('QUIZ=[]');
     expect($body)->toContain('SURVEY=[]');

@@ -5,10 +5,12 @@ declare(strict_types=1);
 use App\Jobs\UnpublishExpiredClassifieds;
 use App\Mail\Classifieds\ClassifiedListingExpired;
 use App\Scopes\LiveClassifieds;
+use Illuminate\Bus\UniqueLock;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Mail\Transport\ArrayTransport;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -37,6 +39,8 @@ use Tests\TestCase;
  * Serial, not parallel: the job unpublishes EVERY expired listing in the
  * collection, not only this file's. Run beside ClassifiedsBoardTest in a
  * parallel worker, it would unpublish that file's expired fixtures mid-test.
+ * ClassifiedsBoardTest is serial too since #473, so what remains is that the job
+ * reads the whole shared collection.
  *
  * @command  php artisan test --compact tests/Feature/Classifieds/UnpublishExpiredClassifiedsTest.php
  */
@@ -591,6 +595,11 @@ it('logs a malformed account address and still notifies the next listing', funct
 });
 
 it('queues one run while another is pending, so two runs cannot both notify a listing', function (): void {
+    // A faked queue never runs the job, so nothing releases the lock it takes. The test
+    // cache is a file store and the lock has no expiry, so it outlives this run.
+    $lock = new UniqueLock(Cache::driver());
+    $lock->release(new UnpublishExpiredClassifieds);
+
     Queue::fake();
 
     // The second dispatch finds the first run's unique lock still held, and is dropped
@@ -598,4 +607,6 @@ it('queues one run while another is pending, so two runs cannot both notify a li
     UnpublishExpiredClassifieds::dispatch();
 
     Queue::assertPushed(UnpublishExpiredClassifieds::class, 1);
+
+    $lock->release(new UnpublishExpiredClassifieds);
 });

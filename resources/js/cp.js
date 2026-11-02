@@ -41,17 +41,6 @@ Statamic.booting(() => {
 });
 
 /**
- * LikertScale Fieldtype
- * (single-row scale + multi-row matrix; App\Fieldtypes\LikertScale)
- */
-
-import LikertScaleFieldtype from './components/fieldtypes/LikertScaleFieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('likert_scale-fieldtype', LikertScaleFieldtype);
-});
-
-/**
  * Checkboxes Fieldtype
  * (extends the base Statamic Checkboxes fieldtype)
  */
