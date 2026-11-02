@@ -23,7 +23,7 @@ $script = dirname(__DIR__, 2).'/scripts/select-shard-timings.php';
  *
  * @param  array<mixed>  $entries  Key => created_at, in the order the listing returns them
  */
-$select = function (array $entries, string $started) use ($script): Process {
+$select = function (array $entries, string $started, ?string $prefix = null) use ($script): Process {
     $caches = [];
     foreach ($entries as $key => $createdAt) {
         $caches[] = ['id' => count($caches) + 1, 'ref' => 'refs/heads/main', 'key' => $key, 'created_at' => $createdAt];
@@ -33,7 +33,7 @@ $select = function (array $entries, string $started) use ($script): Process {
     file_put_contents($file, (string) json_encode(['total_count' => count($caches), 'actions_caches' => $caches]));
 
     try {
-        $process = new Process([PHP_BINARY, $script, "--caches={$file}", "--started={$started}"]);
+        $process = new Process([PHP_BINARY, $script, "--caches={$file}", "--started={$started}", ...($prefix === null ? [] : ["--prefix={$prefix}"])]);
         $process->run();
     } finally {
         unlink($file);
@@ -113,6 +113,25 @@ it('ignores entries without the timings prefix', function () use ($select): void
     ];
 
     expect($select($entries, '2026-11-02T03:00:00Z')->getOutput())->toBe('pest-shard-timings-100-1');
+});
+
+it('chooses only among the entries of the operating system it is given (#516)', function () use ($select): void {
+    $entries = [
+        'pest-shard-timings-ubuntu-latest-300-1' => '2026-11-02T02:05:00Z',
+        'pest-shard-timings-windows-latest-200-1' => '2026-11-02T02:00:00Z',
+        'pest-shard-timings-100-1' => '2026-11-02T02:08:00Z',
+    ];
+
+    $windows = $select($entries, '2026-11-02T03:00:00Z', 'pest-shard-timings-windows-latest-');
+    $macos = $select($entries, '2026-11-02T03:00:00Z', 'pest-shard-timings-macos-latest-');
+    $foreign = $select($entries, '2026-11-02T03:00:00Z', 'composer-files-');
+
+    expect($windows->getOutput())->toBe('pest-shard-timings-windows-latest-200-1')
+        ->and($macos->getExitCode())->toBe(0)
+        ->and($macos->getOutput())->toBe('')
+        ->and($select($entries, '2026-11-02T03:00:00Z')->getOutput())->toBe('pest-shard-timings-100-1')
+        ->and($foreign->getExitCode())->toBe(2)
+        ->and($foreign->getErrorOutput())->toContain('--prefix must start with pest-shard-timings-');
 });
 
 it('prints nothing when no entry was saved before the run started', function () use ($select): void {
