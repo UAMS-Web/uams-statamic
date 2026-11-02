@@ -21,7 +21,7 @@ uses(TestCase::class);
  * `post_categories` is `propagate: false` and its per-site entries carry no `origin`, so
  * without `select_across_sites` a stored cross-site id is DROPPED ON READ — not rejected,
  * dropped. The block then looks filtered in its YAML and renders completely unfiltered,
- * which is why `wordpress-importer#628` omits the field rather than writing one.
+ * which is why `wordpress-importer-archive#628` omits the field rather than writing one.
  *
  * These assert through the REAL fieldset rather than a synthetic field, so a change to
  * `uamsweb_block_news.yaml` is what they are testing.

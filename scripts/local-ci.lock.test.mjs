@@ -6,7 +6,7 @@
 // mutates or reads worktree state — which no behavioral test can see, because a
 // misplaced lock fails identically downstream of the removal it failed to guard.
 // That is exactly how the same defect survived its own suite in the sibling
-// repository's implementation (UAMS-Web/wordpress-importer#936).
+// repository's implementation (UAMS-Web/wordpress-importer-archive#936).
 
 import { describe, expect, it } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
