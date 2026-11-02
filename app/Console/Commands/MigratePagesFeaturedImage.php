@@ -22,7 +22,7 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * and their entries must not be touched — a repo-wide sweep would corrupt them.
  *
  * Run with `--dry-run` first to preview. The importer-side half of this is
- * `UAMS-Web/wordpress-importer#433`, which stops new ones being written; it does
+ * `UAMS-Web/wordpress-importer-archive#433`, which stops new ones being written; it does
  * not clean up entries already on disk.
  */
 #[Description('Move `pages` entries off the retired `featured_image` handle onto `featured_image_16_9` (UAMS-Web/uams-statamic-archive#2005)')]

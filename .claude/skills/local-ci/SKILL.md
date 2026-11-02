@@ -88,7 +88,7 @@ gh api repos/{o}/{r}/commits/<head-sha>/check-runs'?per_page=100' --jq '.total_c
 
 ### 5. Comment the verdict, then merge on green
 
-**Comment the verdict on the pull request before any merge decision, green or red.** The wording below is shared with the sibling repositories that run the same gate ([`uamswp-migration-api#153`](https://github.com/UAMS-Web/uamswp-migration-api/issues/153), [`wordpress-importer#999`](https://github.com/UAMS-Web/wordpress-importer/issues/999)) and is adopted rather than paraphrased, so three procedures for one obligation do not drift apart:
+**Comment the verdict on the pull request before any merge decision, green or red.** The wording below is shared with the sibling repositories that run the same gate ([`uamswp-migration-api#153`](https://github.com/UAMS-Web/uamswp-migration-api/issues/153), [`wordpress-importer-archive#999`](https://github.com/UAMS-Web/wordpress-importer-archive/issues/999)) and is adopted rather than paraphrased, so three procedures for one obligation do not drift apart:
 
 > Comment the verdict on the pull request BEFORE any merge decision, GREEN OR RED.
 >

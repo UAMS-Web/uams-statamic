@@ -1035,7 +1035,7 @@ describe('base drift', () => {
     })
 
     // The notice must not name a cause. A missing ref and a failed git call are the same null here,
-    // and `wordpress-importer#880` is the sibling shipping "no origin/main ref" where it exists.
+    // and `wordpress-importer-archive#880` is the sibling shipping "no origin/main ref" where it exists.
     it('does not state why the base could not be measured', () => {
         const { notice } = baseState(baseProbe(null, 'fatal: bad revision'))
 

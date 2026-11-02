@@ -19,7 +19,7 @@ uses(TestCase::class, RequiresContentSubmodule::class);
  * Coverage for UAMS-Web/uams-statamic-archive#2534: `knowledge_base_tags` was a flat taxonomy enabled only on
  * `default`, and a flat term exists on every site its taxonomy is enabled for, so
  * the importer titled each term `"{site name} — {term name}"` and prefixed its slug
- * with the site. `UAMS-Web/wordpress-importer#1215` settled that tags import as
+ * with the site. `UAMS-Web/wordpress-importer-archive#1215` settled that tags import as
  * entries in a site-scoped collection, following UAMS-Web/uams-statamic-archive#1863, UAMS-Web/uams-statamic-archive#2532 and UAMS-Web/uams-statamic-archive#2533.
  *
  * Every one of the 193 terms belonged to the Department of Radiology, the only site

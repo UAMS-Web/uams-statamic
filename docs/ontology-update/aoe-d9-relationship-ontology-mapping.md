@@ -233,7 +233,7 @@ The cascade scopes each picker's options by a sibling field's runtime value, whi
 | --- | --- | --- |
 | Importer/relationship safety | Safe (all keys/refs unchanged) | High blast radius (sweep every consumer + content-key merge) |
 | Code coherence | Lasting handle/label mismatch | Clean (handle matches concept) |
-| Coordination cost | None | Re-coordinate wordpress-importer#31/UAMS-Web/uams-statamic-archive#919 |
+| Coordination cost | None | Re-coordinate wordpress-importer-archive#31/UAMS-Web/uams-statamic-archive#919 |
 | Effort | S/XS | High |
 
 **Recommendation: relabel display only.** The directive is a conceptual/display reframe, not a data-model change; the collections already correspond 1:1 to the new names. Display edits deliver the full editor/visitor-facing effect at S/XS with zero importer or relationship risk; a handle rename buys only cosmetic code-side coherence at a large, importer-coupled cost (the build's own convention: rename = sweep all references). Every `whereJsonOverlaps('expertise',…)` and `get('treatments')` in scopes/computeds would break — argues strongly for relabel.
