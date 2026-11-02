@@ -501,7 +501,9 @@ jobs:
       # PARITY: mirrored by scripts/gate-pest.mjs.
       # --shard selects this job's share of the classes, and changes nothing about
       # how they run. --log-junit feeds `pest-report`, which merges the four shards'
-      # reports before the skip-baseline and slowest-class checks read them.
+      # reports before the skip-baseline and slowest-class checks read them. On
+      # Windows the shard is selected by a configuration instead, in the steps
+      # below (#504).
       - name: Run Pest (parallel shard, excluding the serial group)
         if: runner.os != 'Windows'
         env:

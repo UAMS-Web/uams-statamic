@@ -25,7 +25,14 @@ $script = dirname(__DIR__, 2).'/scripts/pest-shard-config.php';
  *
  * @param  list<string>  $files  Test files to create, relative to the tree
  */
-$makeTree = function (array $files): string {
+/**
+ * The fixture trees made so far, removed after each test.
+ *
+ * @var ArrayObject<int, string> $created
+ */
+$created = new ArrayObject;
+
+$makeTree = function (array $files) use ($created): string {
     $dir = sys_get_temp_dir().'/pest-shard-config-'.bin2hex(random_bytes(6));
     mkdir($dir);
 
@@ -60,8 +67,27 @@ $makeTree = function (array $files): string {
         file_put_contents($path, "<?php\n");
     }
 
+    $created->append($dir);
+
     return $dir;
 };
+
+// Remove every fixture tree a test made, files first
+afterEach(function () use ($created): void {
+    foreach ($created as $dir) {
+        $entries = new RecursiveIteratorIterator(new RecursiveDirectoryIterator((string) $dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+
+        foreach ($entries as $entry) {
+            if ($entry instanceof SplFileInfo) {
+                $entry->isDir() ? rmdir($entry->getPathname()) : unlink($entry->getPathname());
+            }
+        }
+
+        rmdir((string) $dir);
+    }
+
+    $created->exchangeArray([]);
+});
 
 /**
  * Run the script in a fixture tree.
