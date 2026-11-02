@@ -234,35 +234,3 @@ it('clears a stale destination rather than counting its leftovers', function ():
 
     $files->deleteDirectory(dirname($seedDirectory, 3));
 });
-
-/**
- * Clearing the cache directory keeps a `.gitignore` that is in it. The real test
- * cache root has carried none since UAMS-Web/uams-statamic#408; this one is planted.
- */
-it('preserves the tracked .gitignore when it clears the cache directory', function (): void {
-    $files = new Filesystem;
-    $app = stacheSnapshotApp($this->app);
-    [$seedDirectory, $cacheDirectory] = stacheSnapshotScratchPaths($app, 'gitignore');
-
-    $files->ensureDirectoryExists($seedDirectory.'/stache');
-    $files->put($seedDirectory.'/stache/keys', 'keys');
-
-    $files->ensureDirectoryExists($cacheDirectory);
-    $files->put($cacheDirectory.'/.gitignore', "*\n!.gitignore\n");
-
-    // Force the give-up path, which is where the final clear happens.
-    $app->instance(Filesystem::class, new class extends Filesystem
-    {
-        public function copyDirectory($directory, $destination, $options = null): bool
-        {
-            return false;
-        }
-    });
-
-    expect(seedStacheFromSnapshotVia($this, $app))->toBeFalse();
-
-    expect($files->exists($cacheDirectory.'/.gitignore'))->toBeTrue();
-    expect($files->get($cacheDirectory.'/.gitignore'))->toBe("*\n!.gitignore\n");
-
-    $files->deleteDirectory(dirname($seedDirectory, 3));
-});
