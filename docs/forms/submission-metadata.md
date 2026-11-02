@@ -6,9 +6,9 @@ Every public-form submission is automatically stamped with contextual `_`-prefix
 
 ## How it works
 
-[`app/Listeners/AppendSubmissionMetadata`](../../app/Listeners/AppendSubmissionMetadata.php) listens for `Statamic\Events\SubmissionCreating`, which fires inside `Submission::save()` while the submit request is still live and **before** the YAML is persisted. The listener merges the metadata into the submission's data; because `Submission::fileData()` writes `data()->all()` (every key, not just blueprint fields), the `_*` fields land in the stored YAML alongside the editor fields.
+The form settings add-on's `AppendSubmissionMetadata` listener (in [`uams-web/aether-form-settings`](../../vendor/uams-web/aether-form-settings/src/Listeners/AppendSubmissionMetadata.php)) listens for `Statamic\Events\SubmissionCreating`, which fires inside `Submission::save()` while the submit request is still live and **before** the YAML is persisted. The listener merges the metadata into the submission's data; because `Submission::fileData()` writes `data()->all()` (every key, not just blueprint fields), the `_*` fields land in the stored YAML alongside the editor fields.
 
-This is the server-side "Option A" from the ticket: capture happens once, for every form, and cannot be omitted or spoofed per-form. The listener is registered once in `EventServiceProvider::$listen`, like every listener (UAMS-Web/uams-statamic-archive#3240). It returns `void`, so it never aborts the save (`SubmissionCreating` aborts only on a `false` return).
+This is the server-side "Option A" from the ticket: capture happens once, for every form, and cannot be omitted or spoofed per-form. The add-on registers it when its `features.submission_data` switch is on, which [`config/aether-form-settings.php`](../../config/aether-form-settings.php) does (#265); with the switch off, a submission saves with none of these fields. It returns `void`, so it never aborts the save (`SubmissionCreating` aborts only on a `false` return).
 
 ## The fields
 
@@ -34,7 +34,7 @@ Statamic forms POST to the `/!/forms/<handle>` endpoint, so the request URL is t
 
 The submit endpoint sits under the default site's `/` prefix, so `Site::current()` during the submit request is the default site whatever page the form was on. Before [#3068](https://github.com/UAMS-Web/uams-statamic-archive/issues/3068) the three `_site_*` fields read it, and a submission from a page on `/health` recorded `default`.
 
-The site now comes from [`uams-web/aether-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), which records the site of the submitting page under `_site`: the site whose URL the Referer falls under, or the default site when the Referer is missing or matches no site. `_site_handle`, `_site_name` and `_site_url` describe the site `_site` names, so the two records always agree. A submission saved outside the submit route carries no `_site`; the listener then names the site the same way the add-on does for that request.
+The site now comes from [`uams-web/aether-multisite-forms`](https://github.com/UAMS-Web/statamic-multisite-forms), which records the site of the submitting page under `_site`: the site whose URL the Referer falls under, or the default site when the Referer is missing or matches no site. `_site_handle`, `_site_name` and `_site_url` describe the site `_site` names, so the two records always agree. A submission saved outside the submit route carries no `_site`; the listener then names the site the same way the add-on does for that request. The form settings add-on asks its `SubmissionSite` contract for the site; the site binds it to [`MultisiteSubmissionSite`](../../app/Support/Forms/MultisiteSubmissionSite.php), which reads `_site`.
 
 The request context the notification job carries to a queue worker (`CaptureFormRequestContext`, read by `{{ global_origin }}`) takes its site from the same place.
 

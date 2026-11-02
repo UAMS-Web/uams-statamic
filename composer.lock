@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf18fab7c2542f3b00a547e42f3e8218",
+    "content-hash": "cf0a05bfd89f8e7965efa064c2915adc",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10796,16 +10796,16 @@
         },
         {
             "name": "uams-web/aether-form-settings",
-            "version": "v0.4.0",
+            "version": "v0.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-form-settings.git",
-                "reference": "1a20e3483b4505c813327d7fdc3f5a58fee282dd"
+                "reference": "71ba1e2277ed071373e2d7662a3b936f4ae8997f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-form-settings/zipball/1a20e3483b4505c813327d7fdc3f5a58fee282dd",
-                "reference": "1a20e3483b4505c813327d7fdc3f5a58fee282dd",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-form-settings/zipball/71ba1e2277ed071373e2d7662a3b936f4ae8997f",
+                "reference": "71ba1e2277ed071373e2d7662a3b936f4ae8997f",
                 "shasum": ""
             },
             "require": {
@@ -10864,7 +10864,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-form-settings/issues",
                 "source": "https://github.com/UAMS-Web/aether-form-settings"
             },
-            "time": "2026-11-01T19:46:28+00:00"
+            "time": "2026-11-02T11:26:07+00:00"
         },
         {
             "name": "uams-web/aether-multisite-forms",
