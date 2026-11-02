@@ -125,9 +125,12 @@ it('fails on a file only the text check flags', function () use ($script) {
     // text check flags it as suppressing nothing, while the breadth check runs the installed
     // plugin, which trims the tail (UAMS-Web/uams-statamic-archive#2327), so the marker removes every mutant and passes.
     // Breadth stays clean, so the exit code can only come from the text check.
+    // The marker is assembled from two halves so this file holds no literal occurrence: the
+    // CI breadth sweep over `tests/` would otherwise read it as a mention that removes mutants.
+    $marker = '@pest-mutate-'.'ignore';
     $dir = sys_get_temp_dir().'/mutate-ignore-changed-text-'.bin2hex(random_bytes(6));
     mkdir($dir, 0777, true);
-    file_put_contents($dir.'/Fixture.php', "<?php\n\nfunction a(int \$n): bool\n{\n    // @pest-mutate-ignore \n    return \$n > 10;\n}\n");
+    file_put_contents($dir.'/Fixture.php', "<?php\n\nfunction a(int \$n): bool\n{\n    // {$marker} \n    return \$n > 10;\n}\n");
     file_put_contents($dir.'/NodeVisitor.php', "<?php if (\$matches[1] === '') {}");
 
     $process = new Process([PHP_BINARY, $script, $dir.'/Fixture.php'], null, ['MUTATE_IGNORE_VISITOR_PATH' => $dir.'/NodeVisitor.php']);
@@ -214,7 +217,9 @@ it('checks a committed change on the branch when given no paths', function () us
 
 it('passes when nothing under app/ or tests/ changed', function () use ($run, $repository, $remove) {
     $dir = $repository();
-    file_put_contents($dir.'/notes.php', "<?php\n// @pest-mutate-ignore: not a mutator\n");
+    // Assembled from two halves for the same reason as the text-check fixture above
+    $marker = '@pest-mutate-'.'ignore';
+    file_put_contents($dir.'/notes.php', "<?php\n// {$marker}: not a mutator\n");
 
     try {
         [$code, $output] = $run(['--base=HEAD'], $dir);
