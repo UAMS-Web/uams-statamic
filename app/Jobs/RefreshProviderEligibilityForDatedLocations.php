@@ -40,6 +40,10 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * or after the cache is cleared, treats every location dated up to now as passed, which costs one wider
  * refresh and never misses a date. Each run reads only published locations.
  *
+ * The job is unique while it is queued or running. The lock expires after {@see self::$uniqueFor}
+ * seconds, so a run that never finished, such as one whose worker was killed, cannot block every
+ * later dispatch (#488). A location's date then takes effect at most that much later.
+ *
  * Dispatched by the schedule in `routes/console.php`, at the cadence in
  * `clinical_provider_profile.location_date_refresh.cron`.
  */
@@ -54,6 +58,13 @@ final class RefreshProviderEligibilityForDatedLocations implements ShouldBeUniqu
      * The cache key holding the Unix time of the last run.
      */
     public const string LAST_RUN_KEY = 'clinical_provider_profile:location_date_refresh:last_run';
+
+    /**
+     * Seconds before the unique lock expires. One hour is forty times the queue's default
+     * `retry_after` of 90 seconds, the longest a job can run on those settings before the
+     * queue hands it out again. No production run has been timed.
+     */
+    public int $uniqueFor = 3600;
 
     public function handle(ProviderEligibilityIndexRefresher $refresher): void
     {

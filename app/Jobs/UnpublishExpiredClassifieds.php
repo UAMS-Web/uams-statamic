@@ -44,6 +44,8 @@ use Symfony\Component\Mime\Exception\ExceptionInterface as MimeExceptionInterfac
  *
  * The job is unique while it is queued or running, so a second dispatch during a run is
  * dropped. Two runs reading the same listing before either saves would each send a notice.
+ * The lock expires after {@see self::$uniqueFor} seconds, so a run that never finished, such as
+ * one whose worker was killed, cannot block every later dispatch (#488).
  *
  * Dispatched by the schedule in `routes/console.php` on the UAMS-Web/uams-statamic-archive#1772 pattern that
  * {@see ScanLinkHealth} established, with the same caveat about queue connections.
@@ -59,6 +61,13 @@ final class UnpublishExpiredClassifieds implements ShouldBeUnique, ShouldQueue
      * The entry data key recording the expiration date a listing was notified for.
      */
     public const string NOTICE_MARKER = 'expiry_notice_sent_for';
+
+    /**
+     * Seconds before the unique lock expires. One hour is forty times the queue's default
+     * `retry_after` of 90 seconds, the longest a job can run on those settings before the
+     * queue hands it out again. No production run has been timed.
+     */
+    public int $uniqueFor = 3600;
 
     /**
      * @param  ClassifiedExpiry  $expiry  The shared definition of an expired listing.
