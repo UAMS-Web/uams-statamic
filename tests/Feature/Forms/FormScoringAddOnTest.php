@@ -15,7 +15,7 @@ use function Pest\Laravel\withServerVariables;
 /**
  * Proves quiz and survey forms still work on this site now that scoring, the
  * `quiz` and `survey` tags, and the `quiz` and `likert_scale` fieldtypes come from
- * the `uams-web/statamic-form-settings` add-on (#264).
+ * the `uams-web/aether-form-settings` add-on (#264).
  *
  * The behavior itself is tested in the add-on's own suite. These tests only prove
  * that the installed add-on works through this site's own form pipeline: the

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 use Statamic\Fields\Fieldtype;
 use Tests\Support\ContainsAnyOverlapAudit;
 use Tests\TestCase;
-use UAMSWeb\FormSettings\CpForms\ConfirmationSettingsFieldBuilder;
+use UAMSWeb\Aether\Forms\Settings\CpForms\ConfirmationSettingsFieldBuilder;
 
 uses(TestCase::class);
 
