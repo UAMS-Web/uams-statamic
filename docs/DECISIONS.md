@@ -3792,3 +3792,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The 0.26 ratio was measured at four shards; six shards have fewer classes per worker. The two consecutive pull request runs #516 asks for settle it. Until a `main` push saves per-OS entries, every shard reads a committed file. Runner variance on the same partition reached 1.9 times for one shard on #514's run, so a single run can miss the target either way.
 
 **Companion.** #516. `.github/workflows/ci.yml`, `.github/pest-shards.windows-latest.json`, `scripts/select-shard-timings.php`, `tests/Feature/SelectShardTimingsTest.php`, `scripts/local-ci.chain.test.mjs`, `tests/Feature/MergeShardReportsTest.php`.
+
+## 2026-11-02: Every push run of `CI` gets its own concurrency group; a pull request keeps one (#530)
+
+**Decision.** The `CI` workflow's concurrency group is `${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}`, the shared template's line from UAMS-Web/uams-claude-skills#473. A pull request keeps one group per ref and still cancels its own stale run; a push to `main` or a manual run gets a group keyed on its commit, so no later push cancels it.
+
+**Why.** With one group per ref, every push to `main` shared `CI-refs/heads/main`. GitHub keeps one running and one pending run per group and cancels the pending one when another is queued, whatever `cancel-in-progress` says, so a burst of merges cancelled runs before they started a job. Nineteen commits on `main` carried only CodeQL's three settled green check runs and never ran the chain, which reads through the check-runs API as a pass.
+
+**Rejected.** *Keep the group and have the gate re-run a cancelled run*: a re-run joins the same group, and nothing showed it escapes the cancellation. *Keep the group and pace merges*: it holds the queue to one pull request per completed chain.
+
+**Residual.** A burst of merges now runs one full chain per merge rather than one per burst. The nineteen commits are accounted for on #530 rather than re-run.
+
+**Companion.** #530. `.github/workflows/ci.yml`, `tests/Feature/Config/CiConcurrencyGroupTest.php`.

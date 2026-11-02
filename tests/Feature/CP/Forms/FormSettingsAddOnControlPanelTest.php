@@ -32,7 +32,7 @@ use function Pest\Laravel\withoutVite;
  *
  * @command  php artisan test --compact tests/Feature/CP/Forms/FormSettingsAddOnControlPanelTest.php
  */
-uses(StacheIsolatedTestCase::class)->group('serial');
+uses(StacheIsolatedTestCase::class);
 
 /**
  * Per-test forms directory, so the throwaway form never touches resources/forms.
