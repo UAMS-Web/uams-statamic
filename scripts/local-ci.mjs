@@ -26,7 +26,8 @@
 //     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
 //
 // The jobs run as a cost-ordered CHAIN, shortest
-// -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
+// -> longest (`validate` excepted, see CHAIN; `encoding` is also slower than its place
+// implies, since its shared breadth check took 499s on Windows 11, #403): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
 // LOCAL ONLY: ci.yml fans its jobs out in parallel (#373),

@@ -1807,7 +1807,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    # Local-chain cost rank: after the content pointer guard.
+    # Local-chain cost rank: after the content pointer guard, though the shared breadth
+    # check below makes it slower than that place implies (UAMS-Web/uams-statamic#403).
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
