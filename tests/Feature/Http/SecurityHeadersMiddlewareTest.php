@@ -439,6 +439,8 @@ it('adds a named allowance to the response that takes it up, and to no other', f
     expect($scriptSrc)->toContain("'self'")
         ->and($scriptSrc)->toContain("'nonce-")
         ->and(substr_count($scriptSrc, 'https://cse.google.com'))->toBe(1)
+        ->and($scriptSrc)->toContain("'unsafe-eval'")
         ->and(securityHeadersMiddlewareTestDirective($widened, 'frame-src'))->toContain('https://cse.google.com')
-        ->and($plain)->not->toContain('https://cse.google.com');
+        ->and($plain)->not->toContain('https://cse.google.com')
+        ->and($plain)->not->toContain("'unsafe-eval'");
 });

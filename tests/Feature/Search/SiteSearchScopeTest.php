@@ -283,7 +283,7 @@ it('shows Google results in place of the site results and hides the type tabs', 
 
     expect($html)
         ->toContain('src="https://cse.google.com/cse.js?cx=engine%3Aone"')
-        ->toContain('class="site-search-google gcse-searchresults-only" data-queryParameterName="q"')
+        ->toContain('<div class="gcse-searchresults-only" data-queryParameterName="q"></div>')
         ->toContain('Search results for&nbsp;&ldquo;kirk&rdquo;')
         ->toContain('<input type="hidden" name="scope" value="google">')
         ->toMatch('#aria-current="page">All UAMS websites</a>#')

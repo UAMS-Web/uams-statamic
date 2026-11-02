@@ -8,5 +8,8 @@
 #}}
 {{ $google_engine = {site_search_scope:google_engine} }}
 <script async src="https://cse.google.com/cse.js?cx={{ $google_engine | urlencode }}" nonce="{{ csp_nonce }}"></script>
-<div class="site-search-google gcse-searchresults-only" data-queryParameterName="q"></div>
+{{# Google's class stays alone on its element: `cse.js` throws on one that carries another class. #}}
+<div class="site-search-google">
+	<div class="gcse-searchresults-only" data-queryParameterName="q"></div>
+</div>
 <noscript><p class="text-center mb-0">Searching all UAMS websites needs JavaScript.</p></noscript>

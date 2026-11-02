@@ -171,8 +171,13 @@ return [
             // Google's results for "All UAMS websites" on /search
             // (UAMS-Web/uams-statamic#412): `cse.js` is nonce-tagged by our template,
             // then loads its own scripts and stylesheets, which a nonce cannot cover.
+            // Its element calls eval() for each result, so results fail without
+            // 'unsafe-eval' once the policy enforces. This response alone gets that.
+            // Its three inline <style> elements stay blocked: results render
+            // without them, and allowing them would mean dropping the nonce.
             'google_search' => [
                 'script-src' => [
+                    "'unsafe-eval'",
                     'https://cse.google.com',
                     'https://www.google.com',
                 ],
