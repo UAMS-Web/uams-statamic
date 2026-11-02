@@ -32,39 +32,38 @@ uses(TestCase::class);
  * @command  php artisan test --compact tests/Feature/SiteSearchTest.php
  */
 it('wires the /search form to the launch index handles and escapes the reflected query', function (): void {
-    $page = File::get(resource_path('views/search/index.antlers.html'));
+    $page = File::get(base_path('vendor/uams-web/aether-search/resources/views/index.antlers.html'));
 
     expect($page)
         // Form submits back to this site's search page (GET).
         ->toContain('action="{{ $search_path }}"')
         ->toContain('name="q"')
         ->toContain('name="index"')
-        // The typed tabs (UAMS-Web/uams-statamic-archive#1524) offer the six launch scopes as links.
-        ->toContain('index=default{{ $scope_query }}"')
-        ->toContain('index=people{{ $scope_query }}"')
-        ->toContain('index=clinical_expertise{{ $scope_query }}"')
-        ->toContain('index=clinical_locations{{ $scope_query }}"')
-        ->toContain('index=clinical_resources{{ $scope_query }}"')
-        ->toContain('index=posts{{ $scope_query }}"')
-        ->toContain('All results')
-        ->toContain('Clinical Areas of Expertise')
-        ->toContain('News')
-        // The `index` param is validated against the curated launch scopes; a blank
-        // or tampered value falls back to the unified default (no unconfigured-index 500).
-        ->toContain("get:index == 'people'")
-        ->toContain("\$search_index = 'default'")
-        // Reflected query is escaped in both sinks — raw-by-default Antlers makes it an XSS sink.
-        // The query is coerced to an array-guarded scalar (`$q`) first, then sanitized,
-        // so a tampered `?q[]=x` can't crash `sanitize`/`urlencode` with a TypeError.
-        ->toContain('$raw_q | is_array')
-        ->toContain('$q | sanitize')
+        // The typed tabs (UAMS-Web/uams-statamic-archive#1524) come from the settings.
+        ->toContain('{{ aether_search:tabs :active="$search_index" }}')
+        ->toContain('index={{ handle }}{{ $scope_query }}"')
+        // The query goes through the tag, which sanitizes it and treats `?q[]=x` as absent.
+        ->toContain('{aether_search:query}')
         // The page delegates to the shared listing partial.
-        ->toContain('partial:search/results')
+        ->toContain('partial:aether-search::listing/results')
         // The heading + results are wrapped in the standard page-builder block shell,
         // on a gray band, with the query echoed through the block's own heading partial.
-        ->toContain('partial:page_builder/uamsweb_block')
+        ->toContain(':host="$cfg.partial_results_block"')
         ->toContain('background_color="bg-gray"')
-        ->toContain('partial:page_builder/components/block_header');
+        ->toContain(':src="$cfg.partial_results_header"');
+
+    // The six launch scopes, and the host frames the add-on renders inside.
+    expect(config('aether-search.tabs'))->toBe([
+        'default' => 'All results',
+        'people' => 'People',
+        'clinical_expertise' => 'Clinical Areas of Expertise',
+        'clinical_locations' => 'Clinical Locations',
+        'clinical_resources' => 'Clinical Resources',
+        'posts' => 'News',
+    ])->and(config('aether-search.partials'))->toMatchArray([
+        'results_block' => 'page_builder/uamsweb_block',
+        'results_header' => 'page_builder/components/block_header',
+    ]);
 
     // The field carries no leading search glyph — a prepended icon reads as a button (per
     // design). Guard on `fa-search`, the class the removed glyph actually used, so
@@ -245,44 +244,44 @@ it('keeps taxonomies, assets, and the excluded collections out of the built defa
 });
 
 it('dispatches each hit to a per-type card and paginates via the shared component', function (): void {
-    $listing = File::get(resource_path('views/search/_results.antlers.html'));
+    $listing = File::get(base_path('vendor/uams-web/aether-search/resources/views/listing/_results.antlers.html'));
 
     expect($listing)
         ->toContain('search:results')
         ->toContain(':index="index"')
         // The listing is the block's `module-body`.
         ->toContain('search-results module-body')
-        // Shared pagination component.
-        ->toContain('partial:components/pagination');
+        // Shared pagination component, named in the settings.
+        ->toContain(':src="$pagination_partial"');
+    expect(config('aether-search.partials.pagination'))->toBe('components/pagination');
 
     // People render the compact card with a portrait (UAMS-Web/uams-statamic-archive#1510); the other wrappers pass
     // through to the existing native card partials.
-    expect(File::get(resource_path('views/search/cards/_people.antlers.html')))
-        ->toContain('partial:search/cards/compact :portrait_url="portrait:url"')
+    expect(File::get(resource_path('views/vendor/aether-search/cards/_people.antlers.html')))
+        ->toContain('partial:aether-search::cards/compact :portrait_url="portrait:url"')
         ->not->toContain('partial:page_builder/components/fad_provider_card');
-    expect(File::get(resource_path('views/search/cards/_posts.antlers.html')))
+    expect(File::get(resource_path('views/vendor/aether-search/cards/_posts.antlers.html')))
         ->toContain('partial:posts/card');
-    expect(File::get(resource_path('views/search/cards/_clinical_locations.antlers.html')))
+    expect(File::get(resource_path('views/vendor/aether-search/cards/_clinical_locations.antlers.html')))
         ->toContain('partial:clinical_locations/card');
-    expect(File::get(resource_path('views/search/cards/_clinical_resources.antlers.html')))
+    expect(File::get(resource_path('views/vendor/aether-search/cards/_clinical_resources.antlers.html')))
         ->toContain('partial:clinical_resources/card');
     // Areas of Expertise get their own card (UAMS-Web/uams-statamic-archive#1510), through the shared compact card.
-    expect(File::get(resource_path('views/search/cards/_clinical_expertise.antlers.html')))
-        ->toContain('partial:search/cards/compact');
+    expect(File::get(resource_path('views/vendor/aether-search/cards/_clinical_expertise.antlers.html')))
+        ->toContain('partial:aether-search::cards/compact');
     // The generic fallback renders the compact card, which escapes editor/importer
     // content (Antlers output is raw by default).
-    expect(File::get(resource_path('views/search/cards/_default.antlers.html')))
-        ->toContain('partial:search/cards/compact');
-    expect(File::get(resource_path('views/search/cards/_compact.antlers.html')))
+    expect(File::get(base_path('vendor/uams-web/aether-search/resources/views/cards/_default.antlers.html')))
+        ->toContain('partial:aether-search::cards/compact');
+    expect(File::get(base_path('vendor/uams-web/aether-search/resources/views/cards/_compact.antlers.html')))
         ->toContain('title | strip_tags | entities')
         ->toContain('excerpt | strip_tags');
     // Each hit renders through the shared result row, which dispatches it.
-    expect($listing)->toContain('partial:search/result');
+    expect($listing)->toContain('partial:aether-search::listing/result');
     // Per-type dispatch with a generic fallback, in the row.
-    expect(File::get(resource_path('views/search/_result.antlers.html')))
-        ->toContain('search/cards/{collection}')
-        ->toContain('search/cards/default')
-        ->toContain("collection == 'clinical_expertise'");
+    expect(File::get(base_path('vendor/uams-web/aether-search/resources/views/listing/_result.antlers.html')))
+        ->toContain('aether_search:card :result_type="result_type" :collection="collection"')
+        ->toContain('aether_search:label :result_type="result_type" :collection="collection"');
 });
 
 it('renders the shared pagination only when there is more than one page', function (): void {
@@ -324,7 +323,7 @@ it('fails closed on an array-valued query instead of crashing with a 500', funct
     // A tampered `?q[]=x` arrives as an array; piping it through `sanitize` /
     // `urlencode` throws an uncaught TypeError (HTTP 500). The page must coerce it to
     // '' and render the pre-query prompt rather than 500ing.
-    $html = (string) view('search/index', ['get' => ['q' => ['x']]])->render();
+    $html = renderAetherSearchPage(['q' => ['x']]);
 
     expect($html)
         ->toContain('Enter a search term');
@@ -332,16 +331,11 @@ it('fails closed on an array-valued query instead of crashing with a 500', funct
 });
 
 it('escapes a hostile query rather than reflecting it as live markup', function (): void {
-    // A full HTTP `?q=` request does not populate the Antlers `get` cascade under
-    // the test harness, so render the page view with a hostile query injected into
-    // `get` directly. This targets the template's own `| sanitize` on the reflected
-    // query (the input value and the results heading) rather than relying on the
-    // cascade's implicit sanitization — so it goes red if `| sanitize` is dropped.
-    // The request query is empty, so `search:results` short-circuits to no-results
-    // and no index build is needed.
+    // The query reaches the page through the tag, which sanitizes it, and this holds
+    // the input value and the results heading to that.
     $payload = '<script>alert(1)</script>';
 
-    $html = (string) view('search/index', ['get' => ['q' => $payload]])->render();
+    $html = renderSiteSearch(['q' => $payload]);
 
     // The raw payload must never appear; it is reflected HTML-escaped instead.
     expect($html)
@@ -350,14 +344,15 @@ it('escapes a hostile query rather than reflecting it as live markup', function 
 });
 
 /**
- * Render the /search view with `$get` injected into the Antlers `get` cascade (a full
- * HTTP request does not populate it under the harness; see the hostile-query test).
+ * Render the /search view for a query string, finding nothing.
  *
  * @param  array<string, mixed>  $get
  */
 function renderSiteSearch(array $get): string
 {
-    return (string) view('search/index', ['get' => $get])->render();
+    stubEmptySearchIndex();
+
+    return renderAetherSearchPage($get);
 }
 
 /**
@@ -441,7 +436,7 @@ it('dispatches the query to the index the selected tab names (#1524)', function 
         ->with($expected)
         ->andThrow(new RuntimeException('dispatched to '.$expected));
 
-    expect(fn (): string => renderSiteSearch(array_filter(['q' => 'heart', 'index' => $requested])))
+    expect(fn (): string => renderAetherSearchPage(array_filter(['q' => 'heart', 'index' => $requested])))
         ->toThrow('dispatched to '.$expected);
 })->with([
     'no index' => [null, 'default'],
@@ -460,7 +455,7 @@ it('dispatches the query to the index the selected tab names (#1524)', function 
  */
 function renderSearchResultRow(array $data): string
 {
-    return (string) view('search/_result', $data)->render();
+    return (string) view('aether-search::listing/_result', $data)->render();
 }
 
 it('renders an Area of Expertise hit through its own card under a type label (#1510)', function (): void {
@@ -537,20 +532,16 @@ it('escapes an Area-of-Expertise section title in the compact card (#1527, #1510
 });
 
 it('links a scoped empty result to the same query across all results (#1510)', function (): void {
-    // The request query is empty, so `search:results` short-circuits to no results
-    // and the empty state renders without an index build. The query is given as the
-    // cascade delivers it in production: HTML-escaped (Statamic\View\Cascade).
-    $html = renderSiteSearch(['q' => e('heart & soul'), 'index' => 'people']);
+    $html = renderSiteSearch(['q' => 'heart & soul', 'index' => 'people']);
 
     expect($html)->toContain('or <a href="/search?q=heart+%26+soul&amp;index=default">search all results</a>.');
 });
 
 it('decodes the cascade-escaped query before encoding it into every link (#1510)', function (string $query, string $encoded): void {
-    // `renderSiteSearch()` hands `get` over raw, while the live cascade HTML-escapes
-    // it first; `e()` reproduces that, so encoding the escaped form directly would
-    // turn `O'Brien` into `O%26%23039%3BBrien` here as it did on the live page.
-    $html = renderSiteSearch(['q' => e($query), 'index' => 'people']);
-    $kb = renderSiteSearch(['q' => e($query), 'index' => 'knowledge_bases', 'kb_scope' => 'abc']);
+    // The tag sanitizes the query, so encoding that form directly would turn `O'Brien`
+    // into `O%26%23039%3BBrien` as it did on the live page.
+    $html = renderSiteSearch(['q' => $query, 'index' => 'people']);
+    $kb = renderSiteSearch(['q' => $query, 'index' => 'knowledge_bases', 'kb_scope' => 'abc']);
 
     expect(siteSearchTabs($html))->toContain('href="/search?q='.$encoded.'&amp;index=default"');
     expect($html)->toContain('<a href="/search?q='.$encoded.'&amp;index=default">search all results</a>');

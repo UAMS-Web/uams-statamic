@@ -412,10 +412,10 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
     // The shipped /search view, rendered with no query. `fetch` is stubbed on the page
     // before anything is typed, so the suggestions come from the stub rather than an
     // index: what is under test is the binding of siteSearchTypeahead's handlers and
-    // ARIA attributes under the CSP build, which resources/js/site-search-typeahead.test.js
+    // ARIA attributes under the CSP build, which the add-on's site-search-typeahead.test.js
     // cannot reach from jsdom. Keys are REAL key presses, not synthetic events, because
     // a browser's own Escape on a search field clears it and only a real press shows it.
-    $page = (string) view('search/index', ['get' => ['index' => 'people']])->render();
+    $page = renderAetherSearchPage(['index' => 'people']);
 
     expect($page)->toContain('x-data="siteSearchTypeahead"')
         ->toContain('data-index="people"');
