@@ -461,16 +461,33 @@ class EntryValidator
             // Skip non-array condition values
             // ---
 
+            // Field::conditions() only returns the named string keys, so the cast is
+            // a no-op that exists for phpstan.
+            // @pest-mutate-ignore: RemoveStringCast
+            $blockKey = (string) $key;
+
+            // A block that is one string is a custom condition with no target field,
+            // `custom ` prefix optional, which the editor evaluates on the sibling
+            // values alone; a name it has no function for reads as hidden (#508)
+            if (\is_string($nested)) {
+                $passes = $this->evaluateCustomCondition($this->fieldHandle($field), (string) preg_replace('/^custom /', '', $nested), null, $values);
+
+                // Invert for unless/hide_when, as the array form does below
+                $showOnPass = ! str_contains($blockKey, 'unless') && ! str_contains($blockKey, 'hide_when');
+
+                // Field is hidden when this block fails
+                if (($showOnPass ? $passes : ! $passes) === false) {
+                    return false;
+                }
+
+                continue;
+            }
+
             // Check if the condition value is not an array (skip malformed)
             if (! \is_array($nested)) {
                 // Skip malformed condition block
                 continue;
             }
-
-            // Field::conditions() only returns the named string keys, so the cast is
-            // a no-op that exists for phpstan.
-            // @pest-mutate-ignore: RemoveStringCast
-            $blockKey = (string) $key;
 
             /** @var array<string, string> $nested */
             // Detect if this block is if_any (OR) vs if (AND)
@@ -542,22 +559,10 @@ class EntryValidator
         // Literals
         // ---
 
-        // Check if the right-hand side is the literal "null"
-        if ($rhs === 'null') {
-            // Compare lhs to null
-            return $lhs === null;
-        }
-
-        // Check if the right-hand side is the literal "true"
-        if ($rhs === 'true') {
-            // Compare lhs to true (loose)
-            return $lhs == true;
-        }
-
-        // Check if the right-hand side is the literal "false"
-        if ($rhs === 'false') {
-            // Compare lhs to false (loose); an unanswered field is not false (#508)
-            return ! $this->isUnanswered($lhs) && $lhs == false;
+        // Check if the right-hand side is a bare "null", "true" or "false" literal
+        if (\in_array($rhs, ['null', 'true', 'false'], true)) {
+            // Compare the way the editor's loose `==` does (#508)
+            return $this->passesLiteralComparison($lhs, $rhs, equal: true);
         }
 
         // ---
@@ -588,14 +593,10 @@ class EntryValidator
                 return $empty;
             }
 
-            // Check if the target is the string "true" or "false" for boolean comparison
-            if (
-                $target === 'true'
-                || $target === 'false'
-            ) {
-                // Compare lhs as boolean to target. The editor reads an unanswered
-                // field as null, and `null == false` is false in JavaScript (#508)
-                return ! $this->isUnanswered($lhs) && (bool) $lhs === ($target === 'true');
+            // Check if the target is a "null", "true" or "false" literal
+            if (\in_array($target, ['null', 'true', 'false'], true)) {
+                // Compare the way the editor's loose `==` does (#508)
+                return $this->passesLiteralComparison($lhs, $target, equal: true);
             }
 
             // Compare lhs to target (loose)
@@ -611,6 +612,12 @@ class EntryValidator
             if ($target === 'empty') {
                 // Special case: not empty
                 return ! $empty;
+            }
+
+            // Check if the target is a "null", "true" or "false" literal
+            if (\in_array($target, ['null', 'true', 'false'], true)) {
+                // Compare the way the editor's loose `!=` does (#508)
+                return $this->passesLiteralComparison($lhs, $target, equal: false);
             }
 
             // Compare lhs to target (not equal, loose)
@@ -664,12 +671,65 @@ class EntryValidator
     }
 
     /**
-     * Whether a value is one the editor reads as unanswered: Statamic's condition
-     * validator turns an empty string into null before it compares.
+     * Compare a value with a `null`, `true` or `false` literal as the editor does.
+     *
+     * Statamic's condition validator turns an empty string into null, hides the
+     * field when the value is an object or array, and otherwise applies
+     * JavaScript's loose `==`: null equals only null, a boolean equals itself,
+     * and a number or string is read as a number against 1 or 0, so `'1'`
+     * equals `true` and `'on'` equals neither.
+     *
+     * @param  mixed  $lhs  The value of the field the condition is keyed on
+     * @param  string  $literal  `null`, `true` or `false`
+     * @param  bool  $equal  True for `==` (`equals` or a bare literal), false for `!=` (`not`)
+     * @return bool True when the condition passes
      */
-    private function isUnanswered(mixed $value): bool
+    private function passesLiteralComparison(mixed $lhs, string $literal, bool $equal): bool
     {
-        return $value === null || $value === '';
+        // The editor hides a field when the value it compares is an object or array
+        if (\is_array($lhs) || \is_object($lhs)) {
+            return false;
+        }
+
+        // The editor reads an unanswered field as null
+        if ($lhs === '') {
+            $lhs = null;
+        }
+
+        $matches = match (true) {
+            // null equals only null; true and false never equal null
+            $literal === 'null', $lhs === null => $literal === 'null' && $lhs === null,
+            // A boolean compares as itself
+            \is_bool($lhs) => $lhs === ($literal === 'true'),
+            // A number or string compares as a number against 1 or 0
+            default => $this->jsNumber($lhs) === ($literal === 'true' ? 1.0 : 0.0),
+        };
+
+        return $equal ? $matches : ! $matches;
+    }
+
+    /**
+     * Read a scalar as JavaScript's `Number()` does, NAN where it reads NaN.
+     */
+    private function jsNumber(mixed $value): float
+    {
+        if (\is_int($value) || \is_float($value)) {
+            return (float) $value;
+        }
+
+        // The editor trims a string value before comparing it
+        $string = trim(\is_scalar($value) ? (string) $value : '');
+
+        return match (true) {
+            // Number('') is 0
+            $string === '' => 0.0,
+            preg_match('/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i', $string) === 1 => (float) $string,
+            preg_match('/^0x[0-9a-f]+$/i', $string) === 1 => (float) hexdec($string),
+            preg_match('/^0b[01]+$/i', $string) === 1 => (float) bindec($string),
+            preg_match('/^0o[0-7]+$/i', $string) === 1 => (float) octdec($string),
+            // Anything else, Infinity included, can equal neither 1 nor 0
+            default => NAN,
+        };
     }
 
     /**

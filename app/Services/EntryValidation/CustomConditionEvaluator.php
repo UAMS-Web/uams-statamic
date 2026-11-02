@@ -81,14 +81,19 @@ class CustomConditionEvaluator
             return false;
         }
 
-        // Check if the target is an array (no param may be in it)
+        // Check if the target is an array: no item may be a param, compared strictly
+        // as JavaScript's `includes` does, so the number 1 is not the param '1'
         if (\is_array($target)) {
-            /** @var array<array-key, scalar> $target */
-            return array_intersect($target, $params) === [];
+            return array_all($target, fn (mixed $item): bool => ! \in_array($item, $params, true));
         }
 
-        // Coerce the target to a string (null and scalars only; array branch returned above)
-        $targetString = \is_scalar($target) || $target === null ? (string) $target : '';
+        // Coerce the target to a string as JavaScript's String() does
+        $targetString = match (true) {
+            $target === null => '',
+            \is_bool($target) => $target ? 'true' : 'false',
+            \is_scalar($target) => (string) $target,
+            default => '',
+        };
 
         // True when no param appears as a literal, case-sensitive substring
         return array_all($params, fn (string $param): bool => ! str_contains($targetString, $param));
@@ -217,6 +222,13 @@ class CustomConditionEvaluator
     /**
      * Resolve a `selectionCount` operand: a number literal, or a sibling field read
      * as a number (an array by its item count), else NAN.
+     *
+     * Two known differences from `resolveNumericOperand` in the editor, accepted
+     * because no blueprint or fieldset uses a field-handle operand today (every
+     * use is a literal): the editor falls back to the root values when the
+     * sibling lookup finds nothing, which this class has no access to; and it
+     * reads hexadecimal, `Infinity` and an object as `Number()` does, where this
+     * reads them as NAN or, for an associative array, as its item count.
      *
      * @param  array<string, mixed>  $values
      */

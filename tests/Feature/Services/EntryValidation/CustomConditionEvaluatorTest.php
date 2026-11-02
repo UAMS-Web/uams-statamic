@@ -44,12 +44,23 @@ it('evaluates each custom condition the way its JavaScript does', function (stri
     'isNotEmpty on false' => ['isNotEmpty', [], false, [], false],
     'isNotEmpty on zero' => ['isNotEmpty', [], 0, [], false],
     'isNotEmpty on a float zero' => ['isNotEmpty', [], 0.0, [], false],
+    'isNotEmpty on NaN' => ['isNotEmpty', [], NAN, [], false],
+    'isNotEmpty on a float' => ['isNotEmpty', [], 0.5, [], true],
+    'parentOverride address on a child overriding with a float one' => ['parentOverride', ['address'], null, ['parent' => 'p', 'parent_address_override_query' => 1.0], true],
+    'notSyndicated on a float zero' => ['notSyndicated', [], null, ['syndication_query' => 0.0], true],
 
     // notContainsAny
     'notContainsAny with no match' => ['notContainsAny', ['Occupation', 'WorkRole'], 'Credential', [], true],
     'notContainsAny with a match' => ['notContainsAny', ['Occupation', 'WorkRole'], 'WorkRole', [], false],
     'notContainsAny in a list' => ['notContainsAny', ['a', 'b'], ['c', 'b'], [], false],
     'notContainsAny with no params' => ['notContainsAny', [], 'anything', [], false],
+    'notContainsAny compares list items strictly, like includes' => ['notContainsAny', ['1'], [1], [], true],
+    'notContainsAny does not match true to the param one' => ['notContainsAny', ['1'], [true], [], true],
+    'notContainsAny on a nested list' => ['notContainsAny', ['x'], [['x']], [], true],
+    'notContainsAny reads false as the text false' => ['notContainsAny', ['false'], false, [], false],
+    'notContainsAny reads true as the text true' => ['notContainsAny', ['ru'], true, [], false],
+    'notContainsAny on a number' => ['notContainsAny', ['5'], 15, [], false],
+    'notContainsAny on null' => ['notContainsAny', ['a'], null, [], true],
 
     // notSyndicated
     'notSyndicated once answered no' => ['notSyndicated', [], null, ['syndication_query' => false], true],
