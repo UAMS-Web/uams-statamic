@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
@@ -1412,7 +1412,8 @@ describe('vendor source checkouts that block composer install (#2691)', () => {
      * carries, and a source checkout on a branch no remote carries.
      */
     function fixtureTree() {
-        const root = mkdtempSync(join(tmpdir(), 'wts-vendor-git-'))
+        // The real path: a Windows runner's temp directory is an 8.3 short name, and git reports the long one.
+        const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'wts-vendor-git-')))
         const upstream = join(root, 'upstream.git')
         const seed = join(root, 'seed')
         const tree = join(root, 'tree')
