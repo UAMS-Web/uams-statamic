@@ -5,8 +5,9 @@ declare(strict_types=1);
 /**
  * Run both `@pest-mutate-ignore` checks on the files a branch changed (UAMS-Web/uams-statamic-archive#3256).
  *
- * `scripts/check-mutate-ignore.php` reads each marker's text and
- * `scripts/check-mutate-ignore-breadth.php` counts the mutants each annotation removes.
+ * `scripts/check-mutate-ignore.php` reads each marker's text and the shared
+ * `.claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php` counts the mutants
+ * each annotation removes (UAMS-Web/uams-statamic#403).
  * Only local CI's `encoding` job ran the second, so a pull request whose annotation removed
  * two mutants passed the text check its author ran, then failed review on breadth: UAMS-Web/uams-statamic-archive#3251
  * and UAMS-Web/uams-statamic-archive#3255 were handed back for exactly that on 2026-10-23. This runs both, on the same
@@ -20,8 +21,8 @@ declare(strict_types=1);
  *
  * BOUND. Scoped to changed files, a clean run says nothing about files the branch did not
  * touch; the `encoding` job still checks the whole of `app` and `tests`. The breadth check
- * fails a stale baseline entry only for a file it scanned, so scoping cannot raise a
- * stale-entry failure on its own.
+ * fails a stale baseline entry for a file it scanned or one that no longer exists, so a
+ * scoped run can still fail on an entry for a deleted file.
  *
  * Usage:  php scripts/check-mutate-ignore-changed.php [--base=<ref>] [path ...]
  * Exit:   0 = both checks clean, or nothing to check; 1 = either check flagged;
@@ -52,14 +53,15 @@ function changedFail(string $message): never
  *
  * @param  array<int, string>  $command  The program and its arguments.
  * @param  bool  $separateErrors  Whether to return standard error apart from standard output.
+ * @param  string|null  $cwd  The directory to run in; null for this process's own.
  * @return array{0: int, 1: string, 2: string} The exit code, the output, and standard error
  *                                             when it was kept apart.
  */
-function changedExec(array $command, bool $separateErrors = false): array
+function changedExec(array $command, bool $separateErrors = false, ?string $cwd = null): array
 {
     $errorFile = $separateErrors ? tempnam(sys_get_temp_dir(), 'mutate-ignore-changed-') : false;
     $descriptors = [1 => ['pipe', 'w'], 2 => $errorFile === false ? ['redirect', 1] : ['file', $errorFile, 'w']];
-    $process = proc_open($command, $descriptors, $pipes);
+    $process = proc_open($command, $descriptors, $pipes, $cwd);
 
     if (! is_resource($process)) {
         changedFail('could not start '.$command[0]);
@@ -106,10 +108,11 @@ function changedGit(array $arguments): array
  *
  * @param  string  $script  The check's path.
  * @param  array<int, string>  $arguments  Options and paths for the check.
+ * @param  string|null  $cwd  The directory to run it in; null for this process's own.
  */
-function changedRun(string $script, array $arguments): int
+function changedRun(string $script, array $arguments, ?string $cwd = null): int
 {
-    [$code, $output] = changedExec([PHP_BINARY, $script, ...$arguments]);
+    [$code, $output] = changedExec([PHP_BINARY, $script, ...$arguments], false, $cwd);
     echo $output;
 
     return $code;
@@ -155,10 +158,20 @@ if ($paths === []) {
 echo 'check-mutate-ignore-changed: checking '.count($paths)." file(s)\n";
 
 $text = changedRun(__DIR__.'/check-mutate-ignore.php', $paths);
-$breadth = changedRun(__DIR__.'/check-mutate-ignore-breadth.php', [
-    '--baseline='.__DIR__.'/check-mutate-ignore-breadth.baseline.json',
-    ...$paths,
-]);
+
+// The shared check takes its root, its `vendor/` and the paths in its baseline from its
+// working directory, and this command may run from a subdirectory or another checkout, so it
+// runs from this repository's root with every path made absolute first
+$repository = dirname(__DIR__);
+$absolute = array_map(
+    static fn (string $path): string => preg_match('~^(?:[A-Za-z]:)?[/\\\\]~', $path) === 1 ? $path : getcwd().'/'.$path,
+    $paths,
+);
+
+$breadth = changedRun($repository.'/.claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php', [
+    '--baseline='.$repository.'/tests/mutate-ignore-breadth.baseline.json',
+    ...$absolute,
+], $repository);
 
 echo "check-mutate-ignore-changed: text check exited {$text}, breadth check exited {$breadth}\n";
 

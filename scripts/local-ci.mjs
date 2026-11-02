@@ -1918,11 +1918,12 @@ function main() {
             // (UAMS-Web/uams-statamic-archive#3160), which the auditor above cannot see, and fails on one that removes more
             // than one mutant of a named mutator or none at all, unless the committed baseline
             // lists it, and on a baseline entry that no longer occurs. Returned as-is so the
-            // exit 2 it gives when it cannot run fails the job as well.
+            // exit 2 it gives when it cannot run fails the job as well. The check is the
+            // shared one from the pest-testing skill (UAMS-Web/uams-statamic#403).
             step('JOB encoding - mutate-ignore breadth check')
             const mutateIgnoreBreadth = runPhp([
-                'scripts/check-mutate-ignore-breadth.php',
-                '--baseline=scripts/check-mutate-ignore-breadth.baseline.json',
+                '.claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php',
+                '--baseline=tests/mutate-ignore-breadth.baseline.json',
                 'app',
                 'tests',
             ], worktreePath)

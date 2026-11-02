@@ -9,7 +9,7 @@ use Symfony\Component\Process\Process;
  * `composer mutate-ignore`, which runs the text check and the breadth check on a branch's
  * changed files and fails when either flags.
  *
- * The breadth arms reuse `MutateIgnoreBreadthTest`'s fixtures: the `faf7dac66` copy of
+ * The breadth arms use the fixtures in `tests/Fixtures/MutateIgnoreBreadth`: the `faf7dac66` copy of
  * `ConditionalLogicEvaluator.php` carries an annotation that removes three mutants and that
  * the text check passes, and the `2ee8781cf` copy is clean for both. The text arm is a
  * finding only the text check makes, so neither half's exit code can stand in for the other.

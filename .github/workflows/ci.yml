@@ -1897,11 +1897,14 @@ jobs:
       # which the auditor above cannot see: breadth is a property of the AST, not of the
       # line. Fails on an annotation that removes more than one mutant of a named mutator
       # or none at all, unless the committed baseline lists it, and on a baseline entry
-      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. About
-      # a minute over app and tests, measured on macOS; it reuses this job's install.
+      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. The
+      # check is the shared one from the pest-testing skill (UAMS-Web/uams-statamic#403);
+      # it also measures each mention of the marker against every mutator, so it is slower
+      # than the private copy it replaced: 499s against 134s over app and tests, measured on
+      # Windows 11. It reuses this job's install.
       # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
       - name: Run mutate-ignore breadth check
-        run: php scripts/check-mutate-ignore-breadth.php --baseline=scripts/check-mutate-ignore-breadth.baseline.json app tests
+        run: php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php --baseline=tests/mutate-ignore-breadth.baseline.json app tests
 
       # Rejects a raw 0x0D that is not part of a CRLF pair (UAMS-Web/uams-statamic-archive#2495). `eol=lf` normalizes
       # CRLF and never sees a lone CR, and Pint passes it through untouched, so the class
