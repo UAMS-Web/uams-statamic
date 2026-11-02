@@ -27,6 +27,11 @@ use Throwable;
 class EntryValidator
 {
     /**
+     * @param  CustomConditionEvaluator  $customConditions  Ports of the editor's custom field conditions
+     */
+    public function __construct(private readonly CustomConditionEvaluator $customConditions) {}
+
+    /**
      * Validate an entry against its blueprint the way the Control Panel validates a save.
      *
      * Only the fields visible under the blueprint's display conditions are validated,
@@ -551,8 +556,8 @@ class EntryValidator
 
         // Check if the right-hand side is the literal "false"
         if ($rhs === 'false') {
-            // Compare lhs to false (loose)
-            return $lhs == false;
+            // Compare lhs to false (loose); an unanswered field is not false (#508)
+            return ! $this->isUnanswered($lhs) && $lhs == false;
         }
 
         // ---
@@ -588,8 +593,9 @@ class EntryValidator
                 $target === 'true'
                 || $target === 'false'
             ) {
-                // Compare lhs as boolean to target
-                return (bool) $lhs === ($target === 'true');
+                // Compare lhs as boolean to target. The editor reads an unanswered
+                // field as null, and `null == false` is false in JavaScript (#508)
+                return ! $this->isUnanswered($lhs) && (bool) $lhs === ($target === 'true');
             }
 
             // Compare lhs to target (loose)
@@ -648,27 +654,59 @@ class EntryValidator
             return str_contains($lhsString, $needle);
         }
 
-        // Check if the condition is the custom `notContainsAny` (resources/js/conditions/notContainsAny)
-        if (preg_match('/^custom\s+notContainsAny:(.+)$/s', $rhs, $m)) {
-            // Split and trim the needles the way the editor does
-            $needles = array_map(trim(...), explode(',', $m[1]));
-
-            // Check if the left-hand side is an array (no needle may be in it)
-            if (\is_array($lhs)) {
-                /** @var array<array-key, scalar> $lhs */
-                // True when lhs array shares no value with the needles
-                return array_intersect($lhs, $needles) === [];
-            }
-
-            // Coerce lhs to string for matching (null and scalars only; array branch returned above)
-            $lhsString = \is_scalar($lhs) || $lhs === null ? (string) $lhs : '';
-
-            // True when no needle appears as a literal, case-sensitive substring
-            return array_all($needles, fn (string $needle): bool => ! str_contains($lhsString, $needle));
+        // Check if the condition is a custom one registered in resources/js/conditions
+        if (preg_match('/^custom\s+(.*)$/s', $rhs, $m)) {
+            return $this->evaluateCustomCondition($fieldHandle, $m[1], $lhs, $values);
         }
 
         // Default: loose equality
         return $lhs == $rhs;
+    }
+
+    /**
+     * Whether a value is one the editor reads as unanswered: Statamic's condition
+     * validator turns an empty string into null before it compares.
+     */
+    private function isUnanswered(mixed $value): bool
+    {
+        return $value === null || $value === '';
+    }
+
+    /**
+     * Evaluate a `custom <name>:<params>` condition the way the editor does.
+     *
+     * The name ends at the first colon and the params run to the next one, each
+     * split on commas and trimmed, as Statamic's condition validator parses them. A
+     * name {@see CustomConditionEvaluator} does not port reads as hidden, which is
+     * what the editor does with an unregistered one, and is logged so it is seen.
+     *
+     * @param  string  $fieldHandle  The field the condition is keyed on
+     * @param  string  $condition  The condition after `custom `, e.g. `selectionCount:lt,6`
+     * @param  mixed  $target  The value of the field the condition is keyed on
+     * @param  array<string, mixed>  $values  Current context values
+     * @return bool True when the condition passes
+     */
+    private function evaluateCustomCondition(string $fieldHandle, string $condition, mixed $target, array $values): bool
+    {
+        $parts = explode(':', $condition);
+        $name = $parts[0];
+        $params = ($parts[1] ?? '') === '' ? [] : array_map(trim(...), explode(',', $parts[1]));
+
+        $passes = $this->customConditions->evaluate($name, $params, $target, $values);
+
+        if ($passes === null) {
+            Log::warning(
+                'EntryValidator: custom field condition has no server-side port; treating the field as hidden',
+                [
+                    'condition' => $name,
+                    'field' => $fieldHandle,
+                ]
+            );
+
+            return false;
+        }
+
+        return $passes;
     }
 
     /**
