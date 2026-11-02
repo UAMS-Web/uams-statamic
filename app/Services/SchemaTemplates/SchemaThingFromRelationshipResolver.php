@@ -829,16 +829,11 @@ class SchemaThingFromRelationshipResolver
             'current_field_replicator_relationship_field'
         );
 
-        // Read optional scope for normalizing direct/current field items (e.g., bare term slugs)
+        // Read optional scope for normalizing direct/current field items (e.g., bare
+        // term slugs); every normalizer reads an empty scope as no scope
         $directNormalizationScope = \is_string($params['direct_scope'] ?? null)
             ? trim($params['direct_scope'])
             : null;
-
-        // Check if the direct normalization scope is an empty string
-        if ($directNormalizationScope === '') {
-            // Treat empty string as no scope
-            $directNormalizationScope = null;
-        }
 
         // Check whether any handle uses Antlers-only `source_entry.*` or
         // `replicator_row.*` forms (not bare entry field names on `contextEntity`)
@@ -961,19 +956,14 @@ class SchemaThingFromRelationshipResolver
                 $directHandles
             );
 
-            // Read the same field(s) from the source entry when handles remain
-            $rawTargets = $handlesForSourceEntryObjectRead === []
-                ? null
-                : $this->readFirstNonEmptyFieldValueFromEntity(
-                    $context['source_entry'],
-                    $handlesForSourceEntryObjectRead
-                );
+            // Read the same field(s) from the source entry (no handles read nothing)
+            $rawTargets = $this->readFirstNonEmptyFieldValueFromEntity(
+                $context['source_entry'],
+                $handlesForSourceEntryObjectRead
+            );
 
             // Check whether the source entry yielded a usable relationship value
-            if (
-                $rawTargets !== null
-                && ! $this->isEmptyRelationshipValue($rawTargets)
-            ) {
+            if (! $this->isEmptyRelationshipValue($rawTargets)) {
                 // Re-expand items from the source entry field value
                 $items = $this->expandDirectModeRawTargetsToItems(
                     $rawTargets,
@@ -1029,11 +1019,8 @@ class SchemaThingFromRelationshipResolver
     ): array {
         $stripped = [];
 
+        // Handles come from SchemaTagFieldHandles::listFromParam(), so none is empty
         foreach ($handles as $handle) {
-            if ($handle === '') {
-                continue;
-            }
-
             if (\str_starts_with($handle, 'source_entry.')) {
                 $suffix = \substr(
                     $handle,
@@ -1264,16 +1251,11 @@ class SchemaThingFromRelationshipResolver
             return [];
         }
 
-        // Normalize optional secondary context scope disambiguator
+        // Normalize optional secondary context scope disambiguator (every
+        // normalizer reads an empty scope as no scope)
         $secondaryScope = \is_string($params['secondary_scope'] ?? null)
             ? trim($params['secondary_scope'])
             : null;
-
-        // Check if the secondary scope is an empty string
-        if ($secondaryScope === '') {
-            // Treat empty string as no scope
-            $secondaryScope = null;
-        }
 
         // Read optional scope for nested secondary_field items (falls back to secondary_scope)
         $nestedScopeRaw = \is_string($params['nested_scope'] ?? null)
@@ -1607,25 +1589,16 @@ class SchemaThingFromRelationshipResolver
             return [];
         }
 
-        // Normalize optional secondary context scope (e.g. asset container)
+        // Normalize optional secondary context scope (e.g. asset container); every
+        // normalizer reads an empty scope as no scope
         $secondaryScope = \is_string($params['secondary_scope'] ?? null)
             ? trim($params['secondary_scope'])
             : null;
 
-        // Treat empty secondary scope as unset
-        if ($secondaryScope === '') {
-            $secondaryScope = null;
-        }
-
-        // Normalize optional scope for middle hop term resolution
+        // Normalize optional scope for middle hop term resolution (empty reads as none)
         $intermediateScopeRaw = \is_string($params['intermediate_scope'] ?? null)
             ? trim($params['intermediate_scope'])
             : null;
-
-        // Treat empty intermediate scope as unset
-        if ($intermediateScopeRaw === '') {
-            $intermediateScopeRaw = null;
-        }
 
         // Read optional nested_scope for the innermost relationship items
         $nestedScopeRaw = \is_string($params['nested_scope'] ?? null)
@@ -2096,16 +2069,13 @@ class SchemaThingFromRelationshipResolver
             // Attempt to read from entries
             // ---
 
-            // Check if the entity is an instance of EntryModel
-            if ($entity instanceof EntryModel) {
-                // Prefer value() so mocks only need to stub one accessor
-                $value = $entity->value($handle);
-            } elseif (
+            // Check if the entity is an entry (an EntryModel included; use
+            // is_callable so Mockery and magic dispatch still resolve `value`)
+            if (
                 $entity instanceof EntryContract
                 && \is_callable([$entity, 'value'])
             ) {
-                // Read the field value from the entry (use is_callable so Mockery and
-                // magic dispatch still resolve `value`)
+                // Read the field value from the entry
                 $value = $entity->value($handle);
             }
 
@@ -2249,10 +2219,7 @@ class SchemaThingFromRelationshipResolver
         }
 
         // Check if the value is an empty array
-        if (
-            \is_array($value)
-            && $value === []
-        ) {
+        if ($value === []) {
             // Return true (i.e., treat empty arrays as empty)
             return true;
         }
@@ -2512,16 +2479,15 @@ class SchemaThingFromRelationshipResolver
         string $field,
         string $expected
     ): bool {
-        // Use default-locale data for taxonomy term roots (accept contract for unit-test doubles)
+        // Use default-locale data for taxonomy term roots (accept contract for
+        // unit-test doubles); a localized term is a term contract with
+        // inDefaultLocale() too
         if (
             $entity instanceof TermContract
             && method_exists($entity, 'inDefaultLocale')
         ) {
             /** @var mixed $localized */
             $localized = $entity->inDefaultLocale();
-        } elseif ($entity instanceof LocalizedTerm) {
-            // Use localized term data directly when already localized
-            $localized = $entity;
         } else {
             // Reject non-term entities for this comparison
             return false;
@@ -2533,16 +2499,12 @@ class SchemaThingFromRelationshipResolver
             return false;
         }
 
-        // Read raw field value (supports dotted paths into nested group fields)
+        // Read raw field value (supports dotted paths into nested group fields;
+        // a leaf Statamic Value comes back unwrapped)
         $raw = $this->getLocalizedTermDataValueByFieldPath(
             $localized,
             $field
         );
-
-        // Unwrap Statamic Value wrappers to the underlying scalar
-        if ($raw instanceof Value) {
-            $raw = $raw->value();
-        }
 
         // Coerce scalar field values to trimmed string form
         $actual = \is_scalar($raw) ? trim((string) $raw) : '';
@@ -2597,10 +2559,7 @@ class SchemaThingFromRelationshipResolver
             }
 
             // Stop when the path cannot continue (missing or non-container)
-            if (
-                $cursor === null
-                || (! \is_array($cursor) && ! \is_object($cursor))
-            ) {
+            if (! \is_array($cursor) && ! \is_object($cursor)) {
                 unset(
                     $cursor,
                     $localized,
@@ -2930,11 +2889,8 @@ class SchemaThingFromRelationshipResolver
         // Normalize the candidate to a trimmed string when scalar
         // ---
 
-        // Check if the raw URL is a string
-        if (\is_string($rawUrl)) {
-            // Trim the raw URL to a candidate string
-            $candidate = trim($rawUrl);
-        } elseif (\is_scalar($rawUrl)) {
+        // Check if the raw URL is a scalar (a string included)
+        if (\is_scalar($rawUrl)) {
             // Cast the raw URL to a string and trim it to a candidate string
             $candidate = trim((string) $rawUrl);
         } else {
@@ -2951,10 +2907,9 @@ class SchemaThingFromRelationshipResolver
         // Reject empty or non-URL strings
         // ---
 
-        // Check if the candidate is an empty string or not a valid URL
+        // Check if the candidate is not a valid URL (the empty string is not one)
         if (
-            $candidate === ''
-            || filter_var(
+            filter_var(
                 $candidate,
                 FILTER_VALIDATE_URL
             ) === false
@@ -2989,17 +2944,9 @@ class SchemaThingFromRelationshipResolver
         mixed $rawType,
         array $allowed
     ): ?string {
-        // Normalize to lowercase string for matching
+        // Normalize to lowercase string for matching (null and the empty string
+        // are never in the allowed list)
         $type = \is_string($rawType) ? strtolower(trim($rawType)) : null;
-
-        // Check if the type is null or an empty string (i.e., no type is provided)
-        if (
-            $type === null
-            || $type === ''
-        ) {
-            // Return null to signal no type is provided
-            return null;
-        }
 
         // Check if the type is in the allowed list
         if (\in_array($type, $allowed, true)) {
@@ -3354,10 +3301,9 @@ class SchemaThingFromRelationshipResolver
             // Trim surrounding whitespace from the candidate URL string
             $trimmedUrl = trim($entity);
 
-            // Check if the trimmed URL is non-empty and validates as a URL
+            // Check if the trimmed URL validates as a URL (the empty string does not)
             if (
-                $trimmedUrl !== ''
-                && filter_var(
+                filter_var(
                     $trimmedUrl,
                     FILTER_VALIDATE_URL
                 ) !== false
@@ -3533,11 +3479,8 @@ class SchemaThingFromRelationshipResolver
         // Derive the leading-slash path segment used for encoding
         $path = $this->extractPathFromTermUrlForCanonicalId($url);
 
-        // Check if the path is missing or not usable
-        if (
-            $path === null
-            || $path === ''
-        ) {
+        // Check if the path is missing (a derived path is never empty)
+        if ($path === null) {
             // Return null to signal no canonical id can be built
             return null;
         }
@@ -3577,17 +3520,14 @@ class SchemaThingFromRelationshipResolver
                 $trimmed
             ) === 1
         ) {
-            // Parse the path from the absolute URL
+            // Parse the path from the absolute URL (null when it has none)
             $path = parse_url(
                 $trimmed,
                 PHP_URL_PATH
             );
 
-            // Check if a non-empty path was parsed
-            if (
-                \is_string($path)
-                && $path !== ''
-            ) {
+            // Check if a path was parsed
+            if (\is_string($path)) {
                 // Return the parsed path
                 return $path;
             }
@@ -3604,11 +3544,8 @@ class SchemaThingFromRelationshipResolver
                 PHP_URL_PATH
             );
 
-            // Check if a non-empty path was parsed
-            if (
-                \is_string($path)
-                && $path !== ''
-            ) {
+            // Check if a path was parsed (null when it has none)
+            if (\is_string($path)) {
                 // Return the parsed path
                 return $path;
             }
@@ -3641,15 +3578,10 @@ class SchemaThingFromRelationshipResolver
 
         // Attempt to include custom asset data fields
         try {
-            // Get the data from the asset
-            /** @var Collection<string, mixed>|null $assetData */
+            // Get the data from the asset (a collection, empty when the asset has none)
+            /** @var Collection<string, mixed> $assetData */
             $assetData = $asset->data();
-
-            // Read the augmented asset data when present
-            if ($assetData !== null) {
-                // Get the data from the asset data
-                $context = $assetData->all();
-            }
+            $context = $assetData->all();
         } catch (\Throwable $throwable) {
             // Unset the exception to free memory
             unset(
@@ -4646,15 +4578,6 @@ class SchemaThingFromRelationshipResolver
     private function parseOptionalPositiveInt(
         mixed $value
     ): ?int {
-        // Check if the value is null or an empty string
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            // Return null to signal that no positive integer can be parsed
-            return null;
-        }
-
         // Check if the value is an integer
         if (\is_int($value)) {
             // Return the value if it is a strictly positive integer
@@ -4670,7 +4593,7 @@ class SchemaThingFromRelationshipResolver
             return $parsed > 0 ? $parsed : null;
         }
 
-        // Return null for unsupported values
+        // Return null for null, the empty string and other unsupported values
         return null;
     }
 
@@ -4783,13 +4706,9 @@ class SchemaThingFromRelationshipResolver
                 continue;
             }
 
-            // Append each keyword string from the target's stored data
+            // Append each keyword string from the target's stored data (each one
+            // is non-empty: keywordStringsFromData() keeps only non-empty strings)
             foreach ($keywords as $keyword) {
-                // Skip empty keyword strings
-                if ($keyword === '') {
-                    continue;
-                }
-
                 // Record first-seen keywords only
                 if (! isset($seenKeys[$keyword])) {
                     $seenKeys[$keyword] = true;
@@ -4944,8 +4863,8 @@ class SchemaThingFromRelationshipResolver
         mixed $raw,
         string $subkey
     ): array {
-        // Return no values when the raw payload is not a non-empty list
-        if (! \is_array($raw) || $raw === []) {
+        // Return no values when the raw payload is not a list of rows
+        if (! \is_array($raw)) {
             unset($raw);
 
             return [];
