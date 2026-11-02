@@ -12,8 +12,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Every job reads the repository and nothing more (#391). `GITHUB_TOKEN` is used
-# only by `actions/checkout`; private repositories are reached through
+# Every job reads the repository and nothing more (#391), except where a job-level
+# block says otherwise. `GITHUB_TOKEN` is used by `actions/checkout`, and by `gh api`
+# in the `pest` job's "Choose shard timings" (#519); private repositories are reached through
 # `secrets.COMPOSER_AUTH_TOKEN`, and `actions/cache` and the artifact actions
 # authenticate with the runner's own token, which `permissions` does not govern.
 # A job that ever needs more gets a job-level block saying why.
@@ -300,6 +301,12 @@ jobs:
             shard: 5
           - os: windows-latest
             shard: 6
+    # `actions: read` lets "Choose shard timings" list the timings cache entries and
+    # read when this run first started (#519); a job-level block replaces the
+    # top-level one, so `contents: read` is restated.
+    permissions:
+      contents: read
+      actions: read
     env:
       SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 6 || 4 }}
     steps:
@@ -445,34 +452,54 @@ jobs:
 
       # The timings Pest balances the shards on (#387). Each push to main writes
       # them, from that run's merged report, to the Actions cache (see
-      # `pest-report`); a pull request reads the newest one main wrote, since a
-      # branch can read its base branch's cache. Restored by prefix only: the
-      # exact key below is never written, so the newest saved entry always wins.
+      # `pest-report`); a pull request reads one main wrote, since a branch can read
+      # its base branch's cache. Every shard of a run must read the same entry, so
+      # each one chooses it by the same rule: the newest entry created at or before
+      # the run's FIRST attempt started. Restoring the newest entry by prefix instead
+      # let a main push that saved an entry while a run's shards were starting split
+      # them across two entries, and `pest-report` refused the run (#519). The first
+      # attempt's start, not this attempt's, because "Re-run failed jobs" re-runs one
+      # shard and merges it with the reports the others left in attempt 1.
       #
-      # Each operating system reads its own timings (#516). A Windows runner
-      # cannot restore an entry a Linux runner saved (`enableCrossOsArchive` is
-      # off), so while only the Ubuntu leg saved, every Windows shard fell back to
-      # the committed file ("Cache not found" on #514's run 41440485266).
+      # Each operating system chooses among its own timings, saved under
+      # pest-shard-timings-<os>- (#516). A Windows runner cannot restore an entry a
+      # Linux runner saved (`enableCrossOsArchive` is off), so while only the Ubuntu
+      # leg saved, every Windows shard fell back to the committed file ("Cache not
+      # found" on #514's run 41440485266).
       #
-      # With no entry yet (a new repository, or an evicted cache) a committed copy
-      # is used instead: .github/pest-shards.<os>.json where one exists, and
-      # .github/pest-shards.json otherwise.
+      # With no entry from before that start (a new repository, or an evicted cache)
+      # a committed copy is used instead: .github/pest-shards.<os>.json where one
+      # exists, and .github/pest-shards.json otherwise.
       #
       # REMOTE-ONLY: the local runner runs the parallel band whole, so it reads
       # no timings.
+      - name: Choose shard timings
+        id: choose-timings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          PREFIX: pest-shard-timings-${{ matrix.os }}-
+        run: |
+          started=$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/1" --jq .run_started_at)
+          gh api "repos/$REPO/actions/caches?key=$PREFIX&ref=refs/heads/main&sort=created_at&direction=desc&per_page=100" > shard-timings-caches.json
+          key=$(php scripts/select-shard-timings.php --caches=shard-timings-caches.json --started="$started" --prefix="$PREFIX")
+          echo "Run's first attempt started $started; timings entry: ${key:-none from before the start}"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+
       - name: Restore shard timings
         id: shard-timings
+        if: steps.choose-timings.outputs.key != ''
         uses: actions/cache/restore@v6
         with:
           path: tests/.pest/shards.json
-          key: pest-shard-timings-never-written
-          restore-keys: pest-shard-timings-${{ matrix.os }}-
+          key: ${{ steps.choose-timings.outputs.key }}
 
       # Logs which timings this shard read, and records their source and hash for
       # `pest-report`. Every shard partitions the band from its own copy, so
-      # shards that read different copies (a main push saving new timings between
-      # two shards' restores) can run a class twice or not at all; `pest-report`
-      # refuses that by comparing the notes.
+      # shards that read different copies (one shard's restore missing the chosen
+      # entry, for one) can run a class twice or not at all; `pest-report` refuses
+      # that by comparing the notes.
       - name: Place shard timings
         env:
           SHARD: ${{ matrix.shard }}
@@ -1003,9 +1030,9 @@ jobs:
 
       # The timings a pull request's shards read: written on each push to main,
       # by each leg under a key naming its operating system and unique to the run,
-      # and read back by that prefix (see "Restore shard timings", #516). Never
-      # written by a pull request, so a branch cannot change the partition another
-      # branch reads. The committed fallbacks, .github/pest-shards.json and
+      # and chosen by its creation time (see "Choose shard timings", #519, #516).
+      # Never written by a pull request, so a branch cannot change the partition
+      # another branch reads. The committed fallbacks, .github/pest-shards.json and
       # .github/pest-shards.windows-latest.json, are refreshed by hand from this
       # artifact when the cache is empty for long enough to matter.
       # REMOTE-ONLY: the local runner does not shard.

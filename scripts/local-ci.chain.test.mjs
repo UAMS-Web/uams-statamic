@@ -730,7 +730,7 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         if (totals === null || totals['windows-latest'] !== 6) {
             failures.push('the Windows shards do not read a total of six')
         }
-        if (!pestJob.includes('          restore-keys: pest-shard-timings-${{ matrix.os }}-\n')) {
+        if (!pestJob.includes('          PREFIX: pest-shard-timings-${{ matrix.os }}-\n') || !pestJob.includes('--prefix="$PREFIX"')) {
             failures.push('the shards do not restore timings saved by their own operating system')
         }
         if (!reportJob.includes('          key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}\n')) {
@@ -756,7 +756,7 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         const oldPest = pest
             .replace(/\n {8}include:\n {10}- os: windows-latest\n {12}shard: 5\n {10}- os: windows-latest\n {12}shard: 6\n/, '\n')
             .replace(/SHARD_TOTAL: .+/, 'SHARD_TOTAL: 4')
-            .replace('restore-keys: pest-shard-timings-${{ matrix.os }}-', 'restore-keys: pest-shard-timings-')
+            .replace('PREFIX: pest-shard-timings-${{ matrix.os }}-', 'PREFIX: pest-shard-timings-')
         const oldReport = report
             .replace('key: pest-shard-timings-${{ matrix.os }}-', 'key: pest-shard-timings-')
             .replace("if: github.event_name == 'push' && github.ref == 'refs/heads/main'\n", "if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'\n")

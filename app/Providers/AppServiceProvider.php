@@ -275,14 +275,6 @@ class AppServiceProvider extends ServiceProvider
             fn (Request $request) => Limit::perMinute(60)->by($request->ip() ?: 'unknown')
         );
 
-        // Rate limiter for the site-search type-ahead (UAMS-Web/uams-statamic-archive#1506). A reader types a few
-        // characters a second and the client debounces, so 120/min per client IP is
-        // well above real use while bounding a script that enumerates the index.
-        RateLimiter::for(
-            'site-search-suggestions',
-            fn (Request $request) => Limit::perMinute(120)->by($request->ip() ?: 'unknown')
-        );
-
         // Rate limiters for posting and editing classified listings (UAMS-Web/uams-statamic-archive#2519). Each has
         // its own key prefix, so edits never count against the posting allowance, and
         // is keyed by account, falling back to the client IP.

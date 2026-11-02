@@ -167,7 +167,7 @@ import { registerTocEngine } from './toc-engine.js';
 import { registerFadFilter } from './fad-filter.js';
 
 // Site-search type-ahead (UAMS-Web/uams-statamic-archive#1506): the suggestions listbox under the /search input.
-import { registerSiteSearchTypeahead } from './site-search-typeahead.js';
+import { registerSiteSearchTypeahead } from '../../vendor/uams-web/aether-search/resources/js/site-search-typeahead.js';
 
 // Set Alpine globally. The alpine-csp-forms add-on's script registers the
 // `$showField` magic from an `alpine:init` listener on this instance (UAMS-Web/uams-statamic-archive#3073).
