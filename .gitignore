@@ -89,7 +89,7 @@ yarn-error.log
 /tests/.pest/
 /mutate.log
 
-# Per-container Claude Code settings (ported from wordpress-importer#515)
+# Per-container Claude Code settings (ported from wordpress-importer-archive#515)
 .claude/settings.local.json
 
 # Security-audit reports. The `security-audit` skill writes its finding-level report
