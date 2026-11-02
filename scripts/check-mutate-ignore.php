@@ -157,7 +157,7 @@ $lineMapIsLive = mutateIgnoreLineMapIsLive();
 $findings = [];
 
 // A directory is searched for `*.php`; a single file is read whatever its extension, the
-// same contract as `scripts/check-mutate-ignore-breadth.php`.
+// same contract as the shared `check-mutate-ignore-breadth.php` in the pest-testing skill.
 $paths = [];
 
 foreach ($roots as $root) {

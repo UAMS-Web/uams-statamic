@@ -26,7 +26,8 @@
 //     validate  composer validate (composer.json <-> composer.lock freshness) and the PSR-4 class check
 //
 // The jobs run as a cost-ordered CHAIN, shortest
-// -> longest (`validate` excepted, see CHAIN): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
+// -> longest (`validate` excepted, see CHAIN; `encoding` is also slower than its place
+// implies, since its shared breadth check took 499s on Windows 11, #403): isolation -> validate -> no-emoji -> content-pointer -> encoding -> spell -> js -> build -> pint ->
 // rector -> mutate -> phpstan -> pest -> browser. Each runs only if the previous passed, so a failure
 // skips every more-expensive job after it, saving your wall-clock. This order is
 // LOCAL ONLY: ci.yml fans its jobs out in parallel (#373),
@@ -1918,11 +1919,12 @@ function main() {
             // (UAMS-Web/uams-statamic-archive#3160), which the auditor above cannot see, and fails on one that removes more
             // than one mutant of a named mutator or none at all, unless the committed baseline
             // lists it, and on a baseline entry that no longer occurs. Returned as-is so the
-            // exit 2 it gives when it cannot run fails the job as well.
+            // exit 2 it gives when it cannot run fails the job as well. The check is the
+            // shared one from the pest-testing skill (UAMS-Web/uams-statamic#403).
             step('JOB encoding - mutate-ignore breadth check')
             const mutateIgnoreBreadth = runPhp([
-                'scripts/check-mutate-ignore-breadth.php',
-                '--baseline=scripts/check-mutate-ignore-breadth.baseline.json',
+                '.claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php',
+                '--baseline=tests/mutate-ignore-breadth.baseline.json',
                 'app',
                 'tests',
             ], worktreePath)
