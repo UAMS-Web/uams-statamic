@@ -1166,6 +1166,12 @@ class IncompletePublishedEntries extends Widget
             // Extract and trim the target value from the match
             $target = trim($m[1]);
 
+            // Check if the target is "empty" (the editor tests emptiness, not the word)
+            if ($target === 'empty') {
+                // Return whether lhs is empty
+                return $empty;
+            }
+
             // Check if the target is the string "true" or "false" for boolean comparison
             if (
                 $target === 'true'
@@ -1229,6 +1235,25 @@ class IncompletePublishedEntries extends Widget
 
             // True when lhs string contains needle
             return str_contains($lhsString, $needle);
+        }
+
+        // Check if the condition is the custom `notContainsAny` (resources/js/conditions/notContainsAny)
+        if (preg_match('/^custom\s+notContainsAny:(.+)$/s', $rhs, $m)) {
+            // Split and trim the needles the way the editor does
+            $needles = array_map(trim(...), explode(',', $m[1]));
+
+            // Check if the left-hand side is an array (no needle may be in it)
+            if (\is_array($lhs)) {
+                /** @var array<array-key, scalar> $lhs */
+                // True when lhs array shares no value with the needles
+                return array_intersect($lhs, $needles) === [];
+            }
+
+            // Coerce lhs to string for matching (null and scalars only; array branch returned above)
+            $lhsString = \is_scalar($lhs) || $lhs === null ? (string) $lhs : '';
+
+            // True when no needle appears as a literal, case-sensitive substring
+            return array_all($needles, fn (string $needle): bool => ! str_contains($lhsString, $needle));
         }
 
         // Default: loose equality
