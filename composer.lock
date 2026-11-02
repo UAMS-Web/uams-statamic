@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ff62384001508be8085958ed31e790a4",
+    "content-hash": "1e6179567a055346138f763be41527db",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10796,16 +10796,16 @@
         },
         {
             "name": "uams-web/statamic-form-settings",
-            "version": "v0.1.0",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/UAMS-Web/statamic-form-settings.git",
-                "reference": "1ff0cd550a2b59a7e250e7b9825d0209a4dab21f"
+                "url": "https://github.com/UAMS-Web/aether-form-settings.git",
+                "reference": "540f23d2b3297959e24dd9673b749d437be71fae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/statamic-form-settings/zipball/1ff0cd550a2b59a7e250e7b9825d0209a4dab21f",
-                "reference": "1ff0cd550a2b59a7e250e7b9825d0209a4dab21f",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-form-settings/zipball/540f23d2b3297959e24dd9673b749d437be71fae",
+                "reference": "540f23d2b3297959e24dd9673b749d437be71fae",
                 "shasum": ""
             },
             "require": {
@@ -10832,7 +10832,7 @@
                 },
                 "statamic": {
                     "name": "Form Settings",
-                    "description": "Notification routing and conditions, confirmations, and submission restrictions for Statamic forms."
+                    "description": "Notification routing and conditions, confirmations, submission restrictions, and quiz and survey scoring for Statamic forms."
                 },
                 "composer-exit-on-patch-failure": true
             },
@@ -10842,6 +10842,9 @@
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
             "authors": [
                 {
                     "name": "UAMS Web Services"
@@ -10851,7 +10854,7 @@
                     "role": "Web Developer"
                 }
             ],
-            "description": "Control Panel form settings for Statamic: notification routing and conditions, confirmations, and submission restrictions, each behind its own switch.",
+            "description": "Control Panel form settings for Statamic: notification routing and conditions, confirmations, submission restrictions, and quiz and survey scoring, each behind its own switch.",
             "homepage": "https://github.com/UAMS-Web/statamic-form-settings",
             "keywords": [
                 "statamic",
@@ -10861,7 +10864,8 @@
                 "issues": "https://github.com/UAMS-Web/statamic-form-settings/issues",
                 "source": "https://github.com/UAMS-Web/statamic-form-settings"
             },
-            "time": "2026-10-23T17:23:06+00:00"
+            "abandoned": "uams-web/aether-form-settings",
+            "time": "2026-11-01T19:13:16+00:00"
         },
         {
             "name": "uams-web/statamic-multisite-forms",

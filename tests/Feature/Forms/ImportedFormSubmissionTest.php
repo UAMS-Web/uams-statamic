@@ -30,12 +30,8 @@ use function Pest\Laravel\withServerVariables;
  * site: its title carries the site-name prefix the importer writes. It is read
  * as stored and never saved, so the test exercises the settings keys the importer
  * wrote: the email row with its recipient role and `{{ all_fields }}` message, and the
- * site assignment.
- *
- * The form's stored Bard confirmation message is not asserted. `v0.1.0` of the add-on
- * never shows a Bard confirmation message; UAMS-Web/statamic-form-settings#22 fixes it
- * after that tag (UAMS-Web/statamic-form-settings#13), so assert it once the site
- * requires a release that carries the fix.
+ * site assignment, and the stored Bard confirmation message, which the add-on shows
+ * since `v0.3.0` (UAMS-Web/statamic-form-settings#22).
  *
  * @command  php artisan test --compact tests/Feature/Forms/ImportedFormSubmissionTest.php
  */
@@ -143,6 +139,10 @@ it('sends the imported notification to the address its recipient role names', fu
         ->assertRedirect()
         ->assertSessionHasNoErrors()
         ->assertSessionHas('form.'.IMPORTED_FORM_SUBMISSION_HANDLE.'.submission_created', true);
+
+    // The stored Bard confirmation message is shown
+    expect(mustBeString(session('form.'.IMPORTED_FORM_SUBMISSION_HANDLE.'.success'), 'confirmation message'))
+        ->toContain('Thank you for completing this form');
 
     // Exactly one notification is sent, to the address the recipient role resolves to
     $transport = mustBe(ArrayTransport::class, Mail::getSymfonyTransport(), 'transport');
