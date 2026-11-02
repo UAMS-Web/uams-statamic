@@ -596,7 +596,7 @@ it('logs a malformed account address and still notifies the next listing', funct
 
 it('queues one run while another is pending, so two runs cannot both notify a listing', function (): void {
     // A faked queue never runs the job, so nothing releases the lock it takes. The test
-    // cache is a file store and the lock has no expiry, so it outlives this run.
+    // cache is a file store and the lock lasts an hour, so it outlives this run.
     $lock = new UniqueLock(Cache::driver());
     $lock->release(new UnpublishExpiredClassifieds);
 
