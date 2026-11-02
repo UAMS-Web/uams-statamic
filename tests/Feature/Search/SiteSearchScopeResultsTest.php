@@ -102,8 +102,8 @@ function renderScopedResults(?string $searchSite, array $params = [], string $qu
     app()->instance('request', Request::create('/second/search?'.$query));
 
     return (string) Antlers::parse(
-        '{{ partial:search/results index="default" :search_site="search_site" :all_results_url="all_results_url" :wider_scope_url="wider_scope_url" :wider_scope_label="wider_scope_label" }}',
-        $params + ['search_site' => $searchSite, 'all_results_url' => '', 'wider_scope_url' => '', 'wider_scope_label' => '']
+        '{{ partial:aether-search::listing/results index="default" :search_site="search_site" :all_results_url="all_results_url" :wider_scope_url="wider_scope_url" :wider_scope_label="wider_scope_label" :always_scope="always_scope" }}',
+        $params + ['search_site' => $searchSite, 'all_results_url' => '', 'wider_scope_url' => '', 'wider_scope_label' => '', 'always_scope' => config('aether-search.always_scope')]
     );
 }
 

@@ -76,7 +76,7 @@ it('adds an accessible heading and an inline search box posting to /search', fun
         ->toContain('id="error-search-heading"')
         ->toContain('id="error-links-heading"')
         // Inline search form posts to this site's search page (GET).
-        ->toContain('action="{{ site_search_scope:path }}"')
+        ->toContain('action="{{ aether_search:path }}"')
         ->toContain('name="q"')
         ->toContain('role="search"')
         // Focus management: the caret lands in the search field.
