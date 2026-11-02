@@ -48,7 +48,7 @@
         "stillat/relationships": "^2.4",
         "studio1902/statamic-peak-tools": "9.2.3",
         "uams-web/statamic-alpine-csp-forms": "^0.1.0",
-        "uams-web/statamic-form-settings": "^0.1",
+        "uams-web/statamic-form-settings": "^0.3",
         "uams-web/statamic-multisite-forms": "^0.6",
         "uams-web/wordpress-importer": "^0.31"
     },
