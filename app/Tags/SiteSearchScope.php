@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
+use App\Http\Middleware\SecurityHeaders;
 use Statamic\Facades\Site;
 use Statamic\Facades\URL;
 use Statamic\Sites\Site as SiteObject;
@@ -18,6 +19,10 @@ use Statamic\Tags\Tags;
  * travels in the URL as `?scope=all`, and only where it differs from the default,
  * so the root site's URLs read as they always have. Values are fixed here and never
  * echo the request, so they are safe in an href.
+ *
+ * With a Google search engine ID configured (`services.google_search.engine_id`),
+ * every site also offers "All UAMS websites", where Google's results replace the
+ * site's own (UAMS-Web/uams-statamic#412).
  */
 class SiteSearchScope extends Tags
 {
@@ -30,6 +35,11 @@ class SiteSearchScope extends Tags
      * The scope that searches every site.
      */
     public const string ALL_SITES = 'all';
+
+    /**
+     * The scope that shows Google's results for every UAMS website.
+     */
+    public const string GOOGLE = 'google';
 
     /**
      * Resolve the `requested` scope, falling back to the current site's default.
@@ -51,6 +61,10 @@ class SiteSearchScope extends Tags
      */
     public static function resolve(SiteObject $site, mixed $requested): string
     {
+        if ($requested === self::GOOGLE && self::configuredGoogleEngine() !== '') {
+            return self::GOOGLE;
+        }
+
         if ($site->handle() === self::rootSite()->handle()) {
             return self::ALL_SITES;
         }
@@ -97,6 +111,20 @@ class SiteSearchScope extends Tags
     }
 
     /**
+     * The Google search engine ID for this page's results, and permission for this
+     * response alone to load Google's script.
+     *
+     * Rendering is the moment the script is needed, so no other page gets the wider
+     * content security policy.
+     */
+    public function googleEngine(): string
+    {
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+
+        return self::configuredGoogleEngine();
+    }
+
+    /**
      * The scopes the current site offers, each marked against the `active` scope.
      *
      * @return list<array{value: string, label: string, param: string, is_active: bool}>
@@ -109,6 +137,10 @@ class SiteSearchScope extends Tags
 
         if (! $this->onRootSite()) {
             $scopes = [self::THIS_SITE => 'This site'] + $scopes;
+        }
+
+        if (self::configuredGoogleEngine() !== '') {
+            $scopes[self::GOOGLE] = 'All UAMS websites';
         }
 
         $options = [];
@@ -129,7 +161,21 @@ class SiteSearchScope extends Tags
      */
     private function paramFor(mixed $scope): string
     {
+        if ($scope === self::GOOGLE) {
+            return self::GOOGLE;
+        }
+
         return $scope === self::ALL_SITES && ! $this->onRootSite() ? self::ALL_SITES : '';
+    }
+
+    /**
+     * The configured Google search engine ID, or an empty string for none.
+     */
+    private static function configuredGoogleEngine(): string
+    {
+        $engine = config('services.google_search.engine_id');
+
+        return is_string($engine) ? trim($engine) : '';
     }
 
     /**
