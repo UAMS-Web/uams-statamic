@@ -470,6 +470,29 @@ it('evaluates a single condition', function (string $rhs, mixed $lhs, bool $pass
     'not a value' => ['not draft', 'live', true],
     'not a matching value' => ['not draft', 'draft', false],
     'not trims a NUL the regex keeps' => ["not \0draft", 'draft', false],
+    'not a value on a list, hidden like the editor' => ['not draft', ['live'], false],
+    'not a value on an empty list, hidden like the editor' => ['not draft', [], false],
+    'not a value on an object, hidden like the editor' => ['not draft', new stdClass, false],
+    'equals a value on a list holding it, hidden like the editor' => ['equals red', ['red'], false],
+    'equals a value on an object that reads as it, hidden like the editor' => ['equals red', new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return 'red';
+        }
+    }, false],
+    'a bare value on a list holding it, hidden like the editor' => ['draft', ['draft'], false],
+    'a bare value on an object that reads as it, hidden like the editor' => ['red', new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return 'red';
+        }
+    }, false],
+    'empty on a filled list' => ['empty', ['a'], false],
+    'not empty on a filled list' => ['not empty', ['a'], true],
+    'not empty on an empty list' => ['not empty', [], false],
+    'equals empty on a filled list' => ['equals empty', ['a'], false],
     'contains in a list' => ['contains red', ['red', 'blue'], true],
     'contains missing from a list' => ['contains green', ['red', 'blue'], false],
     'contains a substring' => ['contains ed', 'red', true],
