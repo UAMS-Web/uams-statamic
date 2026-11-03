@@ -14,7 +14,8 @@ use Symfony\Component\Yaml\Yaml;
  * - It fires on every event that can change the body, not only on a push. The
  *   footer most often arrives in the opening body, which a `synchronize`-only
  *   trigger never sees.
- * - It is not gated on `RUN_REMOTE_CI`, which is off for months at a time.
+ * - It is gated on `RUN_REMOTE_CI` only in the shared form, `!= 'false'`, which
+ *   still runs while the variable is unset (UAMS-Web/uams-claude-skills#416).
  * - It runs the check the `writing-pull-requests` skill ships, so the markers
  *   it matches live in one tested place rather than in the workflow's shell.
  *   The copy follows the skill's template (UAMS-Web/uams-statamic-archive#3107), and the path it names has to
@@ -72,16 +73,23 @@ it('triggers on every pull request event that can change the body', function ():
     ]);
 });
 
-it('is not gated on RUN_REMOTE_CI', function (): void {
+it('is ungated, or gated on RUN_REMOTE_CI only in the shared form that runs while it is unset', function (): void {
     $source = file_get_contents(dirname(__DIR__, 3).'/.github/workflows/check-attribution-footer.yml');
+    $gate = "vars.RUN_REMOTE_CI != 'false'";
 
-    // Search only the YAML itself, since the header comment names the variable to explain its absence
+    // Search only the YAML itself, since the header comment names the variable
     $code = implode("\n", array_filter(
         explode("\n", (string) $source),
         fn (string $line): bool => ! str_starts_with(ltrim($line), '#'),
     ));
 
-    expect($code)->not->toContain('RUN_REMOTE_CI');
+    // Any other use of the variable, such as `== 'true'`, would stop the job while it is unset
+    expect(str_replace($gate, '', $code))->not->toContain('RUN_REMOTE_CI')
+        ->and(substr_count($code, $gate))->toBeLessThanOrEqual(1);
+
+    // Where the gate is present, it is the job's whole condition or leads it
+    $condition = attributionFooterJob()['if'] ?? null;
+    expect(! str_contains($code, $gate) || $condition === $gate || (is_string($condition) && str_starts_with($condition, $gate.' && ')))->toBeTrue();
 });
 
 it('grants only read access', function (): void {
