@@ -41,7 +41,7 @@
         "spatie/browsershot": "^5.0",
         "spatie/image": "^3.8",
         "spatie/laravel-pdf": "^2.5",
-        "spatie/schema-org": "^4.0",
+        "spatie/schema-org": "^5.0",
         "statamic/cms": "6.37.0",
         "statamic/eloquent-driver": "5.12.4",
         "statamic/ssg": "^4.1",
