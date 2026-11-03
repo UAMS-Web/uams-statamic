@@ -3804,3 +3804,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** A burst of merges now runs one full chain per merge rather than one per burst. The nineteen commits are accounted for on #530 rather than re-run.
 
 **Companion.** #530. `.github/workflows/ci.yml`, `tests/Feature/Config/CiConcurrencyGroupTest.php`.
+
+## 2026-11-02: The `people` hometown fields carry one condition, and their audience comes through `home_country_query` (#528)
+
+**Decision.** `hometown_us`, `hometown_canada` and `hometown_international` on the `people` blueprint drop their `if_any` on `resident_query` and `fellow_query` and keep only their `if` on `home_country_query`. `home_country_query` keeps its own `if_any` on the two, which is where the resident-or-fellow audience is stated. The build is #533.
+
+**Why.** The Control Panel's field-conditions validator applies the first condition key a field carries and ignores the rest (built `ui-DuwF74uj.js` at `statamic/cms` v6.37.0), so the hometown fields' `if_any` had no effect in the editor. When a person is neither a resident nor a fellow, the editor hides `home_country_query` and leaves its value out of the save (`omitValue` in the same file), so each hometown field's `if` on it fails and the field stays hidden. The second key added nothing, and removing it makes the blueprint say what the editor does.
+
+**Rejected.** *Leaving the blueprint as it is*: it keeps configuration the editor ignores, and keeps the hometown fields dependent on #527 for the server-side evaluator to agree with the editor. *A custom condition combining the two*: a JavaScript function and a PHP port to say what the chain through `home_country_query` already says. *A section or group with its own condition*: restructures the blueprint and moves stored data for the same effect.
+
+**Residual.** An entry saved with a `home_country_query` value for a person who is neither a resident nor a fellow (for example, a value saved before the person's role changed) still shows its hometown field. The 43 `people` entries in `content/` at the time of #528 held none; data in other environments was not read. Nothing here was checked in a browser. #527 stays open for the general case.
+
+**Companion.** #533. `resources/blueprints/collections/people/person.yaml`, `tests/Feature/Blueprints/PeopleHometownConditionsTest.php`.
