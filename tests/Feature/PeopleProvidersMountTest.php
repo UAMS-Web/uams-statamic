@@ -18,7 +18,7 @@ use Tests\TestCase;
  *
  * @command php artisan test --compact tests/Feature/PeopleProvidersMountTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(TestCase::class);
 
 beforeEach(function (): void {
     $people = Collection::findByHandle('people');

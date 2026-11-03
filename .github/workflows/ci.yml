@@ -8,8 +8,16 @@ on:
   # against a branch, rather than only on a pull request or a push to main.
   workflow_dispatch:
 
+# A new push to a pull request cancels that pull request's stale run, so a pull request keeps
+# one group. Every other run (a push to `main`, a manual run) gets a group of its own, keyed on
+# the commit, so a later push never cancels it. A shared push group would: GitHub keeps one
+# running and one pending run per group and cancels the pending one when another is queued,
+# whatever `cancel-in-progress` says, so a merge landing during a long run cancelled the
+# previous merge's run before it started a job. Its commit then showed only CodeQL's three
+# settled green runs, and the chain never ran on it (#530). Pinned by
+# `tests/Feature/Config/CiConcurrencyGroupTest.php`.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Every job reads the repository and nothing more (#391), except where a job-level
@@ -1807,7 +1815,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    # Local-chain cost rank: after the content pointer guard.
+    # Local-chain cost rank: after the content pointer guard, though the shared breadth
+    # check below makes it slower than that place implies (UAMS-Web/uams-statamic#403).
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
@@ -1897,11 +1906,14 @@ jobs:
       # which the auditor above cannot see: breadth is a property of the AST, not of the
       # line. Fails on an annotation that removes more than one mutant of a named mutator
       # or none at all, unless the committed baseline lists it, and on a baseline entry
-      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. About
-      # a minute over app and tests, measured on macOS; it reuses this job's install.
+      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. The
+      # check is the shared one from the pest-testing skill (UAMS-Web/uams-statamic#403);
+      # it also measures each mention of the marker against every mutator, so it is slower
+      # than the private copy it replaced: 499s against 134s over app and tests, measured on
+      # Windows 11. It reuses this job's install.
       # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
       - name: Run mutate-ignore breadth check
-        run: php scripts/check-mutate-ignore-breadth.php --baseline=scripts/check-mutate-ignore-breadth.baseline.json app tests
+        run: php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php --baseline=tests/mutate-ignore-breadth.baseline.json app tests
 
       # Rejects a raw 0x0D that is not part of a CRLF pair (UAMS-Web/uams-statamic-archive#2495). `eol=lf` normalizes
       # CRLF and never sees a lone CR, and Pint passes it through untouched, so the class

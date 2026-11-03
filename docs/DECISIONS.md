@@ -3767,6 +3767,20 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #504. `.github/workflows/ci.yml`, `scripts/pest-shard-config.php`, `tests/Feature/PestShardConfigTest.php`, `scripts/local-ci.chain.test.mjs`, `scripts/gate-pest.mjs`, `scripts/merge-shard-reports.php`.
 
+## 2026-11-02: Site search does not launch on the `local` driver; Loupe is spiked first (#161)
+
+**Decision.** The `local` (Comb) driver is not the launch engine. The next rung of #161's ladder, `daun/statamic-loupe`, is spiked at launch size with the 22 queries #161 measured, against a 400ms p95 gate. The spike's Composer requirement stays on its own branch until its result is known. If Loupe misses the gate, the spike reports its numbers and the choice returns to a person: no further rung is decided here.
+
+**No spending on the engine.** Stated as a follow-up to the decision on 2026-11-02: "I'd prefer not to spend money on the search engine." That rules out any paid service and any new server cost, so a hosted or self-hosted Meilisearch, Typesense or Elasticsearch is off the ladder unless it runs on infrastructure already paid for. Loupe is the only option with no cost.
+
+**Why.** Measured on Windows 11 with PHP 8.4, one process, Statamic's own `lookup` on the `default` index's configuration, over the WordPress exports' reader-facing rows (up to 45,133 documents; `clinical_*` entries are not in the exports). The p95 per lookup is 275ms at 6,500 documents, 650 to 780ms at 15,000 and 2.3 to 2.8s at 45,133. A `/search` page with hits runs two lookups, so it crosses 400ms at about 4,700 documents, interpolated, before results are hydrated. Six medical terms each misspelled by one letter (diabetes, mammogram, cardiology, oncology, pediatrics and neurology, each with a letter dropped or swapped; the exact strings are on #161) return nothing under any of nine setting variants. Memory (under 300MB against 2048M) and the index's size are not the limit. Writing the index rewrites the whole file per 100-document chunk, which took 65s at full size on its own, so a full rebuild exceeds #161's 60s threshold.
+
+**Rejected.** *Stay on `local`*: it fails the latency threshold at launch size and has no typo tolerance. *Go hosted directly*: it costs money, which the follow-up above rules out, and adds a server before the zero-server rung has been measured.
+
+**Residual.** No real query log exists, so the no-results rate is unmeasured. Concurrency, result hydration and the production host are not measured, and each changes latency. Whether the results layer swaps drivers without a UI rewrite is the spike's to confirm.
+
+**Companion.** #161, the measurements and the comparison; #511, the Loupe spike.
+
 ## 2026-11-02: Each operating system balances its Pest shards on its own timings, and Windows runs six (#516)
 
 **Decision.** Every leg of `pest-report` saves its merged per-class timings on a push to `main`, under `pest-shard-timings-<os>-<run id>-<attempt>`, and each `pest` shard chooses among its own operating system's entries by the rule #519 set (the newest entry created at or before the run's first attempt started), through `scripts/select-shard-timings.php --prefix`. With no cache entry, a shard reads `.github/pest-shards.<os>.json` where one is committed (Windows) and `.github/pest-shards.json` otherwise. The Windows leg runs the parallel band as six shards; Linux and macOS stay at four. This changes the 2026-10-28 entry's single timings source, and the 2026-11-02 entry's four Windows shards.
@@ -3790,3 +3804,14 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** An entry saved with a `home_country_query` value for a person who is neither a resident nor a fellow (for example, a value saved before the person's role changed) still shows its hometown field. The 43 `people` entries in `content/` at the time of #528 held none; data in other environments was not read. Nothing here was checked in a browser. #527 stays open for the general case.
 
 **Companion.** #533. `resources/blueprints/collections/people/person.yaml`, `tests/Feature/Blueprints/PeopleHometownConditionsTest.php`.
+## 2026-11-02: Every push run of `CI` gets its own concurrency group; a pull request keeps one (#530)
+
+**Decision.** The `CI` workflow's concurrency group is `${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}`, the shared template's line from UAMS-Web/uams-claude-skills#473. A pull request keeps one group per ref and still cancels its own stale run; a push to `main` or a manual run gets a group keyed on its commit, so no later push cancels it.
+
+**Why.** With one group per ref, every push to `main` shared `CI-refs/heads/main`. GitHub keeps one running and one pending run per group and cancels the pending one when another is queued, whatever `cancel-in-progress` says, so a burst of merges cancelled runs before they started a job. Nineteen commits on `main` carried only CodeQL's three settled green check runs and never ran the chain, which reads through the check-runs API as a pass.
+
+**Rejected.** *Keep the group and have the gate re-run a cancelled run*: a re-run joins the same group, and nothing showed it escapes the cancellation. *Keep the group and pace merges*: it holds the queue to one pull request per completed chain.
+
+**Residual.** A burst of merges now runs one full chain per merge rather than one per burst. The nineteen commits are accounted for on #530 rather than re-run.
+
+**Companion.** #530. `.github/workflows/ci.yml`, `tests/Feature/Config/CiConcurrencyGroupTest.php`.
