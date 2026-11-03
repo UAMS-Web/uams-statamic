@@ -3816,3 +3816,27 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** An entry saved with a `home_country_query` value for a person who is neither a resident nor a fellow (for example, a value saved before the person's role changed) still shows its hometown field. The 43 `people` entries in `content/` at the time of #528 held none; data in other environments was not read. Nothing here was checked in a browser. #527 stays open for the general case.
 
 **Companion.** #533. `resources/blueprints/collections/people/person.yaml`, `tests/Feature/Blueprints/PeopleHometownConditionsTest.php`.
+
+## 2026-11-03: Each PHP file holds one class, and the 12 second classes move to files of their own (#449)
+
+**Decision.** The repository adopts a one-class-per-file rule, enforced by a check outside Composer, and the 12 existing second classes each move to a file of their own: `RequiresContentSubmoduleAnalysisAnchor` in `tests/Concerns/RequiresContentSubmodule.php`, and the 11 `*Info` attribute classes in `app/Enums`, such as `CountryInfo`, `StateInfo` and `IcdInfo`. Josh chose this as option B.
+
+**Why.** The PSR-4 class check from #322, `composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts`, records a violation only when a file has no class matching its path. Composer's class map leaves a second class beside a valid one out with no violation and no warning, so it loads only after its host file has loaded for another reason. Measured on Windows 11 with Composer 2.10.3: a class appended to a file under `tests/Support/Doubles/` exited 0, while a lone misnamed class exited 1. Nothing is known to be broken today. An exemption for the 11 enum attribute classes would leave them invisible to the class map, which is the defect the rule exists to catch, and the moves are small.
+
+**Rejected.** *No rule*: the hazard stays unnoticed until a second class is reached before its host file loads. *A rule that exempts the enum attribute companions*: keeps 11 classes out of the class map and needs an exemption list someone maintains.
+
+**Residual.** Which enforcer is cheapest, PHPStan, Pint or an architecture test, is not decided; #555 chooses it.
+
+**Companion.** #554 moves the classes, then #555 adds the check.
+
+## 2026-11-03: Tests that save entries or terms move onto a base that re-roots them into a per-worker content mirror (#538)
+
+**Decision.** Tests that save entries or terms get a base test case that re-roots those stores into a per-worker content mirror, and files move onto it in batches. Gating a file into the serial group by mechanism then stops depending on the shared mirror (`storage/framework/testing/content-mirror`, rooted in `app/Support/ContentRoot.php`). Josh chose this as option C, built incrementally.
+
+**Why.** The #385 re-audit found the serial group was not drawn on mechanism: 17 files stay serial because they save entries or terms into the shared mirror, while at least nine files in the parallel band write to it the same way. A write is a hazard only when another worker reads it back: a cold Stache warm, a `Cache::flush()`, or a listing that enumerates a whole collection (#473, `ClassifiedsBoardTest`, is the one recorded instance). The shared mirror is the one piece of state such a write leaks through, so removing it removes the question of which readers to protect. A passing ten-band run proves only the failures it happened to observe, and the readers that enumerate a whole collection were never inventoried. `StacheIsolatedTestCase` already proves the pattern by re-rooting every store; `CollectionTreeIsolatedTestCase` re-roots only collection trees, so its entry saves still land in the mirror.
+
+**Rejected.** *Gating the nine band writers into the serial group*: grows the tail and keeps a list someone must remember. *Returning the 17 serial files on observed failure alone*: leaves the shared mirror in place, and a reader that enumerates a collection can still flake.
+
+**Residual.** The count of mechanism `MW` files in the serial table in `tests/README.md` was not reconciled with the issue's figure of 17, which counts `NR` and `MW` together. Which band readers enumerate a whole collection is not fully inventoried. The asset-container files and `BioBlockTest` are outside this decision and have their own tickets.
+
+**Companion.** #556 builds the base, then #557 moves the serial files and #558 moves the nine band writers.
