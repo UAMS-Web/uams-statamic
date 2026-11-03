@@ -49,7 +49,7 @@ History: [the introduction](../../../.claude/history/sync-pr-branch.md).
 
    **Pint is the instructive row**: the *job* is scoped to changed files, and its *ruleset* is not, so scoping the run says nothing about scoping the input. The other rows are shared inputs whose jobs *are* diff-scoped: a smaller and differently-shaped risk than `spell`.
 
-   **All of the inputs above exist here, so there is no carve-out.** `wordpress-importer` has no `pint.json`, so a branch there cannot be affected by a `pint` configuration change arriving through `main`. Nothing exists to change. This repository has one. The chain itself is [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) and [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs).
+   **All of the inputs above exist here, so there is no carve-out.** `aether-wordpress-importer` has no `pint.json`, so a branch there cannot be affected by a `pint` configuration change arriving through `main`. Nothing exists to change. This repository has one. The chain itself is [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) and [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs).
 
    **This is an author-side check, not a gate defect.** The gate validates the branch tip and performs no merge, so a branch behind an interacting change is validated against a base that no longer exists. Authors sync before opening a PR and before the gating run, so the exemption has to be correct on its own terms.
 
