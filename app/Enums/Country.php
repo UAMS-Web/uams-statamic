@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
 
 /**
  * Country enum with ISO 3166-1 codes and exonyms.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
 
 /**
  * Currency enum with ISO 4217 codes and formatting information.

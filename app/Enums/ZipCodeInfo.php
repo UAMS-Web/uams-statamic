@@ -13,7 +13,7 @@ use Attribute;
  * @param  string  $city  City name
  * @param  string  $state_usps  State USPS code
  * @param  string  $state_geoId  State GEOID
- * @param  array<string>  $county_geoId  County GEOIDs
+ * @param  list<string>  $county_geoId  County GEOIDs
  */
 #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
 class ZipCodeInfo

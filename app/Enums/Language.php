@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
 
 /**
  * Language enum with ISO 639 codes and comprehensive language information.

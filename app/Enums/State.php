@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
 
 /**
  * US State/territory enum with comprehensive geographic and administrative data.

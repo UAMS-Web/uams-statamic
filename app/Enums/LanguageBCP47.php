@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
 
 /**
  * BCP 47 language tags enum with comprehensive language registry information.
