@@ -368,8 +368,8 @@ final class CountyEnumGenerator
         $content .= " * 2. Open app/Enums/County.php\n";
         $content .= " * 3. Replace the existing case list in the County enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the CountyInfo attribute class and any other methods in\n";
-        $content .= " *    County.php\n";
+        $content .= " * 4. Keep any other methods in County.php; the CountyInfo attribute\n";
+        $content .= " *    class is in CountyInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";

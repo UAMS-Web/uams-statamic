@@ -337,8 +337,8 @@ final class StateEnumGenerator
         $content .= " * 2. Open app/Enums/State.php\n";
         $content .= " * 3. Replace the existing case list in the State enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the StateInfo attribute class and any other methods in\n";
-        $content .= " *    State.php\n";
+        $content .= " * 4. Keep any other methods in State.php; the StateInfo attribute\n";
+        $content .= " *    class is in StateInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";

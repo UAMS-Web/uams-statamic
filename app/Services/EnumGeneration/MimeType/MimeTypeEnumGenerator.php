@@ -1817,8 +1817,8 @@ final class MimeTypeEnumGenerator
         $content .= " * 2. Open app/Enums/MimeType.php\n";
         $content .= " * 3. Replace the existing case list in the MimeType enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the MimeTypeInfo attribute class and any other methods in\n";
-        $content .= " *    MimeType.php\n";
+        $content .= " * 4. Keep any other methods in MimeType.php; the MimeTypeInfo attribute\n";
+        $content .= " *    class is in MimeTypeInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";

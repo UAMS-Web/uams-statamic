@@ -119,7 +119,6 @@
         "Tests\\Feature\\Config\\SassImportHoldTest": 0.1463,
         "Tests\\Feature\\Config\\SearchIndexCompletenessTest": 0.539,
         "Tests\\Feature\\Config\\SubjectMatterSearchIndexConfigTest": 0.1947,
-        "Tests\\Feature\\Config\\SymfonyConsoleWindowsNullDevicePatchTest": 0.1341,
         "Tests\\Feature\\Config\\TermsSearchIndexReferencesTest": 0.4455,
         "Tests\\Feature\\Config\\UpstreamPostingClassificationTest": 0.193,
         "Tests\\Feature\\Config\\WatchUpstreamWorkflowTest": 12.0296,

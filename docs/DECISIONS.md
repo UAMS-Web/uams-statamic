@@ -3840,3 +3840,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The count of mechanism `MW` files in the serial table in `tests/README.md` was not reconciled with the issue's figure of 17, which counts `NR` and `MW` together. Which band readers enumerate a whole collection is not fully inventoried. The asset-container files and `BioBlockTest` are outside this decision and have their own tickets.
 
 **Companion.** #556 builds the base, then #557 moves the serial files and #558 moves the nine band writers.
+
+## 2026-11-03: The `symfony/console` Windows null-device patch retires on `v8.1.10`, not cut down to its signal-handler hunk (#232)
+
+**Decision.** `patches/symfony-console-terminal-input-windows-null-device.patch` is removed and `symfony/console` moves from `v8.1.9` to `v8.1.10`, with no replacement patch. Josh chose this on 2026-11-03 over cutting the patch down to the one hunk upstream has not fixed.
+
+**Why.** `v8.1.10` selects the null device by platform in `TerminalInputHelper::finish()`, the restore every numbered prompt runs after its answer. The signal-handler restore (line 134 of that file at `v8.1.10`) still writes `2>/dev/null`, but it is installed only when `pcntl_async_signals()` and `pcntl_signal()` exist, and the `pcntl` extension is not available in PHP on Windows, the one platform where `/dev/null` fails. Measured on Windows 11 Pro 10.0.26200 with Herd PHP 8.4: both functions are absent. A `ChoiceQuestion` driven through the autocomplete path printed `The system cannot find the path specified.` once on unpatched `v8.1.9` and not at all on `v8.1.10`. <!-- cspell:ignore pcntl -->
+
+**Rejected.** *Cutting the patch down to the signal-handler hunk*, as the patch's retirement condition in `patches/README.md` had planned: it keeps a vendor patch, its guard test and the re-apply risk on every `symfony/console` release, for a line no Windows PHP can reach.
+
+**Residual.** If a Windows PHP build ever ships `pcntl`, the signal-handler restore would print the same error on an interrupted prompt; the fix for that is upstream's.
+
+**Companion.** #232 (this retirement); #230 (the patch); #231 (offering the signal-handler half upstream, closed).
