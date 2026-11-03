@@ -123,7 +123,8 @@ it('is called inline by every support base that owns a throwaway root', function
 })->with([
     'StacheIsolatedTestCase.php',
     'SchemaFixtureStacheTestCase.php',
-    'CollectionTreeIsolatedTestCase.php',
+    // The trait both tree bases use owns the tree root since #558
+    'IsolatesCollectionTrees.php',
     'BrowserWriteIsolation.php',
 ]);
 
