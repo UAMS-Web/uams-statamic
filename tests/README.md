@@ -201,6 +201,15 @@ regex that misread them, a match inside a comment, and bucketing on a `$` sigil 
 site whose first argument is a helper call or a `file_get_contents(...)` expression, including the
 one on the News block partial this audit was named for.
 
+## Isolating bases: which test case to extend when a test writes content
+
+A test that saves content writes files, and under `--parallel` the default content root is the shared content mirror every worker reads. Pick the base by what the test writes and what it must still read:
+
+- [`StacheIsolatedTestCase`](Support/StacheIsolatedTestCase.php) repoints every Stache store and the blueprint directory at a per-process throwaway tree, and the Stache cache at a per-test in-memory store. The test starts with no content and builds its own fixtures. Use it when the test does not need the real content.
+- [`EntriesAndTermsIsolatedTestCase`](Support/EntriesAndTermsIsolatedTestCase.php) moves only the `entries` and `terms` stores onto a per-process copy of the mirror's `collections/` and `taxonomies/`, and lays a per-test overlay over the warm Stache cache. The real content still resolves, and an entry or term the test saves, including a re-save of a committed one, lands in the copy rather than the mirror (#556). Use it when the test saves entries or terms and still reads real content. Trees, globals, navigation, asset containers, blueprints and form submissions stay shared.
+- [`CollectionTreeIsolatedTestCase`](Support/CollectionTreeIsolatedTestCase.php) re-roots only collection trees. Entry saves through it still land in the shared mirror, which is why its rows in the `serial` table below are keyed `MW`.
+- [`StacheCacheOnlyIsolatedTestCase`](Support/StacheCacheOnlyIsolatedTestCase.php) isolates the Stache cache and nothing else, for a test that observes how the real corpus rebuilds from a cold cache. It isolates no writes.
+
 ## Test helper classes — one PSR-4 file each, never inline
 
 A named helper **class** a test needs (a stub, a fake tag/fieldtype, a fixture builder) goes in **its own file** whose name matches the class and whose namespace matches its directory under the `Tests\ => ./tests` PSR-4 rule — e.g. `Tests\Feature\Views\StubUamsNewsTag` in [`Feature/Views/StubUamsNewsTag.php`](Feature/Views/StubUamsNewsTag.php), `use`-imported by the test. **Do not** declare a named `class` inline inside a Pest test file: Pest files carry no namespace, so an inline class lands in the global namespace and Composer skips it with a `does not comply with psr-4 autoloading standard` warning on every `composer dump-autoload` (issue UAMS-Web/uams-statamic-archive#1026).
