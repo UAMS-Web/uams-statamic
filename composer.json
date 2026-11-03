@@ -43,7 +43,7 @@
         "spatie/laravel-pdf": "^2.5",
         "spatie/schema-org": "^4.0",
         "statamic/cms": "6.37.0",
-        "statamic/eloquent-driver": "5.12.4",
+        "statamic/eloquent-driver": "5.12.5",
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
         "studio1902/statamic-peak-tools": "9.2.3",
