@@ -8,8 +8,8 @@ import { checkCopies } from '../.claude/skills/synced-files/scripts/check-workfl
 // UAMS-Web/uams-statamic-archive#3107: the workflows the shared skills ship as templates are copied into
 // .github/workflows/ once, through a reviewed pull request, and nothing keeps the
 // copy and the template together afterwards. The synced-files skill's
-// check-workflow-copies.mjs compares them outside the header; this runs it in the
-// js job, so a template change the copies never received fails here rather than
+// check-workflow-copies.mjs compares the whole file, header included
+// (UAMS-Web/uams-claude-skills#448); this runs it in the js job, so a template change the copies never received fails here rather than
 // being found by hand.
 //
 // Every copy this repository carries is REQUIRED, so deleting one fails too: the
@@ -42,11 +42,11 @@ describe('workflow copies match their shared templates (#3107)', () => {
         return root
     }
 
-    it('finds every carried copy matching its template outside the header', () => {
+    it('finds every carried copy matching its template', () => {
         const { status, lines } = checkCopies({ root: repoRoot, required: CARRIED })
 
         expect(lines).toHaveLength(CARRIED.length)
-        expect(lines.every((line) => line.endsWith('matches the template outside its header.'))).toBe(true)
+        expect(lines.every((line) => line.endsWith('matches the template.'))).toBe(true)
         expect(status).toBe(0)
     })
 
@@ -61,7 +61,7 @@ describe('workflow copies match their shared templates (#3107)', () => {
         expect(lines.find((line) => line.includes('assign-author.yml'))).toContain('differs from the template')
     })
 
-    it('accepts a copy whose header alone differs', () => {
+    it('fails a copy whose header alone differs', () => {
         const root = scratchRoot('header')
         const copy = join(root, '.github', 'workflows', 'check-attribution-footer.yml')
         const text = readFileSync(copy, 'utf8')
@@ -70,7 +70,12 @@ describe('workflow copies match their shared templates (#3107)', () => {
         expect(onIndex).toBeGreaterThan(0)
         writeFileSync(copy, `${text.slice(0, onIndex)}\n# a note only this repository carries\n${text.slice(onIndex)}`)
 
-        expect(checkCopies({ root, required: CARRIED }).status).toBe(0)
+        // The template owns the header too (UAMS-Web/uams-claude-skills#448), so a note
+        // added only here is drift rather than a local exception
+        const { status, lines } = checkCopies({ root, required: CARRIED })
+
+        expect(status).toBe(1)
+        expect(lines.find((line) => line.includes('check-attribution-footer.yml'))).toContain('differs from the template')
     })
 
     it('fails when a carried copy is deleted', () => {
