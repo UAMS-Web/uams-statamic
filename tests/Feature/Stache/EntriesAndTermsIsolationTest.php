@@ -174,13 +174,13 @@ it('leaves no trace of an earlier test in the copy or the Stache', function (): 
         fn (SplFileInfo $file): bool => str_contains($file->getFilename(), ISOLATION_PROBE_SLUG),
     );
     $slugs = $entries->map(fn (mixed $entry): mixed => $entry instanceof StatamicEntry ? $entry->slug() : null)->all();
-    $resaved = $entries->filter(fn (mixed $entry): bool => $entry instanceof StatamicEntry && str_ends_with((string) mustBeString($entry->get('title') ?? '', 'an entry title'), '(re-saved)'))->all();
+    $reSavedEntries = $entries->filter(fn (mixed $entry): bool => $entry instanceof StatamicEntry && str_ends_with(mustBeString($entry->get('title') ?? '', 'an entry title'), '(re-saved)'))->all();
 
     expect($entries->all())->not->toBe([])
         ->and($leftover)->toBe([])
         ->and($slugs)->not->toContain(ISOLATION_PROBE_SLUG)
         ->and(Term::find(ISOLATION_PROBE_TAXONOMY.'::'.ISOLATION_PROBE_SLUG))->toBeNull()
-        ->and($resaved)->toBe([]);
+        ->and($reSavedEntries)->toBe([]);
 });
 
 it('roots the copy per process, outside the shared mirror', function (): void {
