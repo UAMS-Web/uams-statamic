@@ -8,51 +8,6 @@ use App\Services\EnumGeneration\EnumDataUtils;
 use Attribute;
 
 /**
- * Attribute for storing MIME type information on enum cases.
- */
-#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
-class MimeTypeInfo
-{
-    /**
-     * The MIME type string identifier.
-     *
-     * @var string The MIME type string (e.g., 'application/pdf')
-     */
-    public string $mimeType;
-
-    /**
-     * Array of file extensions associated with this MIME type.
-     *
-     * @var array<int,string> Array of file extensions (e.g., ['pdf'])
-     */
-    public array $extensions;
-
-    /**
-     * The MIME type category classification.
-     *
-     * @var string The MIME type category (e.g., 'application', 'image')
-     */
-    public string $category;
-
-    /**
-     * Initialize a new MimeTypeInfo attribute instance.
-     *
-     * @param  string  $mimeType  The MIME type string (e.g., 'application/pdf')
-     * @param  array<int,string>  $extensions  Array of file extensions (e.g., ['pdf'])
-     * @param  string  $category  The MIME type category (e.g., 'application', 'image')
-     */
-    public function __construct(
-        string $mimeType,
-        array $extensions = [],
-        string $category = '',
-    ) {
-        $this->mimeType = $mimeType;
-        $this->extensions = $extensions;
-        $this->category = $category;
-    }
-}
-
-/**
  * MIME Types enum with comprehensive file type mappings.
  *
  * This enum is intended for use wherever a standardized list of MIME types is
