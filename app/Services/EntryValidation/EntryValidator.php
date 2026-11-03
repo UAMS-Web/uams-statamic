@@ -599,6 +599,11 @@ class EntryValidator
                 return $this->passesLiteralComparison($lhs, $target, equal: true);
             }
 
+            // The editor hides a field when the value it compares is an object or array (#525)
+            if (\is_array($lhs) || \is_object($lhs)) {
+                return false;
+            }
+
             // Compare lhs to target (loose)
             return $lhs == $target;
         }
@@ -618,6 +623,11 @@ class EntryValidator
             if (\in_array($target, ['null', 'true', 'false'], true)) {
                 // Compare the way the editor's loose `!=` does (#508)
                 return $this->passesLiteralComparison($lhs, $target, equal: false);
+            }
+
+            // The editor hides a field when the value it compares is an object or array (#525)
+            if (\is_array($lhs) || \is_object($lhs)) {
+                return false;
             }
 
             // Compare lhs to target (not equal, loose)
@@ -664,6 +674,11 @@ class EntryValidator
         // Check if the condition is a custom one registered in resources/js/conditions
         if (preg_match('/^custom\s+(.*)$/s', $rhs, $m)) {
             return $this->evaluateCustomCondition($fieldHandle, $m[1], $lhs, $values);
+        }
+
+        // The editor reads a bare value as `equals`, so an object or array hides the field (#525)
+        if (\is_array($lhs) || \is_object($lhs)) {
+            return false;
         }
 
         // Default: loose equality
