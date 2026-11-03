@@ -12,11 +12,11 @@ use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\CollectionTree;
 use Symfony\Component\Finder\Finder;
 use Tests\Concerns\RequiresContentSubmodule;
-use Tests\Support\CollectionTreeIsolatedTestCase;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 
 // Tree-isolated: saving an entry into a structured collection appends it to that
 // collection's tree, which must not touch the shared `faq_categories` tree.
-uses(CollectionTreeIsolatedTestCase::class, RequiresContentSubmodule::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class, RequiresContentSubmodule::class);
 
 /**
  * Coverage for UAMS-Web/uams-statamic-archive#2535: `faq_categories` was a flat taxonomy, and a flat term exists

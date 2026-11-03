@@ -135,12 +135,13 @@ parameters:
         # The class alternation exists for the same reason as the method one: `$this`
         # binds to whichever base the file's `uses()` names FIRST, so a content-
         # dependent file that sits on a narrower base reports the identical error
-        # against that base instead. CollectionTreeIsolatedTestCase joined in UAMS-Web/uams-statamic-archive#1873.
+        # against that base instead. CollectionTreeIsolatedTestCase joined in UAMS-Web/uams-statamic-archive#1873,
+        # and EntriesTermsAndTreesIsolatedTestCase in UAMS-Web/uams-statamic#558.
         # Both halves stay enumerated rather than wildcarded — a new base or a new
         # helper should have to be added here deliberately.
         -
             identifier: method.notFound
-            message: '#Call to an undefined method Tests\\(TestCase|Support\\CollectionTreeIsolatedTestCase)::(requireContentCollection|requireContentEntry|skipWithoutQualifyingContentEntry)\(\)#'
+            message: '#Call to an undefined method Tests\\(TestCase|Support\\(CollectionTreeIsolatedTestCase|EntriesTermsAndTreesIsolatedTestCase))::(requireContentCollection|requireContentEntry|skipWithoutQualifyingContentEntry)\(\)#'
         # The plugin's PestInternalClassAccessIgnoreExtension whitelists Pest's
         # own @internal classes at their intended call sites, which retires the
         # whole `#internal class Pest\\#` family from UAMS-Web/uams-statamic-archive#1344 except one: the

@@ -72,8 +72,8 @@ use Tests\TestCase;
  *
  * Only the `entries` and `terms` stores move. An entry saved in a structured
  * collection also saves that collection's tree, into the shared mirror; trees are
- * {@see CollectionTreeIsolatedTestCase}'s, and a test that needs both is not served
- * by either base alone. Globals, navigation, asset containers and form submissions
+ * {@see CollectionTreeIsolatedTestCase}'s, and a test that needs both extends
+ * {@see EntriesTermsAndTreesIsolatedTestCase}. Globals, navigation, asset containers and form submissions
  * stay on the shared mirror too, and listeners an `Entry::save()` fires can still
  * write elsewhere, which is why the proof saves quietly. Their cache writes go
  * through the overlay and are discarded, so one of them saved under this base
