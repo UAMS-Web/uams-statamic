@@ -33,7 +33,7 @@ Five trees, all **siblings** of each other, all inside Herd's parked directory:
 | Primary | *the main clone itself* | Reference checkout. **Holds the `main` branch**, current with `origin/main`. Serves the site at `uams-statamic.test`. Not a work surface. |
 | Slot A | `../uams-statamic-a` | Ticket work. Take this one first. |
 | Slot B | `../uams-statamic-b` | A second concurrent session, or a second ticket. |
-| Importer | `../uams-statamic-importer` | The sibling `wordpress-importer` package's host-app test runs, and nothing else. See *The importer slot* below. |
+| Importer | `../uams-statamic-importer` | The sibling `aether-wordpress-importer` package's host-app test runs, and nothing else. See *The importer slot* below. |
 | Local CI | `../uams-statamic-ci` | Owned by [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs). **Never hand-drive it**: the runner checks branches in and out of it. |
 
 History: [The slots](../../../.claude/history/worktrees.md#the-slots).
@@ -43,7 +43,7 @@ History: [The slots](../../../.claude/history/worktrees.md#the-slots).
 - **All branch work → a slot.** Claim one, work in it, release it. This holds for a solo session as much as a concurrent one: a session that never touches the primary cannot collide with one that does, and the slot is already bootstrapped so there is no reason to prefer the primary.
 - **The primary → `main`, and left there.** It is the tree to diff against. Leaving it on a ticket branch also destroys the oldest drift signal there is: "the primary is on a branch I did not set" no longer means anything if you routinely put it there yourself.
 
-- **`wordpress-importer` host-app test runs → the importer slot**, never A or B. See *The importer slot* below.
+- **`aether-wordpress-importer` host-app test runs → the importer slot**, never A or B. See *The importer slot* below.
 
 - **Local CI → its own tree, driven only by the runner.** The runner resolves its base from the primary, one more reason the primary stays on `main`. See *The CI tree belongs to the runner* below and the `local-ci` skill.
 
@@ -131,7 +131,7 @@ History: [The importer slot](../../../.claude/history/worktrees.md#the-importer-
 
 ## The importer slot
 
-The sibling **`UAMS-Web/wordpress-importer`** package's host-app integration tests (the classes under its `tests/Feature/` that do `use Tests\TestCase;`) cannot run in that package's own CI. They need a booted app, so they run here, following that repo's [`host-app-tests`](https://github.com/UAMS-Web/wordpress-importer/blob/main/.claude/skills/host-app-tests/SKILL.md) skill. `../uams-statamic-importer` exists so those runs stop borrowing A or B.
+The sibling **`UAMS-Web/aether-wordpress-importer`** package's host-app integration tests (the classes under its `tests/Feature/` that do `use Tests\TestCase;`) cannot run in that package's own CI. They need a booted app, so they run here, following that repo's [`host-app-tests`](https://github.com/UAMS-Web/aether-wordpress-importer/blob/main/.claude/skills/host-app-tests/SKILL.md) skill. `../uams-statamic-importer` exists so those runs stop borrowing A or B.
 
 **Claim it with a marker branch**, so the ordinary free/held reading keeps working:
 
@@ -246,16 +246,16 @@ The list the script runs, and the reasoning for each step:
 cd ../uams-statamic-a
 composer install                                  # no-op when vendor/ matches composer.lock
 npm ci                                            # ONLY if package-lock.json moved, see below
-git submodule update --init content users resources/forms public/assets app/private/assets
-php artisan statamic:stache:clear                 # content is invisible to tests until this runs
-DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache   # only when the mirror predates content/
+git submodule update --init <each path in SUBMODULES, scripts/worktree-slots.mjs>
+php artisan statamic:stache:clear                 # refreshes the local Stache the served site reads
+DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache   # carries a content change into tests; only when the mirror predates content/
 ```
 
 - **`npm ci`** is only needed for tickets that touch frontend/build/JS or run `npm run spell`.
 - **The `content/` submodule pointer moves with `main`.** Skipping this is the source of the null-method cascade: collection *configs* (not just entries) live in `content/collections/*.yaml`, so a stale or absent `content/` makes `Collection::findByHandle()` return `null` and every test that touches a collection dies with `Call to a member function entryClass() on null`. **That wall of errors across unrelated suites is the signature of a stale `content/`, not a broken branch.** Verify with `git -C <slot>/content rev-parse HEAD` (the direct read, and the one `scripts/worktree-slots.mjs` uses) after confirming the submodule is initialized (see *Verifying a submodule's state* below). `git submodule status` also reports each linked worktree's own revision (measured on git 2.32.0.windows.2).
 - **`refresh` does NOT build assets, and a browser run needs them.** The asset build belongs to *provisioning* (`npm run build && npm run cp:build`), so a slot refreshed all evening still serves whatever it built when it was first stood up. That matters only for `tests/Browser`, which resolves its script tag through `public/build/manifest.json`: a stale build there produces a plausible *behavioral* failure (an undefined Alpine component, a binding that never fires) with nothing saying the assets are old. `Tests\Support\BrowserAssetFreshness` now refuses such a run and names the command, so this is a cost you are told about rather than one you debug; the gate is unaffected, because [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs)'s chain builds at job 6 and runs `browser` at job 12. **Run `npm run build` before a bare `vendor/bin/pest tests/Browser`.**
-- **`statamic:stache:clear` after any `content/` move.** A content change is invisible to tests until the Stache re-indexes, so both arms of a probe pass and prove nothing.
-- **The content mirror is rebuilt after the Stache clear, and only when it predates `content/`** (UAMS-Web/uams-statamic-archive#2935). Every content test reads the mirror, so one built from a different `content/` tests the wrong content. `test:seed-stache` refuses outside `APP_ENV=testing` and while a test process holds the mirror, so the rebuild cannot tear a band in flight. When it is refused or fails, `refresh` reports the mirror instead of `is current`.
+- **`statamic:stache:clear` after any `content/` move.** It refreshes the local Stache for the served site. From `UAMS-Web/uams-statamic#447` on it does not carry a content change into tests: the test environment has its own file cache root (`storage/framework/testing/cache/data`), and the command runs outside that environment, so it leaves the test cache alone.
+- **The content mirror is rebuilt after the Stache clear, and only when it predates `content/`** (UAMS-Web/uams-statamic-archive#2935). Every content test reads the mirror, so one built from a different `content/` tests the wrong content. `test:seed-stache` rebuilds the mirror and wipes the test cache root, so that rebuild is what carries a content change into tests, from `UAMS-Web/uams-statamic#447` on. Without it a probe's two arms both read the old content, pass, and prove nothing. `test:seed-stache` refuses outside `APP_ENV=testing` and while a test process holds the mirror, so the rebuild cannot tear a band in flight. When it is refused or fails, `refresh` reports the mirror instead of `is current`.
 
 **Nothing else about the submodule storage is settled, so do not extrapolate from the gitdir measurement below.** The object store is *not* shared either (no gitdir carries an `objects/info/alternates`; each holds its own objects). Why `content` and `app/private/assets` initialize without a network clone while `users` and `public/assets` fetch (the **Windows** observation under provisioning: on macOS none of the four submodules then present fetched) is therefore **unexplained**, not explained by sharing. Measure the specific claim you are about to write down. The `local-ci` skill's staged-serially-then-fan-out procedure remains the **version-safe** habit: the gitdir independence has been measured on one git version only, and that skill owns the concurrency procedure.
 
@@ -300,9 +300,9 @@ git worktree add --detach ../uams-statamic-a origin/main
 
 cd ../uams-statamic-a
 
-# 2. All five submodules: content, the login users AND the forms live here. This runs BEFORE the
+# 2. Every submodule in SUBMODULES (scripts/worktree-slots.mjs): the content, the login users and the forms live here. This runs BEFORE the
 #    installs, and the order is load-bearing, see the note below.
-git submodule update --init content users resources/forms public/assets app/private/assets
+git submodule update --init <each path in SUBMODULES, scripts/worktree-slots.mjs>
 
 # 3. Dependencies (reads your global Composer github-oauth PAT for the private packages).
 composer install
@@ -466,5 +466,5 @@ This file is the standing statement on **worktree lifecycle**: the slot model, c
 
 The `local-ci` skill owns the CI tree entirely, and the chain that runs in it.
 
-It also composes **across repositories**: this file owns the importer slot's *existence, claim and release*, while the sibling `wordpress-importer` repo's [`host-app-tests`](https://github.com/UAMS-Web/wordpress-importer/blob/main/.claude/skills/host-app-tests/SKILL.md) skill owns what actually happens inside it: pointing `vendor/` at a branch, which test files to run, and how to read a failure. Neither restates the other.
+It also composes **across repositories**: this file owns the importer slot's *existence, claim and release*, while the sibling `aether-wordpress-importer` repo's [`host-app-tests`](https://github.com/UAMS-Web/aether-wordpress-importer/blob/main/.claude/skills/host-app-tests/SKILL.md) skill owns what actually happens inside it: pointing `vendor/` at a branch, which test files to run, and how to read a failure. Neither restates the other.
 
