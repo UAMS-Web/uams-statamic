@@ -38,10 +38,18 @@ use Tests\TestCase;
  * carries a path in the old one, which {@see CollectionTreeIsolatedTestCase} explains
  * at length: `ExistsAsFile::writeFile()` deletes an item's `initialPath` when it
  * differs from the path recomputed from the store directory. Two caches carry those
- * paths: the path and key indexes, and the cached items themselves, which serialize
- * their `initialPath`. So {@see setUp()} rewrites every entry and term path index and
- * key index into the copy, and forgets every cached entry and term, which then load
- * from the copy's files when read. It asserts the rewrite before the test body runs.
+ * paths where a save reads them: the path and key indexes, and the cached items
+ * themselves, which serialize their `initialPath`. So {@see setUp()} rewrites every
+ * entry and term path index and key index into the copy, and forgets every cached
+ * entry and term, which then load from the copy's files when read. It asserts that
+ * no path index still names the mirror before the test body runs. The duplicates
+ * index (`stache::duplicates`) keeps mirror paths too, and is left alone: it only
+ * reports duplicates and is never a save path.
+ *
+ * Nothing is moved back in `tearDown()`. The application, and with it the Stache,
+ * its store directories and the overlay, is rebuilt for every test, so a restore
+ * would only open a window in which a teardown callback saves against the shared
+ * mirror with indexes that still hold copy paths.
  *
  * ## Why the Stache cache is overlaid rather than replaced
  *
@@ -67,7 +75,10 @@ use Tests\TestCase;
  * {@see CollectionTreeIsolatedTestCase}'s, and a test that needs both is not served
  * by either base alone. Globals, navigation, asset containers and form submissions
  * stay on the shared mirror too, and listeners an `Entry::save()` fires can still
- * write elsewhere, which is why the proof saves quietly.
+ * write elsewhere, which is why the proof saves quietly. Their cache writes go
+ * through the overlay and are discarded, so one of them saved under this base
+ * changes its mirror file while this worker's cache keeps the earlier row: save
+ * them on a base that isolates them, not this one.
  */
 abstract class EntriesAndTermsIsolatedTestCase extends TestCase
 {
@@ -110,18 +121,6 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
      */
     protected string $isolatedContentRoot;
 
-    /**
-     * Each moved store's directory before this test moved it, keyed by store.
-     *
-     * @var array<string, string>
-     */
-    private array $originalDirectories = [];
-
-    /**
-     * The Stache cache store in use before the overlay replaced it.
-     */
-    private ?string $originalCacheStore = null;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -154,24 +153,6 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
         }
 
         $this->flushEntryMemos();
-    }
-
-    protected function tearDown(): void
-    {
-        // Put each store back where it read from, with no memo of the copy's paths
-        foreach ($this->originalDirectories as $storeKey => $directory) {
-            $store = $this->aggregateStore($storeKey);
-            $store->directory($directory);
-            $store->resetMemoizedState();
-        }
-
-        $this->originalDirectories = [];
-
-        // Drop the overlay and everything the test wrote into it
-        Config::set('statamic.stache.cache_store', $this->originalCacheStore);
-        Cache::forgetDriver(self::OVERLAY_STORE);
-
-        parent::tearDown();
     }
 
     /**
@@ -213,7 +194,11 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
 
                 $destination = $target.'/'.$relative;
                 File::ensureDirectoryExists(\dirname($destination));
-                File::copy($source.'/'.$relative, $destination);
+                // A file a sibling worker removed mid-scan must fail here, not leave a stale copy
+                if (! File::copy($source.'/'.$relative, $destination)) {
+                    static::fail("Could not copy \"{$source}/{$relative}\" into this process's copy at \"{$destination}\".");
+                }
+
                 touch($destination, (int) explode(':', $stamp)[1]);
             }
         }
@@ -261,9 +246,7 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
     private function installOverlayCache(): void
     {
         $current = Config::get('statamic.stache.cache_store');
-        $this->originalCacheStore = \is_string($current) ? $current : null;
-
-        $fallback = Cache::store($this->originalCacheStore)->getStore();
+        $fallback = Cache::store(\is_string($current) ? $current : null)->getStore();
 
         Cache::extend('stache_overlay', fn (): Repository => Cache::repository(new OverlayCacheStore($fallback)));
         Config::set('cache.stores.'.self::OVERLAY_STORE, ['driver' => 'stache_overlay']);
@@ -289,8 +272,6 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
         if ($directory !== $sharedDirectory) {
             static::fail("The {$storeKey} store is rooted at \"{$directory}\", not \"{$sharedDirectory}\", so this base would isolate nothing.");
         }
-
-        $this->originalDirectories[$storeKey] = (string) $store->directory();
 
         foreach ($this->childStores($store) as $child) {
             $this->rewriteChildStore($child, $sharedDirectory, $copyDirectory);

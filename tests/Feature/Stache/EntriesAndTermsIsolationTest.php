@@ -35,6 +35,10 @@ uses(EntriesAndTermsIsolatedTestCase::class);
  *
  * Saves are quiet, so no listener writes outside the two stores the base moves.
  *
+ * The third case checks what the first two left behind, so it tests something only
+ * when it runs after them in the same process, which is the file's declared order.
+ * Run alone with `--filter`, it passes having nothing to find.
+ *
  * @command  php artisan test --compact tests/Feature/Stache/EntriesAndTermsIsolationTest.php
  */
 
@@ -175,12 +179,16 @@ it('leaves no trace of an earlier test in the copy or the Stache', function (): 
     );
     $slugs = $entries->map(fn (mixed $entry): mixed => $entry instanceof StatamicEntry ? $entry->slug() : null)->all();
     $reSavedEntries = $entries->filter(fn (mixed $entry): bool => $entry instanceof StatamicEntry && str_ends_with(mustBeString($entry->get('title') ?? '', 'an entry title'), '(re-saved)'))->all();
+    $terms = Term::whereTaxonomy(ISOLATION_PROBE_TAXONOMY);
+    $reSavedTerms = $terms->filter(fn (mixed $term): bool => $term instanceof LocalizedTerm && str_ends_with(mustBeString($term->get('title') ?? '', 'a term title'), '(re-saved)'))->all();
 
     expect($entries->all())->not->toBe([])
+        ->and($terms->all())->not->toBe([])
         ->and($leftover)->toBe([])
         ->and($slugs)->not->toContain(ISOLATION_PROBE_SLUG)
         ->and(Term::find(ISOLATION_PROBE_TAXONOMY.'::'.ISOLATION_PROBE_SLUG))->toBeNull()
-        ->and($reSavedEntries)->toBe([]);
+        ->and($reSavedEntries)->toBe([])
+        ->and($reSavedTerms)->toBe([]);
 });
 
 it('roots the copy per process, outside the shared mirror', function (): void {
