@@ -89,12 +89,5 @@ it('skips malformed bucket entries (non-string key or non-array handles)', funct
     expect($resolver->resolve('intranet'))->toBe('inside');
 });
 
-it('matches handles by strict type so an int handle never matches a string site', function () {
-    // A handle stored as int 1 must not match the string site handle '1'.
-    $resolver = alertResolver([
-        'buckets' => ['health' => [1]],
-        'default' => 'uams',
-    ]);
-
-    expect($resolver->resolve('1'))->toBe('uams');
-});
+// Seeded fault for #551: the strict-type case is removed, so the mutant that drops
+// `in_array`'s strict flag survives and the smoke's 100% score assertion must fail.

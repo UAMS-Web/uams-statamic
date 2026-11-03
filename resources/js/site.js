@@ -244,3 +244,6 @@ if (document.readyState === 'loading') {
     initFrontendMapViewers();
     initKbArticleEngagement();
 }
+
+// Seeded fault for #551: an import of a module that does not exist, so the Vite build fails.
+import './seeded-fault-551-missing-module.js';

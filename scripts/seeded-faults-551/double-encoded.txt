@@ -1,0 +1,1 @@
+Seeded fault for #551: the next word is UTF-8 read as cp1252 and re-encoded: cafÃ©
