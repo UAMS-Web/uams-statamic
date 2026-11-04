@@ -43,7 +43,7 @@
         "spatie/laravel-pdf": "^2.5",
         "spatie/schema-org": "^5.0",
         "statamic/cms": "6.37.0",
-        "statamic/eloquent-driver": "5.12.4",
+        "statamic/eloquent-driver": "5.12.5",
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
         "studio1902/statamic-peak-tools": "9.2.3",
@@ -150,11 +150,7 @@
     "extra": {
         "composer-exit-on-patch-failure": true,
         "patches": {
-            "larastan/larastan": {
-                "Resolve console commands the console kernel registers, so argument() and option() keep their signature types on Laravel 13.36 and later (temporary; see #3156)": "patches/larastan-console-kernel-commands.patch"
-            },
             "pestphp/pest-plugin-browser": {
-                "Fail a request instead of busy-looping when the Playwright socket closes (temporary; see #1814)": "patches/pest-plugin-browser-client-bounded-requests.patch",
                 "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
                 "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch"
             },

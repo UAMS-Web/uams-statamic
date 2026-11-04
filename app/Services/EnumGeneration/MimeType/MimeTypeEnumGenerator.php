@@ -66,11 +66,8 @@ final class MimeTypeEnumGenerator
         // Fetch from mime-db (primary source)
         $mimeDbRecords = $this->fetchMimeDbRecords();
 
-        // Check if mime-db fetch failed
-        if ($mimeDbRecords === null) {
-            // Initialize empty array to prevent null errors
-            $mimeDbRecords = [];
-        }
+        // Initialize empty array to prevent null errors
+        $mimeDbRecords ??= [];
 
         // Fetch from IANA media types (secondary source)
         $ianaRecords = $this->fetchIanaMediaTypeRecords();
@@ -78,11 +75,8 @@ final class MimeTypeEnumGenerator
         // Fetch from Apache MIME types (tertiary source)
         $apacheRecords = $this->fetchApacheMimeTypeRecords();
 
-        // Check if the Apache fetch failed
-        if ($apacheRecords === null) {
-            // Initialize empty array to prevent null errors
-            $apacheRecords = [];
-        }
+        // Initialize empty array to prevent null errors
+        $apacheRecords ??= [];
 
         // ---
         // Merge records from all sources with proper deduplication.
@@ -96,11 +90,8 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
-            if (! isset($recordsByMimeType[$mimeType])) {
-                // Add record to the map
-                $recordsByMimeType[$mimeType] = $record;
-            }
+            // Add record to the map
+            $recordsByMimeType[$mimeType] ??= $record;
         }
 
         // Loop through the IANA records (medium priority)
@@ -108,11 +99,8 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
-            if (! isset($recordsByMimeType[$mimeType])) {
-                // Add record to the map
-                $recordsByMimeType[$mimeType] = $record;
-            }
+            // Add record to the map
+            $recordsByMimeType[$mimeType] ??= $record;
         }
 
         // Loop through the mime-db records (highest priority)

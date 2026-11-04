@@ -6,13 +6,10 @@ namespace App\Jobs;
 
 use App\Mail\Classifieds\ClassifiedListingExpired;
 use App\Support\Classifieds\ClassifiedExpiry;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\UniqueFor;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -57,10 +54,7 @@ use Symfony\Component\Mime\Exception\ExceptionInterface as MimeExceptionInterfac
 #[UniqueFor(3600)]
 final class UnpublishExpiredClassifieds implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The entry data key recording the expiration date a listing was notified for.

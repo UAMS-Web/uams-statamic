@@ -89,7 +89,7 @@ class AppServiceProvider extends ServiceProvider
         // this install serves, and which entry ids exist. Bound lazily so the cost — a walk of
         // every site and every entry id — is paid only by a scan that asks for it, never on an
         // ordinary request boot (UAMS-Web/uams-statamic-archive#1766).
-        $this->app->bind(LinkClassifier::class, static function (): LinkClassifier {
+        $this->app->bind(static function (): LinkClassifier {
             /** @var Collection<int|string, Site> $sites */
             $sites = SiteFacade::all();
 

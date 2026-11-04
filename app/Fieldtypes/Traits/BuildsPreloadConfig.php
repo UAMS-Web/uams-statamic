@@ -128,11 +128,8 @@ trait BuildsPreloadConfig
     protected function processPreloadConfig(
         ?array $config = null
     ): array {
-        // Check if config was not provided
-        if ($config === null) {
-            // Get the cached config
-            $config = $this->getCachedConfig();
-        }
+        // Get the cached config
+        $config ??= $this->getCachedConfig();
 
         // Normalize config with defaults to ensure all required keys are present
         $config = $this->normalizeConfigWithDefaults($config);

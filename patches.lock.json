@@ -1,34 +1,12 @@
 {
-    "_hash": "f1f53cdb967ede7f6f7a86c6e62a5fd15e32108c8c54185c1d400f5670f639c0",
+    "_hash": "9e1af643e6e731de0a27c4ae42424b7422854836bdc24e40a14ccdd1d86e47e9",
     "patches": {
-        "larastan/larastan": [
-            {
-                "package": "larastan/larastan",
-                "description": "Resolve console commands the console kernel registers, so argument() and option() keep their signature types on Laravel 13.36 and later (temporary; see #3156)",
-                "url": "patches/larastan-console-kernel-commands.patch",
-                "sha256": "d1048904672cfd7e61e81c1899806eb62155c8ebee8aa79ac29311adeab5340a",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            }
-        ],
         "pestphp/pest-plugin-browser": [
-            {
-                "package": "pestphp/pest-plugin-browser",
-                "description": "Fail a request instead of busy-looping when the Playwright socket closes (temporary; see #1814)",
-                "url": "patches/pest-plugin-browser-client-bounded-requests.patch",
-                "sha256": "a8488a9c0242bd7cf31a26e48c035dd6db8b5af68c5621f548beb253c7069715",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
             {
                 "package": "pestphp/pest-plugin-browser",
                 "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)",
                 "url": "patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "sha256": "9cb5a827de985d79d7d784588e48b4550577234dc25e46aafa9edc7f1ab2cc28",
+                "sha256": "e3e12e7fea395155120aab77be5ece38c9433689470e83950336f49d61d94191",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"

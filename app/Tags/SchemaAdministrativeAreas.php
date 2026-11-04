@@ -261,11 +261,9 @@ class SchemaAdministrativeAreas extends Tags
     private function cachedNormalizedAreaType(): ?string
     {
         // Resolve and memoize the normalized type on first use
-        if (self::$normalizedAreaType === null) {
-            self::$normalizedAreaType = SchemaObjectFragmentBuilder::normalizedType(
-                'AdministrativeArea'
-            );
-        }
+        self::$normalizedAreaType ??= SchemaObjectFragmentBuilder::normalizedType(
+            'AdministrativeArea'
+        );
 
         // Return the cached normalized type URI
         return self::$normalizedAreaType;

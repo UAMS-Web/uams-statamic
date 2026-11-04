@@ -1,10 +1,10 @@
 diff --git a/src/Execution.php b/src/Execution.php
-index 7ffc945..d8c2e81 100644
+index aba9c9b..9fbecc6 100644
 --- a/src/Execution.php
 +++ b/src/Execution.php
-@@ -146,7 +146,42 @@ final class Execution
+@@ -127,7 +127,42 @@ final class Execution
  
-         while (microtime(true) < $end) {
+         while (hrtime(true) < $end) {
              try {
 -                return Playwright::usingTimeout(1_000, $callback);
 +                // Temporary: drop this patch once pest-plugin-browser separates
@@ -40,7 +40,7 @@ index 7ffc945..d8c2e81 100644
 +                // The first attempt is unaffected - at that point the whole window is
 +                // still remaining - so an operation that fits the budget still completes
 +                // on attempt one, which is the point of the patch.
-+                $remaining = (int) max(1, ($end - microtime(true)) * 1_000);
++                $remaining = (int) max(1, intdiv($end - hrtime(true), 1_000_000));
 +
 +                return Playwright::usingTimeout(min($timeout, $remaining), $callback);
              } catch (ExpectationFailedException) {
