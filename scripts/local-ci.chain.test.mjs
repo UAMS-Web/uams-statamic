@@ -413,6 +413,15 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
         expect(script).toMatch(/'dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'/)
     })
+
+    it('runs the one-class-per-file check in both files', () => {
+        // The PSR-4 check drops a second class silently, so this is the only step that
+        // reports one (#555).
+        expect(workflow).toMatch(/run: php scripts\/check-one-class-per-file\.php\n/)
+
+        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+        expect(script).toMatch(/runPhp\(\['scripts\/check-one-class-per-file\.php'\], worktreePath\)/)
+    })
 })
 
 // UAMS-Web/uams-statamic-archive#2989: the header comment's `--jobs` usage text is the list a person copies

@@ -95,7 +95,8 @@ defaults:
 #   content-pointer-guard -> "Run content pointer guard"
 #   encoding-guard -> "Run encoding guard"
 #   test-isolation-guard -> "Run test isolation guard" + "Run global test symbol check"
-#   composer-validate -> "Run composer validate" + "Run PSR-4 class check"
+#   composer-validate -> "Run composer validate" + "Run PSR-4 class check" +
+#                     "Run one-class-per-file check"
 #   browser        -> "Run CP browser smokes + accessibility gate" (mirrored as
 #                     `--jobs browser`, and part of local-ci's default `all` set
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
@@ -1665,7 +1666,8 @@ jobs:
     # Nothing breaks outright, but every `composer install` on every machine then
     # warns "The lock file is not up to date with the latest changes in
     # composer.json" forever, and warning noise is how real warnings get ignored.
-    # The second step fails on a class whose file does not match its PSR-4 path.
+    # The second step fails on a class whose file does not match its PSR-4 path,
+    # and the third on a file that declares more than one type.
     # Dependency-free: composer reads the two files and scans the source trees
     # directly, so this needs no `composer install`, no content submodule, and no
     # framework boot.
@@ -1710,6 +1712,15 @@ jobs:
       # files.
       - name: Run PSR-4 class check
         run: composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts
+
+      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      # Fails on a file declaring more than one class, enum, interface or trait,
+      # naming the file and each extra type: the second class the step above drops
+      # silently (#449, #555). A token scan of the files git lists, which needs only
+      # PHP. It exits 2, failing the step, when its committed two-class control
+      # fixture is not reported, so a blind scan cannot pass.
+      - name: Run one-class-per-file check
+        run: php scripts/check-one-class-per-file.php
 
   no-emoji-guard:
     name: No-emoji guard (durable records)
