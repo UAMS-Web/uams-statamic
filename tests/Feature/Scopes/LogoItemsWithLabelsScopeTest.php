@@ -10,8 +10,8 @@ use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Fields\LabeledValue;
 use Statamic\Stache\Query\EntryQueryBuilder;
-use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 
 // Tree-isolated: saving a new entry into a structured collection appends it to that
 // collection's tree, which must not touch the shared `logos_item_labels` tree.
