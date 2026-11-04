@@ -128,7 +128,6 @@ trait BuildsPreloadConfig
     protected function processPreloadConfig(
         ?array $config = null
     ): array {
-        // Check if config was not provided
         // Get the cached config
         $config ??= $this->getCachedConfig();
 

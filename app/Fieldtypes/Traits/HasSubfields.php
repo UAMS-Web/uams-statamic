@@ -182,7 +182,6 @@ trait HasSubfields
      */
     protected function getCachedSubfieldDefinitions(): array
     {
-        // Check if cache is null
         // Call the abstract method to get subfield definitions and cache them
         $this->subfieldDefinitionsCache ??= $this->getSubfieldDefinitions();
 

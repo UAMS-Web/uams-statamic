@@ -123,15 +123,12 @@ class Address extends Fieldtype
         // Static variable to cache country options
         static $countryOptions = null;
 
-        // Check if US states and territories are not already cached
         // Get US states and territories
         $usStates ??= $this->getUsStatesAndTerritories();
 
-        // Check if Canadian provinces and territories are not already cached
         // Get Canadian provinces and territories
         $canadianProvinces ??= $this->getCanadianProvincesAndTerritories();
 
-        // Check if country options are not already cached
         // Get country options
         $countryOptions ??= $this->getCountryOptions();
 

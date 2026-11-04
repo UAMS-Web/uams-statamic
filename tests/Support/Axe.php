@@ -58,6 +58,8 @@ function runAxe($page): array
     // Since pest-plugin-browser v5.2.0 axe-core is no longer present on every
     // page: the plugin injects it on demand, from its own bundled copy, only
     // inside its accessibility assertion. Load the same copy the same way here.
+    // Unlike the plugin, this loads it into the top frame only: the scanned
+    // fixtures carry no iframe, and a page that does needs the frames covered.
     if ($page->script('typeof window.axe === "undefined"') === true) {
         $source = InstalledVersions::getInstallPath('pestphp/pest-plugin-browser').'/resources/js/axe.min.js';
         $axe = is_file($source) ? file_get_contents($source) : false;

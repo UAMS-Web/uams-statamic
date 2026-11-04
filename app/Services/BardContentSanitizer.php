@@ -180,7 +180,6 @@ class BardContentSanitizer
             // ---
             // Convert null text to empty string to prevent type issues
             // ---
-            // Check if text is null
             // Set text to empty string
             $text ??= '';
 

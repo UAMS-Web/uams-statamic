@@ -984,7 +984,6 @@ trait PresetOptions
                     // ---
                     // Initialize the array for this config key if it doesn't exist
                     // ---
-                    // Check if config key doesn't exist in map yet
                     // Create an empty array to store preset keys that use this config field
                     $configFieldMap[$configKey] ??= [];
 

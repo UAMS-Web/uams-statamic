@@ -183,7 +183,6 @@ final class CountyEnumGenerator
                 $fullName
             );
 
-            // Check if this case ID has not been processed yet
             // Initialize county data array for this case ID
             $countiesByCaseId[$caseId] ??= [
                 'fullName' => $fullName,

@@ -66,7 +66,6 @@ final class MimeTypeEnumGenerator
         // Fetch from mime-db (primary source)
         $mimeDbRecords = $this->fetchMimeDbRecords();
 
-        // Check if mime-db fetch failed
         // Initialize empty array to prevent null errors
         $mimeDbRecords ??= [];
 
@@ -76,7 +75,6 @@ final class MimeTypeEnumGenerator
         // Fetch from Apache MIME types (tertiary source)
         $apacheRecords = $this->fetchApacheMimeTypeRecords();
 
-        // Check if the Apache fetch failed
         // Initialize empty array to prevent null errors
         $apacheRecords ??= [];
 
@@ -92,7 +90,6 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
             // Add record to the map
             $recordsByMimeType[$mimeType] ??= $record;
         }
@@ -102,7 +99,6 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
             // Add record to the map
             $recordsByMimeType[$mimeType] ??= $record;
         }
