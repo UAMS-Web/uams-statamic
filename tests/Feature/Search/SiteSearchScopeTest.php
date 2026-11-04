@@ -230,6 +230,12 @@ it('serves the search page under a sub-site prefix, as that site', function (): 
         ContentSubmodule::reportMissing('the layout render');
     }
 
+    // The page would otherwise search this process's real `default` index, which an
+    // earlier test in the same worker can leave as an empty file, as
+    // `NavExcludesNonPublicEntriesTest` does; Comb then throws `Empty haystack` (#552).
+    // The test asserts the layout, not the hits, as `SiteSearchTabsTest` does.
+    stubEmptySearchIndex();
+
     /** @var TestCase $test */
     $test = $this->withoutVite();
 
