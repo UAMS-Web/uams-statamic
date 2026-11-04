@@ -52,9 +52,7 @@ class SchemaSiteDefaultsRepository
         /** @var array<string, mixed> $data */
         $data = $this->read();
         $siteKey = Site::multiEnabled() ? $siteHandle : 'default';
-        if (! isset($data['site_defaults'])) {
-            $data['site_defaults'] = [];
-        }
+        $data['site_defaults'] ??= [];
 
         /** @var array<string, mixed> $siteDefaults */
         $siteDefaults = $data['site_defaults'];

@@ -803,13 +803,11 @@ class ProviderPeoplePersonNameComputedValues
             );
 
             // Initialize bucket for this legal-name shell
-            if (! isset($byHash[$key])) {
-                $byHash[$key] = [
-                    'shell' => $row['shell'],
-                    'from_primary' => false,
-                    'from_alternate' => false,
-                ];
-            }
+            $byHash[$key] ??= [
+                'shell' => $row['shell'],
+                'from_primary' => false,
+                'from_alternate' => false,
+            ];
 
             // Record whether this shell was contributed by primary or replicator data
             if ($row['from_primary']) {

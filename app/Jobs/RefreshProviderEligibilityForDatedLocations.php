@@ -6,13 +6,10 @@ namespace App\Jobs;
 
 use App\Support\People\ProviderEligibilityIndexRefresher;
 use Carbon\CarbonInterface;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\UniqueFor;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -54,10 +51,7 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 #[UniqueFor(3600)]
 final class RefreshProviderEligibilityForDatedLocations implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The cache key holding the Unix time of the last run.

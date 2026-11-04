@@ -50,7 +50,7 @@ final readonly class LinkClassifier
             return LinkKind::FragmentOnly;
         }
 
-        if ($reference = $this->classifyStatamicReference($trimmed)) {
+        if (($reference = $this->classifyStatamicReference($trimmed)) instanceof LinkKind) {
             return $reference;
         }
 

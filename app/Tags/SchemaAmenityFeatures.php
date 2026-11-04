@@ -173,11 +173,9 @@ class SchemaAmenityFeatures extends Tags
     private function cachedNormalizedFeatureType(): ?string
     {
         // Resolve and memoize the normalized type on first use
-        if (self::$normalizedFeatureType === null) {
-            self::$normalizedFeatureType = SchemaObjectFragmentBuilder::normalizedType(
-                'LocationFeatureSpecification'
-            );
-        }
+        self::$normalizedFeatureType ??= SchemaObjectFragmentBuilder::normalizedType(
+            'LocationFeatureSpecification'
+        );
 
         // Return the cached normalized type URI
         return self::$normalizedFeatureType;

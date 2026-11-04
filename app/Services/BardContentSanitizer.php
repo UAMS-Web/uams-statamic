@@ -180,12 +180,9 @@ class BardContentSanitizer
             // ---
             // Convert null text to empty string to prevent type issues
             // ---
-
             // Check if text is null
-            if ($text === null) {
-                // Set text to empty string
-                $text = '';
-            }
+            // Set text to empty string
+            $text ??= '';
 
             // Coerce a non-string text value to string for consistent processing
             if (! \is_string($text)) {

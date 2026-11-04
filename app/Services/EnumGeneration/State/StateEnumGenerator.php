@@ -149,36 +149,34 @@ final class StateEnumGenerator
             $caseId = $usps;
 
             // Create the entry once per USPS code
-            if (! isset($statesByCaseId[$caseId])) {
-                $statesByCaseId[$caseId] = [
-                    'caseId' => $caseId,
-                    'fullName' => $fullName,
-                    'baseName' => $baseName,
-                    'apAbbreviation' => $uspsToAp[$usps] ?? $fullName,
-                    'type' => $uspsToType[$usps] ?? 'state',
-                    'fipsCode' => $fips,
-                    'iso3166_2' => 'US-'.$usps,
-                    'geoId' => $geoId,
-                    'nationalStandardCode' => (string) ($rec['STATENS'] ?? ''),
-                    'division' => (string) ($rec['DIVISION'] ?? ''),
-                    'region' => (string) ($rec['REGION'] ?? ''),
-                    'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
-                    'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
-                    'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
-                    'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
-                    'areaLand' => (string) ($rec['AREALAND'] ?? ''),
-                    'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
-                    'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
-                    'centroidGeo' => [
-                        (string) ($rec['CENTLAT'] ?? ''),
-                        (string) ($rec['CENTLON'] ?? ''),
-                    ],
-                    'internalPointGeo' => [
-                        (string) ($rec['INTPTLAT'] ?? ''),
-                        (string) ($rec['INTPTLON'] ?? ''),
-                    ],
-                ];
-            }
+            $statesByCaseId[$caseId] ??= [
+                'caseId' => $caseId,
+                'fullName' => $fullName,
+                'baseName' => $baseName,
+                'apAbbreviation' => $uspsToAp[$usps] ?? $fullName,
+                'type' => $uspsToType[$usps] ?? 'state',
+                'fipsCode' => $fips,
+                'iso3166_2' => 'US-'.$usps,
+                'geoId' => $geoId,
+                'nationalStandardCode' => (string) ($rec['STATENS'] ?? ''),
+                'division' => (string) ($rec['DIVISION'] ?? ''),
+                'region' => (string) ($rec['REGION'] ?? ''),
+                'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
+                'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
+                'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
+                'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
+                'areaLand' => (string) ($rec['AREALAND'] ?? ''),
+                'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
+                'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
+                'centroidGeo' => [
+                    (string) ($rec['CENTLAT'] ?? ''),
+                    (string) ($rec['CENTLON'] ?? ''),
+                ],
+                'internalPointGeo' => [
+                    (string) ($rec['INTPTLAT'] ?? ''),
+                    (string) ($rec['INTPTLON'] ?? ''),
+                ],
+            ];
 
             // Clean up variables to free up memory
             unset(

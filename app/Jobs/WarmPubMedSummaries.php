@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Services\PubMed\PubMedEsummaryService;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,10 +22,7 @@ use Illuminate\Support\Facades\Log;
  */
 final class WarmPubMedSummaries implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * @param  list<string>  $pmids  PubMed identifier strings to warm
