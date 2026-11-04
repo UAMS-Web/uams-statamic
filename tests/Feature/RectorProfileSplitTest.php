@@ -7,10 +7,9 @@ use Symfony\Component\Process\Process;
 /**
  * Guard for UAMS-Web/uams-statamic-archive#1720. `rector.php` carries two profiles over one rule corpus: the
  * **gating** profile the `rector` CI job enforces, and the **sweep** profile
- * (`rector-sweep.php`) that additionally enables five rules whose suggestions are
+ * (`rector-sweep.php`) that additionally enables four rules whose suggestions are
  * judgment calls — `ReadOnlyClassRector`, `ReadOnlyPropertyRector`,
- * `LocallyCalledStaticMethodToNonStaticRector`, `RemoveUselessVarTagRector`, and
- * `RemoveDuplicatedReturnSelfDocblockRector`.
+ * `LocallyCalledStaticMethodToNonStaticRector`, and `RemoveUselessVarTagRector`.
  *
  * The split has to hold in both directions, so this asserts both:
  *
@@ -35,13 +34,12 @@ use Symfony\Component\Process\Process;
 $root = dirname(__DIR__, 2);
 $fixtures = $root.'/tests/Fixtures/Rector/SweepOnly';
 
-/** The five rules the gating profile holds back, by short name. */
+/** The four rules the gating profile holds back, by short name. */
 $sweepOnlyRules = [
     'ReadOnlyClassRector',
     'ReadOnlyPropertyRector',
     'LocallyCalledStaticMethodToNonStaticRector',
     'RemoveUselessVarTagRector',
-    'RemoveDuplicatedReturnSelfDocblockRector',
 ];
 
 /**
@@ -114,9 +112,9 @@ it('keeps every sweep-only rule active under the sweep profile', function () use
     [$exitCode, $output] = $runRector($root, $fixtures, 'rector-sweep.php');
 
     // The mirror assertion: splitting must remove nothing from the on-demand
-    // run. One fixture per rule, so all five report as pending changes.
+    // run. One fixture per rule, so all four report as pending changes.
     expect($exitCode)->toBe(2);
-    expect($output)->toContain('5 files would have been changed');
+    expect($output)->toContain('4 files would have been changed');
 
     foreach ($sweepOnlyRules as $rule) {
         expect($output)->toContain($rule);
