@@ -27,6 +27,23 @@ use Throwable;
 class EntryValidator
 {
     /**
+     * The condition keys in the order the editor tries them, from `KEYS` in Statamic's
+     * field-conditions `Validator` (statamic/cms v6.37.0).
+     *
+     * @var list<string>
+     */
+    private const array EDITOR_CONDITION_KEYS = [
+        'if',
+        'if_any',
+        'show_when',
+        'show_when_any',
+        'unless',
+        'unless_any',
+        'hide_when',
+        'hide_when_any',
+    ];
+
+    /**
      * @param  CustomConditionEvaluator  $customConditions  Ports of the editor's custom field conditions
      */
     public function __construct(private readonly CustomConditionEvaluator $customConditions) {}
@@ -455,64 +472,63 @@ class EntryValidator
         // Get display conditions from field config (if/unless/hide_when)
         $conditions = $field->conditions();
 
-        // Loop through each condition block (if, if_any, unless, hide_when)
-        foreach ($conditions as $key => $nested) {
-            // ---
-            // Skip non-array condition values
-            // ---
+        // The editor judges a field on one block only: the first key in its order
+        // that carries a value, the rest being ignored (#527)
+        $blockKey = $this->editorConditionKey($conditions);
 
-            // Field::conditions() only returns the named string keys, so the cast is
-            // a no-op that exists for phpstan.
-            // @pest-mutate-ignore: RemoveStringCast
-            $blockKey = (string) $key;
-
-            // A block that is one string is a custom condition with no target field,
-            // `custom ` prefix optional, which the editor evaluates on the sibling
-            // values alone; a name it has no function for reads as hidden (#508)
-            if (\is_string($nested)) {
-                $passes = $this->evaluateCustomCondition($this->fieldHandle($field), (string) preg_replace('/^custom /', '', $nested), null, $values);
-
-                // Invert for unless/hide_when, as the array form does below
-                $showOnPass = ! str_contains($blockKey, 'unless') && ! str_contains($blockKey, 'hide_when');
-
-                // Field is hidden when this block fails
-                if (($showOnPass ? $passes : ! $passes) === false) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            // Check if the condition value is not an array (skip malformed)
-            if (! \is_array($nested)) {
-                // Skip malformed condition block
-                continue;
-            }
-
-            /** @var array<string, string> $nested */
-            // Detect if this block is if_any (OR) vs if (AND)
-            $passOnAny = str_contains($blockKey, '_any');
-
-            // Show when conditions pass vs show when they fail (unless/hide_when)
-            $showOnPass = ! str_contains($blockKey, 'unless') && ! str_contains($blockKey, 'hide_when');
-
-            // Evaluate block: any condition passes (OR) or all conditions pass (AND)
-            $passes = $passOnAny
-                ? $this->passesAnyConditions($nested, $values)
-                : $this->passesAllConditions($nested, $values);
-
-            // Invert for unless/hide_when
-            $result = $showOnPass ? $passes : ! $passes;
-
-            // Check if this condition block failed (field should be hidden)
-            if (! $result) {
-                // Field is hidden when this block fails
-                return false;
-            }
+        // No block carries a value; the field is always visible
+        if ($blockKey === null) {
+            return true;
         }
 
-        // All condition blocks passed; field is visible
-        return true;
+        $nested = $conditions[$blockKey];
+
+        // Show when the block passes vs show when it fails (unless/hide_when)
+        $showOnPass = ! str_contains($blockKey, 'unless') && ! str_contains($blockKey, 'hide_when');
+
+        // A block that is one string is a custom condition with no target field,
+        // `custom ` prefix optional, which the editor evaluates on the sibling
+        // values alone; a name it has no function for reads as hidden (#508)
+        if (\is_string($nested)) {
+            $name = str_starts_with($nested, 'custom ') ? substr($nested, \strlen('custom ')) : $nested;
+            $passes = $this->evaluateCustomCondition($this->fieldHandle($field), $name, null, $values);
+
+            return $showOnPass ? $passes : ! $passes;
+        }
+
+        // A block that is neither a string nor an array is malformed; skip it
+        if (! \is_array($nested)) {
+            return true;
+        }
+
+        /** @var array<string, string> $nested */
+        // Evaluate block: any condition passes (OR) or all conditions pass (AND)
+        $passes = str_contains($blockKey, '_any')
+            ? $this->passesAnyConditions($nested, $values)
+            : $this->passesAllConditions($nested, $values);
+
+        // Invert for unless/hide_when
+        return $showOnPass ? $passes : ! $passes;
+    }
+
+    /**
+     * The condition key the editor judges a field on, or null when it has none.
+     *
+     * Mirrors `getConditions()` in Statamic's field-conditions `Validator`, which
+     * takes the first key of its fixed order whose value is truthy in JavaScript
+     * and ignores the others. So `null`, `false`, `''` and `0` are passed over,
+     * while an empty array and the string `'0'` are taken, as JavaScript reads them.
+     *
+     * @param  array<array-key, mixed>  $conditions  The field's condition blocks, as Field::conditions() returns them
+     * @return string|null The key to evaluate, or null when no block carries a value
+     */
+    private function editorConditionKey(array $conditions): ?string
+    {
+        return array_find(
+            self::EDITOR_CONDITION_KEYS,
+            fn (string $key): bool => \array_key_exists($key, $conditions)
+                && ! \in_array($conditions[$key], [null, false, '', 0, 0.0], true)
+        );
     }
 
     /**
