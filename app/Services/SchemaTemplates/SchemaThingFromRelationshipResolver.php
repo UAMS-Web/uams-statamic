@@ -3100,10 +3100,9 @@ class SchemaThingFromRelationshipResolver
         // Check if the entity is an instance of Variables
         if ($entity instanceof Variables) {
             // Get the data from the globals variables
-            $variablesData = method_exists($entity, 'all') ? $entity->all() : [];
-
-            /** @var array<string, mixed> $data */
-            $data = \is_array($variablesData) ? $variablesData : [];
+            /** @var Collection<string, mixed> $variablesData */
+            $variablesData = $entity->data();
+            $data = $variablesData->all();
 
             // Add the globals variables to the context as 'global'
             $data['global'] = $entity;
