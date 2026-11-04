@@ -19,10 +19,10 @@ declare(strict_types=1);
 |
 */
 
+use Composer\InstalledVersions;
 use Pest\Browser\Api\ArrayablePendingAwaitablePage;
 use Pest\Browser\Api\PendingAwaitablePage;
 use Pest\Browser\Api\Webpage;
-use Pest\Browser\Playwright\Page;
 
 /**
  * Replace the ENTIRE served document with a controlled HTML5 document whose body
@@ -59,8 +59,14 @@ function runAxe($page): array
     // page: the plugin injects it on demand, from its own bundled copy, only
     // inside its accessibility assertion. Load the same copy the same way here.
     if ($page->script('typeof window.axe === "undefined"') === true) {
-        $plugin = new ReflectionClass(Page::class);
-        $page->script((string) file_get_contents(dirname((string) $plugin->getFileName(), 3).'/resources/js/axe.min.js'));
+        $source = InstalledVersions::getInstallPath('pestphp/pest-plugin-browser').'/resources/js/axe.min.js';
+        $axe = is_file($source) ? file_get_contents($source) : false;
+
+        if ($axe === false) {
+            throw new RuntimeException('Cannot read the axe-core copy bundled with pest-plugin-browser at '.$source);
+        }
+
+        $page->script($axe);
     }
 
     $violations = $page->script(
