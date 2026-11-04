@@ -261,91 +261,6 @@ file removed between listing and stat. Verify by tag on Packagist, not by the Re
 `tests/Support/Doubles/StatFailingStreamWrapper.php` **stay**. The test asserts behavior an
 upstream fix must also satisfy; it is the proof the removal worked rather than part of the patch.
 
-### `pest-plugin-browser` bounded Playwright requests
-
-**Not a Statamic patch, and not generated.** Hand-written against a dev
-dependency, so it has no `patches/src/` snippet pair and no `app:generate-*`
-command. Edit the `.patch` file directly, then relock. The snippet and generator
-steps under **Required end-to-end steps** below do not apply to it.
-
-- Basename: `pest-plugin-browser-client-bounded-requests`
-- Patch file: `patches/pest-plugin-browser-client-bounded-requests.patch`
-- Target vendor file:
-  `vendor/pestphp/pest-plugin-browser/src/Playwright/Client.php`
-- Test (behavioral, drives the patched client):
-  `tests/Unit/PestBrowserClientPatchTest.php`
-- Upstream issues, both open: `https://github.com/pestphp/pest/issues/1801`,
-  `https://github.com/pestphp/pest/issues/1781`
-- Upstream fix, open against `5.x`:
-  `https://github.com/pestphp/pest-plugin-browser/pull/241`
-
-**Problem.** Two defects in `Playwright/Client.php` both end the same way — a
-wedged process with no failing assertion and no output.
-
-- `fetch()` coerces a closed connection's `null` return into an empty string.
-  `execute()` then loops on it forever, because an empty response has neither an
-  `error` nor an `id` key to trigger error handling or a loop exit. Any dropped
-  connection burns a core until something else kills the job.
-- A `timeout` is sent with an action command but never enforced, so the PHP
-  process idles in `stream_select` indefinitely. Assertions are safe (they carry
-  `Execution::waitForExpectation`'s own bound); **actions** are not, so one
-  mistyped selector hangs the suite with nothing pointing at it.
-
-**Local fix — a PARTIAL port of upstream PR #241.** Two of its three changes are
-taken:
-
-- Treat socket closure as an **error** instead of coercing it to `''`. This is
-  the busy-loop fix, and the reason the patch exists.
-- Send the request timeout as protocol-level **metadata** as well as in `params`.
-  Metadata timeouts arrive in Playwright **1.62.0**, where an absent value means
-  *no timeout at all*; `package-lock.json` pins **1.61.1**, so this half is inert
-  today and becomes live on the next bump.
-
-**The third change is deliberately NOT ported — do not "restore" it.** PR #241
-also adds a per-request `TimeoutCancellation` and a wall-clock deadline (base
-timeout + 30s grace). That is incompatible with how this repo runs browser tests:
-per `tests/Support/CpSmoke.php`, the browser, the in-process Laravel HTTP server,
-and the test all share **one Amp event loop**, so a burst of server-side work
-starves response handling and a wall-clock deadline fires with nothing actually
-wrong.
-
-Measured here, same worktree, same commit, only the patch differing:
-
-| `CpGpsFieldtypeSmokeTest` | Result |
-| --- | --- |
-| Without the deadline | **passes**, 102.6s |
-| With the deadline | **fails**, 144.3s — `did not answer [evaluateExpression] within 60.0 seconds` |
-
-The deadline also bought nothing observable on the pinned Playwright: a zero-match
-locator action already fails bounded on 1.61.1, measured at **65.8s unpatched vs
-63.3s patched**, because Playwright enforces its own timeout. So the half that
-closes `pestphp/pest#1781` upstream is omitted, and that issue stays open for this
-repo — accepted, because the observed cost is a red browser suite and the observed
-benefit is zero. The omission is pinned by a test so it cannot drift back in.
-
-Only source hunks are ported in any case: the dist archive of
-`pest-plugin-browser` ships no `tests/` directory, so upstream's accompanying unit
-tests cannot be patched in. `tests/Unit/PestBrowserClientPatchTest.php`
-reimplements the relevant ones against this repo's suite instead.
-
-**When removing this patch:** the retirement condition is the first
-`pest-plugin-browser` release containing PR #241 or an equivalent fix. **Re-run
-the browser suite when it lands** — if that release also carries the wall-clock
-deadline this patch omits, expect the CP smokes to start failing for the reason
-above, and raise it upstream rather than working around it locally. When it ships,
-delete or revert all of:
-
-- `patches/pest-plugin-browser-client-bounded-requests.patch`
-- `tests/Unit/PestBrowserClientPatchTest.php`
-- The `new.internalClass` and `classConstant.internalClass` `ignoreErrors`
-  entries pinned to that test's path in `phpstan.neon.dist`
-- The `pest-plugin-browser` entry for this patch under `extra.patches` in
-  `composer.json` (leave the package's other entries in place if they remain)
-- The matching block in `patches.lock.json` (or run `composer patches-relock
-  --no-interaction` after editing `composer.json`), followed by `composer update
-  --lock --no-interaction` — removing an `extra.patches` entry changes Composer's
-  content hash just as adding one does
-
 ### `pest-plugin-browser` per-attempt retry timeout
 
 **Not a Statamic patch, and not generated.** Hand-written against a dev
@@ -410,9 +325,10 @@ argument for this patch and was **wrong** in an earlier draft that omitted it.
 `pest-plugin-browser` PR #227, which splits retryable assertions from
 side-effecting actions wholesale — that PR is based on `4.x` and would mean
 enumerating every action method and diverging sharply from the installed `5.x`.
-The installed v5.0.0 already excludes `typeSlowly` from the retry loop, so the
-specific upstream reproduction is already mitigated; this patch removes the
-underlying truncation that produced it. **Residual:** an action that genuinely
+The installed v5.2.0 already keeps `typeSlowly`, `click`, `press`, `keys`, `drag`,
+`append` and the navigation methods out of the retry loop, so the specific
+upstream reproduction is already mitigated; this patch removes the underlying
+truncation that produced it. **Residual:** any other action that genuinely
 throws `ExpectationFailedException` is still retried within the window. That is
 inherent to the retry design and is what PR #227 exists to resolve upstream.
 
@@ -676,36 +592,6 @@ Both patched figures equal a serial run of the same file, which takes no paralle
 - Its `extra.patches` entry in `composer.json`, then `composer patches-relock --no-interaction` and `composer update --lock --no-interaction`
 
 **Guard test.** `tests/Feature/Config/MutantParallelRunnerOptionsPatchTest.php`: one case per option, one for the two-argument and `-m` spellings, and one requiring the drop after the run-filter drop and before the child `Process` is built.
-
-### `larastan` console commands registered through the kernel
-
-`patches/larastan-console-kernel-commands.patch` is temporary, tracked by #279, which removes it. (#3156, which carried it in, is closed.) It is a backport of [`larastan/larastan#2585`](https://github.com/larastan/larastan/pull/2585) onto the locked `v3.10.0`.
-
-**What it fixes.** Since laravel/framework `v13.36.0`, `Illuminate\Foundation\Console\Kernel::load()` and `command()` no longer register their commands through `Artisan::starting()`; they keep them on the kernel and hand them to the kernel's own Artisan application. Larastan's `ConsoleApplicationResolver` builds a standalone Artisan application and reads its commands, so it no longer sees any command discovered in `app/Console/Commands`. `argument()` and `option()` on those commands then fall back to their broad docblock union, and every place that uses the value as a string is reported. Upstream tracks the defect as [`larastan/larastan#2260`](https://github.com/larastan/larastan/issues/2260).
-
-Measured on macOS with #3046's lock merged onto `main` (laravel/framework `v13.37.0`), each run through its own cold `tmpDir`:
-
-| Run | Unpatched | Patched |
-| --- | --- | --- |
-| `phpstan analyse app/Console/Commands` | 27 errors across 7 files | 0 errors |
-| `phpstan analyse` (the whole configured scope) | not run | `[OK] No errors` |
-
-On `main`'s own lock (laravel/framework `v13.35.0`) the commands still reach the standalone application through `Artisan::starting()`, so the patch changes no result there; it is carried now so that the framework update can land.
-
-**What the patch does.** `ConsoleApplicationResolver` asks the bound console kernel for its commands (`Kernel::all()`), which includes both the kernel's own commands and everything registered through `Artisan::starting()`. It falls back to the standalone application when no kernel is bound or the kernel throws, and caches the result for the analysis run.
-
-**Upstream.** Fixed by `larastan/larastan#2585`, merged into the `3.x` branch as `043139b98` on 2026-10-16. `v3.13.1` (published on Packagist 2026-10-16) is that merge commit, and `v3.13.2` (2026-10-23) contains it; `v3.13.0` is 8 commits behind it. Read 2026-10-24 through the GitHub compare API. So a release carries the fix, and the retirement condition below is met. Nothing needs filing upstream.
-
-**Retirement condition.** A released `larastan/larastan` that contains `#2585`. Check the tag, per *Checking whether the fix shipped* in the [`upstream-patch-lifecycle`](../.claude/skills/upstream-patch-lifecycle/SKILL.md) skill.
-
-**Removal checklist.** Remove all of these together, the patch before the package moves:
-
-- `patches/larastan-console-kernel-commands.patch`
-- `tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php`, which calls the patched lookup and goes red once the patch is gone
-- Its two `internalClass` pins in `phpstan.neon.dist`
-- Its `extra.patches` entry in `composer.json`, then `composer patches-relock --no-interaction` and `composer update --lock --no-interaction`
-
-**Guard test.** `tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php`. In the booted application it calls the patched resolver's command lookup and requires each of the seven commands in `app/Console/Commands` and a command registered through `Artisan::starting()` (`migrate`). With the unpatched resolver restored in `vendor/`, it fails naming the missing patch.
 
 ## Required end-to-end steps
 
