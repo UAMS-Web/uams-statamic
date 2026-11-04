@@ -72,8 +72,8 @@ use Tests\TestCase;
  *
  * Only the `entries` and `terms` stores move. An entry saved in a structured
  * collection also saves that collection's tree, into the shared mirror; trees are
- * {@see CollectionTreeIsolatedTestCase}'s, and a test that needs both is not served
- * by either base alone. Globals, navigation, asset containers and form submissions
+ * {@see CollectionTreeIsolatedTestCase}'s, and a test that needs both extends
+ * {@see EntriesTermsAndTreesIsolatedTestCase}. Globals, navigation, asset containers and form submissions
  * stay on the shared mirror too, and listeners an `Entry::save()` fires can still
  * write elsewhere, which is why the proof saves quietly. Their cache writes go
  * through the overlay and are discarded, so one of them saved under this base
@@ -161,7 +161,8 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
      *
      * Removes what the copy has and the mirror does not, then copies every file
      * whose size or modification time differs, keeping the mirror's modification
-     * time so the next comparison can skip it.
+     * time so the next comparison can skip it. A file a sibling worker removes
+     * mid-sync is treated as gone ({@see MirrorCopyFiles}).
      *
      * @param  string  $sharedRoot  The shared mirror, normalized to forward slashes.
      */
@@ -178,8 +179,8 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
                 static::fail("The shared content mirror has no {$subdirectory}/ directory at \"{$source}\" to copy.");
             }
 
-            $sourceFiles = $this->fileStamps($source);
-            $targetFiles = is_dir($target) ? $this->fileStamps($target) : [];
+            $sourceFiles = MirrorCopyFiles::stamps(File::allFiles($source, true));
+            $targetFiles = is_dir($target) ? MirrorCopyFiles::stamps(File::allFiles($target, true)) : [];
 
             // Remove what the last test added
             foreach (array_diff_key($targetFiles, $sourceFiles) as $relative => $stamp) {
@@ -194,33 +195,12 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
 
                 $destination = $target.'/'.$relative;
                 File::ensureDirectoryExists(\dirname($destination));
-                // A file a sibling worker removed mid-scan must fail here, not leave a stale copy
-                if (! File::copy($source.'/'.$relative, $destination)) {
-                    static::fail("Could not copy \"{$source}/{$relative}\" into this process's copy at \"{$destination}\".");
+                // A file a sibling worker removed after the listing leaves no stale copy behind
+                if (MirrorCopyFiles::copyOrForget($source.'/'.$relative, $destination)) {
+                    touch($destination, (int) explode(':', $stamp)[1]);
                 }
-
-                touch($destination, (int) explode(':', $stamp)[1]);
             }
         }
-    }
-
-    /**
-     * Each file under a directory, as its relative path mapped to `size:mtime`.
-     *
-     * @param  string  $directory  Absolute, normalized to forward slashes.
-     * @return array<string, string>
-     */
-    private function fileStamps(string $directory): array
-    {
-        $stamps = [];
-
-        // Key on the forward-slashed relative path so both trees compare alike
-        foreach (File::allFiles($directory, true) as $file) {
-            $relative = str_replace('\\', '/', $file->getRelativePathname());
-            $stamps[$relative] = $file->getSize().':'.$file->getMTime();
-        }
-
-        return $stamps;
     }
 
     /**

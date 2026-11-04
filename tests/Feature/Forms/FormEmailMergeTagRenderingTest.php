@@ -15,7 +15,7 @@ use Statamic\Fields\BlueprintRepository;
 use Statamic\Forms\Form;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mime\Email;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
 
 use function Pest\Laravel\post;
 use function Pest\Laravel\withServerVariables;
@@ -38,7 +38,7 @@ use function Pest\Laravel\withServerVariables;
  * (ip/referrer/get_param) are mutation-covered by FormEmailRequestContextTest and
  * the notification mailable by the form settings add-on's own suite.
  */
-uses(TestCase::class);
+uses(StacheIsolatedTestCase::class);
 
 /**
  * Handle of the throwaway form created for this test.
