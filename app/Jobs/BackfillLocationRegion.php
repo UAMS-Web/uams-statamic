@@ -6,11 +6,8 @@ namespace App\Jobs;
 
 use App\Listeners\DispatchLocationRegionBackfill;
 use App\Services\Locations\LocationRegionBackfiller;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry;
@@ -32,10 +29,7 @@ use Statamic\Facades\Entry;
  */
 final class BackfillLocationRegion implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * @param  string  $entryId  The `clinical_locations` entry id to backfill

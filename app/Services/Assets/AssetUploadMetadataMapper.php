@@ -183,13 +183,11 @@ class AssetUploadMetadataMapper
         }
 
         // Fall back to getID3 XMP dc:description for non-PDF assets
-        if ($description === null) {
-            // Resolve dc:description from getID3 analysis
-            $description = $this->firstStringAtAnalysisPaths(
-                $asset,
-                self::DC_DESCRIPTION_ANALYSIS_PATHS
-            );
-        }
+        // Resolve dc:description from getID3 analysis
+        $description ??= $this->firstStringAtAnalysisPaths(
+            $asset,
+            self::DC_DESCRIPTION_ANALYSIS_PATHS
+        );
 
         // Skip when no description was found
         if ($description === null) {

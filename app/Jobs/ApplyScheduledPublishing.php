@@ -7,11 +7,8 @@ namespace App\Jobs;
 use App\Listeners\SyncEntryPublishedStatus;
 use App\Support\Collections\CollectionExtensions;
 use Carbon\CarbonInterface;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -55,10 +52,7 @@ use Throwable;
  */
 final class ApplyScheduledPublishing implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The site's own collections whose entries this job schedules. Each is undated,

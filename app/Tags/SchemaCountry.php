@@ -320,9 +320,7 @@ class SchemaCountry extends Tags
         $numeric = $country->numeric();
 
         // Resolve the canonical JSON-LD @id when the caller did not supply it
-        if ($atId === null) {
-            $atId = $this->canonicalAtIdForCountry($country);
-        }
+        $atId ??= $this->canonicalAtIdForCountry($country);
 
         // Start the Country map with @id, @type, and name
         $map = [

@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Services\Podcasts\HealthTalk\HealthTalkEpisodeSync;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Attributes\Timeout;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
 /**
  * Runs one UAMS Health Talk sync out of band (UAMS-Web/uams-statamic-archive#1803).
@@ -28,10 +25,7 @@ use Illuminate\Queue\SerializesModels;
 #[Timeout(1800)]
 final class SyncHealthTalkEpisodes implements ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     public function handle(
         HealthTalkEpisodeSync $sync
