@@ -122,25 +122,6 @@ parameters:
     # per-test state analyse at all, and no other mechanism in the plugin supplies
     # it. Declared properties still type-check normally, which bounds the exposure.
     ignoreErrors:
-        # Pest mixes the extra classes passed to `uses()` in as traits on the
-        # generated test class, but the plugin's TestClosureThisTypeExtension
-        # deliberately skips them — toClassObjectTypes() does
-        # `if ($reflection->isTrait()) continue;` — so `$this` binds to
-        # Tests\TestCase alone and every method reached through a `uses()` trait
-        # reads as undefined. This repo mixes in Tests\Concerns\RequiresContent-
-        # Submodule that way across ~11 files. Pinned to that trait's own three
-        # method names so any *other* undefined method on a test case still
-        # fails (UAMS-Web/uams-statamic-archive#1719); skipWithoutQualifyingContentEntry joined them in UAMS-Web/uams-statamic-archive#1738.
-        #
-        # The class alternation exists for the same reason as the method one: `$this`
-        # binds to whichever base the file's `uses()` names FIRST, so a content-
-        # dependent file that sits on a narrower base reports the identical error
-        # against that base instead. CollectionTreeIsolatedTestCase joined in UAMS-Web/uams-statamic-archive#1873.
-        # Both halves stay enumerated rather than wildcarded — a new base or a new
-        # helper should have to be added here deliberately.
-        -
-            identifier: method.notFound
-            message: '#Call to an undefined method Tests\\(TestCase|Support\\CollectionTreeIsolatedTestCase)::(requireContentCollection|requireContentEntry|skipWithoutQualifyingContentEntry)\(\)#'
         # The plugin's PestInternalClassAccessIgnoreExtension whitelists Pest's
         # own @internal classes at their intended call sites, which retires the
         # whole `#internal class Pest\\#` family from UAMS-Web/uams-statamic-archive#1344 except one: the
@@ -187,8 +168,8 @@ parameters:
         -
             identifier: classConstant.internalClass
             message: '#Access to constant on internal class PHPUnit\\Framework\\(AssertionFailedError|SkippedWithMessageException)\.#'
-        # The Composer patches on `pestphp/pest-plugin-browser` are guarded by
-        # BEHAVIORAL tests rather than source-string matches — they drive the
+        # The per-attempt timeout patch on `pestphp/pest-plugin-browser` is guarded
+        # by a BEHAVIORAL test rather than a source-string match: it drives the
         # patched classes directly, which is the only way to prove a bound
         # actually fires rather than that a line of code is present. Every class
         # involved (Client, Playwright, Execution) is annotated @internal by the
@@ -197,29 +178,41 @@ parameters:
         # the browser plugin's — the same gap already pinned for
         # `Playwright::setTimeout()` in tests/Pest.php above.
         #
-        # Pinned by path to the two guard files, so internal-class misuse anywhere
-        # else still fails. Both files are deleted when their patch retires; see
-        # the two `pest-plugin-browser` sections in patches/README.md, whose
-        # removal lists name these entries.
-        -
-            identifier: new.internalClass
-            path: tests/Unit/PestBrowserClientPatchTest.php
-        -
-            identifier: classConstant.internalClass
-            path: tests/Unit/PestBrowserClientPatchTest.php
+        # Pinned by path to the guard file, so internal-class misuse anywhere else
+        # still fails. The file is deleted when its patch retires; see the
+        # per-attempt timeout section in patches/README.md, whose removal list
+        # names this entry.
         -
             identifier: staticMethod.internalClass
             path: tests/Unit/PestBrowserRetryPatchTest.php
-        # The `larastan/larastan` console-kernel-commands patch (UAMS-Web/uams-statamic-archive#3156) is guarded
-        # the same way: the test builds Larastan's @internal ConsoleApplicationResolver
-        # and calls the patched lookup in the booted application. Pinned by path, and
-        # removed with the patch.
+        # Larastan 3.13 types the view name of `View::make()` as `view-string`
+        # and resolves it against the views the application registers at boot.
+        # These form tests render a fixture view from a namespace they register
+        # themselves with `View::addNamespace()` in the test, so the name exists
+        # at run time and no static lookup can find it. Pinned by message and
+        # path: a view name anywhere else is still checked.
         -
-            identifier: new.internalClass
-            path: tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php
-        -
-            identifier: classConstant.internalClass
-            path: tests/Feature/Config/LarastanConsoleKernelCommandsPatchTest.php
+            identifier: argument.type
+            message: '#^Parameter \#1 \$view of static method Illuminate\\View\\Factory::make\(\) expects view-string, string given\.$#'
+            paths:
+                - tests/Browser/ChoiceDynamicDefaultPublicFormTest.php
+                - tests/Browser/ConditionalRebuildStateSweepTest.php
+                - tests/Browser/CspPublicFormConditionsTest.php
+                - tests/Browser/DateDefaultNowPublicFormTest.php
+                - tests/Browser/NestedReplicatorConditionalRebuildTest.php
+                - tests/Browser/NestedReplicatorSubfieldConditionsTest.php
+                - tests/Browser/PublicFormControlsTest.php
+                - tests/Browser/ReplicatorPublicFormTest.php
+                - tests/Browser/ReplicatorRebuildStateGapsTest.php
+                - tests/Browser/ReplicatorSubfieldConditionsTest.php
+                - tests/Browser/SignatureConditionalRebuildTest.php
+                - tests/Feature/Forms/AlpineCspFormsAddonTest.php
+                - tests/Feature/Forms/DateDefaultNowPublicFormTest.php
+                - tests/Feature/Forms/FormScoringAddOnTest.php
+                - tests/Feature/Forms/NestedReplicatorSubfieldConditionsTest.php
+                - tests/Feature/Forms/ProductFormRoundTripTest.php
+                - tests/Feature/Forms/ReplicatorFormRoundTripTest.php
+                - tests/Feature/Forms/ReplicatorSubfieldConditionsTest.php
         # Same uncovered-API shape, but guarding OUR OWN configuration rather than a
         # patch: `pest()->tia()->directory('tests/.pest/tia')` in tests/Pest.php is the
         # single line keeping each checkout's Tia impact graph separate, and deleting it
