@@ -19,7 +19,7 @@ $root = dirname(__DIR__, 2);
 /**
  * Write each fixture, passed as `filename: body after the open tag`, and return their paths.
  *
- * The parameters are typed variadics because PHPStan reads no docblock on a closure
+ * Each parameter is a typed variadic one because PHPStan reads no docblock on a closure
  * assigned to a variable, so an `array` parameter would arrive as `array<mixed>`.
  */
 $writeClassFixtures = function (string ...$files): array {
