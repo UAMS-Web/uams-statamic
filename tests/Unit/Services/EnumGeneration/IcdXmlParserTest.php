@@ -109,14 +109,17 @@ it('parses invalid XML without raising a warning, and restores the libxml error 
  * Windows refuses to start a process whose environment block is too large, so the
  * size is reported with the reason.
  *
+ * PHP keys a variable whose name is all digits as an integer, so getenv() can
+ * return integer keys and the name is cast before it is measured.
+ *
  * @param  string|null  $warning  The message of the warning proc_open() raised, if any
- * @param  array<string, string>  $environment
+ * @param  array<array-key, string>  $environment  The environment the server was given, as getenv() returns it
  */
 function icdXmlServerStartFailure(?string $warning, array $environment): string
 {
     $bytes = 0;
     foreach ($environment as $name => $value) {
-        $bytes += strlen($name) + strlen($value) + 2;
+        $bytes += strlen((string) $name) + strlen($value) + 2;
     }
 
     $reason = $warning ?? 'proc_open() raised no error';
@@ -254,6 +257,15 @@ it('names the reason and the environment size when the server cannot start', fun
         'Could not start the local web server: proc_open() raised no error (environment: 2 variables, 10 bytes).',
     ],
 ]);
+
+it('counts an environment variable whose all-digit name PHP made an integer key', function () {
+    // getenv() keys a variable named "1" as the integer 1, which strict_types strlen() rejects
+    $environment = ['1' => 'x', 'AB' => 'cde'];
+
+    expect(array_key_first($environment))->toBeInt()
+        ->and(icdXmlServerStartFailure(null, $environment))
+        ->toBe('Could not start the local web server: proc_open() raised no error (environment: 2 variables, 11 bytes).');
+});
 
 it('points the default fetch at the OpenPEPPOL ICD code list', function () {
     expect(IcdXmlParser::DEFAULT_ICD_XML_URL)
