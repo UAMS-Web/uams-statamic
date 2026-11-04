@@ -9,26 +9,20 @@ use Maatwebsite\Excel\Concerns\ToArray;
 /**
  * Import class for reading spreadsheet data into an array.
  *
- * This class implements the `ToArray` concern from `maatwebsite/excel` to
- * convert a spreadsheet file into a PHP array. It is used by the
- * `TableDataImporter` fieldtype to process uploaded spreadsheets.
+ * Callers pass it to `Excel::toArray()`, which returns each sheet's rows
+ * itself; the class only tells `maatwebsite/excel` to read the file as plain
+ * arrays. It is used by the `TableDataImporter` fieldtype and the ISCO-08
+ * enum generator.
  */
 class SpreadsheetImport implements ToArray
 {
     /**
-     * Converts the spreadsheet data into an array.
+     * Receives the rows when the class is run through `Excel::import()`.
      *
-     * This method is required by the `ToArray` concern. It receives the
-     * spreadsheet data as an array and returns it unchanged. The `TableDataImporter`
-     * fieldtype will further process this array to populate the `table_data` field.
+     * Required by the `ToArray` concern, whose 4.x signature returns nothing.
+     * `Excel::toArray()` does not call it, so the rows need no handling here.
      *
-     * @param  list<list<scalar|null>>  $array  The spreadsheet data as a multidimensional array
-     * @return list<list<scalar|null>> The same array, returned for further processing
+     * @param  array<array-key, mixed>  $array  The spreadsheet rows
      */
-    public function array(
-        array $array
-    ): array {
-        // Return the array as-is for processing by TableDataImporter
-        return $array;
-    }
+    public function array(array $array): void {}
 }
