@@ -127,8 +127,10 @@
 //     composer-validate composer validate --no-check-publish --no-check-all (the
 //                       lock-hash freshness gate), then composer dump-autoload
 //                       --optimize --dev --strict-psr --dry-run --no-scripts (a
-//                       file with no class matching its PSR-4 path, #322); needs
-//                       neither composer install nor the framework
+//                       file with no class matching its PSR-4 path, #322), then
+//                       php scripts/check-one-class-per-file.php (a file with more
+//                       than one type, #555); needs neither composer install nor
+//                       the framework
 //     toolchain pins    PHP 8.4, Node 22
 //
 // This script intentionally does NOT replicate CI-only infra that does not affect
@@ -1828,7 +1830,16 @@ function main() {
             // class beside a matching one is not reported. `--dev` keeps `autoload-dev`
             // in the scan on the remote job, which has no `vendor/`.
             step('JOB validate - PSR-4 class check')
-            return run(composer, ['dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'], worktreePath)
+            const psr = run(composer, ['dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'], worktreePath)
+            if (psr !== 0) {
+                return psr
+            }
+            // PARITY: the same job's "Run one-class-per-file check" step. Reports a
+            // file declaring more than one class, enum, interface or trait, which the
+            // PSR-4 check above drops silently (#555). Exits 2 when its control
+            // fixture is not reported.
+            step('JOB validate - one-class-per-file check')
+            return runPhp(['scripts/check-one-class-per-file.php'], worktreePath)
         },
         'no-emoji': () => {
             // PARITY: the no-emoji-guard job's "Run no-emoji guard" step in ci.yml.
