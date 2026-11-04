@@ -3852,3 +3852,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** If a Windows PHP build ever ships `pcntl`, the signal-handler restore would print the same error on an interrupted prompt; the fix for that is upstream's.
 
 **Companion.** #232 (this retirement); #230 (the patch); #231 (offering the signal-handler half upstream, closed).
+
+## 2026-11-03: The one-class-per-file rule is enforced by a token scan in the `composer-validate` job, not by PHPStan, Pint or an architecture test (#555)
+
+**Decision.** `scripts/check-one-class-per-file.php` reads every PHP file git lists (tracked, plus untracked files it does not ignore) with `token_get_all()`, and fails when a file declares more than one class, enum, interface or trait, naming the file and each extra type with its line. It runs in the `composer-validate` job after the PSR-4 class check, and in the local runner's `validate` job. Every run first checks a committed fixture with two classes, `tests/Fixtures/one-class-per-file/TwoClasses.php.txt`, and exits 2 unless that fixture is reported.
+
+**Why.** This settles the residual of the #449 entry. PHPStan excludes the large generated enum files by path in `phpstan.neon.dist`, and 9 of the 10 enum files that held second classes before #554 are on that list. Pint has no fixer for the rule. A Pest architecture test reads classes through the autoloader, and a class Composer left out of the class map is the one it cannot see. The token scan reads the file itself, needs no `composer install`, and finished in about 3 seconds on 2317 files. Measured on Windows 11 with Herd PHP 8.4: clean on `main` at `e761ac6fd`, and 12 findings, one per moved class, on the files as they stood at `e7bded726`, before #554.
+
+**Rejected.** *A PHPStan rule*: it would not see the generated enum files without removing their exclusion, which costs analysis time on the largest files in the tree. *A Pest architecture test*: blind to exactly the class the rule exists to catch. *A Pint or PHP-CS-Fixer rule*: none exists, and a custom fixer is more code than the scan.
+
+**Residual.** None known.
+
+**Companion.** #449 (the rule); #554 (the moves).
