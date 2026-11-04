@@ -72,7 +72,7 @@ git checkout --detach origin/main
 cd ../uams-statamic-importer && git fetch origin && git checkout -b importer/<N> origin/main
 ```
 
-- **`vendor/uams-web/wordpress-importer` is invisible to `git status`**: `grep` your diff's token there before trusting a green; when done with a branch, `composer install` restores the pin (or say you did not).
+- **`vendor/uams-web/aether-wordpress-importer` is invisible to `git status`**: `grep` your diff's token there before trusting a green; when done with a branch, `composer install` restores the pin (or say you did not).
 - **The runs mutate every submodule in `SUBMODULES` (`scripts/worktree-slots.mjs`)** and restore little; a killed run empties assets. Diagnose with `git submodule foreach --quiet 'echo "== $sm_path"; git status --porcelain'`; recover with `git -C <submodule> restore --staged --worktree .` (read its `git status` first; if the change is yours, commit inside it and bump the pointer).
 
 ## The CI tree belongs to the runner
