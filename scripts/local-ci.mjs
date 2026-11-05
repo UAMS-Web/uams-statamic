@@ -1993,11 +1993,11 @@ function main() {
             return b1 !== 0 ? b1 : b2
         },
         pint: () => {
-            // PARITY: the pint job in ci.yml; the step is scripts/gate-pint.mjs.
+            // PARITY: the pint job of the chain ci.yml calls as `checks` (#580); the step is scripts/gate-pint.mjs.
             return gatePint({ tree: worktreePath, php, git, repoRoot, baseRef: opts.baseRef })
         },
         rector: () => {
-            // PARITY: the rector job in ci.yml; the step is scripts/gate-rector.mjs.
+            // PARITY: the rector job of the chain ci.yml calls as `checks` (#580); the step is scripts/gate-rector.mjs.
             return gateRector({ tree: worktreePath, php })
         },
         mutate: () => {
@@ -2053,9 +2053,9 @@ function main() {
             return 0
         },
         phpstan: () => {
-            // PARITY: the phpstan job's "Run Larastan" step in ci.yml. `composer stan`
-            // runs `phpstan analyse --no-progress --memory-limit=2G` (pinned in
-            // composer.json so local and CI match). It boots the app (relies on the
+            // PARITY: the phpstan job of the chain ci.yml calls as `checks` (#580),
+            // which runs `composer stan` too: `phpstan analyse --no-progress
+            // --memory-limit=2G` (pinned in composer.json so local and CI match). It boots the app (relies on the
             // framework prep above) and reads app/ only, so no submodule is needed.
             step('JOB phpstan - composer stan')
             return run(composer, ['stan'], worktreePath)

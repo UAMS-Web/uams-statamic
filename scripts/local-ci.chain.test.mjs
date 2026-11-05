@@ -48,10 +48,7 @@ const JOB_KEYS = {
     spell: 'spell',
     js: 'js',
     build: 'build',
-    pint: 'pint',
-    rector: 'rector',
     mutate: 'mutate',
-    phpstan: 'phpstan',
     // #387 splits the local pest job three ways in CI: the parallel band as a
     // four-shard matrix, the serial group beside it, and a job that merges the
     // shards' reports and runs the parallel band's checks on the merged report.
@@ -64,11 +61,21 @@ const JOB_KEYS = {
 // ci.yml jobs with deliberately no local counterpart. Kept as an
 // explicit list so a new job still has to be mirrored or named here: an unlisted one fails
 // the stranger check below. `submodule-access` proves a GitHub-only secret on manual runs
-// (UAMS-Web/uams-statamic-archive#2497). `synced-files` runs the shared synced-files check (UAMS-Web/uams-statamic-archive#3084); the local runner
-// gains its own job with #256. `ci` only reads the other jobs' results (#337). The first
+// (UAMS-Web/uams-statamic-archive#2497). `checks` calls the shared chain (#580); see
+// CALLED_CHAIN_KEYS below for the part of it the local runner mirrors. `ci` only reads
+// the other jobs' results (#337). The first
 // case in the parity block below pins that each
 // still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
-const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'synced-files'])
+const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'checks'])
+
+// The `checks` job calls the shared chain in UAMS-Web/uams-ci-workflows (#580), whose
+// jobs this file cannot see. Of them, these are the ones the local runner mirrors, by
+// the same `--jobs` key. The rest are why `checks` is in REMOTE_ONLY: synced-files,
+// no-emoji and aggregate-needs have no local job (the comparison aggregate-needs
+// makes runs in this file), composer-validate repeats a command the local `validate`
+// job runs, and mutate-ignore overlaps the local `encoding` job's auditor. A key dropped from the local chain while the call still runs its job
+// fails the case that reads this list.
+const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan']
 
 /**
  * Read the `jobs:` ids and their `needs:` edges out of ci.yml.
@@ -142,6 +149,21 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
 
     it('finds every job the mirror knows about, and no stranger', () => {
         expect([...jobs.keys()].sort()).toEqual(Object.keys(JOB_KEYS).sort())
+    })
+
+    it('calls the shared chain at a release tag and mirrors its pint, rector and phpstan jobs locally (#580)', () => {
+        // A branch would move under every run; a tag moves only when this file does.
+        const checks = jobText(workflow, 'checks')
+        expect(checks).toMatch(/^ {4}uses: UAMS-Web\/uams-ci-workflows\/\.github\/workflows\/ci\.yml@v\d+\.\d+\.\d+$/m)
+
+        // Each mirrored job is still one the local runner chains, by the same key.
+        for (const key of CALLED_CHAIN_KEYS) {
+            expect(CHAIN, key).toContain(key)
+        }
+        // And none of them is also a job of this file, which would run it twice.
+        for (const key of CALLED_CHAIN_KEYS) {
+            expect(allJobs.has(key), key).toBe(false)
+        }
     })
 
     it('declares no `needs:` edge but `pest-report` on `pest`, so the remote jobs run in parallel (#373, #387)', () => {
@@ -574,7 +596,8 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
 
     it('reads every job on all three operating systems (#348)', () => {
         const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        const onOneRunner = new Set(['ci', 'submodule-access'])
+        // `checks` runs no job of its own here: its legs are the called chain's (#580).
+        const onOneRunner = new Set(['ci', 'submodule-access', 'checks'])
         const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
         expect(ids.length).toBeGreaterThan(0)
 

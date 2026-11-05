@@ -1,0 +1,63 @@
+name: Set up PHP and Composer
+description: >-
+  The setup the shared CI chain (UAMS-Web/uams-ci-workflows) runs in every PHP job it
+  calls in this repository (#580): PHP 8.4 with the extensions composer.json requires,
+  a cached locked Composer install, and the environment file, application key and
+  post-autoload-dump scripts that booting the application needs (Larastan boots it).
+
+inputs:
+  coverage:
+    description: The coverage driver setup-php installs (none, pcov or xdebug).
+    required: false
+    default: none
+
+runs:
+  using: composite
+  steps:
+    - name: Set up PHP 8.4
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        # `ext-imagick` is a declared platform requirement in composer.json, so the
+        # `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830).
+        extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
+        coverage: ${{ inputs.coverage }}
+        tools: composer:v2
+
+    - name: Determine Composer cache directory
+      id: composer-cache
+      shell: bash
+      run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Composer packages
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-${{ runner.os }}-
+
+    # Every Composer package is public, so the workflow's own token is enough; it
+    # spares the dist downloads GitHub's unauthenticated rate limit. A composite
+    # action has no `secrets` context, so a private package could not be reached
+    # from here at all.
+    - name: Configure Composer auth for GitHub downloads
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: composer config --global --auth github-oauth.github.com "$GITHUB_TOKEN"
+
+    - name: Install Composer dependencies
+      shell: bash
+      run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
+    - name: Prepare environment file
+      shell: bash
+      run: cp .env.example .env
+
+    - name: Generate application key
+      shell: bash
+      run: php artisan key:generate
+
+    - name: Run Composer post-autoload-dump scripts
+      shell: bash
+      run: composer run-script post-autoload-dump --no-interaction

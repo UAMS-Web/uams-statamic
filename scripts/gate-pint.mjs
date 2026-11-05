@@ -47,11 +47,12 @@ export function chunkByArgLength(files, maxLen) {
 export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) {
     const runPhp = phpRunner(php)
 
-    // PARITY: the pint job's "Determine changed PHP files" + "Run Pint on changed
-    // files" steps in ci.yml, which chunks its list too since #348.
+    // PARITY: the pint job of the shared chain ci.yml calls as `checks` (#580). That
+    // job runs `composer test:pint` (`pint --test`) over the whole tree; this step
+    // checks the changed files only, so it is the narrower of the two.
     //
-    // Diff against the REMOTE-TRACKING base (origin/<base>), matching ci.yml's
-    // pull_request path (base="origin/${{ github.base_ref }}"). `--fetch`
+    // Diff against the REMOTE-TRACKING base (origin/<base>), the base a pull
+    // request is compared against. `--fetch`
     // updates origin/<base> but never moves the local <base> branch ref, so
     // after a run of `gh pr merge`s a local main that lags origin would
     // otherwise balloon `<base>...HEAD` with already-merged commits and report a
@@ -95,9 +96,9 @@ export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) 
     }
     console.log(`Changed PHP files: ${changed.length}`)
     // Chunk the path list so a large diff never overflows the Windows command
-    // line (UAMS-Web/uams-statamic-archive#1079). ci.yml passes the whole list at once (its Ubuntu runner
-    // allows a ~2 MB command line; a 300+ file diff exceeds Windows' ~32 KB
-    // cap). Pint checks each file independently, so per-chunk codes aggregate.
+    // line (UAMS-Web/uams-statamic-archive#1079): a 300+ file diff exceeds
+    // Windows' ~32 KB cap. Pint checks each file independently, so per-chunk codes
+    // aggregate.
     let pintCode = 0
     for (const chunk of chunkByArgLength(changed, 8000)) {
         const code = runPhp(['vendor/bin/pint', '--test', ...chunk], tree)
