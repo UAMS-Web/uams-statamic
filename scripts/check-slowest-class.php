@@ -64,10 +64,11 @@ declare(strict_types=1);
  *
  * HOSTED RUNNERS (#584, #586). The parallel share ceiling is calibrated on the gate
  * host, the one machine whose samples are stable enough to fail on. A single sample
- * on a GitHub-hosted runner spiked about 1.9x on whichever class was slowest: on
- * #583's head `8570ca52a`, CI run `41964133422`, `macos-latest`,
+ * on a GitHub-hosted runner can spike well above the class's usual share: on #583's
+ * head `8570ca52a`, CI run `41964133422`, `macos-latest`,
  * `SchemaJsonLdPodcastEpisodeTest` read 8.62% on one attempt and 6.72% on a fresh
- * one, every test green both times. So on a hosted runner a parallel share breach is
+ * one, every test green both times, where `main`'s seven macOS runs before it read
+ * 4.41% to 5.39% for the costliest class, a spike of 1.6x to 2x. So on a hosted runner a parallel share breach is
  * printed, with a workflow warning, and the guard exits 0. The serial band's share
  * and the absolute backstop still fail there, since #584 decided only the parallel
  * share. See hostedRunnerReportsShareBreach() for how a hosted runner is told apart

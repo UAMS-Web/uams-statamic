@@ -1034,8 +1034,8 @@ jobs:
       # (local-ci.mjs additionally tolerates the guard being absent, since it
       # validates older branches too.)
       # On these GitHub-hosted runners a share over the ceiling is printed as a
-      # warning and passes: one hosted sample can spike about 1.9x on whichever
-      # class is slowest, and the ceiling is calibrated on the gate host, where it
+      # warning and passes: one hosted sample read 8.62% against a usual 4.4% to
+      # 5.4%, and the ceiling is calibrated on the gate host, where it
       # still fails. The backstop still fails here (#584, #586).
       # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check slowest class (parallel band)
