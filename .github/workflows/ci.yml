@@ -104,7 +104,8 @@ defaults:
 #                     run `composer test:pint`, `composer test:refactor` and
 #                     `composer stan`, which the local pint, rector and phpstan
 #                     jobs mirror. The local pint job checks the changed files only,
-#                     where the called one checks the whole tree (#580).
+#                     where the called one checks every tracked file: `test:pint`
+#                     names the dot-directories Pint's own finder skips (#580).
 # THREE LEGS (#348): every job here but `submodule-access`, the `checks` call and the
 # aggregate `ci` runs on
 # ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
@@ -117,9 +118,11 @@ defaults:
 # reports of the `pest` shards (#387), and `ci` reads the result of every job
 # (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
-# found rather than only the first. The `checks` call starts with the others; the
-# chain it calls orders its own jobs (rector and phpstan after pint), which this
-# file does not control.
+# found rather than only the first. The `checks` call starts with the others, but
+# the chain it calls orders its own jobs, which this file does not control: pint
+# needs composer-validate and synced-files, and rector, phpstan and mutate-ignore
+# need pint. A failure early in that chain therefore skips the later ones, so a run
+# reports a PHPStan error only once a hand-edited synced file, say, is fixed (#580).
 # Until #373 these ran as a strict sequential chain, cost-ordered shortest to
 # longest, each job entered through `needs:` on the one before it, so an early
 # failure never billed Actions minutes for the expensive jobs behind it. That
@@ -175,8 +178,11 @@ defaults:
 # `scripts/local-ci.chain.test.mjs` fails until it does. `submodule-access` alone stays
 # out, named with its reason in `.github/aggregate-needs-allow.json`.
 # REMOTE-ONLY (no job in local-ci.mjs until #256): the `checks` call's synced-files,
-# no-emoji, aggregate-needs, composer-validate and mutate-ignore jobs run shared
-# checks the local runner has no job for (synced-files: UAMS-Web/uams-statamic-archive#3084).
+# no-emoji, aggregate-needs and mutate-ignore jobs run shared checks the local runner
+# has no job of its own for (synced-files: UAMS-Web/uams-statamic-archive#3084). Its
+# composer-validate job runs the command the local `validate` job runs, its
+# mutate-ignore job overlaps the local `encoding` job's auditor, and the chain test
+# runs the aggregate-needs comparison.
 # REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
 # a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
 # the private submodules. That secret exists only on GitHub, and the local runner
@@ -1752,8 +1758,9 @@ jobs:
   # tag, so this file takes a change to it only when the tag below moves. It runs
   # composer-validate, synced-files, no-emoji, aggregate-needs, pint, rector, phpstan
   # and mutate-ignore, and reports each check as `checks / <job> (<os>)`, ending in
-  # `checks / Chain result`. Each job checks out THIS repository and installs
-  # through `.github/actions/setup`, which this repository carries.
+  # `checks / Chain result`. Each job checks out THIS repository; pint, rector,
+  # phpstan and mutate-ignore install through `.github/actions/setup`, which this
+  # repository carries, and the others set up PHP or Node themselves.
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only

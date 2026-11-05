@@ -70,9 +70,10 @@ const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'checks'])
 
 // The `checks` job calls the shared chain in UAMS-Web/uams-ci-workflows (#580), whose
 // jobs this file cannot see. Of them, these are the ones the local runner mirrors, by
-// the same `--jobs` key; the rest (synced-files, no-emoji, aggregate-needs,
-// composer-validate, mutate-ignore) have no local job and are why `checks` is in
-// REMOTE_ONLY. A key dropped from the local chain while the call still runs its job
+// the same `--jobs` key. The rest are why `checks` is in REMOTE_ONLY: synced-files,
+// no-emoji and aggregate-needs have no local job (the comparison aggregate-needs
+// makes runs in this file), composer-validate repeats a command the local `validate`
+// job runs, and mutate-ignore overlaps the local `encoding` job's auditor. A key dropped from the local chain while the call still runs its job
 // fails the case that reads this list.
 const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan']
 
