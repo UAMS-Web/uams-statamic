@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Support\Redirects;
 
 use App\Services\Redirects\MigrationRedirectGenerator;
-use App\Tags\FindRedirectRule;
 use Illuminate\Support\Str;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * A typed, immutable migration redirect planned by the generator (UAMS-Web/uams-statamic-archive#1641).

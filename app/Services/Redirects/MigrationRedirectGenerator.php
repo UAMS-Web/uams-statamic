@@ -6,8 +6,6 @@ namespace App\Services\Redirects;
 
 use App\Http\Controllers\Feed\PostsFeedController;
 use App\Support\Redirects\MigrationRedirect;
-use App\Support\Redirects\RedirectSource;
-use App\Tags\FindRedirectRule;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
@@ -21,6 +19,8 @@ use Statamic\Facades\AssetContainer as AssetContainerFacade;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Generates the WordPress → Statamic migration redirect map (UAMS-Web/uams-statamic-archive#1641).

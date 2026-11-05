@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Exceptions\SiteHttpException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Statamic\View\Cascade;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
+use UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException;
 
 use function Pest\Laravel\withoutVite;
 
@@ -16,9 +16,9 @@ use function Pest\Laravel\withoutVite;
  *
  * ## Why this file exists at all
  *
- * The redirect suites render `errors/_redirects` **directly**, which proves the
- * partial aborts with the right status and stops there. What Laravel then did
- * with that abort is exactly where UAMS-Web/uams-statamic-archive#1942 lived: the message reached no visitor,
+ * The redirect suites ask the add-on's 404 resolver what it answers, which
+ * proves it raises the right status and stops there. What Laravel then did
+ * with that exception is exactly where UAMS-Web/uams-statamic-archive#1942 lived: the message reached no visitor,
  * and the page was the framework's fallback rather than the site's. No test in
  * the suite could see that, because none of them let the exception reach the
  * handler.
@@ -55,9 +55,8 @@ use function Pest\Laravel\withoutVite;
  * glue that reaches it, which is stated here rather than left implied.
  *
  * The link *before* the throw is covered elsewhere: `RedirectServingTest` drives
- * the real partial to the tag with a stored rule's code, and
- * `RespondWithStatusTest` pins which exception the tag then raises. Raising it
- * directly here also needs no write to the `redirects` global, which lives in
+ * the `uams-web/aether-redirects` add-on's resolver with a stored rule's code and
+ * pins which exception it hands the handler (#398). Raising it directly here also needs no write to the `redirects` global, which lives in
  * the `content/` submodule where a test fixture must never land (UAMS-Web/uams-statamic-archive#1873 / UAMS-Web/uams-statamic-archive#1920).
  *
  * All of the above was cross-checked against the running site, where a seeded
@@ -66,8 +65,6 @@ use function Pest\Laravel\withoutVite;
  * @command  php artisan test --compact tests/Feature/Redirects/TargetlessErrorPageTest.php
  */
 uses(TestCase::class);
-
-covers(SiteHttpException::class);
 
 beforeEach(function (): void {
     // These pages render the full site layout, which resolves its assets through

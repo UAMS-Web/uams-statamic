@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Redirects;
 
-use App\Support\Redirects\MarketingRedirect;
 use App\Support\Redirects\MigrationRedirect;
-use App\Support\Redirects\RedirectStatus;
-use App\Tags\FindRedirectRule;
 use Closure;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -15,6 +12,9 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\GlobalSet as GlobalSetItem;
 use Statamic\Globals\Variables;
+use UAMSWeb\Aether\Redirects\Support\MarketingRedirect;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Reads and appends redirects on the shared `redirects` global (UAMS-Web/uams-statamic-archive#1355).

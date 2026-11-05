@@ -5,9 +5,7 @@ declare(strict_types=1);
 // Hosts built to look like an allowed one, which no dictionary carries
 // cspell:ignore uamsxflu xuams
 
-use App\Http\Middleware\ServeRedirectDomainRequests;
 use App\Http\Middleware\TrustHosts;
-use App\Services\Redirects\RedirectDomainRules;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +19,8 @@ use Statamic\Stache\Stores\CollectionsStore;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Http\Middleware\ServeRedirectDomainRequests;
+use UAMSWeb\Aether\Redirects\Services\RedirectDomainRules;
 
 // Stache-isolated: each test saves redirect domain entries.
 uses(StacheIsolatedTestCase::class);

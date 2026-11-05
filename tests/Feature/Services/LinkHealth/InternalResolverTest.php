@@ -7,8 +7,6 @@ use App\Services\LinkHealth\InternalResolver;
 use App\Services\LinkHealth\LinkKind;
 use App\Services\LinkHealth\LinkOccurrence;
 use App\Services\LinkHealth\ResolutionState;
-use App\Support\Redirects\RedirectRuleMatcher;
-use App\Tags\FindRedirectRule;
 use Illuminate\Support\Facades\File;
 use Statamic\Entries\Collection;
 use Statamic\Facades\AssetContainer;
@@ -24,6 +22,8 @@ use Statamic\Tags\Parameters;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\StacheIsolatedTestCase;
 use Tests\Support\ThrowawayRoot;
+use UAMSWeb\Aether\Redirects\Support\RedirectRuleMatcher;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Coverage for {@see InternalResolver} — resolving internal targets by lookup rather than by

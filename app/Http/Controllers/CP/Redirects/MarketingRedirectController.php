@@ -6,8 +6,6 @@ namespace App\Http\Controllers\CP\Redirects;
 
 use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\RedirectCollisionDetector;
-use App\Support\Redirects\MarketingRedirect;
-use App\Support\Redirects\RedirectStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +14,8 @@ use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Statamic\Facades\User;
 use Statamic\Http\Controllers\CP\CpController;
+use UAMSWeb\Aether\Redirects\Support\MarketingRedirect;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
 
 /**
  * Drives the marketing-redirect creation utility (UAMS-Web/uams-statamic-archive#1355).
