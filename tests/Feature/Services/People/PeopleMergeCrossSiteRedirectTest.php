@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Services\People\PeopleMergeService;
 use App\Support\References\EntryReferenceRepointer;
-use App\Tags\FindRedirectRule;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Assert;
 use Statamic\Facades\Blueprint;
@@ -14,6 +13,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Cross-site serving of people-merge redirects (UAMS-Web/uams-statamic-archive#1088, follow-up to UAMS-Web/uams-statamic-archive#838).
@@ -23,8 +23,8 @@ use Tests\Support\StacheIsolatedTestCase;
  * redirect for a loser reachable *only on a non-default site* is actually served
  * there. This test shapes the redirects global like production (registered on ≥2
  * sites, `redirects` field non-localizable) and proves the redirect serves on the
- * non-default site via `find_redirect_rule` — the same per-site read the 404
- * template (`resources/views/errors/_redirects.antlers.html`) performs.
+ * non-default site via `find_redirect_rule` — the same per-site read the
+ * `uams-web/aether-redirects` add-on performs on a 404 (#398).
  *
  * Verified mechanism: `find_redirect_rule` reads
  * `GlobalSet::findByHandle('redirects')->in($currentSite)->get('redirects')` — a

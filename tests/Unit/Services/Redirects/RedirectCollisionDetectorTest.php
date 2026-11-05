@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Services\Redirects\RedirectCollisionDetector;
-use App\Support\Redirects\ValidityWindow;
 use Tests\TestCase;
+use UAMSWeb\Aether\Redirects\Support\ValidityWindow;
 
 uses(TestCase::class);
 

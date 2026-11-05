@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Services\Redirects\EdgeRedirectManifestBuilder;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Statamic\Contracts\Globals\GlobalSet as GlobalSetContract;
 use Statamic\Facades\GlobalSet;
-use Statamic\Facades\URL;
 use Statamic\Globals\Variables;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Services\EdgeRedirectManifestBuilder;
+use UAMSWeb\Aether\Redirects\Services\NotFoundRedirectResolver;
 
 // Stache-isolated: each test writes the `redirects` global set.
 uses(StacheIsolatedTestCase::class);
@@ -22,10 +23,10 @@ uses(StacheIsolatedTestCase::class);
  *
  * The central test is a parity check with two independent arms:
  *
- *   - the engine: the real `errors/_redirects` partial rendered for a request,
- *     against these rules stored in the real global set, so the redirect goes
- *     through the `redirect` tag and Laravel's URL generator exactly as it does
- *     on a 404 page; and
+ *   - the engine: the `uams-web/aether-redirects` add-on's 404 resolver asked
+ *     about a request, against these rules stored in the real global set, so the
+ *     redirect goes through Laravel's URL generator exactly as it does on a 404
+ *     (#398); and
  *   - an edge: a reference evaluator that follows the manifest's own `semantics`
  *     text step by step, and nothing else.
  *
@@ -175,8 +176,12 @@ function edgeManifest(): array
 }
 
 /**
- * What the real serving path does for a request: the `errors/_redirects` partial,
- * rendered with `current_uri` derived as the Statamic cascade derives it.
+ * What the real serving path does for a request that is about to render a 404:
+ * the add-on's resolver, which answers with the rule's redirect or error page.
+ *
+ * The error page needs the full site layout, which the isolated Stache base cannot
+ * render, so the exception handler here answers with the error's status alone;
+ * `TargetlessErrorPageTest` renders the page itself.
  *
  * @param  string  $requestUri  The request URI, query string included.
  * @return array{status: int, location: string|null}
@@ -186,15 +191,33 @@ function edgeManifestServe(string $requestUri): array
     $request = Request::create($requestUri);
     app()->instance('request', $request);
 
-    try {
-        view('errors/_redirects', ['current_uri' => URL::tidy($request->path())])->render();
-    } catch (HttpResponseException $e) {
-        return ['status' => $e->getResponse()->getStatusCode(), 'location' => $e->getResponse()->headers->get('Location')];
-    } catch (HttpException $e) {
-        return ['status' => $e->getStatusCode(), 'location' => null];
+    app()->instance(ExceptionHandler::class, new class implements ExceptionHandler
+    {
+        public function report(Throwable $e): void {}
+
+        public function shouldReport(Throwable $e): bool
+        {
+            return false;
+        }
+
+        public function render($request, Throwable $e): Response
+        {
+            return new Response('', $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500);
+        }
+
+        public function renderForConsole($output, Throwable $e): void {}
+    });
+
+    $response = app(NotFoundRedirectResolver::class)->responseFor($request);
+
+    if ($response === null) {
+        return ['status' => 200, 'location' => null];
     }
 
-    return ['status' => 200, 'location' => null];
+    return [
+        'status' => $response->getStatusCode(),
+        'location' => $response->isRedirection() ? $response->headers->get('Location') : null,
+    ];
 }
 
 /**

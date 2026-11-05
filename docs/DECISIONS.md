@@ -3864,3 +3864,17 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** None known.
 
 **Companion.** #449 (the rule); #554 (the moves).
+
+## 2026-11-04: The redirect engine is served by `uams-web/aether-redirects`, and the site keeps its error views (#398)
+
+**Decision.** The site requires `uams-web/aether-redirects` at `^0.2.0` and deletes its own copies of the moved code: the redirect value objects and matcher under `app/Support/Redirects/` (all but `MigrationRedirect`), `RedirectDomainRules`, `EdgeRedirectManifestBuilder`, `ServeRedirectDomainRequests`, `GenerateEdgeRedirectManifest`, the `find_redirect_rule` and `respond_with_status` tags, `SiteHttpException`, the `errors/_redirects` partial and the `redirects` global blueprint. The add-on owns answering a stored rule on a 404 (registered through `renderUsing` on Statamic's 404 exception and a `renderable()` callback), the `URL::tidy` of a rule's target, and `SiteHttpException`. The site keeps its `errors/<code>` views, the `errors/_redirect_message` partial that reads `response_message`, `MigrationRedirect`, the generators and lifecycle listeners, and the `redirect_domains` blueprint. Every handle and row key is unchanged, so a rule `wordpress-importer` writes is served with no importer change.
+
+**Why.** One add-on serves every site that runs the migration, so the engine is tested once, in the add-on's own suite, under the Full coverage bar. The error views are site design rather than engine behavior, so they stay where the site's other templates live.
+
+**Rejected.** *Keep `respond_with_status` and `errors/_redirects` in the site and call the add-on's matcher from them*: two serving paths for one rule, and a site that forgets the partial serves nothing. *Move the error views into the add-on*: the add-on would then carry one site's layout.
+
+**Behavior change.** The `find_redirect_rule` tag now ships outside `App\Tags`, so `@default` in `config/statamic/antlers.php`'s `allowedContentTags` no longer admits it, and Antlers parsed as user content (Bard with Antlers enabled, form email bodies) can no longer call it. No content in the tree does. The allow-list is deliberately not widened; the error templates that do call the tag are trusted and unaffected.
+
+**Residual.** The edge-manifest parity slice follows in the add-on as its own pull request.
+
+**Companion.** #398 (the move and its acceptance criteria); `UAMS-Web/aether-redirects` v0.2.0. Earlier entries that link `app/Tags/RespondWithStatus.php` and `app/Exceptions/SiteHttpException.php` describe the code as it stood before this move.

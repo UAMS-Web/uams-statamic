@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f7841d4ce619d1f0d2f8cb771bc3c67a",
+    "content-hash": "66bf8f63d6a4bc19b1baa14a07d59bc5",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -10953,6 +10953,78 @@
                 "source": "https://github.com/UAMS-Web/aether-multisite-forms"
             },
             "time": "2026-11-01T21:03:19+00:00"
+        },
+        {
+            "name": "uams-web/aether-redirects",
+            "version": "v0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-redirects.git",
+                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
+                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\Redirects\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Redirects",
+                    "description": "Redirect rules, redirect domains and a marketing-redirect workflow."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\Redirects\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "Redirect rules for Statamic: a redirects global set served on the 404 path, rules on redirect domains, an edge redirect manifest, and a marketing-redirect request and approval workflow.",
+            "homepage": "https://github.com/UAMS-Web/aether-redirects",
+            "keywords": [
+                "redirects",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-redirects/issues",
+                "source": "https://github.com/UAMS-Web/aether-redirects"
+            },
+            "time": "2026-11-05T02:59:22+00:00"
         },
         {
             "name": "uams-web/aether-search",

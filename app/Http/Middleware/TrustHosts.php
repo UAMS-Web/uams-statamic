@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Services\Redirects\RedirectDomainRules;
 use Closure;
 use Illuminate\Http\Middleware\TrustHosts as BaseTrustHosts;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use UAMSWeb\Aether\Redirects\Services\RedirectDomainRules;
 
 /**
  * Refuses a request for an address the site does not serve (UAMS-Web/uams-statamic-archive#3014).

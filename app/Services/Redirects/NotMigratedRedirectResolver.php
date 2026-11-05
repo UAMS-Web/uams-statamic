@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Redirects;
 
 use App\Support\Redirects\MigrationRedirect;
-use App\Support\Redirects\RedirectSource;
 use Closure;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
 
 /**
  * Dispositions a retired WordPress permalink — one with no surviving Statamic

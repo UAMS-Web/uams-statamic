@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Redirects;
 
-use App\Support\Redirects\RedirectSource;
-use App\Support\Redirects\ValidityWindow;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
+use UAMSWeb\Aether\Redirects\Support\ValidityWindow;
 
 /**
  * Detects redirect source collisions within overlapping validity windows (UAMS-Web/uams-statamic-archive#1356).

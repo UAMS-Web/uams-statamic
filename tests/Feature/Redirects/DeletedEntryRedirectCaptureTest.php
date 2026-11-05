@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Support\Redirects\DeletedEntryRedirectCapture;
-use App\Support\Redirects\RedirectRuleMatcher;
 use Statamic\Entries\Entry as ConcreteEntry;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
@@ -13,6 +12,7 @@ use Statamic\Globals\Variables;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Support\RedirectRuleMatcher;
 
 /**
  * Covers the redirect captured when an entry with a public URL is deleted (UAMS-Web/uams-statamic-archive#301).
