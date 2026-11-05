@@ -110,6 +110,9 @@
         "test": [
             "@php vendor/bin/pest"
         ],
+        "test:pint": [
+            "@php vendor/bin/pint --test"
+        ],
         "refactor": [
             "@php vendor/bin/rector"
         ],
