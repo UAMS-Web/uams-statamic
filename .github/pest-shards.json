@@ -393,7 +393,6 @@
         "Tests\\Feature\\RectorProfileSplitTest": 6.303,
         "Tests\\Feature\\RectorSeeImportPreservationTest": 2.0161,
         "Tests\\Feature\\Redirects\\DeletedEntryRedirectCaptureTest": 4.8478,
-        "Tests\\Feature\\Redirects\\EdgeRedirectManifestTest": 8.815,
         "Tests\\Feature\\Redirects\\MultisiteDeletedEntryRedirectCaptureTest": 0.5837,
         "Tests\\Feature\\Redirects\\RedirectResponseOptionKeysTest": 0.2315,
         "Tests\\Feature\\Redirects\\RedirectServingTest": 5.2606,
