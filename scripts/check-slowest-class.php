@@ -54,10 +54,25 @@ declare(strict_types=1);
  *                                         [--ceiling=<seconds>]
  *
  * EXIT
- *     0  the costliest class is within both its share ceiling and the backstop
- *     1  it is over either one, or the report is missing, unparseable, or carries no
- *        durations — a band that produced no usable report has not been verified,
- *        and passing it would reinstate the silence this guard exists to remove.
+ *     0  the costliest class is within both its share ceiling and the backstop, or
+ *        the parallel band's share alone is over its ceiling on a GitHub-hosted
+ *        runner, where the breach is reported and does not fail (#584)
+ *     1  it is over either one anywhere else, over the backstop anywhere, or the
+ *        report is missing, unparseable, or carries no durations: a band that
+ *        produced no usable report has not been verified, and passing it would
+ *        reinstate the silence this guard exists to remove.
+ *
+ * HOSTED RUNNERS (#584, #586). The parallel share ceiling is calibrated on the gate
+ * host, the one machine whose samples are stable enough to fail on. A single sample
+ * on a GitHub-hosted runner can spike well above the class's usual share: on #583's
+ * head `8570ca52a`, CI run `41964133422`, `macos-latest`,
+ * `SchemaJsonLdPodcastEpisodeTest` read 8.62% on one attempt and 6.72% on a fresh
+ * one, every test green both times, where `main`'s seven macOS runs before it read
+ * 4.41% to 5.39% for the costliest class, a spike of 1.6x to 2x. So on a hosted runner a parallel share breach is
+ * printed, with a workflow warning, and the guard exits 0. The serial band's share
+ * and the absolute backstop still fail there, since #584 decided only the parallel
+ * share. See hostedRunnerReportsShareBreach() for how a hosted runner is told apart
+ * from the gate host.
  */
 
 /**
@@ -138,6 +153,41 @@ const SLOWEST_CLASS_SHARE_CEILING_PERCENT = [
  * the whole suite — reaches it.
  */
 const SLOWEST_CLASS_BACKSTOP_SECONDS = 1500.0;
+
+/**
+ * Whether this process runs on a GitHub-hosted Actions runner (#586).
+ *
+ * Both variables must say so: GitHub sets `GITHUB_ACTIONS` to `true` in every
+ * Actions job, and `RUNNER_ENVIRONMENT` to `github-hosted` or `self-hosted`. The gate
+ * host sets neither, and a self-hosted runner reports `self-hosted`, so each of them
+ * reads as not hosted and keeps the failing guard. The check fails closed: a missing,
+ * empty or unexpected value keeps the guard failing, because mistaking the gate host
+ * for a hosted runner would silently stop the guard failing where it is calibrated.
+ *
+ * @param  array<string, string>  $environment  The process environment, as getenv() returns it
+ * @return bool True only on a GitHub-hosted runner
+ */
+function runsOnGitHubHostedRunner(array $environment): bool
+{
+    return ($environment['GITHUB_ACTIONS'] ?? '') === 'true'
+        && ($environment['RUNNER_ENVIRONMENT'] ?? '') === 'github-hosted';
+}
+
+/**
+ * Whether a share breach in this band is reported rather than failed (#584).
+ *
+ * Only the parallel band, and only on a GitHub-hosted runner: that is the case #584
+ * decided. A band with no ceiling of its own takes the parallel ceiling but not this
+ * exemption, so a misspelled band name cannot widen it.
+ *
+ * @param  string  $band  The band name passed with --band
+ * @param  array<string, string>  $environment  The process environment, as getenv() returns it
+ * @return bool True when a share breach is reported and the guard exits 0
+ */
+function hostedRunnerReportsShareBreach(string $band, array $environment): bool
+{
+    return $band === 'parallel' && runsOnGitHubHostedRunner($environment);
+}
 
 /**
  * Sum each test class's `time` across every `<testcase>` in a JUnit report.
@@ -282,6 +332,32 @@ try {
 }
 
 $result = evaluateSlowestClass($totals, $shareCeiling, $backstop);
+
+// On a GitHub-hosted runner a parallel share breach is a signal, not a verdict
+// (#584): report it, as a workflow warning so it shows on the run's summary, and
+// pass. The backstop is not covered, so a class over it still fails below.
+if (! $result['shareOk'] && $result['backstopOk'] && hostedRunnerReportsShareBreach($band, getenv())) {
+    $message = sprintf(
+        "Slowest class over its share ceiling, reported and not failed on a GitHub-hosted runner: %s band's %s is %.1fs, %.2f%% of %.1fs summed class time, share ceiling %.2f%% (over by %.2f points). The ceiling is calibrated on the gate host, where this share still fails (#584).\n",
+        $band,
+        $result['class'],
+        $result['seconds'],
+        $result['share'],
+        $result['summed'],
+        $result['shareCeiling'],
+        $result['share'] - $result['shareCeiling'],
+    );
+
+    echo $message;
+    printf(
+        "::warning title=Slowest class over its share ceiling::%s is %.2f%% of the %s band, share ceiling %.2f%%; reported, not failed, on a GitHub-hosted runner (#584).\n",
+        $result['class'],
+        $result['share'],
+        $band,
+        $result['shareCeiling'],
+    );
+    exit(0);
+}
 
 if ($result['ok']) {
     printf(

@@ -68,6 +68,8 @@ This procedure has not been run since the rulesets replaced classic protection.
 - **A Dependabot bump of an action in a copied workflow cannot go green alone.** It changes the copy and not the template, and a hand edit to the template fails `synced-files`. The bump has to arrive through the template in `UAMS-Web/uams-claude-skills`.
 - **An open pull request reports `CI` only once its branch carries the job.** Until it is updated from `main`, the check stays pending.
 - **After a flaked `pest` shard, re-run the whole workflow.** Re-running only the failed job can restore newer shard timings than the other shards read, and `pest-report` then refuses the run.
+- **Only "Re-run all jobs" takes a fresh timing sample.** "Re-run failed jobs" copies every successful shard job forward from the earlier attempt, with its old start and end times, so `pest-report` re-reads the same timings and a share it measured comes back unchanged. On #583's CI run `41964133422` the macOS slowest-class share read 8.62% on attempt 1, the same 8.62% on attempt 2 (failed jobs only), and 6.72% on attempt 3 (all jobs) (#584).
+- **On a GitHub-hosted runner a parallel slowest-class share over 7.5% is a warning, not a failure.** `scripts/check-slowest-class.php` prints it and passes there, and still fails it on the gate host, where the ceiling is calibrated (#584, #586).
 - **A pull request from a fork cannot pass `CI`.** GitHub passes a fork's run no secrets, so the private submodules do not clone. Copy its commits to a branch in this repository.
 
 ## The failure this guards against

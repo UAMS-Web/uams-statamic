@@ -1013,6 +1013,10 @@ jobs:
       # Node, for the same reason as the skip guard: this job sets up PHP only.
       # (local-ci.mjs additionally tolerates the guard being absent, since it
       # validates older branches too.)
+      # On these GitHub-hosted runners a share over the ceiling is printed as a
+      # warning and passes: one hosted sample read 8.62% against a usual 4.4% to
+      # 5.4%, and the ceiling is calibrated on the gate host, where it
+      # still fails. The backstop still fails here (#584, #586).
       # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check slowest class (parallel band)
         run: php scripts/check-slowest-class.php --report=junit-parallel.xml --band=parallel
