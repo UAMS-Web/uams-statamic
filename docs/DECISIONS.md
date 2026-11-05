@@ -3878,3 +3878,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The edge-manifest parity slice follows in the add-on as its own pull request.
 
 **Companion.** #398 (the move and its acceptance criteria); `UAMS-Web/aether-redirects` v0.2.0. Earlier entries that link `app/Tags/RespondWithStatus.php` and `app/Exceptions/SiteHttpException.php` describe the code as it stood before this move.
+
+## 2026-11-05: On GitHub-hosted runners the parallel band's slowest-class share breach is reported, not failed; the gate host still fails it above 7.5% (#584)
+
+**Decision.** `scripts/check-slowest-class.php` prints a parallel band share over 7.5%, with a workflow warning, and exits 0 when `GITHUB_ACTIONS` is `true` and `RUNNER_ENVIRONMENT` is `github-hosted`. Anywhere else, the gate host and a self-hosted runner included, the breach still fails. The serial band's share and the 1500s backstop still fail everywhere.
+
+**Why.** The 7.5% ceiling is calibrated on the gate host, whose samples are stable enough to fail on. A single hosted sample can spike about 1.9x on whichever class is slowest: on #583's head `8570ca52a`, CI run `41964133422`, `macos-latest`, `SchemaJsonLdPodcastEpisodeTest` read 393.8s of 4568.5s (8.62%) on one attempt and 269.2s of 4005.5s (6.72%) on a fresh one, every test green both times, against 4.41% to 5.39% on `main`'s seven macOS runs before it. A red `CI` from runner variance blocks a pull request that changed nothing the guard measures. The detection needs both variables and an exact match, so a missing or unexpected value keeps the guard failing: mistaking the gate host for a hosted runner would silently stop it failing where it is calibrated.
+
+**Rejected.** *A higher ceiling of about 10% on hosted runners*: the measured spike took the class from a typical 4.4% to 5.4% to 8.62%, about 1.9x, so 10% leaves a thin margin and the same flip recurs on a slightly larger spike. *Splitting `SchemaJsonLdPodcastEpisodeTest`*: it sits near 5% on a normal run, and a spike lands on whichever class is slowest, so splitting this one moves the next spike to another class rather than preventing it.
+
+**Residual.** "Re-run failed jobs" copies successful shard jobs forward with their old timings, so only "Re-run all jobs" takes a fresh sample; `docs/runbooks/branch-protection.md` says so.
+
+**Companion.** #584 (the decision and its measurements); #586 (the build).
