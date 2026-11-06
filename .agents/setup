@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+export DEBIAN_FRONTEND=noninteractive
+
+step() {
+    local label="$1" started=$SECONDS
+    shift
+    printf '\n==> %s\n' "$label"
+    "$@"
+    printf '==> %s completed in %ss\n' "$label" "$((SECONDS - started))"
+}
+
+install_php() {
+    local packages=(ca-certificates curl unzip git php8.4-cli php8.4-intl
+        php8.4-mbstring php8.4-sqlite3 php8.4-xml php8.4-gd php8.4-bcmath
+        php8.4-imagick php8.4-zip php8.4-curl php8.4-pcov)
+    local missing=() package
+    for package in "${packages[@]}"; do
+        if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+            missing+=("$package")
+        fi
+    done
+    if ((${#missing[@]})); then
+        if [[ ! -f /etc/apt/sources.list.d/php.list ]]; then
+            local keyring
+            keyring=$(mktemp --suffix=.deb)
+            curl --fail --silent --show-error --location --retry 3 \
+                https://packages.sury.org/debsuryorg-archive-keyring.deb -o "$keyring"
+            sudo dpkg -i "$keyring"
+            rm "$keyring"
+            echo 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ bookworm main' \
+                | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
+        fi
+        sudo apt-get update -qq
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${missing[@]}"
+    fi
+    sudo update-alternatives --set php /usr/bin/php8.4
+    sudo tee /etc/php/8.4/cli/conf.d/99-orb.ini >/dev/null <<'INI'
+memory_limit = -1
+pcov.enabled = 0
+INI
+}
+
+install_node() {
+    if [[ $(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true) != 22 ]]; then
+        local temp archive
+        temp=$(mktemp -d)
+        archive=$(curl -fsSL --retry 3 https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt \
+            | awk '$2 ~ /linux-x64.tar.xz$/ { print $2 }')
+        curl -fsSL --retry 3 "https://nodejs.org/dist/latest-v22.x/$archive" -o "$temp/$archive"
+        curl -fsSL --retry 3 https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt \
+            | grep " $archive$" > "$temp/SHASUMS256.txt"
+        (cd "$temp" && sha256sum -c SHASUMS256.txt)
+        sudo tar -xJf "$temp/$archive" -C /usr/local --strip-components=1
+        rm -rf "$temp"
+    fi
+    if ! node -e 'const [major, minor] = process.argv[1].split(".").map(Number); process.exit(major > 11 || major === 11 && minor >= 10 ? 0 : 1)' "$(npm --version)"; then
+        sudo npm install --global 'npm@^11.10.0' --ignore-scripts
+    fi
+}
+
+install_composer() {
+    if ! command -v composer >/dev/null; then
+        local installer expected
+        installer=$(mktemp)
+        expected=$(curl -fsSL --retry 3 https://composer.github.io/installer.sig)
+        curl -fsSL --retry 3 https://getcomposer.org/installer -o "$installer"
+        echo "$expected  $installer" | sha384sum -c -
+        sudo php "$installer" --install-dir=/usr/local/bin --filename=composer
+        rm "$installer"
+    fi
+}
+
+step 'PHP 8.4 and extensions' install_php
+step 'Node 22 and npm' install_node
+step 'Composer' install_composer
+
+# These collection definitions must exist before statamic:install can scaffold content.
+step 'Test content submodules' git submodule update --init --depth 1 content users resources/forms
+[[ -f .env ]] || cp .env.example .env
+step 'Locked PHP dependencies' composer install --no-scripts --no-interaction --no-progress --prefer-dist
+if ! grep -Eq '^APP_KEY=.+[^"[:space:]]' .env; then
+    step 'Local application key' php artisan key:generate --no-interaction
+fi
+step 'Publish application assets' composer run-script post-autoload-dump --no-interaction
+step 'Install Git hooks' composer run-script post-install-cmd --no-interaction
+[[ -f database/database.sqlite ]] || touch database/database.sqlite
+step 'Local SQLite migrations' env APP_ENV=local DB_CONNECTION=sqlite \
+    DB_DATABASE="$PWD/database/database.sqlite" \
+    ASSET_METADATA_DATABASE="$PWD/storage/framework/cache/asset-metadata.sqlite" \
+    php artisan migrate --force --no-interaction
+step 'Locked JavaScript dependencies' npm ci
+step 'Browser test runtime' npx --no-install playwright install --with-deps chromium
+step 'Front-end build' npm run build
+step 'Control Panel build' npm run cp:build
+step 'Test Stache snapshot' env DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache --no-interaction
+printf '\nOrb toolchain and dependencies are ready.\n'

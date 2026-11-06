@@ -127,3 +127,6 @@ __pycache__/
 # Per-shard PHPUnit configurations and listings the Windows `pest` shards write (#504)
 /phpunit.shard-*.xml
 /pest-shard-list-*.txt
+
+# Thread-specific orb portal registrations.
+/.amp/portals/*
