@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+step() {
+    local label="$1"
+    shift
+    local start=$SECONDS
+    printf '\n==> %s\n' "$label"
+    "$@"
+    printf '==> %s: %ss\n' "$label" "$((SECONDS - start))"
+}
+
+install_toolchain() {
+    local packages=(ca-certificates curl unzip xz-utils git)
+    local missing=() package
+    for package in "${packages[@]}"; do
+        dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed' || missing+=("$package")
+    done
+    if ((${#missing[@]})); then
+        sudo apt-get update -qq
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
+    fi
+
+    if [[ ! -f /etc/apt/sources.list.d/php.list ]]; then
+        curl -fsSL --retry 3 https://packages.sury.org/debsuryorg-archive-keyring.deb -o /tmp/orb-php-keyring.deb
+        sudo dpkg -i /tmp/orb-php-keyring.deb
+        rm /tmp/orb-php-keyring.deb
+        echo 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ bookworm main' | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
+    fi
+    packages=(php8.4-cli php8.4-curl php8.4-intl php8.4-mbstring php8.4-sqlite3 php8.4-xml php8.4-gd php8.4-bcmath php8.4-imagick php8.4-zip php8.4-pcov)
+    missing=()
+    for package in "${packages[@]}"; do
+        dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed' || missing+=("$package")
+    done
+    if ((${#missing[@]})); then
+        sudo apt-get update -qq
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
+    fi
+    sudo update-alternatives --set php /usr/bin/php8.4
+    printf 'memory_limit=-1\nzend.assertions=1\npcre.jit=0\n' | sudo tee /etc/php/8.4/cli/conf.d/99-orb.ini >/dev/null
+
+    if ! command -v composer >/dev/null; then
+        local installer expected
+        installer=$(mktemp)
+        curl -fsSL --retry 3 https://getcomposer.org/installer -o "$installer"
+        expected=$(curl -fsSL --retry 3 https://composer.github.io/installer.sig)
+        [[ "$(sha384sum "$installer" | cut -d ' ' -f 1)" == "$expected" ]]
+        sudo php "$installer" --2 --install-dir=/usr/local/bin --filename=composer
+        rm "$installer"
+    fi
+
+    if [[ "$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)" != 22 ]]; then
+        local directory archive
+        directory=$(mktemp -d)
+        curl -fsSL --retry 3 https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt -o "$directory/SHASUMS256.txt"
+        archive=$(awk '$2 ~ /linux-x64.tar.xz$/ {print $2}' "$directory/SHASUMS256.txt")
+        curl -fsSL --retry 3 "https://nodejs.org/dist/latest-v22.x/$archive" -o "$directory/$archive"
+        (cd "$directory"; grep " $archive$" SHASUMS256.txt | sha256sum -c -)
+        sudo tar -xJf "$directory/$archive" --strip-components=1 -C /usr/local
+        rm -r "$directory"
+    fi
+    if ! node -e 'const [a,b] = process.argv[1].split(".").map(Number); process.exit(a > 11 || (a === 11 && b >= 10) ? 0 : 1)' "$(npm --version)"; then
+        sudo npm install -g 'npm@^11.10.0'
+    fi
+    php --version | head -n 1
+    composer --version
+    node --version
+    npm --version
+}
+
+step 'Install missing toolchain components' install_toolchain
+
+# Content must exist before Statamic's install scripts can scaffold these paths.
+# Use the orb's Git credential helper; never persist a person's token in a snapshot.
+step 'Initialize application submodules' git submodule update --init --depth 1 content users resources/forms
+
+[[ -f .env ]] || cp .env.example .env
+mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache
+[[ -f database/database.sqlite ]] || touch database/database.sqlite
+
+step 'Install locked PHP dependencies' composer install --no-scripts --no-interaction --no-progress --prefer-dist
+if ! grep -Eq '^APP_KEY=.+[^"[:space:]]' .env; then
+    step 'Generate local application key' php artisan key:generate --no-interaction
+fi
+step 'Discover and publish application packages' composer run-script post-autoload-dump --no-interaction
+
+step 'Prepare orb-local SQLite databases' env DB_URL= DB_CONNECTION=sqlite \
+    DB_DATABASE="$PWD/database/database.sqlite" \
+    ASSET_METADATA_DATABASE="$PWD/storage/framework/cache/asset-metadata.sqlite" \
+    php artisan migrate --database=sqlite --no-interaction
+
+step 'Install locked JavaScript dependencies' npm ci --no-audit --no-fund
+step 'Install browser test runtime' npx --no-install playwright install --with-deps chromium
+step 'Build site assets' npm run build
+step 'Build Control Panel assets' npm run cp:build
+printf '\nOrb setup ready. Run vendor/bin/pest or npm run test:js.\n'

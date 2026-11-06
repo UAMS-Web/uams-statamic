@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# SQLite and file-backed caches need no daemon or per-thread authentication.
+for tool in php composer node npm; do
+    command -v "$tool" >/dev/null || { echo "Missing $tool; rerun .agents/setup." >&2; exit 1; }
+done
+[[ -f vendor/autoload.php && -d node_modules ]] || {
+    echo 'Dependencies are missing; rerun .agents/setup, not resume.' >&2
+    exit 1
+}
+echo 'Orb toolchain and dependencies ready.'
