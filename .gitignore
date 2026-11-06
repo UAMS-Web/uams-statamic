@@ -1,5 +1,6 @@
 /.phpunit.cache
 /node_modules
+/.amp/portals/*
 /public/build
 /public/cp-hot
 /public/hot

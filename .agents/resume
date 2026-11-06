@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# SQLite and file-backed caches need no daemon after a snapshot wakes.
+# Authentication is supplied by Amp for the current thread, not saved in setup.
+for tool in php composer node npm; do
+    command -v "$tool" >/dev/null || { printf 'Missing %s; rerun .agents/setup\n' "$tool" >&2; exit 1; }
+done
+if [[ ! -f vendor/autoload.php || ! -d node_modules || ! -f .env ]]; then
+    printf 'Orb dependencies are incomplete; run .agents/setup\n' >&2
+    exit 1
+fi
+printf 'Orb toolchain and dependencies are present.\n'

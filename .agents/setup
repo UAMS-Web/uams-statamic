@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+export DEBIAN_FRONTEND=noninteractive
+
+step() {
+    local label="$1" started=$SECONDS
+    shift
+    printf '\n==> %s\n' "$label"
+    "$@"
+    printf '==> %s finished in %ss\n' "$label" "$((SECONDS - started))"
+}
+
+install_system() {
+    if [[ ! -f /usr/share/keyrings/debsuryorg-archive-keyring.gpg ]]; then
+        local keyring
+        keyring=$(mktemp)
+        curl --fail --silent --show-error --location --max-time 60 \
+            https://packages.sury.org/debsuryorg-archive-keyring.deb -o "$keyring"
+        sudo dpkg -i "$keyring"
+        rm -f "$keyring"
+    fi
+    if [[ ! -f /etc/apt/sources.list.d/php-sury.list ]]; then
+        printf '%s\n' 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ bookworm main' \
+            | sudo tee /etc/apt/sources.list.d/php-sury.list >/dev/null
+    fi
+    local packages=(php8.4-cli php8.4-bcmath php8.4-curl php8.4-gd php8.4-imagick
+        php8.4-intl php8.4-mbstring php8.4-sqlite3 php8.4-xml php8.4-zip php8.4-pcov unzip)
+    local missing=() package
+    for package in "${packages[@]}"; do
+        if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != 'install ok installed' ]]; then
+            missing+=("$package")
+        fi
+    done
+    if ((${#missing[@]})); then
+        sudo apt-get update -qq
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${missing[@]}"
+    fi
+    sudo update-alternatives --set php /usr/bin/php8.4
+}
+
+install_tools() {
+    local scratch
+    scratch=$(mktemp -d)
+    if ! command -v composer >/dev/null; then
+        curl -fsSL --max-time 60 https://getcomposer.org/installer -o "$scratch/composer-setup.php"
+        local expected actual
+        expected=$(curl -fsSL --max-time 60 https://composer.github.io/installer.sig)
+        actual=$(sha384sum "$scratch/composer-setup.php" | cut -d ' ' -f 1)
+        [[ "$expected" == "$actual" ]]
+        php "$scratch/composer-setup.php" --2 --install-dir="$scratch" --filename=composer
+        sudo install -m 755 "$scratch/composer" /usr/local/bin/composer
+    fi
+    if [[ "$(node -p 'process.versions.node.split(".")[0]')" != 22 ]]; then
+        local archive
+        curl -fsSL --max-time 60 https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt -o "$scratch/SHASUMS256.txt"
+        archive=$(awk '$2 ~ /-linux-x64.tar.xz$/ { print $2 }' "$scratch/SHASUMS256.txt")
+        curl -fsSL --max-time 120 "https://nodejs.org/dist/latest-v22.x/$archive" -o "$scratch/$archive"
+        (cd "$scratch"; grep " $archive\$" SHASUMS256.txt | sha256sum -c -)
+        sudo tar -xJf "$scratch/$archive" -C /usr/local --strip-components=1
+    fi
+    if ! npm --version | awk -F. '{ exit !($1 > 11 || ($1 == 11 && $2 >= 10)) }'; then
+        sudo npm install --global 'npm@^11.10.0'
+    fi
+    rm -rf "$scratch"
+}
+
+install_composer() {
+    local fingerprint
+    fingerprint=$(sha256sum patches.lock.json patches/*.patch | sha256sum | cut -d ' ' -f 1)
+    # Composer install does not reapply changed patches to restored vendor files.
+    # Follow worktree-slots.mjs: remove patched packages, then install so failures propagate.
+    if [[ -d vendor && (! -f vendor/.orb-patch-inputs || "$(cat vendor/.orb-patch-inputs)" != "$fingerprint") ]]; then
+        node --input-type=module <<'JS'
+import { existsSync, readFileSync, rmSync } from 'node:fs';
+for (const file of ['patches.lock.json', 'vendor/.orb-patches.lock.json']) {
+    if (!existsSync(file)) continue;
+    for (const name of Object.keys(JSON.parse(readFileSync(file, 'utf8')).patches)) {
+        if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(name) || name.split('/').includes('..')) {
+            throw new Error('Invalid patched package name');
+        }
+        rmSync(`vendor/${name}`, { recursive: true, force: true });
+    }
+}
+JS
+    fi
+    composer install --no-scripts --no-interaction --no-progress --prefer-dist
+    cp patches.lock.json vendor/.orb-patches.lock.json
+    printf '%s\n' "$fingerprint" > vendor/.orb-patch-inputs
+}
+
+prepare_app() {
+    [[ -f .env ]] || cp .env.example .env
+    mkdir -p storage/framework/{cache/data,sessions,views} bootstrap/cache
+    php artisan config:clear --no-interaction
+    if ! grep -Eq '^APP_KEY=.+[^"[:space:]]' .env; then
+        php artisan key:generate --no-interaction
+    fi
+    composer run-script post-autoload-dump --no-interaction
+    composer run-script post-install-cmd --no-interaction
+    # Always target these local SQLite files, never a configured external database.
+    [[ -f database/database.sqlite ]] || touch database/database.sqlite
+    DB_CONNECTION=sqlite DB_DATABASE="$PWD/database/database.sqlite" DB_URL= \
+        ASSET_METADATA_DATABASE="$PWD/storage/framework/cache/asset-metadata.sqlite" \
+        php artisan migrate --no-interaction
+}
+
+install_npm() {
+    local fingerprint
+    fingerprint=$({ sha256sum package.json package-lock.json .npmrc composer.lock; node -v; npm -v; } | sha256sum | cut -d ' ' -f 1)
+    # npm ci removes node_modules even on a warm snapshot (10s measured here).
+    if [[ -f node_modules/.orb-install-inputs && "$(cat node_modules/.orb-install-inputs)" == "$fingerprint" ]]; then
+        printf 'Locked npm dependencies already installed.\n'
+    else
+        npm ci --no-audit --no-fund
+        printf '%s\n' "$fingerprint" > node_modules/.orb-install-inputs
+    fi
+}
+
+install_playwright() {
+    npx --no-install playwright install chromium
+    local executable libraries
+    executable=$(node --input-type=module -e 'import { chromium } from "playwright"; process.stdout.write(chromium.executablePath())')
+    libraries=$(ldd "$executable")
+    if [[ "$libraries" == *'not found'* ]]; then
+        npx --no-install playwright install-deps chromium
+    fi
+}
+
+step 'System packages (PHP 8.4 and extensions)' install_system
+step 'Composer 2, Node 22 and npm' install_tools
+# Use Amp's existing Git credentials, never bake user tokens into a shared snapshot.
+# Initialize before Statamic's install script can scaffold content in these paths.
+step 'Required content, users and form definitions' \
+    git submodule update --init --depth 1 content users resources/forms
+step 'Locked Composer dependencies' install_composer
+step 'Local application environment' prepare_app
+step 'Locked npm dependencies' install_npm
+step 'Playwright Chromium and system libraries' install_playwright
+step 'Puppeteer Chrome' npx --no-install puppeteer browsers install chrome
+step 'Site assets' npm run build
+step 'Control Panel assets' npm run cp:build
+printf '\nOrb setup ready: PHP %s, Node %s, npm %s\n' "$(php -r 'echo PHP_VERSION;')" "$(node -v)" "$(npm -v)"
