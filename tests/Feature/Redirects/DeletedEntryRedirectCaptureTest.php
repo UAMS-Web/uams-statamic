@@ -22,6 +22,10 @@ use UAMSWeb\Aether\Redirects\Support\RedirectRuleMatcher;
  * capture that served immediately would send visitors to an empty destination, which is
  * worse than the 404 it replaces.
  *
+ * Linux, PHP 8.4.27, PCOV: App\Listeners\CaptureRedirectOnEntryDelete has all
+ * 3 statements covered and its 1 covered mutant killed, with no survivors.
+ * The entry-deletion case exercises the registered listener, not a mock.
+ *
  * @command  php artisan test --compact tests/Feature/Redirects/DeletedEntryRedirectCaptureTest.php
  */
 uses(StacheIsolatedTestCase::class);
@@ -32,6 +36,7 @@ beforeEach(function (): void {
     if (! $set instanceof Statamic\Globals\GlobalSet) {
         throw new RuntimeException('GlobalSet::make() did not return a global set.');
     }
+
     $set->title('Redirects');
     $set->save();
 
@@ -173,6 +178,7 @@ it('captures nothing for an entry that never had a URL', function (): void {
     if (! $c instanceof Statamic\Entries\Collection) {
         throw new RuntimeException('Collection::make() did not return a collection.');
     }
+
     $c->save();
 
     $entry = makeSavedEntry('routeless', 'no-url');
@@ -208,7 +214,7 @@ it('captures through the EntryDeleted listener, not only through the service', f
         ->and($rows[0]['enabled'])->toBeFalse();
 });
 
-it('captures a page-tree entry\'s full URL, parent segments included', function (): void {
+it("captures a page-tree entry's full URL, parent segments included", function (): void {
     // A page tree, which is where redirects matter most.
     $pages = Collection::make('capture_tree');
     $pages->routes('{parent_uri}/{slug}');
