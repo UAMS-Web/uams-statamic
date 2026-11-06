@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "66bf8f63d6a4bc19b1baa14a07d59bc5",
+    "content-hash": "4a2d361f645e3e37420fff11b33627f5",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11097,16 +11097,16 @@
         },
         {
             "name": "uams-web/aether-wordpress-importer",
-            "version": "v0.32.0",
+            "version": "v0.33.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git",
-                "reference": "8c666bdf82bc2066b770458c7f282861fcab1509"
+                "reference": "0118d23b053c6fbc803a5cecc4ea0656602e271f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/8c666bdf82bc2066b770458c7f282861fcab1509",
-                "reference": "8c666bdf82bc2066b770458c7f282861fcab1509",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/0118d23b053c6fbc803a5cecc4ea0656602e271f",
+                "reference": "0118d23b053c6fbc803a5cecc4ea0656602e271f",
                 "shasum": ""
             },
             "require": {
@@ -11216,7 +11216,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-wordpress-importer/issues",
                 "source": "https://github.com/UAMS-Web/aether-wordpress-importer"
             },
-            "time": "2026-11-01T22:30:05+00:00"
+            "time": "2026-11-02T13:37:05+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer-cleanup",
