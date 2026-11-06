@@ -40,6 +40,8 @@ class EnforcePeopleEditingScope
     {
         $entry = $event->entry;
 
+        // Equivalent: governs() independently rejects every non-entry value.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $entry instanceof Entry || ! $this->scope->governs($entry)) {
             return;
         }

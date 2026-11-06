@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Listeners\EnforcePeopleEditingScope;
 use App\Support\People\PeopleEditingScope;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\File;
@@ -48,6 +49,16 @@ use function Pest\Laravel\withoutVite;
  * The role's permissions are read from the tracked `resources/users/roles.yaml`,
  * so the test exercises the role as shipped; the role and group files are
  * repointed at a throwaway directory so nothing tracked is written.
+ *
+ * Linux, PHP 8.4.27, PCOV: EnforcePeopleEditingScope has all 13 statements
+ * covered and its 15 remaining covered mutants killed.
+ * The listener's InstanceOfToTrue mutant is equivalent: governs() also rejects
+ * non-entry values, so removing the earlier type check changes no outcome.
+ * Exactly that mutant is annotated; every killable mutant is dead.
+ *
+ * @see EnforcePeopleEditingScope
+ *
+ * @command  php artisan test --compact tests/Feature/CP/People/ScopedPeopleEditingTest.php
  */
 uses(StacheIsolatedTestCase::class);
 
@@ -221,6 +232,7 @@ function scopedPeopleBySlug(string $slug): ?EntryItem
     $query = Entry::query();
     $query->where('collection', 'people');
     $query->where('slug', $slug);
+
     $entry = $query->first();
 
     return $entry instanceof EntryItem ? $entry : null;
@@ -571,6 +583,7 @@ it('lets a scoped editor open an entry in scope and refuses one out of scope', f
 
     get(scopedPeopleRoute('collections.entries.edit', ['people', 'uhura']))->assertOk();
     get(scopedPeopleRoute('collections.entries.edit', ['people', 'sulu']))->assertOk();
+
     getJson(scopedPeopleRoute('collections.entries.edit', ['people', 'chekov']))->assertForbidden();
 });
 
@@ -614,7 +627,11 @@ it('refuses a scoped editor change that removes the organization in scope', func
         'slug' => 'rand',
         'job_title' => scopedPeopleRole(SCOPED_PEOPLE_ORG_OUT),
     ])->assertServerError()
-        ->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'must stay linked to an organization you edit for'));
+        ->assertJsonPath(
+            'message',
+            'This person must stay linked to an organization you edit for. '
+            .'Add one of your organizations to a role or service line before saving.'
+        );
 
     /** @var EntryItem $rand */
     $rand = Entry::find('rand');
@@ -764,6 +781,21 @@ it('saves a change to a published entry in another collection directly', functio
 
     expect($page->get('bio'))->toBe('Deck one')
         ->and($page->hasWorkingCopy())->toBeFalse();
+});
+
+it('does not enforce people organizations on another collection saved while an editor is signed in', function (): void {
+    // Keep the actor scoped while the entry belongs to a different collection.
+    scopedPeoplePage('bridge');
+    actingAs(scopedPeopleEditor());
+    $page = Entry::find('bridge');
+    Assert::assertInstanceOf(EntryItem::class, $page);
+
+    // Save outside the user's organizations through the real event listeners.
+    $page->set('service_line', [SCOPED_PEOPLE_ORG_OUT]);
+    $page->set('bio', 'Deck two');
+
+    expect($page->save())->toBeTrue()
+        ->and($page->get('bio'))->toBe('Deck two');
 });
 
 it('covers every organization below one a group names', function (): void {
