@@ -28,10 +28,12 @@ import {
 // parallel, because GitHub does not meter the standard runners they use for a
 // public repository; the local runner keeps its cost-ordered chain because one
 // machine runs the jobs serially whatever any graph says. So these cases pin the
-// SET, and pin that ci.yml stays unchained apart from the edge #387 added
+// SET, and pin that the jobs declared here stay unchained apart from #387
 // (`pest-report` reads the `pest` shards' output) and the aggregate `ci` job, which
-// orders nothing (#337), rather than comparing two
-// orders that no longer both exist.
+// orders nothing (#337). The `checks` call's internal ordering is outside this
+// scanner: its callee runs pint after composer-validate and synced-files, then
+// rector, phpstan and mutate-ignore after pint (#580, #594). A pass here says
+// nothing about independence inside that call.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
@@ -166,15 +168,12 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         }
     })
 
-    it('declares no `needs:` edge but `pest-report` on `pest`, so the remote jobs run in parallel (#373, #387)', () => {
-        // The remote jobs fan out. The cost-ordered chain they used to run as was
-        // there to protect a metered Actions budget, and GitHub does not meter the
-        // standard runners every job here uses for a public repository. An edge
-        // added back would restore the serial wall-clock for nothing and diverge
-        // from the local runner, whose chain is deliberately NOT mirrored, so this
-        // fails rather than letting one return unnoticed. Reintroducing an edge is
-        // a decision to take deliberately in docs/DECISIONS.md, not to discover
-        // through a passing parity test.
+    it('keeps caller jobs independent except for reporting dependencies (#373, #387)', () => {
+        // Check only the graph declared in this repository's ci.yml. The scanner
+        // reads `checks` as one job, not the callee's jobs or their `needs:`.
+        // The called chain deliberately orders its checks (#580); that accepted
+        // narrowing of #373 is recorded in docs/DECISIONS.md (#594). Another edge
+        // in this caller still needs its own recorded decision.
         //
         // The one allowed edge (#387) is not an ordering choice: `pest-report`
         // merges the `pest` shards' reports, so it cannot run before them.
