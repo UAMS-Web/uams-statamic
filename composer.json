@@ -157,7 +157,8 @@
         "patches": {
             "pestphp/pest-plugin-browser": {
                 "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch"
+                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch",
+                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
             },
             "pestphp/pest-plugin-mutate": {
                 "Launch each mutant child process so a run cannot score every mutant killed without executing one (temporary; see #2322)": "patches/pest-plugin-mutate-mutant-process-launch.patch",

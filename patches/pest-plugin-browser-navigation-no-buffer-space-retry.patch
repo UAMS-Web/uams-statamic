@@ -1,0 +1,104 @@
+diff --git a/src/Playwright/Page.php b/src/Playwright/Page.php
+index 9165839..fcf4e59 100644
+--- a/src/Playwright/Page.php
++++ b/src/Playwright/Page.php
+@@ -97,12 +97,16 @@ final class Page
+      */
+     public function goto(string $url, array $options = []): self
+     {
+-        $response = $this->sendMessage('goto', [
+-            ...['url' => $url, 'waitUntil' => 'load'],
+-            ...$options,
+-        ]);
+-
+-        $this->processVoidResponse($response);
++        // Temporary: retry a navigation the Windows runner's socket layer refused.
++        // See NavigationRetry and UAMS-Web/uams-statamic#585.
++        NavigationRetry::onNoBufferSpace(function () use ($url, $options): void {
++            $response = $this->sendMessage('goto', [
++                ...['url' => $url, 'waitUntil' => 'load'],
++                ...$options,
++            ]);
++
++            $this->processVoidResponse($response);
++        });
+ 
+         return $this;
+     }
+diff --git a/src/Playwright/NavigationRetry.php b/src/Playwright/NavigationRetry.php
+new file mode 100644
+index 0000000..4b52156
+--- /dev/null
++++ b/src/Playwright/NavigationRetry.php
+@@ -0,0 +1,71 @@
++<?php
++
++declare(strict_types=1);
++
++namespace Pest\Browser\Playwright;
++
++use PHPUnit\Framework\ExpectationFailedException;
++
++/**
++ * Retries a navigation that failed with `net::ERR_NO_BUFFER_SPACE`.
++ *
++ * Temporary: carried as a local patch by UAMS-Web/uams-statamic#585. Chromium
++ * reports that error when the operating system refuses a socket with
++ * WSAENOBUFS, which a hosted Windows runner did once on a static loopback
++ * fixture while the same head passed on another attempt. The condition is the
++ * runner's, not the page's, so a short bounded retry absorbs it. Any other
++ * navigation error is thrown on its first occurrence.
++ */
++final class NavigationRetry
++{
++    /**
++     * The Chromium error the retry is scoped to.
++     */
++    public const string ERROR = 'net::ERR_NO_BUFFER_SPACE';
++
++    /**
++     * How many times a refused navigation is retried before its error is thrown.
++     */
++    public const int RETRIES = 2;
++
++    /**
++     * The wait before the first retry, in microseconds; each later retry waits one step longer.
++     */
++    public const int BACKOFF_MICROSECONDS = 500_000;
++
++    /**
++     * Runs the navigation, retrying it while it fails with `net::ERR_NO_BUFFER_SPACE`.
++     *
++     * @param  callable(): void  $navigate  The navigation to run.
++     * @param  (callable(int): void)|null  $sleep  Waits the given microseconds; `usleep()` when null.
++     * @param  (callable(string): void)|null  $report  Receives one line per retry; written to STDERR when null, so a job log shows each retry.
++     */
++    public static function onNoBufferSpace(callable $navigate, ?callable $sleep = null, ?callable $report = null): void
++    {
++        $sleep ??= usleep(...);
++        $report ??= static function (string $line): void {
++            fwrite(STDERR, $line.PHP_EOL);
++        };
++
++        for ($retry = 0; ; $retry++) {
++            try {
++                $navigate();
++
++                return;
++            } catch (ExpectationFailedException $exception) {
++                if ($retry >= self::RETRIES || ! str_contains($exception->getMessage(), self::ERROR)) {
++                    throw $exception;
++                }
++
++                $report(sprintf(
++                    'pest-plugin-browser: retry %d of %d after %s (patch from UAMS-Web/uams-statamic#585)',
++                    $retry + 1,
++                    self::RETRIES,
++                    $exception->getMessage(),
++                ));
++
++                $sleep(self::BACKOFF_MICROSECONDS * ($retry + 1));
++            }
++        }
++    }
++}
