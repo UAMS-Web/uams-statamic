@@ -56,6 +56,18 @@ it('carries the requested lens marker for every lens', function (string $lens): 
         ->toContain('Bob Wesley');
 })->with(['academic', 'institutional', 'researcher']);
 
+it('keeps the full credentials name on a lens that passes no identity_name', function (string $lens): void {
+    // UAMS-Web/uams-statamic#344: only the clinical lens swaps in the
+    // regulatory-designation name; the computed being present changes nothing here.
+    $html = renderPeopleIdentityHeader($lens, [
+        'title' => 'Jane McCoy',
+        'display_name_full_with_credentials' => ['text' => 'Jane McCoy, M.D., Ph.D. (Non-Clinical)'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'Jane McCoy, M.D.'],
+    ]);
+
+    expect($html)->toContain('<span class="name">Jane McCoy, M.D., Ph.D. (Non-Clinical)</span>');
+})->with(['academic', 'institutional', 'researcher']);
+
 it('strip_tags-escapes the editor-controlled name (Antlers is raw by default)', function (): void {
     $html = renderPeopleIdentityHeader('academic', [
         'title' => 'Jane McCoy',

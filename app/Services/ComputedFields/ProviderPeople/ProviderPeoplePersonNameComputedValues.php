@@ -9,6 +9,7 @@ use App\Support\PersonNameDisplayFormats;
 use Illuminate\Support\Collection as IlluminateCollection;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Term;
+use Statamic\Taxonomies\LocalizedTerm;
 
 /**
  * Person-name Statamic computed field values for providers and people entries.
@@ -1700,6 +1701,94 @@ class ProviderPeoplePersonNameComputedValues
     public function getDisplayNameFullWithCredentials(
         Entry $entry
     ): array {
+        // Build the pair from every selected credential
+        return $this->displayNameFullPairWithCredentials(
+            $entry,
+            $entry->get('credentials')
+        );
+    }
+
+    /**
+     * Display name with only the regulatory-designation credential titles, for the
+     * clinical (provider) lens and the Find-a-Doc card (UAMS-Web/uams-statamic#344).
+     *
+     * A credential term is kept when it answers yes to both "Is this a clinical
+     * credential?" (`clinical_query`) and "Is this a regulatory designation?"
+     * (`clinical_statutory_credential_query`). The Control Panel shows the second
+     * question only when the first is answered yes, so requiring both stops a
+     * hidden, stale regulatory answer on a non-clinical term from reaching the
+     * clinical name. Every other lens keeps `display_name_full_with_credentials`.
+     *
+     * @param  Entry  $entry  The providers or people entry to process
+     * @return array{text: string, phonetic_text: string|null} Paired display name with regulatory credential titles and their IPA suffixes joined by `.`
+     */
+    public function getDisplayNameFullWithClinicalCredentials(
+        Entry $entry
+    ): array {
+        // Build the pair from the regulatory-designation credentials only
+        return $this->displayNameFullPairWithCredentials(
+            $entry,
+            $this->regulatoryCredentialSlugs($entry->get('credentials'))
+        );
+    }
+
+    /**
+     * Credential term slugs, in their selected order, whose term answers yes to
+     * both the clinical and the regulatory-designation questions.
+     *
+     * @param  mixed  $credentials  Entry `credentials` field (term slugs)
+     * @return list<string> The kept slugs
+     */
+    private function regulatoryCredentialSlugs(
+        mixed $credentials
+    ): array {
+        // Treat a bare slug as a one-item list, as the full name's `collect()` does
+        if (\is_string($credentials)) {
+            $credentials = [$credentials];
+        }
+
+        // Return no slugs when the credentials are not a list
+        if (! \is_array($credentials)) {
+            return [];
+        }
+
+        // Keep each slug whose term answers yes to both questions
+        $kept = [];
+
+        foreach ($credentials as $slug) {
+            // Skip a value that cannot name a term
+            if (! \is_string($slug) || $slug === '') {
+                continue;
+            }
+
+            // Find the credential term
+            $term = Term::find('credentials::'.$slug);
+
+            // Keep the slug when both answers are a strict `true`
+            if (
+                $term instanceof LocalizedTerm
+                && $term->get('clinical_query') === true
+                && $term->get('clinical_statutory_credential_query') === true
+            ) {
+                $kept[] = $slug;
+            }
+        }
+
+        return $kept;
+    }
+
+    /**
+     * Display name pair with the titles and abbreviation IPA of the given
+     * credential slugs appended.
+     *
+     * @param  Entry  $entry  The providers or people entry to process
+     * @param  mixed  $credentials  Credential term slugs to append
+     * @return array{text: string, phonetic_text: string|null} Paired display name with credential titles and credential IPA suffixes joined by `.`
+     */
+    private function displayNameFullPairWithCredentials(
+        Entry $entry,
+        mixed $credentials
+    ): array {
         // Resolve base display string from `person_name`
         $baseDisplayName = $this->resolveDisplayNameFullText($entry);
 
@@ -1710,9 +1799,6 @@ class ProviderPeoplePersonNameComputedValues
                 ''
             );
         }
-
-        // Get the credentials from the entry
-        $credentials = $entry->get('credentials');
 
         // Build the text with the credential titles
         $text = $this->displayNameWithCredentialTitles(

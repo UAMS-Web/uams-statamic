@@ -63,6 +63,38 @@ it('strip_tags-escapes the editor-controlled name (Antlers is raw by default)', 
         ->toContain('McCoy');
 });
 
+// --- The clinical name (UAMS-Web/uams-statamic#344) ---------------------------------------------------------
+//
+// The clinical lens shows `display_name_full_with_clinical_credentials`, which keeps
+// only regulatory-designation credentials, in place of the full credentials name.
+
+it('shows the regulatory-designation name rather than the full credentials name', function (array $extra): void {
+    $html = renderProviderLensBody([
+        'title' => 'Leonard McCoy',
+        'display_name_full_with_credentials' => ['text' => 'Leonard McCoy, M.D., Ph.D. (Non-Clinical)'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'Leonard McCoy, M.D.'],
+        'display_name_short_with_prefix' => ['text' => 'Dr. McCoy'],
+    ] + $extra);
+
+    expect($html)->toContain('<span class="name">Leonard McCoy, M.D.</span>')
+        ->not->toContain('Non-Clinical');
+})->with([
+    'a provider' => [[]],
+    'a resident' => [['resident_query' => new LabeledValue(true, 'Yes')]],
+]);
+
+it('strip_tags-escapes the clinical name', function (): void {
+    $html = renderProviderLensBody([
+        'title' => 'Leonard McCoy',
+        'display_name_full_with_credentials' => ['text' => 'Leonard McCoy, M.D.'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'Leonard <script>alert(1)</script>McCoy'],
+        'display_name_short_with_prefix' => ['text' => 'Dr. McCoy'],
+    ]);
+
+    expect($html)->not->toContain('<script>')
+        ->toContain('<span class="name">Leonard alert(1)McCoy</span>');
+});
+
 // --- The clinical field selection (UAMS-Web/uams-statamic-archive#571) ------------------------------------
 //
 // A `true_false` field augments to a `LabeledValue`, never a raw bool, so these

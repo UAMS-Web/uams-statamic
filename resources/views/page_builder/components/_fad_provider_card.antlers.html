@@ -1,6 +1,6 @@
 {{#
 	@name Find-a-Doc Provider Card
-	@desc A single Find-a-Doc provider card — responsive portrait (or the shared 3:4 "no image available" fallback), name, patient-facing clinical title, and a "View Profile" CTA. Rendered once per provider inside the Providers block's collection loop (UAMS-Web/uams-statamic-archive#64). Editor- and taxonomy-controlled text is escaped with `sanitize` because Antlers output is raw by default.
+	@desc A single Find-a-Doc provider card — responsive portrait (or the shared 3:4 "no image available" fallback), name with only its regulatory-designation credentials (`display_name_full_with_clinical_credentials`, UAMS-Web/uams-statamic#344), patient-facing clinical title, and a "View Profile" CTA. Rendered once per provider inside the Providers block's collection loop (UAMS-Web/uams-statamic-archive#64). Editor- and taxonomy-controlled text is escaped with `sanitize` because Antlers output is raw by default.
 
 	Pass `fad_facet="true"` (the Providers block sets it when reader filtering is enabled, UAMS-Web/uams-statamic-archive#1242) to emit the card's facet anchor: `data-fad-card` plus space-delimited term/entry slugs in `data-expertise` / `data-specialty` / `data-region`, the contract the `fadFilter` Alpine engine reads. The slugs come from the provider's `expertise` (entries → `clinical_expertise`), `clinical_specializations` (terms), and computed `regions` (terms, aggregated from the provider's locations). Unlike the free-text values below, these need no `sanitize`: Statamic slugs are URL-safe (`[a-z0-9-]`), so they cannot carry HTML special characters or break out of the attribute.
 
@@ -10,7 +10,7 @@
 	@set page.page_builder.uamsweb_block_fad_providers
 #}}
 
-<div class="card"{{ if fad_facet }} data-fad-card data-expertise="{{ expertise | pluck:'slug' | join:' ' }}" data-specialty="{{ clinical_specializations | pluck:'slug' | join:' ' }}" data-region="{{ regions | pluck:'slug' | join:' ' }}"{{ if fad_directory }} data-conditions="{{ conditions | pluck:'slug' | join:' ' }}" data-treatments="{{ treatments | pluck:'slug' | join:' ' }}" data-patient_types="{{ patient_types | pluck:'slug' | join:' ' }}" data-location="{{ clinical_locations | pluck:'slug' | join:' ' }}" data-gender="{{ gender | lower | sanitize }}" data-language="{{ language | pluck:'value' | join:' ' | sanitize }}" data-primary_care="{{ if primary_care_query }}yes{{ /if }}" data-alpha="{{ person_name:last_name:text | substr:0:1 | upper | sanitize }}" data-sort-name="{{ person_name:last_name:text | lower | sanitize }} {{ person_name:first_name:text | lower | sanitize }}" data-name="{{ display_name_full_with_credentials:text | lower | strip_tags | sanitize }}"{{ /if }}{{ /if }}>
+<div class="card"{{ if fad_facet }} data-fad-card data-expertise="{{ expertise | pluck:'slug' | join:' ' }}" data-specialty="{{ clinical_specializations | pluck:'slug' | join:' ' }}" data-region="{{ regions | pluck:'slug' | join:' ' }}"{{ if fad_directory }} data-conditions="{{ conditions | pluck:'slug' | join:' ' }}" data-treatments="{{ treatments | pluck:'slug' | join:' ' }}" data-patient_types="{{ patient_types | pluck:'slug' | join:' ' }}" data-location="{{ clinical_locations | pluck:'slug' | join:' ' }}" data-gender="{{ gender | lower | sanitize }}" data-language="{{ language | pluck:'value' | join:' ' | sanitize }}" data-primary_care="{{ if primary_care_query }}yes{{ /if }}" data-alpha="{{ person_name:last_name:text | substr:0:1 | upper | sanitize }}" data-sort-name="{{ person_name:last_name:text | lower | sanitize }} {{ person_name:first_name:text | lower | sanitize }}" data-name="{{ display_name_full_with_clinical_credentials:text | lower | strip_tags | sanitize }}"{{ /if }}{{ /if }}>
 	{{ if portrait:url }}
 		{{# Provider portrait: 3:4 crop_focal renditions with a 2x density source, a
 		    larger crop on wide viewports, and the smaller crop as the default. #}}
@@ -25,7 +25,7 @@
 				height="342"
 				itemprop="https://schema.org/image"
 				class="card-img-top"
-				alt="{{ display_name_full_with_credentials.text | strip_tags | sanitize }}"
+				alt="{{ display_name_full_with_clinical_credentials.text | strip_tags | sanitize }}"
 				loading="lazy"
 				decoding="async">
 		</picture>
@@ -35,7 +35,7 @@
 	{{ /if }}
 	<div class="card-body">
 		<h3 class="card-title h6">
-			<span class="name">{{ display_name_full_with_credentials.text | sanitize }}</span>
+			<span class="name">{{ display_name_full_with_clinical_credentials.text | sanitize }}</span>
 			{{ if clinical_title }}
 				<span class="subtitle">{{ clinical_title | sanitize }}</span>
 			{{ /if }}
@@ -68,7 +68,7 @@
 			    provider's own permalink. Both are app-generated paths, not editor text. #}}
 			<a href="{{ if profile_url }}{{ profile_url }}{{ else }}{{ url }}{{ /if }}" class="btn btn-primary stretched-link"
 				aria-label="View profile for {{ display_name_short_with_prefix.text | strip_tags | sanitize }}"
-				data-itemtitle="{{ display_name_full_with_credentials.text | strip_tags | sanitize }}">View Profile</a>
+				data-itemtitle="{{ display_name_full_with_clinical_credentials.text | strip_tags | sanitize }}">View Profile</a>
 		</div>
 	</div>
 </div>
