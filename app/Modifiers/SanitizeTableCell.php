@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modifiers;
 
+use App\Services\Tables\TableCellEntryLinkResolver;
 use App\Services\Tables\TableCellSanitizer;
 use Statamic\Modifiers\Modifier;
 
@@ -14,7 +15,9 @@ use Statamic\Modifiers\Modifier;
  * emphasis). This modifier renders that value through {@see TableCellSanitizer},
  * which permits inline links and basic emphasis and escapes everything else —
  * enabling cell links while closing the stored-XSS hole left by emitting the raw
- * `{{ value }}`.
+ * `{{ value }}`. Entry references (`statamic://entry::<id>`) are first resolved
+ * to the entry's URL through {@see TableCellEntryLinkResolver}, on the rendered
+ * value only, so the stored cell keeps the reference.
  *
  * Usage in the table render partial:
  *
@@ -37,7 +40,11 @@ class SanitizeTableCell extends Modifier
         array $params,
         array $context
     ): string {
+        // Point entry references at their URLs, which the sanitizer's scheme list
+        // would otherwise strip
+        $resolved = app(TableCellEntryLinkResolver::class)->resolve($value);
+
         // Resolve the shared sanitizer so its compiled definition is reused
-        return app(TableCellSanitizer::class)->sanitize($value);
+        return app(TableCellSanitizer::class)->sanitize($resolved);
     }
 }
