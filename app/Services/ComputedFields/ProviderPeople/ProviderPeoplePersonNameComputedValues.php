@@ -1756,6 +1756,11 @@ class ProviderPeoplePersonNameComputedValues
         $kept = [];
 
         foreach ($credentials as $slug) {
+            // Read an integer slug as a string, as the full name's title lookup does
+            if (\is_int($slug)) {
+                $slug = (string) $slug;
+            }
+
             // Skip a value that cannot name a term
             if (! \is_string($slug) || $slug === '') {
                 continue;

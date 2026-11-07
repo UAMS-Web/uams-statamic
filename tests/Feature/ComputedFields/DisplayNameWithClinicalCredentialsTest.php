@@ -45,7 +45,7 @@ function clinicalNameTerm(string $title, array $data): TermContract
 /**
  * Serve the given terms (keyed by slug) from `Term::find('credentials::<slug>')`.
  *
- * @param  array<string, TermContract>  $terms
+ * @param  array<array-key, TermContract>  $terms
  */
 function clinicalNameServeTerms(array $terms): void
 {
@@ -149,7 +149,7 @@ it('falls back to the bare name when nothing qualifies or credentials are not a 
     'only non-regulatory' => [['ma', 'phd_nonclinical', 'stale']],
     'empty list' => [[]],
     'null' => [null],
-    'non-string slugs' => [[1, null, '']],
+    'unusable slugs' => [[null, '', 1.5, ['md']]],
 ]);
 
 it('reads a bare slug as a one-item list, as the full name does', function (): void {
@@ -158,4 +158,12 @@ it('reads a bare slug as a one-item list, as the full name does', function (): v
 
     expect($names->getDisplayNameFullWithClinicalCredentials(clinicalNamePerson('md'))['text'])->toBe('Jane Doe, M.D.')
         ->and($names->getDisplayNameFullWithClinicalCredentials(clinicalNamePerson('ma'))['text'])->toBe('Jane Doe');
+});
+
+it('reads an integer slug as a string, as the full name does', function (): void {
+    clinicalNameServeTerms(['5' => clinicalNameTerm('Five', ['clinical_query' => true, 'clinical_statutory_credential_query' => true])]);
+    $names = new ProviderPeoplePersonNameComputedValues;
+
+    expect($names->getDisplayNameFullWithClinicalCredentials(clinicalNamePerson([5]))['text'])->toBe('Jane Doe, Five')
+        ->and($names->getDisplayNameFullWithCredentials(clinicalNamePerson([5]))['text'])->toBe('Jane Doe, Five');
 });

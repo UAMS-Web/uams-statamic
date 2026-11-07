@@ -68,6 +68,23 @@ it('keeps the full credentials name on a lens that passes no identity_name', fun
     expect($html)->toContain('<span class="name">Jane McCoy, M.D., Ph.D. (Non-Clinical)</span>');
 })->with(['academic', 'institutional', 'researcher']);
 
+it('uses a passed identity_name for both the name and the portrait alt', function (): void {
+    // UAMS-Web/uams-statamic#344: the clinical lens passes the regulatory-designation name.
+    $html = (string) Antlers::parse(
+        '{{ partial:people/components/identity_header lens="provider" :identity_name="display_name_full_with_clinical_credentials.text" }}',
+        [
+            'title' => 'Jane McCoy',
+            'display_name_full_with_credentials' => ['text' => 'Jane McCoy, M.D., Ph.D. (Non-Clinical)'],
+            'display_name_full_with_clinical_credentials' => ['text' => 'Jane McCoy, M.D.'],
+            'portrait' => ['permalink' => 'https://img.test/mccoy.jpg'],
+        ]
+    );
+
+    expect($html)->toContain('<span class="name">Jane McCoy, M.D.</span>')
+        ->toContain('alt="Jane McCoy, M.D."')
+        ->not->toContain('Non-Clinical');
+});
+
 it('strip_tags-escapes the editor-controlled name (Antlers is raw by default)', function (): void {
     $html = renderPeopleIdentityHeader('academic', [
         'title' => 'Jane McCoy',

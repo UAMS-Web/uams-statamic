@@ -24,7 +24,8 @@
 	      the portrait's alt text (UAMS-Web/uams-statamic#344). The clinical provider
 	      lens passes `display_name_full_with_clinical_credentials.text`, which keeps
 	      only regulatory-designation credentials. Absent or empty, the header shows
-	      `display_name_full_with_credentials`, as every other lens does.
+	      `display_name_full_with_credentials` (the `<h1>` then the entry `title`),
+	      as every other lens does.
 	@set people.components.identity_header
 #}}
 <section class="container-fluid p-0 p-xs-8 p-sm-10 person-info bg-white" data-lens="{{ lens }}">
