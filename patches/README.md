@@ -427,6 +427,62 @@ ships, delete or revert all of:
   --lock --no-interaction` — removing an `extra.patches` entry changes Composer's
   content hash just as adding one does
 
+### `pest-plugin-browser` navigation retry on `net::ERR_NO_BUFFER_SPACE`
+
+**Not a Statamic patch, and not generated.** Hand-written against a dev
+dependency, so it has no `patches/src/` snippet pair and no `app:generate-*`
+command. Edit the `.patch` file directly, then relock. The snippet and generator
+steps under **Required end-to-end steps** below do not apply to it.
+
+- Basename: `pest-plugin-browser-navigation-no-buffer-space-retry`
+- Patch file: `patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`
+- Target vendor files: `vendor/pestphp/pest-plugin-browser/src/Playwright/Page.php`
+  (changed) and `vendor/pestphp/pest-plugin-browser/src/Playwright/NavigationRetry.php`
+  (added)
+- Test (behavioral, drives the retry with recording callables, and checks
+  `Page::goto()` calls it): `tests/Unit/PestBrowserNavigationRetryPatchTest.php`
+- Ticket: #585
+- Upstream issue: none filed
+
+Touches a file none of the other `pest-plugin-browser` patches touch, so the
+three cannot produce conflicting hunks.
+
+**Problem.** On a hosted Windows runner, `KbArticleRatingActiveStateTest` failed
+once (CI run `41964133422`, attempt 3) with `net::ERR_NO_BUFFER_SPACE` while
+navigating to a static fixture on `127.0.0.1`; the same head passed the job on
+attempt 1. Chromium reports that error when Windows refuses a socket with its
+"no buffer space available" error. It is not a connection leak in the suite: sampled on Windows 11
+every few seconds through a Control Panel browser test, which is the heaviest kind
+in the suite, loopback connections in `TIME_WAIT` stayed between 5 and 19,
+against a dynamic port range of 16,384. So the condition belongs to the runner,
+and the plugin's `Page::goto()` turned it into a failed test on its first
+occurrence.
+
+**Local fix.** `Page::goto()` runs its navigation through
+`NavigationRetry::onNoBufferSpace()`, which retries a navigation that failed with
+an `ExpectationFailedException` naming `net::ERR_NO_BUFFER_SPACE` up to twice,
+waiting 0.5s and then 1s. Any other navigation error, and any other exception
+type, is thrown on its first occurrence, and a third refusal is thrown as it
+came. Each retry writes one line to STDERR, starting
+`pest-plugin-browser: retry`, so a job log shows when the retry fired. Every
+navigation goes through `goto()`, both `visit()` and a page's `navigate()`, which
+is why the retry sits in the vendor class rather than in a test helper; the
+plugin's classes are `final`, so there is no subclass to put it in.
+
+**When removing this patch:** retire it when `pest-plugin-browser` retries this
+error itself, or when the Windows `browser` job logs have shown no
+`pest-plugin-browser: retry` line for long enough to decide the runner no longer
+produces it. Then delete or revert all of:
+
+- `patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`
+- `tests/Unit/PestBrowserNavigationRetryPatchTest.php`, which goes red the
+  moment the patch retires, because the class it drives no longer exists
+- The matching `pest-plugin-browser` entry under `extra.patches` in
+  `composer.json` (leave the package's other entries in place)
+- The matching block in `patches.lock.json` (or run `composer patches-relock
+  --no-interaction` after editing `composer.json`), followed by `composer update
+  --lock --no-interaction`
+
 ### `pest-plugin-mutate` `@pest-mutate-ignore` parsing (three silent defects)
 
 `patches/pest-plugin-mutate-annotation-parsing.patch` — temporary, tracked by #2327 and removed by #212.
