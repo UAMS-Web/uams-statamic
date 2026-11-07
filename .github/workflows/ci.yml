@@ -1146,75 +1146,6 @@ jobs:
             exit 1
           fi
 
-  build:
-    name: Vite build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    # Local-chain cost rank: after the JS unit tests.
-    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
-    if: vars.RUN_REMOTE_CI != 'false'
-    steps:
-      - uses: actions/checkout@v7
-
-      # `vite.config.js` imports `@statamic/cms/vite-plugin`, which is provided
-      # by the Statamic vendor (under vendor/statamic/cms/packages/cms after
-      # `composer install`). The build job therefore needs PHP + composer too.
-      - name: Set up PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          # `ext-imagick` is a declared platform requirement in composer.json, so
-          # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
-          # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
-          coverage: none
-          tools: composer:v2
-
-      - name: Determine Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Composer packages
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-
-
-      - name: Configure Composer auth for private GitHub packages
-        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
-
-      - name: Install Composer dependencies
-        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
-
-      - name: Set up Node 22
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-
-      # Node 22 bundles npm 10.9.x, below the `engines.npm` floor, and `.npmrc` sets
-      # `engine-strict=true` — so `npm ci` refuses to run without this pin. Note the
-      # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
-      # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
-      # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
-      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
-      - name: Pin npm to the min-release-age floor
-        run: npm install -g npm@^11.10.0
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      # PARITY: mirrored by the build job in scripts/local-ci.mjs
-      - name: Build site assets
-        run: npm run build
-
-      - name: Build CP assets
-        run: npm run cp:build
-
   js:
     name: JS unit tests (Vitest)
     runs-on: ${{ matrix.os }}
@@ -1596,130 +1527,6 @@ jobs:
           git config --global "url.https://x-access-token:${SUBMODULE_TOKEN}@github.com/.insteadOf" https://github.com/
           node scripts/check-content-pointer.mjs --base "${{ steps.base.outputs.ref }}"
 
-  encoding-guard:
-    name: Encoding guard (Windows-1252 double-encoding)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    # Local-chain cost rank: after the content pointer guard, though the shared breadth
-    # check below makes it slower than that place implies (UAMS-Web/uams-statamic#403).
-    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
-    if: vars.RUN_REMOTE_CI != 'false'
-    # Fails fast if any tracked file contains the cp1252-double-encoded UTF-8
-    # byte sequences that produced PRs UAMS-Web/uams-statamic-archive#739, UAMS-Web/uams-statamic-archive#740, UAMS-Web/uams-statamic-archive#741, UAMS-Web/uams-statamic-archive#742 (see
-    # joshdaugherty/ipa-unicode-inventory#1 for the full pattern). The script
-    # ships with the inventory composer package as of v1.6.2 (see
-    # joshdaugherty/ipa-unicode-inventory#4) — we invoke the vendored copy
-    # so its detection logic stays in lockstep with the package version we
-    # pin. content/ is not initialized — git ls-files does not descend into
-    # submodules, so this job naturally scopes to the umbrella repo.
-    # Despite the name, the job also runs the other sub-second guards below, ending
-    # with the release-notes generator suite (UAMS-Web/uams-statamic-archive#2850), so read the failing step's name.
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          # `ext-imagick` is a declared platform requirement in composer.json, so
-          # every `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830). See
-          # README_Imagick.md for the manual developer install.
-          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
-          coverage: none
-          tools: composer:v2
-
-      - name: Determine Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Composer packages
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-
-
-      - name: Configure Composer auth for private GitHub packages
-        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
-
-      - name: Install Composer dependencies
-        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
-
-      - name: Set up Node 22
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs
-      - name: Run encoding guard
-        run: node vendor/joshdaugherty/ipa-unicode-inventory/scripts/check-double-encoding.mjs
-
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
-      # Added here rather than as a thirteenth job (UAMS-Web/uams-statamic-archive#2236): it reads one tracked
-      # file, needs no install, and belongs beside the other file-content guard.
-      - name: Run decision-log order guard
-        run: node scripts/check-decision-log-order.mjs
-
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
-      # Reports `@pest-mutate-ignore` annotations that suppress nothing (UAMS-Web/uams-statamic-archive#2316).
-      # An inert one is invisible by construction: the mutant simply keeps
-      # surviving, which reads as a wrong reason rather than as an annotation
-      # that never applied, so nothing is ever red to point at it.
-      #
-      # Here rather than in a fourteenth job, extending UAMS-Web/uams-statamic-archive#2236's reasoning rather
-      # than contradicting it. That note declined a job for a guard needing no
-      # install; this one DOES read `vendor/pestphp/pest-plugin-mutate` for the
-      # mutator names it validates against — and this job has already installed,
-      # so folding it in costs nothing while a separate job would duplicate the
-      # whole setup-php-cache-auth-install preamble to run a sub-second script.
-      # Third of thirteen in a chain that is explicitly cost-ordered, so it still
-      # fails before spell, js, build, pint, rector, mutate, phpstan and pest.
-      #
-      # Non-zero of ANY kind fails the step, which is the point rather than an
-      # incidental: the auditor exits 2 when it cannot run at all (the plugin
-      # missing), and treating that as a pass would restore exactly the silent
-      # false-clean this guard exists to close.
-      #
-      # It tokenizes every file under app and tests, which needs more than 128M.
-      # This CLI's memory_limit is the -1 (unlimited) default, so the step passes
-      # no limit; the local runner gives this and every other PHP process it
-      # starts LOCAL_CI_PHP_MEMORY_LIMIT, because a local PHP may cap lower (UAMS-Web/uams-statamic-archive#3212).
-      - name: Run mutate-ignore auditor
-        run: php scripts/check-mutate-ignore.php app tests
-
-      # Counts how many mutants each `@pest-mutate-ignore` annotation removes (UAMS-Web/uams-statamic-archive#3160),
-      # which the auditor above cannot see: breadth is a property of the AST, not of the
-      # line. Fails on an annotation that removes more than one mutant of a named mutator
-      # or none at all, unless the committed baseline lists it, and on a baseline entry
-      # that no longer occurs. Exits 2 when it cannot run, which fails the step too. The
-      # check is the shared one from the pest-testing skill (UAMS-Web/uams-statamic#403);
-      # it also measures each mention of the marker against every mutator, so it is slower
-      # than the private copy it replaced: 499s against 134s over app and tests, measured on
-      # Windows 11. It reuses this job's install.
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
-      - name: Run mutate-ignore breadth check
-        run: php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php --baseline=tests/mutate-ignore-breadth.baseline.json app tests
-
-      # Rejects a raw 0x0D that is not part of a CRLF pair (UAMS-Web/uams-statamic-archive#2495). `eol=lf` normalizes
-      # CRLF and never sees a lone CR, and Pint passes it through untouched, so the class
-      # reaches `main` past both. Beside the other file-content guards by UAMS-Web/uams-statamic-archive#2236's
-      # reasoning: tracked files only, no install, sub-second.
-      - name: Run lone-CR guard
-        run: node scripts/check-lone-cr.mjs
-
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
-      # Runs the unittest suite the shared `writing-release-notes` skill ships beside
-      # `gen_release_notes.py` (UAMS-Web/uams-statamic-archive#2850). Nothing ran it, so release-notes coverage rested
-      # on repo-local Pest guards written against an interface the shared script no
-      # longer has. Beside the other guards by UAMS-Web/uams-statamic-archive#2236's reasoning: offline, no install,
-      # no content, about a second. `python3` comes with the runner image, so no setup
-      # step. unittest exits 1 on any failure or error, which fails the step.
-      - name: Run release-notes generator suite
-        run: python3 .claude/skills/writing-release-notes/gen_release_notes.test.py
-
   test-isolation-guard:
     name: Test isolation guard (parallel-safety)
     runs-on: ${{ matrix.os }}
@@ -1792,6 +1599,18 @@ jobs:
     if: vars.RUN_REMOTE_CI != 'false'
     uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.4.0
     with:
+      npm-version: ^11.10.0
+      encoding-guard: true
+      encoding-guard-command: |
+        set -e
+        node vendor/joshdaugherty/ipa-unicode-inventory/scripts/check-double-encoding.mjs
+        node scripts/check-decision-log-order.mjs
+        php scripts/check-mutate-ignore.php app tests
+        php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php --baseline=tests/mutate-ignore-breadth.baseline.json app tests
+        node scripts/check-lone-cr.mjs
+        python3 .claude/skills/writing-release-notes/gen_release_notes.test.py
+      vite-build: true
+      vite-build-command: npm run build && npm run cp:build
       pest: false
       mutate: false
 
@@ -1803,7 +1622,7 @@ jobs:
   # a skip counts as success on a required check.
   ci:
     name: CI
-    needs: [checks, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, mutate, pest, pest-report, pest-serial, browser]
+    needs: [checks, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, mutate, pest, pest-report, pest-serial, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
