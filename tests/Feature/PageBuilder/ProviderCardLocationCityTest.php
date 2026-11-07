@@ -34,7 +34,7 @@ uses(TestCase::class);
 function providerCardRender(array $locations): string
 {
     $context = [
-        'display_name_full_with_credentials' => ['text' => 'Jane Doe, MD'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'Jane Doe, MD'],
         'clinical_locations' => $locations,
     ];
 

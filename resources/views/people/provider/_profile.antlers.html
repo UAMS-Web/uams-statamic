@@ -46,9 +46,9 @@
 	employment title. That supersedes UAMS-Web/uams-statamic-archive#1680's fallback for this lens only.
 #}}
 {{ if resident_query:value === true }}
-	{{ partial:people/components/identity_header lens="provider" subtitle="Resident Physician" }}
+	{{ partial:people/components/identity_header lens="provider" :identity_name="display_name_full_with_clinical_credentials.text" subtitle="Resident Physician" }}
 {{ else }}
-	{{ partial:people/components/identity_header lens="provider" :subtitle="clinical_title" subtitle_only="true" }}
+	{{ partial:people/components/identity_header lens="provider" :identity_name="display_name_full_with_clinical_credentials.text" :subtitle="clinical_title" subtitle_only="true" }}
 {{ /if }}
 
 {{# The primary appointment location, immediately under the `<h1>` as WordPress has

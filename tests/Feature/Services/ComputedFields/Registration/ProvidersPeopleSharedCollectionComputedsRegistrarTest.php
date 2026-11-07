@@ -44,6 +44,7 @@ const PP_SHARED_HANDLES = [
     'display_name_full',
     'display_name_full_with_prefix',
     'display_name_full_with_credentials',
+    'display_name_full_with_clinical_credentials',
     'display_name_short_with_prefix',
     'full_name',
     'full_name_with_credentials',
@@ -112,6 +113,10 @@ it('wires each computed handle to its owning service method', function (): void 
     $names->shouldReceive('getFullName')->andReturn(['text' => 'FULL_NAME']);
     $listing->shouldReceive('computeBrandOrganizations')->andReturn(['ORG']);
 
+    // The full and clinical credentials names are siblings too (UAMS-Web/uams-statamic#344).
+    $names->shouldReceive('getDisplayNameFullWithCredentials')->andReturn(['text' => 'WITH_CREDENTIALS']);
+    $names->shouldReceive('getDisplayNameFullWithClinicalCredentials')->andReturn(['text' => 'WITH_CLINICAL_CREDENTIALS']);
+
     $captured = [];
     Collection::shouldReceive('computed')->andReturnUsing(
         function (mixed $collections, string $handle, callable $callback) use (&$captured): void {
@@ -132,5 +137,7 @@ it('wires each computed handle to its owning service method', function (): void 
 
     expect(($captured['display_name_full'])($entry))->toBe(['text' => 'DISPLAY_FULL'])
         ->and(($captured['full_name'])($entry))->toBe(['text' => 'FULL_NAME'])
+        ->and(($captured['display_name_full_with_credentials'])($entry))->toBe(['text' => 'WITH_CREDENTIALS'])
+        ->and(($captured['display_name_full_with_clinical_credentials'])($entry))->toBe(['text' => 'WITH_CLINICAL_CREDENTIALS'])
         ->and(($captured['brand_organizations'])($entry))->toBe(['ORG']);
 });
