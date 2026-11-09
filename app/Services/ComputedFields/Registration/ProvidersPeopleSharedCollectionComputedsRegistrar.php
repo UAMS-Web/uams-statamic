@@ -87,6 +87,13 @@ final readonly class ProvidersPeopleSharedCollectionComputedsRegistrar
             $names->getDisplayNameFullWithCredentials(...)
         );
 
+        // Register display_name_full_with_clinical_credentials computed for both collections
+        Collection::computed(
+            self::collectionHandles(),
+            'display_name_full_with_clinical_credentials',
+            $names->getDisplayNameFullWithClinicalCredentials(...)
+        );
+
         // Register display_name_short_with_prefix computed for both collections
         Collection::computed(
             self::collectionHandles(),

@@ -107,7 +107,7 @@ it('returns the display name for a known public provider', function (): void {
     $provider->shouldReceive('value')->with('status_and_visibility')->once()->andReturn('public');
     $provider->shouldReceive('value')->with('password_protected')->once()->andReturn(false);
     $provider->shouldReceive('value')
-        ->with('display_name_full_with_credentials')
+        ->with('display_name_full_with_clinical_credentials')
         ->once()
         ->andReturn(['text' => 'Leonard McCoy']);
 
@@ -133,7 +133,7 @@ it('casts a scalar provider code to string before lookup', function (): void {
     $provider->shouldReceive('value')->with('status_and_visibility')->once()->andReturn('public');
     $provider->shouldReceive('value')->with('password_protected')->once()->andReturn(false);
     $provider->shouldReceive('value')
-        ->with('display_name_full_with_credentials')
+        ->with('display_name_full_with_clinical_credentials')
         ->once()
         ->andReturn(null);
     $provider->shouldReceive('get')->with('title')->once()->andReturn('Numeric Slug');
