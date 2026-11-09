@@ -8,12 +8,12 @@ use Statamic\Assets\Asset;
 use Statamic\Assets\AssetContainer as StatamicAssetContainer;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\AssetContainer;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
 
-// Serial because it persists a file-backed asset container into the shared
-// content mirror, the asset-container leak class (UAMS-Web/uams-statamic-archive#1120), as
-// SeoMetaSocialImageTest does.
-uses(TestCase::class)->group('serial');
+// On StacheIsolatedTestCase because it persists a file-backed asset container:
+// the per-process Stache root keeps it out of the shared content mirror, the
+// asset-container leak class (UAMS-Web/uams-statamic-archive#1120; #536), as SeoMetaSocialImageTest does.
+uses(StacheIsolatedTestCase::class);
 
 covers(PictureWithAlt::class);
 
