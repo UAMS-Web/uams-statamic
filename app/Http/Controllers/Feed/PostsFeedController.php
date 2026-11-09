@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Feed;
 
+use App\Http\Middleware\ProtectEntry;
+use App\Listeners\SyncEntryPublishedStatus;
+use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -26,6 +29,11 @@ use XMLWriter;
  *
  * `whereStatus('published')` excludes draft entries and — because the `posts`
  * collection sets `date_behavior.future: private` — scheduled/future-dated ones.
+ * A `private` or password-protected post is still `published` (see
+ * {@see SyncEntryPublishedStatus}), so the query also applies the public-URL gate
+ * the XML sitemap applies ({@see SitemapInclusionComputedsRegistrar::shouldIncludeInSitemap()}):
+ * neither may be syndicated, since {@see ProtectEntry} 404s or password-gates the
+ * linked page for every feed reader.
  * The document is built with XMLWriter (matching the app's SEO routes), so every
  * value is XML-escaped and the excerpt is CDATA-wrapped.
  *
@@ -107,9 +115,9 @@ final class PostsFeedController
     }
 
     /**
-     * The 10 most-recent published posts for the site, newest first.
+     * The 10 most-recent publicly-live posts for the site, newest first.
      *
-     * @return Collection<int, Entry> The published posts, capped at {@see self::MAX_ITEMS}
+     * @return Collection<int, Entry> The public posts, capped at {@see self::MAX_ITEMS}
      */
     private function recentPosts(SiteObject $site): Collection
     {
@@ -120,6 +128,15 @@ final class PostsFeedController
         // Excludes draft + scheduled/future (the collection's future date_behavior
         // is private), so the feed carries only publicly-live posts.
         $query->whereStatus('published');
+        // A `private` or password-protected post is published too, so the status
+        // check alone would syndicate its title, URL and excerpt. Apply the same
+        // gate the XML sitemap applies (SitemapInclusionComputedsRegistrar::
+        // shouldIncludeInSitemap) as query conditions, so the cap below counts
+        // only entries the feed may carry. The Stache resolves both columns with
+        // `value()`, so a localization reads its origin's gate fields, as the
+        // search scope relies on (HidePrivateSearchResults).
+        $query->where('status_and_visibility', '!=', 'private');
+        $query->where('password_protected', '!=', true);
         $query->orderBy('date', 'desc');
         $query->limit(self::MAX_ITEMS);
 
