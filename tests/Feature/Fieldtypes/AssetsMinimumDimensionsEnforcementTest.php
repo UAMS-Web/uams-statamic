@@ -11,7 +11,7 @@ use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Stache;
 use Tests\Support\AssetReferenceSweep;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
 
 /**
  * End-to-end enforcement of the Assets minimum-dimensions rule (UAMS-Web/uams-statamic-archive#1299) THROUGH
@@ -33,13 +33,14 @@ use Tests\TestCase;
  * Statamic actually invokes it on save, and does NOT wire the file-only string
  * rules) and a real dimension read.
  *
- * Runs in the `serial` group: `beforeEach` persists a file-backed asset container
- * whose disk is only `Storage::fake`d in this process (the container-leak
- * convention, UAMS-Web/uams-statamic-archive#1120).
+ * Runs on `StacheIsolatedTestCase`: `beforeEach` persists a file-backed asset
+ * container whose disk is only `Storage::fake`d in this process, so the container
+ * lands in this process's own Stache root rather than the shared content mirror
+ * another worker reloads (the container-leak class, UAMS-Web/uams-statamic-archive#1120; #536).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/AssetsMinimumDimensionsEnforcementTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(StacheIsolatedTestCase::class);
 
 const MIN_DIMS_CONTAINER = 'min_dims_probe';
 const MIN_DIMS_DISK = 'min_dims_probe_disk';
@@ -165,11 +166,11 @@ afterEach(function (): void {
     // this file's container, assets or faked disk.
 });
 
-it('attaches the minimum-dimensions rule to the field handle in the real Validator', function () use ($imageOnlyMin) {
+it('attaches the minimum-dimensions rule to the field handle in the real Validator', function () use ($imageOnlyMin): void {
     expect(logoHandleRules($imageOnlyMin)->contains(fn ($r): bool => $r instanceof AssetMinimumDimensions))->toBeTrue();
 });
 
-it('does not wire raw file rules to the field handle', function () use ($imageOnlyMin) {
+it('does not wire raw file rules to the field handle', function () use ($imageOnlyMin): void {
     // mimetypes:/extensions:/between: are Laravel FILE rules; they must not sit on
     // the reference-array handle where they would reject every valid selection.
     $strings = logoHandleRules($imageOnlyMin)->filter(fn ($r): bool => is_string($r));
@@ -178,23 +179,23 @@ it('does not wire raw file rules to the field handle', function () use ($imageOn
     expect($strings->contains(fn (string $r): bool => str_starts_with($r, 'extensions:')))->toBeFalse();
 });
 
-it('rejects a selected asset below the minimum, naming its real dimensions', function () use ($imageOnlyMin) {
+it('rejects a selected asset below the minimum, naming its real dimensions', function () use ($imageOnlyMin): void {
     $errors = logoErrors($imageOnlyMin, MIN_DIMS_CONTAINER.'::small.jpg');
 
     expect($errors)->toHaveCount(1);
     expect($errors[0])->toContain('640x480');
 });
 
-it('passes a selected asset that meets the minimum', function () use ($imageOnlyMin) {
+it('passes a selected asset that meets the minimum', function () use ($imageOnlyMin): void {
     expect(logoErrors($imageOnlyMin, MIN_DIMS_CONTAINER.'::large.jpg'))->toBe([]);
 });
 
-it('skips an unmeasurable asset (driver could not read dimensions) instead of rejecting it', function () use ($imageOnlyMin) {
+it('skips an unmeasurable asset (driver could not read dimensions) instead of rejecting it', function () use ($imageOnlyMin): void {
     // broken.jpg has an image extension but no readable dimensions — the HEIC case.
     expect(logoErrors($imageOnlyMin, MIN_DIMS_CONTAINER.'::broken.jpg'))->toBe([]);
 });
 
-it('does not reject a validly-selected asset on a mime- and size-restricted field', function () {
+it('does not reject a validly-selected asset on a mime- and size-restricted field', function (): void {
     // The exact regression the review caught: raw file rules on the reference array
     // rejected every valid save. A valid, adequately-sized image on a field that
     // restricts mime type AND file size must pass end-to-end.
@@ -210,7 +211,7 @@ it('does not reject a validly-selected asset on a mime- and size-restricted fiel
     expect(logoErrors($config, MIN_DIMS_CONTAINER.'::large.jpg'))->toBe([]);
 });
 
-it('attaches no minimum-dimensions rule to a mixed field (non-image guard holds)', function () {
+it('attaches no minimum-dimensions rule to a mixed field (non-image guard holds)', function (): void {
     $rules = logoHandleRules([
         'file_type_restrictions' => 'mime_categories',
         'mime_categories' => ['image', 'document'],
