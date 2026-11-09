@@ -41,7 +41,7 @@
 										<li class="feed-item" itemscope itemtype="https://schema.org/BlogPosting">
 											<article>
 												<header class="item-header">
-													<h3 class="item-title"><a href="{{ permalink }}" itemprop="https://schema.org/url https://schema.org/mainEntityOfPage" content="{{ permalink }}" target="_blank" rel="noopener noreferrer"><span itemprop="https://schema.org/name https://schema.org/headline">{{ title }}</span>{{ partial:components/new_window_indicator }}</a></h3>
+													<h3 class="item-title"><a href="{{ permalink | sanitize_url }}" itemprop="https://schema.org/url https://schema.org/mainEntityOfPage" content="{{ permalink | sanitize_url }}" target="_blank" rel="noopener noreferrer"><span itemprop="https://schema.org/name https://schema.org/headline">{{ title | sanitize }}</span>{{ partial:components/new_window_indicator }}</a></h3>
 													{{ if (date_query && date) || (author_query && author) }}
 														<div class="item-meta">
 															{{ if date_query && date }}
@@ -50,7 +50,7 @@
 															{{ if author_query && author }}
 																<span class="byline">
 																	{{ if date_query && date }}by{{ else }}By{{ /if }}
-																	<span itemprop="https://schema.org/author" itemscope itemtype="https://schema.org/Person"><span itemprop="https://schema.org/name">{{ author }}</span></span>
+																	<span itemprop="https://schema.org/author" itemscope itemtype="https://schema.org/Person"><span itemprop="https://schema.org/name">{{ author | sanitize }}</span></span>
 																</span>
 															{{ /if }}
 														</div>
