@@ -42,7 +42,7 @@
         "spatie/image": "^3.8",
         "spatie/laravel-pdf": "^2.5",
         "spatie/schema-org": "^5.0",
-        "statamic/cms": "6.37.0",
+        "statamic/cms": "6.40.0",
         "statamic/eloquent-driver": "5.12.5",
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
@@ -52,7 +52,7 @@
         "uams-web/aether-multisite-forms": "^0.7",
         "uams-web/aether-redirects": "^0.2.0",
         "uams-web/aether-search": "^0.3",
-        "uams-web/aether-wordpress-importer": "^0.33"
+        "uams-web/aether-wordpress-importer": "^0.34"
     },
     "require-dev": {
         "brianium/paratest": "^7.23",
