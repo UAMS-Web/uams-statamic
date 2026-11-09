@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PHPUnit\Framework\Assert;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Blueprint;
 use Statamic\Fields\Field;
@@ -113,6 +114,43 @@ function providerIdentityScope(): array
         'display_name_full_with_credentials' => ['text' => 'Leonard McCoy, M.D.'],
         'display_name_short_with_prefix' => ['text' => 'Dr. McCoy'],
     ];
+}
+
+/**
+ * Augment a real `people` blueprint field around the given value, and return the
+ * augmented value the template receives.
+ *
+ * A missing blueprint or field FAILS the calling test rather than skipping it
+ * (UAMS-Web/uams-statamic#624): the field going missing is the regression these tests
+ * guard, and a skip would report it as green. The augment check also fails rather than
+ * skips, because `Field::augment()` builds a new `Field` from the field alone, with no
+ * input from the environment, so a non-`Field` result means Statamic's contract
+ * changed and is not a fixture problem.
+ */
+function augmentedPeopleFieldValue(string $handle, mixed $value): mixed
+{
+    $blueprintHandle = 'collections/people/person';
+    $blueprint = Blueprint::find($blueprintHandle);
+
+    if ($blueprint === null) {
+        Assert::fail("The `{$blueprintHandle}` blueprint was not found, so its `{$handle}` field cannot be read.");
+    }
+
+    $field = $blueprint->field($handle);
+
+    if (! $field instanceof Field) {
+        Assert::fail("The `{$blueprintHandle}` blueprint has no `{$handle}` field.");
+    }
+
+    $field->setValue($value);
+    $augmented = $field->augment();
+
+    if (! $augmented instanceof Field) {
+        Assert::fail("`Field::augment()` on the `{$blueprintHandle}` blueprint's `{$handle}` field returned "
+            .get_debug_type($augmented).' rather than a Field.');
+    }
+
+    return $augmented->value();
 }
 
 it('states that a provider is accepting new patients', function (): void {
@@ -336,21 +374,8 @@ it('renders Areas of Expertise when the suppression flag is absent entirely', fu
 // field therefore rendered a section whose loop fell through to the parent scope and
 // linked the provider to themselves. This asserts the production shape.
 it('omits an ontology section whose augmented relation resolves to nothing', function (): void {
-    $conditions = Blueprint::find('collections/people/person')?->field('conditions');
-
-    if (! $conditions instanceof Field) {
-        $this->markTestSkipped('Requires the people blueprint with a `conditions` field.');
-    }
-
-    $conditions->setValue([]);
-    $augmented = $conditions->augment();
-
-    if (! $augmented instanceof Field) {
-        $this->markTestSkipped('The people blueprint `conditions` field did not augment.');
-    }
-
     $html = renderProviderLensBody(providerIdentityScope() + [
-        'conditions' => $augmented->value(),
+        'conditions' => augmentedPeopleFieldValue('conditions', []),
     ]);
 
     expect($html)->not->toContain('provider-conditions')
@@ -448,20 +473,9 @@ it('renders no resources section for a provider with none', function (): void {
 // truthy query-builder object whose blueprint key is NEVER absent, so a bare gate
 // would render an empty section whose loop falls through to the parent scope.
 it('omits the resources section whose augmented relation resolves to nothing', function (): void {
-    $field = Blueprint::find('collections/people/person')?->field('clinical_resources');
-
-    if (! $field instanceof Field) {
-        $this->markTestSkipped('Requires the people blueprint with a `clinical_resources` field.');
-    }
-
-    $field->setValue([]);
-    $augmented = $field->augment();
-
-    if (! $augmented instanceof Field) {
-        $this->markTestSkipped('The people blueprint `clinical_resources` field did not augment.');
-    }
-
-    $html = renderProviderLensBody(providerIdentityScope() + ['clinical_resources' => $augmented->value()]);
+    $html = renderProviderLensBody(providerIdentityScope() + [
+        'clinical_resources' => augmentedPeopleFieldValue('clinical_resources', []),
+    ]);
 
     expect($html)->not->toContain('provider-resources')
         ->and($html)->not->toContain('schema.org/CreativeWork');
@@ -592,20 +606,9 @@ it('lists a multilingual provider languages, pluralized', function (): void {
 // and the real BCP-47 labels carry commas of their own ("Spanish, Castilian"), which
 // is why each language gets its own `<dd>` rather than a joined string.
 it('renders the real augmented language rows, one per language', function (): void {
-    $field = Blueprint::find('collections/people/person')?->field('language');
-
-    if (! $field instanceof Field) {
-        $this->markTestSkipped('Requires the people blueprint with a `language` field.');
-    }
-
-    $field->setValue(['en', 'es']);
-    $augmented = $field->augment();
-
-    if (! $augmented instanceof Field) {
-        $this->markTestSkipped('The people blueprint `language` field did not augment.');
-    }
-
-    $html = renderProviderLensBody(providerIdentityScope() + ['language' => $augmented->value()]);
+    $html = renderProviderLensBody(providerIdentityScope() + [
+        'language' => augmentedPeopleFieldValue('language', ['en', 'es']),
+    ]);
 
     expect($html)->toContain('<dt>Languages</dt>')
         ->and($html)->toContain('<dd class="provider-language">English</dd>')
