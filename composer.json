@@ -188,6 +188,9 @@
     },
     "config": {
         "optimize-autoloader": true,
+        "platform": {
+            "php": "8.4.27"
+        },
         "preferred-install": "dist",
         "process-timeout": 0,
         "sort-packages": true,
