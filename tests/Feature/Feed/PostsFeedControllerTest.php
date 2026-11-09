@@ -18,6 +18,8 @@ use Tests\Support\StacheIsolatedTestCase;
  * covered separately in PostsFeedRouteTest). This exercises the real published
  * status, future-date, site-scope, date-order, and 10-item cap paths against the
  * `whereStatus('published')` query — and the pinned excerpt-only output (UAMS-Web/uams-statamic-archive#185/UAMS-Web/uams-statamic-archive#186).
+ * It also pins the public-URL gate: a `private` or password-protected post is
+ * published too, so the status query alone syndicated its title, URL and excerpt.
  *
  * @covers \App\Http\Controllers\Feed\PostsFeedController
  *
@@ -27,10 +29,22 @@ uses(StacheIsolatedTestCase::class);
 
 /**
  * Persist a fixture post (bypassing listeners) on a site with a date, status, and
- * excerpt — the dimensions the feed filters/orders on.
+ * excerpt: the dimensions the feed filters/orders on. `$status` is the
+ * `status_and_visibility` value and `$passwordProtected` the toggle; both are
+ * left unset (as a legacy post stores them) unless given.
  */
-function feedPost(string $id, string $site, string $date, bool $published, string $excerpt = ''): void
+function feedPost(string $id, string $site, string $date, bool $published, string $excerpt = '', ?string $status = null, ?bool $passwordProtected = null): void
 {
+    $data = ['title' => 'Post '.$id, 'excerpt' => $excerpt];
+
+    if ($status !== null) {
+        $data['status_and_visibility'] = $status;
+    }
+
+    if ($passwordProtected !== null) {
+        $data['password_protected'] = $passwordProtected;
+    }
+
     /** @var Statamic\Entries\Entry $entry */
     $entry = Entry::make();
     $entry->collection('posts');
@@ -38,7 +52,7 @@ function feedPost(string $id, string $site, string $date, bool $published, strin
     $entry->slug($id);
     $entry->locale($site);
     $entry->published($published);
-    $entry->data(['title' => 'Post '.$id, 'excerpt' => $excerpt]);
+    $entry->data($data);
     $entry->date(Carbon::parse($date));
     $entry->saveQuietly();
 }
@@ -87,9 +101,12 @@ function feedItemTitles(string $body): array
 }
 
 beforeEach(function (): void {
+    // The two gate fields the `uamsweb_common_status` fieldset gives a real post.
     $blueprint = Blueprint::makeFromFields([
         'title' => ['type' => 'text'],
         'excerpt' => ['type' => 'text'],
+        'status_and_visibility' => ['type' => 'select'],
+        'password_protected' => ['type' => 'toggle'],
     ]);
     $blueprint->setHandle('post');
     $blueprint->setNamespace('collections.posts');
@@ -146,6 +163,56 @@ it('excludes scheduled (future-dated) posts', function (): void {
     $titles = feedItemTitles(renderFeed('default'));
     expect($titles)->toContain('Post live');
     expect($titles)->not->toContain('Post scheduled');
+});
+
+it('excludes private posts', function (): void {
+    // A `private` post is published (SyncEntryPublishedStatus maps it live), so
+    // only the gate keeps it out; ProtectEntry 404s its URL for every reader.
+    feedPost('public', 'default', '2024-05-01', true, 'Public summary.', status: 'published');
+    feedPost('hidden', 'default', '2024-06-01', true, 'Restricted summary.', status: 'private');
+
+    $body = renderFeed('default');
+    $titles = feedItemTitles($body);
+
+    expect($titles)->toContain('Post public');
+    expect($titles)->not->toContain('Post hidden');
+    expect($body)->not->toContain('Restricted summary.');
+    expect($body)->not->toContain('/hidden');
+});
+
+it('excludes password-protected posts', function (): void {
+    feedPost('open', 'default', '2024-05-01', true, 'Open summary.', passwordProtected: false);
+    feedPost('locked', 'default', '2024-06-01', true, 'Locked summary.', passwordProtected: true);
+
+    $body = renderFeed('default');
+    $titles = feedItemTitles($body);
+
+    expect($titles)->toContain('Post open');
+    expect($titles)->not->toContain('Post locked');
+    expect($body)->not->toContain('Locked summary.');
+    expect($body)->not->toContain('/locked');
+});
+
+it('fills the 10-item cap from public posts only', function (): void {
+    // 10 public posts, then 2 newer private and 2 newer password-protected ones.
+    // The gate runs in the query, so the non-public posts neither appear nor
+    // displace the oldest public ones from the cap.
+    foreach (range(1, 10) as $n) {
+        feedPost(sprintf('pub%02d', $n), 'default', sprintf('2024-%02d-01', $n), true, status: 'published');
+    }
+    feedPost('priv1', 'default', '2025-01-01', true, status: 'private');
+    feedPost('priv2', 'default', '2025-02-01', true, status: 'private');
+    feedPost('lock1', 'default', '2025-03-01', true, passwordProtected: true);
+    feedPost('lock2', 'default', '2025-04-01', true, passwordProtected: true);
+
+    $titles = feedItemTitles(renderFeed('default'));
+
+    expect($titles)->toHaveCount(10);
+    expect($titles[0])->toBe('Post pub10');
+    expect($titles[9])->toBe('Post pub01');
+    foreach (['Post priv1', 'Post priv2', 'Post lock1', 'Post lock2'] as $withheld) {
+        expect($titles)->not->toContain($withheld);
+    }
 });
 
 it('scopes each feed to the requested site', function (): void {
