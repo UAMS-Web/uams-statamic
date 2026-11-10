@@ -274,15 +274,24 @@ trait CreatesApplication
      * `cp.json` as invalid JSON.
      *
      * The segment ends in the process id ({@see ThrowawayRoot}), so no two live
-     * processes share a directory, serial runs included. Each process starts with no
-     * index and builds the ones its saves touch, as a fresh checkout already did.
-     * The directory is removed when the process exits; a killed process leaves it.
+     * processes share a directory, serial runs included. Each TEST starts with no
+     * index and builds the ones its saves or searches touch, as a fresh checkout
+     * already did (#572); the cost is one rebuild per index on a test's first save,
+     * about 130ms for `default` against the warm Stache. The directory is removed
+     * when the process exits; a killed process leaves it.
      */
     private function isolateSearchIndexes(Application $app): void
     {
         $directory = storage_path('framework/testing/search/'.ThrowawayRoot::segment());
 
         $app['config']->set('statamic.search.drivers.local.path', $directory);
+
+        // Start every test with no index (#572). The directory outlives the test that wrote
+        // it, and an index built from one test's Stache, or a delete that left it `[]`, is
+        // wrong for the next: a real search there reads a partial set or throws `Empty
+        // haystack`. With no file, a search builds the index from the content this test
+        // booted with, and a save rebuilds once and then inserts, as a fresh process did.
+        (new Filesystem)->deleteDirectory($directory);
 
         if (self::$searchIndexCleanupRegistered) {
             return;

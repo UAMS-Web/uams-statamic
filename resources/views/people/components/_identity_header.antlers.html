@@ -19,13 +19,20 @@
 	      empty `subtitle` renders no subtitle at all (UAMS-Web/uams-statamic-archive#2600). The clinical provider lens
 	      does, for WordPress parity: `single-physicians.php` printed an empty subtitle
 	      for a provider with no specialization, never the employment title.
+
+	      A lens MAY pass `identity_name` to replace the name shown in the `<h1>` and
+	      the portrait's alt text (UAMS-Web/uams-statamic#344). The clinical provider
+	      lens passes `display_name_full_with_clinical_credentials.text`, which keeps
+	      only regulatory-designation credentials. Absent or empty, the header shows
+	      `display_name_full_with_credentials` (the `<h1>` then the entry `title`),
+	      as every other lens does.
 	@set people.components.identity_header
 #}}
 <section class="container-fluid p-0 p-xs-8 p-sm-10 person-info bg-white" data-lens="{{ lens }}">
 	<div class="row mx-0 mx-xs-n4 mx-sm-n8">
 		<div class="col-12 col-xs p-4 py-xs-0 px-xs-4 px-sm-8 order-2 text">
 			<h1 class="page-title">
-				<span class="name">{{ ( display_name_full_with_credentials.text ?? title ) | strip_tags }}</span>
+				<span class="name">{{ ( identity_name ?: ( display_name_full_with_credentials.text ?? title ) ) | strip_tags }}</span>
 				{{ if subtitle }}
 					{{# A lens-supplied subtitle (UAMS-Web/uams-statamic-archive#1680). Escaped on the same footing as the
 					    name beside it, and NOT passed through `people/components/job_title`:
@@ -67,7 +74,7 @@
 						srcset="{{ glide :src="portrait:permalink" w="389" h="519" fit="crop_focal" }}"
 						media="(min-width: 992px)">
 					<img src="{{ glide :src="portrait:permalink" w="778" h="1038" fit="crop_focal" }}"
-						alt="{{ display_name_full_with_credentials.text | strip_tags | sanitize }}"
+						alt="{{ ( identity_name ?: display_name_full_with_credentials.text ) | strip_tags | sanitize }}"
 						width="778"
 						height="1038"
 						loading="eager"
