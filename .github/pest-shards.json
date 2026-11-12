@@ -103,7 +103,6 @@
         "Tests\\Feature\\Config\\FrontendWorkingMethodSkillTest": 0.2945,
         "Tests\\Feature\\Config\\GitAutomationConfigTest": 0.4759,
         "Tests\\Feature\\Config\\GoogleBusinessProfileEnvExampleTest": 0.1367,
-        "Tests\\Feature\\Config\\LocalCiSkillRecipesTest": 0.334,
         "Tests\\Feature\\Config\\MutantFilterLengthPatchTest": 0.0418,
         "Tests\\Feature\\Config\\MutantModifiedSourceWritePatchTest": 0.0041,
         "Tests\\Feature\\Config\\MutantParallelRunnerOptionsPatchTest": 0.0062,
