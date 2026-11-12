@@ -53,3 +53,17 @@ The 12-assertion gap this drift was first reported at (36,919 and 36,907 at one 
 ### The spread after #335
 
 Measured on Windows 11 with PHP 8.4.27 with both tests fixed, three parallel bands (`--exclude-group=serial`) on the same loaded machine, durations 3,246s to 4,346s: 13,915 tests each, 4 failing and 16 skipped in every band, and 39,067 assertions in all three. `node scripts/diff-band-assertions.mjs` reported no test differing in any of the three pairs, and against the before-change bands it named the clamp test, so it can report a difference. The clamp test reported 5 and the uri-row test 2 in every band. The bound of 2 is kept for the `TestBootstrapCostTest` branch above, which did not fire in these three. The serial band and macOS were not run.
+
+### The spread on macOS and in the serial band
+
+Measured for #469 on macOS (Darwin 25.6.0) with Herd PHP 8.4.27, `Parallel: 12 processes`, at `main` `0044faf0289a9a96a6a57458dfdd471235eaa580`, on 2026-11-12. The three runs were back to back, each one `node scripts/gate-pest.mjs` in one slot: the reset, `test:seed-stache`, `route:cache`, the parallel band (`--exclude-group=serial`) and then the serial band (`--group=serial`), each with `--log-junit`. Another session's mutation run shared the machine, and the one-minute load average read between 8.9 and 17.5 at the run boundaries.
+
+| Run | Parallel band | Duration | Serial band | Duration |
+| --- | --- | --- | --- | --- |
+| 1 | 13,801 passed, 2 skipped, 18 risky (39,594 assertions) | 679.73s | 150 passed (385 assertions) | 215.95s |
+| 2 | 13,801 passed, 2 skipped, 18 risky (39,594 assertions) | 578.32s | 150 passed (385 assertions) | 209.81s |
+| 3 | 13,801 passed, 2 skipped, 18 risky (39,594 assertions) | 594.09s | 150 passed (385 assertions) | 210.26s |
+
+`node scripts/diff-band-assertions.mjs` reported no test differing in any of the three pairs of either band: `0 of 13821 tests differ` for the parallel reports and `0 of 150 tests differ` for the serial ones. As a control, the same script was run against a copy of a run's report with one test case's count raised by 3, and it named that test and exited 1 in both bands. So the spread is zero on macOS in both bands.
+
+The clamp test reported 5 and the uri-row test 2 in every run, and the first test in `TestBootstrapCostTest` reported 4 in every run, so the bound of 2 above was not reached. These totals are not comparable with the Windows figures above: the trees differ, and a few tests branch on the operating system.
