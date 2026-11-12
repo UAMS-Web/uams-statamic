@@ -12,8 +12,8 @@ use Statamic\Facades\Entry;
 use Statamic\Fields\Blueprint as StatamicBlueprint;
 use Statamic\Fields\Field;
 use Symfony\Component\Yaml\Yaml;
-use Tests\Support\Doubles\IncompletePublishedEntriesWidgetTestDouble;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\IncompleteEntries\Services\EntryValidation\EntryValidator;
 
 // Isolated Stache: the reported-field cases persist a collection, a blueprint and entries
 uses(StacheIsolatedTestCase::class);
@@ -97,9 +97,7 @@ function peopleHometownReportedFields(array $data): array
     Assert::assertInstanceOf(StatamicBlueprint::class, $entryBlueprint);
 
     /** @var list<string> $reported */
-    $reported = array_keys((new IncompletePublishedEntriesWidgetTestDouble)
-        ->exposeValidateEntry($entry, $entryBlueprint)['errors']
-        ->toArray());
+    $reported = array_keys(app(EntryValidator::class)->validate($entry, $entryBlueprint)->errors->toArray());
 
     return array_values(array_intersect($reported, HOMETOWN_FIELDS));
 }
