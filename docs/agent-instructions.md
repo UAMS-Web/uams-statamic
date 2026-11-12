@@ -54,11 +54,9 @@ Branch work happens in one of a fixed set of long-lived, **pre-bootstrapped work
 
 ### Dedicated supervised Amp slot
 
-`../uams-statamic-amp` is reserved for one supervised Amp build seat, capacity 1. This is an approved exception to the ordinary slot count, not permission to use another tree. Preserve A, B, C, the primary, the importer tree, and the runner-owned CI tree. A detached, clean reserved slot is not available to another session.
+`../uams-statamic-amp` is a dedicated slot for one supervised Amp build seat; what the reservation does and does not authorize, and who may use the slot, are in [`.claude/rules/worktrees.md`](../.claude/rules/worktrees.md), which is edited in `UAMS-Web/uams-claude-skills` and synced here, never edited in this repository.
 
-The reservation is ownership only. Creating or provisioning the worktree, installing dependencies, starting the seat, and taking work each remain subject to separate operator approval. No automatic startup is authorized. Once separately provisioned, reuse this permanent sibling slot and follow the existing refresh, branch, clean-tree, and release rules there. Never fall back to A or B for this seat.
-
-The shared rule is maintained at `UAMS-Web/uams-claude-skills`, in `shared/.claude/rules/worktrees.md`. Make changes there and deliver its generated copies through the normal sync, not by editing a generated rule in this repository.
+Once its provisioning is separately approved, `scripts/worktree-slots.mjs` drives it by the name `amp` like any other slot: `provision amp` creates it at `../uams-statamic-amp`, and `refresh amp` and `release amp --branch <N>-<slug>` keep it current and release it.
 
 ## Sync PR branches before the gating run
 
