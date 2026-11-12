@@ -3906,3 +3906,25 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Keeping the four checks as local workflow jobs*: preserves their independent fan-out but duplicates the shared commands and platform policy. *Calling a branch rather than a release tag*: takes upstream workflow changes without a reviewed reference update here. *Moving Pest and mutation discovery into the call*: its setup lacks the private-submodule checkout and this repository's sharding and report handling. *Narrowing the remaining plain jobs in this change*: requires their own follow-up and is outside #580 and #594.
 
 **Companion.** #580 and PR #592 carry the workflow change and its verification; #594 records its effects here. The shared workflow was read at `v0.4.0`, not its default branch. The 2026-10-27 fan-out entry above describes the original decision and marks these later limits.
+
+## 2026-11-09: A credential term answers the regulatory question yes only on a statute, an agency rule, or a governing body's binding member rules; roles and degrees are not clinical credentials (#344)
+
+**Decision.** A `credentials` term answers "Is this a regulatory designation?" yes when a statute, a promulgated agency rule (such as 20 CAR Part 706), or a governing body's binding rules for its members (in the NCAA style) requires it, never on an organization's internal bylaws. CSCS and SCCC answer yes on NCAA Division I bylaw 11.1.5. MA, ECDS and QBHP are roles, and M.S. is a degree: each answers "Is this a clinical credential?" no, with its hidden regulatory and justification fields cleared, and stays selectable. ATC, CHT, OCS and RD are clinical credentials that are not regulatory designations. RD's justification cites the Arkansas licensed-dietitian statute. ATC, CHT and OCS carry the justification "executive fiat": an administrator required that these credentials be displayed, although they are not regulatory clinical credentials. The clinical name shows a credential only when its term answers yes to both questions (#621). <!-- cspell:ignore CSCS SCCC ECDS QBHP -->
+
+**Why.** The article's test counts more than statute, and Wikidata Q139581896 covers all three sources, so the JSON-LD mapping needs no split. The justification field records why a term is shown as clinical. For ATC, CHT and OCS that reason is an administrative directive, not a regulation, and the field says so rather than inventing a regulatory basis.
+
+**Rejected.** *Statute only*: would answer no for CSCS and SCCC, which the article lists. *Keeping MA, ECDS, QBHP and M.S. as clinical credentials that are not regulatory designations*: each would need a justification for a clinical status it does not have. *Writing a regulatory-sounding justification for ATC, CHT and OCS*: would misstate why they are displayed.
+
+**Companion.** Decided on 2026-10-27, revised on 2026-11-07 and 2026-11-09, on #344. The content changes are `UAMS-Web/aether-submodule-content#93`, `#94` and `#95`; the code changes are #620, #621 and #622; the pointer for #95 is #631.
+
+## 2026-11-12: Site search moves to the Loupe driver with `max_total_hits` at 200 (#511)
+
+**Decision.** `daun/statamic-loupe` replaces the `local` driver for site search, with `max_total_hits` at 200 on the `default` index. The build is #646, which also moves site and scope filtering ahead of the hit cap.
+
+**Why.** At the counted launch size of 46,777 documents, Loupe's p95 per lookup was 132 to 164ms at `max_total_hits` 200, under the 400ms gate, and it found the intended term for all six misspellings that return nothing on `local`. Measured on #511, Windows 11, PHP 8.4.27, `daun/statamic-loupe` 4.2.0, `loupe/loupe` 1.1.6. It is the only option that needs no paid service or new server, per the 2026-11-02 entry.
+
+**Rejected.** *Loupe at its default `max_total_hits` (1,000)*: p95 299 to 449ms at launch size, over the gate in two of three runs. *Staying on `local`*: fails latency and typo tolerance (#161). *A hosted or self-hosted engine*: ruled out by the no-spending statement.
+
+**Residual.** The driver applies site and scope filters after the hit cap, so a scoped search can show fewer results than match; #646 owns the fix. Document insertion alone took 618s at launch size and the index is 1.7GB on disk, both well past #161's 60s and 75 to 100MB thresholds. Concurrency, hydration and the production host are not measured.
+
+**Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).
