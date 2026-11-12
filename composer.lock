@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fee790b9910c9d7c9ecab7f3d0aaf904",
+    "content-hash": "c9dbb5fdfc014d2ac3d27616566e6451",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11542,6 +11542,77 @@
                 "source": "https://github.com/UAMS-Web/aether-form-settings"
             },
             "time": "2026-11-02T11:26:07+00:00"
+        },
+        {
+            "name": "uams-web/aether-incomplete-entries",
+            "version": "v0.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-incomplete-entries.git",
+                "reference": "fd6dab06bf2ff70146dcef3d0c99d7469b61d897"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-incomplete-entries/zipball/fd6dab06bf2ff70146dcef3d0c99d7469b61d897",
+                "reference": "fd6dab06bf2ff70146dcef3d0c99d7469b61d897",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\IncompleteEntries\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Incomplete Entries",
+                    "description": "Finds published entries whose required or expected fields are empty, so editors can complete them."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\IncompleteEntries\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "Finds published entries whose required or expected fields are empty, so editors can complete them. An Aether add-on for Statamic.",
+            "homepage": "https://github.com/UAMS-Web/aether-incomplete-entries",
+            "keywords": [
+                "aether",
+                "incomplete-entries",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-incomplete-entries/issues",
+                "source": "https://github.com/UAMS-Web/aether-incomplete-entries"
+            },
+            "time": "2026-11-11T03:10:52+00:00"
         },
         {
             "name": "uams-web/aether-multisite-forms",
