@@ -95,14 +95,17 @@ final readonly class AppointmentContextResolver
         $count = \count($published);
 
         $portal = $primary instanceof Entry ? $this->portalTerm($primary) : null;
+        // The fallback is read only when a portal exists (`$showPortal` below), and it
+        // never does on this branch, so any fallback string gives the same result.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $portalSlug = $portal instanceof LocalizedTerm ? $this->stringValue($portal->slug()) : '';
 
         // WordPress gates the portal fragment on a valid location, a portal term,
         // and a slug that is not `_none` — so `show_portal` always implies
         // `location_valid`, which is what makes several boolean combinations in
-        // the branch table unreachable.
-        $showPortal = $primary instanceof Entry
-            && $portal instanceof LocalizedTerm
+        // the branch table unreachable. A portal resolves only from the primary
+        // location, so a portal term already implies that location exists.
+        $showPortal = $portal instanceof LocalizedTerm
             && $portalSlug !== self::PORTAL_SLUG_NONE;
 
         $phone = $this->appointmentLine($portal);
@@ -117,6 +120,9 @@ final readonly class AppointmentContextResolver
 
             // One location links straight to it; more than one jumps to the
             // on-page list, exactly as WordPress does.
+            // `$count === 1` holds only when a published location exists, so `$primary`
+            // is always an Entry when the second conjunct is reached.
+            // @pest-mutate-ignore: InstanceOfToTrue
             'direct_url' => $count === 1 && $primary instanceof Entry
                 ? ($this->stringValue($primary->url()) ?: self::LOCATIONS_ANCHOR)
                 : self::LOCATIONS_ANCHOR,
@@ -184,6 +190,9 @@ final readonly class AppointmentContextResolver
                 continue;
             }
 
+            // An empty id that got past this guard finds nothing (`find('')` is null),
+            // so the list of published locations is the same.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if ($id === '') {
                 continue;
             }
@@ -221,6 +230,9 @@ final readonly class AppointmentContextResolver
         // reference or a one-element list depending on how it was written.
         $reference = \is_array($portals) ? ($portals[0] ?? null) : $portals;
 
+        // An empty reference that got past this guard looks up `portals::`, which
+        // finds no term, so no portal resolves either way.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         if (! \is_string($reference) || $reference === '') {
             return null;
         }
@@ -229,6 +241,9 @@ final readonly class AppointmentContextResolver
             str_contains($reference, '::') ? $reference : self::PORTAL_TAXONOMY.'::'.$reference
         );
 
+        // The term query returns a LocalizedTerm or null, so this test is already
+        // true for every non-null result.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if ($found instanceof LocalizedTerm) {
             return $found;
         }
@@ -261,7 +276,12 @@ final readonly class AppointmentContextResolver
      */
     private function appointmentLine(?LocalizedTerm $portal): array
     {
+        // Without a portal the other line's fallback stays '', which alone sends the
+        // pair to the system default below, so either fallback string gives the same
+        // result.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $number = $portal instanceof LocalizedTerm ? $this->stringValue($portal->get('appointment_phone')) : '';
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $name = $portal instanceof LocalizedTerm ? $this->stringValue($portal->get('appointment_phone_name')) : '';
 
         if ($number === '' || $name === '') {
@@ -311,7 +331,10 @@ final readonly class AppointmentContextResolver
      */
     private function telDigits(string $number): string
     {
-        return preg_replace('/\D+/', '', $number) ?? '';
+        // preg_replace() returns null only for an invalid pattern, and this one is
+        // fixed, so the cast never changes the value.
+        // @pest-mutate-ignore: RemoveStringCast
+        return (string) preg_replace('/\D+/', '', $number);
     }
 
     /**
@@ -336,7 +359,7 @@ final readonly class AppointmentContextResolver
             return $number;
         }
 
-        return \sprintf('(%s) %s-%s', substr($digits, 0, 3), substr($digits, 3, 3), substr($digits, 6, 4));
+        return \sprintf('(%s) %s-%s', substr($digits, 0, 3), substr($digits, 3, 3), substr($digits, 6));
     }
 
     /**
