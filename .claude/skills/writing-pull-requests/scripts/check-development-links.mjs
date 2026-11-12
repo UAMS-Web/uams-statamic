@@ -14,7 +14,22 @@
 // the linked issue: `Closes #N`, `Closes org/repo#N`, `Closes <issue URL>`, same line or across
 // a line break. A directive inside a code span or a fence counts too, because the push-time
 // scan of a squash message reads plain text and acts on it. The directive grammar is imported
-// from check-closing-keyword-across-lines.mjs, so the two checks cannot drift apart.
+// from check-closing-keyword-across-lines.mjs, so the two checks cannot drift apart. A reference
+// wrapped in a Markdown link is read by its label first, here and not in that grammar, because the
+// writing-pull-requests skill prescribes the form for a cross-repository close:
+// `` Closes [`org/repo#N`](url). ``
+//
+// THE BASE BRANCH (UAMS-Web/uams-claude-skills#680, decided on #589). A Development link closes its
+// issue only when the pull request merges into the repository's default branch, so on a pull request
+// to any other base the listing overstates what the merge does. The check takes the pull request's
+// base branch (`--base`) and the repository's default branch (`--default-branch`) and compares them,
+// case-sensitively, as git does:
+//     base equals the default branch   a linked issue the body leaves open is a failure (exit 1);
+//     base is another branch           the same issues are reported as a warning, with the
+//                                      `::warning::` annotation a workflow shows, and the exit is 0;
+//     either value absent or empty     exit 2, never a pass.
+// The link is not judged on a non-default base: the issue closes if the branch later reaches the
+// default branch, and the warning says so.
 //
 // INPUT. The raw response of the GraphQL query the workflow template runs, passed as a file
 // (`--graphql-file`) or on stdin (`--graphql-stdin`), and the body (`--body-file`). The response
@@ -27,16 +42,19 @@
 //     arm 1  body "Part of #5." with #5 linked must be reported;
 //     arm 2  body "Closes #5." with #5 linked must not be reported;
 //     arm 3  body "Closes other/repo#5." with this repository's #5 linked must be reported,
-//            so a reference to a same-numbered issue elsewhere does not satisfy the link.
+//            so a reference to a same-numbered issue elsewhere does not satisfy the link;
+//     arm 4  body "Closes [`#5`](url)." with #5 linked must not be reported.
 // Any arm failing is exit 2.
 //
 // EXIT CODES
-//     0  scanned, controls held, every linked issue is closed by the body (or none is linked)
-//     1  at least one linked issue the body does not close
+//     0  scanned, controls held, every linked issue is closed by the body (or none is linked), or the
+//        base is not the default branch and the unclosed links were reported as a warning
+//     1  at least one linked issue the body does not close, on a pull request to the default branch
 //     2  the check could not run
 //
 // USAGE
-//     node check-development-links.mjs --repo <owner/repo> --body-file <path> --graphql-file <path>
+//     node check-development-links.mjs --repo <owner/repo> --base <branch> --default-branch <branch> \
+//         --body-file <path> --graphql-file <path>
 
 import { readFileSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -53,6 +71,9 @@ export function resolveReference(reference, repo) {
     return `${owner === '' ? repo : owner}#${reference.slice(hash + 1)}`.toLowerCase()
 }
 
+/** The body with each Markdown link whose label is a reference replaced by that label. */
+export const unwrapLinkedReferences = (body) => body.replace(/\[`?((?:[\w.-]+\/[\w.-]+)?#\d+)`?\]\([^)\s]*\)/g, '$1')
+
 /**
  * Linked issues the body has no closing directive for.
  *
@@ -62,7 +83,7 @@ export function resolveReference(reference, repo) {
  * @return {string[]}
  */
 export function unclosedLinks(body, linked, repo) {
-    const closed = new Set(findDirectives(body).map((directive) => resolveReference(directive.reference, repo)))
+    const closed = new Set(findDirectives(unwrapLinkedReferences(body)).map((directive) => resolveReference(directive.reference, repo)))
     return linked.filter((issue) => !closed.has(issue.toLowerCase()))
 }
 
@@ -91,21 +112,44 @@ export function parseLinked(text) {
 
 const CONTROL_REPO = 'o/r'
 
+/**
+ * What to do with the linked issues the body leaves open: `pass` when there are none, `fail` when the
+ * pull request merges into the default branch, `warn` when it merges into any other base.
+ *
+ * @param  {string[]}  open  the result of unclosedLinks
+ * @param  {string}  base  the pull request's base branch
+ * @param  {string}  defaultBranch  the repository's default branch
+ * @return {'pass'|'warn'|'fail'}
+ */
+export function classify(open, base, defaultBranch) {
+    if (open.length === 0) return 'pass'
+    return base === defaultBranch ? 'fail' : 'warn'
+}
+
 export function runControls() {
     const failures = []
     const arms = [
         ['arm 1 (a body that leaves the issue open is reported)', 'Part of #5.\n', ['o/r#5']],
         ['arm 2 (a keyword for the issue is not reported)', 'Closes #5.\n', []],
         ['arm 3 (a same-numbered issue elsewhere does not satisfy the link)', 'Closes other/repo#5.\n', ['o/r#5']],
+        ['arm 4 (a keyword before a reference in a Markdown link is not reported)', 'Closes [`#5`](https://github.com/o/r/issues/5).\n', []],
     ]
     for (const [name, body, expected] of arms) {
         const got = unclosedLinks(body, ['o/r#5'], CONTROL_REPO)
         if (got.join(',') !== expected.join(',')) failures.push(`${name}: expected [${expected}], got [${got}]`)
     }
+    const outcomes = [
+        ['arm 5 (a link left open on the default branch fails)', classify(['o/r#5'], 'main', 'main'), 'fail'],
+        ['arm 6 (a link left open on another base is a warning)', classify(['o/r#5'], 'dev', 'main'), 'warn'],
+        ['arm 7 (nothing left open passes on any base)', classify([], 'dev', 'main'), 'pass'],
+    ]
+    for (const [name, got, expected] of outcomes) {
+        if (got !== expected) failures.push(`${name}: expected ${expected}, got ${got}`)
+    }
     return failures
 }
 
-const OPTIONS = ['--repo', '--body-file', '--graphql-file']
+const OPTIONS = ['--repo', '--base', '--default-branch', '--body-file', '--graphql-file']
 
 export function main(argv = process.argv.slice(2), { log = console.log, error = console.error, readText = (path) => readFileSync(path, 'utf8') } = {}) {
     const options = {}
@@ -118,8 +162,8 @@ export function main(argv = process.argv.slice(2), { log = console.log, error = 
         options[argv[i].slice(2)] = argv[i + 1]
         i += 1
     }
-    for (const required of ['repo', 'body-file', 'graphql-file']) {
-        if (options[required] === undefined) {
+    for (const required of ['repo', 'base', 'default-branch', 'body-file', 'graphql-file']) {
+        if (options[required] === undefined || options[required] === '') {
             error(`check-development-links: --${required} is required.`)
             return 2
         }
@@ -158,6 +202,13 @@ export function main(argv = process.argv.slice(2), { log = console.log, error = 
     const open = unclosedLinks(body, linked, options.repo)
     if (open.length === 0) {
         log('development-link check: every linked issue is closed by a keyword in the body.')
+        return 0
+    }
+
+    if (classify(open, options.base, options['default-branch']) === 'warn') {
+        const list = open.join(', ')
+        log(`::warning title=Development link closes nothing on this base::${list} is linked for closing and the body has no keyword for it, but this pull request targets '${options.base}', not the default branch '${options['default-branch']}', so merging it closes nothing. The link closes the issue only if the branch later reaches '${options['default-branch']}'.`)
+        log(`development-link check: WARNING, ${open.length} linked issue(s) left open by the body on a base that is not the default branch: ${list}`)
         return 0
     }
 

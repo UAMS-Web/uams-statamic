@@ -19,6 +19,7 @@ use Statamic\Facades\AssetContainer as AssetContainerFacade;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\Redirects\Services\MarketingRedirectStore;
 use UAMSWeb\Aether\Redirects\Support\RedirectSource;
 use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 

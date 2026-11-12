@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "25f105f13b21eb0da9217d6b2cd98e7e",
+    "content-hash": "6e3fcd7176348ba5ef4eba6299f2b53d",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11612,8 +11612,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-incomplete-entries/issues",
                 "source": "https://github.com/UAMS-Web/aether-incomplete-entries"
             },
-            "time": "2026-11-11T03:10:52+00:00",
-            "published-time": "2026-11-12T18:40:29+00:00"
+            "time": "2026-11-11T03:10:52+00:00"
         },
         {
             "name": "uams-web/aether-multisite-forms",
@@ -11690,21 +11689,21 @@
         },
         {
             "name": "uams-web/aether-redirects",
-            "version": "v0.2.0",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-redirects.git",
-                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46"
+                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
-                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
+                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.4",
-                "statamic/cms": "^6.35"
+                "statamic/cms": "^6.40"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -11714,7 +11713,9 @@
                 "orchestra/testbench": "^11.3",
                 "pestphp/pest": "^5.3",
                 "pestphp/pest-plugin-phpstan": "^5.2",
-                "rector/rector": "^2.7"
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
             },
             "type": "statamic-addon",
             "extra": {
@@ -11758,7 +11759,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-redirects/issues",
                 "source": "https://github.com/UAMS-Web/aether-redirects"
             },
-            "time": "2026-11-05T02:59:22+00:00"
+            "time": "2026-11-12T16:50:44+00:00"
         },
         {
             "name": "uams-web/aether-search",
@@ -12157,8 +12158,7 @@
                 "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
                 "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
             },
-            "time": "2026-11-10T21:43:23+00:00",
-            "published-time": "2026-11-10T21:45:52+00:00"
+            "time": "2026-11-10T21:43:23+00:00"
         },
         {
             "name": "ueberdosis/tiptap-php",
@@ -16373,8 +16373,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-03T12:14:22+00:00",
-            "published-time": "2026-11-03T12:14:36+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "phpstan/phpstan-mockery",
