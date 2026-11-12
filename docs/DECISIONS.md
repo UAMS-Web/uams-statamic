@@ -3916,3 +3916,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Statute only*: would answer no for CSCS and SCCC, which the article lists. *Keeping MA, ECDS, QBHP and M.S. as clinical credentials that are not regulatory designations*: each would need a justification for a clinical status it does not have. *Writing a regulatory-sounding justification for ATC, CHT and OCS*: would misstate why they are displayed.
 
 **Companion.** Decided on 2026-10-27, revised on 2026-11-07 and 2026-11-09, on #344. The content changes are `UAMS-Web/aether-submodule-content#93`, `#94` and `#95`; the code changes are #620, #621 and #622; the pointer for #95 is #631.
+
+## 2026-11-12: Site search moves to the Loupe driver with `max_total_hits` at 200 (#511)
+
+**Decision.** `daun/statamic-loupe` replaces the `local` driver for site search, with `max_total_hits` at 200 on the `default` index. The build is #646, which also moves site and scope filtering ahead of the hit cap.
+
+**Why.** At the counted launch size of 46,777 documents, Loupe's p95 per lookup was 132 to 164ms at `max_total_hits` 200, under the 400ms gate, and it found the intended term for all six misspellings that return nothing on `local`. Measured on #511, Windows 11, PHP 8.4.27, `daun/statamic-loupe` 4.2.0, `loupe/loupe` 1.1.6. It is the only option that needs no paid service or new server, per the 2026-11-02 entry.
+
+**Rejected.** *Loupe at its default `max_total_hits` (1,000)*: p95 299 to 449ms at launch size, over the gate in two of three runs. *Staying on `local`*: fails latency and typo tolerance (#161). *A hosted or self-hosted engine*: ruled out by the no-spending statement.
+
+**Residual.** The driver applies site and scope filters after the hit cap, so a scoped search can show fewer results than match; #646 owns the fix. Document insertion alone took 618s at launch size and the index is 1.7GB on disk, both well past #161's 60s and 75 to 100MB thresholds. Concurrency, hydration and the production host are not measured.
+
+**Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).
