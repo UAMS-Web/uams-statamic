@@ -7,7 +7,7 @@
  * Runs against an installed checkout, `--tree` or the working directory. It exits with the first
  * failing build's status or the suite's, or 2 for a wrong flag or a missing tool. `--skip-build`
  * keeps the bundles already in the tree, which is right only when they were built from it.
- * `local-ci.mjs` calls `gateBrowser` (#295).
+ * `local-ci.json` runs it as the `browser` job (#296).
  */
 
 import process from 'node:process'

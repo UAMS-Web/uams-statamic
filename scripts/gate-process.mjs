@@ -3,9 +3,9 @@
  *
  * The `pest`, `pint`, `rector` and `browser` steps live in scripts of their own
  * (`gate-pest.mjs`, `gate-pint.mjs`, `gate-rector.mjs`, `gate-browser.mjs`), each runnable
- * alone and each called by `local-ci.mjs` (#295). Both callers need the same console output,
- * the same spawn rules, the same tool discovery and the same PHP memory limit, so a single copy
- * of those lives here.
+ * alone and each run as a `local-ci.json` job (#296), as are `ci-job.mjs` and
+ * `prepare-dependencies.mjs`. They need the same console output, the same spawn rules, the same
+ * tool discovery and the same PHP memory limit, so a single copy of those lives here.
  */
 
 import { spawnSync } from 'node:child_process'

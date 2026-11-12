@@ -6,10 +6,11 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parityRegions, touchedLines, touchesRegion, evaluate } from './check-ci-parity.mjs'
 
-// UAMS-Web/uams-statamic-archive#2376 — the CI-parity hook fired on any staged `scripts/local-ci.mjs`, so the
-// ~half of that file's changes that are legitimately one-sided all needed
-// `--no-verify` — which also skips the unrelated merge-resolution gate in the
-// same hook. These assert the hook now gates on the marked REGIONS instead.
+// UAMS-Web/uams-statamic-archive#2376: the CI-parity hook once fired on any staged runner change, so
+// the legitimately one-sided changes all needed `--no-verify`, which also skips the
+// unrelated merge-resolution gate in the same hook. These assert the hook gates on
+// the marked REGIONS of ci.yml and the step scripts, and on any change to the files
+// that are wholly the local mirror (#296).
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -17,26 +18,21 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 // never widens the touched set.
 const hunk = (start, count = 1) => `@@ -${start} +${start},${count} @@\n`
 
+// A step script: line 3 to 5 is the marked region, the rest local-only.
 const MJS = [
     'const x = 1',                                  // 1
     '',                                             // 2
-    '    const runners = {',                        // 3
-    "        pest: () => {",                        // 4
-    '            // PARITY: mirrored by the pest job in ci.yml.',   // 5
-    "            step('JOB pest')",                 // 6
-    '        },',                                   // 7
-    "        local: () => {",                       // 8
-    "            step('JOB local')",                // 9  <- unmarked runner
-    '        },',                                   // 10
-    '    }',                                        // 11
-    'function localOnly() { return 2 }',            // 12 <- unmarked, outside any runner
+    '// PARITY: mirrored by the pest job in ci.yml.', // 3
+    "step('JOB pest')",                             // 4
+    '// PARITY-END',                                // 5
+    'function localOnly() { return 2 }',            // 6 <- unmarked
 ].join('\n')
 
 const YML = [
     'jobs:',                                        // 1
     '  pest:',                                      // 2
     '    steps:',                                   // 3
-    '      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.', // 4
+    '      # PARITY: mirrored by the pest job in local-ci.json.', // 4
     '      - name: Run Pest',                       // 5
     '        run: vendor/bin/pest',                 // 6
     '      - name: Unmarked step',                  // 7
@@ -44,8 +40,8 @@ const YML = [
 ].join('\n')
 
 describe('parityRegions', () => {
-    it('scopes an mjs marker to its enclosing runner body', () => {
-        expect(parityRegions(MJS, 'mjs')).toEqual([{ start: 5, end: 7 }])
+    it('scopes a step-script marker to its PARITY-END', () => {
+        expect(parityRegions(MJS, 'mjs')).toEqual([{ start: 3, end: 5 }])
     })
 
     it('scopes a yml marker to the step it precedes, not to the rest of the file', () => {
@@ -80,9 +76,9 @@ describe('parityRegions', () => {
     })
 
     it('sees regions in the REAL files, so a blind parser cannot pass the rest', () => {
-        const mjs = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
+        const mjs = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
         const yml = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
-        expect(parityRegions(mjs, 'mjs').length).toBeGreaterThan(20)
+        expect(parityRegions(mjs, 'mjs').length).toBeGreaterThan(0)
         expect(parityRegions(yml, 'yml').length).toBeGreaterThan(20)
     })
 })
@@ -100,75 +96,44 @@ describe('touchedLines', () => {
 })
 
 describe('the gate decision', () => {
-    const both = { ciSource: YML, scriptSource: MJS }
+    const step = (diff, source = MJS, sourceOld = MJS) => ({ ciSource: YML, gateSteps: [{ diff, source, sourceOld }] })
 
-    it('does NOT fire when the mjs change touches no marked region', () => {
-        // Criterion 1, and the case UAMS-Web/uams-statamic-archive#2376 exists for: line 12 is `localOnly()`.
-        expect(evaluate({ ...both, scriptDiff: hunk(12) }).fire).toBe(false)
+    it('does NOT fire when a step-script change touches no marked region', () => {
+        // The case UAMS-Web/uams-statamic-archive#2376 exists for: line 6 is `localOnly()`.
+        expect(evaluate(step(hunk(6))).fire).toBe(false)
     })
 
     it('fires when only one side changes inside a marked region', () => {
-        // Criterion 2. Line 6 is inside the marked pest runner.
-        expect(evaluate({ ...both, scriptDiff: hunk(6) }).fire).toBe(true)
+        // Line 4 is inside the marked region.
+        expect(evaluate(step(hunk(4))).fire).toBe(true)
     })
 
     it('does NOT fire when both sides change inside a marked region', () => {
-        expect(evaluate({ ...both, scriptDiff: hunk(6), ciDiff: hunk(6) }).fire).toBe(false)
+        expect(evaluate({ ...step(hunk(4)), ciDiff: hunk(6) }).fire).toBe(false)
     })
 
     it('fires on a commit touching a marked AND an unmarked region together', () => {
-        // Criterion 3 — the mixed case. Line 6 marked, line 12 not; the marked
-        // half still has no counterpart, so this must not be waved through.
-        const diff = hunk(6) + hunk(12)
-        expect(evaluate({ ...both, scriptDiff: diff }).fire).toBe(true)
+        // The marked half still has no counterpart, so this must not be waved through.
+        expect(evaluate(step(hunk(4) + hunk(6))).fire).toBe(true)
     })
 
     it('fires when a whole marked region is DELETED', () => {
         // The new-file side alone cannot see this: the staged source no longer
-        // contains the region, so there is nothing left to intersect and the gate
-        // passed. Removing a mirrored runner outright is exactly the drift it
-        // exists to catch. Found by adversarial review, not by a test.
-        const gone = ['const x = 1', '', '    const runners = {', '    }'].join('\n')
-        const r = evaluate({
-            scriptDiff: '@@ -4,4 +3,0 @@\n',
-            scriptSource: gone,
-            scriptSourceOld: MJS,
-            ciSource: YML,
-        })
-        expect(r.fire).toBe(true)
+        // contains the region, so there is nothing left to intersect. Removing a
+        // mirrored step outright is exactly the drift the gate exists to catch.
+        const gone = ['const x = 1', '', 'function localOnly() { return 2 }'].join('\n')
+        expect(evaluate(step('@@ -3,3 +2,0 @@\n', gone, MJS)).fire).toBe(true)
     })
 
-    it('fires when a yml marked region changes with no mjs counterpart', () => {
-        expect(evaluate({ ...both, ciDiff: hunk(6) }).fire).toBe(true)
-    })
-})
-
-describe('the two commits that had to bypass it (criterion 5)', () => {
-    // Read at each commit's OWN file state: the markers have moved since. The two
-    // commits are on the line in UAMS-Web/uams-statamic-archive (its pull requests
-    // #2373 and #2375), which this repository shares no history with, so each one's
-    // `scripts/local-ci.mjs` and its `git diff --unified=0` against its first parent
-    // are committed under scripts/fixtures/ci-parity/ rather than read from git. A
-    // live read resolved only where the archive's objects happened to be present: in
-    // a local checkout, never on a CI runner (#375).
-    const fixture = (name) => readFileSync(join(repoRoot, 'scripts', 'fixtures', 'ci-parity', name), 'utf8')
-
-    it.each(['#2350', '#2312'])('%s would no longer need --no-verify', (label) => {
-        const number = label.slice(1)
-        const source = fixture(`${number}.local-ci.mjs.txt`)
-        const diff = fixture(`${number}.local-ci.mjs.diff`)
-        expect(diff).not.toBe('')                       // the diff really is non-empty
-        expect(touchesRegion(touchedLines(diff), parityRegions(source, 'mjs'))).toBe(false)
+    it('fires when a yml marked region changes with no local counterpart', () => {
+        expect(evaluate({ ciSource: YML, ciDiff: hunk(6) }).fire).toBe(true)
     })
 
-    it('reads fixtures that still carry marked regions, so a false result is not vacuous', () => {
-        // An empty or truncated fixture has no regions at all, and nothing touches no
-        // region: the case above would then pass whatever the diff said. Each fixture
-        // must still hold the file's marked regions, and the diff must name lines.
-        for (const number of ['2350', '2312']) {
-            expect(parityRegions(fixture(`${number}.local-ci.mjs.txt`), 'mjs').length).toBeGreaterThan(0)
-            expect(touchedLines(fixture(`${number}.local-ci.mjs.diff`)).length).toBeGreaterThan(0)
-        }
+    it('counts any change to a wholly mirrored file, and pairs it with a ci.yml region change (#296)', () => {
+        // local-ci.json and scripts/ci-job.mjs carry no markers: every line is the mirror.
+        expect(evaluate({ ciSource: YML, mirrorDiffs: [hunk(1)] }).fire).toBe(true)
+        expect(evaluate({ ciSource: YML, mirrorDiffs: [hunk(1)], ciDiff: hunk(6) }).fire).toBe(false)
+        expect(evaluate({ ciSource: YML, mirrorDiffs: [''] }).fire).toBe(false)
     })
 })
 
@@ -196,14 +161,14 @@ describe('the line after a marked yml step (#2865)', () => {
         'jobs:',                                        // 1
         '  pest:',                                      // 2
         '    steps:',                                   // 3
-        '      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.', // 4
+        '      # PARITY: mirrored by the pest job in local-ci.json.', // 4
         '      - name: Run Pest',                       // 5
         '        run: vendor/bin/pest',                 // 6
         '',                                             // 7: the empty line after the final newline
     ].join('\n')
 
     const yml = (before, after) => evaluate({
-        ciDiff: diffOf(before, after), ciSource: after, ciSourceOld: before, scriptSource: MJS,
+        ciDiff: diffOf(before, after), ciSource: after, ciSourceOld: before,
     })
 
     it('ends a yml region on its step\'s last line, not on the blank line after it', () => {
@@ -240,7 +205,7 @@ describe('a marker in the middle of a comment block (#3238)', () => {
     // 9 the next step. The region has to reach the step, not stop at line 6.
     const MID = [
         'jobs:', '  pest:', '    steps:',
-        '      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.', // 4
+        '      # PARITY: mirrored by the pest job in local-ci.json.', // 4
         '      #',                                                            // 5
         '      # Why this step is shaped the way it is.',                     // 6
         '      - name: Run Pest',                                             // 7
@@ -251,7 +216,7 @@ describe('a marker in the middle of a comment block (#3238)', () => {
     ].join('\n')
 
     const yml = (before, after) => evaluate({
-        ciDiff: diffOf(before, after), ciSource: after, ciSourceOld: before, scriptSource: MJS,
+        ciDiff: diffOf(before, after), ciSource: after, ciSourceOld: before,
     })
 
     it('covers the annotated step and stops before the next one', () => {
@@ -271,7 +236,7 @@ describe('a marker in the middle of a comment block (#3238)', () => {
         // step's leading comment, so editing that comment read as editing this step.
         const direct = [
             'jobs:', '  pest:', '    steps:',
-            '      # PARITY: mirrored by the pest job in scripts/local-ci.mjs.', // 4
+            '      # PARITY: mirrored by the pest job in local-ci.json.', // 4
             '      - name: Run Pest',                                             // 5
             '        run: vendor/bin/pest',                                       // 6
             '',
@@ -290,7 +255,7 @@ describe('a marker in the middle of a comment block (#3238)', () => {
         // the comment block alone, and an edit to the step's run: body was refused.
         const real = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
         const lines = real.split('\n')
-        const marker = lines.findIndex((l) => l.includes('# PARITY: mirrored by the mutate job in scripts/local-ci.mjs')) + 1
+        const marker = lines.findIndex((l) => l.includes('# PARITY: mirrored by the mutate job in local-ci.json')) + 1
         const run = lines.findIndex((l) => l.includes('--mutate --path=app/Support/UamsAlert')) + 1
 
         expect(marker).toBeGreaterThan(0)
