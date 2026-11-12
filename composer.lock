@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "18357c79ef3068e37ebe7d5e0d63c673",
+    "content-hash": "5ecfb000b1c068a8c610ddd2d90b7b18",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11759,16 +11759,16 @@
         },
         {
             "name": "uams-web/aether-tables",
-            "version": "v0.1.2",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-tables.git",
-                "reference": "58d3db740c01712c8f9c380353912e8fb464f812"
+                "reference": "18d4dd5e03da9051e3a862e99a8cef7688959a73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-tables/zipball/58d3db740c01712c8f9c380353912e8fb464f812",
-                "reference": "58d3db740c01712c8f9c380353912e8fb464f812",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-tables/zipball/18d4dd5e03da9051e3a862e99a8cef7688959a73",
+                "reference": "18d4dd5e03da9051e3a862e99a8cef7688959a73",
                 "shasum": ""
             },
             "require": {
@@ -11809,6 +11809,9 @@
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
             "authors": [
                 {
                     "name": "UAMS Web Services"
@@ -11828,8 +11831,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-tables/issues",
                 "source": "https://github.com/UAMS-Web/aether-tables"
             },
-            "time": "2026-11-12T02:23:48+00:00",
-            "published-time": "2026-11-12T18:52:48+00:00"
+            "time": "2026-11-12T20:30:40+00:00",
+            "published-time": "2026-11-12T20:35:50+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer",
