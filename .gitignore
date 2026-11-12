@@ -74,6 +74,9 @@ yarn-error.log
 # uams-web/aether-redirects published assets (#398)
 /public/vendor/aether-redirects
 
+# uams-web/aether-tables published assets (#518)
+/public/vendor/aether-tables
+
 # Where those add-ons published before their rename (#435); an existing checkout still has them
 /public/vendor/statamic-alpine-csp-forms
 /public/vendor/statamic-multisite-forms

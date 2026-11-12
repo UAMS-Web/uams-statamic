@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Events\TriggerActivated;
 use App\Listeners\AppendOrphanBanner;
 use App\Listeners\AppendPublishDependencyBanner;
 use App\Listeners\CaptureRedirectOnEntryDelete;
@@ -17,8 +16,6 @@ use App\Listeners\EnforcePeopleEditingScope;
 use App\Listeners\EnforcePeopleScopeOnProviderSync;
 use App\Listeners\FlattenLogoOrderValues;
 use App\Listeners\GenerateNewsReleasePdf;
-use App\Listeners\HandlePasteTableDataTrigger;
-use App\Listeners\HandleTableDataImporterTrigger;
 use App\Listeners\HashVisibilityPassword;
 use App\Listeners\InvalidateSchemaJsonLdCache;
 use App\Listeners\MakeWorkdayFieldsReadOnly;
@@ -84,13 +81,6 @@ class EventServiceProvider extends BaseServiceProvider
      * @var array<string, array<int, string>> Array mapping event classes to arrays of listener classes
      */
     protected $listen = [
-        // Map TriggerActivated event to its listeners; each ignores triggers it
-        // does not own, and the route uses the first non-empty response
-        TriggerActivated::class => [
-            HandleTableDataImporterTrigger::class,
-            HandlePasteTableDataTrigger::class,
-        ],
-
         // Store current entry for {{ disambiguate_title }} when id is null (new entries);
         // validate knowledge base entries when saving;
         // validate clinical expertise (Areas of Expertise) entries when saving
