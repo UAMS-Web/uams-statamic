@@ -5,10 +5,10 @@
  *     node scripts/ci-local.mjs [shared runner options]      (npm run ci:local -- ...)
  *
  * The shared runner (`.claude/skills/local-ci/local-ci.mjs`, configured by `local-ci.json`) does
- * the work, in its default slot `<primary>-ci`. This only adds the `dependencies` job to a
- * `--jobs` subset and translates the private runner's flags, refusing the ones with no
- * counterpart rather than dropping them: `--fresh` dropped silently reads as though it rebuilt
- * something.
+ * the work: with `--branch`, in its slot `<primary>-ci`; without it, in place. This only adds the
+ * jobs a `--jobs` subset depends on and translates the private runner's flags, refusing the ones
+ * with no counterpart rather than dropping them: `--fresh` dropped silently reads as though it
+ * rebuilt something.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -20,6 +20,24 @@ import { fileURLToPath } from 'node:url'
 export const DEPENDENCIES_JOB = 'dependencies'
 
 /**
+ * The job that makes the shared runner resolve PHP. The runner resolves it, checks it against
+ * `config.platform.php`, prints it in its header and hands it to every job as `LOCAL_CI_PHP` only
+ * when a selected job's command starts with `php` or `vendor/bin/`; without this job a `--jobs pest`
+ * run would do none of that, and the gates would fall back to whatever `php` is first on PATH.
+ */
+export const PHP_JOB = 'php'
+
+/**
+ * Jobs a selected job reads the output of, so a subset naming the second gains the first.
+ *
+ * @type {Record<string, string>}
+ */
+export const JOB_INPUTS = {
+    // `browser` runs with --skip-build, reusing the bundles the `build` job made from this commit
+    browser: 'build',
+}
+
+/**
  * The private runner's flags the shared runner has no counterpart for, and what to do instead.
  *
  * @type {Record<string, string>}
@@ -29,30 +47,34 @@ export const RETIRED_FLAGS = {
     '--skip-install': 'the `dependencies` job installs only in the runner\'s slot, and every run includes it',
     '--skip-submodule': 'the `dependencies` job initializes the gate submodules in the runner\'s slot on every run',
     '--no-reset': 'the `pest` job always resets the reused tree\'s caches before the suite',
-    '--fetch': 'the shared runner fetches the branch from origin on every --branch run',
+    '--fetch': 'the shared runner fetches only the branch on a --branch run, not origin/main, so run `git fetch origin main` first when the pint and content-pointer base must be current',
 }
 
 /**
- * A `--jobs` list with the `dependencies` job first, added when it is missing.
+ * A `--jobs` list with the jobs its members depend on added: `php` and `dependencies` always, and
+ * each named job's input (see {@see JOB_INPUTS}). The shared runner runs a subset in
+ * `local-ci.json` order, so where an addition lands in the list does not matter.
  *
  * The shared runner ignores `always` once `--jobs` names a subset, so without this a
  * `--branch --jobs pest` run in a reused slot would install nothing and pass against whatever
- * `vendor/` the slot held last.
+ * `vendor/` the slot held last, and `--jobs browser` would test the bundles an earlier commit
+ * built.
  *
  * @param  {string}  list  The comma-separated value given to `--jobs`.
  * @return {string}
  */
 export function withDependencies(list) {
     const names = list.split(',').map((name) => name.trim()).filter(Boolean)
+    const added = [PHP_JOB, DEPENDENCIES_JOB, ...names.map((name) => JOB_INPUTS[name]).filter(Boolean)]
 
-    return names.includes(DEPENDENCIES_JOB) ? names.join(',') : [DEPENDENCIES_JOB, ...names].join(',')
+    return [...new Set([...added.filter((name) => ! names.includes(name)), ...names])].join(',')
 }
 
 /**
  * The shared runner's arguments for this invocation's.
  *
  * `--jobs all` becomes `--all` and `-b` becomes `--branch`: the private runner took both, and
- * the shared runner would refuse them. Any other `--jobs` list gains the `dependencies` job.
+ * the shared runner would refuse them. Any other `--jobs` list gains the jobs it depends on.
  *
  * @param  {string[]}  args
  * @return {string[]}

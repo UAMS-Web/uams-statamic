@@ -17,20 +17,26 @@
  *     `patches.lock.json`; clears the reused tree's file caches; prepares `.env`, the app key and
  *     `post-autoload-dump`; and runs `npm ci`.
  *   - Anywhere else (a developer's checkout, a work slot) it installs NOTHING. Installing into
- *     someone's working tree is their decision, so it reports what is out of date and fails.
+ *     someone's working tree is their decision, so it reports what is out of date and fails,
+ *     including patched packages `vendor/` was never recorded as carrying the patches of:
+ *     `composer install` reports "Nothing to install" for a package whose patch is new, so a
+ *     version check alone passes an unpatched `vendor/`. `--sync-patches` is that decision, made
+ *     explicitly: it reinstalls those packages in place and records the lock.
  *
  * The patch step runs here rather than as the runner's `prepare.patches`, because `prepare` runs
  * before any job: it would `composer reinstall` the slot's OLD version of a package against the
  * commit's NEW patch. Installing first and re-syncing second is the order the private runner
- * used. The patch record is dropped before the install, so an install that dies after
- * re-extracting a patched package cannot leave a record vouching for an unpatched `vendor/`.
+ * used. The patch record is read, then dropped, before the install: read first, because it is
+ * what the sync compares against (dropped first, every run would reinstall every patched package);
+ * dropped before the install, so one that dies after re-extracting a patched package cannot
+ * leave a record vouching for an unpatched `vendor/`.
  */
 
 import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 
-import { dropPatchRecord, installedPackages, PATCH_LOCK_RECORD, SLOT_MARKER, syncPatchedVendor } from '../.claude/skills/local-ci/local-ci.mjs'
+import { dropPatchRecord, installedPackages, PATCH_LOCK_RECORD, patchReinstallPackages, SLOT_MARKER, syncPatchedVendor } from '../.claude/skills/local-ci/local-ci.mjs'
 import { capture, captureResult, isMainModule, phpRunner, resolveGit, resolveNpm, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
 import { clearFileCaches } from './gate-pest.mjs'
 import { GATE_SUBMODULES } from './gate-slot.mjs'
@@ -201,11 +207,21 @@ function installSlot(tree) {
 
     console.log('Runner slot: installing from composer.lock and package-lock.json.')
 
+    // What vendor/ was last brought in line with, read before the install step drops it
+    const recordedLock = readText(join(tree, PATCH_LOCK_RECORD))
+
     const steps = [
         () => initSubmodules(tree, git, composer),
         () => {
             // composer.json declares ext-imagick, so name the omission before Composer's platform error
-            if (capture(php, ['-r', 'echo extension_loaded("imagick") ? "1" : "";'], tree) === '1') {
+            const probe = captureResult(php, ['-r', 'echo extension_loaded("imagick") ? "1" : "";'], tree)
+
+            if (probe.status !== 0) {
+                console.error(`${php} did not run (exit ${probe.status}), so the imagick check could not be made. Check that this PHP starts: \`${php} --version\`.`)
+
+                return 1
+            }
+            if (probe.stdout.trim() === '1') {
                 return 0
             }
             console.error('This PHP has no `imagick` extension, which composer.json declares as `ext-imagick`. Install it first: see README_Imagick.md.')
@@ -219,7 +235,7 @@ function installSlot(tree) {
 
             return run(composer, ['install', '--no-scripts', '--no-interaction', '--no-progress', '--prefer-dist'], tree)
         },
-        () => syncPatches(tree, composer),
+        () => syncPatches(tree, composer, recordedLock),
         () => {
             step('Clearing reused-worktree file caches before the first app boot')
             clearFileCaches(git, tree)
@@ -262,11 +278,12 @@ function installSlot(tree) {
  * Reinstall the packages whose patches differ from the ones `vendor/` was last brought in line
  * with, then record the lock.
  *
- * @param  {string}  tree
- * @param  {string}  composer
+ * @param  {string}       tree
+ * @param  {string}       composer
+ * @param  {string|null}  recordedLock  The record as it stood before this run touched it.
  * @return {number}
  */
-function syncPatches(tree, composer) {
+function syncPatches(tree, composer, recordedLock) {
     const installedJson = readText(join(tree, 'vendor', 'composer', 'installed.json'))
 
     if (installedJson === null) {
@@ -278,7 +295,7 @@ function syncPatches(tree, composer) {
     try {
         const packages = syncPatchedVendor({
             currentLock: readText(join(tree, 'patches.lock.json')),
-            recordedLock: readText(join(tree, PATCH_LOCK_RECORD)),
+            recordedLock,
             installed: installedPackages(installedJson),
             reinstall: (names) => run(composer, ['reinstall', ...names, '--no-interaction', '--no-progress'], tree),
             writeRecord: (text) => writeFileSync(join(tree, PATCH_LOCK_RECORD), text),
@@ -295,6 +312,23 @@ function syncPatches(tree, composer) {
 }
 
 /**
+ * The patched packages whose patches `vendor/` is not recorded as carrying: every one, when there
+ * is no record, since `vendor/composer/installed.json` says nothing about patches.
+ *
+ * @param  {string}  tree
+ * @return {string[]}
+ */
+export function patchDrift(tree) {
+    const installedJson = readText(join(tree, 'vendor', 'composer', 'installed.json'))
+
+    if (installedJson === null) {
+        return []
+    }
+
+    return patchReinstallPackages(readText(join(tree, 'patches.lock.json')), readText(join(tree, PATCH_LOCK_RECORD)), installedPackages(installedJson))
+}
+
+/**
  * Report drift outside the runner's slot, installing nothing.
  *
  * @param  {string}  tree
@@ -303,8 +337,18 @@ function syncPatches(tree, composer) {
 export function reportDrift(tree) {
     const composer = composerDrift(readJson(join(tree, 'composer.lock')), readJson(join(tree, 'vendor', 'composer', 'installed.json')))
     const npm = npmDrift(readJson(join(tree, 'package-lock.json')), readJson(join(tree, 'node_modules', '.package-lock.json')))
+    const patched = patchDrift(tree)
+
+    if (patched.length > 0) {
+        console.error(`Not a runner slot, so nothing was installed, and vendor/ is not recorded as carrying the patches patches.lock.json declares for: ${patched.join(', ')}.`)
+        console.error("Run node scripts/prepare-dependencies.mjs --sync-patches here to reinstall them and record it, or validate in the runner's slot with node scripts/ci-local.mjs --branch <branch>.")
+    }
 
     if (composer.length === 0 && npm.length === 0) {
+        if (patched.length > 0) {
+            return 1
+        }
+
         console.log('vendor/ and node_modules/ match the locks. Not a runner slot, so nothing was installed.')
 
         return 0
@@ -319,5 +363,17 @@ export function reportDrift(tree) {
 }
 
 if (isMainModule(import.meta.url)) {
-    runCli({}, ({ tree }) => (isRunnerSlot(tree, resolveGit()) ? installSlot(tree) : reportDrift(tree)))
+    runCli({ 'sync-patches': { type: 'boolean' } }, ({ tree, 'sync-patches': sync }) => {
+        if (sync) {
+            const composer = which('composer')
+
+            if (! composer) {
+                throw new Error('composer is not on PATH.')
+            }
+
+            return syncPatches(tree, composer, readText(join(tree, PATCH_LOCK_RECORD)))
+        }
+
+        return isRunnerSlot(tree, resolveGit()) ? installSlot(tree) : reportDrift(tree)
+    })
 }

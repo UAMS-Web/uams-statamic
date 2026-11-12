@@ -29,9 +29,10 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
 const config = JSON.parse(readFileSync(join(repoRoot, 'local-ci.json'), 'utf8'))
 
-// Jobs `local-ci.json` runs that have no ci.yml counterpart: the install step the shared runner
-// leaves to the repository, and two checks of the sync's own output.
-const LOCAL_ONLY = new Set(['dependencies', 'synced-files', 'handed-back-workflow'])
+// Jobs `local-ci.json` runs that have no ci.yml counterpart: the PHP resolution and install
+// steps the shared runner leaves to the repository (setup-php and the install steps in ci.yml),
+// and two checks of the sync's own output.
+const LOCAL_ONLY = new Set(['php', 'dependencies', 'synced-files', 'handed-back-workflow'])
 
 // The jobs `local-ci.json` runs in its chain order, less the local-only ones.
 const CHAIN = config.jobs.map((job) => job.name).filter((name) => !LOCAL_ONLY.has(name))
@@ -209,11 +210,14 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         }
     })
 
-    it('runs the dependencies job first and `browser` last (#1727)', () => {
-        // `dependencies` installs the slot every later job reads. The `browser` regression
+    it('runs php and dependencies first, build before browser, and `browser` last (#1727)', () => {
+        // `php` is the job that makes the runner resolve and check PHP and hand it to every
+        // job; `dependencies` installs the slot every later job reads. The `browser` regression
         // this pins: four CP smokes sat red on `main` for eleven days because tests/Browser
         // ran only when a human remembered to ask for it.
-        expect(config.jobs[0].name).toBe('dependencies')
+        expect(config.jobs.slice(0, 2).map((job) => job.name)).toEqual(['php', 'dependencies'])
+        expect(config.jobs[0].run).toMatch(/^php\s/)
+        expect(CHAIN.indexOf('build')).toBeLessThan(CHAIN.indexOf('browser'))
         expect(CHAIN.at(-1)).toBe('browser')
     })
 
@@ -233,7 +237,12 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
             } else if (tool === 'composer') {
                 expect(composer.scripts?.[first], `${name}: composer ${first}`).toBeDefined()
             } else {
-                expect(tool, name).toBe('vendor/bin/pest')
+                // php itself, or php running a vendor/bin tool the lock installs
+                expect(tool, name).toBe('php')
+                const bin = run.split(' ').find((word) => word.startsWith('vendor/bin/'))
+                if (bin) {
+                    expect(composer['require-dev']?.['pestphp/pest'], `${name}: ${bin}`).toBeDefined()
+                }
             }
         }
     })
@@ -249,17 +258,28 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         }
     })
 
-    it('lists only directories that exist as residue', () => {
+    it('refuses a reused slot holding files the validated commit lacks, in the directories jobs read (#1889)', () => {
+        // The shared runner's prepare.residue is the UAMS-Web/uams-statamic-archive#1889 guard
+        // now: a file a commit deleted that a reused slot still holds is refused before any
+        // job runs. #1889's files were under tests/, and larastan reads app/ and config/; an
+        // emptied list would turn the guard off with every other case here still green.
+        expect(config.prepare.residue).toEqual(expect.arrayContaining(['app', 'config', 'database', 'resources', 'routes', 'tests']))
+
         for (const dir of config.prepare.residue) {
             expect(existsSync(join(repoRoot, dir)), dir).toBe(true)
         }
     })
 
-    it('gates composer.lock freshness before any job that installs anything', () => {
-        // The saving that justifies the extra link: `encoding` is the first job to
-        // run `composer install` in ci.yml, and everything after it is costlier still.
-        expect(CHAIN.indexOf('validate')).toBeGreaterThan(-1)
-        expect(CHAIN.indexOf('validate')).toBeLessThan(CHAIN.indexOf('encoding'))
+    it('fails on a stale composer.lock before the jobs that run PHP against it', () => {
+        // Locally `dependencies` installs before `validate` by design (it is the job that
+        // installs); what `validate` still saves is every costlier job after it.
+        const order = config.jobs.map((job) => job.name)
+        expect(order.indexOf('dependencies')).toBeGreaterThan(-1)
+        expect(order.indexOf('validate')).toBeGreaterThan(order.indexOf('dependencies'))
+
+        for (const job of ['encoding', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']) {
+            expect(order.indexOf(job), job).toBeGreaterThan(order.indexOf('validate'))
+        }
     })
 
     it('runs the mutation smoke ci.yml runs, with its false-green guard', () => {
@@ -269,11 +289,14 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         expect(mutate.mutation).toEqual({ minScore: 100 })
         expect(jobText(workflow, 'mutate')).toContain('vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php')
         expect(mutate.run).toContain('vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert')
+        // The gate scripts' memory limit (#3212); the runner adds none of its own
+        expect(mutate.run).toMatch(/^php -d memory_limit=4G vendor\/bin\/pest /)
         expect(mutate.run).toContain('--class="App\\Support\\UamsAlert\\AlertSiteKeyResolver" --covered-only')
     })
 
     it('sees a file the validated commit deleted still sitting in the worktree', () => {
-        // The UAMS-Web/uams-statamic-archive#1889 case exactly: UAMS-Web/uams-statamic-archive#1847 deleted these two audit tests, they were
+        // worktreeDriftEntries is gate-pest.mjs's submodule drift probe; the superproject's
+        // #1889 guard is prepare.residue (above). The UAMS-Web/uams-statamic-archive#1889 case exactly: UAMS-Web/uams-statamic-archive#1847 deleted these two audit tests, they were
         // absent from both validated commits, and the REUSING run executed and
         // passed them anyway. A surviving deletion is UNTRACKED — `??`, which
         // reads like an addition — so it is the status that must not be waved

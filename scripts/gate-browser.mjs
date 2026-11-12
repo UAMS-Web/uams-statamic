@@ -36,14 +36,12 @@ export function gateBrowser({ tree, npm, npx, php, reuseBuild = false }) {
     // bundles with byte-identical commands, and repeating them is duplicated
     // cost for nothing (UAMS-Web/uams-statamic-archive#1727).
     //
-    // So the caller decides, through `reuseBuild`: `canReuseBuildOutput()` in the
-    // runner, or `--skip-build` by hand. Skip only when `build` actually ran AND
-    // exited 0 in THIS invocation.
-    // `results` holds only jobs already executed this run, so a `--jobs
-    // browser`-only run (or any selection omitting `build`) reads undefined
-    // and still builds — which is what keeps a standalone browser run honest.
-    // A `build` that FAILED cannot reach here at all: the chain marks the run
-    // broken and skips every later job, browser included.
+    // So the caller decides, through `--skip-build`: `local-ci.json`'s browser job
+    // passes it, which is sound only because `build` ran AND exited 0 earlier in
+    // the same invocation. `scripts/ci-local.mjs` adds `build` to any `--jobs`
+    // subset naming `browser`, and a `build` that FAILED cannot reach here at all:
+    // the chain stops the run before every later job, browser included. Run by
+    // hand without the flag, this builds, which keeps a standalone run honest.
     let bf = 0
     let bc = 0
 

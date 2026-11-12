@@ -39,8 +39,9 @@ parameters:
     # A RELATIVE path here resolves against THIS file's directory, so each
     # checkout gets its own cache and a deleted one takes only its own with it.
     # There is no `--tmp-dir` CLI flag, so the config key is the only lever.
-    # Git-ignored via `/storage/phpstan` — which also keeps it out of the
-    # reused-slot drift check in scripts/gate-pest.mjs (UAMS-Web/uams-statamic-archive#1889).
+    # Git-ignored via `/storage/phpstan`, and outside the directories the shared
+    # runner's reused-slot residue check reads (`prepare.residue` in local-ci.json;
+    # UAMS-Web/uams-statamic-archive#1889).
     # Pinned by tests/Feature/PhpstanTmpDirTest.php so an edit cannot silently
     # restore the shared default.
     tmpDir: storage/phpstan

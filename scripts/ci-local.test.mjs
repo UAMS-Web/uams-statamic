@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { DEPENDENCIES_JOB, RETIRED_FLAGS, runnerArgs, withDependencies } from './ci-local.mjs'
+import { DEPENDENCIES_JOB, JOB_INPUTS, PHP_JOB, RETIRED_FLAGS, runnerArgs, withDependencies } from './ci-local.mjs'
 import { pointerBase, tokenEnv } from './ci-job.mjs'
-import { composerDrift, npmDrift, strandedEntries } from './prepare-dependencies.mjs'
+import { composerDrift, npmDrift, patchDrift, strandedEntries } from './prepare-dependencies.mjs'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -11,21 +11,31 @@ import { join } from 'node:path'
 // silently, a drift report that reads a stale tree as current.
 
 describe('ci-local.mjs argument translation', () => {
-    it('puts the dependencies job first in a --jobs subset that lacks it', () => {
-        // Without it a reused slot runs `pest` against whatever vendor/ it held last
-        expect(withDependencies('pest')).toBe('dependencies,pest')
-        expect(withDependencies(' pint , rector ')).toBe('dependencies,pint,rector')
+    it('adds the php and dependencies jobs to a --jobs subset that lacks them', () => {
+        // Without dependencies a reused slot runs `pest` against whatever vendor/ it held last;
+        // without php the runner resolves no PHP, and the gates run whatever php is on PATH
+        expect(withDependencies('pest')).toBe('php,dependencies,pest')
+        expect(withDependencies(' pint , rector ')).toBe('php,dependencies,pint,rector')
     })
 
-    it('leaves a --jobs subset that already names the dependencies job as it is', () => {
-        expect(withDependencies('pest,dependencies')).toBe('pest,dependencies')
-        expect(DEPENDENCIES_JOB).toBe('dependencies')
+    it('adds nothing a --jobs subset already names', () => {
+        expect(withDependencies('pest,dependencies,php')).toBe('pest,dependencies,php')
+        expect(withDependencies('dependencies,pest')).toBe('php,dependencies,pest')
+        expect([PHP_JOB, DEPENDENCIES_JOB]).toEqual(['php', 'dependencies'])
+    })
+
+    it('adds the build job to a subset that names browser, which reuses its bundles', () => {
+        // browser runs with --skip-build: without build it tests an earlier commit's bundles
+        expect(JOB_INPUTS.browser).toBe('build')
+        expect(withDependencies('browser')).toBe('php,dependencies,build,browser')
+        expect(withDependencies('browser,build')).toBe('php,dependencies,browser,build')
+        expect(withDependencies('build')).toBe('php,dependencies,build')
     })
 
     it('translates the private runner\'s spellings of all and the branch flag', () => {
         expect(runnerArgs(['-b', 'feature', '--jobs', 'all'])).toEqual(['--branch', 'feature', '--all'])
         expect(runnerArgs(['-j', 'all'])).toEqual(['--all'])
-        expect(runnerArgs(['--branch', 'feature', '-j', 'pest'])).toEqual(['--branch', 'feature', '--jobs', 'dependencies,pest'])
+        expect(runnerArgs(['--branch', 'feature', '-j', 'pest'])).toEqual(['--branch', 'feature', '--jobs', 'php,dependencies,pest'])
     })
 
     it('passes every other argument through unchanged', () => {
@@ -109,6 +119,32 @@ describe('prepare-dependencies.mjs drift detection', () => {
         const installed = { packages: { 'node_modules/opt': { version: '1.0.0' } } }
 
         expect(npmDrift(lock, installed)).toEqual(['node_modules/opt: 2.0.0 (installed 1.0.0)'])
+    })
+
+    it('reports patched packages vendor/ is not recorded as carrying, and none once the record matches', () => {
+        // composer install reports "Nothing to install" for a package whose patch is new, so a
+        // version comparison alone passes an unpatched vendor/ (#1743)
+        const dir = mkdtempSync(join(tmpdir(), 'patch-drift-'))
+        const lockText = JSON.stringify({ _hash: 'h', patches: { 'a/a': [{ description: 'x', url: 'patches/a.patch', sha256: 's' }] } })
+
+        try {
+            mkdirSync(join(dir, 'vendor', 'composer'), { recursive: true })
+            writeFileSync(join(dir, 'vendor', 'composer', 'installed.json'), JSON.stringify({ packages: [{ name: 'a/a' }, { name: 'b/b' }] }))
+            writeFileSync(join(dir, 'patches.lock.json'), lockText)
+
+            // No record: every installed patched package
+            expect(patchDrift(dir)).toEqual(['a/a'])
+
+            // A record of a different lock
+            writeFileSync(join(dir, 'vendor', '.local-ci-patches.lock.json'), lockText.replace('"s"', '"t"'))
+            expect(patchDrift(dir)).toEqual(['a/a'])
+
+            // The same lock
+            writeFileSync(join(dir, 'vendor', '.local-ci-patches.lock.json'), lockText)
+            expect(patchDrift(dir)).toEqual([])
+        } finally {
+            rmSync(dir, { recursive: true, force: true })
+        }
     })
 
     it('finds files stranded in an uninitialized submodule directory, and none in an initialized or absent one', () => {
