@@ -251,3 +251,152 @@ it('the audit command reports completeness and exits zero', function (): void {
         ->expectsOutputToContain('job_title org-link completeness')
         ->assertExitCode(0);
 });
+
+/**
+ * Save an `organizations` entry that carries `job_title` rows of its own, so a
+ * scan that forgot to scope to `people` would pick it up.
+ *
+ * @param  array<int, array<string, mixed>>  $jobTitle  Replicator rows.
+ */
+function deptNonPersonWithRoles(string $id, array $jobTitle): void
+{
+    /** @var EntryObject $entry */
+    $entry = Entry::make();
+    /** @var EntryObject $entry */
+    $entry = $entry->collection('organizations');
+    /** @var EntryObject $entry */
+    $entry = $entry->id($id);
+    /** @var EntryObject $entry */
+    $entry = $entry->slug($id);
+    /** @var EntryObject $entry */
+    $entry = $entry->locale('default');
+    /** @var EntryObject $entry */
+    $entry = $entry->published(true);
+    /** @var EntryObject $entry */
+    $entry = $entry->data(['title' => 'Not a person '.$id, 'job_title' => $jobTitle]);
+    $entry->saveQuietly();
+}
+
+it('seeds a zero audit row for every mapped set when there is no people collection', function (): void {
+    $people = CollectionFacade::findByHandle('people');
+    Assert::assertInstanceOf(Collection::class, $people);
+    $people->delete();
+
+    $report = deptPeopleSvc()->auditRoleLinkCompleteness();
+
+    expect($report)->toHaveKeys([
+        'academic_leadership_role',
+        'faculty_role_title',
+        'clinical_leadership_role',
+        'institutional_leadership_role',
+        'institutional_role',
+    ])
+        ->and($report['academic_leadership_role'])->toBe(['link' => 'department', 'leadership' => true, 'rows' => 0, 'linked' => 0])
+        ->and($report['clinical_leadership_role'])->toBe(['link' => 'service_line', 'leadership' => true, 'rows' => 0, 'linked' => 0]);
+});
+
+it('audits only published people, not drafts or entries in other collections', function (): void {
+    deptPerson('chair', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]]);
+    deptPerson('draft-chair', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]], published: false);
+    deptNonPersonWithRoles('org-with-roles', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]]);
+
+    $report = deptPeopleSvc()->auditRoleLinkCompleteness();
+
+    expect($report['academic_leadership_role']['rows'])->toBe(1)
+        ->and($report['academic_leadership_role']['linked'])->toBe(1);
+});
+
+it('does not count an empty or non-string organization id as a link', function (): void {
+    deptPerson('blank-link', [['type' => 'academic_leadership_role', 'department' => ['']]]);
+    deptPerson('int-link', [['type' => 'academic_leadership_role', 'department' => [5]]]);
+
+    $report = deptPeopleSvc()->auditRoleLinkCompleteness();
+
+    expect($report['academic_leadership_role']['rows'])->toBe(2)
+        ->and($report['academic_leadership_role']['linked'])->toBe(0);
+});
+
+it('reports the audit leadership flag as a boolean, defaulting to false', function (): void {
+    config(['department_hub.people_role_map' => [
+        'custom_role' => [
+            ['set' => 'custom_leadership', 'link' => 'department', 'leadership' => 1],
+            ['set' => 'custom_member', 'link' => 'department'],
+        ],
+    ]]);
+
+    $report = deptPeopleSvc()->auditRoleLinkCompleteness();
+
+    expect($report['custom_leadership']['leadership'])->toBeTrue()
+        ->and($report['custom_member']['leadership'])->toBeFalse();
+});
+
+it('returns no people for an organization that has no id yet', function (): void {
+    /** @var EntryObject $org */
+    $org = Entry::make();
+    /** @var EntryObject $org */
+    $org = $org->collection('organizations');
+    /** @var EntryObject $org */
+    $org = $org->data(['title' => 'Unsaved org', 'organization_role' => 'department_academic']);
+
+    deptPerson('chair', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]]);
+
+    expect($org->id())->toBeNull()
+        ->and(deptPeopleIds(deptPeopleSvc()->resolvePeople($org)))->toBe([]);
+});
+
+it('treats an empty organization role as unmapped even when the map has an empty key', function (): void {
+    config(['department_hub.people_role_map' => [
+        '' => [['set' => 'academic_leadership_role', 'link' => 'department', 'leadership' => true]],
+    ]]);
+
+    $org = deptOrg('org-blank-role', '');
+    deptPerson('chair', [['type' => 'academic_leadership_role', 'department' => ['org-blank-role']]]);
+
+    expect(deptPeopleIds(deptPeopleSvc()->resolvePeople($org)))->toBe([]);
+});
+
+it('treats a descriptor with no leadership flag as a non-leadership set', function (): void {
+    config(['department_hub.people_role_map' => [
+        'custom_role' => [['set' => 'academic_leadership_role', 'link' => 'department']],
+    ]]);
+
+    $org = deptOrg('org-custom', 'custom_role');
+    deptPerson('member', [['type' => 'academic_leadership_role', 'department' => ['org-custom']]]);
+
+    expect(deptPeopleIds(deptPeopleSvc()->resolveLeadership($org)))->toBe([])
+        ->and(deptPeopleIds(deptPeopleSvc()->resolvePeople($org)))->toBe(['member']);
+});
+
+it('finds a leadership set listed after a non-leadership one', function (): void {
+    config(['department_hub.people_role_map' => [
+        'custom_role' => [
+            ['set' => 'faculty_role_title', 'link' => 'department', 'leadership' => false],
+            ['set' => 'academic_leadership_role', 'link' => 'department', 'leadership' => true],
+        ],
+    ]]);
+
+    $org = deptOrg('org-custom', 'custom_role');
+    deptPerson('chair', [['type' => 'academic_leadership_role', 'department' => ['org-custom']]]);
+    deptPerson('prof', [['type' => 'faculty_role_title', 'department' => ['org-custom']]]);
+
+    expect(deptPeopleIds(deptPeopleSvc()->resolveLeadership($org)))->toBe(['chair']);
+});
+
+it('derives people from the people collection only', function (): void {
+    $org = deptOrg('org-anesthesiology', 'department_academic');
+
+    deptPerson('chair', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]]);
+    deptNonPersonWithRoles('org-with-roles', [['type' => 'academic_leadership_role', 'department' => ['org-anesthesiology']]]);
+
+    expect(deptPeopleIds(deptPeopleSvc()->resolvePeople($org)))->toBe(['chair']);
+});
+
+it('matches an organization id exactly, not by loose numeric comparison', function (): void {
+    // '100' == '1e2' under PHP's loose comparison of numeric strings.
+    $org = deptOrg('100', 'department_academic');
+
+    deptPerson('look-alike', [['type' => 'academic_leadership_role', 'department' => ['1e2']]]);
+    deptPerson('exact', [['type' => 'academic_leadership_role', 'department' => ['100']]]);
+
+    expect(deptPeopleIds(deptPeopleSvc()->resolvePeople($org)))->toBe(['exact']);
+});
