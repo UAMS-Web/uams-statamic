@@ -24,6 +24,7 @@
         "php": "^8.4",
         "ext-imagick": "*",
         "cweagans/composer-patches": "^2.0",
+        "daun/statamic-loupe": "^4.2",
         "el-schneider/statamic-admin-bar": "^0.3.2",
         "ezyang/htmlpurifier": "^4.19",
         "jacksleight/statamic-bard-mutator": "^3.0.5",

@@ -34,7 +34,7 @@ return [
     'indexes' => [
 
         'default' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             // Collections only — taxonomy terms and assets are deliberately kept
             // out of the unified site search. The `ExcludeNonSearchableCollections`
             // scope then removes the infrastructure / non-reader-facing collections
@@ -69,7 +69,7 @@ return [
         // Collection Entries
 
         'clinical_providers' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_providers',
             'fields' => [
                 'alternate_name_list',
@@ -88,7 +88,7 @@ return [
         ],
 
         'people' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:people',
             'fields' => [
                 'alternate_name_list',
@@ -105,7 +105,7 @@ return [
         ],
 
         'clinical_locations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_locations',
             'fields' => [
                 'title',
@@ -126,7 +126,7 @@ return [
         ],
 
         'clinical_conditions' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_conditions',
             'fields' => [
                 'title',
@@ -138,7 +138,7 @@ return [
         ],
 
         'clinical_expertise' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_expertise',
             // Drop Areas of Expertise an editor has flagged out of interactive
             // search (UAMS-Web/uams-statamic-archive#1060/UAMS-Web/uams-statamic-archive#1438) while they stay published, routable, and in the
@@ -155,7 +155,7 @@ return [
         ],
 
         'clinical_services' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_services',
             'fields' => [
                 'title',
@@ -167,7 +167,7 @@ return [
         ],
 
         'clinical_resources' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_resources',
             'fields' => [
                 'title',
@@ -177,7 +177,7 @@ return [
         ],
 
         'posts' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:posts',
             'fields' => [
                 'title',
@@ -193,7 +193,7 @@ return [
         // topic/root entries carry only `title` here and are filtered out of the
         // results (the scope restricts hits to published `article` entries).
         'knowledge_bases' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:knowledge_bases',
             'fields' => [
                 'title',
@@ -204,7 +204,7 @@ return [
         ],
 
         'calculators' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:calculators',
             'fields' => [
                 'title',
@@ -215,7 +215,7 @@ return [
         // Taxonomy Terms
 
         'audiences' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:audiences',
             'fields' => [
                 'title',
@@ -228,7 +228,7 @@ return [
         ],
 
         'drugs' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:drugs',
             'fields' => [
                 'title',
@@ -248,7 +248,7 @@ return [
         ],
 
         'membership_organizations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:membership_organizations',
             'fields' => [
                 'title',
@@ -261,7 +261,7 @@ return [
         ],
 
         'certification_organizations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:certification_organizations',
             'fields' => [
                 'title',
@@ -274,7 +274,7 @@ return [
         ],
 
         'certifications' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:certifications',
             'fields' => [
                 'title',
@@ -289,7 +289,7 @@ return [
         ],
 
         'clinical_specializations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_specializations',
             'fields' => [
                 'title',
@@ -307,7 +307,7 @@ return [
         ],
 
         'credentials' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:credentials',
             'fields' => [
                 'title',
@@ -320,7 +320,7 @@ return [
         ],
 
         'education_organizations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:education_organizations',
             'fields' => [
                 'title',
@@ -333,7 +333,7 @@ return [
         ],
 
         'education_types' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:education_types',
             'fields' => [
                 'title',
@@ -345,7 +345,7 @@ return [
         ],
 
         'facilities' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:facilities',
             'fields' => [
                 'title',
@@ -358,7 +358,7 @@ return [
         ],
 
         'fields_of_study' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:fields_of_study',
             // `subject_matter` was a `terms_search_index` relationship indexed raw
             // (term references, not text). It is the field-of-study's association,
@@ -374,7 +374,7 @@ return [
         ],
 
         'patient_types' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:patient_types',
             'fields' => [
                 'title',
@@ -386,7 +386,7 @@ return [
         ],
 
         'regions' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:regions',
             'fields' => [
                 'title',
@@ -398,7 +398,7 @@ return [
         // collection (UAMS-Web/uams-statamic-archive#1863), so this index sources from the collection now that
         // the `taxonomy:people_groups` source no longer exists.
         'people_groups' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:people_groups',
             'fields' => [
                 'title',
@@ -406,7 +406,7 @@ return [
         ],
 
         'affiliations_hospital' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:affiliations_hospital',
             'fields' => [
                 'title',
@@ -415,7 +415,7 @@ return [
         ],
 
         'audio_series' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:audio_series',
             'fields' => [
                 'title',
@@ -423,7 +423,7 @@ return [
         ],
 
         'organizations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:organizations',
             // The non-computed inputs to the generated title, so an editor can find an
             // entry by its Workday name, its Workday ID, or its public label - not only
@@ -442,7 +442,7 @@ return [
         ],
 
         'geographic_locations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:geographic_locations',
             'fields' => [
                 'title',
@@ -456,7 +456,7 @@ return [
         ],
 
         'google_business_profile_categories' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:google_business_profile_categories',
             'fields' => [
                 'title',
@@ -464,7 +464,7 @@ return [
         ],
 
         'location_types' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:location_types',
             'fields' => [
                 'title',
@@ -474,7 +474,7 @@ return [
         // `logos_item_categories` migrated from a flat taxonomy to a structured
         // collection (UAMS-Web/uams-statamic-archive#1863), alongside `people_groups`.
         'logos_item_categories' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:logos_item_categories',
             'fields' => [
                 'title',
@@ -484,7 +484,7 @@ return [
         // `logos_item_labels` followed as a site-scoped structured collection
         // (UAMS-Web/uams-statamic-archive#2533), so this index sources from the collection.
         'logos_item_labels' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:logos_item_labels',
             'fields' => [
                 'title',
@@ -492,7 +492,7 @@ return [
         ],
 
         'other_specialties_all' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:other_specialties',
             ],
@@ -507,7 +507,7 @@ return [
         ],
 
         'other_specialties' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:other_specialties',
             ],
@@ -522,7 +522,7 @@ return [
         ],
 
         'portals' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:portals',
             'fields' => [
                 'title',
@@ -533,7 +533,7 @@ return [
         // collection (UAMS-Web/uams-statamic-archive#1433), so this index sources from the collection now that
         // the `taxonomy:post_categories` source no longer exists (UAMS-Web/uams-statamic-archive#1483).
         'post_categories' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:post_categories',
             'fields' => [
                 'title',
@@ -543,7 +543,7 @@ return [
         // `post_tags` became a site-scoped structured collection (UAMS-Web/uams-statamic-archive#2532), so this
         // index sources from the collection now that the taxonomy no longer exists.
         'post_tags' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:post_tags',
             'fields' => [
                 'title',
@@ -551,7 +551,7 @@ return [
         ],
 
         'professional_and_leadership_development_activities' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:professional_and_leadership_development_activities',
             ],
@@ -565,7 +565,7 @@ return [
         ],
 
         'professional_and_leadership_development_organizations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:professional_and_leadership_development_organizations',
             ],
@@ -580,7 +580,7 @@ return [
         ],
 
         'professional_and_leadership_development_organizations_all' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:professional_and_leadership_development_organizations',
                 'taxonomy:certification_organizations',
@@ -602,7 +602,7 @@ return [
         // `data_source` / `list_date` fields live on the list blueprint only, so
         // category entries index by `title` alone (the missing fields are skipped).
         'recognition_lists' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:recognition_lists',
             'fields' => [
                 'title',
@@ -617,7 +617,7 @@ return [
         ],
 
         'recognition_lists_publications' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:recognition_lists_publications',
             // `schema_object` is an `entries` pointer to the schema_objects
             // collection (entry references, not text) and is not a publication's
@@ -633,7 +633,7 @@ return [
         ],
 
         'recognition_lists_series' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:recognition_lists_series',
             'fields' => [
                 'title',
@@ -648,7 +648,7 @@ return [
         ],
 
         'recognition_lists_data_sources' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:recognition_lists_data_sources',
             // `schema_object` is an `entries` pointer to the schema_objects
             // collection (entry references, not text) and is not a data source's
@@ -664,7 +664,7 @@ return [
         ],
 
         'research_specialties_all' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:research_specialties_acgme',
                 'taxonomy:research_specialties_non_accredited',
@@ -680,7 +680,7 @@ return [
         ],
 
         'research_specialties_acgme' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:research_specialties_acgme',
             ],
@@ -695,7 +695,7 @@ return [
         ],
 
         'research_specialties_non_accredited' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:research_specialties_non_accredited',
             ],
@@ -710,7 +710,7 @@ return [
         ],
 
         'residency_years' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:residency_years',
             'fields' => [
                 'title',
@@ -718,7 +718,7 @@ return [
         ],
 
         'specialties_all' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:specialties_acgme',
                 'taxonomy:specialties_aoa',
@@ -738,7 +738,7 @@ return [
         ],
 
         'medical_specialties_all' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:specialties_acgme',
                 'taxonomy:specialties_aoa',
@@ -755,7 +755,7 @@ return [
         ],
 
         'specialties_acgme' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:specialties_acgme',
             ],
@@ -770,7 +770,7 @@ return [
         ],
 
         'specialties_aoa' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:specialties_aoa',
             ],
@@ -785,7 +785,7 @@ return [
         ],
 
         'specialties_non_accredited' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => [
                 'taxonomy:specialties_non_accredited',
             ],
@@ -804,7 +804,7 @@ return [
         // query (UAMS-Web/uams-statamic-archive#2823). Its fields are the union of the `subject_matter` index below and
         // the `clinical_specializations` index above.
         'subject_concepts' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => ['collection:subject_matter', 'collection:clinical_specializations'],
             'fields' => [
                 'title',
@@ -830,7 +830,7 @@ return [
         ],
 
         'subject_matter' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:subject_matter',
             'fields' => [
                 'title',
@@ -848,7 +848,7 @@ return [
         ],
 
         'video_series' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'taxonomy:video_series',
             'fields' => [
                 'title',
@@ -870,6 +870,10 @@ return [
     */
 
     'drivers' => [
+
+        'loupe' => [
+            'path' => storage_path('statamic/loupe'),
+        ],
 
         'local' => [
             'path' => storage_path('statamic/search'),
