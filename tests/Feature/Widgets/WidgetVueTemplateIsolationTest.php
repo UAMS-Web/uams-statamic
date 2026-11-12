@@ -49,7 +49,7 @@ it('keeps the duplicate-people widget\'s entry titles inside a v-pre root', func
 });
 
 it('keeps the incomplete-entries widget\'s entry titles inside a v-pre root', function (): void {
-    $html = view('widgets.incomplete_published_entries', [
+    $html = view('aether-incomplete-entries::widgets.incomplete_published_entries', [
         'title' => 'Published Entries With Validation Issues',
         'entries' => collect([[
             'title' => WIDGET_TEMPLATE_PAYLOAD,
@@ -80,7 +80,7 @@ it('keeps the incomplete-entries widget\'s entry titles inside a v-pre root', fu
 });
 
 it('keeps the incomplete-entries widget\'s not-computed state inside the v-pre root', function (): void {
-    $html = view('widgets.incomplete_published_entries', [
+    $html = view('aether-incomplete-entries::widgets.incomplete_published_entries', [
         'title' => 'Published Entries With Validation Issues',
         'entries' => collect(),
         'pagination' => null,
