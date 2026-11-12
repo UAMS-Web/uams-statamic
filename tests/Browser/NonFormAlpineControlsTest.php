@@ -445,8 +445,14 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
     // fires against the index of the page's active tab
     $page->type('#site-search-q', 'card');
 
+    // Wait on what the assertions below read: the options, which x-for renders, AND the
+    // listbox's visibility, which the x-show effect applies. They need not land in the
+    // same read, so polling on the options alone let a macOS run see 3 options in a
+    // listbox still at display:none (#591).
     for ($waited = 0.0; $waited <= 15.0; $waited += 0.2) {
-        if ($page->script('(() => document.querySelectorAll("#site-search-suggestions [role=option]").length)()') === 3) {
+        if ($page->script('(() => { const list = document.querySelector("#site-search-suggestions");'
+            .' return list.querySelectorAll("[role=option]").length === 3'
+            .' && getComputedStyle(list).display !== "none"; })()') === true) {
             break;
         }
 

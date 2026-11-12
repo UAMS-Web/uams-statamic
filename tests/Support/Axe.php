@@ -7,8 +7,8 @@ declare(strict_types=1);
 | Accessibility (axe-core) smoke helpers (issue UAMS-Web/uams-statamic-archive#1046)
 |--------------------------------------------------------------------------
 |
-| pestphp/pest-plugin-browser bundles axe-core and injects `window.axe` into
-| every page it loads, so no npm dependency is needed. These helpers run a scan
+| pestphp/pest-plugin-browser bundles axe-core, and `runAxe()` loads that copy
+| into the page before scanning, so no npm dependency is needed. These helpers run a scan
 | scoped to the automatable WCAG 2.0/2.1 A & AA rule sets, surface the FULL
 | violation report (every impact level) in the job output for visibility, and
 | fail only on `serious`/`critical` — the automatable failures the §504 gate
@@ -19,6 +19,7 @@ declare(strict_types=1);
 |
 */
 
+use Composer\InstalledVersions;
 use Pest\Browser\Api\ArrayablePendingAwaitablePage;
 use Pest\Browser\Api\PendingAwaitablePage;
 use Pest\Browser\Api\Webpage;
@@ -54,6 +55,22 @@ function loadAccessibilityFixture($page, string $bodyHtml): void
  */
 function runAxe($page): array
 {
+    // Since pest-plugin-browser v5.2.0 axe-core is no longer present on every
+    // page: the plugin injects it on demand, from its own bundled copy, only
+    // inside its accessibility assertion. Load the same copy the same way here.
+    // Unlike the plugin, this loads it into the top frame only: the scanned
+    // fixtures carry no iframe, and a page that does needs the frames covered.
+    if ($page->script('typeof window.axe === "undefined"') === true) {
+        $source = InstalledVersions::getInstallPath('pestphp/pest-plugin-browser').'/resources/js/axe.min.js';
+        $axe = is_file($source) ? file_get_contents($source) : false;
+
+        if ($axe === false) {
+            throw new RuntimeException('Cannot read the axe-core copy bundled with pest-plugin-browser at '.$source);
+        }
+
+        $page->script($axe);
+    }
+
     $violations = $page->script(
         'async () => (await window.axe.run(document, {'
         .'runOnly: {type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]}'

@@ -183,36 +183,33 @@ final class CountyEnumGenerator
                 $fullName
             );
 
-            // Check if this case ID has not been processed yet
-            if (! isset($countiesByCaseId[$caseId])) {
-                // Initialize county data array for this case ID
-                $countiesByCaseId[$caseId] = [
-                    'fullName' => $fullName,
-                    'baseName' => $baseName,
-                    'fipsCode' => $countyFips3,
-                    'parentUspsCode' => $usps ?? '',
-                    'parentFipsCode' => $parentFips,
-                    'geoId' => (string) ($rec['GEOID'] ?? ''),
-                    'nationalStandardCode' => (string) ($rec['COUNTYNS'] ?? ''),
-                    'fipsClassCode' => (string) ($rec['COUNTYCC'] ?? ''),
-                    'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
-                    'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
-                    'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
-                    'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
-                    'areaLand' => (string) ($rec['AREALAND'] ?? ''),
-                    'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
-                    'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
-                    'centroidGeo' => [
-                        (string) ($rec['CENTLAT'] ?? ''),
-                        (string) ($rec['CENTLON'] ?? ''),
-                    ],
-                    'internalPointGeo' => [
-                        (string) ($rec['INTPTLAT'] ?? ''),
-                        (string) ($rec['INTPTLON'] ?? ''),
-                    ],
-                    'caseId' => $caseId,
-                ];
-            }
+            // Initialize county data array for this case ID
+            $countiesByCaseId[$caseId] ??= [
+                'fullName' => $fullName,
+                'baseName' => $baseName,
+                'fipsCode' => $countyFips3,
+                'parentUspsCode' => $usps ?? '',
+                'parentFipsCode' => $parentFips,
+                'geoId' => (string) ($rec['GEOID'] ?? ''),
+                'nationalStandardCode' => (string) ($rec['COUNTYNS'] ?? ''),
+                'fipsClassCode' => (string) ($rec['COUNTYCC'] ?? ''),
+                'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
+                'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
+                'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
+                'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
+                'areaLand' => (string) ($rec['AREALAND'] ?? ''),
+                'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
+                'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
+                'centroidGeo' => [
+                    (string) ($rec['CENTLAT'] ?? ''),
+                    (string) ($rec['CENTLON'] ?? ''),
+                ],
+                'internalPointGeo' => [
+                    (string) ($rec['INTPTLAT'] ?? ''),
+                    (string) ($rec['INTPTLON'] ?? ''),
+                ],
+                'caseId' => $caseId,
+            ];
 
             // Clean up variables to free up memory
             unset(
@@ -368,8 +365,8 @@ final class CountyEnumGenerator
         $content .= " * 2. Open app/Enums/County.php\n";
         $content .= " * 3. Replace the existing case list in the County enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the CountyInfo attribute class and any other methods in\n";
-        $content .= " *    County.php\n";
+        $content .= " * 4. Keep any other methods in County.php; the CountyInfo attribute\n";
+        $content .= " *    class is in CountyInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";

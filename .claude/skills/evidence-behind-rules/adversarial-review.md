@@ -37,7 +37,7 @@ History: [the introduction](../../history/adversarial-review.md).
 
 4. **Mechanism: a multi-agent `Workflow` review** when orchestration is available (the Ultracode opt-in, or the user asked for a workflow). Spawn **N independent reviewer agents over the diff**, each with a **distinct lens chosen for the change's actual risk surface** (e).g. *regression-safety*, *spec/acceptance-criteria correctness*, *edge-cases & test-rigor*, and a dedicated *security / attacker* lens for the repository's high-risk surfaces.
 
-   This repo's high-risk surfaces: the WordPress importer parser in `vendor/uams-web/wordpress-importer/src/`, Antlers templates (raw-by-default, so unescaped output is the norm) CP controllers and authorization, and any SSRF / path-traversal / injection seam.
+   This repo's high-risk surfaces: the WordPress importer parser in `vendor/uams-web/aether-wordpress-importer/src/`, Antlers templates (raw-by-default, so unescaped output is the norm) CP controllers and authorization, and any SSRF / path-traversal / injection seam.
 
    Prompt each agent to **refute** (find the break), default to skeptical, and pin the context it must **not** relitigate (settled decisions, the chosen format). Force **structured, schema-validated findings** (severity + a worked example + a wrong-vs-right outcome verified against the code). Launch it in the background, under the sequencing in step 2. Without orchestration, scale down to the same adversarial frame: `/code-review` for general correctness, `/security-review` for a security-sensitive diff, or a focused self-review hunting your own blind spots.
 

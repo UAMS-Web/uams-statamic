@@ -4789,11 +4789,9 @@ class SchemaOutputService
             // Skip overlay keys this template cannot read (avoids term queries for
             // unrelated snapshot fields unless primary-term wiring needs them).
             if (! $templateReferencesPrimaryRelatedTaxonomyTerm) {
-                if ($referencedIdentifiers === null) {
-                    $referencedIdentifiers = $this->antlersTemplateReferencedIdentifierSet(
-                        $template
-                    );
-                }
+                $referencedIdentifiers ??= $this->antlersTemplateReferencedIdentifierSet(
+                    $template
+                );
 
                 if (! isset($referencedIdentifiers[$overlayKey])) {
                     unset($overlayKey);

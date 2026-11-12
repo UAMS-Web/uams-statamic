@@ -210,25 +210,23 @@ class InternationalPhoneticAlphabet extends BaseValidationRule implements Valida
             $googleTtsNormalization
         );
 
-        if (! isset(self::$transcriptionValidators[$key])) {
-            self::$transcriptionValidators[$key] = TranscriptionValidator::fromDisk(
-                null,
-                null,
-                // Equivalent: the inventory itself allows `/`, `[` and `]`, so stripping
-                // them changes no verdict; disallowed delimiters are refused before this.
-                // @pest-mutate-ignore: TernaryNegated
-                $allowDelimiters
-                    ? TranscriptionValidator::STRIP_DELIMITERS_WIKIMEDIA_SLASH_BRACKETS
-                    : TranscriptionValidator::STRIP_DELIMITERS_NONE,
-                null,
-                $normalize,
-                $normalize,
-                // The constructor guarantees Google/TTS implies normalize
-                $googleTtsNormalization,
-                TranscriptionValidator::SEGMENT_SCALARS,
-                false
-            );
-        }
+        self::$transcriptionValidators[$key] ??= TranscriptionValidator::fromDisk(
+            null,
+            null,
+            // Equivalent: the inventory itself allows `/`, `[` and `]`, so stripping
+            // them changes no verdict; disallowed delimiters are refused before this.
+            // @pest-mutate-ignore: TernaryNegated
+            $allowDelimiters
+                ? TranscriptionValidator::STRIP_DELIMITERS_WIKIMEDIA_SLASH_BRACKETS
+                : TranscriptionValidator::STRIP_DELIMITERS_NONE,
+            null,
+            $normalize,
+            $normalize,
+            // The constructor guarantees Google/TTS implies normalize
+            $googleTtsNormalization,
+            TranscriptionValidator::SEGMENT_SCALARS,
+            false
+        );
 
         return self::$transcriptionValidators[$key];
     }

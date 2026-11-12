@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\ContentRoot;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Support\Collection as IlluminateCollection;
 use Illuminate\Support\Facades\Config;
 use Statamic\Entries\Collection as StatamicCollection;
@@ -14,6 +15,7 @@ use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\CollectionTree;
 use Tests\Support\CollectionTreeIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 use Tests\Support\ThrowawayRoot;
 
 uses(CollectionTreeIsolatedTestCase::class);
@@ -33,6 +35,10 @@ uses(CollectionTreeIsolatedTestCase::class);
  *
  * @command  php artisan test --compact tests/Feature/CollectionTreeIsolationTest.php
  */
+beforeEach(function (): void {
+    // Deleting a pages entry records a redirect in the redirects global, which stays on the shared mirror (#558)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+});
 
 /** Forward slashes, so a Windows path compares against `base_path()` at all. */
 function treeIsolationSlashes(string $path): string

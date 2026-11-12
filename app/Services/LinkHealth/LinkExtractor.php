@@ -387,6 +387,7 @@ final class LinkExtractor
             $type === 'bard' => $this->walkBard($value, BlueprintFieldMap::sets($config['sets'] ?? []), $context, $here),
             $type === 'grid' => $this->walkGrid($value, BlueprintFieldMap::normalize($config['fields'] ?? []), $context, $here),
             $type === 'group' => $this->walkGroup($value, BlueprintFieldMap::normalize($config['fields'] ?? []), $context, $here),
+            $type === 'table' => $this->walkTable($value, $context, $here),
             isset(self::RELATION_TYPES[$type]) => $this->collectRelation($value, self::RELATION_TYPES[$type], $context, $here),
             // Class 3 in this file's docblock: the strict flag on a string against `list<string>`.
             // @pest-mutate-ignore: TrueToFalse
@@ -559,6 +560,37 @@ final class LinkExtractor
     {
         if (\is_array($value)) {
             $this->walkFieldMap($value, $fields, $context, $path);
+        }
+    }
+
+    /**
+     * Walk a table's rows and scrape each cell as markup (#612).
+     *
+     * A cell holds HTML, including `statamic://entry::<id>` anchors that the
+     * `sanitize_table_cell` modifier resolves at render time and drops when the target is
+     * missing or unpublished. Extracting them here is what makes that drop visible in a report.
+     * The path names the row and the cell: `<field>.<row>.cells.<cell>`.
+     *
+     * @param  mixed  $value  The stored table value: a list of `['cells' => [<html>, ...]]` rows.
+     * @param  OccurrenceContext  $context  Which item is being walked.
+     * @param  list<string|int>  $path  Path segments already descended.
+     */
+    private function walkTable(mixed $value, OccurrenceContext $context, array $path): void
+    {
+        if (! \is_array($value)) {
+            return;
+        }
+
+        foreach ($value as $rowIndex => $row) {
+            $cells = \is_array($row) ? ($row['cells'] ?? null) : null;
+
+            if (! \is_array($cells)) {
+                continue;
+            }
+
+            foreach ($cells as $cellIndex => $cell) {
+                $this->collectMarkup($cell, $context, [...$path, $rowIndex, 'cells', $cellIndex]);
+            }
         }
     }
 

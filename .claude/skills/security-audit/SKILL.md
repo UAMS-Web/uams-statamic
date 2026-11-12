@@ -167,7 +167,7 @@ detection cannot run, the workflow keeps the Statamic behavior, the superset of 
 
 First-party here is `app/`, `routes/`, `config/`, `resources/`, `vendor/uams-web/` (the importer
 package the app consumes) and `.github/workflows/`; pass
-`firstParty: ['app/', 'routes/', 'config/', 'resources/views/', 'resources/js/', 'vendor/uams-web/wordpress-importer/src/', '.github/workflows/']`.
+`firstParty: ['app/', 'routes/', 'config/', 'resources/views/', 'resources/js/', 'vendor/uams-web/aether-wordpress-importer/src/', '.github/workflows/']`.
 
 ### 2. Run the workflow
 

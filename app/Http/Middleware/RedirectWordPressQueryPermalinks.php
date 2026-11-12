@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Exceptions\SiteHttpException;
 use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\StructuralRedirectSynthesizer;
-use App\Support\Redirects\RedirectStatus;
-use App\Support\Redirects\ValidityWindow;
-use App\Tags\FindRedirectRule;
-use App\Tags\RespondWithStatus;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException;
+use UAMSWeb\Aether\Redirects\Services\NotFoundRedirectResolver;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
+use UAMSWeb\Aether\Redirects\Support\ValidityWindow;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Serves the WordPress ugly-permalink redirects (`?p=` / `?page_id=`) the
@@ -57,7 +57,7 @@ class RedirectWordPressQueryPermalinks
      * Response codes that abort with a status rather than move the visitor,
      * mirroring the targetless branch of the serving template.
      *
-     * Deliberately the same set as {@see RespondWithStatus::SITE_RENDERED_CODES},
+     * Deliberately the same set {@see NotFoundRedirectResolver} renders on a 404,
      * because both must raise the *same* exception: the moment an
      * `errors/<code>.antlers.html` view exists, a bare `abort()` resolves it
      * through Laravel's `response()->view()`, which applies no layout and answers

@@ -328,9 +328,7 @@ final class Isco08EnumGenerator
                 continue;
             }
 
-            if (! isset($byCode[$code])) {
-                $byCode[$code] = [];
-            }
+            $byCode[$code] ??= [];
 
             $byCode[$code][$title] = true;
         }
@@ -405,9 +403,7 @@ final class Isco08EnumGenerator
         foreach ($units as $u) {
             $p = $this->parentCode($u);
             if ($p !== null && isset($unitSet[$p])) {
-                if (! isset($childrenByParent[$p])) {
-                    $childrenByParent[$p] = [];
-                }
+                $childrenByParent[$p] ??= [];
 
                 $childrenByParent[$p][] = $u;
             }

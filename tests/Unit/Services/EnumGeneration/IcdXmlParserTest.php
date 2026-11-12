@@ -109,14 +109,17 @@ it('parses invalid XML without raising a warning, and restores the libxml error 
  * Windows refuses to start a process whose environment block is too large, so the
  * size is reported with the reason.
  *
+ * PHP keys a variable whose name is all digits as an integer, so getenv() can
+ * return integer keys and the name is cast before it is measured.
+ *
  * @param  string|null  $warning  The message of the warning proc_open() raised, if any
- * @param  array<string, string>  $environment
+ * @param  array<array-key, string>  $environment  The environment the server was given, as getenv() returns it
  */
 function icdXmlServerStartFailure(?string $warning, array $environment): string
 {
     $bytes = 0;
     foreach ($environment as $name => $value) {
-        $bytes += strlen($name) + strlen($value) + 2;
+        $bytes += strlen((string) $name) + strlen($value) + 2;
     }
 
     $reason = $warning ?? 'proc_open() raised no error';
@@ -127,6 +130,33 @@ function icdXmlServerStartFailure(?string $warning, array $environment): string
         count($environment),
         $bytes
     );
+}
+
+/**
+ * The environment to start the server with: this process's own, minus
+ * PHP_CLI_SERVER_WORKERS, and minus every variable whose name PHP cannot hand
+ * back to proc_open().
+ *
+ * getenv() keys a variable whose name is all digits as an integer, and
+ * proc_open() writes an integer-keyed or empty-named entry into the block as its
+ * value alone, with no name and no `=`. Windows rejects that block, and the start
+ * fails with `CreateProcess failed: The parameter is incorrect`. Such a variable
+ * means nothing to the server, so it is left out rather than passed in a form
+ * that stops the server starting.
+ *
+ * @param  array<array-key, string>  $environment  The environment as getenv() returns it
+ * @return array<string, string>
+ */
+function icdXmlServerEnvironment(array $environment): array
+{
+    $passable = [];
+    foreach ($environment as $name => $value) {
+        if (is_string($name) && $name !== '' && $name !== 'PHP_CLI_SERVER_WORKERS') {
+            $passable[$name] = $value;
+        }
+    }
+
+    return $passable;
 }
 
 /**
@@ -169,8 +199,7 @@ function withIcdXmlServer(string $fileName, string $body, Closure $callback): mi
         // test and keep holding every lock descriptor they inherited, including the
         // content mirror's band lock, which test:seed-stache then cannot take. As a
         // single process the server is the child proc_terminate() signals.
-        $environment = getenv();
-        unset($environment['PHP_CLI_SERVER_WORKERS']);
+        $environment = icdXmlServerEnvironment(getenv());
 
         // Pipes rather than file descriptors: mutation testing replaces the file
         // stream wrapper, and a file descriptor spec then fails to open. The server
@@ -254,6 +283,35 @@ it('names the reason and the environment size when the server cannot start', fun
         'Could not start the local web server: proc_open() raised no error (environment: 2 variables, 10 bytes).',
     ],
 ]);
+
+it('counts an environment variable whose all-digit name PHP made an integer key', function () {
+    // getenv() keys a variable named "1" as the integer 1, which strict_types strlen() rejects
+    $environment = ['1' => 'x', 'AB' => 'cde'];
+
+    expect(array_key_first($environment))->toBeInt()
+        ->and(icdXmlServerStartFailure(null, $environment))
+        ->toBe('Could not start the local web server: proc_open() raised no error (environment: 2 variables, 11 bytes).');
+});
+
+it('leaves out of the server environment every variable proc_open() cannot pass back', function () {
+    $environment = ['1' => 'digits', '' => 'empty', 'PHP_CLI_SERVER_WORKERS' => '4', 'KIRK' => 'captain', 'SPOCK' => ''];
+
+    expect(icdXmlServerEnvironment($environment))->toBe(['KIRK' => 'captain', 'SPOCK' => '']);
+});
+
+it('starts the server while the environment holds a variable with an all-digit name', function () {
+    // On Windows, passing getenv()'s integer key for this variable to proc_open()
+    // fails with "CreateProcess failed: The parameter is incorrect".
+    putenv('1701=enterprise');
+
+    try {
+        expect(array_key_exists(1701, getenv()))->toBeTrue()
+            ->and(withIcdXmlServer('ok.txt', 'ok', fn (string $baseUrl): string => 'started'))
+            ->toBe('started');
+    } finally {
+        putenv('1701');
+    }
+});
 
 it('points the default fetch at the OpenPEPPOL ICD code list', function () {
     expect(IcdXmlParser::DEFAULT_ICD_XML_URL)

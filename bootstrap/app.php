@@ -6,7 +6,6 @@ use App\Cache\ScopeAliasCache;
 use App\Http\Middleware\ProtectEntry;
 use App\Http\Middleware\RedirectWordPressQueryPermalinks;
 use App\Http\Middleware\SecurityHeaders;
-use App\Http\Middleware\ServeRedirectDomainRequests;
 use App\Http\Middleware\TrustHosts;
 use App\Support\ContentMirror;
 use Illuminate\Foundation\Application;
@@ -37,10 +36,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Add security headers middleware
         $middleware->append(SecurityHeaders::class);
 
-        // Answer the vanity redirect domains' requests the edge passes on (UAMS-Web/uams-statamic-archive#2813).
-        // Global rather than in a route group, so a redirect domain's request is
-        // answered before routing and never reaches Statamic's catch-all route.
-        $middleware->append(ServeRedirectDomainRequests::class);
+        // The vanity redirect domains' requests (UAMS-Web/uams-statamic-archive#2813) are answered by
+        // the `uams-web/aether-redirects` add-on, whose provider pushes its own global
+        // middleware after this stack, so they are not registered here (#398).
 
         // Serve the WordPress ugly-permalink redirects (`?p=` / `?page_id=`) the
         // migration generator synthesizes (UAMS-Web/uams-statamic-archive#1657). Every other migration redirect is

@@ -89,9 +89,17 @@ $cleanUp = function (string $dir): void {
 /**
  * Run the guard and return [exitCode, stdout.stderr].
  *
+ * The two variables that mark a GitHub-hosted runner are removed unless the caller
+ * sets them (#586). This suite itself runs on hosted runners, where a subprocess
+ * would otherwise inherit `GITHUB_ACTIONS=true` and `RUNNER_ENVIRONMENT=github-hosted`
+ * and report every parallel share breach instead of failing it, so the gate-host
+ * assertions below would pass on a laptop and fail in CI. A `false` value makes
+ * Symfony Process unset the variable rather than pass it through.
+ *
+ * @param  array<string, string|false>  $environment  Values for `GITHUB_ACTIONS` and `RUNNER_ENVIRONMENT`
  * @return array{0: int, 1: string}
  */
-$runGuard = function (string $report, ?float $ceiling = null, string $band = 'parallel', ?float $shareCeiling = null) use ($script, $root): array {
+$runGuard = function (string $report, ?float $ceiling = null, string $band = 'parallel', ?float $shareCeiling = null, array $environment = []) use ($script, $root): array {
     // PHP_BINARY, not a bare `php`: the suite runs under an interpreter that is not
     // always the PATH default (Herd), and the repo root is the cwd both CI and
     // local-ci invoke from. Matches SkipBaselineGuardTest.
@@ -103,7 +111,16 @@ $runGuard = function (string $report, ?float $ceiling = null, string $band = 'pa
         $command[] = '--share-ceiling='.$shareCeiling;
     }
 
-    $process = new Process($command, $root);
+    // Unset both by default, then copy the caller's values over them. Narrowed
+    // value by value, since PHPStan applies no docblock to this closure's parameter.
+    $env = ['GITHUB_ACTIONS' => false, 'RUNNER_ENVIRONMENT' => false];
+    foreach ($environment as $name => $value) {
+        if (is_string($name) && (is_string($value) || $value === false)) {
+            $env[$name] = $value;
+        }
+    }
+
+    $process = new Process($command, $root, $env);
     $process->run();
 
     return [$process->getExitCode() ?? -1, $process->getOutput().$process->getErrorOutput()];
@@ -309,6 +326,112 @@ it('passes a class exactly at its share ceiling and exactly at the backstop', fu
 
     $cleanUp($shareDir);
     $cleanUp($backstopDir);
+});
+
+/**
+ * The environment GitHub sets on a hosted runner (#586).
+ *
+ * @var array<string, string>
+ */
+$hostedRunner = ['GITHUB_ACTIONS' => 'true', 'RUNNER_ENVIRONMENT' => 'github-hosted'];
+
+it('reports a parallel share breach on a GitHub-hosted runner without failing', function () use ($writeReport, $runGuard, $cleanUp, $band, $hostedRunner): void {
+    // #583's macOS sample, CI run 41964133422 attempt 1: 393.8s of 4568.5s, 8.62%.
+    // On the gate host this fails (next test); on a hosted runner it is reported.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SchemaJsonLdPodcastEpisodeTest', 393.8, 4568.5));
+
+    [$code, $output] = $runGuard($report, environment: $hostedRunner);
+
+    expect($code)->toBe(0);
+    expect($output)->toContain("reported and not failed on a GitHub-hosted runner: parallel band's Tests\Feature\SchemaJsonLdPodcastEpisodeTest is 393.8s, 8.62% of 4568.5s summed class time, share ceiling 7.50% (over by 1.12 points)");
+    expect($output)->toContain("::warning title=Slowest class over its share ceiling::Tests\Feature\SchemaJsonLdPodcastEpisodeTest is 8.62% of the parallel band, share ceiling 7.50%");
+    expect($output)->not->toContain('Slowest class EXCEEDED');
+    expect($output)->not->toContain('Slowest class OK');
+
+    $cleanUp($dir);
+});
+
+it('still fails the same parallel share breach on the gate host', function () use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // The control for the test above: the same report, with neither variable set.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SchemaJsonLdPodcastEpisodeTest', 393.8, 4568.5));
+
+    [$code, $output] = $runGuard($report);
+
+    expect($code)->toBe(1);
+    expect($output)->toContain("Slowest class EXCEEDED: parallel band's Tests\Feature\SchemaJsonLdPodcastEpisodeTest is 8.62% of 4568.5s summed class time, share ceiling 7.50%");
+    expect($output)->not->toContain('::warning');
+
+    $cleanUp($dir);
+});
+
+it('treats only GITHUB_ACTIONS=true with RUNNER_ENVIRONMENT=github-hosted as a hosted runner', function (array $environment, int $expected) use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // The detection fails closed: anything short of both values keeps the guard
+    // failing, so the gate host can never be mistaken for a hosted runner.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SchemaJsonLdPodcastEpisodeTest', 393.8, 4568.5));
+
+    [$code] = $runGuard($report, environment: $environment);
+
+    expect($code)->toBe($expected);
+
+    $cleanUp($dir);
+})->with([
+    'GitHub-hosted runner' => [['GITHUB_ACTIONS' => 'true', 'RUNNER_ENVIRONMENT' => 'github-hosted'], 0],
+    'self-hosted runner' => [['GITHUB_ACTIONS' => 'true', 'RUNNER_ENVIRONMENT' => 'self-hosted'], 1],
+    'no RUNNER_ENVIRONMENT' => [['GITHUB_ACTIONS' => 'true'], 1],
+    'empty RUNNER_ENVIRONMENT' => [['GITHUB_ACTIONS' => 'true', 'RUNNER_ENVIRONMENT' => ''], 1],
+    'no GITHUB_ACTIONS' => [['RUNNER_ENVIRONMENT' => 'github-hosted'], 1],
+    'GITHUB_ACTIONS not true' => [['GITHUB_ACTIONS' => 'false', 'RUNNER_ENVIRONMENT' => 'github-hosted'], 1],
+    'differently cased value' => [['GITHUB_ACTIONS' => 'TRUE', 'RUNNER_ENVIRONMENT' => 'GitHub-Hosted'], 1],
+    'neither set (the gate host)' => [[], 1],
+]);
+
+it('passes a parallel share at or under its ceiling on a hosted runner and on the gate host alike', function () use ($writeReport, $runGuard, $cleanUp, $band, $hostedRunner): void {
+    // 75s of 1000s is exactly 7.50%; 269.2s of 4005.5s is #583's fresh sample, 6.72%.
+    foreach ([[75.0, 1000.0, '7.50%'], [269.2, 4005.5, '6.72%']] as [$seconds, $summed, $share]) {
+        [$dir, $report] = $writeReport($band('Tests\Feature\SchemaJsonLdPodcastEpisodeTest', $seconds, $summed));
+
+        foreach ([$hostedRunner, []] as $environment) {
+            [$code, $output] = $runGuard($report, environment: $environment);
+
+            expect($code)->toBe(0);
+            expect($output)->toContain("Slowest class OK: parallel band's costliest class is Tests\Feature\SchemaJsonLdPodcastEpisodeTest at ".sprintf('%.1f', $seconds)."s, {$share}");
+            expect($output)->not->toContain('::warning');
+        }
+
+        $cleanUp($dir);
+    }
+});
+
+it('still fails the serial band and an unnamed band over their share ceilings on a hosted runner', function () use ($writeReport, $runGuard, $cleanUp, $band, $hostedRunner): void {
+    // #584 decided the parallel share only. 250s of 500s is 50%, over the serial
+    // band's 40% and the 7.5% an unnamed band inherits.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', 250.0, 500.0));
+
+    foreach (['serial', 'suite'] as $name) {
+        [$code, $output] = $runGuard($report, band: $name, environment: $hostedRunner);
+
+        expect($code)->toBe(1);
+        expect($output)->toContain("Slowest class EXCEEDED: {$name} band's Tests\Feature\SlowTest is 50.00%");
+        expect($output)->not->toContain('::warning');
+    }
+
+    $cleanUp($dir);
+});
+
+it('still fails a class over the backstop on a hosted runner, share breach or not', function () use ($writeReport, $runGuard, $cleanUp, $band, $hostedRunner): void {
+    // 1600s of 22600s is 7.08%, under the share ceiling; 1600s of 16000s is 10%,
+    // over it. The backstop fails both, since #584 did not touch it.
+    foreach ([[22600.0, 30], [16000.0, 40]] as [$summed, $fillers]) {
+        [$dir, $report] = $writeReport($band('Tests\Feature\HugeTest', 1600.0, $summed, $fillers));
+
+        [$code, $output] = $runGuard($report, environment: $hostedRunner);
+
+        expect($code)->toBe(1);
+        expect($output)->toContain("Tests\Feature\HugeTest cost 1600.0s, backstop 1500.0s (over by 100.0s)");
+        expect($output)->not->toContain('::warning');
+
+        $cleanUp($dir);
+    }
 });
 
 it('fails an override it cannot read rather than falling back to the committed number', function () use ($script, $root, $writeReport, $cleanUp, $band): void {

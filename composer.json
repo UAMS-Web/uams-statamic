@@ -34,24 +34,27 @@
         "laravel/prompts": "^0.3.5",
         "laravel/tinker": "^3.0",
         "league/commonmark": "^2.8.1",
-        "maatwebsite/excel": "^3.1",
+        "maatwebsite/excel": "^4.0",
         "mitydigital/sitemapamic": "^3.5.0",
         "propaganistas/laravel-phone": "^6.0",
         "smalot/pdfparser": "^2.0",
         "spatie/browsershot": "^5.0",
         "spatie/image": "^3.8",
         "spatie/laravel-pdf": "^2.5",
-        "spatie/schema-org": "^4.0",
-        "statamic/cms": "6.37.0",
-        "statamic/eloquent-driver": "5.12.4",
+        "spatie/schema-org": "^5.0",
+        "statamic/cms": "6.40.0",
+        "statamic/eloquent-driver": "5.12.5",
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
         "studio1902/statamic-peak-tools": "9.2.3",
         "uams-web/aether-alpine-csp-forms": "^0.3",
         "uams-web/aether-form-settings": "^0.5",
+        "uams-web/aether-incomplete-entries": "^0.2.1",
         "uams-web/aether-multisite-forms": "^0.7",
+        "uams-web/aether-redirects": "^0.2.0",
         "uams-web/aether-search": "^0.3",
-        "uams-web/aether-wordpress-importer": "^0.32"
+        "uams-web/aether-wordpress-importer": "^0.34",
+        "uams-web/patches-pest-plugin-mutate": "^1.0"
     },
     "require-dev": {
         "brianium/paratest": "^7.23",
@@ -109,6 +112,10 @@
         "test": [
             "@php vendor/bin/pest"
         ],
+        "test:pint": [
+            "@php vendor/bin/pint --test",
+            "@php vendor/bin/pint --test .agents .claude .cursor"
+        ],
         "refactor": [
             "@php vendor/bin/rector"
         ],
@@ -150,22 +157,10 @@
     "extra": {
         "composer-exit-on-patch-failure": true,
         "patches": {
-            "larastan/larastan": {
-                "Resolve console commands the console kernel registers, so argument() and option() keep their signature types on Laravel 13.36 and later (temporary; see #3156)": "patches/larastan-console-kernel-commands.patch"
-            },
             "pestphp/pest-plugin-browser": {
-                "Fail a request instead of busy-looping when the Playwright socket closes (temporary; see #1814)": "patches/pest-plugin-browser-client-bounded-requests.patch",
                 "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch"
-            },
-            "pestphp/pest-plugin-mutate": {
-                "Launch each mutant child process so a run cannot score every mutant killed without executing one (temporary; see #2322)": "patches/pest-plugin-mutate-mutant-process-launch.patch",
-                "Stop three silent @pest-mutate-ignore parsing defects suppressing nothing or the wrong set (temporary; see #2327)": "patches/pest-plugin-mutate-annotation-parsing.patch",
-                "Let a mutant child on Windows run its tests and write files, so its failure is a real kill (temporary; see #2524)": "patches/pest-plugin-mutate-windows-mutant-child.patch",
-                "Drop the run's own --filter from each mutant child so a filtered run cannot score every mutant killed (temporary; see #2570)": "patches/pest-plugin-mutate-drop-run-filter.patch",
-                "Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)": "patches/pest-plugin-mutate-windows-filter-length.patch",
-                "Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)": "patches/pest-plugin-mutate-write-mutated-source.patch",
-                "Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)": "patches/pest-plugin-mutate-drop-parallel-runner-options.patch"
+                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch",
+                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
             },
             "statamic/cms": {
                 "Add blueprint-aware collection create labels": "patches/statamic-collection-create-label-blueprint.patch",
@@ -178,9 +173,6 @@
                 "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-paths.patch",
                 "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-get-item.patch",
                 "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-basic-vanished-file-get-item.patch"
-            },
-            "symfony/console": {
-                "Send the stty restore's error output to NUL on Windows, so a numbered prompt stops printing a path error (temporary; see #232)": "patches/symfony-console-terminal-input-windows-null-device.patch"
             }
         },
         "laravel": {
@@ -189,6 +181,9 @@
     },
     "config": {
         "optimize-autoloader": true,
+        "platform": {
+            "php": "8.4.27"
+        },
         "preferred-install": "dist",
         "process-timeout": 0,
         "sort-packages": true,

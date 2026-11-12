@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use App\Services\Redirects\MarketingRedirectStore;
-use App\Support\Redirects\MarketingRedirect;
-use App\Support\Redirects\RedirectStatus;
 use Illuminate\Support\Facades\Event;
 use Statamic\Events\GlobalVariablesSaved;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Support\MarketingRedirect;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
 
 /**
  * Feature coverage for {@see MarketingRedirectStore}'s approval mutations (UAMS-Web/uams-statamic-archive#1357):

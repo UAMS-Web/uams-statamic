@@ -202,11 +202,9 @@ class SchemaGeoCoordinates extends Tags
     private function cachedNormalizedGeoCoordinatesType(): ?string
     {
         // Resolve and memoize the normalized type on first use
-        if (self::$normalizedGeoCoordinatesType === null) {
-            self::$normalizedGeoCoordinatesType = SchemaObjectFragmentBuilder::normalizedType(
-                'GeoCoordinates'
-            );
-        }
+        self::$normalizedGeoCoordinatesType ??= SchemaObjectFragmentBuilder::normalizedType(
+            'GeoCoordinates'
+        );
 
         // Return the cached normalized type URI
         return self::$normalizedGeoCoordinatesType;

@@ -7,7 +7,7 @@ use Statamic\Facades\Antlers;
 /*
  | §504 / WCAG automated accessibility gate (issue UAMS-Web/uams-statamic-archive#1046, part of epic #54).
  |
- | The pest-plugin-browser bundles axe-core and exposes window.axe on every page,
+ | The pest-plugin-browser bundles axe-core, which runAxe() loads into the page,
  | so this gate needs no npm dependency. It runs in the opt-in `browser` job
  | (`vendor/bin/pest tests/Browser`, mirrored in scripts/local-ci.mjs) and fails
  | on any serious/critical violation; moderate/minor are reported, not failed.
@@ -29,7 +29,7 @@ use Statamic\Facades\Antlers;
  */
 
 it('proves the axe gate catches serious and critical violations', function () {
-    // Any served page gives us a DOM with window.axe injected; loadAccessibilityFixture
+    // Any served page gives us a DOM for runAxe() to load axe into; loadAccessibilityFixture
     // then replaces the whole document so the assertions are deterministic and
     // content-free regardless of which page (or SPA) was served.
     $page = visit('/cp/auth/login');

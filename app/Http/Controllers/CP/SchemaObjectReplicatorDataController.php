@@ -45,9 +45,7 @@ class SchemaObjectReplicatorDataController extends CpController
 
         foreach ($propertyNames as $propertyName) {
             $propertyCase = SchemaProperty::tryFrom($propertyName);
-            $rangeTypes = $propertyCase !== null
-                ? $propertyCase->rangeTypes()
-                : ['Text'];
+            $rangeTypes = $propertyCase?->rangeTypes() ?? ['Text'];
             $setsConfig = $replicatorSetsService->setsForRangeTypes($rangeTypes);
             $configByProperty[$propertyName] = [
                 'sets' => $replicatorSetsService->configSetsForVue($setsConfig),

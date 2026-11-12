@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Http\Controllers\CP\Redirects\MarketingRedirectController;
 use App\Services\Redirects\MarketingRedirectStore;
-use App\Support\Redirects\MarketingRedirect;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -20,6 +19,7 @@ use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Support\MarketingRedirect;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -199,6 +199,9 @@ function marketingRedirectServed(string $uri, string $siteHandle): string
     return (string) Antlers::parse(
         '{{ find_redirect_rule in="'.$siteHandle.'" }}{{ target_url }}|{{ response }}{{ /find_redirect_rule }}',
         ['current_uri' => $uri],
+        // Trusted: the tag ships in uams-web/aether-redirects, outside `App\Tags`, so
+        // user-content mode refuses it under the `allowedContentTags` allow-list (#398).
+        true,
     );
 }
 

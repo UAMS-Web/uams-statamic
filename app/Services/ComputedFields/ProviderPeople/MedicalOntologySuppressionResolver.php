@@ -123,6 +123,8 @@ final readonly class MedicalOntologySuppressionResolver
             return [];
         }
 
+        // resolve() only iterates the rows, so their keys never reach the outcome.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_filter(
             $rows,
             static fn (mixed $row): bool => \is_array($row) && ($row['enabled'] ?? true) !== false

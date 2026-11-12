@@ -71,6 +71,9 @@ yarn-error.log
 # uams-web/aether-search published assets (#477)
 /public/vendor/aether-search
 
+# uams-web/aether-redirects published assets (#398)
+/public/vendor/aether-redirects
+
 # Where those add-ons published before their rename (#435); an existing checkout still has them
 /public/vendor/statamic-alpine-csp-forms
 /public/vendor/statamic-multisite-forms
@@ -124,3 +127,6 @@ __pycache__/
 # Per-shard PHPUnit configurations and listings the Windows `pest` shards write (#504)
 /phpunit.shard-*.xml
 /pest-shard-list-*.txt
+
+# Thread-specific orb portal registrations.
+/.amp/portals/*

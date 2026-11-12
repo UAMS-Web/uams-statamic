@@ -38,17 +38,18 @@ function errorViewSource(string $name): string
  *
  * @command  php artisan test --compact tests/Feature/Views/Error404PageTest.php
  */
-it('keeps the redirect partials first, before the new wayfinding markup', function (): void {
+it('keeps the knowledge base redirect first, before the new wayfinding markup', function (): void {
     $view = File::get(resource_path('views/errors/404.antlers.html'));
 
-    // Both redirect partials are still invoked (redirect global behavior preserved).
+    // The Redirects global's rules are answered by the `uams-web/aether-redirects`
+    // add-on before this view renders (#398), so the view no longer includes a
+    // redirects partial; the knowledge base mount redirect is still invoked here.
     expect($view)
-        ->toContain('partial:errors/redirects')
+        ->not->toContain('partial:errors/redirects')
         ->toContain('partial:errors/knowledge_base_mount_redirect');
 
-    // They run before any of the new visible markup, so a matching redirect fires
+    // It runs before any of the visible markup, so a matching redirect fires
     // before the 404 body ever renders.
-    $redirectPos = strpos($view, 'partial:errors/redirects');
     $mountRedirectPos = strpos($view, 'partial:errors/knowledge_base_mount_redirect');
     /** @var int<0, max> $headingPos */
     $headingPos = strpos($view, '<h1>');
@@ -57,9 +58,7 @@ it('keeps the redirect partials first, before the new wayfinding markup', functi
     /** @var int<0, max> $formPos */
     $formPos = strpos($view, 'partial:errors/recovery_aids');
 
-    expect($redirectPos)->toBeLessThan($headingPos)
-        ->and($mountRedirectPos)->toBeLessThan($headingPos)
-        ->and($redirectPos)->toBeLessThan($formPos)
+    expect($mountRedirectPos)->toBeLessThan($headingPos)
         ->and($mountRedirectPos)->toBeLessThan($formPos);
 });
 

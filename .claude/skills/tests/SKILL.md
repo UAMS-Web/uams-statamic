@@ -332,6 +332,8 @@ Mutation-clean, not a line-% floor and not a literal `100%`. Line and statement 
    - **deleted:** dead code removed;
    - **equivalent:** no input can kill it; annotate with `@pest-mutate-ignore` and record the reason in the covering test's docblock.
 
+4. **Take the closing measurement from a mutation run on Linux** (UAMS-Web/uams-claude-skills#543): the shared workflow's `mutate` job on `ubuntu-latest`, or a local Linux run with the same command. A mutation run on Windows or macOS may be used while working, but it never closes a coverage ticket. A Windows run can score mutants the tests never detect as killed: on 2026-11-05, in `UAMS-Web/aether-wordpress-importer-cleanup`, the same 3153 mutants scored 100.00% on `windows-latest` while `ubuntu-latest` and `macos-latest` each reported 215 untested, and a control pull request that applied two of those mutants by hand passed the whole suite on all three runners. The cause is not yet found, so a Windows score cannot show the bar is met even with the patched instrument.
+
 **The criterion is *no unexplained survivors*, not a score.** A percentage collapses "unexamined gap" and "provably equivalent mutant" into one number. Chasing a literal `100%` pushes agents to delete defensive guards or invent circular assertions. Accepted equivalents stay; the test docblock states which survive and why.
 
 Where this repository already has [`adversarial-review`](../../rules/adversarial-review.md), that file holds the review side of the triage. This section is still the definition of "full."
@@ -351,6 +353,7 @@ Before trusting a mutation score:
 When the coverage ticket closes, record on it:
 
 - The population list, or how it is generated from that repository's `phpunit.xml` / Pest config (and any deliberate exclusions).
+- **The run that met the bar, named:** the workflow run id (or the command, for a local Linux run), the platform (Linux) and the score. A closing note that names only a Windows or macOS run does not meet the bar.
 - Per class, or an equivalent rollup: the platform the score was taken on, mutant counts, and that every killable mutant is dead with equivalents explained.
 - The standing pin-before-change rule stays in force for the life of the repository; closing the follow-up does not retire it.
 
@@ -396,7 +399,7 @@ The per-test conversion process is the [`phpunit-to-pest`](../phpunit-to-pest/SK
 
 ## Running the suite before a pull request
 
-The GitHub Actions form of the suite job is the `pest` job in the `code-quality` skill's `templates/ci.yml`, chained after the lint jobs and sharing its composite setup action; a repository that runs Pest in Actions copies that template rather than writing the job again.
+The GitHub Actions form of the suite job is the `pest` job in the `code-quality` skill's `templates/ci-reusable.yml` (the shared workflow that `templates/ci.yml` calls), chained after the lint jobs and sharing its composite setup action; a repository that runs Pest in Actions copies that template rather than writing the job again.
 
 **In a public repository whose `ci.yml` runs the suite, run nothing locally before opening the pull request**: open it as a draft, and its remote run is the pre-PR check. Flip it to ready once every remote check on its head is green, and fix a red one by pushing to the same branch. Run a test locally while writing it, and keep a local run of the suite for the cases remote CI cannot cover: a change whose criteria name Windows or another platform it does not run, the full mutation run a coverage ticket records, and a run that needs a loaded WordPress install or the importer's host application. The [`writing-pull-requests`](../writing-pull-requests/SKILL.md) skill's *Draft state and merge order* owns this, and the pre-merge validation of a ready pull request is unchanged. The rest of this section applies where the suite has no remote run: a private repository, or a public one with no `ci.yml`.
 

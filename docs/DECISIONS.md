@@ -3603,6 +3603,8 @@ It is a separate patch rather than an addition to the shared-filter one because 
 
 **Decision.** The jobs in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) carry no `needs:` and run in parallel. [`scripts/local-ci.mjs`](../scripts/local-ci.mjs) keeps its cost-ordered chain and its stop at the first failure, and that asymmetry is deliberate rather than drift: the parity contract between the two files now covers each job's command and the SET of jobs, never the order they run in. [`scripts/local-ci.chain.test.mjs`](../scripts/local-ci.chain.test.mjs) asserts that set, and asserts that the workflow declares no `needs:` edge, behind a control fixture proving its scanner can still see one. Supersedes the 2026-07-15 entry above, which superseded the `UAMS-Web/uams-statamic-archive#1543` spell-only gate.
 
+**Later scope.** #387 adds the `pest-report` dependency on the parallel shards, and #337 adds the aggregate `CI` job that reads all required results. The 2026-11-05 shared-chain decision (#580, recorded by #594 below) narrows the fan-out further: `synced-files`, `pint`, `rector`, and `phpstan` now run inside `checks`, whose own dependencies order them. The other jobs declared here still start independently, apart from those reporting dependencies. The parity test reads only this repository's workflow, not the called workflow's graph, so its passing fan-out assertion does not establish independence inside `checks`.
+
 **Why.** The 2026-07-15 decision chose the chain to protect a metered Actions budget, in its own words trading "serialized wall-clock on green runs to save the expensive-job minutes on red runs", and rejected a fully parallel workflow because "every job always runs and bills even when a 16s guard already failed". Both arguments rest on the jobs being billed. This repository became public on 2026-10-27, and all 16 of its jobs run on `ubuntu-latest`, a standard runner, which GitHub does not meter for a public repository. The premise is gone, so the trade inverts: the chain buys nothing and costs the sum of every job's duration instead of the longest.
 
 Measured on `main` at `28094126b` before the change: 13 of the 16 jobs carried `needs:`, forming a single strand with one head; no job declared `outputs:`, and the workflow used neither `actions/upload-artifact` nor `actions/download-artifact`. So every one of the 13 edges was a cost gate and none was a data dependency, which is what made removing them safe rather than merely cheap. Actions run `40565090364` shows the cost concretely: `encoding-guard` failed at position five of fourteen on a Composer credential error, and all nine downstream jobs reported `skipped`, so a run that could have reported every independent fault in the branch reported one.
@@ -3816,3 +3818,113 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** An entry saved with a `home_country_query` value for a person who is neither a resident nor a fellow (for example, a value saved before the person's role changed) still shows its hometown field. The 43 `people` entries in `content/` at the time of #528 held none; data in other environments was not read. Nothing here was checked in a browser. #527 stays open for the general case.
 
 **Companion.** #533. `resources/blueprints/collections/people/person.yaml`, `tests/Feature/Blueprints/PeopleHometownConditionsTest.php`.
+
+## 2026-11-03: Each PHP file holds one class, and the 12 second classes move to files of their own (#449)
+
+**Decision.** The repository adopts a one-class-per-file rule, enforced by a check outside Composer, and the 12 existing second classes each move to a file of their own: `RequiresContentSubmoduleAnalysisAnchor` in `tests/Concerns/RequiresContentSubmodule.php`, and the 11 `*Info` attribute classes in `app/Enums`, such as `CountryInfo`, `StateInfo` and `IcdInfo`. Josh chose this as option B.
+
+**Why.** The PSR-4 class check from #322, `composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts`, records a violation only when a file has no class matching its path. Composer's class map leaves a second class beside a valid one out with no violation and no warning, so it loads only after its host file has loaded for another reason. Measured on Windows 11 with Composer 2.10.3: a class appended to a file under `tests/Support/Doubles/` exited 0, while a lone misnamed class exited 1. Nothing is known to be broken today. An exemption for the 11 enum attribute classes would leave them invisible to the class map, which is the defect the rule exists to catch, and the moves are small.
+
+**Rejected.** *No rule*: the hazard stays unnoticed until a second class is reached before its host file loads. *A rule that exempts the enum attribute companions*: keeps 11 classes out of the class map and needs an exemption list someone maintains.
+
+**Residual.** Which enforcer is cheapest, PHPStan, Pint or an architecture test, is not decided; #555 chooses it.
+
+**Companion.** #554 moves the classes, then #555 adds the check.
+
+## 2026-11-03: Tests that save entries or terms move onto a base that re-roots them into a per-worker content mirror (#538)
+
+**Decision.** Tests that save entries or terms get a base test case that re-roots those stores into a per-worker content mirror, and files move onto it in batches. Gating a file into the serial group by mechanism then stops depending on the shared mirror (`storage/framework/testing/content-mirror`, rooted in `app/Support/ContentRoot.php`). Josh chose this as option C, built incrementally.
+
+**Why.** The #385 re-audit found the serial group was not drawn on mechanism: 17 files stay serial because they save entries or terms into the shared mirror, while at least nine files in the parallel band write to it the same way. A write is a hazard only when another worker reads it back: a cold Stache warm, a `Cache::flush()`, or a listing that enumerates a whole collection (#473, `ClassifiedsBoardTest`, is the one recorded instance). The shared mirror is the one piece of state such a write leaks through, so removing it removes the question of which readers to protect. A passing ten-band run proves only the failures it happened to observe, and the readers that enumerate a whole collection were never inventoried. `StacheIsolatedTestCase` already proves the pattern by re-rooting every store; `CollectionTreeIsolatedTestCase` re-roots only collection trees, so its entry saves still land in the mirror.
+
+**Rejected.** *Gating the nine band writers into the serial group*: grows the tail and keeps a list someone must remember. *Returning the 17 serial files on observed failure alone*: leaves the shared mirror in place, and a reader that enumerates a collection can still flake.
+
+**Residual.** The count of mechanism `MW` files in the serial table in `tests/README.md` was not reconciled with the issue's figure of 17, which counts `NR` and `MW` together. Which band readers enumerate a whole collection is not fully inventoried. The asset-container files and `BioBlockTest` are outside this decision and have their own tickets.
+
+**Companion.** #556 builds the base, then #557 moves the serial files and #558 moves the nine band writers.
+
+## 2026-11-03: The `symfony/console` Windows null-device patch retires on `v8.1.10`, not cut down to its signal-handler hunk (#232)
+
+**Decision.** `patches/symfony-console-terminal-input-windows-null-device.patch` is removed and `symfony/console` moves from `v8.1.9` to `v8.1.10`, with no replacement patch. Josh chose this on 2026-11-03 over cutting the patch down to the one hunk upstream has not fixed.
+
+**Why.** `v8.1.10` selects the null device by platform in `TerminalInputHelper::finish()`, the restore every numbered prompt runs after its answer. The signal-handler restore (line 134 of that file at `v8.1.10`) still writes `2>/dev/null`, but it is installed only when `pcntl_async_signals()` and `pcntl_signal()` exist, and the `pcntl` extension is not available in PHP on Windows, the one platform where `/dev/null` fails. Measured on Windows 11 Pro 10.0.26200 with Herd PHP 8.4: both functions are absent. A `ChoiceQuestion` driven through the autocomplete path printed `The system cannot find the path specified.` once on unpatched `v8.1.9` and not at all on `v8.1.10`. <!-- cspell:ignore pcntl -->
+
+**Rejected.** *Cutting the patch down to the signal-handler hunk*, as the patch's retirement condition in `patches/README.md` had planned: it keeps a vendor patch, its guard test and the re-apply risk on every `symfony/console` release, for a line no Windows PHP can reach.
+
+**Residual.** If a Windows PHP build ever ships `pcntl`, the signal-handler restore would print the same error on an interrupted prompt; the fix for that is upstream's.
+
+**Companion.** #232 (this retirement); #230 (the patch); #231 (offering the signal-handler half upstream, closed).
+
+## 2026-11-03: The one-class-per-file rule is enforced by a token scan in the `composer-validate` job, not by PHPStan, Pint or an architecture test (#555)
+
+**Decision.** `scripts/check-one-class-per-file.php` reads every PHP file git lists (tracked, plus untracked files it does not ignore) with `token_get_all()`, and fails when a file declares more than one class, enum, interface or trait, naming the file and each extra type with its line. It runs in the `composer-validate` job after the PSR-4 class check, and in the local runner's `validate` job. Every run first checks a committed fixture with two classes, `tests/Fixtures/one-class-per-file/TwoClasses.php.txt`, and exits 2 unless that fixture is reported.
+
+**Why.** This settles the residual of the #449 entry. PHPStan excludes the large generated enum files by path in `phpstan.neon.dist`, and 9 of the 10 enum files that held second classes before #554 are on that list. Pint has no fixer for the rule. A Pest architecture test reads classes through the autoloader, and a class Composer left out of the class map is the one it cannot see. The token scan reads the file itself, needs no `composer install`, and finished in about 3 seconds on 2317 files. Measured on Windows 11 with Herd PHP 8.4: clean on `main` at `e761ac6fd`, and 12 findings, one per moved class, on the files as they stood at `e7bded726`, before #554.
+
+**Rejected.** *A PHPStan rule*: it would not see the generated enum files without removing their exclusion, which costs analysis time on the largest files in the tree. *A Pest architecture test*: blind to exactly the class the rule exists to catch. *A Pint or PHP-CS-Fixer rule*: none exists, and a custom fixer is more code than the scan.
+
+**Residual.** None known.
+
+**Companion.** #449 (the rule); #554 (the moves).
+
+## 2026-11-04: The redirect engine is served by `uams-web/aether-redirects`, and the site keeps its error views (#398)
+
+**Decision.** The site requires `uams-web/aether-redirects` at `^0.2.0` and deletes its own copies of the moved code: the redirect value objects and matcher under `app/Support/Redirects/` (all but `MigrationRedirect`), `RedirectDomainRules`, `EdgeRedirectManifestBuilder`, `ServeRedirectDomainRequests`, `GenerateEdgeRedirectManifest`, the `find_redirect_rule` and `respond_with_status` tags, `SiteHttpException`, the `errors/_redirects` partial and the `redirects` global blueprint. The add-on owns answering a stored rule on a 404 (registered through `renderUsing` on Statamic's 404 exception and a `renderable()` callback), the `URL::tidy` of a rule's target, and `SiteHttpException`. The site keeps its `errors/<code>` views, the `errors/_redirect_message` partial that reads `response_message`, `MigrationRedirect`, the generators and lifecycle listeners, and the `redirect_domains` blueprint. Every handle and row key is unchanged, so a rule `wordpress-importer` writes is served with no importer change.
+
+**Why.** One add-on serves every site that runs the migration, so the engine is tested once, in the add-on's own suite, under the Full coverage bar. The error views are site design rather than engine behavior, so they stay where the site's other templates live.
+
+**Rejected.** *Keep `respond_with_status` and `errors/_redirects` in the site and call the add-on's matcher from them*: two serving paths for one rule, and a site that forgets the partial serves nothing. *Move the error views into the add-on*: the add-on would then carry one site's layout.
+
+**Behavior change.** The `find_redirect_rule` tag now ships outside `App\Tags`, so `@default` in `config/statamic/antlers.php`'s `allowedContentTags` no longer admits it, and Antlers parsed as user content (Bard with Antlers enabled, form email bodies) can no longer call it. No content in the tree does. The allow-list is deliberately not widened; the error templates that do call the tag are trusted and unaffected.
+
+**Residual.** The edge-manifest parity slice follows in the add-on as its own pull request.
+
+**Companion.** #398 (the move and its acceptance criteria); `UAMS-Web/aether-redirects` v0.2.0. Earlier entries that link `app/Tags/RespondWithStatus.php` and `app/Exceptions/SiteHttpException.php` describe the code as it stood before this move.
+
+## 2026-11-05: On GitHub-hosted runners the parallel band's slowest-class share breach is reported, not failed; the gate host still fails it above 7.5% (#584)
+
+**Decision.** `scripts/check-slowest-class.php` prints a parallel band share over 7.5%, with a workflow warning, and exits 0 when `GITHUB_ACTIONS` is `true` and `RUNNER_ENVIRONMENT` is `github-hosted`. Anywhere else, the gate host and a self-hosted runner included, the breach still fails. The serial band's share and the 1500s backstop still fail everywhere.
+
+**Why.** The 7.5% ceiling is calibrated on the gate host, whose samples are stable enough to fail on. A single hosted sample can spike 1.6x to 2x above the costliest class's usual share: on #583's head `8570ca52a`, CI run `41964133422`, `macos-latest`, `SchemaJsonLdPodcastEpisodeTest` read 393.8s of 4568.5s (8.62%) on one attempt and 269.2s of 4005.5s (6.72%) on a fresh one, every test green both times, against 4.41% to 5.39% on `main`'s seven macOS runs before it. A red `CI` from runner variance blocks a pull request that changed nothing the guard measures. The detection needs both variables and an exact match, so a missing or unexpected value keeps the guard failing: mistaking the gate host for a hosted runner would silently stop it failing where it is calibrated.
+
+**Rejected.** *A higher ceiling of about 10% on hosted runners*: the measured spike took the class from a typical 4.4% to 5.4% to 8.62%, 1.6x to 2x, so 10% leaves a thin margin and the same flip recurs on a slightly larger spike. *Splitting `SchemaJsonLdPodcastEpisodeTest`*: it sits near 5% on a normal run, and a spike lands on whichever class is slowest, so splitting this one moves the next spike to another class rather than preventing it.
+
+**Residual.** "Re-run failed jobs" copies successful shard jobs forward with their old timings, so only "Re-run all jobs" takes a fresh sample; `docs/runbooks/branch-protection.md` says so.
+
+**Companion.** #584 (the decision and its measurements); #586 (the build).
+
+## 2026-11-05: The shared CI call owns four checks, their ordering, and their Linux-only legs (#580, #594)
+
+**Decision.** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) calls `UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.4.0` as `checks`, replacing this repository's `synced-files`, `pint`, `rector`, and `phpstan` jobs. The caller's aggregate `CI` job requires the call. `pest: false` and `mutate: false` leave the sharded suite and mutation tooling smoke in the caller: the suite and mutation discovery need the private `content`, `users`, and `resources/forms` submodules, which the called setup cannot check out with its workflow token. The caller retains the setup that uses `secrets.COMPOSER_AUTH_TOKEN` and the shard reports. The optional called jobs remain off, and their existing counterparts stay here.
+
+**Ordering and accepted cost.** In the called workflow at `v0.4.0`, `composer-validate` and `synced-files` must succeed before `pint`; `rector`, `phpstan`, and `mutate-ignore` need `pint`. An early failure therefore skips the later checks: a changed synced file can hide a PHPStan error until that first fault is repaired. This narrows #373's independent fan-out rather than preserving it behind the call. The caller's other jobs still run independently, except for `pest-report` reading the shards and `CI` reading their results. The caller's parity scanner cannot inspect the callee's graph.
+
+**Platforms.** With the platform inputs left at their defaults, `pint`, `rector`, `phpstan`, and `synced-files` now run on Linux only. [`UAMS-Web/uams-claude-skills#454`](https://github.com/UAMS-Web/uams-claude-skills/issues/454) records the decision to narrow platform-independent checks. #551 supplies the seeded-fault and control evidence for four additional job types; it does not itself move those jobs here. The plain jobs beside the call retain their existing platform legs, and the called `mutate-ignore` check still runs on Linux, Windows, and macOS.
+
+**Why.** The shared release owns the repeated check commands and their platform classification, avoiding a second maintained copy here. The local `composer-validate` and `no-emoji-guard` jobs stay because they add this repository's class checks and fixture-aware sweep. The local runner still mirrors the called Pint, Rector, and PHPStan commands, but its cost-ordered execution remains separate from remote scheduling.
+
+**Rejected.** *Keeping the four checks as local workflow jobs*: preserves their independent fan-out but duplicates the shared commands and platform policy. *Calling a branch rather than a release tag*: takes upstream workflow changes without a reviewed reference update here. *Moving Pest and mutation discovery into the call*: its setup lacks the private-submodule checkout and this repository's sharding and report handling. *Narrowing the remaining plain jobs in this change*: requires their own follow-up and is outside #580 and #594.
+
+**Companion.** #580 and PR #592 carry the workflow change and its verification; #594 records its effects here. The shared workflow was read at `v0.4.0`, not its default branch. The 2026-10-27 fan-out entry above describes the original decision and marks these later limits.
+
+## 2026-11-09: A credential term answers the regulatory question yes only on a statute, an agency rule, or a governing body's binding member rules; roles and degrees are not clinical credentials (#344)
+
+**Decision.** A `credentials` term answers "Is this a regulatory designation?" yes when a statute, a promulgated agency rule (such as 20 CAR Part 706), or a governing body's binding rules for its members (in the NCAA style) requires it, never on an organization's internal bylaws. CSCS and SCCC answer yes on NCAA Division I bylaw 11.1.5. MA, ECDS and QBHP are roles, and M.S. is a degree: each answers "Is this a clinical credential?" no, with its hidden regulatory and justification fields cleared, and stays selectable. ATC, CHT, OCS and RD are clinical credentials that are not regulatory designations. RD's justification cites the Arkansas licensed-dietitian statute. ATC, CHT and OCS carry the justification "executive fiat": an administrator required that these credentials be displayed, although they are not regulatory clinical credentials. The clinical name shows a credential only when its term answers yes to both questions (#621). <!-- cspell:ignore CSCS SCCC ECDS QBHP -->
+
+**Why.** The article's test counts more than statute, and Wikidata Q139581896 covers all three sources, so the JSON-LD mapping needs no split. The justification field records why a term is shown as clinical. For ATC, CHT and OCS that reason is an administrative directive, not a regulation, and the field says so rather than inventing a regulatory basis.
+
+**Rejected.** *Statute only*: would answer no for CSCS and SCCC, which the article lists. *Keeping MA, ECDS, QBHP and M.S. as clinical credentials that are not regulatory designations*: each would need a justification for a clinical status it does not have. *Writing a regulatory-sounding justification for ATC, CHT and OCS*: would misstate why they are displayed.
+
+**Companion.** Decided on 2026-10-27, revised on 2026-11-07 and 2026-11-09, on #344. The content changes are `UAMS-Web/aether-submodule-content#93`, `#94` and `#95`; the code changes are #620, #621 and #622; the pointer for #95 is #631.
+
+## 2026-11-12: Site search moves to the Loupe driver with `max_total_hits` at 200 (#511)
+
+**Decision.** `daun/statamic-loupe` replaces the `local` driver for site search, with `max_total_hits` at 200 on the `default` index. The build is #646, which also moves site and scope filtering ahead of the hit cap.
+
+**Why.** At the counted launch size of 46,777 documents, Loupe's p95 per lookup was 132 to 164ms at `max_total_hits` 200, under the 400ms gate, and it found the intended term for all six misspellings that return nothing on `local`. Measured on #511, Windows 11, PHP 8.4.27, `daun/statamic-loupe` 4.2.0, `loupe/loupe` 1.1.6. It is the only option that needs no paid service or new server, per the 2026-11-02 entry.
+
+**Rejected.** *Loupe at its default `max_total_hits` (1,000)*: p95 299 to 449ms at launch size, over the gate in two of three runs. *Staying on `local`*: fails latency and typo tolerance (#161). *A hosted or self-hosted engine*: ruled out by the no-spending statement.
+
+**Residual.** The driver applies site and scope filters after the hit cap, so a scoped search can show fewer results than match; #646 owns the fix. Document insertion alone took 618s at launch size and the index is 1.7GB on disk, both well past #161's 60s and 75 to 100MB thresholds. Concurrency, hydration and the production host are not measured.
+
+**Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).

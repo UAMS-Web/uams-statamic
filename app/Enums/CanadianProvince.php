@@ -5,21 +5,6 @@ declare(strict_types=1);
 namespace App\Enums;
 
 use App\Services\EnumGeneration\EnumDataUtils;
-use Attribute;
-
-/**
- * Attribute for storing province and territory names on enum cases.
- */
-#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
-class CanadianProvinceInfo
-{
-    public string $fullName;
-
-    public function __construct(string $fullName)
-    {
-        $this->fullName = $fullName;
-    }
-}
 
 /**
  * Canadian province and territory enum with postal abbreviations and full names.

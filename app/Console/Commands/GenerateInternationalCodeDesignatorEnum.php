@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\File as LaravelFile;
  * writes app/Enums/InternationalCodeDesignator.php with IcdInfo attributes
  * and getters for id, name, and description.
  *
+ * The IcdInfo attribute class itself lives in app/Enums/IcdInfo.php, one class
+ * per file (UAMS-Web/uams-statamic#554), and this command does not write it:
+ * emitting it into the enum file would declare it twice.
+ *
  * Data Source:
  *   - OpenPEPPOL BIS invoice 3 codelist icd.xml:
  *     https://raw.githubusercontent.com/OpenPEPPOL/peppol-bis-invoice-3/refs/heads/master/structure/codelist/icd.xml
@@ -50,7 +54,7 @@ class GenerateInternationalCodeDesignatorEnum extends Command
             return 1;
         }
 
-        // Build full enum PHP content (attribute class, cases, icdData, getters)
+        // Build full enum PHP content (cases, icdData, getters)
         $generatedAt = date('Y-m-d');
         $phpContent = $this->buildEnumPhpContent($records, $generatedAt);
 
@@ -87,11 +91,7 @@ class GenerateInternationalCodeDesignatorEnum extends Command
     {
         $out = "<?php\n\n";
         $out .= "namespace App\\Enums;\n\n";
-        $out .= "use App\\Services\\EnumGeneration\\EnumDataUtils;\n";
-        $out .= "use Attribute;\n\n";
-
-        // IcdInfo attribute class
-        $out .= $this->buildIcdInfoAttributeClass();
+        $out .= "use App\\Services\\EnumGeneration\\EnumDataUtils;\n\n";
 
         // Enum docblock and opening
         $out .= $this->buildEnumDocblock($generatedAt);
@@ -119,36 +119,6 @@ class GenerateInternationalCodeDesignatorEnum extends Command
         );
 
         return $out;
-    }
-
-    /**
-     * Build the IcdInfo attribute class source.
-     */
-    private function buildIcdInfoAttributeClass(): string
-    {
-        $out = "/**\n";
-        $out .= " * Attribute for storing ISO 6523 ICD (International Code Designator)\n";
-        $out .= " * information on enum cases.\n";
-        $out .= " *\n";
-        $out .= " * @param  string  \$id  The 4-digit ICD code\n";
-        $out .= " * @param  string  \$name  The official name of the scheme\n";
-        $out .= " * @param  string  \$description  Notes on use and issuing agency\n";
-        $out .= " */\n";
-        $out .= "#[Attribute(Attribute::TARGET_CLASS_CONSTANT)]\n";
-        $out .= "class IcdInfo\n";
-        $out .= "{\n";
-        $out .= "    /**\n";
-        $out .= "     * @param  string  \$id  The 4-digit ICD code\n";
-        $out .= "     * @param  string  \$name  The official name of the scheme\n";
-        $out .= "     * @param  string  \$description  Notes on use and issuing agency\n";
-        $out .= "     */\n";
-        $out .= "    public function __construct(\n";
-        $out .= "        public string \$id,\n";
-        $out .= "        public string \$name,\n";
-        $out .= "        public string \$description = '',\n";
-        $out .= "    ) {}\n";
-
-        return $out."}\n\n";
     }
 
     /**
