@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "77e40ac464ced60850514e8a7aebafcc",
+    "content-hash": "51210fd9f48cb4ef3ebcfc75a986c570",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -6761,16 +6761,16 @@
         },
         {
             "name": "statamic/cms",
-            "version": "v6.37.0",
+            "version": "v6.40.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/statamic/cms.git",
-                "reference": "f4d06b82f7a81a2a7c8177be8e7344602f8461a4"
+                "reference": "34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/statamic/cms/zipball/f4d06b82f7a81a2a7c8177be8e7344602f8461a4",
-                "reference": "f4d06b82f7a81a2a7c8177be8e7344602f8461a4",
+                "url": "https://api.github.com/repos/statamic/cms/zipball/34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6",
+                "reference": "34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6",
                 "shasum": ""
             },
             "require": {
@@ -6779,7 +6779,7 @@
                 "composer/semver": "^3.4",
                 "ext-json": "*",
                 "guzzlehttp/guzzle": "^6.3 || ^7.0",
-                "inertiajs/inertia-laravel": "^2.0 || ^3.0",
+                "inertiajs/inertia-laravel": "^2.0.7 || ^3.0",
                 "intervention/image": "^3.9.1 || ^4.0",
                 "james-heinrich/getid3": "^1.9.21",
                 "laravel/framework": "^12.40.0 || ^13.0",
@@ -6869,7 +6869,7 @@
             ],
             "support": {
                 "issues": "https://github.com/statamic/cms/issues",
-                "source": "https://github.com/statamic/cms/tree/v6.37.0"
+                "source": "https://github.com/statamic/cms/tree/v6.40.0"
             },
             "funding": [
                 {
@@ -6877,7 +6877,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-22T14:30:18+00:00"
+            "time": "2026-11-03T15:49:12+00:00"
         },
         {
             "name": "statamic/eloquent-driver",
@@ -11097,23 +11097,23 @@
         },
         {
             "name": "uams-web/aether-wordpress-importer",
-            "version": "v0.33.0",
+            "version": "v0.34.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git",
-                "reference": "0118d23b053c6fbc803a5cecc4ea0656602e271f"
+                "reference": "0efeb7b6db850945634ee28f21f217f447984897"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/0118d23b053c6fbc803a5cecc4ea0656602e271f",
-                "reference": "0118d23b053c6fbc803a5cecc4ea0656602e271f",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/0efeb7b6db850945634ee28f21f217f447984897",
+                "reference": "0efeb7b6db850945634ee28f21f217f447984897",
                 "shasum": ""
             },
             "require": {
                 "james-heinrich/getid3": "^1.9",
                 "laravel/prompts": "^0.3",
                 "php": "^8.4",
-                "statamic/cms": "6.37.0",
+                "statamic/cms": "6.40.0",
                 "uams-web/aether-wordpress-importer-cleanup": "^2.0"
             },
             "require-dev": {
@@ -11186,7 +11186,10 @@
                     "pint"
                 ],
                 "test:pint": [
-                    "pint --test"
+                    "node scripts/run-pint.mjs"
+                ],
+                "test:mutation-instrument": [
+                    "@php .claude/skills/pcov-setup/scripts/check-mutation-instrument.php --arg=--testsuite=Unit,Integration"
                 ]
             },
             "license": [
@@ -11216,7 +11219,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-wordpress-importer/issues",
                 "source": "https://github.com/UAMS-Web/aether-wordpress-importer"
             },
-            "time": "2026-11-02T13:37:05+00:00"
+            "time": "2026-11-09T12:11:08+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer-cleanup",
@@ -17913,5 +17916,8 @@
         "ext-imagick": "*"
     },
     "platform-dev": {},
+    "platform-overrides": {
+        "php": "8.4.27"
+    },
     "plugin-api-version": "2.9.0"
 }
