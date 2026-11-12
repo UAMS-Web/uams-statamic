@@ -20,15 +20,6 @@ Artisan::command('inspire', function () {
 // research_publication_select computed field reads cache-only (UAMS-Web/uams-statamic-archive#865).
 Schedule::command('pubmed:warm')->daily();
 
-// Run the Incomplete Published Entries audit out of band, so the dashboard widget reads
-// its result instead of scanning inside the request (UAMS-Web/uams-statamic-archive#2506). The scan takes over a minute,
-// so it runs in the background and never overlaps itself. Hourly, because the widget keeps
-// the last result through entry saves and only needs to catch up with them.
-Schedule::command('cp:scan-incomplete-published-entries')
-    ->hourly()
-    ->withoutOverlapping()
-    ->runInBackground();
-
 // Compare the Google Business Profile category taxonomy with the Business Information API
 // (UAMS-Web/uams-statamic-archive#2617), so nobody has to remember the check (UAMS-Web/uams-statamic-archive#2091). Twice a month rather than once:
 // the dashboard widget flags a check overdue after 30 days, which a run on the 1st would

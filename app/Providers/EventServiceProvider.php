@@ -23,7 +23,6 @@ use App\Listeners\MirrorSpotlightFeaturedProviderRelationships;
 use App\Listeners\PreserveGoogleBusinessProfileCategoryGcid;
 use App\Listeners\PreventDeletingMounts;
 use App\Listeners\PreventMountingToTreeRoot;
-use App\Listeners\RecordIncompletePublishedEntriesContentChange;
 use App\Listeners\RedirectOrphanedDescendants;
 use App\Listeners\RedirectSuppressedDependents;
 use App\Listeners\RefreshKnowledgeBaseMountUris;
@@ -169,14 +168,12 @@ class EventServiceProvider extends BaseServiceProvider
         // `schema_templates.json_ld_cache.ttl_seconds` instead.
         // ---
 
-        // Invalidate Incomplete Published Entries widget cache when content changes;
         // Invalidate schema JSON-LD cache when entry is saved;
         // disambiguate duplicate entry titles (append (2), (3), ...);
         // clear current entry used by {{ disambiguate_title }} tag;
         // queue a location's Arkansas region derivation off the save path (UAMS-Web/uams-statamic-archive#1112)
         // re-index linked people's eligibility when a practice location changes (UAMS-Web/uams-statamic-archive#3123)
         EntrySaved::class => [
-            RecordIncompletePublishedEntriesContentChange::class,
             ScanLinksOnPublish::class,
             DisambiguateEntryTitle::class,
             SetCurrentEntryForTitleFormat::class,
