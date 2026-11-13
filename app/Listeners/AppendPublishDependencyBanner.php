@@ -86,6 +86,8 @@ class AppendPublishDependencyBanner
             return $collection instanceof Collection ? $collection : null;
         }
 
+        // handle() has already returned unless the blueprint is a Blueprint.
+        // @pest-mutate-ignore: InstanceOfToTrue
         $namespace = $event->blueprint instanceof Blueprint ? $event->blueprint->namespace() : null;
         if (! \is_string($namespace) || ! str_starts_with($namespace, self::COLLECTION_NAMESPACE_PREFIX)) {
             return null;
@@ -93,6 +95,8 @@ class AppendPublishDependencyBanner
 
         $collection = CollectionFacade::findByHandle(substr($namespace, \strlen(self::COLLECTION_NAMESPACE_PREFIX)));
 
+        // findByHandle() is typed `?Collection`, so the value is returned unchanged either way.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $collection instanceof Collection ? $collection : null;
     }
 }

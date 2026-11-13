@@ -27,8 +27,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * QuantitativeValueDurationComputedsRegistrar are covered by their own tests under
  * tests/Feature/Services/ComputedFields/Registration/.
  *
- * Mutation: 100% on App\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving
- * (23 mutants, --covered-only).
+ * Mutation-clean on App\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving
+ * (UAMS-Web/uams-statamic#315), with one accepted equivalent annotated in the
+ * listener: the strict flag on the collection-handle `in_array()`, since a string
+ * or null handle matches the non-numeric collection handles loosely or strictly alike.
  *
  * @command  php artisan test --compact tests/Feature/Providers/ComputedPropertiesProviderRegistrationTest.php
  */
@@ -119,4 +121,44 @@ it('strips virtual activity computeds from people certification sets on entry sa
     // Dispatch the entry saving listener to strip virtual certification fields
     $listener = new StripProviderPeopleVirtualFieldsOnEntrySaving;
     $listener->handle(new EntrySaving($entry));
+});
+
+it('leaves an entry outside the provider and people collections untouched', function () {
+    // An unsupported entry is never read or written, so a publication set it
+    // carries keeps its PubMed field.
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collectionHandle')->andReturn('posts');
+    $entry->shouldNotReceive('get');
+    $entry->shouldNotReceive('set');
+
+    (new StripProviderPeopleVirtualFieldsOnEntrySaving)->handle(new EntrySaving($entry));
+});
+
+it('strips certification computeds when the sets arrive as a collection', function () {
+    // A replicator value can be an Illuminate collection; it is unwrapped to an
+    // array before the virtual fields are removed.
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collectionHandle')->andReturn('people');
+    $entry->shouldReceive('get')
+        ->andReturnUsing(fn (string $key, mixed $default = null): mixed => match ($key) {
+            'research_publication_select' => [],
+            'certifications' => collect([
+                ['board' => 'x', 'activity_valid_for' => 'v', 'activity_active_query' => 'v2'],
+            ]),
+            default => $default,
+        });
+    $entry->shouldReceive('set')->once()->with('certifications', [['board' => 'x']]);
+
+    (new StripProviderPeopleVirtualFieldsOnEntrySaving)->handle(new EntrySaving($entry));
+});
+
+it('writes nothing back for a people entry with no certifications', function () {
+    // An empty certification list is left as it is rather than rewritten.
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collectionHandle')->andReturn('people');
+    $entry->shouldReceive('get')
+        ->andReturnUsing(fn (string $key, mixed $default = null): mixed => $key === 'certifications' ? [] : $default);
+    $entry->shouldNotReceive('set');
+
+    (new StripProviderPeopleVirtualFieldsOnEntrySaving)->handle(new EntrySaving($entry));
 });
