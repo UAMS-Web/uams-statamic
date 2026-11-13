@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 use App\Scopes\PostsInPostCategoryBySlug;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /**
  * @covers \App\Scopes\PostsInPostCategoryBySlug
@@ -78,6 +80,9 @@ function postIdsForCategorySlug(array $values): array
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::findByHandle('post_categories') || ! Collection::findByHandle('posts')) {
         ContentSubmodule::reportMissing('migrated post_categories + posts collections');
     }
@@ -130,7 +135,7 @@ it('lists only the posts filed under the category its slug resolves to', functio
     expect($ids)->toContain($inCardiology->id());
     expect($ids)->not->toContain($inOncology->id());
     expect($ids)->not->toContain($uncategorized->id());
-})->group('serial');
+});
 
 it('applies no constraint for a blank or absent slug, so the unfiltered listing lists every post', function (?string $blank): void {
     /** @var Statamic\Entries\Entry $cardiology */
@@ -162,7 +167,7 @@ it('applies no constraint for a blank or absent slug, so the unfiltered listing 
 })->with([
     'absent key' => [null],
     'empty string' => [''],
-])->group('serial');
+]);
 
 it('lists nothing when the slug resolves to no category (including uncategorized posts)', function (): void {
     /** @var Statamic\Entries\Entry $cardiology */
@@ -189,7 +194,7 @@ it('lists nothing when the slug resolves to no category (including uncategorized
 
     expect($ids)->not->toContain($inCardiology->id());
     expect($ids)->not->toContain($uncategorized->id());
-})->group('serial');
+});
 
 it('resolves the slug on the current site only, ignoring a same-slug category on another site', function (): void {
     // beforeEach already skips unless post_categories resolves, so it is non-null here.
@@ -228,7 +233,7 @@ it('resolves the slug on the current site only, ignoring a same-slug category on
     $ids = postIdsForCategorySlug(['category_slug' => POSTS_CAT_SLUG_TEST_PREFIX.'shared']);
 
     expect($ids)->not->toContain($post->id());
-})->group('serial');
+});
 
 /**
  * Create + save a published default-site test post filed under the given category ids.

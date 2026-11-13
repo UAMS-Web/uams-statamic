@@ -10,12 +10,12 @@ use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 
-// Tree-isolated: the emission test places a `post_tags` entry in its collection's
+// Entries, terms and trees isolated (#557): the emission test places a `post_tags` entry in its collection's
 // structure tree, and a tree write needs a root no sibling worker shares.
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -156,4 +156,4 @@ it('emits a self-provisioned post_tags archive loc, with no routeless-collection
         ->and($locs->every(fn (string $loc): bool => str_contains($loc, '/post-tags/')))->toBeTrue()
         // ...and no routeless collection's URLs leak into the emission.
         ->and($locs->contains(fn (string $loc): bool => str_contains($loc, '/subject-matter/')))->toBeFalse();
-})->group('serial');
+});
