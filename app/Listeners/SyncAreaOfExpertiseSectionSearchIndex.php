@@ -37,6 +37,10 @@ final class SyncAreaOfExpertiseSectionSearchIndex implements ShouldQueue
      *
      * @var list<string>
      */
+    // A constant expression is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, removing the one item fails 3 tests in
+    // SyncAreaOfExpertiseSectionSearchIndexTest.
+    // @pest-mutate-ignore: RemoveArrayItem
     private const array INDEXES = ['default'];
 
     /**
@@ -64,6 +68,9 @@ final class SyncAreaOfExpertiseSectionSearchIndex implements ShouldQueue
     public function handle(EntrySaved|EntryDeleted $event): void
     {
         $entry = $event->entry;
+        // isAreaOfExpertise() refuses anything that is not an entry itself, so this guard is
+        // for phpstan.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $entry instanceof Entry || ! $this->isAreaOfExpertise($entry)) {
             return;
         }
@@ -81,6 +88,9 @@ final class SyncAreaOfExpertiseSectionSearchIndex implements ShouldQueue
 
             // Only maintain an already-built index incrementally; if it has not been built yet,
             // the next query's ensureExists() rebuilds it in full from the provider.
+            // The list holds one index, so ending the loop and going on to the next end it
+            // alike.
+            // @pest-mutate-ignore: ContinueToBreak
             if (! $index->exists()) {
                 continue;
             }
@@ -88,10 +98,24 @@ final class SyncAreaOfExpertiseSectionSearchIndex implements ShouldQueue
             // Remove every possible section document for this AoE (idempotent) so an emptied
             // section, a toggled-off `searchable`, an unpublish, or a delete drops its stale docs.
             foreach (ClinicalExpertiseSectionResolver::tokens() as $token) {
-                $index->delete(new AreaOfExpertiseSectionDocument($id, $token, '', '', ''));
+                // A delete reads only the reference, built from the id and the token, so the
+                // title, URL and site are never read.
+                $index->delete(new AreaOfExpertiseSectionDocument(
+                    $id,
+                    $token,
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
+                    '',
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
+                    '',
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
+                    '',
+                ));
             }
 
             // A save re-inserts the currently valid sections; a delete only removes.
+            // The list holds one index, so ending the loop and going on to the next end it
+            // alike.
+            // @pest-mutate-ignore: ContinueToBreak
             if ($removing) {
                 continue;
             }
