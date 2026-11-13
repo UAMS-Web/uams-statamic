@@ -51,7 +51,7 @@ $sweepOnlyRules = [
  * key on the active rule set, so a warm cache left by a *gate*-profile run makes
  * a later *sweep*-profile run silently under-report — measured over `app/` while
  * building UAMS-Web/uams-statamic-archive#1720: 124 files cold versus 92 warm. And a concurrent Rector process
- * (parallel afk-wave worktrees, `scripts/local-ci.mjs`, a `composer refactor`
+ * (parallel afk-wave worktrees, the local runner's `rector` job, a `composer refactor`
  * while the suite runs) would otherwise race the shared directory. A fresh dir
  * starts empty, so no `--clear-cache` — and no delete race — is needed.
  *

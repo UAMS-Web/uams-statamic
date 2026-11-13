@@ -53,8 +53,9 @@ function mutantLaunchPatchSource(string $path): string
  * applies from, so declaring a patch in `composer.json` alone leaves the lock and its
  * `_hash` unchanged. `composer reinstall <package>` then re-extracts and re-applies the
  * LOCKED set, silently omitting the new patch — measured here, and it is also what the
- * `_hash` that {@see patchStaleReason()} compares is derived from, so `scripts/local-ci.mjs`
- * sees nothing stale and skips its own re-patch.
+ * `_hash` that {@see patchStaleReason()} compares is derived from, so neither that check
+ * nor the local runner's patch record (`scripts/prepare-dependencies.mjs`) sees anything
+ * stale, and neither re-patches.
  *
  * @param  string  $source  Vendored file contents.
  * @param  string  $needle  The patched text that must be present.
