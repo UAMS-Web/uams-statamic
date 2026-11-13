@@ -21,9 +21,9 @@ uses(TestCase::class);
  * The first boots a fresh test case, which stands in for the next test, and
  * requires Statamic's route and install lists to hold the same number of entries
  * after that boot as after this test's own. The second runs three times through
- * the real test lifecycle and requires every static array outside the test
- * framework to be the same size in the third run as in the second, so a list some
- * other package starts growing fails here too, naming the property.
+ * the real test lifecycle and requires no static array outside the test framework
+ * to be larger in the third run than in the second, so a list some other package
+ * starts growing fails here too, naming the property.
  */
 it("leaves Statamic's route and install lists the same size after another boot", function (): void {
     $afterThisBoot = StatamicStaticRegistries::sizes();
