@@ -334,15 +334,16 @@ jobs:
           extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
-          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
-          # runs, because four tests are written to run only under those values and
+          # `zend.assertions` and `pcre.jit` are the values the local gate also passes
+          # to both bands, from SUITE_PHP_INI in scripts/gate-pest.mjs (#688), whatever
+          # the machine's php.ini says. They are set because four tests are written to run only under those values and
           # self-skip otherwise: two assert an AssertionError and need assertions
           # compiled in, two induce a PCRE failure the JIT does not produce. The
           # runner's defaults (-1 and 1) made all four skip, which took the parallel
           # band to 5 skips against a baseline of 3 and failed
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
-          # forbids; matching the local environment restores the four tests.
+          # forbids; setting the two values restores the four tests.
           # CLI OPcache stays off on Windows (#348): a long run there ended in an access
           # violation with it on, JIT or no JIT.
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
@@ -718,15 +719,16 @@ jobs:
           extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
-          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
-          # runs, because four tests are written to run only under those values and
+          # `zend.assertions` and `pcre.jit` are the values the local gate also passes
+          # to both bands, from SUITE_PHP_INI in scripts/gate-pest.mjs (#688), whatever
+          # the machine's php.ini says. They are set because four tests are written to run only under those values and
           # self-skip otherwise: two assert an AssertionError and need assertions
           # compiled in, two induce a PCRE failure the JIT does not produce. The
           # runner's defaults (-1 and 1) made all four skip, which took the parallel
           # band to 5 skips against a baseline of 3 and failed
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
-          # forbids; matching the local environment restores the four tests.
+          # forbids; setting the two values restores the four tests.
           # CLI OPcache stays off on Windows (#348): a long run there ended in an access
           # violation with it on, JIT or no JIT.
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
