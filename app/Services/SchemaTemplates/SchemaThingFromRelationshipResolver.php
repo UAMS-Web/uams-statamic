@@ -858,13 +858,14 @@ class SchemaThingFromRelationshipResolver
         // `replicator_row.*` forms (not bare entry field names on `contextEntity`)
         $directHandlesUseAntlersContextFieldForms = false;
         foreach ($directHandles as $directHandleCandidate) {
+            // Continuing past the first match only re-sets the same flag for the remaining
+            // handles.
+            // @pest-mutate-ignore: BreakToContinue
             if (
                 \str_starts_with($directHandleCandidate, 'source_entry.')
                 || \str_starts_with($directHandleCandidate, 'replicator_row.')
             ) {
                 $directHandlesUseAntlersContextFieldForms = true;
-                // Continuing only re-sets the same flag for the remaining handles.
-                // @pest-mutate-ignore: BreakToContinue
                 break;
             }
         }
@@ -1603,15 +1604,23 @@ class SchemaThingFromRelationshipResolver
             'tertiary_field_replicator_relationship_field'
         );
 
-        // Return no targets when a required field handle set is missing
-        // With any hop's handles empty nothing is read on that hop, so the result is empty
-        // whichever way the checks combine, or without the return.
-        // @pest-mutate-ignore: BooleanOrToBooleanAnd, RemoveEarlyReturn
-        if (
-            $directHandles === []
-            || $secondaryHandles === []
-            || $tertiaryHandles === []
-        ) {
+        // ---
+        // Return no targets when a required field handle set is missing. With any hop's
+        // handles empty, nothing is read on that hop, so the result is empty anyway.
+        // ---
+
+        // @pest-mutate-ignore: RemoveEarlyReturn
+        if ($directHandles === []) {
+            return [];
+        }
+
+        // @pest-mutate-ignore: RemoveEarlyReturn
+        if ($secondaryHandles === []) {
+            return [];
+        }
+
+        // @pest-mutate-ignore: RemoveEarlyReturn
+        if ($tertiaryHandles === []) {
             return [];
         }
 
