@@ -34,6 +34,10 @@ class RestoreWorkdayManagedFields
     /**
      * The revision key prefix of a `people` entry.
      */
+    // A constant expression is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, each of the six concatenation mutants fails a test in
+    // WorkdayManagedFieldsTest.
+    // @pest-mutate-ignore: ConcatRemoveLeft, ConcatRemoveRight, ConcatSwitchSides
     private const string REVISION_KEY_PREFIX = 'collections/'.PeopleEditingScope::COLLECTION.'/';
 
     public function __construct(
@@ -49,6 +53,8 @@ class RestoreWorkdayManagedFields
     {
         $entry = $event->entry;
 
+        // governs() refuses anything that is not an entry itself, so this guard is for phpstan.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $entry instanceof Entry || ! $this->fields->governs($entry)) {
             return;
         }
@@ -60,6 +66,7 @@ class RestoreWorkdayManagedFields
         $data = $entry->data();
 
         // phpstan requires this type guard; an entry's data is always a collection.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $data instanceof Collection) {
             return;
         }
