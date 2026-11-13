@@ -127,6 +127,8 @@ it('adds an increment to the counter already in the profile bag', function (mixe
 })->with([
     'integer' => [3, 5],
     'numeric string' => ['4', 6],
+    'float, truncated' => [4.5, 6],
+    'non-numeric string' => ['abc', 2],
     'non-scalar' => [[9], 2],
 ]);
 
@@ -153,6 +155,7 @@ it('adds milliseconds to the timing already in the profile bag', function (mixed
 })->with([
     'float' => [2.25, 3.75],
     'numeric string' => ['1', 2.5],
+    'non-numeric string' => ['abc', 1.5],
     'non-scalar' => [[9], 1.5],
 ]);
 
@@ -216,6 +219,13 @@ it('records a full build sample with its caller and target', function (): void {
         ->and($sample['caller_property_key'])->toBe('founder');
 });
 
+it('reads an integer entry id as a string profile id', function (): void {
+    $entry = new EntryModel;
+    $entry->id(5);
+
+    expect(thingHelpersCall('profileEntityId', $entry))->toBe('5');
+});
+
 it('records null callers when the context names none', function (): void {
     thingHelpersCall('recordProfileFullBuildSample', 'direct', 'tpl', null, [
         SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => 5,
@@ -254,14 +264,18 @@ it('keeps the slowest full builds, slowest first, up to the configured limit', f
 
 it('keeps all builds up to the limit and treats unusable entries as zero milliseconds', function (): void {
     Config::set('schema_templates.json_ld_compose_profile.top_n', 10);
+    // The missing and non-numeric timings sit before a real zero, so reading
+    // either one as anything but zero moves it past that zero
     thingHelpersSetProfileBag(['relationship_full_build_top' => [
+        ['mode' => 'd'],
         ['ms' => 'x', 'mode' => 'c'],
+        ['ms' => 0.0, 'mode' => 'z'],
         ['ms' => 300.0, 'mode' => 'a'],
     ]]);
 
     thingHelpersCall('recordProfileFullBuildSample', 'new', 'tpl', null, [], microtime(true) - 0.2);
 
-    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['a', 'new', 'c']);
+    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['a', 'new', 'd', 'c', 'z']);
 });
 
 it('reads a non-scalar or missing top limit as ten', function (): void {
@@ -382,6 +396,7 @@ it('reads an entry @id from its absolute URL, then its URL', function (array $re
 })->with([
     'absolute URL' => [['absoluteUrl' => 'https://example.test/a', 'url' => '/b'], 'https://example.test/a'],
     'URL' => [['absoluteUrl' => '', 'url' => '/b'], '/b'],
+    'URL of a subject, before its slug' => [['absoluteUrl' => '', 'url' => '/b', 'collectionHandle' => 'subject_matter', 'slug' => 'heart'], '/b'],
     'no URL' => [['absoluteUrl' => '', 'url' => ''], null],
 ]);
 
@@ -513,6 +528,7 @@ it('matches an entry against a piped collection scope', function (?string $scope
     'piped, padded' => ['pages | people', 'people', true],
     'other collection' => ['pages', 'people', false],
     'entry without a collection' => ['people', null, false],
+    'entry without a collection, scope with an empty piece' => ['people|', null, false],
 ]);
 
 it('does not match an entry contract that has no collection', function (): void {
@@ -631,7 +647,11 @@ it('resolves a qualified asset id from a stored path', function (): void {
 
 it('normalizes an item to an asset in a container', function (): void {
     $image = thingHelpersAssetIn('images');
-    App\Models\Asset::query()->insert(['container' => 'images', 'folder' => 'a', 'basename' => 'x.jpg', 'filename' => 'x', 'extension' => 'jpg', 'path' => 'a/x.jpg']);
+    App\Models\Asset::query()->insert([
+        ['container' => 'images', 'folder' => 'a', 'basename' => 'x.jpg', 'filename' => 'x', 'extension' => 'jpg', 'path' => 'a/x.jpg'],
+        // A metadata row whose asset no longer exists
+        ['container' => 'images', 'folder' => 'a', 'basename' => 'stale.jpg', 'filename' => 'stale', 'extension' => 'jpg', 'path' => 'a/stale.jpg'],
+    ]);
     Statamic\Facades\Asset::shouldReceive('find')->andReturnUsing(fn (string $id): ?Asset => \in_array($id, ['images::a/x.jpg', 'direct'], true) ? $image : null);
 
     expect(thingHelpersCall('normalizeToAsset', $image, 'images'))->toBe($image)
@@ -642,6 +662,7 @@ it('normalizes an item to an asset in a container', function (): void {
         ->and(thingHelpersCall('normalizeToAsset', 'a/x.jpg', 'images'))->toBe($image)
         ->and(thingHelpersCall('normalizeToAsset', 'a/x.jpg', 'files'))->toBeNull()
         ->and(thingHelpersCall('normalizeToAsset', 'a/missing.jpg', null))->toBeNull()
+        ->and(thingHelpersCall('normalizeToAsset', 'a/stale.jpg', null))->toBeNull()
         ->and(thingHelpersCall('normalizeToAsset', 'images::a/x.jpg-not', null))->toBeNull()
         ->and(thingHelpersCall('normalizeToAsset', '', null))->toBeNull()
         ->and(thingHelpersCall('normalizeToAsset', 5, null))->toBeNull();
@@ -1021,11 +1042,12 @@ function thingHelpersAsset(array $returns): Asset
 
 it('builds an asset template context from its data, augmented values and metadata', function (): void {
     $augmented = Mockery::mock(Augmented::class);
+    // The unusable keys come first, so each is skipped rather than ending the merge
     $augmented->shouldReceive('all')->andReturn(new AugmentedCollection([
+        5 => 'dropped',
+        '' => 'dropped',
         'alt' => new Value('Alt text'),
         'credit' => 'Photographer',
-        '' => 'dropped',
-        5 => 'dropped',
     ]));
 
     $asset = thingHelpersAsset([
@@ -1573,6 +1595,42 @@ it('falls back from a blank nested scope to the secondary scope in tertiary mode
         'current_field' => 'terms',
         'secondary_field' => 'series',
         'tertiary_field' => 'about',
+    ]))->toBe([$tag]);
+});
+
+it('walks global variables or a scoped asset as the secondary entity in tertiary mode', function (string $context, ?string $scope): void {
+    $person = thingHelpersEntryIn('people', 'p1');
+    $series = thingHelpersTermWith('series', ['about' => [$person]]);
+    if ($context === 'globals') {
+        $secondary = Mockery::mock(Variables::class);
+        $secondary->shouldReceive('get')->andReturnUsing(fn (string $h): mixed => $h === 'series' ? [$series] : null);
+    } else {
+        $secondary = thingHelpersAssetIn('images');
+        $secondary->shouldReceive('data')->andReturn(collect(['series' => [$series]]));
+    }
+
+    expect(thingHelpersTertiary(['links' => [$secondary]], [
+        'secondary_context' => $context,
+        'secondary_scope' => $scope,
+        'current_field' => 'links',
+        'secondary_field' => 'series',
+        'tertiary_field' => 'about',
+    ]))->toBe([$person]);
+})->with([
+    'globals' => ['globals', null],
+    'assets in a padded container scope' => ['assets', ' images '],
+]);
+
+it('reads a scoped asset as the secondary entity in secondary mode, trimming the scope', function (): void {
+    $tag = thingHelpersTermIn('tags');
+    $asset = thingHelpersAssetIn('images');
+    $asset->shouldReceive('data')->andReturn(collect(['topics' => [$tag]]));
+
+    expect(thingHelpersSecondary(['links' => [$asset]], [
+        'secondary_context' => 'assets',
+        'secondary_scope' => ' images ',
+        'current_field' => 'links',
+        'secondary_field' => 'topics',
     ]))->toBe([$tag]);
 });
 

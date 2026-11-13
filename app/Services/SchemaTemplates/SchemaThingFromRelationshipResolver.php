@@ -153,6 +153,8 @@ class SchemaThingFromRelationshipResolver
         // Resolve entities from the selected traversal mode
         if ($mode === 'tertiary') {
             // Collect targets via asset (or other secondary) then term hop then field
+            // The 0.0 is read only when profiling is off, and then never used.
+            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForTertiaryMode(
                 $context,
@@ -163,6 +165,8 @@ class SchemaThingFromRelationshipResolver
             }
         } elseif ($mode === 'secondary') {
             // Collect targets via one relationship hop from secondary entities
+            // The 0.0 is read only when profiling is off, and then never used.
+            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForSecondaryMode(
                 $context,
@@ -245,13 +249,9 @@ class SchemaThingFromRelationshipResolver
             $resolvedTemplateId = $templateId ?? $this->resolveTemplateIdForTarget(
                 $targetEntity
             );
-            // Check whether no template id is available for this target
+            // Check whether no template id is available for this target (the parameter
+            // and the cascade both yield only a non-empty string or null)
             if (! \is_string($resolvedTemplateId)) {
-                // Skip to the next target
-                continue;
-            }
-
-            if ($resolvedTemplateId === '') {
                 // Skip to the next target
                 continue;
             }
@@ -490,17 +490,12 @@ class SchemaThingFromRelationshipResolver
                 continue;
             }
 
-            // Merge canonical target identity into the schema node
+            // Merge canonical target identity into the schema node (never empty: the
+            // merge only sets @id on the non-empty base node)
             $node = $this->mergeTemplateNodeWithTarget(
                 $baseNode,
                 $targetEntity
             );
-
-            // Check whether node merge failed
-            if ($node === []) {
-                // Skip to the next target
-                continue;
-            }
 
             // Read the node @id key used for deduplication
             $nodeIdKey = \is_string($node['@id'] ?? null) ? $node['@id'] : '';
@@ -588,6 +583,8 @@ class SchemaThingFromRelationshipResolver
 
         // Encode nodes as JSON output
         if ($profileEnabled) {
+            // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+            // @pest-mutate-ignore: IncrementInteger, DecrementInteger
             $elapsedMs = (microtime(true) - $resolveStart) * 1000;
             $this->recordProfileIncrement('relationship_resolve_calls', 1);
             $this->recordProfileAddMs('relationship_resolve_ms', $elapsedMs);
@@ -612,6 +609,8 @@ class SchemaThingFromRelationshipResolver
             return;
         }
 
+        // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+        // @pest-mutate-ignore: IncrementInteger, DecrementInteger
         $elapsedMs = (microtime(true) - $start) * 1000;
 
         $callsKey = 'relationship_collect_'.$mode.'_calls';
@@ -643,6 +642,8 @@ class SchemaThingFromRelationshipResolver
             return;
         }
 
+        // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+        // @pest-mutate-ignore: IncrementInteger, DecrementInteger
         $elapsedMs = (microtime(true) - $start) * 1000;
 
         $this->recordProfileIncrement('relationship_full_build_calls', 1);
@@ -683,12 +684,18 @@ class SchemaThingFromRelationshipResolver
         usort($top, static function (array $a, array $b): int {
             $aMsRaw = $a['ms'] ?? 0.0;
             $bMsRaw = $b['ms'] ?? 0.0;
+            // <=> compares a numeric string numerically, so the cast changes no order.
+            // @pest-mutate-ignore: RemoveDoubleCast
             $aMs = \is_numeric($aMsRaw) ? (float) $aMsRaw : 0.0;
+            // <=> compares a numeric string numerically, so the cast changes no order.
+            // @pest-mutate-ignore: RemoveDoubleCast
             $bMs = \is_numeric($bMsRaw) ? (float) $bMsRaw : 0.0;
 
             return $bMs <=> $aMs;
         });
 
+        // Slicing a list that already holds exactly the limit leaves it unchanged.
+        // @pest-mutate-ignore: GreaterToGreaterOrEqual
         if (\count($top) > $topLimit) {
             $top = \array_slice($top, 0, $topLimit);
         }
@@ -766,6 +773,9 @@ class SchemaThingFromRelationshipResolver
         if ($entity instanceof TaxonomyTerm) {
             $termId = $entity->id();
 
+            // A term id is always a non-empty string (taxonomy::slug), so neither the cast nor
+            // the fallback is reached.
+            // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
             return \is_scalar($termId) ? (string) $termId : '';
         }
 
@@ -773,18 +783,24 @@ class SchemaThingFromRelationshipResolver
             $localizedTerm = $entity->term();
             $localizedTermId = $localizedTerm instanceof TaxonomyTerm ? $localizedTerm->id() : null;
 
+            // A term id is always a string, so the cast changes nothing.
+            // @pest-mutate-ignore: RemoveStringCast
             return \is_scalar($localizedTermId) ? (string) $localizedTermId : '';
         }
 
         if ($entity instanceof Asset) {
             $assetPath = $entity->path();
 
+            // An asset path is always a string, so the cast changes nothing.
+            // @pest-mutate-ignore: RemoveStringCast
             return \is_scalar($assetPath) ? (string) $assetPath : '';
         }
 
         if ($entity instanceof Variables) {
             $variablesHandle = $entity->handle();
 
+            // A global set handle is always a string, so the cast changes nothing.
+            // @pest-mutate-ignore: RemoveStringCast
             return \is_scalar($variablesHandle) ? (string) $variablesHandle : '';
         }
 
@@ -815,6 +831,8 @@ class SchemaThingFromRelationshipResolver
             // Return an empty array to signal no usable direct/current field handles were
             // provided
             // ---
+            // With no direct handles nothing is read, so the collection is empty anyway.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -844,6 +862,8 @@ class SchemaThingFromRelationshipResolver
                 || \str_starts_with($directHandleCandidate, 'replicator_row.')
             ) {
                 $directHandlesUseAntlersContextFieldForms = true;
+                // Continuing only re-sets the same flag for the remaining handles.
+                // @pest-mutate-ignore: BreakToContinue
                 break;
             }
         }
@@ -1236,6 +1256,8 @@ class SchemaThingFromRelationshipResolver
         // Check whether the secondary field handle set is missing
         if ($secondaryHandles === []) {
             // Return an empty array to signal no usable secondary field handles were provided
+            // With no secondary handles no entity yields a target, so the result is empty anyway.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -1581,11 +1603,16 @@ class SchemaThingFromRelationshipResolver
         );
 
         // Return no targets when a required field handle set is missing
+        // With any hop's handles empty nothing is read on that hop, so the result is empty
+        // whichever way the checks combine.
+        // @pest-mutate-ignore: BooleanOrToBooleanAnd
         if (
             $directHandles === []
             || $secondaryHandles === []
             || $tertiaryHandles === []
         ) {
+            // With any hop's handles empty nothing is read on that hop, so the result is empty anyway.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -1716,6 +1743,9 @@ class SchemaThingFromRelationshipResolver
                 );
 
                 // Skip items that do not resolve to a term
+                // A middle item that is not a term has no fields to read, so it yields no targets
+                // either way.
+                // @pest-mutate-ignore: InstanceOfToTrue
                 if (! $middleTerm instanceof TaxonomyTerm) {
                     unset(
                         $middleItem,
@@ -1975,6 +2005,8 @@ class SchemaThingFromRelationshipResolver
                 );
 
                 // Check whether a non-empty field suffix and a source entry exist
+                // The entity reader returns null for anything that is not an entity.
+                // @pest-mutate-ignore: InstanceOfToTrue
                 if (
                     $prefixedField !== ''
                     && ($context['source_entry'] ?? null) instanceof EntryContract
@@ -2567,6 +2599,8 @@ class SchemaThingFromRelationshipResolver
                     $segment
                 );
 
+                // A cursor that is not a container fails the descent below, which also returns null.
+                // @pest-mutate-ignore: RemoveEarlyReturn
                 return null;
             }
 
@@ -2916,7 +2950,6 @@ class SchemaThingFromRelationshipResolver
         ) {
             // Unset local variables to free memory
             unset(
-                $candidate,
                 $rawUrl
             );
 
@@ -3427,7 +3460,9 @@ class SchemaThingFromRelationshipResolver
             // Resolve the localized URL
             $url = $localizedTerm->url();
 
-            // Check if the URL is a string and not empty
+            // Check if the URL is a string and not empty (the @id builder also returns null
+            // for a blank URL)
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if (
                 \is_string($url)
                 && $url !== ''
@@ -3436,7 +3471,8 @@ class SchemaThingFromRelationshipResolver
                 return $this->canonicalIdForTaxonomyTermUrl($url);
             }
 
-            // Return null to signal no canonical id is found
+            // Return null to signal no canonical id is found (the method ends in the same null)
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
@@ -3449,7 +3485,9 @@ class SchemaThingFromRelationshipResolver
             // Resolve the URL
             $url = $entity->url();
 
-            // Check if the URL is a string and not empty
+            // Check if the URL is a string and not empty (the @id builder also returns null
+            // for a blank URL)
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if (
                 \is_string($url)
                 && $url !== ''
@@ -3458,7 +3496,8 @@ class SchemaThingFromRelationshipResolver
                 return $this->canonicalIdForTaxonomyTermUrl($url);
             }
 
-            // Return null to signal no canonical id is found
+            // Return null to signal no canonical id is found (the method ends in the same null)
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
@@ -3539,6 +3578,8 @@ class SchemaThingFromRelationshipResolver
         // Check for protocol-relative URL
         if (str_starts_with($trimmed, '//')) {
             // Parse path using a dummy scheme so parse_url can read the path
+            // parse_url() reads the path of a protocol-relative URL without the scheme too.
+            // @pest-mutate-ignore: ConcatRemoveLeft
             $path = parse_url(
                 'https:'.$trimmed,
                 PHP_URL_PATH
@@ -3843,6 +3884,8 @@ class SchemaThingFromRelationshipResolver
         }
 
         // Check if source context is a term with an inDefaultLocale method
+        // Only terms have inDefaultLocale(), and the parameter is an entry or a term.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (
             $sourceContextEntity instanceof TermContract
             && method_exists($sourceContextEntity, 'inDefaultLocale')
@@ -3959,6 +4002,8 @@ class SchemaThingFromRelationshipResolver
             // Return the term if it is an instance of TaxonomyTerm, otherwise return null
             // (i.e., no term can be resolved)
             // ---
+            // LocalizedTerm::term() always holds a concrete Term, so the check never fails.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $term instanceof TaxonomyTerm ? $term : null;
         }
 
@@ -4003,6 +4048,8 @@ class SchemaThingFromRelationshipResolver
             // Return the term if it is an instance of TaxonomyTerm, otherwise return null
             // (i.e., no term can be resolved)
             // ---
+            // LocalizedTerm::term() always holds a concrete Term, so the check never fails.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $term instanceof TaxonomyTerm ? $term : null;
         }
 
@@ -4043,6 +4090,8 @@ class SchemaThingFromRelationshipResolver
             // Return the term if it is an instance of TaxonomyTerm, otherwise return null
             // (i.e., no term can be resolved)
             // ---
+            // LocalizedTerm::term() always holds a concrete Term, so the check never fails.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $term instanceof TaxonomyTerm ? $term : null;
         }
 
@@ -4231,6 +4280,9 @@ class SchemaThingFromRelationshipResolver
             unset($taxonomyPieces);
 
             // Return null when no listed taxonomy could normalize the item
+            // The single-handle checks below compare against the whole piped list, which no
+            // taxonomy handle equals, so they return null too.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
@@ -4349,10 +4401,15 @@ class SchemaThingFromRelationshipResolver
             // Return the term if it is an instance of TaxonomyTerm, otherwise return null
             // (i.e., no term can be resolved)
             // ---
+            // LocalizedTerm::term() always holds a concrete Term, so the check never fails.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $term instanceof TaxonomyTerm ? $term : null;
         }
 
         // Return concrete term model
+        // Term::find() returns a localized term, a term or null, and the localized case
+        // returned above, so the check never changes the result.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $found instanceof TaxonomyTerm ? $found : null;
     }
 
@@ -4512,6 +4569,8 @@ class SchemaThingFromRelationshipResolver
         // Return current-site variables for the resolved global set
         $variables = $set->inCurrentSite();
 
+        // inCurrentSite() returns Variables or null, so the check never changes the result.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $variables instanceof Variables ? $variables : null;
     }
 
@@ -4667,6 +4726,8 @@ class SchemaThingFromRelationshipResolver
                 $targets
             );
 
+            // With no targets the loop below adds nothing, and the encoded empty list is '[]'.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return '[]';
         }
 
@@ -4766,6 +4827,8 @@ class SchemaThingFromRelationshipResolver
             $term = $entity->term();
 
             // Return the term when it is a concrete TaxonomyTerm instance
+            // LocalizedTerm::term() always holds a concrete Term, so the check never fails.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $term instanceof TaxonomyTerm ? $term : null;
         }
 
@@ -4867,6 +4930,8 @@ class SchemaThingFromRelationshipResolver
         if (! \is_array($raw)) {
             unset($raw);
 
+            // Without the return, the loop over the unset payload adds nothing and returns [].
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 

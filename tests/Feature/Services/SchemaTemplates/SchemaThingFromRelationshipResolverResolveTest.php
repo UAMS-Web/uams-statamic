@@ -203,6 +203,29 @@ it('skips targets whose template builds no node', function (mixed $node): void {
     'empty' => [[]],
 ]);
 
+it('moves on to the next target after skipping one', function (string $skip): void {
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldReceive('resolve')->andReturnUsing(fn (EntryModel $entry): array => [
+        'enabled' => true,
+        'main_content_entry' => $skip === 'no template' && $entry->id() === 'a' ? null : 'tpl',
+        'subject_entry' => null,
+        'webpage_entry' => null,
+        'website_entry' => null,
+    ]);
+    $output = thingResolveOutput();
+    $output->shouldReceive('buildStandaloneSchemaObjectNode')->andReturnUsing(
+        fn (string $template, EntryModel $entry): ?array => $entry->id() === 'a' ? ['null node' => null, 'empty node' => [], 'no template' => ['@type' => 'Person']][$skip] : ['@type' => 'Person']
+    );
+
+    $json = thingResolveResolver($output, $cascade)->resolve(['about' => [thingResolveEntry('a'), thingResolveEntry('b')]], ['current_field' => 'about']);
+
+    expect(thingResolveDecode($json))->toBe([['@type' => 'Person', '@id' => 'https://example.test/b']]);
+})->with([
+    'no template' => ['no template'],
+    'null node' => ['null node'],
+    'empty node' => ['empty node'],
+]);
+
 it('emits every node without an @id, and keeps the template @id for a target without one', function (): void {
     $output = Mockery::mock(SchemaOutputService::class);
     $output->shouldReceive('buildStandaloneSchemaObjectNode')->andReturn(['@type' => 'Thing', 'name' => 'x']);
@@ -431,6 +454,24 @@ it('builds each canonical @id in full once per call and compacts the repeats', f
     expect(thingResolveDecode($json))->toBe([['@type' => 'Person', '@id' => 'https://example.test/a']]);
 });
 
+it('compacts a repeat built in this call even when the graph no longer holds its full body', function (): void {
+    $emit = thingResolveEmitContext();
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    // The graph drops its record of surviving full bodies before each target
+    $cascade->shouldReceive('resolve')->andReturnUsing(function () use ($emit): array {
+        $emit->materializedFullNodeAtIds = [];
+
+        return ['enabled' => true, 'main_content_entry' => 'tpl', 'subject_entry' => null, 'webpage_entry' => null, 'website_entry' => null];
+    });
+    $output = thingResolveOutput();
+    $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->once()->andReturn(['@type' => 'Person']);
+    $alsoA = thingResolveEntry('a2', 'https://example.test/a');
+
+    $json = thingResolveResolver($output, $cascade)->resolve(['about' => [thingResolveEntry('a'), $alsoA]], ['current_field' => 'about', 'emit_context' => $emit]);
+
+    expect(thingResolveDecode($json))->toBe([['@type' => 'Person', '@id' => 'https://example.test/a']]);
+});
+
 it('records nothing in the graph maps for a node without a type or an @id', function (array $node): void {
     $output = thingResolveOutput();
     $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturn($node);
@@ -494,7 +535,12 @@ it('does not cache an untyped graph build', function (): void {
 it('records the composition profile when it is enabled', function (): void {
     Config::set('schema_templates.json_ld_compose_profile.enabled', true);
     $output = thingResolveOutput();
-    $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturn(['@type' => 'Person']);
+    // The one graph build takes at least 20ms, so the resolve timing has a floor to check
+    $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturnUsing(function (): array {
+        usleep(20_000);
+
+        return ['@type' => 'Person'];
+    });
     $resolver = thingResolveResolver($output);
     $emit = thingResolveEmitContext(['https://example.test/b' => true], ['https://example.test/b' => true]);
 
@@ -506,6 +552,7 @@ it('records the composition profile when it is enabled', function (): void {
     expect($bag['relationship_collect_direct_calls'])->toBe(2)
         ->and($bag['relationship_targets_direct'])->toBe(3)
         ->and($bag['relationship_resolve_calls'])->toBe(2)
+        ->and($bag['relationship_resolve_ms'])->toBeFloat()->toBeGreaterThanOrEqual(20.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_full_build_calls'])->toBe(2)
         ->and($bag['relationship_compact_ref_hits'])->toBe(1)
         ->and($bag['relationship_full_build_top'])->toHaveCount(2);
@@ -533,6 +580,9 @@ it('records collector samples for each mode, and fragment cache hits', function 
     expect($bag['relationship_collect_secondary_calls'])->toBe(1)
         ->and($bag['relationship_collect_tertiary_calls'])->toBe(1)
         ->and($bag['relationship_collect_global_calls'])->toBe(1)
+        // Elapsed times, not timestamps: each collector is timed from its own start
+        ->and($bag['relationship_collect_secondary_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
+        ->and($bag['relationship_collect_tertiary_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_fragment_cache_hits'])->toBe(2)
         ->and($bag['relationship_full_build_calls'])->toBe(1)
         // A call that collects nothing returns before the resolve sample

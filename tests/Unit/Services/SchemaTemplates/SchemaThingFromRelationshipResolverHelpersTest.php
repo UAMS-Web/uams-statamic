@@ -311,6 +311,7 @@ it('reads a row URL usable as a canonical @id', function (array $row, ?string $e
     'blank' => [['url' => '  '], null],
     'integer' => [['url' => 5], null],
     'array' => [['url' => ['https://example.test/c']], null],
+    'not an absolute URL' => [['url' => '/relative/path'], null],
     'null' => [['url' => null], null],
     'no url field' => [['title' => 'x'], null],
 ]);
@@ -352,7 +353,8 @@ it('reads the first non-empty field from the context', function (array $context,
 ]);
 
 it('reads a source_entry field from the source entry', function (): void {
-    $entry = thingUnitAccessor(EntryModel::class, 'value', ['topics' => new Value(['t1'])]);
+    // The entry also answers the empty handle, so a handle with no field name must not be read
+    $entry = thingUnitAccessor(EntryModel::class, 'value', ['topics' => new Value(['t1']), '' => 'blank handle']);
 
     expect(thingUnitCall('readFirstNonEmptyFieldValueFromContext', ['source_entry' => $entry], ['source_entry.missing', 'source_entry.topics']))->toBe(['t1'])
         ->and(thingUnitCall('readFirstNonEmptyFieldValueFromContext', ['source_entry' => $entry, '' => 'x'], ['source_entry.']))->toBeNull()
