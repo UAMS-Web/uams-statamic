@@ -157,7 +157,7 @@ it('names the special-interest fields with one handle per collection across the 
 
     // The scope guard reads exactly these two field handles (order-independent).
     /** @var array<int, string> $scopeFields */
-    $scopeFields = specialInterestConstant(ValidateSpecialInterestsScope::class, 'OVERRIDE_FIELDS');
+    $scopeFields = (new ReflectionMethod(ValidateSpecialInterestsScope::class, 'overrideFields'))->invoke(null);
     expect(collect($scopeFields)->sort()->values()->all())->toBe(collect($handles)->sort()->values()->all());
 
     // The implied-set union and the computed inverse both map each C/T collection to its field.

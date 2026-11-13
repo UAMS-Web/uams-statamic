@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use App\Support\Relationships\BoundedRelationshipProcessor;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
@@ -14,10 +15,11 @@ use Stillat\Relationships\Comparisons\ComparisonResult;
 use Stillat\Relationships\EntryRelationship;
 use Stillat\Relationships\Processors\RelationshipProcessor;
 use Stillat\Relationships\RelationshipManager;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -34,8 +36,8 @@ uses(CollectionTreeIsolatedTestCase::class);
 |
 | The first two tests are hermetic (container + a no-op processor call). The stale-
 | snapshot and bounded-buffer tests exercise the real singleton through the live
-| clinical-ontology sync, so they run serial against the real Stache and skip when
-| the content/ submodule is absent.
+| clinical-ontology sync on a per-process copy of the real content (#557) and skip
+| when the content/ submodule is absent.
 */
 
 it('binds the bounded processor over the vendor RelationshipProcessor', function () {
@@ -142,6 +144,9 @@ function og1406MakeSpecialty(string $suffix, string $title, array $data = []): S
 
 describe('bounded accumulator over the live ontology sync (#1406)', function () {
     beforeEach(function () {
+        // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+        app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
         foreach (['clinical_expertise', 'clinical_conditions'] as $handle) {
             if (! Collection::find($handle)) {
                 ContentSubmodule::reportMissing('clinical ontology collections');
@@ -195,7 +200,7 @@ describe('bounded accumulator over the live ontology sync (#1406)', function () 
             ->toContain($second->id());
         // ...and the intervening edit survives (no stale-snapshot clobber).
         expect($fresh->get('title'))->toBe('Renamed Title');
-    })->group('serial');
+    });
 
     it('does not accumulate effected entries across successive saves', function () {
         /** @var BoundedRelationshipProcessor $processor */
@@ -216,5 +221,5 @@ describe('bounded accumulator over the live ontology sync (#1406)', function () 
         // Unbounded would climb to 5 (one per save); bounded stays at the single
         // relationship's effected set, never the running total.
         expect(max($sizes))->toBeLessThanOrEqual(2);
-    })->group('serial');
+    });
 });
