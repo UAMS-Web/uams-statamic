@@ -1781,7 +1781,7 @@ jobs:
   checks:
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.8.0
+    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.10.0
     with:
       pest: false
       mutate: false
