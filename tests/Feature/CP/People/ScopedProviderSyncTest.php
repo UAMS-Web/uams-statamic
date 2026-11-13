@@ -67,7 +67,7 @@ function scopedSyncEditor(): FileStatamicUser
     $role->title('Location editor');
     $role->permissions(array_merge(...array_map(
         fn (string $collection): array => ["view {$collection} entries", "edit {$collection} entries"],
-        array_keys(EnforcePeopleScopeOnProviderSync::SYNCED_FIELDS),
+        array_keys(EnforcePeopleScopeOnProviderSync::syncedFields()),
     )));
     $role->save();
 
@@ -226,7 +226,7 @@ beforeEach(function (): void {
     $locationBlueprint->save();
 
     // The other collections whose people field syncs into people
-    foreach (EnforcePeopleScopeOnProviderSync::SYNCED_FIELDS as $handle => $field) {
+    foreach (EnforcePeopleScopeOnProviderSync::syncedFields() as $handle => $field) {
         if ($handle === 'clinical_locations') {
             continue;
         }
@@ -392,7 +392,7 @@ it('guards every relationship the addon syncs into people', function (): void {
     }
 
     ksort($synced);
-    $guarded = EnforcePeopleScopeOnProviderSync::SYNCED_FIELDS;
+    $guarded = EnforcePeopleScopeOnProviderSync::syncedFields();
     ksort($guarded);
 
     expect($synced)->not->toBeEmpty()
@@ -476,4 +476,39 @@ it('skips an event that carries something other than an entry', function (): voi
 
     expect(throwableFrom(fn () => $listener->handle(new EntrySaving(new stdClass))))->toBeNull()
         ->and(scopedSyncIds('cl-main', 'physician_locations'))->toBe(['sulu', 'chekov']);
+});
+
+it('leaves alone an entry in a collection that syncs nothing into people', function (): void {
+    actingAs(scopedSyncEditor());
+
+    // `organizations` is set up here and syncs no field into people
+    /** @var EntryItem $page */
+    $page = Entry::make();
+    $page->collection('organizations');
+    $page->locale('default');
+    $page->id('org-main');
+    $page->data(['title' => 'Organization', 'physician_locations' => ['pavel']]);
+
+    $listener = app(EnforcePeopleScopeOnProviderSync::class);
+
+    // An unsynced collection names no field, so nothing is read or refused
+    expect(throwableFrom(fn () => $listener->handle(new EntrySaving($page))))->toBeNull();
+});
+
+it('looks nothing up for the stored copy of an entry with no id', function (): void {
+    actingAs(scopedSyncEditor());
+
+    // A lookup of a null id would also find nothing, so only the missing call shows
+    // that an entry with no id is treated as new without one
+    Entry::partialMock()->shouldReceive('find')->with(null)->never();
+
+    /** @var EntryItem $location */
+    $location = Entry::make();
+    $location->collection('clinical_locations');
+    $location->locale('default');
+    $location->data(['title' => 'Unsaved clinic', 'physician_locations' => ['pavel']]);
+
+    $listener = app(EnforcePeopleScopeOnProviderSync::class);
+
+    expect(fn () => $listener->handle(new EntrySaving($location)))->toThrow(Exception::class, SCOPED_SYNC_REFUSAL);
 });

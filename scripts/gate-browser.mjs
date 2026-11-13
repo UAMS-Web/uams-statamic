@@ -54,7 +54,9 @@ export function gateBrowser({ tree, npm, npx, php, reuseBuild = false }) {
         bc = run(npm, ['run', 'cp:build'], tree)
     }
 
-    // Mirrors the browser job's "Run CP browser smokes" step in ci.yml.
+    // Mirrors the browser job's "Run CP browser smokes" step in ci.yml, less its
+    // `--shard` and `--log-junit`: ci.yml splits the suite into four Linux shards and
+    // merges their reports in `browser-report` (#521); here it runs whole, in one process.
     // tests/Browser holds the CP smokes and the axe-core accessibility gate (UAMS-Web/uams-statamic-archive#1046).
     step('JOB browser - pest tests/Browser')
     const bt = runPhp(['vendor/bin/pest', 'tests/Browser'], tree)

@@ -22,7 +22,7 @@ use Symfony\Component\Process\Process;
  * Driven as a subprocess (like {@see SkipBaselineGuardTest} and
  * {@see ParallelSafeTestsGuardTest}) rather than by requiring the script: that pins
  * the real CLI contract — exit code, and the class names it prints — which is what
- * ci.yml and local-ci.mjs actually depend on. Framework-free, and its fixtures live
+ * ci.yml and scripts/gate-pest.mjs actually depend on. Framework-free, and its fixtures live
  * under a per-run `sys_get_temp_dir()` path, so it is parallel-safe.
  *
  * @command  php artisan test --compact tests/Feature/SlowestClassGuardTest.php

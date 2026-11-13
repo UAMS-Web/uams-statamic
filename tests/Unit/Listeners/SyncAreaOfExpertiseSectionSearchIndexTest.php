@@ -21,6 +21,12 @@ use Tests\Support\StacheIsolatedTestCase;
  * storage, so this drives the listener with a real AoE entry + the real provider but a mocked
  * search index — asserting the exact delete/insert calls without writing an index file.
  *
+ * Accepted equivalents, annotated in the listener: the `instanceof Entry` guard that
+ * isAreaOfExpertise() repeats, `continue` turned to `break` in a loop over one index,
+ * and the three blank strings a delete document carries but never reads. The one-item
+ * index list is a constant, which the mutation runner skips as uncovered; removing
+ * the item by hand fails 3 tests here.
+ *
  * @command  php artisan test --compact tests/Unit/Listeners/SyncAreaOfExpertiseSectionSearchIndexTest.php
  */
 uses(StacheIsolatedTestCase::class);
@@ -141,6 +147,13 @@ it('queues only for an Area-of-Expertise save or delete', function (): void {
     expect($listener->shouldQueue(new EntrySaved($aoe)))->toBeTrue()
         ->and($listener->shouldQueue(new EntryDeleted($aoe)))->toBeTrue()
         ->and($listener->shouldQueue(new EntrySaved($other)))->toBeFalse();
+});
+
+it('queues nothing for a delete whose payload is not an entry', function (): void {
+    /** @var SyncAreaOfExpertiseSectionSearchIndex $listener */
+    $listener = $this->listener;
+
+    expect($listener->shouldQueue(new EntryDeleted(new stdClass)))->toBeFalse();
 });
 
 it('ignores a save on a non-Area-of-Expertise collection', function (): void {

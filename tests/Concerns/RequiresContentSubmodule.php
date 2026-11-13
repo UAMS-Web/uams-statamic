@@ -11,9 +11,9 @@ use Tests\Support\ContentSubmodule;
 
 /**
  * Lets content-dependent tests skip gracefully when the `content/` submodule is
- * absent. The canonical environments (`ci.yml` phpunit job, `local-ci.mjs`, a
- * normal local checkout) all initialize `content/`, so these guards never trip
- * there; a bare worktree or `local-ci --skip-submodule` run reports a clear
+ * absent. The canonical environments (`ci.yml` phpunit job, the local runner's
+ * `dependencies` job, a normal local checkout) all initialize `content/`, so these
+ * guards never trip there; a run in a bare worktree reports a clear
  * `SKIP` instead of the `FAIL`/`ERROR` that a missing collection would cause.
  *
  * A `null` lookup on its own is **not** the condition these guards name. Both
