@@ -1,16 +1,16 @@
 # Runbook: local CI band baselines
 
-A band figure is only comparable to an earlier one when both name the interpreter that produced them. Since UAMS-Web/uams-statamic-archive#3235 the local CI runner prints each Pest band next to the PHP version it resolved, both in its summary block and in the commit status it posts:
+A band figure is only comparable to an earlier one when both name the interpreter that produced them. Since UAMS-Web/uams-statamic-archive#3235 each Pest band is printed next to the PHP version that ran it. Since #296 the shared runner prints the interpreter in its header, and the `pest` job (`scripts/gate-pest.mjs`) prints the band lines after the suite:
 
 ```
-  PHP:      /Users/<user>/Library/Application Support/Herd/bin/php84 (8.4.27)
+  PHP:        /Users/<user>/Library/Application Support/Herd/bin/php84 (8.4.27, from Herd php84)
   parallel: 12,909 passed, 1 skipped (36,638 assertions) under PHP 8.4.27
   serial: 166 passed (540 assertions) under PHP 8.4.27
 ```
 
 The band lines are counted from each band's JUnit report (`junit-parallel.xml`, `junit-serial.xml` in the CI tree), summed over every `<testcase>`. When a band wrote no report the line says so instead of being left out.
 
-To read the interpreter back out of a saved log, use the helper. It matches the line's `PHP:` prefix rather than its position, because the header's fetch section is one line shorter when the branch already exists locally:
+To read the interpreter back out of a saved log, use the helper. It matches the line's `PHP:` prefix rather than its position, because what the runner prints before the header varies in length:
 
 ```bash
 node scripts/local-ci-bands.mjs ci.log

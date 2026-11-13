@@ -6,13 +6,14 @@
  * Pest's own output, so nothing that outlives the log says which interpreter a figure
  * came from. When Herd's PHP moved from 8.4.25 to 8.4.27 on one machine, the next chain
  * reported 10 more parallel assertions for the same tree, and the move could not be
- * told apart from a code change. The runner now prints each band beside the version in
- * its summary block and in the commit status it posts, which is what a verdict quotes.
+ * told apart from a code change. `scripts/gate-pest.mjs` therefore prints each band beside
+ * the version after the suite, which is what a verdict quotes (#296).
  *
- * READ BY PREFIX, NEVER BY POSITION. The header's `PHP:` line sat at line 24 in two of
- * three logs and at line 23 in the third, because the fetch section is a line shorter
- * when the branch already exists locally. `interpreterFromLog()` matches the line's own
- * prefix, so a shorter header still yields the interpreter rather than the line after it.
+ * READ BY PREFIX, NEVER BY POSITION. The header's `PHP:` line moves with the length of
+ * what the runner prints before it, so `interpreterFromLog()` matches the line's own
+ * prefix, and a shorter header still yields the interpreter rather than the line after
+ * it. The shared runner writes `PHP:  <path> (<version>, from <source>)`; the version is
+ * the text before the first comma inside the parentheses.
  *
  * COUNTED FROM THE TESTCASES. The figures are summed over every `<testcase>` in the
  * band's JUnit report rather than read from a suite's attributes, because a merged
@@ -33,7 +34,7 @@ import { pathToFileURL } from 'node:url'
  * @returns {?{path: string, version: string}} null when no header line is present.
  */
 export function interpreterFromLog(log) {
-    const match = /^PHP:[ \t]+(.+?)[ \t]+\(([^()\r\n]*)\)[ \t]*\r?$/m.exec(String(log))
+    const match = /^PHP:[ \t]+(.+?)[ \t]+\(([^(),\r\n]*)(?:,[^()\r\n]*)?\)[ \t]*\r?$/m.exec(String(log))
 
     return match ? { path: match[1], version: match[2] } : null
 }
