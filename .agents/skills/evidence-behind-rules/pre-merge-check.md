@@ -126,7 +126,7 @@ Work these in order. The early steps are cheap and can invalidate the expensive 
 
 4. **Run the repository's gate on the state that will land.** Step 2 brought the branch current, so the head commit is that state unless `main` moved again in between; check before the run. **Read the summary rather than the exit code** (a pipe replaces `$?` with the last command's status) and **name the commit the runner printed.**
 
-   The [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill owns running the jobs, the exit-code trap and posting the verdict comment (`--comment`); a repository that keeps its own runner names that runner there. This rule does not restate any of it.
+   The [`local-ci`](../local-ci/SKILL.md) skill owns running the jobs, the exit-code trap and posting the verdict comment (`--comment`); a repository that keeps its own runner names that runner there. This rule does not restate any of it.
 
    The runner here validates the branch tip, checked out by name or detached at `origin/<branch>`, and performs no merge. Step 2 is what makes the tip the state that lands.
 
@@ -180,7 +180,7 @@ Work these in order. The early steps are cheap and can invalidate the expensive 
 
 11. **Say what you found, on the pull request.** The answer is "ready" or "not yet, here is what turned up", never a bare yes. That finding is itself a published claim gating a decision, so [`adversarial-review`](../rule-adversarial-review/SKILL.md)'s trigger covers it: most sharply where it reports something checked and clean. **Comment it on the pull request before any merge decision, green or red.** A verdict that exists only in a terminal or a chat window is not a record: the pull request is where the next reader looks, and scrollback is not an artifact.
 
-    The verdict convention (its wording, the jobs it names, the head SHA it records) is the [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill's and is not restated here.
+    The verdict convention (its wording, the jobs it names, the head SHA it records) is the [`local-ci`](../local-ci/SKILL.md) skill's and is not restated here.
 
 ## A finding in the description alone
 
@@ -202,7 +202,7 @@ On a red (a failing chain, or a finding a review caught on a green one) the gate
 
 4. **Apply the `handed-back` label** in the same turn as the comment. The comment carries the finding; the label carries the fact that one is outstanding. Both writes are REST (`POST` adds to the labels already there), so an exhausted GraphQL quota cannot strand a pull request in the wrong state: the argument that decided against the draft flip, pointing the other way.
 
-The [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill ships the one-step form: `post-verdict.mjs <n> verdict.md --hand-back` posts the comment and applies the label in a single command, one command rather than two calls, because the second call was the one that got missed.
+The [`local-ci`](../local-ci/SKILL.md) skill ships the one-step form: `post-verdict.mjs <n> verdict.md --hand-back` posts the comment and applies the label in a single command, one command rather than two calls, because the second call was the one that got missed.
 
 **Why a label and not a draft flip.** `ready -> draft` is the author's own signal (it says the author pulled the work back) so a gate emitting it impersonates the author it is reporting to, in the one field a reader uses to tell "the gate found something" from "the author withdrew this". And the flag is GraphQL-only: `PATCH .../pulls/{n}` ignores `draft` (step 1), so the flip would spend the quota [`github-api-budget`](../rule-github-api-budget/SKILL.md) exists to protect, on a signal that is already wrong on the first ground. The flip did one thing incidentally (it removed the branch from the merge queue) and the label does that deliberately. **The pull request stays ready.** The author owns that flag; the gate reports on the artifact and does not mutate state it does not own.
 
@@ -249,5 +249,5 @@ Where orchestration is available (Ultracode, or the user asked for a workflow), 
 
 This file owns **the decision to merge**: the order in which its neighbors are applied at the moment of merging, the measurement that explains why the order is the only thing enforcing it, and what the gate does with a red. It does not own the chain, the job list, or the shape of the verdict comment. The *build* gate (TDD, branch, PR, the chain) lives in [`AGENTS.md`](../../../AGENTS.md); bringing a branch current is [`sync-pr-branch`](../rule-sync-pr-branch/SKILL.md); the ship-time obligations that outlive a green build (never pushing to `main`, ticking criteria, moving the board card, giving residue a ticket) are [`closing-a-ticket`](../rule-closing-a-ticket/SKILL.md); the skeptical pass itself, and its tooling, are [`adversarial-review`](../rule-adversarial-review/SKILL.md); where you branch is [`worktrees`](../rule-worktrees/SKILL.md); the plumbing sweep is [`coordination-plumbing-stays-out-of-artifacts`](../rule-coordination-plumbing-stays-out-of-artifacts/SKILL.md). The composing behavior steps 6 and 7 rest on is measured in [`github-api-budget`](../rule-github-api-budget/SKILL.md). Don't restate any of them.
 
-Running the jobs, the exit-code trap, and **recording the verdict on the pull request** live in [`local-ci`](../../../.claude/skills/local-ci/SKILL.md); what happens after a red verdict is this file's, above.
+Running the jobs, the exit-code trap, and **recording the verdict on the pull request** live in [`local-ci`](../local-ci/SKILL.md); what happens after a red verdict is this file's, above.
 

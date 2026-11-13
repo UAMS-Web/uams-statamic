@@ -49,7 +49,7 @@ History: [the introduction](../../../.claude/history/adversarial-review.md).
 
    Mutation-verify with the tooling too (Pest's native mutation testing automates this across the changed surface: `vendor/bin/pest --mutate --class="<Namespace>\\…\\<ChangedClass>"` flags any *surviving mutant* (a mutation no test kills = a false-green gap). It needs a coverage driver (PCOV) fast, coverage-only (or Xdebug); a per-machine install that does **not** travel via git). See *Tooling that raises the floor* below.
 
-   The full chain, run locally, is the [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill.
+   The full chain, run locally, is the [`local-ci`](../local-ci/SKILL.md) skill.
 
    The quick gate here is `php artisan test --compact`.
 
