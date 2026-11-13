@@ -38,7 +38,7 @@ covers(SchemaThingFromRelationshipResolver::class);
 /**
  * A mocked entry with an id and a canonical absolute URL.
  */
-function thingResolveEntry(string $id, ?string $url = null): EntryModel
+function thingResolveEntry(string $id, ?string $url = null): EntryModel&MockInterface
 {
     $entry = Mockery::mock(EntryModel::class);
     $entry->shouldReceive('id')->andReturn($id);
@@ -60,7 +60,12 @@ function thingResolveOutput(array $overrides = []): SchemaOutputService&MockInte
 {
     $output = Mockery::mock(SchemaOutputService::class);
     $output->shouldReceive('buildFlattenedSchemaAntlersContextFromDataObject')->andReturnUsing(
-        fn (EntryModel $entry): array => ['title' => 'T-'.$entry->id()]
+        function (EntryModel $entry): array {
+            /** @var string $id */
+            $id = $entry->id();
+
+            return ['title' => 'T-'.$id];
+        }
     );
     $output->shouldReceive('buildStandaloneSchemaObjectNode')->andReturnUsing(
         fn (string $template, mixed $entity, array $context): array => $overrides + ['@type' => 'Person', 'template' => $template, 'title' => $context['title'] ?? null]
@@ -323,6 +328,7 @@ it('resolves the context entity for a global target and builds against the targe
  * Resolve one global-sourced target with source merging off, so the build is page-invariant.
  *
  * @param  array<string, mixed>  $params  Extra parameters.
+ * @param  array<string, mixed>  $context  Extra Antlers context.
  */
 function thingResolvePageInvariant(SchemaThingFromRelationshipResolver $resolver, EntryModel $target, array $params = [], array $context = []): string
 {
@@ -348,7 +354,9 @@ it('stores a page-invariant build in the fragment cache and serves the next comp
 });
 
 it('does not cache a build that is not page-invariant', function (Closure $vary): void {
-    [$params, $context, $fragments] = $vary();
+    /** @var array{0: array<string, mixed>, 1: array<string, mixed>, 2: bool} $variation */
+    $variation = $vary();
+    [$params, $context, $fragments] = $variation;
     Config::set('schema_templates.json_ld_cache.fragments_enabled', $fragments);
     $target = thingResolveEntry('founder');
     $output = thingResolveOutput();
@@ -547,6 +555,7 @@ it('records the composition profile when it is enabled', function (): void {
     $resolver->resolve(['about' => [thingResolveEntry('a'), thingResolveEntry('b')]], ['current_field' => 'about', 'schema_object' => 'tpl', 'emit_context' => $emit]);
     $resolver->resolve(['about' => [thingResolveEntry('c')]], ['current_field' => 'about', 'schema_object' => 'tpl']);
 
+    /** @var array<string, mixed> $bag */
     $bag = request()->attributes->get(JsonLdCompositionProfiler::REQUEST_JSON_LD_COMPOSITION_PROFILE);
 
     expect($bag['relationship_collect_direct_calls'])->toBe(2)
@@ -575,6 +584,7 @@ it('records collector samples for each mode, and fragment cache hits', function 
     thingResolvePageInvariant($resolver, $target);
     thingResolvePageInvariant($resolver, $target, ['emit_context' => thingResolveEmitContext()]);
 
+    /** @var array<string, mixed> $bag */
     $bag = request()->attributes->get(JsonLdCompositionProfiler::REQUEST_JSON_LD_COMPOSITION_PROFILE);
 
     expect($bag['relationship_collect_secondary_calls'])->toBe(1)

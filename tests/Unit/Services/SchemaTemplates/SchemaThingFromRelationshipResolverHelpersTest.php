@@ -217,6 +217,7 @@ it('reads no term data from something without data', function (mixed $localized)
 ]);
 
 it('compares a term default-locale field with the expected value', function (array $data, string $field, string $expected, bool $matches): void {
+    /** @var array<string, mixed> $data */
     expect(thingUnitCall('taxonomyTermDefaultLocaleDataEquals', thingUnitTermWithData($data), $field, $expected))->toBe($matches);
 })->with([
     'equal after trimming' => [['type' => ' Credential '], 'type', 'Credential', true],
@@ -298,8 +299,8 @@ it('compares a credential subtype only on CTDL credentials', function (): void {
 // ---
 
 it('strips the source_entry prefix from relationship field handles', function (): void {
-    expect(thingUnitCall('stripSourceEntryPrefixFromRelationshipFieldHandles', ['about', 'source_entry.topics', 'source_entry.', 'xsource_entry.y']))
-        ->toBe(['about', 'topics', 'xsource_entry.y']);
+    expect(thingUnitCall('stripSourceEntryPrefixFromRelationshipFieldHandles', ['about', 'source_entry.topics', 'source_entry.', 'my_source_entry.y']))
+        ->toBe(['about', 'topics', 'my_source_entry.y']);
 });
 
 it('reads a row URL usable as a canonical @id', function (array $row, ?string $expected): void {
@@ -415,6 +416,7 @@ it('turns each enabled replicator row into a target when no relationship field i
 });
 
 it('reads a row without an id or a type as null in its template context', function (): void {
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $targets */
     $targets = thingUnitCall('extractReplicatorTargets', [['value' => ['title' => 'x']]], []);
 
     expect($targets[0]['template_context']['replicator_row_id'])->toBeNull()

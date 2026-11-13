@@ -13,6 +13,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Statamic\Assets\Asset;
 use Statamic\Assets\AssetContainer;
 use Statamic\Contracts\Data\Augmented;
@@ -82,7 +83,12 @@ function thingHelpersProfileBag(): array
 {
     $bag = request()->attributes->get(JsonLdCompositionProfiler::REQUEST_JSON_LD_COMPOSITION_PROFILE);
 
-    return \is_array($bag) ? $bag : [];
+    if (! \is_array($bag)) {
+        return [];
+    }
+
+    /** @var array<string, mixed> $bag */
+    return $bag;
 }
 
 /**
@@ -203,6 +209,7 @@ it('records a full build sample with its caller and target', function (): void {
         SchemaOutputService::ANTLERS_SCHEMA_PROPERTY_KEY => 'founder',
     ], microtime(true) - 0.25);
 
+    /** @var array{relationship_full_build_calls: mixed, relationship_full_build_ms: float, relationship_full_build_top: list<array<string, mixed>>} $bag */
     $bag = thingHelpersProfileBag();
     $sample = $bag['relationship_full_build_top'][0];
 
@@ -231,7 +238,9 @@ it('records null callers when the context names none', function (): void {
         SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => 5,
     ], microtime(true));
 
-    $sample = thingHelpersProfileBag()['relationship_full_build_top'][0];
+    /** @var list<array<string, mixed>> $top */
+    $top = thingHelpersProfileBag()['relationship_full_build_top'];
+    $sample = $top[0];
 
     expect($sample['caller_template_entry_id'])->toBeNull()
         ->and($sample['caller_property_key'])->toBeNull()
@@ -251,7 +260,9 @@ it('keeps the slowest full builds, slowest first, up to the configured limit', f
     // A build of about 200ms lands between the two timed samples
     thingHelpersCall('recordProfileFullBuildSample', 'new', 'tpl', null, [], microtime(true) - 0.2);
 
-    $modes = array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode');
+    /** @var list<array<string, mixed>> $top */
+    $top = thingHelpersProfileBag()['relationship_full_build_top'];
+    $modes = array_column($top, 'mode');
 
     // Unusable timings sort as zero, in their original order (usort is stable)
     expect($modes)->toBe(\array_slice(['a', 'new', 'b', 'c', 'd'], 0, $kept));
@@ -275,7 +286,9 @@ it('keeps all builds up to the limit and treats unusable entries as zero millise
 
     thingHelpersCall('recordProfileFullBuildSample', 'new', 'tpl', null, [], microtime(true) - 0.2);
 
-    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['a', 'new', 'd', 'z', 'c']);
+    /** @var list<array<string, mixed>> $top */
+    $top = thingHelpersProfileBag()['relationship_full_build_top'];
+    expect(array_column($top, 'mode'))->toBe(['a', 'new', 'd', 'z', 'c']);
 });
 
 it('reads a non-scalar or missing top limit as ten', function (): void {
@@ -301,7 +314,9 @@ it('starts the slowest-builds list when the bag holds none or an unusable one', 
 
     thingHelpersCall('recordProfileFullBuildSample', 'new', 'tpl', null, [], microtime(true));
 
-    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['new']);
+    /** @var list<array<string, mixed>> $top */
+    $top = thingHelpersProfileBag()['relationship_full_build_top'];
+    expect(array_column($top, 'mode'))->toBe(['new']);
 })->with([
     'not an array' => ['broken'],
     'list not an array' => [['relationship_full_build_top' => 'broken']],
@@ -320,14 +335,14 @@ it('names the kind of a profiled entity', function (Closure $entity, string $exp
 it('reads the id of a profiled entity', function (Closure $entity, string $expected): void {
     expect(thingHelpersCall('profileEntityId', $entity()))->toBe($expected);
 })->with([
-    'entry' => [fn (): EntryModel => (new EntryModel)->id('entry-1'), 'entry-1'],
+    'entry' => [fn (): EntryModel => tap(new EntryModel, fn (EntryModel $e): mixed => $e->id('entry-1')), 'entry-1'],
     'entry without an id' => [fn (): EntryModel => new EntryModel, ''],
-    'taxonomy term' => [fn (): TaxonomyTerm => (new TaxonomyTerm)->taxonomy('tags')->slug('one'), 'tags::one'],
-    'localized term' => [fn (): LocalizedTerm => new LocalizedTerm((new TaxonomyTerm)->taxonomy('tags')->slug('two'), 'default'), 'tags::two'],
+    'taxonomy term' => [fn (): TaxonomyTerm => thingHelpersTaxonomyTerm('tags', 'one'), 'tags::one'],
+    'localized term' => [fn (): LocalizedTerm => new LocalizedTerm(thingHelpersTaxonomyTerm('tags', 'two'), 'default'), 'tags::two'],
     'localized term without a term' => [fn (): LocalizedTerm => new LocalizedTerm(null, 'default'), ''],
-    'asset' => [fn (): Asset => (new Asset)->path('images/a.jpg'), 'images/a.jpg'],
+    'asset' => [fn (): Asset => tap(new Asset, fn (Asset $a): mixed => $a->path('images/a.jpg')), 'images/a.jpg'],
     'asset without a path' => [fn (): Asset => new Asset, ''],
-    'global variables' => [fn (): Variables => (new Variables)->globalSet('settings'), 'settings'],
+    'global variables' => [fn (): Variables => tap(new Variables, fn (Variables $v): mixed => $v->globalSet('settings')), 'settings'],
     'global variables without a set' => [fn (): Variables => new Variables, ''],
     'a test double' => [fn (): EntryModel => tap(Mockery::mock(EntryModel::class), fn ($m) => $m->shouldReceive('id')->andReturn('mocked')), ''],
     'anything else' => [fn (): stdClass => new stdClass, ''],
@@ -336,6 +351,18 @@ it('reads the id of a profiled entity', function (Closure $entity, string $expec
 // ---
 // Canonical @id resolution
 // ---
+
+/**
+ * A real, unsaved taxonomy term with a taxonomy handle and a slug.
+ */
+function thingHelpersTaxonomyTerm(string $taxonomy, string $slug): TaxonomyTerm
+{
+    $term = new TaxonomyTerm;
+    $term->taxonomy($taxonomy);
+    $term->slug($slug);
+
+    return $term;
+}
 
 /**
  * The fragment @id the resolver builds for a root-relative term path.
@@ -392,6 +419,7 @@ it('uses an absolute URL string as its own @id', function (mixed $value, ?string
 ]);
 
 it('reads an entry @id from its absolute URL, then its URL', function (array $returns, ?string $expected): void {
+    /** @var array<string, mixed> $returns */
     expect(thingHelpersCall('resolveCanonicalIdForEntity', thingHelpersEntry($returns)))->toBe($expected);
 })->with([
     'absolute URL' => [['absoluteUrl' => 'https://example.test/a', 'url' => '/b'], 'https://example.test/a'],
@@ -410,6 +438,7 @@ it('gives routeless subjects and specializations an @id from their slug', functi
 ]);
 
 it('gives a routeless entry no @id without a usable slug or a known collection', function (array $returns): void {
+    /** @var array<string, mixed> $returns */
     expect(thingHelpersCall('resolveCanonicalIdForEntity', thingHelpersEntry($returns)))->toBeNull();
 })->with([
     'subject with an empty slug' => [['collectionHandle' => 'subject_matter', 'slug' => '']],
@@ -486,7 +515,7 @@ it('sets a node @id from the target, keeping the template @id when the target ha
  *
  * @param  string|null  $collection  Collection handle, or null for none.
  */
-function thingHelpersEntryIn(?string $collection, string $id = 'e1'): EntryModel
+function thingHelpersEntryIn(?string $collection, string $id = 'e1'): EntryModel&MockInterface
 {
     $entry = Mockery::mock(EntryModel::class);
     $entry->shouldReceive('id')->andReturn($id);
@@ -500,7 +529,7 @@ function thingHelpersEntryIn(?string $collection, string $id = 'e1'): EntryModel
 /**
  * A mocked taxonomy term in a taxonomy.
  */
-function thingHelpersTermIn(string $taxonomy): TaxonomyTerm
+function thingHelpersTermIn(string $taxonomy): TaxonomyTerm&MockInterface
 {
     $term = Mockery::mock(TaxonomyTerm::class);
     $term->shouldReceive('taxonomy')->andReturn(tap(Mockery::mock(Taxonomy::class), fn ($t) => $t->shouldReceive('handle')->andReturn($taxonomy)));
@@ -511,7 +540,7 @@ function thingHelpersTermIn(string $taxonomy): TaxonomyTerm
 /**
  * A mocked asset in a container.
  */
-function thingHelpersAssetIn(string $container): Asset
+function thingHelpersAssetIn(string $container): Asset&MockInterface
 {
     $asset = Mockery::mock(Asset::class);
     $asset->shouldReceive('container')->andReturn(tap(Mockery::mock(AssetContainer::class), fn ($c) => $c->shouldReceive('handle')->andReturn($container)));
@@ -764,6 +793,7 @@ function thingHelpersBindRequest(mixed $routeData, string $url = 'https://exampl
     $route = new Route('GET', '/page', []);
     $route->bind($request);
     if ($routeData !== null) {
+        /** @var object|string $routeData */
         $route->setParameter('data', $routeData);
     }
     $request->setRouteResolver(fn (): Route => $route);
@@ -875,13 +905,17 @@ it('reads the source site handle from an entry or a term', function (Closure $en
 /**
  * A mock whose site accessor returns a site with the given handle.
  *
- * @param  class-string  $class  Class to mock.
+ * @template T of object
+ *
+ * @param  class-string<T>  $class  Class to mock.
+ * @return T&MockInterface
  */
 function thingHelpersSited(string $class, string $method, mixed $handle): object
 {
     $site = Mockery::mock(Site::class);
     $site->shouldReceive('handle')->andReturn($handle);
 
+    /** @var T&MockInterface $mock */
     $mock = Mockery::mock($class);
     $mock->shouldReceive($method)->andReturn($site);
 
@@ -941,7 +975,7 @@ it('builds a term template context from its default-locale data plus the term', 
 
 it('builds a global variables template context from its values and the set', function (): void {
     // The values are read through data(), and `global` is assigned last
-    $variables = (new Variables)->globalSet('settings');
+    $variables = tap(new Variables, fn (Variables $v): mixed => $v->globalSet('settings'));
     $variables->set('phone', '555');
 
     expect(thingHelpersCall('buildTemplateContextForEntity', $variables))->toBe(['phone' => '555', 'global' => $variables]);
@@ -1000,12 +1034,12 @@ it('resolves no template id for a target without an entry or term', function ():
 it('merges the source entry or term and its site into a target context', function (): void {
     $entry = thingHelpersSited(EntryModel::class, 'site', 'health');
     $term = tap(Mockery::mock(TaxonomyTerm::class), fn ($t) => $t->shouldReceive('inDefaultLocale')->andReturn(thingHelpersSited(LocalizedTerm::class, 'site', 'research')));
-    $siteless = tap(Mockery::mock(EntryModel::class), fn ($e) => $e->shouldReceive('site')->andReturnNull());
+    $withoutSite = tap(Mockery::mock(EntryModel::class), fn ($e) => $e->shouldReceive('site')->andReturnNull());
 
     expect(thingHelpersCall('mergeSourceContextIntoTemplateContext', ['title' => 'T', 'source_site' => 'kept?'], null))->toBe(['title' => 'T', 'source_site' => 'kept?'])
         ->and(thingHelpersCall('mergeSourceContextIntoTemplateContext', ['title' => 'T', 'source_site' => 'replaced'], $entry))->toBe(['title' => 'T', 'source_site' => 'health', 'source_entry' => $entry])
         ->and(thingHelpersCall('mergeSourceContextIntoTemplateContext', ['title' => 'T'], $term))->toBe(['title' => 'T', 'source_term' => $term, 'source_site' => 'research'])
-        ->and(thingHelpersCall('mergeSourceContextIntoTemplateContext', ['title' => 'T'], $siteless))->toBe(['title' => 'T', 'source_entry' => $siteless]);
+        ->and(thingHelpersCall('mergeSourceContextIntoTemplateContext', ['title' => 'T'], $withoutSite))->toBe(['title' => 'T', 'source_entry' => $withoutSite]);
 });
 
 it('prepares a target build context: target fields, then the source context, then row overrides', function (): void {
@@ -1094,6 +1128,7 @@ it('builds an asset context without a permalink when it has no absolute URL, and
         'absoluteUrl' => $absolute,
     ]);
 
+    /** @var array<string, mixed> $context */
     $context = thingHelpersCall('buildTemplateContextForAsset', $asset);
 
     expect(array_keys($context))->toBe(['size', 'last_modified', 'width', 'height', 'mime_type', 'duration', 'bitrate', 'asset', 'absolute_url', 'url', 'permalink'])
@@ -1127,7 +1162,10 @@ it('builds an asset entity template context through the asset builder', function
         'absoluteUrl' => 'https://example.test/x',
     ]);
 
-    expect(thingHelpersCall('buildTemplateContextForEntity', $asset)['caption'])->toBe('Cap');
+    /** @var array<string, mixed> $context */
+    $context = thingHelpersCall('buildTemplateContextForEntity', $asset);
+
+    expect($context['caption'])->toBe('Cap');
 });
 
 // ---
@@ -1143,7 +1181,10 @@ it('builds an asset entity template context through the asset builder', function
  */
 function thingHelpersDirect(array $context, array $params, EntryContract|TermContract|null $contextEntity = null): array
 {
-    return thingHelpersCall('collectTargetsForDirectMode', $context, $params, $contextEntity);
+    /** @var array<int, mixed> $targets */
+    $targets = thingHelpersCall('collectTargetsForDirectMode', $context, $params, $contextEntity);
+
+    return $targets;
 }
 
 /**
@@ -1153,7 +1194,12 @@ function thingHelpersDirect(array $context, array $params, EntryContract|TermCon
  */
 function thingHelpersRealEntry(string $id, array $data): EntryModel
 {
-    return (new EntryModel)->id($id)->collection('pages')->data($data);
+    $entry = new EntryModel;
+    $entry->id($id);
+    $entry->collection('pages');
+    $entry->data($data);
+
+    return $entry;
 }
 
 it('collects nothing in direct mode without a current field', function (): void {
@@ -1195,7 +1241,9 @@ it('keeps unresolved replicator rows that carry their own template context', fun
         ['type' => 'people', 'value' => ['people' => [$person]]],
     ];
 
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $rowOnly */
     $rowOnly = thingHelpersDirect(['segments' => $rows], ['current_field' => 'segments', 'current_field_replicator' => 'true']);
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $related */
     $related = thingHelpersDirect(['segments' => $rows], ['current_field' => 'segments', 'current_field_replicator' => true, 'current_field_replicator_relationship_field' => 'people']);
 
     expect($rowOnly)->toHaveCount(2)
@@ -1252,7 +1300,9 @@ it('keeps an empty stored entry field authoritative over the context bag', funct
 });
 
 it('reads the context bag when the anchor or the context entity is a test double, or a handle names an Antlers form', function (Closure $build): void {
-    [$context, $params, $entity, $expected] = $build();
+    /** @var array{0: array<string, mixed>, 1: array<string, mixed>, 2: EntryContract|TermContract|null, 3: mixed} $built */
+    $built = $build();
+    [$context, $params, $entity, $expected] = $built;
 
     expect(thingHelpersDirect($context, $params, $entity))->toBe($expected);
 })->with([
@@ -1297,6 +1347,7 @@ it('falls back to replicator rows on the source entry field', function (): void 
     $source = Mockery::mock(EntryModel::class);
     $source->shouldReceive('value')->andReturnUsing(fn (string $h): mixed => $h === 'segments' ? [['type' => 'p', 'value' => ['people' => [$person]]]] : null);
 
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $targets */
     $targets = thingHelpersDirect(['source_entry' => $source], ['current_field' => 'segments', 'current_field_replicator' => true, 'current_field_replicator_relationship_field' => 'people']);
 
     expect($targets)->toHaveCount(1)->and($targets[0]['entity'])->toBe($person);
@@ -1315,7 +1366,10 @@ it('falls back to replicator rows on the source entry field', function (): void 
  */
 function thingHelpersSecondary(array $context, array $params): array
 {
-    return thingHelpersCall('collectTargetsForSecondaryMode', $context, $params);
+    /** @var array<int, mixed> $targets */
+    $targets = thingHelpersCall('collectTargetsForSecondaryMode', $context, $params);
+
+    return $targets;
 }
 
 /**
@@ -1332,6 +1386,7 @@ function thingHelpersEntryWith(string $collection, array $values, string $id = '
 }
 
 it('collects nothing in secondary mode without a usable configuration', function (array $params): void {
+    /** @var array<string, mixed> $params */
     Statamic\Facades\GlobalSet::shouldReceive('findByHandle')->never();
 
     expect(thingHelpersSecondary(['locations' => [thingHelpersEntryWith('locations', ['org' => [thingHelpersTermIn('tags')]])]], $params))->toBe([]);
@@ -1344,6 +1399,7 @@ it('collects nothing in secondary mode without a usable configuration', function
 ]);
 
 it('collects the secondary field of each entity the current field links, capped at both limits', function (array $limits, int $first, int $second): void {
+    /** @var array<string, mixed> $limits */
     $targets = [[thingHelpersTermIn('a'), thingHelpersTermIn('b')], [thingHelpersTermIn('c'), thingHelpersTermIn('d')]];
     $locations = [
         thingHelpersEntryWith('locations', ['org' => $targets[0]], 'l1'),
@@ -1379,6 +1435,7 @@ it('keeps only the secondary entities in the secondary scope', function (): void
 });
 
 it('normalizes secondary targets in the nested scope, falling back to the secondary scope', function (array $scopes, bool $resolves): void {
+    /** @var array<string, mixed> $scopes */
     $tag = thingHelpersTermIn('tags');
     Term::shouldReceive('find')->andReturnUsing(fn (string $id): mixed => $id === 'tags::one' ? $tag : null);
     Entry::shouldReceive('find')->andReturnNull();
@@ -1469,6 +1526,7 @@ it('expands replicator rows on both hops, keeping each target row context', func
     Statamic\Facades\Asset::shouldReceive('find')->andReturnNull();
     Term::shouldReceive('find')->andReturnNull();
 
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $collected */
     $collected = thingHelpersSecondary(['places' => [['type' => 'place', 'value' => ['location' => [$location]]], ['type' => 'place', 'value' => []]]], [
         'secondary_context' => 'entries',
         'current_field' => 'places',
@@ -1497,7 +1555,10 @@ it('expands replicator rows on both hops, keeping each target row context', func
  */
 function thingHelpersTertiary(array $context, array $params): array
 {
-    return thingHelpersCall('collectTargetsForTertiaryMode', $context, $params);
+    /** @var array<int, mixed> $targets */
+    $targets = thingHelpersCall('collectTargetsForTertiaryMode', $context, $params);
+
+    return $targets;
 }
 
 /**
@@ -1516,6 +1577,7 @@ function thingHelpersTermWith(string $taxonomy, array $values): TaxonomyTerm
 }
 
 it('collects nothing in tertiary mode without a usable configuration', function (array $params): void {
+    /** @var array<string, mixed> $params */
     expect(thingHelpersTertiary(['segments' => ['x']], $params))->toBe([]);
 })->with([
     'no secondary context' => [['current_field' => 'segments', 'secondary_field' => 'series', 'tertiary_field' => 'about']],
@@ -1525,6 +1587,8 @@ it('collects nothing in tertiary mode without a usable configuration', function 
 ]);
 
 it('walks entity, term and field hops in order, capped at the first two limits', function (array $limits, array $expected): void {
+    /** @var array<string, mixed> $limits */
+    /** @var list<string> $expected */
     $about = ['a1' => thingHelpersEntryIn('subject_matter', 'a1'), 'a2' => thingHelpersEntryIn('subject_matter', 'a2'), 'a3' => thingHelpersEntryIn('subject_matter', 'a3')];
     $seriesOne = thingHelpersTermWith('series', ['about' => [$about['a1']]]);
     $seriesTwo = thingHelpersTermWith('series', ['about' => [$about['a2']]]);
@@ -1639,6 +1703,7 @@ it('expands replicator rows on all three hops in tertiary mode', function (): vo
     $series = thingHelpersTermWith('series', ['hosts' => [['type' => 'host', 'value' => ['who' => [$person]]]]]);
     $segment = thingHelpersEntryWith('segments', ['series_rows' => [['type' => 'link', 'value' => ['series' => [$series]]]]], 's1');
 
+    /** @var list<array{entity: mixed, template_context: array<string, mixed>}> $collected */
     $collected = thingHelpersTertiary(['rows' => [['type' => 'row', 'value' => ['segment' => [$segment]]]]], [
         'secondary_context' => 'entries',
         'current_field' => 'rows',
