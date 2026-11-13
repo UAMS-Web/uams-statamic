@@ -108,8 +108,15 @@ declare(strict_types=1);
  * by under 0.3 points, and across two machines the share stays between 5.0% and
  * 5.9%. The costliest class did inflate a little faster than the mean (x2.22 against
  * x2.13 in round 3), which is why the ceiling is not pressed against the readings.
- * 7.5% sits 27% above the worst observed and below 8.33%, the 1/12 point at which a
- * class starts binding the gate's twelve workers — so it fires before a class binds.
+ * 7.5% sits 27% above the worst observed, and it is a warning on growth rather than
+ * the binding point itself. It was set below 8.33%, the 1/12 point at which a class
+ * bound the gate's band when the gate ran twelve workers. The gate now runs
+ * PARALLEL_WORKERS = 4 (scripts/gate-pest.mjs, #482), where a class binds at 1/4,
+ * 25%, so 7.5% fires long before a class binds the local band. The ceiling did not
+ * move with the worker count: the share is a ratio of summed work, which the worker
+ * count does not change, so the readings above still apply; the margin below 1/4 is
+ * what keeps a class split before it binds; and CI runs the same check over its
+ * merged shard report, whose runners keep paratest's default count.
  * UAMS-Web/uams-statamic-archive#1797's 1085.3s class, against the 10797s of summed work UAMS-Web/uams-statamic-archive#1890 later measured,
  * would have read about 10% and failed it.
  *
@@ -125,7 +132,9 @@ declare(strict_types=1);
  * window holds one class, so a spike slowing it about 2.7x takes round 1 past 40%.
  * In the parallel band the same window also slows the classes running beside it on
  * the other workers, so the share tends toward 1/workers: from 5.11% it takes about
- * 2.9x on ten workers and 5.7x on twelve to pass 7.5%. UAMS-Web/uams-statamic-archive#2525 inflated its costliest
+ * 2.9x on ten workers and 5.7x on twelve to pass 7.5%, but only about 1.7x on the
+ * gate's four, because fewer workers dilute the spike less. Four workers also leave
+ * the machine less contended, which is what produces such spikes. UAMS-Web/uams-statamic-archive#2525 inflated its costliest
  * class 2.98x, but alongside every other class, which is the case the share absorbs.
  *
  * A band name without its own entry takes the parallel ceiling, the stricter one.

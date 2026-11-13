@@ -28,6 +28,15 @@ import { bandFromJunit, bandLine } from './local-ci-bands.mjs'
 export const KNOWN_CONTENT_LITTER = []
 
 /**
+ * The parallel band's worker count. Without `--processes`, paratest starts one
+ * worker per logical core: 12 on the Windows 11 machine (6 physical cores, 63.9 GB)
+ * that runs this gate, where a full band on 2026-11-01 left 2.6 GB free and other
+ * work on the machine stopped for low memory. Local runs use 4 workers on every
+ * platform; CI's shards on GitHub-hosted runners keep their own default (#482).
+ */
+export const PARALLEL_WORKERS = 4
+
+/**
  * Split what the suite just wrote into the content/ submodule from what was
  * already there, holding known debt aside.
  */
@@ -209,8 +218,8 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // otherwise (~2G on Herd), which the growing content set now OOMs mid-run;
     // the single-process serial tail takes it directly.
     // Build the Stache seed once before the parallel suite so each of the
-    // ~12 paratest workers copies it into its own per-worker cache instead
-    // of running statamic:stache:warm: 12 concurrent warms saturate the
+    // paratest workers (PARALLEL_WORKERS of them) copies it into its own per-worker cache instead
+    // of running statamic:stache:warm: 12 concurrent warms saturated the
     // disk (~168s each vs 21s alone), the dominant parallel cost (UAMS-Web/uams-statamic-archive#1537).
     // DB_DATABASE=:memory: mirrors phpunit.xml: the warm probes the DB for
     // computed-field indexes, so it needs a connectable database (a fresh
@@ -288,7 +297,9 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // the four reports in its `pest-report` job before the band checks
     // (#387); this runner runs the band whole, so it has nothing to shard
     // or merge. The two commands differ only by --shard, and on Windows
-    // only by the shard's --configuration (#504).
+    // only by the shard's --configuration (#504). LOCAL-ONLY: --processes
+    // caps the workers at PARALLEL_WORKERS on this machine; CI's runners
+    // take paratest's default, one per logical core (#482).
     step('JOB pest - parallel suite (excluding serial group)')
     const parallelReport = join(tree, 'junit-parallel.xml')
     const serialReport = join(tree, 'junit-serial.xml')
@@ -298,7 +309,7 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // removes. CI checks out fresh, so it has nothing to mirror here.
     rmSync(parallelReport, { force: true })
     rmSync(serialReport, { force: true })
-    const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], tree)
+    const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], tree)
     step('JOB pest - serial tail (group=serial)')
     const serialCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
 
