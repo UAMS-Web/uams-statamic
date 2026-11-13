@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 use App\Services\ComputedFields\Reverse\ReverseEntryReferenceResolver;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +146,9 @@ function revSlugs(iterable $set): array
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::find(REV_COLLECTION_A) || ! Collection::find(REV_COLLECTION_B)) {
         ContentSubmodule::reportMissing('reusable_content + tables collections');
     }
@@ -173,7 +178,7 @@ it('matches a reference stored as a scalar, a single-element array, and a multi-
         REV_PREFIX.'scalar',
         REV_PREFIX.'single-array',
     ]);
-})->group('serial');
+});
 
 it('spans multiple source collections in one reverse', function (): void {
     $targetId = 'zz-shared-target';
@@ -185,7 +190,7 @@ it('spans multiple source collections in one reverse', function (): void {
         ->resolve([REV_COLLECTION_A, REV_COLLECTION_B], REV_PROBE_FIELD, $targetId);
 
     expect(revSlugs($resolved))->toBe([REV_PREFIX.'a', REV_PREFIX.'b']);
-})->group('serial');
+});
 
 it('restricts to published pointing entries by default and includes drafts when asked', function (): void {
     $targetId = 'zz-pub-target';
@@ -204,7 +209,7 @@ it('restricts to published pointing entries by default and includes drafts when 
     // Explicitly include drafts.
     expect(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId, publishedOnly: false)))
         ->toBe([REV_PREFIX.'draft', REV_PREFIX.'published']);
-})->group('serial');
+});
 
 it('ignores a pointing entry in a collection that was not asked for', function (): void {
     $targetId = 'zz-scoped-target';
@@ -218,7 +223,7 @@ it('ignores a pointing entry in a collection that was not asked for', function (
         ->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId);
 
     expect(revSlugs($resolved))->toBe([REV_PREFIX.'in-scope']);
-})->group('serial');
+});
 
 it('keeps the published-only and all-statuses reverses distinct within one request', function (): void {
     $targetId = 'zz-status-distinct';
@@ -241,7 +246,7 @@ it('keeps the published-only and all-statuses reverses distinct within one reque
         ->toBe([REV_PREFIX.'live', REV_PREFIX.'unpublished'])
         ->and(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
         ->toBe([REV_PREFIX.'live']);
-})->group('serial');
+});
 
 it('keeps nested resolves over different fields distinct within one request', function (): void {
     $targetId = 'zz-field-distinct';
@@ -258,7 +263,7 @@ it('keeps nested resolves over different fields distinct within one request', fu
     // Same request, a different field list: it must not reuse the empty set above.
     expect(revSlugs($resolver->resolveNested(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
         ->toBe([REV_PREFIX.'probe-field']);
-})->group('serial');
+});
 
 it('keeps resolves distinct when handles differ only in where an underscore splits them', function (): void {
     $targetId = 'zz-boundary-target';
@@ -274,7 +279,7 @@ it('keeps resolves distinct when handles differ only in where an underscore spli
     // Same request: the real pair must not reuse the empty set above.
     expect(revSlugs($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, $targetId)))
         ->toBe([REV_PREFIX.'boundary']);
-})->group('serial');
+});
 
 it('returns an empty set for a target that nothing references', function (): void {
     revMakeEntry(REV_COLLECTION_A, 'unrelated', ['some-other-id']);
@@ -283,7 +288,7 @@ it('returns an empty set for a target that nothing references', function (): voi
         ->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, 'zz-nobody-points-here');
 
     expect(revSlugs($resolved))->toBe([]);
-})->group('serial');
+});
 
 it('skips a source collection that does not exist but still queries the real ones (#1458)', function (): void {
     // A configured source collection can be absent from the current Stache (e.g. a
@@ -307,7 +312,7 @@ it('skips a source collection that does not exist but still queries the real one
     // missing collection is dropped, not allowed to crash or void the whole query).
     expect(revSlugs($resolver->resolve([REV_COLLECTION_A, 'zz_no_such_collection'], REV_PROBE_FIELD, $targetId)))
         ->toBe([REV_PREFIX.'real-match']);
-})->group('serial');
+});
 
 it('returns an empty set (and no query) for a null or empty target id', function (): void {
     // A not-yet-saved target has no id to be referenced by; must short-circuit.
@@ -320,7 +325,7 @@ it('returns an empty set (and no query) for a null or empty target id', function
     expect($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, null)->all())->toBe([])
         ->and($resolver->resolve(REV_COLLECTION_A, REV_PROBE_FIELD, '')->all())->toBe([])
         ->and($resolver->resolveNested(REV_COLLECTION_A, REV_NESTED_PROBE_FIELD, '')->all())->toBe([]);
-})->group('serial');
+});
 
 it('resolveNested matches an id nested anywhere inside a group value, spanning roles', function (): void {
     $targetId = 'zz-nested-person';
@@ -336,7 +341,7 @@ it('resolveNested matches an id nested anywhere inside a group value, spanning r
         ->resolveNested(REV_COLLECTION_A, REV_NESTED_PROBE_FIELD, $targetId);
 
     expect(revSlugs($resolved))->toBe([REV_PREFIX.'as-host', REV_PREFIX.'as-writer']);
-})->group('serial');
+});
 
 it('keeps shallow and nested matching distinct within one request (no cache-key collision)', function (): void {
     $targetId = 'zz-mode-distinct';
@@ -357,7 +362,7 @@ it('keeps shallow and nested matching distinct within one request (no cache-key 
     // nested call would reuse the shallow empty set cached above and wrongly return [].
     expect(revSlugs($resolver->resolveNested(REV_COLLECTION_A, REV_NESTED_PROBE_FIELD, $targetId)))
         ->toBe([REV_PREFIX.'nested-only']);
-})->group('serial');
+});
 
 it('unions multiple nested fields, matching an id nested under a replicator field only', function (): void {
     $targetId = 'zz-segment-person';
@@ -387,7 +392,7 @@ it('unions multiple nested fields, matching an id nested under a replicator fiel
         ->resolveNested(REV_COLLECTION_A, [REV_NESTED_PROBE_FIELD, REV_SEGMENTS_PROBE_FIELD], $targetId);
 
     expect(revSlugs($resolved))->toBe([REV_PREFIX.'segment-credit']);
-})->group('serial');
+});
 
 it('memoizes the reverse set per request (one Stache query for repeated reads)', function (): void {
     $targetId = 'zz-memo-target';
@@ -413,4 +418,4 @@ it('memoizes the reverse set per request (one Stache query for repeated reads)',
 
     expect(revSlugs($first))->toBe([REV_PREFIX.'memo'])
         ->and(revSlugs($second))->toBe([REV_PREFIX.'memo']);
-})->group('serial');
+});
