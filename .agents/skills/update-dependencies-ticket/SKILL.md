@@ -138,7 +138,7 @@ green (the lifecycle skill's *Proving it worked*).
 node .claude/skills/local-ci/local-ci.mjs      # full job parity; see the local-ci skill
 ```
 
-The runner and its options are the [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill.
+The runner and its options are the [`local-ci`](../local-ci/SKILL.md) skill.
 
 This repository's gate is its own runner, `node scripts/local-ci.mjs --branch <branch>` (the
 `local-ci` skill's *Repositories with their own runner*). It checks the branch out into its CI
@@ -220,4 +220,4 @@ lifecycle, its registration forms and the removal order →
 [`worktrees`](../rule-worktrees/SKILL.md); REST-vs-GraphQL →
 [`github-api-budget`](../rule-github-api-budget/SKILL.md).
 
-The local gate → [`local-ci`](../../../.claude/skills/local-ci/SKILL.md).
+The local gate → [`local-ci`](../local-ci/SKILL.md).

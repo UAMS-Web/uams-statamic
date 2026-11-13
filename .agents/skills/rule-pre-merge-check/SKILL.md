@@ -79,7 +79,7 @@ Work these in order, not starting at the gate: cheap early steps can void later 
 
 4. **Run the gate on the state that will land** (if `main` moved since step 2, re-sync first). **Read the summary, not the exit code, and name the commit it printed.**
 
-   [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) owns running the jobs and the verdict comment (`--comment`): its wording, jobs and head SHA.
+   [`local-ci`](../local-ci/SKILL.md) owns running the jobs and the verdict comment (`--comment`): its wording, jobs and head SHA.
 
    The runner here validates the branch tip and performs no merge; step 2 makes the tip what lands.
 
@@ -133,7 +133,7 @@ Not a draft flip: `draft` is the author's signal and costs GraphQL; the pull req
 
 **`handed-back` comes off when the pull request RE-ENTERS the queue (a push to the head) or a person edits its body**, never on an author's "ready", a title edit, a bot edit or a comment; a workflow removes it, never the gate by hand, except while the repository's remote-CI switch is off and the workflow is skipped (see the `PATCH` below).
 
-`post-verdict.mjs <n> verdict.md --hand-back` ([`local-ci`](../../../.claude/skills/local-ci/SKILL.md)) comments and labels in one command. The removal workflow is a template in [`handed-back-label`](../handed-back-label/SKILL.md), copied to `.github/workflows/clear-handed-back.yml` with its drift check.
+`post-verdict.mjs <n> verdict.md --hand-back` ([`local-ci`](../local-ci/SKILL.md)) comments and labels in one command. The removal workflow is a template in [`handed-back-label`](../handed-back-label/SKILL.md), copied to `.github/workflows/clear-handed-back.yml` with its drift check.
 
 Settled 2026-09-09 (`uams-statamic-archive#2323`, `wordpress-importer-archive#1033`, `uamswp-migration-api` D-068).
 

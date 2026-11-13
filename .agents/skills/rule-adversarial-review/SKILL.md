@@ -40,7 +40,7 @@ A **change that ships** and a **claim that is published** (a figure, count, veri
 
    Mutation-verify with `--mutate` too; see *Mutation testing*.
 
-   The full chain, locally: [`local-ci`](../../../.claude/skills/local-ci/SKILL.md).
+   The full chain, locally: [`local-ci`](../local-ci/SKILL.md).
 
    Quick gate: `php artisan test --compact`.
 

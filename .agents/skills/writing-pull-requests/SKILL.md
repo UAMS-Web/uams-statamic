@@ -176,7 +176,7 @@ green checks panel.
   first. Put it on the *dependent* PR, where whoever is about to merge will read it, rather than
   only on the one that goes first. See **Companion PRs and merge order** below.
 
-**Remote CI runs here on every pull request.** This repository is public, so the org-level `RUN_REMOTE_CI` Actions variable, which is scoped to private repositories, does not reach it, and `.github/workflows/ci.yml` reports real results on drafts and ready pull requests alike (`UAMS-Web/uamswp-migration-api#7`, `UAMS-Web/aether-wordpress-importer#163`, `UAMS-Web/uams-statamic#337`). Validation of a ready pull request runs through the [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill.
+**Remote CI runs here on every pull request.** This repository is public, so the org-level `RUN_REMOTE_CI` Actions variable, which is scoped to private repositories, does not reach it, and `.github/workflows/ci.yml` reports real results on drafts and ready pull requests alike (`UAMS-Web/uamswp-migration-api#7`, `UAMS-Web/aether-wordpress-importer#163`, `UAMS-Web/uams-statamic#337`). Validation of a ready pull request runs through the [`local-ci`](../local-ci/SKILL.md) skill.
 
 **A red hand-back comes back as a comment and a label, not as a draft flip.** The gate comments its verdict on the pull request and applies the `handed-back` label; it never flips the pull request to draft, because `ready → draft` is the author's own signal. The label comes off when the pull request re-enters the queue: a push to its head, and a workflow under `.github/workflows/` does that removal on the push itself, so the author never applies or removes it by hand. Watch for the verdict comment, fix, and push; the push is what re-arms the gate.
 
@@ -256,7 +256,7 @@ The pull-request number works on the `issues` endpoint: GitHub treats pull reque
 
 **Assignment does not route the validation pipeline.** `scripts/watch-github.mjs` queues every open, ready pull request in a repository regardless of who, or whether anyone, is assigned to it, so an unassigned pull request is validated exactly like an assigned one and a hand-over needs nothing beyond the reassignment itself.
 
-It never usefully did route it (UAMS-Web/uams-statamic-archive#2366). Concurrent gates are kept apart by watching different repositories: see [`local-ci`](../../../.claude/skills/local-ci/SKILL.md). The add-versus-replace distinction above is live here: a hand-over written against the wrong endpoint silently produces two assignees.
+It never usefully did route it (UAMS-Web/uams-statamic-archive#2366). Concurrent gates are kept apart by watching different repositories: see [`local-ci`](../local-ci/SKILL.md). The add-versus-replace distinction above is live here: a hand-over written against the wrong endpoint silently produces two assignees.
 
 ## Title
 

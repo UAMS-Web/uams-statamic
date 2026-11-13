@@ -183,7 +183,7 @@ Three jobs, one per tool, run before a pull request where remote CI does not run
 | `rector` | `vendor/bin/rector --dry-run` (the gating profile) | any `.php` under the paths `rector.php` names |
 | `phpstan` | `composer stan` | any `.php` in the diff, tests included, because `phpstan.neon.dist` lists `tests` |
 
-Add them to the repository's `local-ci.json`; the job file's format and how the runner selects jobs from the diff are in the [local-ci skill](../../../.claude/skills/local-ci/SKILL.md). Private repositories run the tools there and not in GitHub Actions, where minutes are billed. A private repository that does not have the local-ci runner yet still runs the three commands above locally before every push (and may put the same three steps in a workflow if the org accepts the Actions minutes); adopting the [local-ci skill](../../../.claude/skills/local-ci/SKILL.md) is the longer-term path so the runner owns gating without billed minutes.
+Add them to the repository's `local-ci.json`; the job file's format and how the runner selects jobs from the diff are in the [local-ci skill](../local-ci/SKILL.md). Private repositories run the tools there and not in GitHub Actions, where minutes are billed. A private repository that does not have the local-ci runner yet still runs the three commands above locally before every push (and may put the same three steps in a workflow if the org accepts the Actions minutes); adopting the [local-ci skill](../local-ci/SKILL.md) is the longer-term path so the runner owns gating without billed minutes.
 
 ### The CI workflow template
 
