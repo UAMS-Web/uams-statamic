@@ -39,7 +39,12 @@ final class IscedHierarchy
      * Ancestor codes from broadest (root) to immediate parent, filtered to
      * those that actually exist in `$existing`.
      *
-     * @param  array<string, true>  $existing
+     * Keyed by `array-key`, not `string`: PHP stores a one-character ISCED-P or
+     * ISCED-A code such as `'3'` as an integer key, while a two-character ISCED-F
+     * code such as `'09'` stays a string (#685). Every read is an `isset()`,
+     * which finds either.
+     *
+     * @param  array<array-key, true>  $existing
      * @return array<int, string>
      */
     public static function ancestors(string $code, int $minTierLength, array $existing): array
@@ -66,8 +71,10 @@ final class IscedHierarchy
      * Build a parent-keyed children map from a list of codes, sorted by
      * length-then-lex within each parent.
      *
+     * Keyed by `array-key` for the reason `ancestors()` gives (#685).
+     *
      * @param  array<int, string>  $codes
-     * @return array<string, array<int, string>>
+     * @return array<array-key, array<int, string>>
      */
     public static function buildChildrenMap(array $codes, int $minTierLength): array
     {
@@ -100,7 +107,7 @@ final class IscedHierarchy
     /**
      * Collect all transitive descendants of `$code`, sorted by length-then-lex.
      *
-     * @param  array<string, array<int, string>>  $childrenByParent
+     * @param  array<array-key, array<int, string>>  $childrenByParent  Keyed as `buildChildrenMap()` returns it.
      * @return array<int, string>
      */
     public static function descendants(string $code, array $childrenByParent): array
