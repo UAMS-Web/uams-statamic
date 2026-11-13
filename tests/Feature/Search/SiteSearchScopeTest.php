@@ -21,7 +21,8 @@ uses(TestCase::class);
 /**
  * The scope choice on `/search` (UAMS-Web/uams-statamic#413), over the real
  * `resources/sites.yaml`: a sub-site offers "This site" and "All of <root site's
- * name>", and the root site offers only the second. Which hits each scope returns is
+ * name>", and the root site offers only its one wide scope, labeled "This site"
+ * since `uams-web/aether-search` 0.3.1 (#665). Which hits each scope returns is
  * covered by `SiteSearchScopeResultsTest`.
  *
  * @covers \UAMSWeb\Aether\Search\Tags\AetherSearch
@@ -61,9 +62,11 @@ function scopeLinks(string $html): array
 }
 
 /**
- * The root site's name, as `scopeLinks()` reads it out of the page.
+ * The label a sub-site gives its wide scope, "All of <root site's name>", as
+ * `scopeLinks()` reads it out of the page. The root site labels the same scope
+ * "This site" (#665).
  */
-function rootSiteLabel(): string
+function allOfRootSiteLabel(): string
 {
     return 'All of '.mustBeString(mustBe(SiteObject::class, Site::default(), 'the root site')->name(), 'root site name');
 }
@@ -135,8 +138,8 @@ it('offers only all of the root site on the root site, as the default', function
 
     $html = renderScopedSearch('default', ['q' => 'kirk']);
 
-    expect(scopeLinks($html))->toBe([rootSiteLabel() => '/search?q=kirk&amp;index=default'])
-        ->and($html)->toMatch('#aria-current="page">'.preg_quote(rootSiteLabel(), '#').'</a>#');
+    expect(scopeLinks($html))->toBe(['This site' => '/search?q=kirk&amp;index=default'])
+        ->and($html)->toMatch('#aria-current="page">This site</a>#');
 });
 
 it('offers this site by default and all of the root site on a sub-site', function (): void {
@@ -144,7 +147,7 @@ it('offers this site by default and all of the root site on a sub-site', functio
 
     expect(scopeLinks($html))->toBe([
         'This site' => '/health/search?q=kirk&amp;index=people',
-        rootSiteLabel() => '/health/search?q=kirk&amp;index=people&amp;scope=all',
+        allOfRootSiteLabel() => '/health/search?q=kirk&amp;index=people&amp;scope=all',
     ])->and($html)->toMatch('#aria-current="page">This site</a>#');
 });
 
@@ -152,7 +155,7 @@ it('keeps the chosen scope in the tabs, the form and the type-ahead links on a s
     $html = renderScopedSearch('health', ['q' => 'kirk', 'scope' => 'all']);
 
     expect($html)
-        ->toMatch('#aria-current="page">'.preg_quote(rootSiteLabel(), '#').'</a>#')
+        ->toMatch('#aria-current="page">'.preg_quote(allOfRootSiteLabel(), '#').'</a>#')
         ->toContain('href="/health/search?q=kirk&amp;index=people&amp;scope=all"')
         ->toContain('action="/health/search"')
         ->toContain('<input type="hidden" name="scope" value="all">')
@@ -214,7 +217,7 @@ it('never reflects a hand-edited scope into the page', function (): void {
 it('ignores the scope on the root site, which has only one', function (): void {
     $html = renderScopedSearch('default', ['q' => 'kirk', 'scope' => 'site']);
 
-    expect(scopeLinks($html))->toBe([rootSiteLabel() => '/search?q=kirk&amp;index=default'])
+    expect(scopeLinks($html))->toBe(['This site' => '/search?q=kirk&amp;index=default'])
         ->and($html)->not->toContain('name="scope"');
 });
 
@@ -261,11 +264,11 @@ it('offers all UAMS websites on every site once a Google search engine is config
     config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
 
     expect(scopeLinks(renderScopedSearch('default', ['q' => 'kirk'])))->toBe([
-        rootSiteLabel() => '/search?q=kirk&amp;index=default',
+        'This site' => '/search?q=kirk&amp;index=default',
         'All UAMS websites' => '/search?q=kirk&amp;index=default&amp;scope=google',
     ])->and(scopeLinks(renderScopedSearch('health', ['q' => 'kirk'])))->toBe([
         'This site' => '/health/search?q=kirk&amp;index=default',
-        rootSiteLabel() => '/health/search?q=kirk&amp;index=default&amp;scope=all',
+        allOfRootSiteLabel() => '/health/search?q=kirk&amp;index=default&amp;scope=all',
         'All UAMS websites' => '/health/search?q=kirk&amp;index=default&amp;scope=google',
     ]);
 });
