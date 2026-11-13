@@ -32,23 +32,28 @@ use Statamic\Facades\User;
  */
 class EnforcePeopleScopeOnProviderSync
 {
-    /**
-     * The synced field on each collection whose reciprocal is on `people`.
-     *
-     * @var array<string, string> Field handle keyed by collection handle.
-     */
-    public const array SYNCED_FIELDS = [
-        'clinical_locations' => 'physician_locations',
-        'clinical_expertise' => 'clinical_providers',
-        'clinical_conditions' => 'clinical_providers',
-        'clinical_services' => 'clinical_providers',
-        'clinical_resources' => 'clinical_providers',
-        'recognition_lists' => 'members',
-    ];
-
     public function __construct(
         protected PeopleEditingScope $scope
     ) {}
+
+    /**
+     * The synced field on each collection whose reciprocal is on `people`.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return array<string, string> Field handle keyed by collection handle.
+     */
+    public static function syncedFields(): array
+    {
+        return [
+            'clinical_locations' => 'physician_locations',
+            'clinical_expertise' => 'clinical_providers',
+            'clinical_conditions' => 'clinical_providers',
+            'clinical_services' => 'clinical_providers',
+            'clinical_resources' => 'clinical_providers',
+            'recognition_lists' => 'members',
+        ];
+    }
 
     /**
      * Abort the save when a scoped user adds or removes an out-of-scope person.
@@ -65,7 +70,7 @@ class EnforcePeopleScopeOnProviderSync
         }
 
         $collection = $entry->collectionHandle();
-        $field = \is_string($collection) ? (self::SYNCED_FIELDS[$collection] ?? null) : null;
+        $field = \is_string($collection) ? (self::syncedFields()[$collection] ?? null) : null;
 
         if ($field === null) {
             return;
