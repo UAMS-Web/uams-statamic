@@ -109,7 +109,7 @@ A British spelling that stands in a first-party file is not automatically wrong,
 
 This file is the standing statement of **which English this repository writes, and what justifies an exception**. The pull-request-time workflow (when to run the spell check, and reconciling each flagged word before opening) stays in [`writing-pull-requests`](../writing-pull-requests/SKILL.md), which points here rather than restating the convention. It composes with [`no-emoji-in-durable-records`](../rule-no-emoji-in-durable-records/SKILL.md) and [`impersonal-voice-in-github-artifacts`](../rule-impersonal-voice-in-github-artifacts/SKILL.md), which constrain the same prose along different axes; how a rule or skill is worded belongs to the writing skills, and the `cspell` mechanics belong to that tool.
 
-Which files the `spell` job actually reads belongs to the [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill and to the runner.
+Which files the `spell` job actually reads belongs to the [`local-ci`](../local-ci/SKILL.md) skill and to the runner.
 
 The sorted-order invariant and its rationale belong to [`scripts/project-words-sorted.test.mjs`](../../../scripts/project-words-sorted.test.mjs) and UAMS-Web/uams-statamic-archive#2284.
 

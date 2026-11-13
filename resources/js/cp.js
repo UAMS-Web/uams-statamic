@@ -567,15 +567,3 @@ import PeopleMerge from './pages/People/Merge.vue';
 Statamic.booting(() => {
     Statamic.$inertia.register('app::PeopleMerge', PeopleMerge);
 });
-
-// ---------------------------------------
-// Marketing Redirects (Tools > Marketing Redirects)
-// ---------------------------------------
-
-import MarketingRedirectCreate from './pages/Redirects/MarketingRedirectCreate.vue';
-import MarketingRedirectReview from './pages/Redirects/MarketingRedirectReview.vue';
-
-Statamic.booting(() => {
-    Statamic.$inertia.register('app::MarketingRedirectCreate', MarketingRedirectCreate);
-    Statamic.$inertia.register('app::MarketingRedirectReview', MarketingRedirectReview);
-});
