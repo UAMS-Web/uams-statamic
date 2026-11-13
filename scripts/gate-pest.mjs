@@ -10,19 +10,20 @@
  * and runs no step before it.
  *
  * The reset deletes every ignored file under `storage/framework` and `bootstrap/cache`, sessions
- * included, so `--no-reset` is for a tree where that matters, and for a tree already reset, which
- * is how `local-ci.mjs` calls `gatePest` (#295). It keeps the served site's asset metadata
+ * included, so `--no-reset` is for a tree where that matters, and for a tree already reset.
+ * `local-ci.json` runs it without `--no-reset`, as the `pest` job (#296). It keeps the served site's asset metadata
  * database, which `migrate` cannot rebuild, and it refuses while a test process in the tree holds
  * the content mirror band lock.
  *
  * It exits non-zero when any stage fails, or 2 for a wrong flag or a missing tool.
  */
 
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
-import { captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
+import { capture, captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
 import { GATE_SUBMODULES } from './gate-slot.mjs'
+import { bandFromJunit, bandLine } from './local-ci-bands.mjs'
 
 export const KNOWN_CONTENT_LITTER = []
 
@@ -287,9 +288,8 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // Windows, a per-shard `--configuration` (#504), and merges
     // the four reports in its `pest-report` job before the band checks
     // (#387); this runner runs the band whole, so it has nothing to shard
-    // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
-    // differ only by --shard, and on Windows only by the shard's
-    // --configuration (#504).
+    // or merge. The two commands differ only by --shard, and on Windows
+    // only by the shard's --configuration (#504).
     step('JOB pest - parallel suite (excluding serial group)')
     const parallelReport = join(tree, 'junit-parallel.xml')
     const serialReport = join(tree, 'junit-serial.xml')
@@ -302,6 +302,16 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], tree)
     step('JOB pest - serial tail (group=serial)')
     const serialCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
+
+    // UAMS-Web/uams-statamic-archive#3235: each band beside the interpreter that produced it, so a
+    // figure quoted from this log names its PHP. A band that wrote no report says so rather than
+    // being left out.
+    const phpVersion = capture(php, ['-r', 'echo PHP_VERSION;'], tree) || 'unknown'
+    for (const [band, report] of [['parallel', parallelReport], ['serial', serialReport]]) {
+        console.log(existsSync(report)
+            ? bandLine(band, bandFromJunit(readFileSync(report, 'utf8')), phpVersion)
+            : `${band}: no report written under PHP ${phpVersion}`)
+    }
 
     // UAMS-Web/uams-statamic-archive#1744 — a band that silently skips tests would otherwise report PASS
     // having tested less than it should have. Only meaningful when the band

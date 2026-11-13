@@ -19,6 +19,7 @@ use Statamic\Sites\Sites;
 use Tests\Support\CachedSites;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\ParallelParent;
+use Tests\Support\StatamicStaticRegistries;
 use Tests\Support\ThrowawayRoot;
 use Tests\Support\WorkerCacheDirectory;
 use Throwable;
@@ -140,6 +141,13 @@ trait CreatesApplication
      */
     public function createApplication(): Application
     {
+        // Drop the route and install callbacks every earlier boot in this process
+        // pushed onto Statamic's statics, so this boot registers its routes once
+        // rather than once per earlier test (UAMS-Web/uams-statamic#540). Done before
+        // the boot rather than in `tearDown()` so that any caller of this trait, not
+        // only `Tests\TestCase`, gets a flat per-boot cost.
+        StatamicStaticRegistries::reset();
+
         /** @var Application $app */
         $app = require __DIR__.'/../bootstrap/app.php';
 

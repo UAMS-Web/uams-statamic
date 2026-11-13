@@ -359,14 +359,14 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         }
     })
 
-    it('lists the same steps in the check, the hook and the runner', () => {
+    it('lists the same steps in the check, the hook and local-ci.json', () => {
         const names = GATE_STEP_FILES.map((file) => file.replace('scripts/gate-', '').replace('.mjs', ''))
         const hook = readFileSync(join(scripts, '..', '.githooks', 'pre-commit'), 'utf8')
-        const runner = readFileSync(join(scripts, 'local-ci.mjs'), 'utf8')
-        const imported = [...runner.matchAll(/from '\.\/gate-(\w+)\.mjs'/g)].map((match) => match[1])
+        const config = JSON.parse(readFileSync(join(scripts, '..', 'local-ci.json'), 'utf8'))
+        const run = config.jobs.map((job) => job.run.match(/^node scripts\/gate-(\w+)\.mjs\b/)?.[1]).filter(Boolean)
 
         expect(hook).toContain(`gate-(${names.join('|')})`)
-        expect([...new Set(imported)].filter((name) => name !== 'process' && name !== 'slot').sort()).toEqual(names)
+        expect([...new Set(run)].sort()).toEqual(names)
     })
 
     it('exits 2 from the command line on a marked step edit alone, and 0 on an edit outside the marks', () => {
@@ -381,7 +381,7 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         inRepo('config', 'user.email', 'gate@example.test')
         inRepo('config', 'user.name', 'Gate')
         writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), 'on: push\n')
-        writeFileSync(join(repo, 'scripts', 'local-ci.mjs'), '// runner\n')
+        writeFileSync(join(repo, 'local-ci.json'), '{}\n')
         writeFileSync(step, source)
         inRepo('add', '.')
         inRepo('commit', '-q', '-m', 'seed')
