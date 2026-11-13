@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Listeners\ValidateClinicalExpertiseTree;
 use Illuminate\Support\Facades\Log;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\LegacyMockInterface;
 use Statamic\Entries\Entry;
 use Statamic\Events\CollectionTreeSaving;
 use Statamic\Facades\Entry as EntryFacade;
@@ -25,6 +26,12 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 |
 | @covers \App\Listeners\ValidateClinicalExpertiseTree
 |
+| Accepted equivalents, annotated in the listener: the strict flags on the two
+| blueprint `in_array()` calls, whose needles are a blueprint handle or a null
+| parent and whose lists hold only non-numeric handles. The blueprint lists are
+| constants, which the mutation runner skips as uncovered; each item removed by
+| hand fails a test here, and the annotation says so.
+|
 | @command  php artisan test --compact tests/Feature/Listeners/ValidateClinicalExpertiseTreeTest.php
 */
 
@@ -43,7 +50,7 @@ function expertiseTreeEvent(array $tree, string $handle = 'clinical_expertise'):
 }
 
 /** Register an entry (by id) with EntryFacade::find, exposing the given blueprint + title. */
-function expertiseTreeEntry(string $id, string $blueprint, string $title = 'X'): void
+function expertiseTreeEntry(string $id, string $blueprint, mixed $title = 'X'): void
 {
     $entry = Mockery::mock(Entry::class);
 
@@ -143,7 +150,9 @@ it('bypasses validation during a WordPress import', function () {
     $_SERVER['argv'] = ['artisan', 'import:wordpress', 'export.xml'];
 
     try {
-        // A content page at the root would normally be rejected; the import bypass lets it through.
+        // A content page at the root would normally be rejected; the import bypass lets it
+        // through without reading a single entry.
+        EntryFacade::shouldReceive('find')->never();
         $tree = [['entry' => 'cp1']];
 
         expect(throwableFrom(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent($tree))))->toBeNull();
@@ -188,4 +197,134 @@ it('logs and skips when a tree node references a missing entry', function () {
     $tree = [['entry' => 'ghost']];
 
     expect(throwableFrom(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent($tree))))->toBeNull();
+});
+
+/** Run `$callback` with `$_SERVER['argv']` set to `$argv`, restoring it after. */
+function expertiseTreeWithArgv(mixed $argv, callable $callback): mixed
+{
+    $had = array_key_exists('argv', $_SERVER);
+    $original = $_SERVER['argv'] ?? null;
+    $_SERVER['argv'] = $argv;
+
+    try {
+        return $callback();
+    } finally {
+        if ($had) {
+            $_SERVER['argv'] = $original;
+        } else {
+            unset($_SERVER['argv']);
+        }
+    }
+}
+
+it('rejects a landing page at the subsite root', function () {
+    expertiseTreeEntry('lp1', 'landing_page', 'Cardiology Landing');
+
+    expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'lp1']])))
+        ->toThrow(Exception::class, "Content page entry 'Cardiology Landing' must be the child");
+});
+
+it('accepts a content page nested under a basic page', function () {
+    expertiseTreeEntry('e1', 'clinical_expertise');
+    expertiseTreeEntry('cp1', 'basic_page');
+    expertiseTreeEntry('cp2', 'landing_page');
+
+    $tree = [['entry' => 'e1', 'children' => [['entry' => 'cp1', 'children' => [['entry' => 'cp2']]]]]];
+
+    expect(throwableFrom(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent($tree))))->toBeNull();
+});
+
+it('names an entry by its id when its title is missing or not text', function (mixed $title) {
+    expertiseTreeEntry('cp1', 'basic_page', $title);
+
+    expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry 'cp1' must be the child");
+})->with(['null' => [null], 'array' => [['not', 'text']]]);
+
+it('reads a numeric title as text', function () {
+    expertiseTreeEntry('cp1', 'basic_page', 2024);
+
+    expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry '2024' must be the child");
+});
+
+it('logs the node it skips for a missing entry id', function () {
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+
+    (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['children' => [['entry' => 'cp1']]]]));
+
+    $log->shouldHaveReceived('warning')->once()->with(
+        'ValidateClinicalExpertiseTree::validateTree: Missing entry ID in tree node',
+        ['node' => ['children' => [['entry' => 'cp1']]]]
+    );
+});
+
+it('reads a numeric node id as text, and a non-scalar one as empty', function () {
+    Log::spy();
+    // Matched by identity, so an id passed through as an integer would not match.
+    EntryFacade::shouldReceive('find')->withArgs(fn (mixed $id): bool => $id === '9917')->once()->andReturn(null);
+    EntryFacade::shouldReceive('find')->withArgs(fn (mixed $id): bool => $id === '')->once()->andReturn(null);
+
+    (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 9917], ['entry' => ['not', 'an', 'id']]]));
+});
+
+it('goes on to the next sibling after a node it skips', function (string $skippedNode) {
+    // A skipped node is passed over, not the end of its level: the invalid content page
+    // after it is still reached.
+    expertiseTreeEntry('x1', 'some_other_blueprint');
+    expertiseTreeEntry('cp1', 'basic_page', 'Sibling Page');
+    EntryFacade::shouldReceive('find')->with('ghost')->andReturn(null);
+    Log::spy();
+
+    $skipped = match ($skippedNode) {
+        'no id' => ['children' => []],
+        'not found' => ['entry' => 'ghost'],
+        'unknown blueprint' => ['entry' => 'x1'],
+        default => throw new InvalidArgumentException("No such skipped node: {$skippedNode}"),
+    };
+
+    expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([$skipped, ['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry 'Sibling Page' must be the child");
+})->with([
+    'a node with no entry id' => ['no id'],
+    'an entry it cannot find' => ['not found'],
+    'an entry of an unknown blueprint' => ['unknown blueprint'],
+]);
+
+it('does not descend into empty or non-list children', function (mixed $children) {
+    expertiseTreeEntry('e1', 'clinical_expertise');
+
+    expect(throwableFrom(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'e1', 'children' => $children]]))))
+        ->toBeNull();
+})->with(['empty list' => [[]], 'not a list' => ['children']]);
+
+it('validates a console run that is not the WordPress import', function (mixed $argv) {
+    expertiseTreeEntry('cp1', 'basic_page', 'Console Page');
+
+    expertiseTreeWithArgv($argv, function (): void {
+        expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'cp1']])))
+            ->toThrow(Exception::class, "Content page entry 'Console Page' must be the child");
+    });
+})->with([
+    'another command' => [['artisan', 'statamic:stache:warm']],
+    'a non-text argument' => [['artisan', 42]],
+    'no argument list' => ['not a list'],
+]);
+
+it('validates outside the console even when argv names the import', function () {
+    expertiseTreeEntry('cp1', 'basic_page', 'Web Page');
+
+    // A web request carries no import; only a console argv can bypass validation.
+    $running = new ReflectionProperty(app(), 'isRunningInConsole');
+    $running->setValue(app(), false);
+
+    try {
+        expertiseTreeWithArgv(['artisan', 'import:wordpress'], function (): void {
+            expect(fn () => (new ValidateClinicalExpertiseTree)->handle(expertiseTreeEvent([['entry' => 'cp1']])))
+                ->toThrow(Exception::class, "Content page entry 'Web Page' must be the child");
+        });
+    } finally {
+        $running->setValue(app(), null);
+    }
 });

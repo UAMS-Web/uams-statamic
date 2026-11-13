@@ -316,7 +316,7 @@ trait CreatesApplication
      * Make sure the disposable `content/` mirror the test env reads through
      * exists before anything indexes it (UAMS-Web/uams-statamic-archive#1916).
      *
-     * `test:seed-stache` builds it, and both CI and `scripts/local-ci.mjs` run
+     * `test:seed-stache` builds it, and both CI and `scripts/gate-pest.mjs` run
      * that first — so in a normal band this finds the mirror present and does
      * nothing but take a lock. It is here for the path that skips the seed: a
      * developer running one test file, or a fresh checkout. Without it the
