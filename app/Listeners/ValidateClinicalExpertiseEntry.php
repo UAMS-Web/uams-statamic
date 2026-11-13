@@ -56,32 +56,6 @@ use Statamic\Structures\Tree;
 class ValidateClinicalExpertiseEntry
 {
     /**
-     * Blueprints whose entries are content pages (never valid at the subsite root).
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_BLUEPRINTS = ['basic_page', 'landing_page'];
-
-    /**
-     * Blueprints allowed to parent a content page: an Area of Expertise or another
-     * content page.
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_PARENT_BLUEPRINTS = ['clinical_expertise', 'basic_page', 'landing_page'];
-
-    /**
-     * The controlled certifying-org anchor fields on the `clinical_expertise`
-     * blueprint. A published Area of Expertise must set at least one (UAMS-Web/uams-statamic-archive#1066): a
-     * Schema.org `MedicalSpecialty` member (`schema_medical_specialty`, a
-     * `schema_type` fieldtype) or a Health Care Provider Taxonomy classification
-     * (`clinical_specializations`, an `entries` relation to that collection, UAMS-Web/uams-statamic-archive#2596).
-     *
-     * @var list<string>
-     */
-    private const array CONTROLLED_ANCHOR_FIELDS = ['schema_medical_specialty', 'clinical_specializations'];
-
-    /**
      * Create the listener with the request and the published-state resolver.
      *
      * @param  Request  $request  The current request, read for a new entry's parent
@@ -171,7 +145,7 @@ class ValidateClinicalExpertiseEntry
             // Blueprint handles are non-numeric strings or null, which loose and strict
             // in_array() compare alike.
             // @pest-mutate-ignore: TrueToFalse
-            \in_array($blueprint, self::CONTENT_PAGE_BLUEPRINTS, true)
+            \in_array($blueprint, self::contentPageBlueprints(), true)
         ) { // Validate content pages: they must have a parent that is an expertise or content page.
             // Content pages must have a parent (they can never be at the subsite root).
             if ($parentBlueprint === null) {
@@ -189,7 +163,7 @@ class ValidateClinicalExpertiseEntry
                 // Blueprint handles are non-numeric strings or null, which loose and
                 // strict in_array() compare alike.
                 // @pest-mutate-ignore: TrueToFalse
-                ! \in_array($parentBlueprint, self::CONTENT_PAGE_PARENT_BLUEPRINTS, true)
+                ! \in_array($parentBlueprint, self::contentPageParentBlueprints(), true)
             ) {
                 Log::error(
                     'ValidateClinicalExpertiseEntry::handle: Throwing exception: Invalid parent for content page',
@@ -208,7 +182,7 @@ class ValidateClinicalExpertiseEntry
      */
     protected function hasControlledAnchor(Entry $entry): bool
     {
-        return \array_any(self::CONTROLLED_ANCHOR_FIELDS, fn (string $field): bool => $this->isAnchorSet($entry->get($field)));
+        return \array_any(self::controlledAnchorFields(), fn (string $field): bool => $this->isAnchorSet($entry->get($field)));
     }
 
     /**
@@ -361,5 +335,46 @@ class ValidateClinicalExpertiseEntry
         }
 
         return $parentEntry;
+    }
+
+    /**
+     * Blueprints whose entries are content pages (never valid at the subsite root).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageBlueprints(): array
+    {
+        return ['basic_page', 'landing_page'];
+    }
+
+    /**
+     * Blueprints allowed to parent a content page: an Area of Expertise or another
+     * content page.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageParentBlueprints(): array
+    {
+        return ['clinical_expertise', 'basic_page', 'landing_page'];
+    }
+
+    /**
+     * The controlled certifying-org anchor fields on the `clinical_expertise`
+     * blueprint. A published Area of Expertise must set at least one (UAMS-Web/uams-statamic-archive#1066): a
+     * Schema.org `MedicalSpecialty` member (`schema_medical_specialty`, a
+     * `schema_type` fieldtype) or a Health Care Provider Taxonomy classification
+     * (`clinical_specializations`, an `entries` relation to that collection, UAMS-Web/uams-statamic-archive#2596).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function controlledAnchorFields(): array
+    {
+        return ['schema_medical_specialty', 'clinical_specializations'];
     }
 }
