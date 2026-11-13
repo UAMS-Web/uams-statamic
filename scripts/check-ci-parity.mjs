@@ -1,44 +1,23 @@
 #!/usr/bin/env node
-// Decides whether a staged change to one of the two mirrored CI files touches
-// behavior the OTHER file mirrors, so `.githooks/pre-commit` can gate on that
-// rather than on the files' mere presence in the index (UAMS-Web/uams-statamic-archive#2376).
+// Decides whether a staged change to the mirrored CI files touches behavior the
+// OTHER side mirrors, so `.githooks/pre-commit` can gate on that rather than on
+// the files' mere presence in the index (UAMS-Web/uams-statamic-archive#2376).
 //
-// The gate it serves is real: `.github/workflows/ci.yml` and
-// `scripts/local-ci.mjs` are hand-maintained mirrors with no shared source of
-// truth, so editing one without the other lets local and remote CI drift
-// silently. What the old check could not do was tell a change INSIDE a mirrored
-// region from one outside it -- and `scripts/local-ci.mjs` is not only the
-// mirror. It also carries toolchain discovery, worktree management, argument
-// parsing and the chain runner, none of which `ci.yml` has a counterpart for.
+// The gate it serves is real: `.github/workflows/ci.yml` and the local runner's
+// job list are hand-maintained mirrors with no shared source of truth, so editing
+// one without the other lets local and remote CI drift silently.
 //
-// Measured on UAMS-Web/uams-statamic-archive#2376: of the last 50 commits touching `scripts/local-ci.mjs`, 4
-// were local-CI-only against 3 touching both. The one-sided change is the
-// COMMON case, so `--no-verify` had become routine on the one file where the
-// gate matters most -- and that flag also disarms the unrelated merge-resolution
-// gate in the same hook, which is the half that can actually lose work.
+// THE LOCAL SIDE (#296). The shared local CI runner reads its jobs from
+// `local-ci.json`, and the jobs that run several commands hold them in
+// `scripts/ci-job.mjs`. Both files exist only to mirror ci.yml, so ANY staged
+// change to either counts as a mirrored change. The gate step scripts
+// (`scripts/gate-*.mjs`, #295) also hold code ci.yml has no counterpart for, so
+// only their `PARITY:` ... `PARITY-END` regions count.
 //
-// WHAT COUNTS AS A MARKED REGION, and why it is not simply "the `PARITY:` line".
-// The markers are POINT annotations: each names what it mirrors and has no end
-// delimiter. Their extent has to be derived, and it derives unevenly --
-// measured at e3b0d36c7, 23 of the 28 markers in `scripts/local-ci.mjs` sit
-// inside a runner body and 5 do not:
-//
-//   inside a runner   the body IS the region, delimited by the same shape
-//                     `scripts/local-ci.chain.test.mjs:175` already parses and
-//                     tests: `^ {8}'?key'?: \(\) => \{$` ... `^ {8}\},?$`.
-//                     Reusing an invariant the suite already enforces beats
-//                     inventing a second one that can disagree with it.
-//   outside           extent genuinely ambiguous, so it is stated rather than
-//                     guessed: `PARITY-END` closes those explicitly. The
-//                     clearest case is the npm floor -- its marker says the
-//                     FLOOR VALUE is mirrored, while `assertNpmFloor()` six
-//                     lines below is local-only enforcement CI has no
-//                     counterpart for. A rule that swallowed the function would
-//                     over-fire; one stopping at the constant might under-fire.
-//                     Nothing in the file said which, so this ticket says it.
-//
-// The two markers in the file header are deliberately NOT regions: they
-// describe the convention, not mirrored code.
+// WHAT COUNTS AS A MARKED REGION in ci.yml: a `# PARITY:` marker governs the
+// step it precedes, derived below. In a step script a marker governs the lines
+// up to its `PARITY-END`; a marker with no end governs nothing, so an
+// un-delimited marker cannot silently claim the rest of the file.
 //
 // FAILING SAFE. If this script cannot run at all, the hook keeps its old
 // behavior and fires on any one-sided staging. That can only over-fire, never
@@ -53,13 +32,11 @@ import { isMainModule } from './gate-process.mjs';
 export const VIOLATION = 2;
 
 export const CI_FILE = '.github/workflows/ci.yml';
-export const SCRIPT_FILE = 'scripts/local-ci.mjs';
+// Files that are wholly the local mirror: any staged change to one is a mirrored change.
+export const MIRROR_FILES = Object.freeze(['local-ci.json', 'scripts/ci-job.mjs']);
 
-// The steps `scripts/local-ci.mjs` calls rather than holds (#295). Each marks its
-// mirrored code with one `PARITY:` line closed by `PARITY-END`, since none has
-// the runner-body shape the regions below are otherwise derived from. They count
-// as the script side of the comparison, or moving a step out of the runner would
-// have moved it out of this gate.
+// The step scripts `local-ci.json` runs (#295). Each marks its mirrored code with
+// one `PARITY:` line closed by `PARITY-END`; the rest of each file is local-only.
 export const GATE_STEP_FILES = Object.freeze([
     'scripts/gate-browser.mjs',
     'scripts/gate-pest.mjs',
@@ -67,8 +44,6 @@ export const GATE_STEP_FILES = Object.freeze([
     'scripts/gate-rector.mjs',
 ]);
 
-const RUNNER_OPEN = /^ {8}'?([a-z][a-z-]*)'?: \(\) => \{$/;
-const RUNNER_CLOSE = /^ {8}\},?$/;
 const MARKER = /PARITY/;
 const END_MARKER = /PARITY-END/;
 
@@ -91,23 +66,6 @@ export function parityRegions(source, kind) {
         for (let j = i + 1; j < lines.length; j += 1) {
             if (END_MARKER.test(lines[j])) { end = j + 1; break; }
             if (MARKER.test(lines[j])) break; // next marker: this one never closed
-        }
-
-        if (end === null && kind === 'mjs') {
-            // Inside a runner body? Walk up for its opening line, then down to
-            // the matching close. A marker with no enclosing runner and no
-            // explicit end governs nothing -- deliberately, so an un-delimited
-            // marker cannot silently claim the rest of the file.
-            let open = null;
-            for (let j = i; j >= 0; j -= 1) {
-                if (RUNNER_CLOSE.test(lines[j])) break;
-                if (RUNNER_OPEN.test(lines[j])) { open = j; break; }
-            }
-            if (open !== null) {
-                for (let j = i + 1; j < lines.length; j += 1) {
-                    if (RUNNER_CLOSE.test(lines[j])) { end = j + 1; break; }
-                }
-            }
         }
 
         if (end === null && kind === 'yml') {
@@ -230,18 +188,20 @@ export function touchesRegion(touched, regions) {
  * catch. Both-in-region is the co-change it wants; neither-in-region is the
  * local-only edit UAMS-Web/uams-statamic-archive#2376 is about, and it passes.
  *
+ * `mirrorDiffs` holds the staged diffs of the MIRROR_FILES: a non-empty one is in
+ * region whatever it touches.
+ *
  * @returns {{fire: boolean, ciInRegion: boolean, scriptInRegion: boolean}}
  */
 export function evaluate({
-    ciDiff = '', scriptDiff = '', ciSource = '', scriptSource = '',
-    ciSourceOld = '', scriptSourceOld = '', gateSteps = [],
+    ciDiff = '', ciSource = '', ciSourceOld = '', mirrorDiffs = [], gateSteps = [],
 }) {
     const inRegion = (diff, source, sourceOld, kind) => diff !== '' && (
         touchesRegion(touchedLines(diff), parityRegions(source, kind))
         || touchesRegion(touchedLinesOld(diff), parityRegions(sourceOld, kind))
     );
     const ciInRegion = inRegion(ciDiff, ciSource, ciSourceOld, 'yml');
-    const scriptInRegion = inRegion(scriptDiff, scriptSource, scriptSourceOld, 'mjs')
+    const scriptInRegion = mirrorDiffs.some((diff) => diff !== '')
         || gateSteps.some(({ diff, source, sourceOld }) => inRegion(diff, source, sourceOld, 'mjs'));
     return { fire: ciInRegion !== scriptInRegion, ciInRegion, scriptInRegion };
 }
@@ -265,9 +225,9 @@ const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
 export function main() {
     const staged = git(['diff', '--cached', '--name-only']).split('\n');
     const ciStaged = staged.includes(CI_FILE);
-    const scriptStaged = staged.includes(SCRIPT_FILE);
+    const stagedMirrors = MIRROR_FILES.filter((f) => staged.includes(f));
     const stagedSteps = GATE_STEP_FILES.filter((f) => staged.includes(f));
-    if (!ciStaged && !scriptStaged && stagedSteps.length === 0) return 0;
+    if (!ciStaged && stagedMirrors.length === 0 && stagedSteps.length === 0) return 0;
 
     // Region extents are read from the INDEX, not the working tree: the commit
     // records the index, so a marker moved-but-not-staged must not shift the
@@ -293,25 +253,22 @@ export function main() {
 
     const { fire, ciInRegion, scriptInRegion } = evaluate({
         ciDiff: ciStaged ? diffOf(CI_FILE) : '',
-        scriptDiff: scriptStaged ? diffOf(SCRIPT_FILE) : '',
         ciSource: ciStaged ? at(CI_FILE) : '',
-        scriptSource: scriptStaged ? at(SCRIPT_FILE) : '',
         ciSourceOld: ciStaged ? atHead(CI_FILE) : '',
-        scriptSourceOld: scriptStaged ? atHead(SCRIPT_FILE) : '',
+        mirrorDiffs: stagedMirrors.map(diffOf),
         gateSteps: stagedSteps.map((f) => ({ diff: diffOf(f), source: atOrEmpty(f), sourceOld: atHead(f) })),
     });
     if (!fire) return 0;
 
-    const scriptSide = stagedSteps.length > 0 && !scriptStaged ? stagedSteps.join(', ') : SCRIPT_FILE;
-    const inOne = ciInRegion ? CI_FILE : scriptSide;
-    const other = ciInRegion ? `${SCRIPT_FILE} or a gate step script` : CI_FILE;
+    const inOne = ciInRegion ? CI_FILE : [...stagedMirrors, ...stagedSteps].join(', ');
+    const other = ciInRegion ? `${MIRROR_FILES.join(', ')} or a gate step script` : CI_FILE;
     console.error('');
     console.error('CI parity gate: a staged change lands in a mirrored region of');
     console.error(`    ${inOne}`);
     console.error(`with no matching change in a mirrored region of`);
     console.error(`    ${other}`);
     console.error('');
-    console.error('These regions are marked `PARITY:` and must change together, so the');
+    console.error('A `PARITY:` region and its local mirror must change together, so the');
     console.error('local and remote runners cannot drift. Update the other side, or if');
     console.error('this really is one-sided:');
     console.error('    git commit --no-verify');

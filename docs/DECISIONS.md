@@ -3929,6 +3929,16 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).
 
+## 2026-11-12: The shared local CI runner replaces this repository's own (#296, #256)
+
+**Decision.** Supersedes the 2026-10-04 entry (UAMS-Web/uams-statamic-archive#2835). The shared runner the sync delivers (`.claude/skills/local-ci/local-ci.mjs`) runs this repository's checks from [`local-ci.json`](../local-ci.json), and `scripts/local-ci.mjs` and its tests are removed. [`scripts/ci-local.mjs`](../scripts/ci-local.mjs) runs it, adding to a `--jobs` subset the jobs it depends on (`php`, which makes the shared runner resolve and check PHP, `dependencies`, and `build` for `browser`) and refusing the retired runner's flags with what to do instead. Every job sets `always: true` and none declares `requires`; `chain` stops at the first failure, as the private runner did.
+
+**Why.** The capabilities the keep decision named now exist on one side or the other. The shared runner gained a runner-owned `--branch` slot with a handoff to the branch's own copy, a single-flight lock on the tree it runs in, `prepare` and `mutation`, and commit statuses, all documented in the delivered runner's header (`UAMS-Web/uams-claude-skills#26` landed the job shapes this repository needed). What is specific to this repository moved into scripts the jobs run: the gate steps ([`scripts/gate-*.mjs`](../scripts), #295), the multi-command jobs ([`scripts/ci-job.mjs`](../scripts/ci-job.mjs)), and the slot install ([`scripts/prepare-dependencies.mjs`](../scripts/prepare-dependencies.mjs)), which installs only in the runner's slot and anywhere else reports drift, including patched packages `vendor/` is not recorded as carrying the patches of. [`scripts/ci-local.chain.test.mjs`](../scripts/ci-local.chain.test.mjs) keeps the job list in step with `ci.yml`, and `.githooks/pre-commit` treats `local-ci.json` and `scripts/ci-job.mjs` as wholly the mirror.
+
+**Rejected.** *A thin wrapper that keeps `scripts/local-ci.mjs` as the runner*: two job lists for one gate. *Declaring `requires` on jobs whose tool can be absent*: the runner reports such a job skipped and exits 0, so a missing tool would pass. *Letting `prepare.patches` re-sync patched packages*: `prepare` runs before any job, so it would reinstall the slot's old package version against the commit's new patch; the `dependencies` job installs first and re-syncs second.
+
+**Companion.** #296 (the slice) and #256 (the staged adoption); `UAMS-Web/uams-claude-skills#711` (the sync change that delivers the runner here).
+
 ## 2026-11-12: `brianium/paratest` is pinned to `~7.27.5` and ignored in Dependabot until Pest accommodates `v7.28.0` (#658)
 
 **Decision.** `composer.json` pins `brianium/paratest` to `~7.27.5`, with the reason under `extra.pinned`, and the composer entry of `.github/dependabot.yml` ignores the package, each naming #658 and `pestphp/pest#2024`. An upstream watch row on `pestphp/pest#2024` comments on #659, which retires the pin, the `ignore` entry and the row once a Pest release accommodates `7.28.0`. No other package moves.

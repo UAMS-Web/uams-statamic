@@ -1,26 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compare, controlFailures, parseWorkflow, readRepository } from '../.claude/skills/code-quality/scripts/check-aggregate-needs.mjs'
-import {
-    ALL_JOBS,
-    CHAIN,
-    RUNNER_PINNED_ENV,
-    RUNNER_PINNED_FLAG,
-    driftLabel,
-    handoffArgv,
-    parseArgs,
-    runnerHandoff,
-    unknownJobs,
-    worktreeDriftEntries,
-} from './local-ci.mjs'
+import { JOBS } from './ci-job.mjs'
+import { driftLabel, worktreeDriftEntries } from './gate-pest.mjs'
 
-// UAMS-Web/uams-statamic-archive#1735 — `scripts/local-ci.mjs` is a HAND-maintained mirror of
-// `.github/workflows/ci.yml`, and the job SET is the part of it that silently
-// rots: add a job to one file and the other keeps gating a branch by the old set,
+// UAMS-Web/uams-statamic-archive#1735 and #296: `local-ci.json` is a HAND-maintained mirror of
+// `.github/workflows/ci.yml` for the shared local CI runner, and the job SET is the part of it
+// that silently rots: add a job to one file and the other keeps gating a branch by the old set,
 // so a locally-green branch is gated differently than it would be on CI. The
 // `.githooks/pre-commit` hook only catches staging one file without the other; it
 // cannot see whether the two agree. These assert that they do.
@@ -37,8 +27,17 @@ import {
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
+const config = JSON.parse(readFileSync(join(repoRoot, 'local-ci.json'), 'utf8'))
 
-// ci.yml job id -> the `--jobs` key local-ci.mjs addresses that job by. Every job
+// Jobs `local-ci.json` runs that have no ci.yml counterpart: the PHP resolution and install
+// steps the shared runner leaves to the repository (setup-php and the install steps in ci.yml),
+// and two checks of the sync's own output.
+const LOCAL_ONLY = new Set(['php', 'dependencies', 'synced-files', 'handed-back-workflow'])
+
+// The jobs `local-ci.json` runs in its chain order, less the local-only ones.
+const CHAIN = config.jobs.map((job) => job.name).filter((name) => !LOCAL_ONLY.has(name))
+
+// ci.yml job id -> the `local-ci.json` job name that mirrors it. Every job
 // in the workflow must appear here or in REMOTE_ONLY below; an unmapped id fails the
 // test, which is the point — a job added to CI has to be mirrored, not silently ignored.
 const JOB_KEYS = {
@@ -134,16 +133,13 @@ function parseWorkflowJobs(yaml) {
     return jobs
 }
 
-describe('ci.yml <-> local-ci.mjs chain parity', () => {
+describe('ci.yml <-> local-ci.json chain parity', () => {
     const allJobs = parseWorkflowJobs(workflow)
     const jobs = new Map([...allJobs].filter(([id]) => !REMOTE_ONLY.has(id)))
 
     it('keeps every remote-only job in ci.yml', () => {
         // Each listed job must exist, so a rename cannot leave a stale exemption
         // pointing at nothing while the renamed job slips past this guard unseen.
-        // The "outside the chain" half of this case retired with #373: no job in
-        // ci.yml carries a cost edge any more, and the unchained case below
-        // asserts that for every job at once rather than for these.
         for (const id of REMOTE_ONLY) {
             expect(allJobs.has(id)).toBe(true)
         }
@@ -153,12 +149,19 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect([...jobs.keys()].sort()).toEqual(Object.keys(JOB_KEYS).sort())
     })
 
+    it('mirrors every ci.yml job with a job local-ci.json runs, and runs no unaccounted job', () => {
+        // JOB_KEYS maps a ci.yml id to a local name; that name has to be a real job here,
+        // or the mirror points at nothing and the ci.yml job goes unchecked locally.
+        const mirrored = new Set([...Object.values(JOB_KEYS), ...CALLED_CHAIN_KEYS])
+        expect([...mirrored].sort()).toEqual([...CHAIN].sort())
+    })
+
     it('calls the shared chain at a release tag and mirrors its pint, rector and phpstan jobs locally (#580)', () => {
         // A branch would move under every run; a tag moves only when this file does.
         const checks = jobText(workflow, 'checks')
         expect(checks).toMatch(/^ {4}uses: UAMS-Web\/uams-ci-workflows\/\.github\/workflows\/ci\.yml@v\d+\.\d+\.\d+$/m)
 
-        // Each mirrored job is still one the local runner chains, by the same key.
+        // Each mirrored job is still one the local runner chains, by the same name.
         for (const key of CALLED_CHAIN_KEYS) {
             expect(CHAIN, key).toContain(key)
         }
@@ -195,164 +198,105 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect(chained).toEqual([['pest-report', ['pest']]])
     })
 
-    it('addresses every chained job by a valid `--jobs` key', () => {
-        // Since UAMS-Web/uams-statamic-archive#1727 there is no opt-in job: the chain and the `all` expansion
-        // hold exactly the same set, so a default run cannot silently omit a job.
-        expect([...CHAIN].sort()).toEqual([...ALL_JOBS].sort())
+    it('runs every job on a default run, chained, with no job that can skip itself (#296)', () => {
+        // The private runner this replaces ran every job in this order and stopped at the
+        // first failure; `chain` and `always` keep that. A `requires` entry would let a job
+        // whose tool is missing report SKIPPED, which the shared runner counts as a pass.
+        expect(config.chain).toBe(true)
+
+        for (const job of config.jobs) {
+            expect(job.always, job.name).toBe(true)
+            expect(job.requires, job.name).toBeUndefined()
+        }
     })
 
-    it('keeps `browser` in the default `all` set, running last (#1727)', () => {
-        // The regression this pins: four CP smokes sat red on `main` for eleven
-        // days because tests/Browser ran only when a human remembered to ask for
-        // it. Dropping `browser` back out of ALL_JOBS restores that blind spot,
-        // and every other assertion in this file would still pass — the set-
-        // equality check above compares CHAIN against whatever ALL_JOBS happens
-        // to be, so removing it from BOTH stays green. This names it explicitly.
-        expect(ALL_JOBS).toContain('browser')
+    it('runs php and dependencies first, build before browser, and `browser` last (#1727)', () => {
+        // `php` is the job that makes the runner resolve and check PHP and hand it to every
+        // job; `dependencies` installs the slot every later job reads. The `browser` regression
+        // this pins: four CP smokes sat red on `main` for eleven days because tests/Browser
+        // ran only when a human remembered to ask for it.
+        expect(config.jobs.slice(0, 2).map((job) => job.name)).toEqual(['php', 'dependencies'])
+        expect(config.jobs[0].run).toMatch(/^php\s/)
+        expect(CHAIN.indexOf('build')).toBeLessThan(CHAIN.indexOf('browser'))
         expect(CHAIN.at(-1)).toBe('browser')
     })
 
-    it('implements a runner for every job it chains', () => {
-        // Name-level parity is not enough: a job present in both files' chains but
-        // missing its runner passes every other assertion here and then dies at
-        // dispatch on `runners[job]()` being undefined. Asserted against the source
-        // text because `runners` is built inside `main()` and cannot be imported.
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        // The key may be quoted: a hyphenated job name is not a bare identifier, so
-        // `no-emoji` is written `'no-emoji': () => {`. Matching only bare keys would
-        // silently drop it from `implemented` and report a missing runner that exists.
-        const implemented = [...script.matchAll(/^ {8}'?([a-z][a-z-]*)'?: \(\) => \{$/gm)].map((m) => m[1])
-        expect([...CHAIN].sort()).toEqual([...implemented].sort())
-    })
+    it('names a command that exists for every job', () => {
+        // A job whose script was renamed fails only at dispatch, after every cheaper job has
+        // run; this finds it without running anything.
+        const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
+        const composer = JSON.parse(readFileSync(join(repoRoot, 'composer.json'), 'utf8'))
 
-    it('gates composer.lock freshness before any job that installs anything', () => {
-        // The saving that justifies the extra link: `encoding` is the first job to
-        // run `composer install`, and everything after it is costlier still.
-        expect(CHAIN.indexOf('validate')).toBeGreaterThan(-1)
-        expect(CHAIN.indexOf('validate')).toBeLessThan(CHAIN.indexOf('encoding'))
-    })
+        for (const { name, run } of config.jobs) {
+            const [tool, first, second] = run.split(' ')
 
-    it('hands the run to the branch when its runner defines the chain differently', () => {
-        // The UAMS-Web/uams-statamic-archive#1882 case, in miniature: `main`'s runner has no `mutate` job and
-        // the branch's does. Comparing SOURCE is what notices — nothing else in
-        // the run can, because the executing copy is the only one parsed.
-        const base = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        const branch = base.replace("'rector', 'mutate'", "'rector', 'mutate', 'boom'")
-        expect(branch).not.toBe(base)
-
-        expect(runnerHandoff({ pinned: false, executingSource: base, branchSource: branch }).action).toBe('handoff')
-    })
-
-    it('runs in place when the branch runner is identical, absent, or already pinned', () => {
-        const base = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-
-        // Identical — the overwhelmingly common case, and the one that must cost
-        // nothing: no re-exec means no second checkout and no second install.
-        expect(runnerHandoff({ pinned: false, executingSource: base, branchSource: base }).action).toBe('run')
-
-        // A branch that carries no runner at all has nothing to hand off TO.
-        expect(runnerHandoff({ pinned: false, executingSource: base, branchSource: null }).action).toBe('run')
-
-        // Line endings alone are not a difference in what the chain DOES, so a
-        // checkout under a different core.autocrlf must not trigger a handoff.
-        expect(runnerHandoff({
-            pinned: false,
-            executingSource: 'const CHAIN = []\nmain()\n',
-            branchSource: 'const CHAIN = []\r\nmain()\r\n',
-        }).action).toBe('run')
-    })
-
-    it('cannot recurse: a pinned run never hands off again, however different the sources', () => {
-        // Recursion is the failure mode a self-re-exec invites, so the guard is
-        // proved rather than asserted: feed the decision two deliberately DIFFERENT
-        // sources — the one input that would otherwise hand off forever — with the
-        // pin set, from either channel.
-        expect(runnerHandoff({ pinned: true, executingSource: 'a', branchSource: 'b' }).action).toBe('run')
-        expect(parseArgs(['--branch', 'b', RUNNER_PINNED_FLAG]).runnerPinned).toBe(true)
-    })
-
-    it('keeps the pin out of the forwarded argv, so a runner predating it still parses', () => {
-        // The pin travels in RUNNER_PINNED_ENV precisely because the branch's copy
-        // may be OLDER than this file. A pre-#1882 `parseArgs` has no case for the
-        // flag, so its `default:` arm throws `Unknown option` — which would make
-        // every branch cut before this change un-validatable the moment it merged.
-        const argv = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
-        expect(argv).not.toContain(RUNNER_PINNED_FLAG)
-
-        // And the env channel is what the child actually reads — a name an older
-        // parser cannot see at all.
-        expect(RUNNER_PINNED_ENV).toBe('LOCAL_CI_RUNNER_PINNED')
-        expect(readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8'))
-            .toContain(`[RUNNER_PINNED_ENV]: '1'`)
-    })
-
-    it('forwards only flags the base branch\'s runner already parses', (context) => {
-        // Asserted against the real base-branch source, not a hand-written stand-in.
-        // A CI checkout fetches only the commit under test and creates no
-        // `origin/main`, so there the base cannot be read at all (#375). That case
-        // is a skip that names the missing ref, never a pass: with no base source
-        // the loop below would have nothing to compare against.
-        const base = readAtRef(repoRoot, 'origin/main', 'scripts/local-ci.mjs')
-        if (base.unreachable !== null) {
-            context.skip(base.unreachable)
-        }
-
-        const flags = handoffArgv(['--branch', 'some-branch', '--jobs', 'all'], '/tmp/wt')
-            .filter((arg) => arg.startsWith('-'))
-        expect(flags.length).toBeGreaterThan(0)
-        for (const arg of flags) {
-            // Every flag the handoff forwards must be one the BASE branch's parser
-            // already knows, or that older runner dies before it validates anything.
-            expect(base.source).toContain(`'${arg}'`)
+            if (tool === 'node') {
+                expect(existsSync(join(repoRoot, first)), `${name}: ${first}`).toBe(true)
+            } else if (tool === 'npm') {
+                expect(pkg.scripts?.[second], `${name}: npm run ${second}`).toBeDefined()
+            } else if (tool === 'composer') {
+                expect(composer.scripts?.[first], `${name}: composer ${first}`).toBeDefined()
+            } else {
+                // php itself, or php running a vendor/bin tool the lock installs
+                expect(tool, name).toBe('php')
+                const bin = run.split(' ').find((word) => word.startsWith('vendor/bin/'))
+                if (bin) {
+                    expect(composer['require-dev']?.['pestphp/pest'], `${name}: ${bin}`).toBeDefined()
+                }
+            }
         }
     })
 
-    it('rejects an unknown job name even when `all` is also requested', () => {
-        // `--jobs all,typo` expands to ALL_JOBS and drops `typo` on the way, so a
-        // guard reading the EXPANSION returns clean and the chain reports every job
-        // passing while the operator believes `typo` ran. The caller's own list is
-        // what has to be checked.
-        expect(unknownJobs(parseArgs(['--branch', 'b', '--jobs', 'all,typo']).jobs)).toEqual(['typo'])
-        expect(unknownJobs(parseArgs(['--branch', 'b', '--jobs', 'all,browser']).jobs)).toEqual([])
+    it('names a job ci-job.mjs defines wherever a job runs it', () => {
+        const named = config.jobs
+            .map((job) => job.run.match(/^node scripts\/ci-job\.mjs (\S+)$/)?.[1])
+            .filter(Boolean)
+        expect(named.length).toBeGreaterThan(0)
+
+        for (const job of named) {
+            expect([...Object.keys(JOBS), 'content-pointer'], job).toContain(job)
+        }
     })
 
-    it('forwards the caller\'s arguments but drops the ones this process already spent', () => {
-        const argv = handoffArgv(
-            ['--branch', 'b', '--fresh', '--fetch', '--jobs', 'pest', '-w', '/old/path', '--skip-install'],
-            '/new/path',
-        )
+    it('refuses a reused slot holding files the validated commit lacks, in the directories jobs read (#1889)', () => {
+        // The shared runner's prepare.residue is the UAMS-Web/uams-statamic-archive#1889 guard
+        // now: a file a commit deleted that a reused slot still holds is refused before any
+        // job runs. #1889's files were under tests/, and larastan reads app/ and config/; an
+        // emptied list would turn the guard off with every other case here still green.
+        expect(config.prepare.residue).toEqual(expect.arrayContaining(['app', 'config', 'database', 'resources', 'routes', 'tests']))
 
-        // --fresh already rebuilt the worktree and --fetch already reconciled the
-        // ref; repeating either would discard this process's work or silently
-        // validate a newer commit than the one it announced.
-        expect(argv).not.toContain('--fresh')
-        expect(argv).not.toContain('--fetch')
-
-        // Everything else the caller asked for survives, and exactly one worktree
-        // path reaches the child — the resolved one.
-        const opts = parseArgs(argv)
-        expect(opts.branch).toBe('b')
-        expect(opts.jobs).toEqual(['pest'])
-        expect(opts.skipInstall).toBe(true)
-        expect(opts.worktreePath).toBe('/new/path')
-        expect(argv.filter((a) => a === '-w' || a === '--worktree-path')).toHaveLength(1)
+        for (const dir of config.prepare.residue) {
+            expect(existsSync(join(repoRoot, dir)), dir).toBe(true)
+        }
     })
 
-    it('carries an unrecognized job name past parsing so the branch can define it', () => {
-        // A job that exists only on the branch must survive `--jobs` parsing here,
-        // or the handoff can never reach it — the runner would reject the name
-        // before the branch it belongs to is even on disk. parseArgs therefore
-        // accepts it, and unknownJobs() is what main() consults afterwards.
-        expect(parseArgs(['--branch', 'b', '--jobs', 'boom']).jobs).toEqual(['boom'])
-        expect(unknownJobs(['boom'])).toEqual(['boom'])
+    it('fails on a stale composer.lock before the jobs that run PHP against it', () => {
+        // Locally `dependencies` installs before `validate` by design (it is the job that
+        // installs); what `validate` still saves is every costlier job after it.
+        const order = config.jobs.map((job) => job.name)
+        expect(order.indexOf('dependencies')).toBeGreaterThan(-1)
+        expect(order.indexOf('validate')).toBeGreaterThan(order.indexOf('dependencies'))
 
-        // Everything this runner does implement still reads as known, `browser`
-        // and `all` included — they are valid `--jobs` values, just not in ALL_JOBS.
-        expect(unknownJobs([...ALL_JOBS, 'browser', 'all'])).toEqual([])
+        for (const job of ['encoding', 'pint', 'rector', 'mutate', 'phpstan', 'pest', 'browser']) {
+            expect(order.indexOf(job), job).toBeGreaterThan(order.indexOf('validate'))
+        }
+    })
+
+    it('runs the mutation smoke ci.yml runs, with its false-green guard', () => {
+        // ci.yml fails a run that mutated nothing; `mutation.minScore` is the runner's
+        // equivalent, and without it Pest's exit status alone passes an empty run.
+        const mutate = config.jobs.find((job) => job.name === 'mutate')
+        expect(mutate.mutation).toEqual({ minScore: 100 })
+        expect(jobText(workflow, 'mutate')).toContain('vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php')
+        expect(mutate.run).toContain('vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert')
+        // The gate scripts' memory limit (#3212); the runner adds none of its own
+        expect(mutate.run).toMatch(/^php -d memory_limit=4G vendor\/bin\/pest /)
+        expect(mutate.run).toContain('--class="App\\Support\\UamsAlert\\AlertSiteKeyResolver" --covered-only')
     })
 
     it('sees a file the validated commit deleted still sitting in the worktree', () => {
-        // The UAMS-Web/uams-statamic-archive#1889 case exactly: UAMS-Web/uams-statamic-archive#1847 deleted these two audit tests, they were
+        // worktreeDriftEntries is gate-pest.mjs's submodule drift probe; the superproject's
+        // #1889 guard is prepare.residue (above). The UAMS-Web/uams-statamic-archive#1889 case exactly: UAMS-Web/uams-statamic-archive#1847 deleted these two audit tests, they were
         // absent from both validated commits, and the REUSING run executed and
         // passed them anyway. A surviving deletion is UNTRACKED — `??`, which
         // reads like an addition — so it is the status that must not be waved
@@ -415,68 +359,26 @@ describe('ci.yml <-> local-ci.mjs chain parity', () => {
         expect(driftLabel(' M')).toContain('content differs')
     })
 
-    it('runs composer validate with the application-scoped flags in both files', () => {
+    it('runs composer validate with the application-scoped flags in both places', () => {
         // The flags scope the check to an application rather than a published
-        // package. They do not change pass/fail — what they must stay is IDENTICAL
-        // across the two files, or the mirror lies about what the gate checks.
-        const flags = /composer validate --no-check-publish --no-check-all/
-        expect(workflow).toMatch(flags)
-
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        expect(script).toMatch(/'validate', '--no-check-publish', '--no-check-all'/)
+        // package. They do not change pass/fail; what they must stay is IDENTICAL
+        // across the two, or the mirror lies about what the gate checks.
+        expect(workflow).toMatch(/composer validate --no-check-publish --no-check-all/)
+        expect(JOBS.validate.map(([, command]) => command)).toContainEqual(['composer', 'validate', '--no-check-publish', '--no-check-all'])
     })
 
-    it('runs the PSR-4 class check with --dev in both files', () => {
+    it('runs the PSR-4 class check with --dev in both places', () => {
         // Without `--dev`, a tree with no `vendor/` is treated as a non-dev install,
         // `autoload-dev` is skipped, and the check passes with `tests/` unread (#322).
         expect(workflow).toMatch(/composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts/)
-
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        expect(script).toMatch(/'dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'/)
+        expect(JOBS.validate.map(([, command]) => command)).toContainEqual(['composer', 'dump-autoload', '--optimize', '--dev', '--strict-psr', '--dry-run', '--no-scripts'])
     })
 
-    it('runs the one-class-per-file check in both files', () => {
+    it('runs the one-class-per-file check in both places', () => {
         // The PSR-4 check drops a second class silently, so this is the only step that
         // reports one (#555).
         expect(workflow).toMatch(/run: php scripts\/check-one-class-per-file\.php\n/)
-
-        const script = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8')
-        expect(script).toMatch(/runPhp\(\['scripts\/check-one-class-per-file\.php'\], worktreePath\)/)
-    })
-})
-
-// UAMS-Web/uams-statamic-archive#2989: the header comment's `--jobs` usage text is the list a person copies
-// from when assembling a job selection. It once omitted `phpstan`, and because
-// that name is valid the runner accepted the narrower selection without a word.
-// So the documented list must hold exactly the jobs the runner knows, compared
-// as sets (two lists of equal length can still disagree), in the chain's order.
-describe('--jobs usage text', () => {
-    // Read the comma-separated names on the line after the `--jobs` option
-    function documentedJobs() {
-        const lines = readFileSync(join(repoRoot, 'scripts', 'local-ci.mjs'), 'utf8').split('\n')
-        const option = lines.findIndex((line) => line.includes('-j, --jobs <list>') && line.startsWith('//'))
-        expect(option).toBeGreaterThan(-1)
-
-        return lines[option + 1]
-            .replace(/^\/\/\s*/, '')
-            .replace(/,\s*$/, '')
-            .split(',')
-            .map((name) => name.trim())
-    }
-
-    it('names every job in ALL_JOBS and nothing else', () => {
-        expect(new Set(documentedJobs())).toEqual(new Set(ALL_JOBS))
-    })
-
-    it('lists the jobs in the chain order', () => {
-        expect(documentedJobs()).toEqual(CHAIN)
-    })
-
-    it('is accepted whole by --jobs', () => {
-        const opts = parseArgs(['--branch', 'x', '--jobs', documentedJobs().join(',')])
-
-        expect(opts.jobs).toEqual(documentedJobs())
-        expect(unknownJobs(opts.jobs)).toEqual([])
+        expect(JOBS.validate.map(([, command]) => command)).toContainEqual(['php', 'scripts/check-one-class-per-file.php'])
     })
 })
 
