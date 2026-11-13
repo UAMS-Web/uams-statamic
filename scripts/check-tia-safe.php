@@ -66,7 +66,7 @@ use Pest\Plugins\Tia\Fingerprint;
  * SECOND HAZARD: NO COVERAGE DRIVER. Tia records its edges from coverage. With no
  * driver the graph records zero edges, and a graph with no edges cannot mark
  * anything affected — so every subsequent run replays. Note this is exactly the
- * state BOTH gate paths run in — `ci.yml` pins `coverage: none` and `local-ci.mjs`
+ * state BOTH gate paths run in — `ci.yml` pins `coverage: none` and `scripts/gate-pest.mjs`
  * passes `-d pcov.enabled=0` — which is one of the three reasons Tia is excluded
  * from the gate entirely. See the `PARITY` comments in those two files.
  *

@@ -21,7 +21,7 @@ use Tests\TestCase;
  * commits stage is pinned by RegistrantRecordsStayOutOfAutomaticCommitsTest (UAMS-Web/uams-statamic-archive#2629).
  *
  * **Where this runs.** In BOTH gates, and in every developer checkout and worktree
- * slot. Since UAMS-Web/uams-statamic-archive#2477, `ci.yml`'s pest job and `scripts/local-ci.mjs` check out
+ * slot. Since UAMS-Web/uams-statamic-archive#2477, `ci.yml`'s pest job and the local runner's `dependencies` job check out
  * `users` alongside `content` (it is a 2 KB pack holding the two seed accounts and
  * this allowlist, and nothing else since UAMS-Web/uams-statamic-archive#2454), so a reverted allowlist reds the
  * chain rather than passing it. The skips below fire only where the submodule is

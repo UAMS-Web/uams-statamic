@@ -67,7 +67,7 @@ export function primaryCheckoutFrom(commonDir, detail = null) {
  * Ask git for the primary checkout containing `cwd`.
  *
  * `gitExe` accepts either a bare command name or an already-resolved absolute path, so a caller
- * that has resolved its own git (`local-ci.mjs` honors `$LOCAL_CI_GIT`) keeps that resolution.
+ * that has resolved its own git (`scripts/gate-process.mjs` honors `$LOCAL_CI_GIT`) keeps that resolution.
  *
  * @param  string  $cwd
  * @param  string  $gitExe
