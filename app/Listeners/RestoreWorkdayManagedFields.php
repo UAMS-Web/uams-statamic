@@ -31,15 +31,6 @@ use Statamic\Facades\User;
  */
 class RestoreWorkdayManagedFields
 {
-    /**
-     * The revision key prefix of a `people` entry.
-     */
-    // A constant expression is never a covered line, so the mutation runner skips it as
-    // uncovered. Applied by hand, each of the six concatenation mutants fails a test in
-    // WorkdayManagedFieldsTest.
-    // @pest-mutate-ignore: ConcatRemoveLeft, ConcatRemoveRight, ConcatSwitchSides
-    private const string REVISION_KEY_PREFIX = 'collections/'.PeopleEditingScope::COLLECTION.'/';
-
     public function __construct(
         protected WorkdayManagedFields $fields
     ) {}
@@ -90,7 +81,7 @@ class RestoreWorkdayManagedFields
 
         $key = $revision->key();
 
-        if (! \is_string($key) || ! str_starts_with($key, self::REVISION_KEY_PREFIX)) {
+        if (! \is_string($key) || ! str_starts_with($key, self::revisionKeyPrefix())) {
             return;
         }
 
@@ -114,5 +105,16 @@ class RestoreWorkdayManagedFields
 
         $attributes['data'] = $this->fields->restore($attributes['data'], $this->fields->storedData($entry));
         $revision->attributes($attributes);
+    }
+
+    /**
+     * The revision key prefix of a `people` entry.
+     *
+     * A method rather than a constant so that the mutation runner, which skips a
+     * line no test reports as covered, tests each change to it.
+     */
+    private static function revisionKeyPrefix(): string
+    {
+        return 'collections/'.PeopleEditingScope::COLLECTION.'/';
     }
 }
