@@ -31,7 +31,7 @@ use Symfony\Component\Finder\SplFileInfo;
  *
  * Run once, in the test env, before the parallel suite:
  * `DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache` (wired into
- * the phpunit job in `ci.yml` and `scripts/local-ci.mjs`, mirroring the
+ * the phpunit job in `ci.yml` and the local runner's `scripts/gate-pest.mjs`, mirroring the
  * `route:cache` pre-step). The `:memory:` mirrors `phpunit.xml`: the warm builds
  * computed-field indexes that probe the database (e.g. `Schema::hasTable`), so it
  * needs a connectable DB — the tests use in-memory SQLite, and a fresh checkout
@@ -50,9 +50,8 @@ use Symfony\Component\Finder\SplFileInfo;
  *
  * The snapshot persists so workers can copy it, and is NOT re-validated against
  * `content/` on consume — so a stale snapshot (content changed since it was
- * built) would seed pre-change content. CI and `scripts/local-ci.mjs` rebuild it
- * on every run (a fresh checkout / throwaway worktree), so they are always
- * current; the only exposure is running `pest --parallel` directly in a
+ * built) would seed pre-change content. CI and the local runner's
+ * `scripts/gate-pest.mjs` rebuild it on every run, so they are always current; the only exposure is running `pest --parallel` directly in a
  * persistent checkout after editing `content/` — rebuild with `test:seed-stache`
  * first, or delete `storage/framework/stache-seed` to fall back to a warm.
  *

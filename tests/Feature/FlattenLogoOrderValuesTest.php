@@ -17,6 +17,9 @@ uses(TestCase::class, RequiresContentSubmodule::class);
  * pairs are mirrored to sortable top-level `order_value__<key>` fields, stale
  * mirrors are pruned, and the block sorts on the prefixed handle.
  *
+ * Accepted equivalent mutant, annotated in the listener: the `instanceof`
+ * guard on `$entry->data()`, which always returns a collection for an entry.
+ *
  * @command  php artisan test --compact tests/Feature/FlattenLogoOrderValuesTest.php
  */
 it('mirrors order_values to prefixed top-level fields and prunes stale ones', function (): void {
@@ -37,6 +40,23 @@ it('mirrors order_values to prefixed top-level fields and prunes stale ones', fu
     expect($entry->get('order_value__stale'))->toBeNull();
     // The nested source is left intact.
     expect($entry->get('order_values'))->toBe(['priority' => '5', 'alpha' => '2']);
+});
+
+it('mirrors only non-empty string order keys', function (): void {
+    $this->requireContentCollection('logo_list_items');
+
+    /** @var Entry $entry */
+    $entry = EntryFacade::make();
+    $entry->collection('logo_list_items');
+    // A list row has an integer key and a blank row has an empty key; neither
+    // names an order key, so neither gets a mirror.
+    $entry->set('order_values', ['priority' => '5', '' => '1', 0 => '7']);
+
+    (new FlattenLogoOrderValues)->handle(new EntrySaving($entry));
+
+    expect($entry->get('order_value__priority'))->toBe('5')
+        ->and($entry->has('order_value__'))->toBeFalse()
+        ->and($entry->has('order_value__0'))->toBeFalse();
 });
 
 it('ignores entries in other collections', function (): void {

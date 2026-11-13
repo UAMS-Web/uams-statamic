@@ -88,10 +88,10 @@ it('git-ignores the cache directory so it cannot be committed or read as worktre
 
     $relative = ltrim(substr($normalize((string) $tmpDir), strlen($normalize($root))), '/');
 
-    // Two failures ride on this beyond the obvious "don't commit a 1.3 GB cache".
-    // `scripts/local-ci.mjs` refuses a reused worktree whose `git status` is not
-    // clean (UAMS-Web/uams-statamic-archive#1889), so an un-ignored cache directory would abort every local-CI
-    // run the moment `composer stan` had populated it.
+    // More rides on this than the obvious "don't commit a 1.3 GB cache".
+    // `node scripts/worktree-slots.mjs release` refuses a slot whose `git status`
+    // lists anything, untracked paths included, so an un-ignored cache directory
+    // would block releasing every slot the moment `composer stan` had populated it.
     $process = new Process(['git', 'check-ignore', '--quiet', $relative.'/probe'], $root);
     $process->run();
 

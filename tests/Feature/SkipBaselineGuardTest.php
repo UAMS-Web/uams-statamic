@@ -17,7 +17,7 @@ use Symfony\Component\Process\Process;
  *
  * Driven as a subprocess (like `tests/Feature/ParallelSafeTestsGuardTest.php`)
  * rather than by requiring the script: that pins the real CLI contract — exit
- * code and the names it prints — which is what ci.yml and local-ci.mjs actually
+ * code and the names it prints — which is what ci.yml and scripts/gate-pest.mjs actually
  * depend on. Pure subprocess check; framework-free, and its fixtures live under
  * a per-run `sys_get_temp_dir()` path, so it is parallel-safe.
  *

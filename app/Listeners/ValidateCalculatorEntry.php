@@ -119,11 +119,15 @@ class ValidateCalculatorEntry
         foreach ($parts as $part) {
             $handle = $part['handle'] ?? null;
             if (is_scalar($handle) && $handle) {
+                // An array key is cast the same way with or without the string cast.
+                // @pest-mutate-ignore: RemoveStringCast
                 $handle = (string) $handle;
                 if (isset($seen[$handle])) {
                     throw new Exception(sprintf("Handle '%s' is used more than once. Every variable and split sub-handle must be unique within the calculator.", $handle));
                 }
 
+                // isset() reads only that the key exists, so its value is never read.
+                // @pest-mutate-ignore: TrueToFalse
                 $seen[$handle] = true;
             }
 
@@ -138,11 +142,15 @@ class ValidateCalculatorEntry
                     continue;
                 }
 
+                // An array key is cast the same way with or without the string cast.
+                // @pest-mutate-ignore: RemoveStringCast
                 $subHandle = (string) $subHandle;
                 if (isset($seen[$subHandle])) {
                     throw new Exception(sprintf("Handle '%s' is used more than once. Every variable and split sub-handle must be unique within the calculator.", $subHandle));
                 }
 
+                // isset() reads only that the key exists, so its value is never read.
+                // @pest-mutate-ignore: TrueToFalse
                 $seen[$subHandle] = true;
             }
         }
@@ -168,7 +176,15 @@ class ValidateCalculatorEntry
                 $subHandle = is_array($split) ? ($split['handle'] ?? null) : null;
                 if (is_scalar($subHandle) && $subHandle) {
                     $compositeHandle = $part['handle'] ?? '?';
-                    $subHandles[(string) $subHandle] = is_scalar($compositeHandle) ? (string) $compositeHandle : '?';
+
+                    // The composite only reaches sprintf('%s'), which prints a scalar the
+                    // same with or without the cast.
+                    // @pest-mutate-ignore: RemoveStringCast
+                    $composite = is_scalar($compositeHandle) ? (string) $compositeHandle : '?';
+
+                    // An array key is cast the same way with or without the string cast.
+                    // @pest-mutate-ignore: RemoveStringCast
+                    $subHandles[(string) $subHandle] = $composite;
                 }
             }
         }
@@ -179,6 +195,8 @@ class ValidateCalculatorEntry
 
         foreach ($parts as $part) {
             $formula = $this->extractFormula($part);
+            // An empty formula holds no identifier, so scanning it finds nothing either.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if ($formula === '') {
                 continue;
             }
@@ -190,9 +208,14 @@ class ValidateCalculatorEntry
             // vanishingly unlikely in practice; a false positive here gives a
             // clear error and the author renames the sub-handle.
             preg_match_all('/[a-zA-Z_]\w*/', $formula, $matches);
+            // The first matching identifier throws, so a repeated one is never reached.
+            // @pest-mutate-ignore: UnwrapArrayUnique
             foreach (array_unique($matches[0]) as $identifier) {
                 if (isset($subHandles[$identifier])) {
                     $compositeOfSub = $subHandles[$identifier];
+                    // The handle only reaches sprintf('%s'), which prints a scalar the same
+                    // with or without the cast.
+                    // @pest-mutate-ignore: RemoveStringCast
                     $partHandle = is_scalar($part['handle'] ?? null) ? (string) $part['handle'] : '?';
                     throw new Exception(
                         sprintf("Formula on '%s' references '%s', which is a split sub-handle of '%s'. Sub-handles are display-only; reference the composite handle '%s' instead.", $partHandle, $identifier, $compositeOfSub, $compositeOfSub)

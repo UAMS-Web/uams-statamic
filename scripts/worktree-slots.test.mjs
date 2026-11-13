@@ -192,7 +192,7 @@ describe('treeKind', () => {
 })
 
 describe('expectationsFor', () => {
-    // The CI slot is runner-owned: local-ci.mjs initializes only `content`, `users` and
+    // The CI slot is runner-owned: the runner's dependencies job initializes only `content`, `users` and
     // `resources/forms` (UAMS-Web/uams-statamic-archive#2477, UAMS-Web/uams-statamic-archive#2818)
     // and runs its own installs without writing this script's stamp. Judging it as a slot
     // reported four permanent drift lines for a tree in exactly the state it should be in.
@@ -646,7 +646,7 @@ describe('driftReasons', () => {
         })).toEqual([])
     })
 
-    // The CI slot is runner-owned: `local-ci.mjs` runs its own UAMS-Web/uams-statamic-archive#1743 patch check there, and this
+    // The CI slot is runner-owned: the runner's dependencies job brings its patches in line there, and this
     // script does not install into it at all. Reporting patch drift would make `status --check`
     // permanently red for a tree nobody here bootstraps — the UAMS-Web/uams-statamic-archive#1952 failure, re-introduced.
     it('exempts a tree this script does not bootstrap from the patch check', () => {

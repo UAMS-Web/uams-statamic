@@ -31,11 +31,6 @@ use Statamic\Facades\User;
  */
 class RestoreWorkdayManagedFields
 {
-    /**
-     * The revision key prefix of a `people` entry.
-     */
-    private const string REVISION_KEY_PREFIX = 'collections/'.PeopleEditingScope::COLLECTION.'/';
-
     public function __construct(
         protected WorkdayManagedFields $fields
     ) {}
@@ -49,6 +44,8 @@ class RestoreWorkdayManagedFields
     {
         $entry = $event->entry;
 
+        // governs() refuses anything that is not an entry itself, so this guard is for phpstan.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $entry instanceof Entry || ! $this->fields->governs($entry)) {
             return;
         }
@@ -60,6 +57,7 @@ class RestoreWorkdayManagedFields
         $data = $entry->data();
 
         // phpstan requires this type guard; an entry's data is always a collection.
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $data instanceof Collection) {
             return;
         }
@@ -83,7 +81,7 @@ class RestoreWorkdayManagedFields
 
         $key = $revision->key();
 
-        if (! \is_string($key) || ! str_starts_with($key, self::REVISION_KEY_PREFIX)) {
+        if (! \is_string($key) || ! str_starts_with($key, self::revisionKeyPrefix())) {
             return;
         }
 
@@ -107,5 +105,16 @@ class RestoreWorkdayManagedFields
 
         $attributes['data'] = $this->fields->restore($attributes['data'], $this->fields->storedData($entry));
         $revision->attributes($attributes);
+    }
+
+    /**
+     * The revision key prefix of a `people` entry.
+     *
+     * A method rather than a constant so that the mutation runner, which skips a
+     * line no test reports as covered, tests each change to it.
+     */
+    private static function revisionKeyPrefix(): string
+    {
+        return 'collections/'.PeopleEditingScope::COLLECTION.'/';
     }
 }

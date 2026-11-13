@@ -32,8 +32,9 @@ parameters:
     # Neither obvious remedy works. `clear-result-cache` drops resultCache.php
     # and reports success for a directory it has substantially not cleared —
     # measured 2026-07-31, 6,883 files / 1.3 GB left under `cache/PHPStan/**`,
-    # every one naming the dead worktree. `--fresh` rebuilds the worktree and
-    # vendor/; the cache lives outside both. And `rm -rf` on the shared directory
+    # every one naming the dead worktree. Removing the local CI runner's slot so
+    # its next run recreates it rebuilds the worktree and vendor/; the cache
+    # lives outside both. And `rm -rf` on the shared directory
     # races whatever concurrent session is mid-analysis in it.
     #
     # A RELATIVE path here resolves against THIS file's directory, so each
