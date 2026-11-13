@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "254b3e1e4bcd74951d2293d6538ebf2c",
+    "content-hash": "86322a29bbc34ad1b5ead403c6a05142",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11613,6 +11613,78 @@
                 "source": "https://github.com/UAMS-Web/aether-incomplete-entries"
             },
             "time": "2026-11-11T03:10:52+00:00"
+        },
+        {
+            "name": "uams-web/aether-listings-management",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-listings-management.git",
+                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-listings-management/zipball/2c492d40db90c25c0be362b9065f8ca80dbcd09e",
+                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\People\\ListingsManagement\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "ListingsManagement",
+                    "description": "Google Business Profile listing sync."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\People\\ListingsManagement\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "ListingsManagement: Google Business Profile listing sync for UAMS Statamic sites.",
+            "homepage": "https://github.com/UAMS-Web/aether-listings-management",
+            "keywords": [
+                "google-business-profile",
+                "listings",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-listings-management/issues",
+                "source": "https://github.com/UAMS-Web/aether-listings-management"
+            },
+            "time": "2026-11-11T18:34:01+00:00",
+            "published-time": "2026-11-12T18:49:24+00:00"
         },
         {
             "name": "uams-web/aether-multisite-forms",
