@@ -56,7 +56,10 @@ const JOB_KEYS = {
     pest: 'pest',
     'pest-serial': 'pest',
     'pest-report': 'pest',
+    // #521 shards the browser job on Linux and merges the shards' reports in a
+    // report job, as #387 does for the parallel band; locally it is one job.
     browser: 'browser',
+    'browser-report': 'browser',
 }
 
 // ci.yml jobs with deliberately no local counterpart. Kept as an
@@ -68,6 +71,10 @@ const JOB_KEYS = {
 // case in the parity block below pins that each
 // still EXISTS in ci.yml, so a rename cannot leave a stale exemption behind.
 const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'checks'])
+
+// ci.yml jobs that run on ubuntu-latest alone rather than on the three legs (#348):
+// the browser suite and its report, Linux only since #521.
+const LINUX_ONLY = ['browser', 'browser-report']
 
 // The `checks` job calls the shared chain in UAMS-Web/uams-ci-workflows (#580), whose
 // jobs this file cannot see. Of them, these are the ones the local runner mirrors, by
@@ -195,7 +202,7 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         // `ci` needs every job and orders none of them: it runs last and reads their
         // results. The aggregate's own block below holds that list.
         const chained = [...allJobs].filter(([id, job]) => id !== 'ci' && job.needs !== null).map(([id, job]) => [id, job.needs])
-        expect(chained).toEqual([['pest-report', ['pest']]])
+        expect(chained).toEqual([['pest-report', ['pest']], ['browser-report', ['browser']]])
     })
 
     it('runs every job on a default run, chained, with no job that can skip itself (#296)', () => {
@@ -498,7 +505,7 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
     it('reads every job on all three operating systems (#348)', () => {
         const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
         // `checks` runs no job of its own here: its legs are the called chain's (#580).
-        const onOneRunner = new Set(['ci', 'submodule-access', 'checks'])
+        const onOneRunner = new Set(['ci', 'submodule-access', 'checks', ...LINUX_ONLY])
         const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
         expect(ids.length).toBeGreaterThan(0)
 
@@ -510,6 +517,17 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
             // No leg leaves the matrix: Windows shards the band too (#504).
             expect(job.includes('exclude:'), id).toBe(false)
             expect(job, id).not.toMatch(/^ +continue-on-error:/m)
+        }
+    })
+
+    it('runs the browser suite and its report on Linux only (#521)', () => {
+        // Decided 2026-11-02: tests/Browser checks the same assets in Chromium on
+        // every platform, so the Windows and macOS legs were dropped. Each job in
+        // LINUX_ONLY must still exist and must name no matrix leg.
+        for (const id of LINUX_ONLY) {
+            const job = jobText(workflow, id)
+            expect(job, id).toContain('    runs-on: ubuntu-latest\n')
+            expect(job, id).not.toContain('matrix.os')
         }
     })
 

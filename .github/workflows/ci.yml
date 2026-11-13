@@ -102,23 +102,26 @@ defaults:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
+#                     Here it runs on Linux only, as four shards (#521).
+#   browser-report -> no counterpart: it merges the browser shards' reports and
+#                     checks every class ran exactly once, as `pest-report` does.
 #   checks         -> no step here: the called chain's pint, rector and phpstan jobs
 #                     run `composer test:pint`, `composer test:refactor` and
 #                     `composer stan`, which the local pint, rector and phpstan
 #                     jobs mirror. The local pint job checks the changed files only,
 #                     where the called one checks every tracked file: `test:pint`
 #                     names the dot-directories Pint's own finder skips (#580).
-# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call and the
-# aggregate `ci` runs on
+# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call, the
+# Linux-only `browser` and `browser-report` jobs (#521) and the aggregate `ci` runs on
 # ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
 # failure does not cancel the others, and `ci` needs them all. The `checks` call's
 # legs are the chain's own classification; see its comment. Windows differs in
 # two places, each marked where it stands: each `pest` shard runs from a list of
 # its test files instead of `--shard` (#504), and CLI OPcache stays off.
-# JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
+# JOB FAN-OUT: every job below runs in parallel. Three jobs declare `needs:`, each
 # because it reads what the jobs it names leave behind. `pest-report` merges the
-# reports of the `pest` shards (#387), and `ci` reads the result of every job
-# (#337). Otherwise one job's
+# reports of the `pest` shards (#387), `browser-report` those of the `browser`
+# shards (#521), and `ci` reads the result of every job (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first. The `checks` call starts with the others, but
 # the chain it calls orders its own jobs, which this file does not control: pint
@@ -140,7 +143,7 @@ defaults:
 # rather than a budget. So the parity contract below covers each job's COMMAND and
 # the SET of jobs, never the order they run in; `scripts/ci-local.chain.test.mjs`
 # asserts that set, and asserts that the only `needs:` edges here are `pest-report`
-# on `pest` and the aggregate `ci` job's.
+# on `pest`, `browser-report` on `browser` and the aggregate `ci` job's.
 # LOCAL-ONLY (intentionally no job here): the local `dependencies` job
 # (`scripts/prepare-dependencies.mjs`) installs into the runner's REUSED slot: it
 # initializes the gate submodules, runs `composer install`, re-applies Composer
@@ -935,7 +938,7 @@ jobs:
     # band with a whole-band baseline and the second divides by a fraction of the
     # band, so neither runs in a shard.
     #
-    # One of the two `needs:` lists in this file, and the reason it is allowed: this job
+    # One of the three `needs:` lists in this file, and the reason it is allowed: this job
     # reads the shards' output, so it cannot run before them. It skips when any
     # shard fails, as the checks below skipped in the single job when the band
     # failed; the failed shard already fails the run.
@@ -1293,12 +1296,32 @@ jobs:
         run: npm run spell
 
   browser:
-    name: CP browser smoke (Pest + Playwright)
-    runs-on: ${{ matrix.os }}
+    name: CP browser smoke (Pest + Playwright, shard ${{ matrix.shard }} of 4)
+    runs-on: ubuntu-latest
+    # Linux only, in four shards (#521). The suite checks the same built assets in
+    # Chromium on every platform and no test in tests/Browser branches on the
+    # operating system, so the Windows and macOS legs were dropped (decided
+    # 2026-11-02). Run whole on one runner the suite took 1,052s of a 1,131s job
+    # on run 43356581270 (job 131659928398), its setup about 75s; the largest
+    # class, CpRedirectResponseCodeTest, takes about 210s, so four shards balanced
+    # on .github/browser-shards.json are predicted at about 263s of suite each,
+    # and a fifth would save under a minute for another runner's setup.
+    #
+    # Pest assigns test CLASSES to shards (`--shard=<i>/<total>`) from the
+    # per-class timings it finds at tests/.pest/shards.json; every shard copies the
+    # same committed .github/browser-shards.json there, so every shard partitions
+    # the suite the same way. `browser-report` merges the shards' reports with the
+    # band's own scripts/merge-shard-reports.php and fails when a class ran in no
+    # shard or in two. The committed timings are refreshed by hand from the
+    # `browser-report` artifact; a class missing from them is still run, by
+    # Pest's round-robin fallback, and the report still checks it ran once.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # 1 to SHARD_TOTAL below; `browser-report` passes the same total to the merge.
+        shard: [1, 2, 3, 4]
+    env:
+      SHARD_TOTAL: 4
     # Local-chain cost rank: LAST, the most expensive job. Here it runs in
     # parallel with the rest.
     # Runs on every PR, like every other job here. The `browser-tests` label gate
@@ -1406,12 +1429,104 @@ jobs:
       - name: Build CP assets
         run: npm run cp:build
 
+      # The timings this shard partitions the suite by, and a note of their source
+      # and hash for `browser-report`, which refuses shards that read different
+      # copies. Committed rather than cached: the suite is small enough that its
+      # timings move slowly (#521).
+      # REMOTE-ONLY: the local runner runs tests/Browser whole, so it reads no timings.
+      - name: Place browser shard timings
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p tests/.pest
+          cp .github/browser-shards.json tests/.pest/shards.json
+          note="source=committed .github/browser-shards.json sha256=$(sha256sum tests/.pest/shards.json | cut -d' ' -f1)"
+          echo "Shard timings: $note"
+          echo "$note" > "shard-timings-$SHARD.txt"
+
+      # What the whole suite holds, so `browser-report` can show the shards ran each
+      # class exactly once. Listing loads the test files without running them.
+      # REMOTE-ONLY: the local runner does not shard, so it has nothing to compare.
+      - name: List the browser suite's tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: vendor/bin/pest tests/Browser --list-tests > "pest-list-$SHARD.txt"
+
       # PARITY: mirrored by scripts/gate-browser.mjs, which the local browser job runs
       # with --skip-build after the build job, as this job builds its own bundles above.
       # tests/Browser holds the CP smokes and the axe-core accessibility gate
       # (UAMS-Web/uams-statamic-archive#1046), which fails on serious/critical WCAG violations.
+      # --shard selects this job's share of the classes and changes nothing about how
+      # they run; --log-junit feeds `browser-report`. The local runner runs the whole
+      # suite in one process.
       - name: Run CP browser smokes + accessibility gate
-        run: vendor/bin/pest tests/Browser
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: vendor/bin/pest tests/Browser --shard="$SHARD/$SHARD_TOTAL" --log-junit "junit-parallel-$SHARD.xml"
+
+      # Only a shard whose suite passed uploads, and `browser-report` needs all of
+      # them, so a failed shard leaves the report job skipped; the failed shard
+      # already fails the run. The file names are the ones
+      # scripts/merge-shard-reports.php reads.
+      - name: Upload the shard's report, listing and timings note
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-shard-${{ matrix.shard }}
+          path: |
+            junit-parallel-${{ matrix.shard }}.xml
+            pest-list-${{ matrix.shard }}.txt
+            shard-timings-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  browser-report:
+    name: CP browser smoke (report)
+    runs-on: ubuntu-latest
+    # Merges the browser shards' reports and refuses a suite the shards did not run
+    # exactly once (#521): a class no shard ran, a class two shards ran, a case
+    # count that differs from the listing, or shards that read different timings.
+    # The same checks `pest-report` runs on the parallel band, by the same script.
+    #
+    # The second of the `needs:` lists in this file outside `ci`, allowed for the
+    # same reason as `pest-report`'s: it reads the shards' output.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: browser
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: browser-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-browser.xml and the per-class timings to refresh
+      # .github/browser-shards.json from. Fails, naming what it found, as above.
+      # REMOTE-ONLY: the local runner runs the suite whole.
+      - name: Merge the shard reports and check every class ran once
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-browser.xml --timings=browser-shards.json
+
+      - name: Upload the suite report and timings
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-suite-report
+          path: |
+            junit-browser.xml
+            browser-shards.json
+          if-no-files-found: error
+          retention-days: 14
 
   composer-validate:
     name: Composer validate (composer.lock freshness)
@@ -1794,7 +1909,7 @@ jobs:
   # a skip counts as success on a required check.
   ci:
     name: CI
-    needs: [checks, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, mutate, pest, pest-report, pest-serial, browser]
+    needs: [checks, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, mutate, pest, pest-report, pest-serial, browser-report, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
