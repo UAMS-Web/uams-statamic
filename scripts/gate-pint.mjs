@@ -6,8 +6,8 @@
  *
  * Runs against an installed checkout, `--tree` or the working directory, and exits with Pint's
  * own status: 0 when no changed file needs formatting or none changed. A wrong flag or a missing
- * tool exits 2. `--base` names the branch to diff against, `main` by default. `local-ci.mjs`
- * calls `gatePint` (#295).
+ * tool exits 2. `--base` names the branch to diff against, `main` by default. `local-ci.json`
+ * runs it as the `pint` job (#296).
  */
 
 import process from 'node:process'

@@ -1,0 +1,120 @@
+{
+    "_note": "The shared local CI runner's job list for this repository (#296). Run it through scripts/ci-local.mjs, which places the --branch slot. Every job is always selected and chain is on, as the private runner this replaces ran every job in this order and stopped at the first failure. The jobs mirror .github/workflows/ci.yml by name through scripts/ci-local.chain.test.mjs: pint, rector and phpstan stand in for the shared chain the checks job calls, and pest covers the pest, pest-serial and pest-report jobs. php, dependencies, synced-files and handed-back-workflow are local only. ci.yml's submodule-access job proves a GitHub-only secret on manual runs, and its ci job aggregates the remote results; neither has a counterpart here.",
+    "_requires": "No job declares requires: the runner reports a job with an unmet requires entry as skipped and still exits 0, so a missing tool would pass. A job without one fails when its tool is absent.",
+    "_prepare": "residue lists every tracked directory a job reads. public/ and storage/ are left out because the dependencies job and the suites write ignored and unignored output there on every run. Submodules are initialized by the dependencies job, which authenticates with Composer's GitHub token and clears files a killed run strands in an uninitialized submodule directory; prepare.submodules would use the invoking user's credentials and refuse those files instead. patches is off for the reason scripts/prepare-dependencies.mjs gives.",
+    "base": "main",
+    "php": "8.4",
+    "chain": true,
+    "prepare": {
+        "residue": [".agents", ".ai", ".claude", ".cursor", ".githooks", ".github", "app", "bootstrap", "config", "database", "docs", "lang", "patches", "resources", "routes", "scripts", "tests"],
+        "patches": false
+    },
+    "jobs": [
+        {
+            "name": "php",
+            "_note": "Local only. The shared runner resolves PHP, checks it against php above and composer.json's config.platform.php, prints it in its header and hands it to every job as LOCAL_CI_PHP only when a selected job runs under PHP. Every other job here starts with node, npm or composer, so without this one a --jobs subset would skip all of that and the gates would run whatever php is first on PATH. scripts/ci-local.mjs adds it to every subset.",
+            "run": "php --version",
+            "always": true
+        },
+        {
+            "name": "dependencies",
+            "_note": "Local only. In the runner's own slot it initializes the gate submodules, installs from composer.lock and package-lock.json, brings vendor/ patches in line, prepares .env and the app key, and resets the reused tree's caches. Anywhere else it installs nothing and fails on drift. See scripts/prepare-dependencies.mjs.",
+            "run": "node scripts/prepare-dependencies.mjs",
+            "always": true,
+            "installs": true
+        },
+        {
+            "name": "synced-files",
+            "_note": "Local only. A hand edit to a file the shared sync manages fails the run.",
+            "run": "node .claude/skills/synced-files/scripts/check-synced-files.mjs",
+            "always": true
+        },
+        {
+            "name": "handed-back-workflow",
+            "_note": "Local only. Fails when .github/workflows/clear-handed-back.yml differs from the shared template or is missing.",
+            "run": "node .claude/skills/handed-back-label/scripts/check-handed-back-workflow.mjs",
+            "always": true
+        },
+        {
+            "name": "isolation",
+            "_note": "ci.yml test-isolation-guard.",
+            "run": "node scripts/ci-job.mjs isolation",
+            "always": true
+        },
+        {
+            "name": "validate",
+            "_note": "ci.yml composer-validate: composer validate, the PSR-4 check and the one-class-per-file check.",
+            "run": "node scripts/ci-job.mjs validate",
+            "always": true
+        },
+        {
+            "name": "no-emoji",
+            "_note": "ci.yml no-emoji-guard.",
+            "run": "node scripts/check-no-emoji.mjs",
+            "always": true
+        },
+        {
+            "name": "content-pointer",
+            "_note": "ci.yml content-pointer-guard, against origin/main.",
+            "run": "node scripts/ci-job.mjs content-pointer",
+            "always": true
+        },
+        {
+            "name": "encoding",
+            "_note": "ci.yml encoding-guard: the double-encoding, decision-log order, mutate-ignore, mutate-ignore breadth and lone-CR guards, then the release-notes generator's suite.",
+            "run": "node scripts/ci-job.mjs encoding",
+            "always": true
+        },
+        {
+            "name": "spell",
+            "run": "npm run spell",
+            "always": true
+        },
+        {
+            "name": "js",
+            "run": "npm run test:js",
+            "always": true
+        },
+        {
+            "name": "build",
+            "_note": "npm run build, then npm run cp:build.",
+            "run": "node scripts/ci-job.mjs build",
+            "always": true
+        },
+        {
+            "name": "pint",
+            "_note": "The files changed against origin/main; see scripts/gate-pint.mjs.",
+            "run": "node scripts/gate-pint.mjs",
+            "always": true
+        },
+        {
+            "name": "rector",
+            "run": "node scripts/gate-rector.mjs",
+            "always": true
+        },
+        {
+            "name": "mutate",
+            "_note": "ci.yml mutate: the mutation-tooling smoke, at the 4G memory limit the gate scripts give PHP (#3212). mutation fails a run that mutated nothing or scored below 100, which is the false green Pest's exit status alone allows.",
+            "run": "php -d memory_limit=4G vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert --class=\"App\\Support\\UamsAlert\\AlertSiteKeyResolver\" --covered-only",
+            "always": true,
+            "mutation": { "minScore": 100 }
+        },
+        {
+            "name": "phpstan",
+            "run": "composer stan",
+            "always": true
+        },
+        {
+            "name": "pest",
+            "_note": "ci.yml pest, pest-serial and pest-report: the Stache reset, seed and route cache, the parallel band and the serial tail, and the checks on their reports; see scripts/gate-pest.mjs.",
+            "run": "node scripts/gate-pest.mjs",
+            "always": true
+        },
+        {
+            "name": "browser",
+            "_note": "--skip-build reuses the bundles the build job made from this commit: chain guarantees it passed before this job runs, and scripts/ci-local.mjs adds build to any --jobs subset that names browser.",
+            "run": "node scripts/gate-browser.mjs --skip-build",
+            "always": true
+        }
+    ]
+}
