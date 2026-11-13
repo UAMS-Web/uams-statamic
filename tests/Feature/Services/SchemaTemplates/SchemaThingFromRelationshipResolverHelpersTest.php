@@ -918,13 +918,12 @@ it('builds a term template context from its default-locale data plus the term', 
         ->and(thingHelpersCall('buildTemplateContextForEntity', $localized))->toBe(['title' => 'T', 'term' => $localized]);
 });
 
-it('builds a global variables template context with the set only', function (): void {
-    // Variables has no all(), so the method_exists() guard keeps its values out of the
-    // context: a known gap pinned here so a change to it is deliberate
+it('builds a global variables template context from its values and the set', function (): void {
+    // The values are read through data(), and `global` is assigned last
     $variables = (new Variables)->globalSet('settings');
     $variables->set('phone', '555');
 
-    expect(thingHelpersCall('buildTemplateContextForEntity', $variables))->toBe(['global' => $variables]);
+    expect(thingHelpersCall('buildTemplateContextForEntity', $variables))->toBe(['phone' => '555', 'global' => $variables]);
 });
 
 it('builds no template context for an unsupported entity', function (): void {
