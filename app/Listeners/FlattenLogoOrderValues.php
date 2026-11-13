@@ -71,6 +71,8 @@ class FlattenLogoOrderValues
 
         // Prune any prefixed field no longer backed by an order value.
         $data = $entry->data();
+        // An entry's data() is always a collection; the guard is for phpstan.
+        // @pest-mutate-ignore: InstanceOfToTrue
         $existingKeys = $data instanceof SupportCollection ? array_keys($data->all()) : [];
 
         foreach ($existingKeys as $existingKey) {
