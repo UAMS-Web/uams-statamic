@@ -26,6 +26,13 @@ updates:
         update-types:
           - minor
           - patch
+    # Deliberate holds. An ignored dependency also leaves its group, so a held
+    # package does not hold back the rest of the group.
+    ignore:
+      # #658: v7.28.0 breaks Pest's parallel runner (pestphp/pest#2024), so
+      # composer.json pins ~7.27.5. Remove this entry with the pin once a Pest
+      # release accommodates 7.28.0 (#659).
+      - dependency-name: brianium/paratest
 
   - package-ecosystem: npm
     directory: /
