@@ -96,9 +96,9 @@ uses(TestCase::class)
         // never fires — with nothing saying the assets are old. It read as a
         // regression in a just-merged fix on two machines in one evening.
         //
-        // Armed here rather than in `scripts/local-ci.mjs`: that chain runs
-        // `build` at job 6 and `browser` at job 12, so a gated run cannot reach
-        // this state. The exposure is a bare `vendor/bin/pest tests/Browser`,
+        // Armed here rather than in the local CI runner: its chain runs `build`
+        // ahead of `browser`, and `scripts/ci-local.mjs` adds `build` to any
+        // `--jobs` subset naming `browser`, so a gated run cannot reach this state. The exposure is a bare `vendor/bin/pest tests/Browser`,
         // which is how a browser test is normally written.
         BrowserAssetFreshness::assertFresh();
 

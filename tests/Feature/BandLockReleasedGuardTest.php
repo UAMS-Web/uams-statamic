@@ -29,7 +29,7 @@ uses(TestCase::class);
  * assertion, so the skip baseline is unchanged.
  *
  * Driven as a subprocess, like `SkipBaselineGuardTest`, so the exit code and the
- * output that ci.yml and local-ci.mjs read are what is pinned. Each case uses its
+ * output that ci.yml and scripts/gate-pest.mjs read are what is pinned. Each case uses its
  * own lock file under `storage/framework/testing`, so it is parallel-safe and
  * never touches the real band lock.
  *

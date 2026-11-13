@@ -625,6 +625,9 @@ jobs:
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
       # so the exemption came out and this gate now fails on any write at all.
+      # The local mirror snapshots each submodule before the bands, keyed on the
+      # submodule being on disk rather than on how the run was invoked, and diffs
+      # against that snapshot (see the comment above about its reused slot).
       - name: Check the suite left content/, users/ and resources/forms/ clean
         if: always()
         run: |
@@ -892,6 +895,9 @@ jobs:
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
       # so the exemption came out and this gate now fails on any write at all.
+      # The local mirror snapshots each submodule before the bands, keyed on the
+      # submodule being on disk rather than on how the run was invoked, and diffs
+      # against that snapshot (see the comment above about its reused slot).
       - name: Check the suite left content/, users/ and resources/forms/ clean
         if: always()
         run: |

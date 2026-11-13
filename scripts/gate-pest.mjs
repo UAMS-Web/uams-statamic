@@ -157,13 +157,12 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // switches the check off rather than failing a run that legitimately has
     // none.
     //
-    // Keyed on the submodule being ON DISK, NOT on `--skip-submodule`. That
-    // flag means "content/ is already materialized, don't re-init it" — the
-    // multi-worktree recipe in the local-ci skill stages every submodule
-    // serially and then fans out WITH the flag — so treating it as "no
-    // content/" would switch the gate off for precisely the concurrent runs
-    // that do have content and do run the bands. An initialized submodule
-    // leaves a `<name>/.git` gitdir file; an uninitialized one leaves
+    // Keyed on the submodule being ON DISK, NOT on how the run was invoked.
+    // The multi-worktree recipe in the local-ci skill stages every submodule
+    // serially and then fans out without re-initializing them, so reading an
+    // invocation as "no content/" would switch the gate off for precisely the
+    // concurrent runs that do have content and do run the bands. An initialized
+    // submodule leaves a `<name>/.git` gitdir file; an uninitialized one leaves
     // nothing, which is the fact worth reading.
     //
     // `users/` is probed the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the suite
