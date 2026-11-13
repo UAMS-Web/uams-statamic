@@ -26,6 +26,9 @@ class DisambiguateEntryTitle
     /**
      * Guard to avoid re-entry when we save the entry again after disambiguating.
      */
+    // A property default is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, `true` fails 6 tests in DisambiguateEntryTitleTest.
+    // @pest-mutate-ignore: FalseToTrue
     private static bool $disambiguating = false;
 
     /**

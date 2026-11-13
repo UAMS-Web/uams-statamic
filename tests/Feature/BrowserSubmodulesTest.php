@@ -96,7 +96,7 @@ it('names a content mount point holding only the files statamic:install scaffold
 it('names a mount point holding only output an earlier run stranded', function () use (&$root): void {
     /** @var string $root */
     // Real files rather than placeholders, so this is what a test for `.gitkeep`
-    // alone would pass, and what `scripts/local-ci.mjs` clears as app output.
+    // alone would pass, and what `scripts/prepare-dependencies.mjs` clears as app output.
     File::delete($root.'/users/.git');
     File::put($root.'/users/stranded.yaml', "email: stranded@example.com\n");
 

@@ -71,6 +71,9 @@ final class IscedHierarchy
      */
     public static function buildChildrenMap(array $codes, int $minTierLength): array
     {
+        // Only the keys are read, through isset(), which is true for false as well
+        // as for true, so the fill value cannot change the result.
+        // @pest-mutate-ignore: TrueToFalse
         $existing = array_fill_keys($codes, true);
         $byParent = [];
         foreach ($codes as $c) {
@@ -106,11 +109,17 @@ final class IscedHierarchy
         $stack = $childrenByParent[$code] ?? [];
         $seen = [];
         while ($stack !== []) {
+            // Taking from either end visits the same set of codes, and the result is
+            // sorted below, so the visiting order cannot change it.
+            // @pest-mutate-ignore: ArrayPopToArrayShift
             $c = array_pop($stack);
             if (isset($seen[$c])) {
                 continue;
             }
 
+            // Only the key is read, through isset() above, which is true for false as
+            // well as for true.
+            // @pest-mutate-ignore: TrueToFalse
             $seen[$c] = true;
             $out[] = $c;
             foreach ($childrenByParent[$c] ?? [] as $next) {
