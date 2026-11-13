@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use MityDigital\Sitemapamic\Facades\Sitemapamic;
 use MityDigital\Sitemapamic\Models\SitemapamicUrl;
 use Statamic\Facades\Collection;
@@ -12,11 +13,12 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 use Tests\TestCase;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /**
  * End-to-end render coverage for the UAMS-Web/uams-statamic-archive#1434 category archive on the real
@@ -72,6 +74,9 @@ function tearDownPostCategoryArchiveFixtures(): void
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::findByHandle('post_categories')) {
         ContentSubmodule::reportMissing('migrated post_categories collection');
     }
@@ -176,7 +181,7 @@ it('renders the child-category list, breadcrumb parent chain, and collection-sou
     /** @var Statamic\Entries\Entry|null $resolvedParent */
     $resolvedParent = Data::findByUri($parentUri, 'default');
     expect($resolvedParent?->id())->toBe($parent->id());
-})->group('serial');
+});
 
 it('emits the migrated category archive loc via the collection defaults sitemap path', function (): void {
     /** @var Statamic\Entries\Entry $category */
@@ -215,7 +220,7 @@ it('emits the migrated category archive loc via the collection defaults sitemap 
         ->map(fn (SitemapamicUrl $url): string => $url->loc);
 
     expect($locs->contains(fn (string $loc): bool => str_contains($loc, '/category/'.PC_ARCHIVE_TEST_PREFIX.'sitemap-cat')))->toBeTrue();
-})->group('serial');
+});
 
 it('strips and entity-encodes a markup-bearing category title in the document <title>', function (): void {
     // A category is a collection entry (not a taxonomy term), so the layout <title>
@@ -258,4 +263,4 @@ it('strips and entity-encodes a markup-bearing category title in the document <t
     expect($html)->not->toContain('</title><script>');
     // the benign text survives, `&` entity-encoded
     expect($html)->toContain('Onc &amp; Heme');
-})->group('serial');
+});
