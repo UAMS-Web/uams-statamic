@@ -199,6 +199,15 @@ describe('gate-pest.mjs', () => {
         expect(parallel).toContain('pcov.enabled=0')
     })
 
+    it('caps the parallel band at an explicit worker count of 4 (#482)', () => {
+        runStep('gate-pest.mjs')
+
+        const parallel = callOf('--parallel').call.args
+
+        expect(parallel.filter((arg) => arg.startsWith('--processes'))).toEqual(['--processes=4'])
+        expect(callOf('--group=serial').call.args.some((arg) => arg.startsWith('--processes'))).toBe(false)
+    })
+
     it('leaves the caches alone on --no-reset', () => {
         mkdirSync(join(tree, 'storage', 'framework'), { recursive: true })
         writeFileSync(join(tree, 'storage', 'framework', 'keep.txt'), 'x')

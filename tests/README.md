@@ -23,12 +23,14 @@ vendor/bin/pest --testsuite=Unit
 vendor/bin/pest --testsuite=Feature
 
 # A scoped band - --exclude-group=serial is needed here too, not just whole-suite
-vendor/bin/pest --parallel --exclude-group=serial tests/Feature/Scopes
+vendor/bin/pest --parallel --processes=4 --exclude-group=serial tests/Feature/Scopes
 
 # The whole suite - two steps, not one run. See below before reaching for this.
-vendor/bin/pest -d memory_limit=4G --parallel --exclude-group=serial
+vendor/bin/pest -d memory_limit=4G --parallel --processes=4 --exclude-group=serial
 vendor/bin/pest -d memory_limit=4G --group=serial
 ```
+
+**`--processes=4` is the local worker count, and the gate passes the same one** (`PARALLEL_WORKERS` in [`scripts/gate-pest.mjs`](../scripts/gate-pest.mjs), #482). Without it paratest starts one worker per logical core, and on a 12-logical-core Windows machine with 63.9 GB a full band left 2.6 GB free. Figures below that name 12 processes were measured before this count and are not comparable with a 4-worker band.
 
 **`--exclude-group=serial` belongs on every `--parallel` run, including one scoped to a directory.** The flag reads like a whole-suite concern and is not: nine files under `tests/Feature/Scopes` alone carry `group('serial')`, so a band scoped to that directory runs tests the project deliberately excludes from a band. They then fail on shared state, which is what the group exists to prevent — and the failures present as ordinary assertion errors rather than as anything naming concurrency, so they read as a defect in the code under test. The cost of getting it wrong, measured here rather than imagined: a result published in four places and corrected in all four, after two concurrent sessions each classified a failure that should never have run — one of them against the wrong ticket's signature, correctly, and still wrong.
 

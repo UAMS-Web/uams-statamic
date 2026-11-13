@@ -120,11 +120,12 @@ it('passes a file both checks pass', function () use ($run, $fixtures) {
         ->and($output)->toContain('text check exited 0, breadth check exited 0');
 });
 
-it('fails on a file only the text check flags', function () use ($script) {
+it('fails on a bare marker with a trailing space, which both checks flag', function () use ($script) {
     // A bare marker with a trailing space, against a stand-in for an unpatched plugin. The
-    // text check flags it as suppressing nothing, while the breadth check runs the installed
-    // plugin, which trims the tail (UAMS-Web/uams-statamic-archive#2327), so the marker removes every mutant and passes.
-    // Breadth stays clean, so the exit code can only come from the text check.
+    // text check flags it as suppressing nothing. The breadth check runs the installed
+    // plugin, which trims the tail (UAMS-Web/uams-statamic-archive#2327), so the marker removes
+    // every mutant on its node and below; since the uams-claude-skills@b9ef3a4 sync it reports
+    // that as a bare marker suppressing every mutator there, where it used to pass (#684).
     // The marker is assembled from two halves so this file holds no literal occurrence: the
     // CI breadth sweep over `tests/` would otherwise read it as a mention that removes mutants.
     $marker = '@pest-mutate-'.'ignore';
@@ -141,7 +142,7 @@ it('fails on a file only the text check flags', function () use ($script) {
     rmdir($dir);
 
     expect($process->getExitCode())->toBe(1)
-        ->and($process->getOutput())->toContain('text check exited 1, breadth check exited 0');
+        ->and($process->getOutput())->toContain('text check exited 1, breadth check exited 1');
 });
 
 it('exits 2 when a check cannot run', function () use ($run) {
