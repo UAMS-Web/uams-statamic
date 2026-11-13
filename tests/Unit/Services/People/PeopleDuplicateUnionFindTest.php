@@ -103,3 +103,27 @@ it('compresses only the path it walked', function (): void {
 it('groups an empty set of elements as no groups', function (): void {
     expect(new PeopleDuplicateUnionFind([])->groups())->toBe([]);
 });
+
+it('keeps the structure readable after a union of two unknown elements, in either order (#682)', function (string $first, string $second): void {
+    $sets = new PeopleDuplicateUnionFind([]);
+
+    $sets->union($first, $second);
+
+    expect($sets->find($first))->toBe($second)
+        ->and($sets->find($second))->toBe($second)
+        ->and(unionFindParents($sets))->toBe([$first => $second, $second => $second]);
+})->with([
+    'x then y' => ['x', 'y'],
+    'y then x' => ['y', 'x'],
+]);
+
+it('reports an element introduced only through union in its group (#682)', function (): void {
+    $sets = new PeopleDuplicateUnionFind(['a', 'b']);
+
+    $sets->union('a', 'z');
+    $sets->union('y', 'b');
+
+    expect($sets->groups())->toBe(['z' => ['a', 'z'], 'b' => ['b', 'y']])
+        ->and($sets->find('z'))->toBe('z')
+        ->and($sets->find('y'))->toBe('b');
+});
