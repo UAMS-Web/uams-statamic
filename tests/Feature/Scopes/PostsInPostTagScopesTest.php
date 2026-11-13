@@ -9,12 +9,12 @@ use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Query\Scopes\Scope;
 use Statamic\Stache\Query\EntryQueryBuilder;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 
-// Tree-isolated: saving a new entry into a structured collection appends it to that
+// Entries, terms and trees isolated (#557): saving a new entry into a structured collection appends it to that
 // collection's tree, which must not touch the shared `post_tags` tree.
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /**
  * @covers \App\Scopes\PostsInPostTag
@@ -133,7 +133,7 @@ it('lists only the posts carrying the tag entry id', function (): void {
     expect($ids)->toContain($tagged->id());
     expect($ids)->not->toContain($otherTag->id());
     expect($ids)->not->toContain($untagged->id());
-})->group('serial');
+});
 
 it('lists nothing for an absent tag id, not every post', function (): void {
     $immunology = makeTestPostTag('immunology');
@@ -145,7 +145,7 @@ it('lists nothing for an absent tag id, not every post', function (): void {
 
     expect($ids)->not->toContain($tagged->id());
     expect($ids)->not->toContain($untagged->id());
-})->group('serial');
+});
 
 it('lists only the posts carrying the tag its slug resolves to', function (): void {
     $immunology = makeTestPostTag('immunology');
@@ -160,7 +160,7 @@ it('lists only the posts carrying the tag its slug resolves to', function (): vo
     expect($ids)->toContain($tagged->id());
     expect($ids)->not->toContain($otherTag->id());
     expect($ids)->not->toContain($untagged->id());
-})->group('serial');
+});
 
 it('applies no constraint for a blank or absent slug, so the unfiltered listing lists every post', function (?string $blank): void {
     $immunology = makeTestPostTag('immunology');
@@ -178,7 +178,7 @@ it('applies no constraint for a blank or absent slug, so the unfiltered listing 
 })->with([
     'absent key' => [null],
     'empty string' => [''],
-])->group('serial');
+]);
 
 it('lists nothing when the slug resolves to no tag', function (): void {
     $immunology = makeTestPostTag('immunology');
@@ -190,7 +190,7 @@ it('lists nothing when the slug resolves to no tag', function (): void {
 
     expect($ids)->not->toContain($tagged->id());
     expect($ids)->not->toContain($untagged->id());
-})->group('serial');
+});
 
 it('resolves the slug on the current site only, ignoring a same-slug tag on another site', function (): void {
     /** @var Statamic\Entries\Collection $tagCollection */
@@ -217,4 +217,4 @@ it('resolves the slug on the current site only, ignoring a same-slug tag on anot
 
     expect($onDefault)->not->toContain($post->id());
     expect($onNews)->toContain($post->id());
-})->group('serial');
+});

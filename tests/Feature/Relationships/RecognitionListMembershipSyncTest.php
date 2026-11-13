@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class)->group('serial');
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +27,7 @@ uses(CollectionTreeIsolatedTestCase::class)->group('serial');
 |
 | A stale mapping (wrong handle) passes `relate:list` but silently never syncs, so
 | exercising the real handles through actual saves is the load-bearing check. Uses
-| the real Stache (serial, self-cleaning); skipped when content/ is absent.
+| a per-process copy of the real Stache (self-cleaning, #557); skipped when content/ is absent.
 */
 
 const REC_SYNC_PREFIX = 'zz-rec-sync-';
@@ -108,6 +110,9 @@ function recSyncTearDown(): void
 }
 
 beforeEach(function () {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     foreach (['recognition_lists', 'people'] as $handle) {
         if (! Collection::find($handle)) {
             ContentSubmodule::reportMissing('recognition_lists + people collections');

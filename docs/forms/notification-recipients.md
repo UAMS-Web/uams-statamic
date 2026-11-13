@@ -58,7 +58,7 @@ The field definitions in `resources/blueprints/forms/` stay in this repository: 
 
 ## Getting the submodule
 
-Both gates check it out (`.github/workflows/ci.yml`'s Pest job and `scripts/local-ci.mjs`, which reads the list `GATE_SUBMODULES` in `scripts/gate-slot.mjs`), and `node scripts/worktree-slots.mjs provision` initializes it in a slot. An existing checkout or slot needs it once:
+Both gates check it out (`.github/workflows/ci.yml`'s Pest job and the local runner's `dependencies` job, `scripts/prepare-dependencies.mjs`, which reads the list `GATE_SUBMODULES` in `scripts/gate-slot.mjs`), and `node scripts/worktree-slots.mjs provision` initializes it in a slot. An existing checkout or slot needs it once:
 
 ```bash
 git submodule update --init resources/forms

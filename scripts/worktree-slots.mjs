@@ -24,13 +24,14 @@
  *
  * `refresh` takes `primary` as well as a slot name; `release` and `provision` do not, because the
  * primary must keep `main` checked out and is the clone rather than a worktree of it. Each tree is
- * judged against its own kind: the CI slot is runner-owned, so `scripts/local-ci.mjs` bootstrapping
- * only `content` and `users` there is the expected state and not drift (UAMS-Web/uams-statamic-archive#1952, UAMS-Web/uams-statamic-archive#2477).
+ * judged against its own kind: the CI slot is runner-owned, so the runner's `dependencies` job
+ * (`scripts/prepare-dependencies.mjs`) initializing only the gate submodules there is the expected state and not drift (UAMS-Web/uams-statamic-archive#1952, UAMS-Web/uams-statamic-archive#2477).
  *
  * `composer install` is idempotent and cheap, so refresh simply runs it. `npm ci` is NOT — it
  * deletes `node_modules` first, so running it unconditionally turns a no-op into a multi-minute
  * rebuild. It is therefore gated on a lockfile-hash stamp, following the patch-stamp idiom
- * `local-ci.mjs` uses for the same shape of problem (UAMS-Web/uams-statamic-archive#1743).
+ * of UAMS-Web/uams-statamic-archive#1743, the same shape of problem, which the local runner now
+ * answers with its `vendor/.local-ci-patches.lock.json` record.
  *
  * A submodule is judged on **two** axes, because matching one proves nothing about the other. Its
  * recorded-vs-actual revision answers "is this tree pointing where the branch says", and its
@@ -247,8 +248,8 @@ export function treeKind(treePath, repoRoot) {
  * script owns. Two exceptions, both deliberate:
  *
  * The **CI slot** is runner-owned. `.claude/rules/worktrees.md` holds it out of pre-provisioning
- * because no session's working directory sits in it and `scripts/local-ci.mjs` bootstraps it on
- * every run — initializing only `content`, `users` and `resources/forms` (UAMS-Web/uams-statamic-archive#2477, UAMS-Web/uams-statamic-archive#2818), and running its own installs
+ * because no session's working directory sits in it and the local runner's `dependencies` job
+ * (`scripts/prepare-dependencies.mjs`) bootstraps it on every run — initializing only `content`, `users` and `resources/forms` (UAMS-Web/uams-statamic-archive#2477, UAMS-Web/uams-statamic-archive#2818), and running its own installs
  * without writing this script's stamp. Judging it by a slot's expectations reported four permanent
  * drift lines for a tree in exactly the state it is supposed to be in, which is half of why
  * `--check` could never exit 0 (UAMS-Web/uams-statamic-archive#1952). A missing `content/`, `users/` or `resources/forms/` there
@@ -260,7 +261,7 @@ export function treeKind(treePath, repoRoot) {
  *
  * The **base** check follows the same ownership logic rather than a new one. A slot and the primary
  * are trees this script parks at `origin/main`, so their base is its to judge. The CI slot's base
- * is the runner's — `local-ci.mjs` checks arbitrary branches in and out of it — and an ephemeral
+ * is the runner's (the shared runner checks arbitrary branches in and out of it), and an ephemeral
  * tree's is whoever made it. Judging either would report permanent drift on a tree doing exactly
  * what it is for, which is the UAMS-Web/uams-statamic-archive#1952 failure this function exists to prevent.
  *
@@ -1150,9 +1151,8 @@ function composerHashOf(treePath) {
 /**
  * The patch set a tree DECLARES, as `patches.lock.json`'s own `_hash`.
  *
- * Read through `readPatchLockHash` rather than hashing the file, because that is the hash
- * `local-ci.mjs` stamps — sharing the derivation is what lets the two gates agree about what
- * "the same patch set" means.
+ * Read through `readPatchLockHash` rather than hashing the file, so the stamp this script writes
+ * and the value it compares against share one derivation of what "the same patch set" means.
  *
  * Neither lockfile can stand in for this. A patch is declared in `composer.json`'s
  * `extra.patches` and lives in `patches/*.patch`, so adding one moves `composer.lock` not at

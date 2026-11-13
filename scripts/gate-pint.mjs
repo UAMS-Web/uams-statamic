@@ -52,7 +52,7 @@ export function gatePint({ tree, php, git, repoRoot = tree, baseRef = 'main' }) 
     // checks the changed files only, so it is the narrower of the two.
     //
     // Diff against the REMOTE-TRACKING base (origin/<base>), the base a pull
-    // request is compared against. `--fetch`
+    // request is compared against. `git fetch origin <base>`
     // updates origin/<base> but never moves the local <base> branch ref, so
     // after a run of `gh pr merge`s a local main that lags origin would
     // otherwise balloon `<base>...HEAD` with already-merged commits and report a
