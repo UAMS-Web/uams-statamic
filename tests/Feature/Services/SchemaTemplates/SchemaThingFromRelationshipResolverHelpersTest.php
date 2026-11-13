@@ -264,18 +264,18 @@ it('keeps the slowest full builds, slowest first, up to the configured limit', f
 
 it('keeps all builds up to the limit and treats unusable entries as zero milliseconds', function (): void {
     Config::set('schema_templates.json_ld_compose_profile.top_n', 10);
-    // The missing and non-numeric timings sit before a real zero, so reading
-    // either one as anything but zero moves it past that zero
+    // A real zero sits between the missing and the non-numeric timing, so reading
+    // those two as anything but zero moves one of them past it
     thingHelpersSetProfileBag(['relationship_full_build_top' => [
         ['mode' => 'd'],
-        ['ms' => 'x', 'mode' => 'c'],
         ['ms' => 0.0, 'mode' => 'z'],
+        ['ms' => 'x', 'mode' => 'c'],
         ['ms' => 300.0, 'mode' => 'a'],
     ]]);
 
     thingHelpersCall('recordProfileFullBuildSample', 'new', 'tpl', null, [], microtime(true) - 0.2);
 
-    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['a', 'new', 'd', 'c', 'z']);
+    expect(array_column(thingHelpersProfileBag()['relationship_full_build_top'], 'mode'))->toBe(['a', 'new', 'd', 'z', 'c']);
 });
 
 it('reads a non-scalar or missing top limit as ten', function (): void {

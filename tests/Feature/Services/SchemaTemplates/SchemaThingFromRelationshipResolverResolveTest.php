@@ -595,6 +595,18 @@ it('records no profile when it is disabled', function (): void {
     expect(request()->attributes->get(JsonLdCompositionProfiler::REQUEST_JSON_LD_COMPOSITION_PROFILE))->toBeNull();
 });
 
+it('skips a keyword target that is neither a term nor an entry, and reads the next one', function (): void {
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart', 'alternate_name' => [['text' => 'Cardiac']]]));
+
+    $json = thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(
+        ['about' => [(new Variables)->globalSet('settings'), $subject]],
+        ['current_field' => 'about']
+    );
+
+    expect($json)->toBe('["Heart","Cardiac"]');
+});
+
 it('lazily resolves the fragment cache from the container when none is injected', function (): void {
     $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
     $cascade->shouldIgnoreMissing();

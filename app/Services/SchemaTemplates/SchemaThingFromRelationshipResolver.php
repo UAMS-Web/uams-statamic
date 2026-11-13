@@ -335,6 +335,9 @@ class SchemaThingFromRelationshipResolver
                         $compactRef === null
                         && isset($builtFullCanonicalIds[$preMergeCanonicalId])
                     ) {
+                        // An empty ref is skipped as an empty node, and the full node with this
+                        // @id is already in the output, so the reference shape changes no result.
+                        // @pest-mutate-ignore: RemoveArrayItem
                         $compactRef = ['@id' => $preMergeCanonicalId];
                     }
                 }
@@ -681,18 +684,16 @@ class SchemaThingFromRelationshipResolver
         $top[] = $sample;
 
         /** @var list<array<string, mixed>> $top */
-        usort($top, static function (array $a, array $b): int {
-            $aMsRaw = $a['ms'] ?? 0.0;
-            $bMsRaw = $b['ms'] ?? 0.0;
-            // <=> compares a numeric string numerically, so the cast changes no order.
-            // @pest-mutate-ignore: RemoveDoubleCast
-            $aMs = \is_numeric($aMsRaw) ? (float) $aMsRaw : 0.0;
-            // <=> compares a numeric string numerically, so the cast changes no order.
-            // @pest-mutate-ignore: RemoveDoubleCast
-            $bMs = \is_numeric($bMsRaw) ? (float) $bMsRaw : 0.0;
+        // Read a sample's milliseconds, with a missing or non-numeric timing as zero
+        $sampleMs = static function (array $sample): float {
+            $msRaw = $sample['ms'] ?? null;
 
-            return $bMs <=> $aMs;
-        });
+            // <=> compares a numeric string numerically, so the cast changes no order.
+            // @pest-mutate-ignore: RemoveDoubleCast
+            return \is_numeric($msRaw) ? (float) $msRaw : 0.0;
+        };
+
+        usort($top, static fn (array $a, array $b): int => $sampleMs($b) <=> $sampleMs($a));
 
         // Slicing a list that already holds exactly the limit leaves it unchanged.
         // @pest-mutate-ignore: GreaterToGreaterOrEqual
@@ -825,14 +826,14 @@ class SchemaThingFromRelationshipResolver
             'current_field'
         );
 
-        // Check whether no usable direct/current field handles were provided
+        // Check whether no usable direct/current field handles were provided. With none,
+        // nothing is read, so the collection is empty anyway.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($directHandles === []) {
             // ---
             // Return an empty array to signal no usable direct/current field handles were
             // provided
             // ---
-            // With no direct handles nothing is read, so the collection is empty anyway.
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -1253,11 +1254,11 @@ class SchemaThingFromRelationshipResolver
             'secondary_field_replicator_relationship_field'
         );
 
-        // Check whether the secondary field handle set is missing
+        // Check whether the secondary field handle set is missing. With none, no entity
+        // yields a target, so the result is empty anyway.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($secondaryHandles === []) {
             // Return an empty array to signal no usable secondary field handles were provided
-            // With no secondary handles no entity yields a target, so the result is empty anyway.
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -1604,15 +1605,13 @@ class SchemaThingFromRelationshipResolver
 
         // Return no targets when a required field handle set is missing
         // With any hop's handles empty nothing is read on that hop, so the result is empty
-        // whichever way the checks combine.
-        // @pest-mutate-ignore: BooleanOrToBooleanAnd
+        // whichever way the checks combine, or without the return.
+        // @pest-mutate-ignore: BooleanOrToBooleanAnd, RemoveEarlyReturn
         if (
             $directHandles === []
             || $secondaryHandles === []
             || $tertiaryHandles === []
         ) {
-            // With any hop's handles empty nothing is read on that hop, so the result is empty anyway.
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
@@ -2590,7 +2589,9 @@ class SchemaThingFromRelationshipResolver
                 $cursor = $cursor->all();
             }
 
-            // Stop when the path cannot continue (missing or non-container)
+            // Stop when the path cannot continue (missing or non-container). A cursor that
+            // is not a container fails the descent below, which also returns null.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             if (! \is_array($cursor) && ! \is_object($cursor)) {
                 unset(
                     $cursor,
@@ -2599,8 +2600,6 @@ class SchemaThingFromRelationshipResolver
                     $segment
                 );
 
-                // A cursor that is not a container fails the descent below, which also returns null.
-                // @pest-mutate-ignore: RemoveEarlyReturn
                 return null;
             }
 
@@ -3470,10 +3469,6 @@ class SchemaThingFromRelationshipResolver
                 // Build @id as base URL + fragment (URL-safe Base64 of path)
                 return $this->canonicalIdForTaxonomyTermUrl($url);
             }
-
-            // Return null to signal no canonical id is found (the method ends in the same null)
-            // @pest-mutate-ignore: RemoveEarlyReturn
-            return null;
         }
 
         // ---
@@ -3495,10 +3490,6 @@ class SchemaThingFromRelationshipResolver
                 // Build @id as base URL + fragment (URL-safe Base64 of path)
                 return $this->canonicalIdForTaxonomyTermUrl($url);
             }
-
-            // Return null to signal no canonical id is found (the method ends in the same null)
-            // @pest-mutate-ignore: RemoveEarlyReturn
-            return null;
         }
 
         // Return null for entities without canonical URL identity
@@ -4280,9 +4271,6 @@ class SchemaThingFromRelationshipResolver
             unset($taxonomyPieces);
 
             // Return null when no listed taxonomy could normalize the item
-            // The single-handle checks below compare against the whole piped list, which no
-            // taxonomy handle equals, so they return null too.
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
@@ -4726,8 +4714,6 @@ class SchemaThingFromRelationshipResolver
                 $targets
             );
 
-            // With no targets the loop below adds nothing, and the encoded empty list is '[]'.
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return '[]';
         }
 
@@ -4930,8 +4916,6 @@ class SchemaThingFromRelationshipResolver
         if (! \is_array($raw)) {
             unset($raw);
 
-            // Without the return, the loop over the unset payload adds nothing and returns [].
-            // @pest-mutate-ignore: RemoveEarlyReturn
             return [];
         }
 
