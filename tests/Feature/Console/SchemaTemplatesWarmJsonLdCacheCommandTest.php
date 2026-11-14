@@ -179,6 +179,10 @@ it('merges every site\'s URLs, requests each once, and counts duplicates and fai
 
     expect(Artisan::call('schema-templates:warm-json-ld-cache', $options))->toBe(0);
 
+    // Artisan::call has no TTY, so neither the collecting spinner nor the progress bar is drawn
+    expect(Artisan::output())->not->toContain('Collecting JSON-LD warm URLs')
+        ->not->toContain('Requesting warm URLs');
+
     // Each merged URL is requested exactly once, in merge order, with the warmer's User-Agent
     $sent = Http::recorded()->map(fn (array $pair): string => $pair[0]->url())->all();
     expect($sent)->toBe(['https://alpha.test/', 'https://delta.test/', 'https://epsilon.test/']);
