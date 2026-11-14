@@ -296,7 +296,17 @@ it('applies the committed share ceilings and backstop when none is passed', func
     expect($serialCode)->toBe(0);
     expect($serialOutput)->toContain('(share ceiling 40.00%, backstop 1500.0s)');
 
+    // Below the serial minimum the OK line names the small-band backstop too (#695).
+    // 100s of 300s is 33.33%, under the serial ceiling, in five classes.
+    [$smallDir, $smallReport] = $writeReport($band('Tests\Feature\SlowTest', 100.0, 300.0, 4));
+
+    [$smallCode, $smallOutput] = $runGuard($smallReport, null, 'serial');
+
+    expect($smallCode)->toBe(0);
+    expect($smallOutput)->toContain('33.33% of 300.0s summed class time (share ceiling 40.00%, backstop 1500.0s, small-band backstop 450.0s)');
+
     $cleanUp($dir);
+    $cleanUp($smallDir);
 });
 
 it('lets --share-ceiling override the committed share ceiling', function () use ($writeReport, $runGuard, $cleanUp, $band): void {
@@ -469,6 +479,93 @@ it('still fails a class over the backstop in a band of too few classes', functio
 
     $cleanUp($dir);
 });
+
+it('passes the six-class serial band #671 measured, and still reports its share', function () use ($writeReport, $runGuard, $cleanUp): void {
+    // #671's gated head `31aa13e7a`, ubuntu serial job: six timed classes, 45.5s
+    // summed, the costliest at 21.7s. The small-band backstop (#695) must not red it,
+    // and the report-only share line must read as it did before that bound existed.
+    [$dir, $report] = $writeReport([
+        'Tests\Feature\Classifieds\UnpublishExpiredClassifiedsTest' => [21.7],
+        'Tests\Feature\Console\SeedTestStacheCommandTest' => [12.0],
+        'Tests\Feature\ContentMirrorIsolationTest' => [6.0],
+        'Tests\Feature\PintDeclareStrictTypesEnforcementTest' => [3.5],
+        'Tests\Feature\StacheSnapshotRootStampTest' => [1.5],
+        'Tests\Feature\SerialFillerTest' => [0.8],
+    ]);
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe(0);
+    expect($output)->toContain("Slowest class over its share ceiling, reported and not failed in a band of 6 timed classes (minimum 10): serial band's Tests\Feature\Classifieds\UnpublishExpiredClassifiedsTest is 21.7s, 47.69% of 45.5s summed class time, share ceiling 40.00% (over by 7.69 points). A share cannot fall below 100/N, so with this few classes it does not single out a straggler (#557).");
+    expect($output)->not->toContain('EXCEEDED');
+
+    $cleanUp($dir);
+});
+
+it('fails a class over the small-band backstop below the minimum class count, and passes one at it', function (float $seconds, int $expected) use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // Six classes, the costliest far over the share ceiling at every size here, so
+    // only the 450s small-band backstop (#695) decides the verdict.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', $seconds, $seconds + 50.0, 5));
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe($expected);
+
+    if ($expected === 0) {
+        expect($output)->toContain("reported and not failed in a band of 6 timed classes (minimum 10): serial band's Tests\Feature\SlowTest is ".sprintf('%.1f', $seconds).'s');
+        expect($output)->not->toContain('EXCEEDED');
+    } else {
+        expect($output)->toContain("Slowest class EXCEEDED: serial band's Tests\Feature\SlowTest cost ".sprintf('%.1f', $seconds).'s, small-band backstop 450.0s in a band of 6 timed classes (minimum 10), over by '.sprintf('%.1f', $seconds - 450.0).'s');
+        expect($output)->not->toContain('reported and not failed');
+        expect($output)->not->toContain('share ceiling 40.00% (over by');
+        expect($output)->not->toContain('backstop 1500.0s (over by');
+    }
+
+    $cleanUp($dir);
+})->with([
+    'below the bound' => [449.9, 0],
+    'at the bound' => [450.0, 0],
+    'just over the bound' => [450.1, 1],
+    'ten times the costliest six-class CI reading' => [727.0, 1],
+]);
+
+it('fails a small serial band over its small-band backstop when its share is within the ceiling', function () use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // 500s of 1300s is 38.46%, under the 40% serial ceiling, in nine classes: the
+    // share has nothing to say, and the class has still grown past the bound.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', 500.0, 1300.0, 8));
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe(1);
+    expect($output)->toContain("Slowest class EXCEEDED: serial band's Tests\Feature\SlowTest cost 500.0s, small-band backstop 450.0s in a band of 9 timed classes (minimum 10), over by 50.0s");
+
+    $cleanUp($dir);
+});
+
+it('applies the small-band backstop only below the serial minimum, and never to the parallel band or an unnamed one', function (string $name, int $fillers, float $summed, int $expected) use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // 500s with every share under its ceiling: only a band the small-band backstop
+    // reaches fails.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', 500.0, $summed, $fillers));
+
+    [$code, $output] = $runGuard($report, band: $name);
+
+    expect($code)->toBe($expected);
+    if ($expected === 0) {
+        expect($output)->toContain('Slowest class OK');
+        expect($output)->not->toContain('small-band backstop');
+    } else {
+        expect($output)->toContain('small-band backstop 450.0s');
+    }
+
+    $cleanUp($dir);
+})->with([
+    'serial, nine classes, one under the minimum' => ['serial', 8, 1300.0, 1],
+    'serial, ten classes, at the minimum' => ['serial', 9, 1300.0, 0],
+    // A share under 7.5% needs more than thirteen classes, and neither band has a
+    // minimum, so the class count is not what keeps the bound off them.
+    'parallel, forty-one classes' => ['parallel', 40, 10000.0, 0],
+    'an unnamed band, forty-one classes' => ['suite', 40, 10000.0, 0],
+]);
 
 it('gives the parallel band and an unnamed band no class minimum', function () use ($writeReport, $runGuard, $cleanUp, $band): void {
     // Five classes, 50% share: only the serial band has a minimum to report it under.
