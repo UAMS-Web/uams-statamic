@@ -374,13 +374,19 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         ciSourceOld: '# x\n      # PARITY: y\n      - name: Run\n        run: z\n',
     }
 
-    it.each(GATE_STEP_FILES)('marks one closed region in %s that spans the step', (file) => {
+    // gate-pest.mjs also marks the SUITE_PHP_INI declaration that ci.yml's `ini-values:` mirror (#699).
+    const regionCount = { 'scripts/gate-pest.mjs': 2 }
+
+    it.each(GATE_STEP_FILES)('marks a closed region in %s that spans the step', (file) => {
         const source = readFileSync(join(scripts, '..', file), 'utf8')
         const regions = parityRegions(source, 'mjs')
 
-        expect(regions).toHaveLength(1)
+        expect(regions).toHaveLength(regionCount[file] ?? 1)
 
-        const region = source.split('\n').slice(regions[0].start - 1, regions[0].end).join('\n')
+        const texts = regions.map((r) => source.split('\n').slice(r.start - 1, r.end).join('\n'))
+        const region = texts.find((text) => text.includes(regionMustHold[file][0]))
+
+        expect(region).toBeDefined()
 
         for (const fragment of regionMustHold[file]) {
             expect(region).toContain(fragment)

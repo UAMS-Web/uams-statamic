@@ -36,7 +36,9 @@ export const CI_FILE = '.github/workflows/ci.yml';
 export const MIRROR_FILES = Object.freeze(['local-ci.json', 'scripts/ci-job.mjs']);
 
 // The step scripts `local-ci.json` runs (#295). Each marks its mirrored code with
-// one `PARITY:` line closed by `PARITY-END`; the rest of each file is local-only.
+// `PARITY:` lines, each closed by a `PARITY-END`; the rest of each file is local-only.
+// `scripts/gate-pest.mjs` has two: its job body, and the `SUITE_PHP_INI` declaration
+// that ci.yml's `ini-values:` lines mirror (#699).
 export const GATE_STEP_FILES = Object.freeze([
     'scripts/gate-browser.mjs',
     'scripts/gate-pest.mjs',
