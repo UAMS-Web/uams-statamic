@@ -43,12 +43,14 @@ export const PARALLEL_WORKERS = 4
  * does not produce. Without them a machine whose php.ini says otherwise (Herd's PHP
  * runs `pcre.jit=On`) skips two tests and fails the skip baseline (#688).
  */
+// PARITY: the values ci.yml's two `ini-values:` lines set for the pest jobs (#699).
 export const SUITE_PHP_INI = ['zend.assertions=1', 'pcre.jit=0']
 
 /**
  * The `-d` pairs for {@link SUITE_PHP_INI}, for a PHP command line.
  */
 export const SUITE_PHP_INI_ARGS = SUITE_PHP_INI.flatMap((setting) => ['-d', setting])
+// PARITY-END
 
 /**
  * Split what the suite just wrote into the content/ submodule from what was

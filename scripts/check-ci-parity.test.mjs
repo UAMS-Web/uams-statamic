@@ -267,3 +267,42 @@ describe('a marker in the middle of a comment block (#3238)', () => {
         expect(touchesRegion([run], [region])).toBe(true)
     })
 })
+
+describe('the suite PHP settings pair (#699)', () => {
+    // ci.yml's two `ini-values:` lines and SUITE_PHP_INI in scripts/gate-pest.mjs set the
+    // same `zend.assertions` and `pcre.jit` values, and #688 is what a disagreement costs.
+    // Read from the REAL files, so moving either side out of its region turns these red
+    // instead of leaving the check silently unable to fire.
+    const ci = readFileSync(join(repoRoot, '.github', 'workflows', 'ci.yml'), 'utf8')
+    const gatePest = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
+    const lineOf = (source, test) => source.split('\n').map((l, i) => (test(l) ? i + 1 : 0)).filter(Boolean)
+    const iniLines = lineOf(ci, (l) => /^\s*ini-values:.*zend\.assertions=1.*pcre\.jit=0/.test(l))
+    const [declaration] = lineOf(gatePest, (l) => l.startsWith('export const SUITE_PHP_INI = '))
+    const pair = (ciLine, scriptLine) => evaluate({
+        ciDiff: ciLine ? hunk(ciLine) : '',
+        ciSource: ci,
+        ciSourceOld: ci,
+        gateSteps: scriptLine ? [{ diff: hunk(scriptLine), source: gatePest, sourceOld: gatePest }] : [],
+    })
+
+    it('finds both ini-values lines and the declaration', () => {
+        expect(iniLines).toHaveLength(2)
+        expect(declaration).toBeGreaterThan(0)
+    })
+
+    it('fires on a change to the SUITE_PHP_INI values alone', () => {
+        expect(pair(null, declaration)).toEqual({ fire: true, ciInRegion: false, scriptInRegion: true })
+    })
+
+    it('fires on a change to either ini-values line alone', () => {
+        for (const line of iniLines) {
+            expect(pair(line, null)).toEqual({ fire: true, ciInRegion: true, scriptInRegion: false })
+        }
+    })
+
+    it('passes the same change made on both sides together', () => {
+        for (const line of iniLines) {
+            expect(pair(line, declaration)).toEqual({ fire: false, ciInRegion: true, scriptInRegion: true })
+        }
+    })
+})
