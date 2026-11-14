@@ -27,8 +27,9 @@ final class SyncHealthTalkEpisodes extends Command
 
         $report = $sync->run();
 
-        if (! $report->completed()) {
-            $this->error((string) $report->aborted);
+        // A run that did not complete carries its abort reason, which is what completed() checks
+        if ($report->aborted !== null) {
+            $this->error($report->aborted);
 
             return self::FAILURE;
         }
