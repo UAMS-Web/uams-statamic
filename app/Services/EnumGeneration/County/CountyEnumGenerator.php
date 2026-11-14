@@ -355,7 +355,7 @@ final class CountyEnumGenerator
         array $dataSourceLines = []
     ): string {
         // Header: open PHP tag and start generated documentation block
-        $content = "<?php\n\n";
+        $content = "<?php\n\ndeclare(strict_types=1);\n\n";
         $content .= "/**\n";
         $content .= " * Generated County and County Equivalent Entities enum cases\n";
         $content .= " *\n";
@@ -387,156 +387,35 @@ final class CountyEnumGenerator
         $content .= " *\n";
         $content .= ' * This list of cases was generated on '.\date('Y-m-d').' at '.\date('H:i:s T')."\n";
         $content .= ' * Total counties: '.\count($counties)."\n";
-        $content .= " */\n\n";
+        $content .= " */\n";
         $content .= "enum County: string\n";
         $content .= "{\n";
 
+        // Render each attribute value as a single-quoted PHP literal
+        $l = fn (string $value): string => $this->phpLiteral($value);
+
         // Loop through counties to generate enum cases
         foreach ($counties as $county) {
-            // Escape single quotes in the fullName for valid PHP string literal
-            $escapedFullName = \str_replace(
-                "'",
-                "\\'",
-                $county['fullName']
-            );
-
-            // Emit fips as single-quoted string literal
-            $fipsLiteral = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['fipsCode']
-            )."'";
-
-            // ---
-            // Prepare string literals for extended attributes
-            // ---
-
-            // Escape and format base name as single-quoted string literal
-            $baseName = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['baseName']
-            )."'";
-
-            // Escape and format parent USPS code as single-quoted string literal
-            $parentUspsCode = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['parentUspsCode']
-            )."'";
-
-            // Escape and format parent FIPS code as single-quoted string literal
-            $parentFipsCode = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['parentFipsCode']
-            )."'";
-
-            // Escape and format geo ID as single-quoted string literal
-            $geoId = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['geoId']
-            )."'";
-
-            // Escape and format national standard code as single-quoted string literal
-            $nationalStandardCode = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['nationalStandardCode']
-            )."'";
-
-            // Escape and format FIPS class code as single-quoted string literal
-            $fipsClassCode = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['fipsClassCode']
-            )."'";
-
-            // Escape and format functional status code as single-quoted string literal
-            $functionalStatusCode = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['functionalStatusCode']
-            )."'";
-
-            // Escape and format MAF/TIGER feature class code as single-quoted string literal
-            $mtfcc = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['mafTigerFeatureClassCode']
-            )."'";
-
-            // Escape and format MAF/TIGER object identifier as single-quoted string literal
-            $oid = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['mafTigerObjectIdentifier']
-            )."'";
-
-            // Escape and format legal/statistical area description code as single-quoted string literal
-            $lsadc = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['legalStatisticalAreaDescriptionCode']
-            )."'";
-
-            // Escape and format area land as single-quoted string literal
-            $areaLand = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['areaLand']
-            )."'";
-
-            // Escape and format area water as single-quoted string literal
-            $areaWater = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['areaWater']
-            )."'";
-
-            // Escape and format ArcGIS object identifier as single-quoted string literal
-            $objectId = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['arcGisObjectIdentifier']
-            )."'";
-
-            // ---
-            // Arrays for centroid/internal points
-            // ---
-
-            // Escape and format centroid latitude as single-quoted string literal
-            $centroidLat = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['centroidGeo'][0]
-            )."'";
-
-            // Escape and format centroid longitude as single-quoted string literal
-            $centroidLon = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['centroidGeo'][1]
-            )."'";
-
-            // Escape and format internal point latitude as single-quoted string literal
-            $internalLat = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['internalPointGeo'][0]
-            )."'";
-
-            // Escape and format internal point longitude as single-quoted string literal
-            $internalLon = "'".\str_replace(
-                "'",
-                "\\'",
-                $county['internalPointGeo'][1]
-            )."'";
-
-            // Attribute + case line
-            $content .= "\t#[CountyInfo(fullName: '{$escapedFullName}', baseName: {$baseName}, fipsCode: {$fipsLiteral}, parentUspsCode: {$parentUspsCode}, parentFipsCode: {$parentFipsCode}, geoId: {$geoId}, nationalStandardCode: {$nationalStandardCode}, fipsClassCode: {$fipsClassCode}, functionalStatusCode: {$functionalStatusCode}, mafTigerFeatureClassCode: {$mtfcc}, mafTigerObjectIdentifier: {$oid}, legalStatisticalAreaDescriptionCode: {$lsadc}, areaLand: {$areaLand}, areaWater: {$areaWater}, arcGisObjectIdentifier: {$objectId}, centroidGeo: [{$centroidLat}, {$centroidLon}], internalPointGeo: [{$internalLat}, {$internalLon}])]\n";
-            $content .= "\tcase {$county['caseId']} = '{$county['caseId']}';\n\n";
+            // Attribute + case line, indented with four spaces to match Pint's `indentation_type`
+            $content .= '    #[CountyInfo(fullName: '.$l($county['fullName'])
+                .', baseName: '.$l($county['baseName'])
+                .', fipsCode: '.$l($county['fipsCode'])
+                .', parentUspsCode: '.$l($county['parentUspsCode'])
+                .', parentFipsCode: '.$l($county['parentFipsCode'])
+                .', geoId: '.$l($county['geoId'])
+                .', nationalStandardCode: '.$l($county['nationalStandardCode'])
+                .', fipsClassCode: '.$l($county['fipsClassCode'])
+                .', functionalStatusCode: '.$l($county['functionalStatusCode'])
+                .', mafTigerFeatureClassCode: '.$l($county['mafTigerFeatureClassCode'])
+                .', mafTigerObjectIdentifier: '.$l($county['mafTigerObjectIdentifier'])
+                .', legalStatisticalAreaDescriptionCode: '.$l($county['legalStatisticalAreaDescriptionCode'])
+                .', areaLand: '.$l($county['areaLand'])
+                .', areaWater: '.$l($county['areaWater'])
+                .', arcGisObjectIdentifier: '.$l($county['arcGisObjectIdentifier'])
+                .', centroidGeo: ['.$l($county['centroidGeo'][0]).', '.$l($county['centroidGeo'][1]).']'
+                .', internalPointGeo: ['.$l($county['internalPointGeo'][0]).', '.$l($county['internalPointGeo'][1]).'])]'
+                ."\n";
+            $content .= "    case {$county['caseId']} = '{$county['caseId']}';\n\n";
         }
 
         // Close enum definition
@@ -544,5 +423,17 @@ final class CountyEnumGenerator
 
         // Return full file content for writing
         return $content;
+    }
+
+    /**
+     * Render a value as a single-quoted PHP string literal that evaluates back to it.
+     *
+     * Both `\` and `'` are escaped, so a value holding a backslash, including a
+     * trailing one, round-trips instead of losing a character or breaking the
+     * literal (#716).
+     */
+    private function phpLiteral(string $value): string
+    {
+        return "'".\addcslashes($value, '\\\'')."'";
     }
 }
