@@ -3950,3 +3950,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** `composer.json` cannot carry a comment, so the reason sits in an `extra.pinned` key that no tool reads. The watch fires when `pestphp/pest#2024` changes, not when a release ships; #659 names the release when it acts.
 
 **Companion.** #658 (decision), #659 (removal), #655 (the bump it was found on).
+
+## 2026-11-14: An upstream watch row moves to a `patches-*` repository only when that repository patches the upstream it watches (#667)
+
+**Decision.** A watcher moves to a `uams-web/patches-*` repository only when it watches an upstream that repository patches; a watcher not tied to a patch stays in the consumer that acts on it. So `pestphp/pest-plugin-mutate#43` is watched from `UAMS-Web/patches-pest-plugin-mutate`, the rows for the closed trackers #212, #213 and #215 are removed, and the seven rows on unpatched upstreams stay in [`.github/upstream-watches/`](../.github/upstream-watches) with the workflow and scripts that run them: `pestphp/pest#1820`, `#1813` and `#2024` (#192, #193, #659), `statamic/ideas#1490`, `#1491` and `#140` (#7, #17, #9), and `statamic/docs#2003` (#229). They are a named exception to consumers keeping no upstream watcher.
+
+**Why.** No patch exists for any of the seven, so no `patches-*` repository has a reason to hold the row, and each row's signal is acted on in this repository. If a second consumer starts watching the same upstream item, the placement is revisited, since one shared home would then avoid duplicate rows.
+
+**Rejected.** *Classify each row and give every survivor a home outside the consumer* (a `patches-*` repository, or a hand-checked ticket with no watcher): a hand-checked ticket trades an automated signal for a manual one that is easy to forget, and the rows have no patch to tie them to a `patches-*` repository. *Create new `patches-*` repositories* for `pestphp/pest` and for `statamic/ideas` and `statamic/docs`: they would patch nothing, which is not what a `patches-*` repository is for, and each adds a repository to maintain for a watch this one already runs.
+
+**Companion.** #667 (decision and build); `UAMS-Web/uams-claude-skills#702` (the `patch-package` skill that carries the watcher to the `patches-*` repositories).
