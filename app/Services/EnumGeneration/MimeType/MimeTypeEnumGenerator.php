@@ -1795,7 +1795,7 @@ final class MimeTypeEnumGenerator
         array $dataSourceLines = []
     ): string {
         // Header: open PHP tag and start generated documentation block
-        $content = "<?php\n\n";
+        $content = "<?php\n\ndeclare(strict_types=1);\n\n";
         $content .= "/**\n";
         $content .= " * Generated MIME Types enum cases\n";
         $content .= " *\n";
@@ -1827,48 +1827,26 @@ final class MimeTypeEnumGenerator
         $content .= " *\n";
         $content .= ' * This list of cases was generated on '.\date('Y-m-d').' at '.\date('H:i:s T')."\n";
         $content .= ' * Total MIME types: '.\count($mimeTypes)."\n";
-        $content .= " */\n\n";
+        $content .= " */\n";
         $content .= "enum MimeType: string\n";
         $content .= "{\n";
 
         // Loop through MIME types to generate enum cases
         foreach ($mimeTypes as $mimeType) {
-            // Escape single quotes in the mimeType for valid PHP string literal
-            $escapedMimeType = \str_replace(
-                "'",
-                "\\'",
-                $mimeType['mimeType']
-            );
+            // Render each extension as a literal inside a PHP array literal
+            $extensionsArray = '['.\implode(
+                ', ',
+                \array_map(
+                    $this->phpLiteral(...),
+                    $mimeType['extensions']
+                )
+            ).']';
 
-            // Check if the extensions array is empty
-            if (empty($mimeType['extensions'])) {
-                // Set the extensions array to an empty array
-                $extensionsArray = '[]';
-            } else { // Otherwise
-                // Prepare extensions array as PHP array literal
-                $extensionsArray = "['".\implode(
-                    "', '",
-                    \array_map(
-                        fn ($ext): string => \str_replace(
-                            "'",
-                            "\\'",
-                            $ext
-                        ),
-                        $mimeType['extensions']
-                    )
-                )."']";
-            }
-
-            // Escape single quotes in the category for valid PHP string literal
-            $escapedCategory = \str_replace(
-                "'",
-                "\\'",
-                $mimeType['category']
-            );
-
-            // Attribute + case line
-            $content .= "\t#[MimeTypeInfo(mimeType: '{$escapedMimeType}', extensions: {$extensionsArray}, category: '{$escapedCategory}')]\n";
-            $content .= "\tcase {$mimeType['caseId']} = '{$mimeType['caseId']}';\n\n";
+            // Attribute + case line, indented with four spaces as Pint expects
+            $content .= '    #[MimeTypeInfo(mimeType: '.$this->phpLiteral($mimeType['mimeType'])
+                .', extensions: '.$extensionsArray
+                .', category: '.$this->phpLiteral($mimeType['category']).")]\n";
+            $content .= "    case {$mimeType['caseId']} = ".$this->phpLiteral($mimeType['caseId']).";\n\n";
         }
 
         // Close enum definition
@@ -1876,5 +1854,16 @@ final class MimeTypeEnumGenerator
 
         // Return full file content for writing
         return $content;
+    }
+
+    /**
+     * Render a value as a single-quoted PHP string literal that evaluates back to it.
+     *
+     * Both `\` and `'` are escaped, so a value ending in a backslash cannot
+     * swallow its closing quote (UAMS-Web/uams-statamic#719).
+     */
+    private function phpLiteral(string $value): string
+    {
+        return "'".GeneratorUtils::escapeSingleQuotes($value)."'";
     }
 }
