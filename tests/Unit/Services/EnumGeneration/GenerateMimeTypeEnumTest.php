@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\EnumGeneration\MimeType\MimeTypeEnumGenerator;
+use Symfony\Component\Process\Process;
 
 /**
  * Behavior of the MimeTypeEnumGenerator service's IANA-parsing internals
@@ -1193,3 +1194,80 @@ it('generates a case id from a MIME type', function (string $mimeType, string $e
         1 => 'TEXT_VND_ABC_XYZ',
     ],
 ]);
+
+/**
+ * Evaluate every string literal in generated MimeType enum source, in order.
+ *
+ * A literal that does not parse comes back as a `ParseError:` string, so it fails
+ * its own case rather than aborting the run.
+ *
+ * @return list<mixed>
+ */
+function mimeTypeEnumLiteralValues(string $source): array
+{
+    $values = [];
+    foreach (token_get_all($source) as $token) {
+        if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+            try {
+                $values[] = eval('return '.$token[1].';');
+            } catch (ParseError $error) {
+                $values[] = 'ParseError: '.$error->getMessage();
+            }
+        }
+    }
+
+    return $values;
+}
+
+it('renders output that Pint reports clean with no separate pass (#719)', function (): void {
+    $php = (new MimeTypeEnumGenerator)->generatePhpContent([
+        ['mimeType' => 'application/json', 'extensions' => ['json'], 'category' => 'application', 'caseId' => 'APPLICATION_JSON'],
+        ['mimeType' => "text/o'brien", 'extensions' => [], 'category' => "text's", 'caseId' => 'TEXT_O_BRIEN'],
+        ['mimeType' => 'text/end\\', 'extensions' => ['a\\', 'b'], 'category' => 'text\\', 'caseId' => 'TEXT_END'],
+    ], ['- Apache MIME Types']);
+
+    $root = dirname(__DIR__, 4);
+    $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'mime-enum-'.bin2hex(random_bytes(6)).'.php';
+    file_put_contents($path, $php);
+
+    try {
+        $process = new Process([
+            PHP_BINARY,
+            $root.'/vendor/bin/pint',
+            '--test',
+            '--config',
+            $root.'/pint.json',
+            $path,
+        ]);
+        $process->run();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput())
+        ->and(substr_count($php, "\r"))->toBe(0);
+});
+
+it('writes every literal so it evaluates back to its value (#719)', function (string $value): void {
+    $php = (new MimeTypeEnumGenerator)->generatePhpContent([
+        ['mimeType' => $value, 'extensions' => [$value, $value], 'category' => $value, 'caseId' => 'CASE_A'],
+    ], ['- Apache MIME Types']);
+
+    // mimeType, the two extensions and category in the attribute, then the backing value
+    expect(mimeTypeEnumLiteralValues($php))->toBe([$value, $value, $value, $value, 'CASE_A']);
+})->with([
+    'plain' => ['application/json'],
+    'apostrophe' => ["text/o'brien"],
+    'trailing backslash' => ['end\\'],
+    'doubled backslash' => ['a\\\\b'],
+    'backslash before apostrophe' => ['x\\\'y'],
+    'lone backslash' => ['\\'],
+]);
+
+it('renders an empty extension list as an empty array literal (#719)', function (): void {
+    $php = (new MimeTypeEnumGenerator)->generatePhpContent([
+        ['mimeType' => 'application/x-none', 'extensions' => [], 'category' => 'application', 'caseId' => 'APPLICATION_X_NONE'],
+    ], ['- Apache MIME Types']);
+
+    expect($php)->toContain("    #[MimeTypeInfo(mimeType: 'application/x-none', extensions: [], category: 'application')]\n    case APPLICATION_X_NONE = 'APPLICATION_X_NONE';\n");
+});
