@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\MigrationRedirectGenerator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +13,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Services\MarketingRedirectStore;
 
 /**
  * Feature coverage for {@see MigrationRedirectGenerator} (UAMS-Web/uams-statamic-archive#1641).

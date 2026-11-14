@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0a1434302b25b5b9f6fcb6b011aa3c89",
+    "content-hash": "86322a29bbc34ad1b5ead403c6a05142",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -11544,6 +11544,149 @@
             "time": "2026-11-02T11:26:07+00:00"
         },
         {
+            "name": "uams-web/aether-incomplete-entries",
+            "version": "v0.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-incomplete-entries.git",
+                "reference": "fd6dab06bf2ff70146dcef3d0c99d7469b61d897"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-incomplete-entries/zipball/fd6dab06bf2ff70146dcef3d0c99d7469b61d897",
+                "reference": "fd6dab06bf2ff70146dcef3d0c99d7469b61d897",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\IncompleteEntries\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Incomplete Entries",
+                    "description": "Finds published entries whose required or expected fields are empty, so editors can complete them."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\IncompleteEntries\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "Finds published entries whose required or expected fields are empty, so editors can complete them. An Aether add-on for Statamic.",
+            "homepage": "https://github.com/UAMS-Web/aether-incomplete-entries",
+            "keywords": [
+                "aether",
+                "incomplete-entries",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-incomplete-entries/issues",
+                "source": "https://github.com/UAMS-Web/aether-incomplete-entries"
+            },
+            "time": "2026-11-11T03:10:52+00:00"
+        },
+        {
+            "name": "uams-web/aether-listings-management",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-listings-management.git",
+                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-listings-management/zipball/2c492d40db90c25c0be362b9065f8ca80dbcd09e",
+                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\People\\ListingsManagement\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "ListingsManagement",
+                    "description": "Google Business Profile listing sync."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\People\\ListingsManagement\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "ListingsManagement: Google Business Profile listing sync for UAMS Statamic sites.",
+            "homepage": "https://github.com/UAMS-Web/aether-listings-management",
+            "keywords": [
+                "google-business-profile",
+                "listings",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-listings-management/issues",
+                "source": "https://github.com/UAMS-Web/aether-listings-management"
+            },
+            "time": "2026-11-11T18:34:01+00:00",
+            "published-time": "2026-11-12T18:49:24+00:00"
+        },
+        {
             "name": "uams-web/aether-multisite-forms",
             "version": "v0.7.0",
             "source": {
@@ -11618,21 +11761,21 @@
         },
         {
             "name": "uams-web/aether-redirects",
-            "version": "v0.2.0",
+            "version": "v0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-redirects.git",
-                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46"
+                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
-                "reference": "0fc676c2b0e1410ecbe80fadcfef5407b9fcae46",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
+                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.4",
-                "statamic/cms": "^6.35"
+                "statamic/cms": "^6.40"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -11642,7 +11785,9 @@
                 "orchestra/testbench": "^11.3",
                 "pestphp/pest": "^5.3",
                 "pestphp/pest-plugin-phpstan": "^5.2",
-                "rector/rector": "^2.7"
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
             },
             "type": "statamic-addon",
             "extra": {
@@ -11686,7 +11831,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-redirects/issues",
                 "source": "https://github.com/UAMS-Web/aether-redirects"
             },
-            "time": "2026-11-05T02:59:22+00:00"
+            "time": "2026-11-12T16:50:44+00:00"
         },
         {
             "name": "uams-web/aether-search",
@@ -11756,6 +11901,83 @@
                 "source": "https://github.com/UAMS-Web/aether-search"
             },
             "time": "2026-11-02T15:55:47+00:00"
+        },
+        {
+            "name": "uams-web/aether-tables",
+            "version": "v0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-tables.git",
+                "reference": "18d4dd5e03da9051e3a862e99a8cef7688959a73"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-tables/zipball/18d4dd5e03da9051e3a862e99a8cef7688959a73",
+                "reference": "18d4dd5e03da9051e3a862e99a8cef7688959a73",
+                "shasum": ""
+            },
+            "require": {
+                "ezyang/htmlpurifier": "^4.19",
+                "maatwebsite/excel": "^4.0",
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "phpstan/phpstan-mockery": "^2.0",
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\Tables\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Tables",
+                    "description": "Table sanitizing and pasted-table handling for Statamic editors."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\Tables\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "Table sanitizing and pasted-table handling for Statamic editors.",
+            "homepage": "https://github.com/UAMS-Web/aether-tables",
+            "keywords": [
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-tables/issues",
+                "source": "https://github.com/UAMS-Web/aether-tables"
+            },
+            "time": "2026-11-12T20:30:40+00:00",
+            "published-time": "2026-11-12T20:35:50+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer",
@@ -12008,8 +12230,7 @@
                 "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
                 "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
             },
-            "time": "2026-11-10T21:43:23+00:00",
-            "published-time": "2026-11-10T21:45:52+00:00"
+            "time": "2026-11-10T21:43:23+00:00"
         },
         {
             "name": "ueberdosis/tiptap-php",
@@ -16224,8 +16445,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-03T12:14:22+00:00",
-            "published-time": "2026-11-03T12:14:36+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "phpstan/phpstan-mockery",

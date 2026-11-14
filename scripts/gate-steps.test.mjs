@@ -195,8 +195,36 @@ describe('gate-pest.mjs', () => {
 
         const parallel = callOf('--parallel').call.args
 
-        expect(parallel).toContain('--passthru-php=-d memory_limit=5G')
+        expect(parallel).toContain('--passthru-php=-d memory_limit=5G -d zend.assertions=1 -d pcre.jit=0')
         expect(parallel).toContain('pcov.enabled=0')
+    })
+
+    it('caps the parallel band at an explicit worker count of 4 (#482)', () => {
+        runStep('gate-pest.mjs')
+
+        const parallel = callOf('--parallel').call.args
+
+        expect(parallel.filter((arg) => arg.startsWith('--processes'))).toEqual(['--processes=4'])
+        expect(callOf('--group=serial').call.args.some((arg) => arg.startsWith('--processes'))).toBe(false)
+    })
+
+    it('runs both bands and the paratest workers with zend.assertions=1 and pcre.jit=0 (#688)', () => {
+        runStep('gate-pest.mjs')
+
+        const pairs = ['-d', 'zend.assertions=1', '-d', 'pcre.jit=0']
+
+        for (const marker of ['--parallel', '--group=serial']) {
+            const args = callOf(marker).call.args
+            const before = args.slice(0, args.indexOf('vendor/bin/pest'))
+
+            expect(before.join(' ')).toContain(pairs.join(' '))
+        }
+
+        const passthru = callOf('--parallel').call.args.filter((arg) => arg.startsWith('--passthru-php='))
+
+        expect(passthru).toHaveLength(1)
+        expect(passthru[0]).toContain('-d zend.assertions=1')
+        expect(passthru[0]).toContain('-d pcre.jit=0')
     })
 
     it('leaves the caches alone on --no-reset', () => {
@@ -346,27 +374,33 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         ciSourceOld: '# x\n      # PARITY: y\n      - name: Run\n        run: z\n',
     }
 
-    it.each(GATE_STEP_FILES)('marks one closed region in %s that spans the step', (file) => {
+    // gate-pest.mjs also marks the SUITE_PHP_INI declaration that ci.yml's `ini-values:` mirror (#699).
+    const regionCount = { 'scripts/gate-pest.mjs': 2 }
+
+    it.each(GATE_STEP_FILES)('marks a closed region in %s that spans the step', (file) => {
         const source = readFileSync(join(scripts, '..', file), 'utf8')
         const regions = parityRegions(source, 'mjs')
 
-        expect(regions).toHaveLength(1)
+        expect(regions).toHaveLength(regionCount[file] ?? 1)
 
-        const region = source.split('\n').slice(regions[0].start - 1, regions[0].end).join('\n')
+        const texts = regions.map((r) => source.split('\n').slice(r.start - 1, r.end).join('\n'))
+        const region = texts.find((text) => text.includes(regionMustHold[file][0]))
+
+        expect(region).toBeDefined()
 
         for (const fragment of regionMustHold[file]) {
             expect(region).toContain(fragment)
         }
     })
 
-    it('lists the same steps in the check, the hook and the runner', () => {
+    it('lists the same steps in the check, the hook and local-ci.json', () => {
         const names = GATE_STEP_FILES.map((file) => file.replace('scripts/gate-', '').replace('.mjs', ''))
         const hook = readFileSync(join(scripts, '..', '.githooks', 'pre-commit'), 'utf8')
-        const runner = readFileSync(join(scripts, 'local-ci.mjs'), 'utf8')
-        const imported = [...runner.matchAll(/from '\.\/gate-(\w+)\.mjs'/g)].map((match) => match[1])
+        const config = JSON.parse(readFileSync(join(scripts, '..', 'local-ci.json'), 'utf8'))
+        const run = config.jobs.map((job) => job.run.match(/^node scripts\/gate-(\w+)\.mjs\b/)?.[1]).filter(Boolean)
 
         expect(hook).toContain(`gate-(${names.join('|')})`)
-        expect([...new Set(imported)].filter((name) => name !== 'process' && name !== 'slot').sort()).toEqual(names)
+        expect([...new Set(run)].sort()).toEqual(names)
     })
 
     it('exits 2 from the command line on a marked step edit alone, and 0 on an edit outside the marks', () => {
@@ -381,7 +415,7 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         inRepo('config', 'user.email', 'gate@example.test')
         inRepo('config', 'user.name', 'Gate')
         writeFileSync(join(repo, '.github', 'workflows', 'ci.yml'), 'on: push\n')
-        writeFileSync(join(repo, 'scripts', 'local-ci.mjs'), '// runner\n')
+        writeFileSync(join(repo, 'local-ci.json'), '{}\n')
         writeFileSync(step, source)
         inRepo('add', '.')
         inRepo('commit', '-q', '-m', 'seed')

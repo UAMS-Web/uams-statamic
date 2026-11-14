@@ -49,14 +49,17 @@
         "studio1902/statamic-peak-tools": "9.2.3",
         "uams-web/aether-alpine-csp-forms": "^0.3",
         "uams-web/aether-form-settings": "^0.5",
+        "uams-web/aether-incomplete-entries": "^0.2.1",
+        "uams-web/aether-listings-management": "^0.1.2",
         "uams-web/aether-multisite-forms": "^0.7",
-        "uams-web/aether-redirects": "^0.2.0",
+        "uams-web/aether-redirects": "^0.3.0",
         "uams-web/aether-search": "^0.3",
+        "uams-web/aether-tables": "^0.2",
         "uams-web/aether-wordpress-importer": "^0.34",
         "uams-web/patches-pest-plugin-mutate": "^1.0"
     },
     "require-dev": {
-        "brianium/paratest": "^7.23",
+        "brianium/paratest": "~7.27.5",
         "driftingly/rector-laravel": "^2.0",
         "fakerphp/faker": "^1.23",
         "fruitcake/laravel-debugbar": "^4.0",
@@ -155,6 +158,9 @@
     },
     "extra": {
         "composer-exit-on-patch-failure": true,
+        "pinned": {
+            "brianium/paratest": "Held at ~7.27.5 because v7.28.0 breaks Pest's parallel runner (pestphp/pest#2024; decision #658). Also ignored in .github/dependabot.yml. Remove both once a Pest release accommodates 7.28.0 (#659)."
+        },
         "patches": {
             "pestphp/pest-plugin-browser": {
                 "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",

@@ -37,7 +37,7 @@
  * rename cannot turn this check into a silent no-op.
  *
  * Bare, it reads `docs/DECISIONS.md` under the working directory, which is how
- * CI and `scripts/local-ci.mjs` run it. `--file <path>` (or `--file=<path>`)
+ * CI and the local runner's `encoding` job (`scripts/ci-job.mjs`) run it. `--file <path>` (or `--file=<path>`)
  * reads that path instead, so a revision other than the checkout can be checked
  * from an extracted copy (UAMS-Web/uams-statamic-archive#2910). Any other argument exits 2: an argument the
  * script ignored would read as a report on the file it named. Every outcome

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Stache;
@@ -9,10 +10,11 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class)->group('serial');
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -32,7 +34,7 @@ uses(CollectionTreeIsolatedTestCase::class)->group('serial');
 | `clinical_expertise_related` self) have a write test here.
 |
 | clinical_expertise and clinical_locations are structured, health-scoped collections,
-| so these exercise the real Stache: serial + self-cleaning, skipped when content/ is
+| so these exercise a per-process copy of the real Stache (#557): self-cleaning, skipped when content/ is
 | absent. The knowledge_bases.related_articles self-relationship uses the same
 | manyToMany(same, same) shape but on a large multi-site, multi-blueprint collection
 | (related_articles lives only on the `article` blueprint); its dedicated fixture is
@@ -134,6 +136,9 @@ function og1362MakeLocation(string $suffix, string $title): Statamic\Entries\Ent
 }
 
 beforeEach(function () {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     foreach (['clinical_expertise', 'clinical_conditions', 'clinical_services', 'clinical_locations'] as $handle) {
         if (! Collection::find($handle)) {
             ContentSubmodule::reportMissing('clinical ontology collections');

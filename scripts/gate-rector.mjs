@@ -5,7 +5,7 @@
  *     node scripts/gate-rector.mjs [--tree <path>]
  *
  * Runs against an installed checkout, `--tree` or the working directory, and exits with Rector's
- * own status, or 2 for a wrong flag or a missing tool. `local-ci.mjs` calls `gateRector` (#295).
+ * own status, or 2 for a wrong flag or a missing tool. `local-ci.json` runs it as the `rector` job (#296).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs'

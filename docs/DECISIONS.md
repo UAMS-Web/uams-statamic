@@ -3906,3 +3906,57 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Keeping the four checks as local workflow jobs*: preserves their independent fan-out but duplicates the shared commands and platform policy. *Calling a branch rather than a release tag*: takes upstream workflow changes without a reviewed reference update here. *Moving Pest and mutation discovery into the call*: its setup lacks the private-submodule checkout and this repository's sharding and report handling. *Narrowing the remaining plain jobs in this change*: requires their own follow-up and is outside #580 and #594.
 
 **Companion.** #580 and PR #592 carry the workflow change and its verification; #594 records its effects here. The shared workflow was read at `v0.4.0`, not its default branch. The 2026-10-27 fan-out entry above describes the original decision and marks these later limits.
+
+## 2026-11-09: A credential term answers the regulatory question yes only on a statute, an agency rule, or a governing body's binding member rules; roles and degrees are not clinical credentials (#344)
+
+**Decision.** A `credentials` term answers "Is this a regulatory designation?" yes when a statute, a promulgated agency rule (such as 20 CAR Part 706), or a governing body's binding rules for its members (in the NCAA style) requires it, never on an organization's internal bylaws. CSCS and SCCC answer yes on NCAA Division I bylaw 11.1.5. MA, ECDS and QBHP are roles, and M.S. is a degree: each answers "Is this a clinical credential?" no, with its hidden regulatory and justification fields cleared, and stays selectable. ATC, CHT, OCS and RD are clinical credentials that are not regulatory designations. RD's justification cites the Arkansas licensed-dietitian statute. ATC, CHT and OCS carry the justification "executive fiat": an administrator required that these credentials be displayed, although they are not regulatory clinical credentials. The clinical name shows a credential only when its term answers yes to both questions (#621). <!-- cspell:ignore CSCS SCCC ECDS QBHP -->
+
+**Why.** The article's test counts more than statute, and Wikidata Q139581896 covers all three sources, so the JSON-LD mapping needs no split. The justification field records why a term is shown as clinical. For ATC, CHT and OCS that reason is an administrative directive, not a regulation, and the field says so rather than inventing a regulatory basis.
+
+**Rejected.** *Statute only*: would answer no for CSCS and SCCC, which the article lists. *Keeping MA, ECDS, QBHP and M.S. as clinical credentials that are not regulatory designations*: each would need a justification for a clinical status it does not have. *Writing a regulatory-sounding justification for ATC, CHT and OCS*: would misstate why they are displayed.
+
+**Companion.** Decided on 2026-10-27, revised on 2026-11-07 and 2026-11-09, on #344. The content changes are `UAMS-Web/aether-submodule-content#93`, `#94` and `#95`; the code changes are #620, #621 and #622; the pointer for #95 is #631.
+
+## 2026-11-12: Site search moves to the Loupe driver with `max_total_hits` at 200 (#511)
+
+**Decision.** `daun/statamic-loupe` replaces the `local` driver for site search, with `max_total_hits` at 200 on the `default` index. The build is #646, which also moves site and scope filtering ahead of the hit cap.
+
+**Why.** At the counted launch size of 46,777 documents, Loupe's p95 per lookup was 132 to 164ms at `max_total_hits` 200, under the 400ms gate, and it found the intended term for all six misspellings that return nothing on `local`. Measured on #511, Windows 11, PHP 8.4.27, `daun/statamic-loupe` 4.2.0, `loupe/loupe` 1.1.6. It is the only option that needs no paid service or new server, per the 2026-11-02 entry.
+
+**Rejected.** *Loupe at its default `max_total_hits` (1,000)*: p95 299 to 449ms at launch size, over the gate in two of three runs. *Staying on `local`*: fails latency and typo tolerance (#161). *A hosted or self-hosted engine*: ruled out by the no-spending statement.
+
+**Residual.** The driver applies site and scope filters after the hit cap, so a scoped search can show fewer results than match; #646 owns the fix. Document insertion alone took 618s at launch size and the index is 1.7GB on disk, both well past #161's 60s and 75 to 100MB thresholds. Concurrency, hydration and the production host are not measured.
+
+**Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).
+
+## 2026-11-12: The shared local CI runner replaces this repository's own (#296, #256)
+
+**Decision.** Supersedes the 2026-10-04 entry (UAMS-Web/uams-statamic-archive#2835). The shared runner the sync delivers (`.claude/skills/local-ci/local-ci.mjs`) runs this repository's checks from [`local-ci.json`](../local-ci.json), and `scripts/local-ci.mjs` and its tests are removed. [`scripts/ci-local.mjs`](../scripts/ci-local.mjs) runs it, adding to a `--jobs` subset the jobs it depends on (`php`, which makes the shared runner resolve and check PHP, `dependencies`, and `build` for `browser`) and refusing the retired runner's flags with what to do instead. Every job sets `always: true` and none declares `requires`; `chain` stops at the first failure, as the private runner did.
+
+**Why.** The capabilities the keep decision named now exist on one side or the other. The shared runner gained a runner-owned `--branch` slot with a handoff to the branch's own copy, a single-flight lock on the tree it runs in, `prepare` and `mutation`, and commit statuses, all documented in the delivered runner's header (`UAMS-Web/uams-claude-skills#26` landed the job shapes this repository needed). What is specific to this repository moved into scripts the jobs run: the gate steps ([`scripts/gate-*.mjs`](../scripts), #295), the multi-command jobs ([`scripts/ci-job.mjs`](../scripts/ci-job.mjs)), and the slot install ([`scripts/prepare-dependencies.mjs`](../scripts/prepare-dependencies.mjs)), which installs only in the runner's slot and anywhere else reports drift, including patched packages `vendor/` is not recorded as carrying the patches of. [`scripts/ci-local.chain.test.mjs`](../scripts/ci-local.chain.test.mjs) keeps the job list in step with `ci.yml`, and `.githooks/pre-commit` treats `local-ci.json` and `scripts/ci-job.mjs` as wholly the mirror.
+
+**Rejected.** *A thin wrapper that keeps `scripts/local-ci.mjs` as the runner*: two job lists for one gate. *Declaring `requires` on jobs whose tool can be absent*: the runner reports such a job skipped and exits 0, so a missing tool would pass. *Letting `prepare.patches` re-sync patched packages*: `prepare` runs before any job, so it would reinstall the slot's old package version against the commit's new patch; the `dependencies` job installs first and re-syncs second.
+
+**Companion.** #296 (the slice) and #256 (the staged adoption); `UAMS-Web/uams-claude-skills#711` (the sync change that delivers the runner here).
+
+## 2026-11-12: `brianium/paratest` is pinned to `~7.27.5` and ignored in Dependabot until Pest accommodates `v7.28.0` (#658)
+
+**Decision.** `composer.json` pins `brianium/paratest` to `~7.27.5`, with the reason under `extra.pinned`, and the composer entry of `.github/dependabot.yml` ignores the package, each naming #658 and `pestphp/pest#2024`. An upstream watch row on `pestphp/pest#2024` comments on #659, which retires the pin, the `ignore` entry and the row once a Pest release accommodates `7.28.0`. No other package moves.
+
+**Why.** `brianium/paratest` `v7.28.0` regroups `SuiteLoader::$tests`, and Pest `v5.3.5`'s `WrapperRunner` reads that property as a flat list of filenames, so the parallel runner dies before any test runs (`WrapperRunner.php:646`). Pest's own `^7.27.5` constraint admits `7.28.0`, so an ordinary resolve reaches the broken pair; when #658 was filed, #655 was red on all 14 parallel-band shards while its 44 other updates were fine. The pin keeps the constraint visible where the resolver and a reader both see it; the `ignore` keeps Dependabot from re-proposing a bump that cannot pass, and takes the package out of its group so the rest still updates. Decided by Josh, 2026-11-12.
+
+**Rejected.** *Pin only*: Dependabot keeps re-proposing the bump and the chain reds each time. *Ignore only*: the reason is invisible in `composer.json`. *Hold the whole group*: 44 safe updates wait on one package, for as long as upstream takes.
+
+**Residual.** `composer.json` cannot carry a comment, so the reason sits in an `extra.pinned` key that no tool reads. The watch fires when `pestphp/pest#2024` changes, not when a release ships; #659 names the release when it acts.
+
+**Companion.** #658 (decision), #659 (removal), #655 (the bump it was found on).
+
+## 2026-11-14: An upstream watch row moves to a `patches-*` repository only when that repository patches the upstream it watches (#667)
+
+**Decision.** A watcher moves to a `uams-web/patches-*` repository only when it watches an upstream that repository patches; a watcher not tied to a patch stays in the consumer that acts on it. So `pestphp/pest-plugin-mutate#43` is watched from `UAMS-Web/patches-pest-plugin-mutate`, the rows for the closed trackers #212, #213 and #215 are removed, and the seven rows on unpatched upstreams stay in [`.github/upstream-watches/`](../.github/upstream-watches) with the workflow and scripts that run them: `pestphp/pest#1820`, `#1813` and `#2024` (#192, #193, #659), `statamic/ideas#1490`, `#1491` and `#140` (#7, #17, #9), and `statamic/docs#2003` (#229). They are a named exception to consumers keeping no upstream watcher.
+
+**Why.** No patch exists for any of the seven, so no `patches-*` repository has a reason to hold the row, and each row's signal is acted on in this repository. If a second consumer starts watching the same upstream item, the placement is revisited, since one shared home would then avoid duplicate rows.
+
+**Rejected.** *Classify each row and give every survivor a home outside the consumer* (a `patches-*` repository, or a hand-checked ticket with no watcher): a hand-checked ticket trades an automated signal for a manual one that is easy to forget, and the rows have no patch to tie them to a `patches-*` repository. *Create new `patches-*` repositories* for `pestphp/pest` and for `statamic/ideas` and `statamic/docs`: they would patch nothing, which is not what a `patches-*` repository is for, and each adds a repository to maintain for a watch this one already runs.
+
+**Companion.** #667 (decision and build); `UAMS-Web/uams-claude-skills#702` (the `patch-package` skill that carries the watcher to the `patches-*` repositories).

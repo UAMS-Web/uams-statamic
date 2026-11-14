@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Listeners\MirrorSpotlightFeaturedProviderRelationships;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Statamic\Entries\Collection;
 use Statamic\Events\EntrySaving;
 use Statamic\Facades\Entry;
 use Tests\TestCase;
@@ -187,4 +188,69 @@ it('leaves the ontology untouched when the featured provider is unresolvable', f
     expect($entry->get('clinical_providers'))->toBe(['prov-missing']);
     // ...but a transient resolve failure does not clobber a good mirror.
     expect($entry->get('clinical_locations'))->toBe(['loc-keep']);
+});
+
+it('ignores a save whose payload is not an entry', function (): void {
+    expect(throwableFrom(fn () => (new MirrorSpotlightFeaturedProviderRelationships)->handle(new EntrySaving(new stdClass))))
+        ->toBeNull();
+});
+
+it('leaves alone an entry with no collection', function (): void {
+    $entry = Mockery::mock(Statamic\Entries\Entry::class);
+    $entry->shouldReceive('collection')->andReturn(null);
+    $entry->shouldNotReceive('blueprint');
+    $entry->shouldNotReceive('get');
+
+    expect(throwableFrom(fn () => (new MirrorSpotlightFeaturedProviderRelationships)->handle(new EntrySaving($entry))))
+        ->toBeNull();
+});
+
+it('leaves alone a clinical resource with no blueprint', function (): void {
+    $collection = Mockery::mock(Collection::class);
+    $collection->shouldReceive('handle')->andReturn('clinical_resources');
+    $entry = Mockery::mock(Statamic\Entries\Entry::class);
+    $entry->shouldReceive('collection')->andReturn($collection);
+    $entry->shouldReceive('blueprint')->andReturn(null);
+    $entry->shouldNotReceive('get');
+
+    expect(throwableFrom(fn () => (new MirrorSpotlightFeaturedProviderRelationships)->handle(new EntrySaving($entry))))
+        ->toBeNull();
+});
+
+it('looks no provider up when there is no featured provider', function (): void {
+    Entry::partialMock()->shouldReceive('find')->never();
+
+    mirrorSpotlight('provider_spotlight', ['clinical_locations' => ['loc-1']]);
+});
+
+it('stores the union of related providers as a plain list, each once', function (): void {
+    stubUnresolvableProviders();
+
+    $entry = mirrorSpotlight('provider_spotlight', [
+        'featured_provider' => ['prov-mccoy'],
+        'clinical_providers' => ['prov-spock', 'prov-spock'],
+    ]);
+
+    expect($entry->get('clinical_providers'))->toBe(['prov-spock', 'prov-mccoy']);
+});
+
+it('reads a single id as a one-item list and a blank one as none', function (): void {
+    stubUnresolvableProviders();
+
+    $entry = mirrorSpotlight('provider_spotlight', [
+        'featured_provider' => 'prov-mccoy',
+        'clinical_providers' => '',
+    ]);
+
+    expect($entry->get('clinical_providers'))->toBe(['prov-mccoy']);
+});
+
+it('reads only non-empty string ids from a list', function (): void {
+    stubUnresolvableProviders();
+
+    $entry = mirrorSpotlight('provider_spotlight', [
+        'featured_provider' => ['prov-mccoy', '', 7],
+    ]);
+
+    expect($entry->get('clinical_providers'))->toBe(['prov-mccoy']);
 });

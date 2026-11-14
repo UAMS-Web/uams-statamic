@@ -66,25 +66,10 @@ use Statamic\Fields\Fieldtype;
 class SyncEntryPublishedStatus
 {
     /**
-     * The statuses that map to Statamic's published (live) state.
-     *
-     * @var list<string>
-     */
-    private const array LIVE_STATUSES = ['published', 'private', 'scheduled'];
-
-    /**
      * The `status_and_visibility` fieldset default, injected by the CP for an
      * entry that has no stored value (see `uamsweb_common_status.yaml`).
      */
     private const string DEFAULT_STATUS = 'draft';
-
-    /**
-     * Fields that schedule a later publish or unpublish, applied by
-     * {@see ApplyScheduledPublishing} (UAMS-Web/uams-statamic-archive#2552, UAMS-Web/uams-statamic-archive#2564).
-     *
-     * @var list<string>
-     */
-    private const array SCHEDULE_FIELDS = ['publish_at', 'unpublish_at'];
 
     /**
      * Sync `published` from `status_and_visibility` before the entry persists.
@@ -284,8 +269,11 @@ class SyncEntryPublishedStatus
     {
         // Collect the schedule fields this save changed. Compared directly rather than with
         // `isDirty()`, which reads a removed data key as unchanged (null against null).
+        // An unchanged field put back is set to the value it already holds, and the keys
+        // are only looped over, so neither the filter nor the reindex decides anything.
+        // @pest-mutate-ignore: UnwrapArrayFilter, UnwrapArrayValues
         $changed = array_values(array_filter(
-            self::SCHEDULE_FIELDS,
+            self::scheduleFields(),
             fn (string $field): bool => $entry->get($field) !== $entry->getOriginal($field),
         ));
 
@@ -315,7 +303,10 @@ class SyncEntryPublishedStatus
      */
     private function isLive(string $status): bool
     {
-        return \in_array($status, self::LIVE_STATUSES, true);
+        // The status is a string and the list holds non-numeric strings, so a loose match
+        // finds the same statuses as a strict one.
+        // @pest-mutate-ignore: TrueToFalse
+        return \in_array($status, self::liveStatuses(), true);
     }
 
     /**
@@ -345,5 +336,30 @@ class SyncEntryPublishedStatus
         $handle = $collection->handle();
 
         return ! \is_string($handle) || $user->hasPermission('publish '.$handle.' entries');
+    }
+
+    /**
+     * The statuses that map to Statamic's published (live) state.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function liveStatuses(): array
+    {
+        return ['published', 'private', 'scheduled'];
+    }
+
+    /**
+     * Fields that schedule a later publish or unpublish, applied by
+     * {@see ApplyScheduledPublishing} (UAMS-Web/uams-statamic-archive#2552, UAMS-Web/uams-statamic-archive#2564).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function scheduleFields(): array
+    {
+        return ['publish_at', 'unpublish_at'];
     }
 }

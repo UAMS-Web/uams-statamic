@@ -7,7 +7,7 @@
  * Runs against an installed checkout, `--tree` or the working directory. It exits with the first
  * failing build's status or the suite's, or 2 for a wrong flag or a missing tool. `--skip-build`
  * keeps the bundles already in the tree, which is right only when they were built from it.
- * `local-ci.mjs` calls `gateBrowser` (#295).
+ * `local-ci.json` runs it as the `browser` job (#296).
  */
 
 import process from 'node:process'
@@ -36,14 +36,12 @@ export function gateBrowser({ tree, npm, npx, php, reuseBuild = false }) {
     // bundles with byte-identical commands, and repeating them is duplicated
     // cost for nothing (UAMS-Web/uams-statamic-archive#1727).
     //
-    // So the caller decides, through `reuseBuild`: `canReuseBuildOutput()` in the
-    // runner, or `--skip-build` by hand. Skip only when `build` actually ran AND
-    // exited 0 in THIS invocation.
-    // `results` holds only jobs already executed this run, so a `--jobs
-    // browser`-only run (or any selection omitting `build`) reads undefined
-    // and still builds — which is what keeps a standalone browser run honest.
-    // A `build` that FAILED cannot reach here at all: the chain marks the run
-    // broken and skips every later job, browser included.
+    // So the caller decides, through `--skip-build`: `local-ci.json`'s browser job
+    // passes it, which is sound only because `build` ran AND exited 0 earlier in
+    // the same invocation. `scripts/ci-local.mjs` adds `build` to any `--jobs`
+    // subset naming `browser`, and a `build` that FAILED cannot reach here at all:
+    // the chain stops the run before every later job, browser included. Run by
+    // hand without the flag, this builds, which keeps a standalone run honest.
     let bf = 0
     let bc = 0
 
@@ -56,7 +54,9 @@ export function gateBrowser({ tree, npm, npx, php, reuseBuild = false }) {
         bc = run(npm, ['run', 'cp:build'], tree)
     }
 
-    // Mirrors the browser job's "Run CP browser smokes" step in ci.yml.
+    // Mirrors the browser job's "Run CP browser smokes" step in ci.yml, less its
+    // `--shard` and `--log-junit`: ci.yml splits the suite into four Linux shards and
+    // merges their reports in `browser-report` (#521); here it runs whole, in one process.
     // tests/Browser holds the CP smokes and the axe-core accessibility gate (UAMS-Web/uams-statamic-archive#1046).
     step('JOB browser - pest tests/Browser')
     const bt = runPhp(['vendor/bin/pest', 'tests/Browser'], tree)

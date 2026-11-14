@@ -60,8 +60,9 @@ defaults:
 #     each one through with nothing run. A check stays pending only when its whole
 #     workflow never runs (a path filter, `[skip ci]`), so a head commit carrying
 #     `[skip ci]` cannot merge either.
-#   - While off, `scripts/local-ci.mjs` still validates a branch (no Actions
-#     minutes), but a green local run cannot satisfy `CI`. Flip in Settings ->
+#   - While off, the shared local CI runner (`node scripts/ci-local.mjs`, configured
+#     by `local-ci.json`) still validates a branch (no Actions minutes), but a green
+#     local run cannot satisfy `CI`. Flip in Settings ->
 #     Secrets and variables -> Actions -> Variables.
 #   - An ORG variable whose visibility is "private repositories" does NOT reach
 #     this repository, which is public. Measured 2026-10-27, the hour it was made
@@ -71,12 +72,13 @@ defaults:
 #     variable; the org value cannot do it. Read 2026-11-01: 0 organization and
 #     0 repository variables reach this repository, so every job runs.
 #
-# PARITY: `scripts/local-ci.mjs` reproduces every job below (all but the
+# PARITY: `local-ci.json` reproduces every job below (all but the
 # REMOTE-ONLY `submodule-access` and `ci`, noted further down), and the `checks`
-# call's pint, rector and phpstan jobs, for local runs (no
-# Docker, no act, no Actions minutes) — used when GitHub Actions budget is out.
-# The two are kept in lockstep BY HAND: when you add, remove, or change a job's
-# command here, mirror it in the script (and vice versa). The parity-critical
+# call's pint, rector and phpstan jobs, for local runs through the shared local CI
+# runner (no Docker, no act, no Actions minutes). The jobs that run more than one
+# command live in `scripts/ci-job.mjs` and the `scripts/gate-*.mjs` step scripts.
+# The two sides are kept in lockstep BY HAND: when you add, remove, or change a job's
+# command here, mirror it locally (and vice versa). The parity-critical
 # surface is each job's final run step, flagged inline with `# PARITY:` below:
 #   pest        -> "Run Pest (parallel shard, excluding the serial group)"
 #                     (the local command plus `--shard`: CI splits the band
@@ -100,23 +102,26 @@ defaults:
 #                     since UAMS-Web/uams-statamic-archive#1727 — the `browser-tests` label gate was removed in
 #                     the same change). Runs the CP smokes and the §504/WCAG
 #                     axe-core gate (UAMS-Web/uams-statamic-archive#1046), both in tests/Browser.
+#                     Here it runs on Linux only, as four shards (#521).
+#   browser-report -> no counterpart: it merges the browser shards' reports and
+#                     checks every class ran exactly once, as `pest-report` does.
 #   checks         -> no step here: the called chain's pint, rector and phpstan jobs
 #                     run `composer test:pint`, `composer test:refactor` and
 #                     `composer stan`, which the local pint, rector and phpstan
 #                     jobs mirror. The local pint job checks the changed files only,
 #                     where the called one checks every tracked file: `test:pint`
 #                     names the dot-directories Pint's own finder skips (#580).
-# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call and the
-# aggregate `ci` runs on
+# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call, the
+# Linux-only `browser` and `browser-report` jobs (#521) and the aggregate `ci` runs on
 # ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
 # failure does not cancel the others, and `ci` needs them all. The `checks` call's
 # legs are the chain's own classification; see its comment. Windows differs in
 # two places, each marked where it stands: each `pest` shard runs from a list of
 # its test files instead of `--shard` (#504), and CLI OPcache stays off.
-# JOB FAN-OUT: every job below runs in parallel. Two jobs declare `needs:`, each
+# JOB FAN-OUT: every job below runs in parallel. Three jobs declare `needs:`, each
 # because it reads what the jobs it names leave behind. `pest-report` merges the
-# reports of the `pest` shards (#387), and `ci` reads the result of every job
-# (#337). Otherwise one job's
+# reports of the `pest` shards (#387), `browser-report` those of the `browser`
+# shards (#521), and `ci` reads the result of every job (#337). Otherwise one job's
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first. The `checks` call starts with the others, but
 # the chain it calls orders its own jobs, which this file does not control: pint
@@ -132,66 +137,51 @@ defaults:
 # nothing left to save the trade inverts, and wall-clock is the longest job rather
 # than the sum of all of them. Supersedes the 2026-07-15 entry in
 # docs/DECISIONS.md, which superseded the UAMS-Web/uams-statamic-archive#1543 spell-only gate.
-# DELIBERATELY NOT MIRRORED: `local-ci.mjs` keeps its cost-ordered chain and its
-# stop at the first failure. It runs on ONE machine, where the jobs are serial
+# DELIBERATELY NOT MIRRORED: `local-ci.json` sets `chain`, so the local runner stops
+# at the first failure. It runs on ONE machine, where the jobs are serial
 # whatever any graph says, and stopping early saves the developer's own wall-clock
 # rather than a budget. So the parity contract below covers each job's COMMAND and
-# the SET of jobs, never the order they run in; `scripts/local-ci.chain.test.mjs`
+# the SET of jobs, never the order they run in; `scripts/ci-local.chain.test.mjs`
 # asserts that set, and asserts that the only `needs:` edges here are `pest-report`
-# on `pest` and the aggregate `ci` job's.
-# LOCAL-ONLY (intentionally no job here): `local-ci.mjs` resets a REUSED worktree's
-# runtime state (storage/framework, bootstrap caches, Stache) before the framework
-# jobs. There is no counterpart here on purpose — every CI run starts from a fresh
-# checkout, so there is never stale runtime state to clear. See UAMS-Web/uams-statamic-archive#1164.
-# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also re-applies Composer
-# patches when a REUSED worktree's patch set is stale. On reuse `composer install`
-# reports "Nothing to install", so no package-install event fires and a newly added
-# patch is never applied — the band would validate the OLD patch set and report
-# green. Again no counterpart here: the `composer install` below always runs cold
-# against a fresh checkout, so patches are applied every time. See UAMS-Web/uams-statamic-archive#1743.
-# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also reconciles the branch
-# it is about to validate with `origin/<branch>` and prints the commit under test.
-# `git worktree add`/`git checkout` resolve the LOCAL ref, which neither `--fetch`
-# nor `--fresh` moves, so a local runner can validate a commit the PR has moved past
-# (UAMS-Web/uams-statamic-archive#1710). No counterpart here because `actions/checkout` always lands the requested
-# ref — this is a local-runner-only gap. See UAMS-Web/uams-statamic-archive#1746.
-# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also hands the run over to
-# the BRANCH's own copy of itself when the two differ, so a PR that adds or removes a
-# chain job has that job list executed rather than the base branch's. Observed on
-# UAMS-Web/uams-statamic-archive#1878: the `mutate` job it added never ran, and the chain still reported green. The
-# child is marked pinned through the LOCAL_CI_RUNNER_PINNED environment variable
-# rather than a flag, so a runner predating the change ignores it instead of dying on
-# an unknown option. No counterpart here because `actions/checkout` lands the PR's own
-# workflow file, so this file IS always the branch's. Locally the runner is loaded
-# before the branch is checked out, wherever it is invoked from, which is the gap the
-# handoff closes. See UAMS-Web/uams-statamic-archive#1882 and UAMS-Web/uams-statamic-archive#2856.
-# LOCAL-ONLY (intentionally no step here): `local-ci.mjs` also verifies that a REUSED
-# worktree matches the commit under test before setting any job up, and refuses the
-# run when it does not. `git checkout` updates tracked files and removes nothing that
-# has become untracked, so a file the validated commit DELETES survives on disk —
-# two tests deleted by UAMS-Web/uams-statamic-archive#1847 ran and passed in a reusing run that was validating
-# their absence. No counterpart here because every CI run is a fresh checkout, which
-# cannot carry residue from a previous one. See UAMS-Web/uams-statamic-archive#1889.
-# REMOTE-ONLY (intentionally no job in local-ci.mjs): `ci` is the aggregate the ruleset
+# on `pest`, `browser-report` on `browser` and the aggregate `ci` job's.
+# LOCAL-ONLY (intentionally no job here): the local `dependencies` job
+# (`scripts/prepare-dependencies.mjs`) installs into the runner's REUSED slot: it
+# initializes the gate submodules, runs `composer install`, re-applies Composer
+# patches whose set changed (on reuse `composer install` reports "Nothing to
+# install", so a newly added patch is never applied otherwise;
+# UAMS-Web/uams-statamic-archive#1743), clears the reused tree's file caches and runs
+# `npm ci`. `scripts/gate-pest.mjs` resets the slot's runtime state (storage/framework,
+# bootstrap caches, Stache; UAMS-Web/uams-statamic-archive#1164), and the shared
+# runner's `prepare.residue` (in local-ci.json) refuses a slot holding files the commit
+# under test deleted, in the directories it lists (UAMS-Web/uams-statamic-archive#1889).
+# There is no counterpart here on purpose: every CI run starts from a fresh
+# checkout, so there is never stale state, a stale patch set or residue to clear.
+# LOCAL-ONLY (intentionally no step here): the shared runner fetches the branch
+# from origin and checks the commit under test out in its slot, so a local run
+# validates the branch's own `local-ci.json` and the commit the pull request
+# points at. `actions/checkout` does the same here.
+# REMOTE-ONLY (intentionally no job in local-ci.json): `ci` is the aggregate the ruleset
 # on `main` requires, and it does nothing but read the other jobs' results (#337).
 # EVERY JOB ADDED HERE GOES IN ITS `needs:` IN THE SAME CHANGE, or no check requires it;
-# `scripts/local-ci.chain.test.mjs` fails until it does. `submodule-access` alone stays
+# `scripts/ci-local.chain.test.mjs` fails until it does. `submodule-access` alone stays
 # out, named with its reason in `.github/aggregate-needs-allow.json`.
-# REMOTE-ONLY (no job in local-ci.mjs until #256): the `checks` call's synced-files,
-# no-emoji, aggregate-needs and mutate-ignore jobs run shared checks the local runner
-# has no job of its own for (synced-files: UAMS-Web/uams-statamic-archive#3084). Its
-# composer-validate job runs the command the local `validate` job runs, its
-# mutate-ignore job overlaps the local `encoding` job's auditor, and the chain test
-# runs the aggregate-needs comparison.
-# REMOTE-ONLY (intentionally no job in local-ci.mjs): `submodule-access` runs only on
+# REMOTE-ONLY (no ci.yml job of its own): the `checks` call's synced-files,
+# no-emoji, aggregate-needs and mutate-ignore jobs run shared checks. Locally the
+# `synced-files` and `no-emoji` jobs run the first two, its composer-validate job
+# runs the command the local `validate` job runs, its mutate-ignore job overlaps
+# the local `encoding` job's auditor, and the chain test runs the aggregate-needs
+# comparison.
+# REMOTE-ONLY (intentionally no job in local-ci.json): `submodule-access` runs only on
 # a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
 # the private submodules. That secret exists only on GitHub, and the local runner
 # clones them with the developer's own credentials instead. See UAMS-Web/uams-statamic-archive#2497.
-# Toolchain pins that must also match: PHP 8.4 (setup-php), Node 22 (setup-node),
-# and npm >= 11.10.0 (the `engines.npm` floor `.npmrc`'s engine-strict enforces; UAMS-Web/uams-statamic-archive#1826).
+# Toolchain pins that must also match: PHP 8.4 (setup-php; `php` in local-ci.json),
+# Node 22 (setup-node), and npm >= 11.10.0 (the `engines.npm` floor `.npmrc`'s
+# engine-strict enforces, which fails the local `dependencies` job's `npm ci` on an
+# older npm; UAMS-Web/uams-statamic-archive#1826).
 # A pre-commit hook (`.githooks/pre-commit`, auto-wired by composer) blocks a
-# commit that stages only one of these two files; bypass with `--no-verify`.
-# See `.claude/skills/local-ci/SKILL.md` for the job<->command mapping table.
+# commit that changes a `PARITY:` region on one side only; bypass with `--no-verify`.
+# See `.claude/skills/local-ci/SKILL.md` for the shared runner and its configuration.
 
 # `secrets.COMPOSER_AUTH_TOKEN` must be a Personal Access Token (or GitHub App
 # installation token) with read access to UAMS-Web/wordpress-importer,
@@ -224,7 +214,7 @@ jobs:
     #   fine-grained, so a new repository must be added on its settings page
     #   first (the confirmed repository list is recorded on UAMS-Web/uams-statamic-archive#2497).
     #
-    # REMOTE-ONLY (intentionally no counterpart in scripts/local-ci.mjs): it
+    # REMOTE-ONLY (intentionally no counterpart in local-ci.json): it
     # checks a secret that exists only on GitHub. The local runner clones the
     # same submodules with the developer's own credentials (the Composer
     # `github-oauth` token, or git's credential helper) whenever a job needs them.
@@ -344,18 +334,23 @@ jobs:
           extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
-          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
-          # runs, because four tests are written to run only under those values and
+          # `zend.assertions` and `pcre.jit` are the values the local gate also passes
+          # to both bands, from SUITE_PHP_INI in scripts/gate-pest.mjs (#688), whatever
+          # the machine's php.ini says. They are set because four tests are written to run only under those values and
           # self-skip otherwise: two assert an AssertionError and need assertions
           # compiled in, two induce a PCRE failure the JIT does not produce. The
           # runner's defaults (-1 and 1) made all four skip, which took the parallel
           # band to 5 skips against a baseline of 3 and failed
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
-          # forbids; matching the local environment restores the four tests.
+          # forbids; setting the two values restores the four tests.
           # CLI OPcache stays off on Windows (#348): a long run there ended in an access
           # violation with it on, JIT or no JIT.
+          # PARITY: the `zend.assertions` and `pcre.jit` values below mirror SUITE_PHP_INI
+          # in scripts/gate-pest.mjs (#699). The OPcache values share the line and have no
+          # local counterpart, so a change to them alone also asks for a matching change.
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
+          # PARITY-END
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -522,7 +517,7 @@ jobs:
       # reasons, any one of which is disqualifying:
       #
       #   1. No coverage driver. Tia builds its graph from coverage, and this job
-      #      pins `coverage: none` above (local-ci.mjs passes `-d pcov.enabled=0`).
+      #      pins `coverage: none` above (scripts/gate-pest.mjs passes `-d pcov.enabled=0`).
       #      With no driver it records zero edges, and a graph with no edges marks
       #      nothing affected -- so every run replays and reports a green suite
       #      having executed nothing. Pest 5.0.1 does not warn about this.
@@ -621,9 +616,9 @@ jobs:
       # cleanup did not run, so skipping the check on failure would hide the litter in
       # the run most likely to have produced it.
       #
-      # No before/after diff here, unlike local-ci.mjs — this runner checks out fresh,
-      # so anything dirty was written by this run. The runner reuses its worktree and
-      # therefore has to tell the two apart.
+      # No before/after diff here, unlike scripts/gate-pest.mjs: this runner checks out
+      # fresh, so anything dirty was written by this run. The local runner reuses its
+      # slot and therefore has to tell the two apart.
       #
       # users/ is checked the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the file user
       # driver writes there, and what this catches is not a test-created account
@@ -638,6 +633,9 @@ jobs:
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
       # so the exemption came out and this gate now fails on any write at all.
+      # The local mirror snapshots each submodule before the bands, keyed on the
+      # submodule being on disk rather than on how the run was invoked, and diffs
+      # against that snapshot (see the comment above about its reused slot).
       - name: Check the suite left content/, users/ and resources/forms/ clean
         if: always()
         run: |
@@ -725,18 +723,23 @@ jobs:
           extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
           tools: composer:v2
-          # `zend.assertions` and `pcre.jit` match what the local gate's PHP already
-          # runs, because four tests are written to run only under those values and
+          # `zend.assertions` and `pcre.jit` are the values the local gate also passes
+          # to both bands, from SUITE_PHP_INI in scripts/gate-pest.mjs (#688), whatever
+          # the machine's php.ini says. They are set because four tests are written to run only under those values and
           # self-skip otherwise: two assert an AssertionError and need assertions
           # compiled in, two induce a PCRE failure the JIT does not produce. The
           # runner's defaults (-1 and 1) made all four skip, which took the parallel
           # band to 5 skips against a baseline of 3 and failed
           # scripts/check-skip-baseline.php. Raising the baseline would have recorded
           # the coverage loss instead of fixing it, which that file's own header
-          # forbids; matching the local environment restores the four tests.
+          # forbids; setting the two values restores the four tests.
           # CLI OPcache stays off on Windows (#348): a long run there ended in an access
           # violation with it on, JIT or no JIT.
+          # PARITY: the `zend.assertions` and `pcre.jit` values below mirror SUITE_PHP_INI
+          # in scripts/gate-pest.mjs (#699). The OPcache values share the line and have no
+          # local counterpart, so a change to them alone also asks for a matching change.
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
+          # PARITY-END
 
       - name: Determine Composer cache directory
         id: composer-cache
@@ -826,7 +829,7 @@ jobs:
       # reasons, any one of which is disqualifying:
       #
       #   1. No coverage driver. Tia builds its graph from coverage, and this job
-      #      pins `coverage: none` above (local-ci.mjs passes `-d pcov.enabled=0`).
+      #      pins `coverage: none` above (scripts/gate-pest.mjs passes `-d pcov.enabled=0`).
       #      With no driver it records zero edges, and a graph with no edges marks
       #      nothing affected -- so every run replays and reports a green suite
       #      having executed nothing. Pest 5.0.1 does not warn about this.
@@ -888,9 +891,9 @@ jobs:
       # cleanup did not run, so skipping the check on failure would hide the litter in
       # the run most likely to have produced it.
       #
-      # No before/after diff here, unlike local-ci.mjs — this runner checks out fresh,
-      # so anything dirty was written by this run. The runner reuses its worktree and
-      # therefore has to tell the two apart.
+      # No before/after diff here, unlike scripts/gate-pest.mjs: this runner checks out
+      # fresh, so anything dirty was written by this run. The local runner reuses its
+      # slot and therefore has to tell the two apart.
       #
       # users/ is checked the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the file user
       # driver writes there, and what this catches is not a test-created account
@@ -905,6 +908,9 @@ jobs:
       # outside the Stache, where no store re-root reached it. UAMS-Web/uams-statamic-archive#1919 closed that at the
       # seam — Asset::$skipYamlSync is armed for every test by Tests\TestCase::setUp() —
       # so the exemption came out and this gate now fails on any write at all.
+      # The local mirror snapshots each submodule before the bands, keyed on the
+      # submodule being on disk rather than on how the run was invoked, and diffs
+      # against that snapshot (see the comment above about its reused slot).
       - name: Check the suite left content/, users/ and resources/forms/ clean
         if: always()
         run: |
@@ -948,7 +954,7 @@ jobs:
     # band with a whole-band baseline and the second divides by a fraction of the
     # band, so neither runs in a shard.
     #
-    # One of the two `needs:` lists in this file, and the reason it is allowed: this job
+    # One of the three `needs:` lists in this file, and the reason it is allowed: this job
     # reads the shards' output, so it cannot run before them. It skips when any
     # shard fails, as the checks below skipped in the single job when the band
     # failed; the failed shard already fails the run.
@@ -990,7 +996,7 @@ jobs:
       # now. During UAMS-Web/uams-statamic-archive#1726's validation three tests self-skipped and the band still
       # passed, caught only because the count had been predicted by hand. The
       # baseline lives in tests/skip-baseline.json so raising it is a reviewable act.
-      # PHP, not Node: this job sets up PHP but not Node. (local-ci.mjs additionally
+      # PHP, not Node: this job sets up PHP but not Node. (scripts/gate-pest.mjs additionally
       # tolerates the guard being absent, since it validates older branches too; CI
       # only ever runs a branch's own workflow, so no counterpart is needed here.)
       # PARITY: mirrored by scripts/gate-pest.mjs.
@@ -1011,7 +1017,7 @@ jobs:
       # bounds the band, since paratest distributes by class. Reads the reports
       # the two steps above already produced, so it costs no extra run. PHP, not
       # Node, for the same reason as the skip guard: this job sets up PHP only.
-      # (local-ci.mjs additionally tolerates the guard being absent, since it
+      # (scripts/gate-pest.mjs additionally tolerates the guard being absent, since it
       # validates older branches too.)
       # On these GitHub-hosted runners a share over the ceiling is printed as a
       # warning and passes: one hosted sample read 8.62% against a usual 4.4% to
@@ -1099,9 +1105,11 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
 
-      # PARITY: mirrored by the mutate job in scripts/local-ci.mjs (same test,
-      # same --path/--class scoping, same coverage-driver probe ahead of the run,
-      # same two assertions).
+      # PARITY: mirrored by the mutate job in local-ci.json (same test, same
+      # --path/--class scoping; its `mutation.minScore` of 100 makes the runner fail a
+      # run that created no mutations or scored below 100, the two assertions below).
+      # The local job runs it at `-d memory_limit=4G`, as the gate scripts run PHP:
+      # setup-php leaves the limit unlimited here, and a local CLI caps it (#3212).
       #
       # The exit code alone is NOT sufficient. Pest exits 0 on
       # `0 Mutations for 0 Files created`, so the count and the score are both
@@ -1121,7 +1129,8 @@ jobs:
 
           # Refuse before Pest when no coverage driver is active (UAMS-Web/uams-statamic-archive#3213), with a
           # message that names it rather than the generic no-summary line. The
-          # probe mirrors COVERAGE_DRIVER_PROBE in scripts/local-ci.mjs.
+          # local mutate job has no probe: a run without a driver creates no mutations,
+          # which its `mutation.minScore` fails.
           DRIVER="$(php -r 'echo extension_loaded("pcov") && filter_var(ini_get("pcov.enabled"), FILTER_VALIDATE_BOOLEAN) ? "pcov" : (extension_loaded("xdebug") && str_contains((string) ini_get("xdebug.mode"), "coverage") ? "xdebug" : "none");')"
           if [ "$DRIVER" = none ]; then
             echo "::error::No coverage driver is active in this PHP (PCOV, or Xdebug with xdebug.mode including coverage), so the mutation run cannot start. This is a workstation condition, not a branch defect, and it is not a pass. See .claude/skills/pcov-setup/SKILL.md."
@@ -1201,14 +1210,14 @@ jobs:
       # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
       # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
       # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
-      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      # PARITY: mirrored by `.npmrc` engine-strict in the local dependencies job's npm ci
       - name: Pin npm to the min-release-age floor
         run: npm install -g npm@^11.10.0
 
       - name: Install npm dependencies
         run: npm ci
 
-      # PARITY: mirrored by the build job in scripts/local-ci.mjs
+      # PARITY: mirrored by the build job in local-ci.json
       - name: Build site assets
         run: npm run build
 
@@ -1249,14 +1258,14 @@ jobs:
       # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
       # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
       # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
-      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      # PARITY: mirrored by `.npmrc` engine-strict in the local dependencies job's npm ci
       - name: Pin npm to the min-release-age floor
         run: npm install -g npm@^11.10.0
 
       - name: Install npm dependencies
         run: npm ci
 
-      # PARITY: mirrored by the js job in scripts/local-ci.mjs
+      # PARITY: mirrored by the js job in local-ci.json
       - name: Run JS unit tests
         run: npm run test:js
 
@@ -1271,8 +1280,8 @@ jobs:
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
     # Blocking gate (UAMS-Web/uams-statamic-archive#1541): the dictionary is clean (0 hits), so a spelling issue
-    # fails the job. In scripts/local-ci.mjs, where the cost-ordered chain still
-    # runs, a typo skips (and never bills) js, build, pint, phpstan, Pest and the
+    # fails the job. Locally, where `local-ci.json` chains the jobs in cost
+    # order, a typo skips (and never bills) js, build, pint, phpstan, Pest and the
     # browser smoke; here every job runs in parallel, so it fails this job alone.
     # Framework-free and cheap: Node + the
     # cspell CLI, no PHP, Composer, or content submodule. It supersedes the earlier
@@ -1291,24 +1300,44 @@ jobs:
       # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
       # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
       # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
-      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      # PARITY: mirrored by `.npmrc` engine-strict in the local dependencies job's npm ci
       - name: Pin npm to the min-release-age floor
         run: npm install -g npm@^11.10.0
 
       - name: Install npm dependencies
         run: npm ci
 
-      # PARITY: mirrored by the spell job in scripts/local-ci.mjs (advisory).
+      # PARITY: mirrored by the spell job in local-ci.json (advisory).
       - name: Run cspell
         run: npm run spell
 
   browser:
-    name: CP browser smoke (Pest + Playwright)
-    runs-on: ${{ matrix.os }}
+    name: CP browser smoke (Pest + Playwright, shard ${{ matrix.shard }} of 4)
+    runs-on: ubuntu-latest
+    # Linux only, in four shards (#521). The suite checks the same built assets in
+    # Chromium on every platform and no test in tests/Browser branches on the
+    # operating system, so the Windows and macOS legs were dropped (decided
+    # 2026-11-02). Run whole on one runner the suite took 1,052s of a 1,131s job
+    # on run 43356581270 (job 131659928398), its setup about 75s; the largest
+    # class, CpRedirectResponseCodeTest, takes about 210s, so four shards balanced
+    # on .github/browser-shards.json are predicted at about 263s of suite each,
+    # and a fifth would save under a minute for another runner's setup.
+    #
+    # Pest assigns test CLASSES to shards (`--shard=<i>/<total>`) from the
+    # per-class timings it finds at tests/.pest/shards.json; every shard copies the
+    # same committed .github/browser-shards.json there, so every shard partitions
+    # the suite the same way. `browser-report` merges the shards' reports with the
+    # band's own scripts/merge-shard-reports.php and fails when a class ran in no
+    # shard or in two. The committed timings are refreshed by hand from the
+    # `browser-report` artifact; a class missing from them is still run, by
+    # Pest's round-robin fallback, and the report still checks it ran once.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # 1 to SHARD_TOTAL below; `browser-report` passes the same total to the merge.
+        shard: [1, 2, 3, 4]
+    env:
+      SHARD_TOTAL: 4
     # Local-chain cost rank: LAST, the most expensive job. Here it runs in
     # parallel with the rest.
     # Runs on every PR, like every other job here. The `browser-tests` label gate
@@ -1391,7 +1420,7 @@ jobs:
       # cooldown itself is resolution-time: `npm ci` reifies the lockfile and never
       # applies `min-release-age`. The guard is earned wherever the lock is WRITTEN;
       # here the pin exists to satisfy engine-strict and keep CI on one npm (UAMS-Web/uams-statamic-archive#1826).
-      # PARITY: mirrored by assertNpmFloor() in scripts/local-ci.mjs
+      # PARITY: mirrored by `.npmrc` engine-strict in the local dependencies job's npm ci
       - name: Pin npm to the min-release-age floor
         run: npm install -g npm@^11.10.0
 
@@ -1399,7 +1428,7 @@ jobs:
         run: npm ci
 
       # `--with-deps` also installs the Linux system libraries Chromium needs on
-      # the runner. (local-ci.mjs omits `--with-deps` — it is a no-op off Linux.)
+      # the runner. (scripts/gate-browser.mjs omits `--with-deps`: it is a no-op off Linux.)
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -1416,11 +1445,104 @@ jobs:
       - name: Build CP assets
         run: npm run cp:build
 
-      # PARITY: mirrored by scripts/gate-browser.mjs.
+      # The timings this shard partitions the suite by, and a note of their source
+      # and hash for `browser-report`, which refuses shards that read different
+      # copies. Committed rather than cached: the suite is small enough that its
+      # timings move slowly (#521).
+      # REMOTE-ONLY: the local runner runs tests/Browser whole, so it reads no timings.
+      - name: Place browser shard timings
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p tests/.pest
+          cp .github/browser-shards.json tests/.pest/shards.json
+          note="source=committed .github/browser-shards.json sha256=$(sha256sum tests/.pest/shards.json | cut -d' ' -f1)"
+          echo "Shard timings: $note"
+          echo "$note" > "shard-timings-$SHARD.txt"
+
+      # What the whole suite holds, so `browser-report` can show the shards ran each
+      # class exactly once. Listing loads the test files without running them.
+      # REMOTE-ONLY: the local runner does not shard, so it has nothing to compare.
+      - name: List the browser suite's tests
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: vendor/bin/pest tests/Browser --list-tests > "pest-list-$SHARD.txt"
+
+      # PARITY: mirrored by scripts/gate-browser.mjs, which the local browser job runs
+      # with --skip-build after the build job, as this job builds its own bundles above.
       # tests/Browser holds the CP smokes and the axe-core accessibility gate
       # (UAMS-Web/uams-statamic-archive#1046), which fails on serious/critical WCAG violations.
+      # --shard selects this job's share of the classes and changes nothing about how
+      # they run; --log-junit feeds `browser-report`. The local runner runs the whole
+      # suite in one process.
       - name: Run CP browser smokes + accessibility gate
-        run: vendor/bin/pest tests/Browser
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: vendor/bin/pest tests/Browser --shard="$SHARD/$SHARD_TOTAL" --log-junit "junit-parallel-$SHARD.xml"
+
+      # Only a shard whose suite passed uploads, and `browser-report` needs all of
+      # them, so a failed shard leaves the report job skipped; the failed shard
+      # already fails the run. The file names are the ones
+      # scripts/merge-shard-reports.php reads.
+      - name: Upload the shard's report, listing and timings note
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-shard-${{ matrix.shard }}
+          path: |
+            junit-parallel-${{ matrix.shard }}.xml
+            pest-list-${{ matrix.shard }}.txt
+            shard-timings-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  browser-report:
+    name: CP browser smoke (report)
+    runs-on: ubuntu-latest
+    # Merges the browser shards' reports and refuses a suite the shards did not run
+    # exactly once (#521): a class no shard ran, a class two shards ran, a case
+    # count that differs from the listing, or shards that read different timings.
+    # The same checks `pest-report` runs on the parallel band, by the same script.
+    #
+    # The second of the `needs:` lists in this file outside `ci`, allowed for the
+    # same reason as `pest-report`'s: it reads the shards' output.
+    # Budget kill-switch (see RUN_REMOTE_CI note in the header).
+    needs: browser
+    if: vars.RUN_REMOTE_CI != 'false'
+    env:
+      SHARD_TOTAL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Reading XML only: no extensions beyond setup-php's defaults, which include
+      # dom, and no Composer install.
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: browser-shard-*
+          path: shards
+          merge-multiple: true
+
+      # Writes junit-browser.xml and the per-class timings to refresh
+      # .github/browser-shards.json from. Fails, naming what it found, as above.
+      # REMOTE-ONLY: the local runner runs the suite whole.
+      - name: Merge the shard reports and check every class ran once
+        run: php scripts/merge-shard-reports.php --dir=shards --total="$SHARD_TOTAL" --report=junit-browser.xml --timings=browser-shards.json
+
+      - name: Upload the suite report and timings
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-suite-report
+          path: |
+            junit-browser.xml
+            browser-shards.json
+          if-no-files-found: error
+          retention-days: 14
 
   composer-validate:
     name: Composer validate (composer.lock freshness)
@@ -1473,11 +1595,11 @@ jobs:
       # flags, because "No license specified" is a general warning that
       # `--no-check-publish` does not suppress. Exit codes verified here: 0 on a
       # clean checkout, 2 once the lock hash goes stale.
-      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      # PARITY: mirrored by the validate job in local-ci.json
       - name: Run composer validate
         run: composer validate --no-check-publish --no-check-all
 
-      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      # PARITY: mirrored by the validate job in local-ci.json
       # Fails on a file under a PSR-4 root that declares a class but none matching
       # its path: an inline class in a Pest test file, or a misnamed one in `app/`.
       # Pest loads such a class only because the file happens to run, and Composer
@@ -1490,7 +1612,7 @@ jobs:
       - name: Run PSR-4 class check
         run: composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts
 
-      # PARITY: mirrored by the validate job in scripts/local-ci.mjs
+      # PARITY: mirrored by the validate job in local-ci.json
       # Fails on a file declaring more than one class, enum, interface or trait,
       # naming the file and each extra type: the second class the step above drops
       # silently (#449, #555). A token scan of the files git lists, which needs only
@@ -1531,7 +1653,7 @@ jobs:
         with:
           node-version: '22'
 
-      # PARITY: mirrored by the no-emoji job in scripts/local-ci.mjs
+      # PARITY: mirrored by the no-emoji job in local-ci.json
       - name: Run no-emoji guard
         run: node scripts/check-no-emoji.mjs
 
@@ -1587,7 +1709,7 @@ jobs:
       # Each moved submodule's clone authenticates through an insteadOf rewrite, as
       # the pest job's submodule checkout does; `gh` uses the same token to name the
       # submodule pull request to land first.
-      # PARITY: mirrored by the content-pointer job in scripts/local-ci.mjs
+      # PARITY: mirrored by the content-pointer job in local-ci.json
       - name: Run content pointer guard
         env:
           SUBMODULE_TOKEN: ${{ secrets.COMPOSER_AUTH_TOKEN }}
@@ -1653,17 +1775,17 @@ jobs:
         with:
           node-version: '22'
 
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs
+      # PARITY: mirrored by the encoding job in local-ci.json
       - name: Run encoding guard
         run: node vendor/joshdaugherty/ipa-unicode-inventory/scripts/check-double-encoding.mjs
 
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # PARITY: mirrored by the encoding job in local-ci.json.
       # Added here rather than as a thirteenth job (UAMS-Web/uams-statamic-archive#2236): it reads one tracked
       # file, needs no install, and belongs beside the other file-content guard.
       - name: Run decision-log order guard
         run: node scripts/check-decision-log-order.mjs
 
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # PARITY: mirrored by the encoding job in local-ci.json.
       # Reports `@pest-mutate-ignore` annotations that suppress nothing (UAMS-Web/uams-statamic-archive#2316).
       # An inert one is invisible by construction: the mutant simply keeps
       # surviving, which reads as a wrong reason rather than as an annotation
@@ -1699,7 +1821,7 @@ jobs:
       # it also measures each mention of the marker against every mutator, so it is slower
       # than the private copy it replaced: 499s against 134s over app and tests, measured on
       # Windows 11. It reuses this job's install.
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # PARITY: mirrored by the encoding job in local-ci.json.
       - name: Run mutate-ignore breadth check
         run: php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php --baseline=tests/mutate-ignore-breadth.baseline.json app tests
 
@@ -1710,7 +1832,7 @@ jobs:
       - name: Run lone-CR guard
         run: node scripts/check-lone-cr.mjs
 
-      # PARITY: mirrored by the encoding job in scripts/local-ci.mjs.
+      # PARITY: mirrored by the encoding job in local-ci.json.
       # Runs the unittest suite the shared `writing-release-notes` skill ships beside
       # `gen_release_notes.py` (UAMS-Web/uams-statamic-archive#2850). Nothing ran it, so release-notes coverage rested
       # on repo-local Pest guards written against an interface the shared script no
@@ -1727,8 +1849,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    # First (fastest) link in scripts/local-ci.mjs's cost-ordered chain, where a
-    # failure here skips, and never bills, the entire rest of the pipeline. Here
+    # An early link in local-ci.json's cost-ordered chain, where a failure here
+    # skips the entire rest of the pipeline. Here
     # it runs in parallel with every other job; see the fan-out note in the header.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1747,14 +1869,14 @@ jobs:
           php-version: '8.4'
           coverage: none
 
-      # PARITY: mirrored by the isolation job in scripts/local-ci.mjs
+      # PARITY: mirrored by the isolation job in local-ci.json
       - name: Run test isolation guard
         run: php scripts/check-parallel-safe-tests.php
 
       # Global-scope test symbols (UAMS-Web/uams-statamic-archive#3112): a `const` or `function` declared in more
       # than one namespace-less file, and a single-segment `use X;` with no named
       # namespace. The shared pest-testing script; formerly Rules C and D above.
-      # PARITY: mirrored by the isolation job in scripts/local-ci.mjs
+      # PARITY: mirrored by the isolation job in local-ci.json
       - name: Run global test symbol check
         run: php .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
 
@@ -1790,7 +1912,7 @@ jobs:
   checks:
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.8.0
+    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.10.0
     with:
       pest: false
       mutate: false
@@ -1803,13 +1925,13 @@ jobs:
   # a skip counts as success on a required check.
   ci:
     name: CI
-    needs: [checks, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, mutate, pest, pest-report, pest-serial, browser]
+    needs: [checks, encoding-guard, test-isolation-guard, no-emoji-guard, content-pointer-guard, composer-validate, spell, js, build, mutate, pest, pest-report, pest-serial, browser-report, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # REMOTE-ONLY: scripts/local-ci.mjs stops at the first failure, so it has no set of
-      # results to read. The chain test names this job in REMOTE_ONLY.
+      # REMOTE-ONLY: the local runner stops at the first failure (`chain` in
+      # local-ci.json), so it has no set of results to read. The chain test names this job in REMOTE_ONLY.
       # `skipped` and `cancelled` fail as well as `failure`: a job that did not run proved nothing.
       # An empty list fails too, or a broken expression above would pass with nothing read.
       - name: Every needed job succeeded

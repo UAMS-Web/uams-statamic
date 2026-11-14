@@ -21,10 +21,19 @@
 //     template this skill's own copy cannot find (a profile that does not deliver its skill)
 //     is skipped as well.
 //
+// A REUSABLE WORKFLOW IS NOT A COPY
+//     A file whose name matches a template but which declares `workflow_call` is a reusable
+//     workflow the repository defines, not a copy of the template: UAMS-Web/uams-ci-workflows
+//     defines the reusable `pr-body-checks.yml` that the caller template of the same name calls.
+//     It is skipped, and the sync leaves it alone (UAMS-Web/uams-claude-skills#718), because a
+//     sync once replaced that definition with the caller (UAMS-Web/uams-ci-workflows#34). A
+//     required file that turns out to be a definition fails, since it is not the copy required.
+//
 // EXIT CODES
-//     0  every copy that exists matches its template
+//     0  every copy that exists matches its template (also when no copy exists at all, so a
+//        repository that has adopted none of the workflows passes)
 //     1  a copy differs, or a required copy is missing; the file and first line are named
-//     2  the check could not run: a usage error, or no copy and no template was found at all
+//     2  the check could not run: a usage error, or no template is delivered here at all
 //
 // USAGE
 //     node .claude/skills/synced-files/scripts/check-workflow-copies.mjs [--root <dir>] [--require <file>]...
@@ -43,11 +52,25 @@ export const WORKFLOWS = [
     ['assign-author.yml', 'writing-pull-requests'],
     ['check-attribution-footer.yml', 'writing-pull-requests'],
     ['check-closing-keyword-across-lines.yml', 'writing-pull-requests'],
+    ['pr-body-checks.yml', 'writing-pull-requests'],
     ['clear-handed-back.yml', 'handed-back-label'],
 ]
 
+
 const asLf = (text) => text.replace(/\r\n/g, '\n')
 const LINE_BREAK = String.fromCharCode(10)
+
+/**
+ * Whether a workflow file declares `workflow_call`, read from its non-comment text: a key line
+ * (`  workflow_call:`) or a flow form (`on: workflow_call`, `on: [pull_request, workflow_call]`).
+ * Comments are ignored, so a caller whose header mentions the word is still a copy.
+ */
+export function declaresWorkflowCall(text) {
+    return asLf(String(text))
+        .split(LINE_BREAK)
+        .map((line) => line.replace(/(^|\s)#.*$/, ''))
+        .some((line) => /(^|[\s[,{])workflow_call\s*(:|,|\]|\}|$)/.test(line))
+}
 
 /** Where a template lives, for a workflow file and its owning skill. */
 export function templatePath(file, skill, skillsDir = SKILLS_DIR) {
@@ -61,11 +84,11 @@ export function templatePath(file, skill, skillsDir = SKILLS_DIR) {
 export function compareCopy({ root, file, skill, skillsDir = SKILLS_DIR, required = false }) {
     const template = templatePath(file, skill, skillsDir)
     const copy = join(root, '.github', 'workflows', file)
-    if (!existsSync(template)) return { status: 'skip', line: `${file}: the template ${template} is not delivered here, skipped.` }
+    if (!existsSync(template)) return { status: 'skip', reason: 'no-template', line: `${file}: the template ${template} is not delivered here, skipped.` }
     if (!existsSync(copy)) {
         return required
             ? { status: 1, line: `${copy} is missing. Copy the template to it: ${template}` }
-            : { status: 'skip', line: `${file}: no copy at .github/workflows/${file}, skipped.` }
+            : { status: 'skip', reason: 'no-copy', line: `${file}: no copy at .github/workflows/${file}, skipped.` }
     }
 
     let want
@@ -75,6 +98,11 @@ export function compareCopy({ root, file, skill, skillsDir = SKILLS_DIR, require
         have = asLf(readFileSync(copy, 'utf8')).split(LINE_BREAK)
     } catch (failure) {
         return { status: 1, line: `${file}: could not be read: ${failure.message}` }
+    }
+
+    if (declaresWorkflowCall(have.join(LINE_BREAK))) {
+        const line = `${copy} declares workflow_call, so it is this repository's own reusable workflow, not a copy of the template ${template}`
+        return required ? { status: 1, line: `${line}; a copy is required here.` } : { status: 'skip', reason: 'definition', line: `${line}; skipped.` }
     }
 
     let index = 0
@@ -97,8 +125,10 @@ export function checkCopies({ root, required = [], skillsDir = SKILLS_DIR, workf
     if (unknown.length > 0) return { status: 2, lines: [`unknown workflow in --require: ${unknown.join(', ')}. Known: ${known.join(', ')}.`] }
 
     const results = workflows.map(([file, skill]) => compareCopy({ root, file, skill, skillsDir, required: required.includes(file) }))
-    if (results.every((result) => result.status === 'skip')) {
-        return { status: 2, lines: ['workflow copy check cannot run: no template was found and no copy exists.', ...results.map((result) => result.line)] }
+    // Every template missing means the check has nothing to compare against, so it cannot run. A
+    // template present with no copy is a repository that has adopted none of the workflows: clean.
+    if (results.every((result) => result.reason === 'no-template')) {
+        return { status: 2, lines: ['workflow copy check cannot run: no template is delivered here.', ...results.map((result) => result.line)] }
     }
     return { status: results.some((result) => result.status === 1) ? 1 : 0, lines: results.map((result) => result.line) }
 }

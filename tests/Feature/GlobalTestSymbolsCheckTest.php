@@ -110,7 +110,7 @@ it('passes a tree with one declaration per name and no no-op import', function (
 
 it('runs over tests in the CI job and the local-CI isolation job', function () use ($root, $script) {
     $workflow = mustNotBeFalse(file_get_contents($root.'/.github/workflows/ci.yml'), 'ci.yml');
-    $runner = mustNotBeFalse(file_get_contents($root.'/scripts/local-ci.mjs'), 'local-ci.mjs');
+    $runner = mustNotBeFalse(file_get_contents($root.'/scripts/ci-job.mjs'), 'ci-job.mjs');
 
     // The step sits inside the test-isolation-guard job, after the private guard.
     $job = mustBeString(strstr($workflow, "\n  test-isolation-guard:"), 'the test-isolation-guard job');
@@ -122,5 +122,5 @@ it('runs over tests in the CI job and the local-CI isolation job', function () u
 
     expect($afterGuard)->toHaveCount(2)
         ->and($afterGuard[1] ?? '')->toContain('run: php '.$script.' tests')
-        ->and($runner)->toContain("runPhp(['".$script."', 'tests'], worktreePath)");
+        ->and($runner)->toContain("['php', '".$script."', 'tests']");
 });

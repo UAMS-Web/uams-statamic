@@ -1,408 +1,477 @@
 ---
 name: local-ci
 description: >-
-  Run the project's GitHub Actions CI (.github/workflows/ci.yml) locally against any branch using scripts/local-ci.mjs, a cross-platform Node script that checks the branch out into an isolated git worktree and runs the jobs (pest, pint, phpstan, build, js, encoding) with the local PHP 8.4 / Composer / Node 22 toolchain — no Docker, no act, no GitHub Actions minutes. Invoked bare, it runs the full autonomous PR pipeline: arm scripts/watch-github.mjs to watch the five UAMS Statamic repos for PRs opening ready, flipping draft → ready, or flipping ready → draft; seed the queue with existing open ready PRs; bring each PR into compliance with the writing-pull-requests skill; resolve companion PRs and merge order; then update a branch that is behind, read the required remote checks, comment the verdict green or red, and merge on green one PR at a time, handing back anything else. Given a branch, it just validates that branch. Activate when the user runs "/local-ci", is out of GitHub Actions budget, wants to validate a PR/branch before pushing, asks to "run CI locally", "watch for PRs and merge them", "check this branch without using Actions minutes", or "test a different branch without switching off my current one". The worktree keeps the active checkout untouched.
+  Run this repository's checks locally with the shared local CI runner
+  (.claude/skills/local-ci/local-ci.mjs, configured by local-ci.json at the
+  repository root): no Docker, no act, no GitHub Actions minutes. The runner
+  selects jobs from the branch's diff, runs them on the local PHP toolchain,
+  prints a PASS / FAIL / SKIPPED summary whose verdict agrees with its exit
+  status, and with --comment records that verdict on the pull request naming
+  the commit it validated. Activate when validating a branch before a pull
+  request, when asked to "run CI locally" or "check this without using Actions
+  minutes", when adding local-ci.json or a job to a repository, when setting up
+  the pre-commit guard against secret and personal-data files, when gating an
+  Actions workflow behind RUN_REMOTE_CI, or when someone asks why the Actions
+  jobs on a pull request say `skipped`.
 ---
+<!--
+  Synced from UAMS-Web/uams-claude-skills: shared/.claude/skills/local-ci/SKILL.md
+  Edit it there, not here; the next sync overwrites this copy.
+  Delivered to this repository through the profile(s): local-ci.
+-->
+<!-- cspell:ignore gitlink Stache unpushed -->
 
-# Run CI locally (worktree, no Docker)
+# Local CI
 
-## Two invocation modes
+Private repositories run their checks on the developer's machine, not in GitHub Actions: Actions minutes on private repositories bill to the organization's shared pool, and that budget is not spent on remote CI. The shared runner is what runs them.
 
-| Invocation | Mode | What happens |
-|---|---|---|
-| `/local-ci` (bare), or "watch for PRs and merge them" | **Autonomous PR pipeline** | Arm the watcher, seed the queue from existing open PRs, then review → update → read the required checks → comment → merge each PR one at a time, indefinitely. |
-| `/local-ci <branch>`, "run CI on this branch", "validate before pushing" | **One-off validation** | Run `scripts/local-ci.mjs` against the named branch and report. No queue, no merging. |
+A public repository is different: `RUN_REMOTE_CI` does not reach it, so its `ci.yml` runs on every pull request, drafts included, and an author does not run this runner as a pre-PR check there. The draft's remote checks are that check, as the `writing-pull-requests` skill's *Draft state and merge order* says, which also names the cases that still run locally. Running the runner to validate a ready pull request before it merges is unchanged.
 
-Mode A is the rest of this section; everything from *Turning remote CI off* down is the underlying runner both modes share.
+- **`.claude/skills/local-ci/local-ci.mjs`** is the runner: one file, no dependencies, Node 20 or newer, the same on macOS, Linux and Windows. It is synced from `UAMS-Web/uams-claude-skills` and is identical in every repository that has it. Do not edit it here; change it in the source repository.
+- **`post-verdict.mjs`** posts a verdict comment and, on a hand-back, applies the `handed-back` label in the same run, with its tests in UAMS-Web/uams-claude-skills (not synced): see [Posting the verdict and the hand-back label](#posting-the-verdict-and-the-hand-back-label-post-verdictmjs).
+- **`watch-github.mjs`** is the pull request watcher, with its tests in UAMS-Web/uams-claude-skills (not synced): see [Watching pull requests](#watching-pull-requests-watch-githubmjs). The banned-glyph scanner its opt-in scan uses is `glyphs.mjs` in the `writing-comments` skill, which every target receives.
+- **`local-ci.test.mjs`** runs in UAMS-Web/uams-claude-skills and is not synced to targets. On Windows, two spots are platform-sensitive today: the pure `the template` test reads `templates/local-ci.json` through `cat` (not on a stock Windows PATH), and the Herd candidate path assertion builds a macOS-shaped path with Node's `path.join`, which uses backslashes when the suite itself runs on Windows.
+- **`local-ci.json`** at the repository root is the repository's own job list. The sync never touches it.
+- **`.githooks/pre-commit`** is the commit-time guard against secret and personal-data files, where the repository has one. It reads the same `guard.deny` list the runner checks.
 
-## Mode A — the autonomous PR pipeline
+The templates beside this file (`templates/local-ci.json`, `templates/pre-commit`, `templates/gate-workflow.md`, and `templates/local-ci.app-jobs.json` for application jobs) are the starting points for a repository adopting the runner.
 
+## Landing the runner before adopting
 
-**Standing authorization.** Bare `/local-ci` is a standing instruction to *merge on green* without asking again per PR — that is the point of the mode. *Green* means the required remote checks, read as section 4 says; a green local run is not it. The authorization does not extend to force-pushing over a branch you did not author, closing PRs, or merging a PR whose required checks are red, skipped or missing.
+The sync from `UAMS-Web/uams-claude-skills` is what delivers `.claude/skills/local-ci/` (the runner, its tests, and the templates). Until that path is tracked in the adopting repository, copying the skill in by hand leaves untracked files: the tree is dirty, and `--comment` refuses before any job runs.
 
-**Claim a slot.** The pipeline is long-lived and edits branches to remedy failures, so it collides with any other session on the primary checkout. Claim a free slot first — `node scripts/worktree-slots.mjs status`, then work in `../uams-statamic-a` or `-b` — per the [`worktrees`](../../rules/worktrees.md) rule; only take an ephemeral worktree when both slots are held. The runner builds its *own* sibling worktree for each validation regardless — that is separate and unaffected, and since UAMS-Web/uams-statamic-archive#1953 it resolves to a sibling of the **primary** no matter which tree you drive it from.
+Prefer this order:
 
-### 1. Arm the watcher
+1. Land the synced skill path first: merge the sync pull request that adds `.claude/skills/local-ci/`, or commit that directory from this source repository on the adoption branch. The next sync will match what you committed.
+2. Then add `local-ci.json` and the pre-commit hook (below) on a clean tree, and run with `--comment` only when the tree is clean.
 
-[`scripts/watch-github.mjs`](../../../scripts/watch-github.mjs) polls the six repos (the app and its five siblings, `uams-statamic-forms` included since UAMS-Web/uams-statamic-archive#2818) over the GitHub **REST** API (a separate rate-limit bucket from the GraphQL one `gh pr list` uses, so a session-length poll never competes with interactive work) and prints one line per lifecycle event. Arm it under the harness `Monitor` tool with `persistent: true`, so each event arrives as a notification:
+If you must validate before the sync lands, copy the skill directory from this source repository and **commit** it on the adoption branch. Listing `.claude/skills/local-ci/` in `.git/info/exclude` is only a temporary local workaround so an untracked copy does not dirty the tree for `--comment`; do not put that path in `.gitignore` (the sync needs it tracked), and remove the exclude once the path is committed or the sync lands.
 
-```bash
-node scripts/watch-github.mjs --interval 60
-```
+## Turning remote CI off (`RUN_REMOTE_CI`)
 
-Watched repos: `UAMS-Web/uams-statamic`, `uams-statamic-content`, `uams-statamic-users`, `uams-statamic-assets-public`, `uams-statamic-assets-private`.
+GitHub Actions minutes bill at the **organization** level, one pool shared by every `UAMS-Web` repository, and only private repositories consume them. When the pool is exhausted every Actions job fails instantly on a billing error, so the private repositories keep remote CI off and validate locally.
 
-| Event line | Meaning | Queue effect |
-|---|---|---|
-| `READY <repo>#<n> opened ready` | PR opened non-draft | **Enqueue** |
-| `DRAFT <repo>#<n> opened draft` | PR opened as a draft | Note only — drafts never enter the queue |
-| `READY <repo>#<n> draft → ready` | Author flipped it ready | **Enqueue** |
-| `DRAFT <repo>#<n> ready → draft` | Author pulled it back | **Dequeue** — and if it is the in-flight PR, abandon the run and do **not** merge |
-| `PUSH <repo>#<n> pushed <sha>` | An open, ready PR's head moved | **Enqueue (re-enter)** — this is how a red hand-back comes back |
-| `GONE <repo>#<n> merged\|closed` | Left the open set | Dequeue (someone else resolved it) |
-| `WATCH-ERROR <repo> …` | Poll failing (auth, access, typo) | Fix the watcher — a silent watcher looks exactly like a quiet queue |
+Every job in a gated workflow carries `if: vars.RUN_REMOTE_CI != 'false'`. With the Actions variable `RUN_REMOTE_CI` set to `false` the jobs report `skipped` and consume no runner minutes; unset, or any other value, runs them as before. The default is always-on.
 
-The first poll seeds silently. `--once --emit-existing` does a one-shot dump of what is currently open (queue seeding, smoke-testing); `--once` alone exits after a silent seed.
+- The variable is defined at the organization level, scoped to private repositories, so a repository inherits it by carrying the gate; nothing has to be set in the repository. A repository variable overrides it for one repository, which is only for testing the switch.
+- **A `skipped` job is not a passing job.** When a pull request shows the Actions jobs as `skipped`, the switch is off: validate locally and say so on the pull request.
+- **While the switch is off, the local runner is the whole gate.** That is the normal operating mode for months at a time, not a fallback.
+- The runner has no concept of `RUN_REMOTE_CI` and always runs the jobs it selects.
+- **A required status check from a gated job turns green while nothing runs.** GitHub reports a job skipped by an `if:` condition as `Success`, and it does not block a merge even when it is a required check ([Using conditions to control job execution](https://docs.github.com/en/actions/using-jobs/using-conditions-to-control-job-execution)). So branch protection that requires a gated workflow's checks gives no protection while the switch is off: the requirement is met by a job that did not run, and the local verdict comment is the only record of what was checked. A check stays `Pending` and blocks merging only when the whole workflow is skipped by a path, branch or commit-message filter, which is a different mechanism ([Troubleshooting required status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks)). Decide branch protection and the switch together.
 
-**`PUSH` fires only when the pull request is ready on both sides of a poll and its head SHA changed** (`isPush()` in [`scripts/watch-github.mjs`](../../../scripts/watch-github.mjs), UAMS-Web/uams-statamic-archive#2338). So a push to a **draft** does not enqueue it — drafts never enter the queue — and a push that leaves the head where it was, such as a force-push to the same SHA or a push to another branch, emits nothing. A push that also flips the draft state is reported as that `READY` or `DRAFT` flip instead, which is the larger fact. **Several pushes before the gate picks the pull request up queue one run of the latest head, not one per push:** the queue holds one entry per pull request, and the run validates whatever head is current when it starts. Record that SHA in the verdict comment, per *Do not re-pick an unmoved head* below.
+Gating a workflow that still runs in Actions is in [Gating the Actions workflow](#gating-the-actions-workflow).
 
-### 2. Seed the queue from what is already open
+## Adding `local-ci.json` to a repository
 
-Existing open **ready** PRs are processed **first**, ahead of anything the watcher reports afterward — unless a merge-order instruction says otherwise, which always wins over arrival order.
+1. Copy `.claude/skills/local-ci/templates/local-ci.json` to the repository root. The template is a WordPress plugin's configuration: a guard, `php -l` over every tracked PHP file, the `synced-files` check, the `download-archive` check (that a GitHub download holds only what the plugin runs; the `download-archive-check` skill covers it), then Pint, Rector, PHPStan and Pest.
+2. Keep the `synced-files` job whatever else is deleted. It runs `.claude/skills/synced-files/scripts/check-synced-files.mjs` on every run (`always`), so a hand edit to a file the shared sync manages fails the run even when the branch touches nothing under `.claude/`, `.agents/` or `.cursor/`. It needs only `node`. A deleted checker fails the job rather than skipping it, and so does a manifest with no `hashes`, which a sync from before UAMS-Web/uams-claude-skills#30 leaves: merge a current sync pull request first. The `synced-files` skill covers the check and its exit statuses.
+3. Set `php` to the version the repository develops and tests on (`"8.4"` in a WordPress repository; the `tests` skill explains why that is not its supported floor, and how a job lints on the floor), and `base` to the branch pull requests target (`main`, or `dev` where `dev` is promoted to `main`).
+4. Delete the jobs for tools the repository does not have yet, and fix the commands of the ones it does: the `run` of each job is the command the repository's own `composer.json` scripts run.
+5. Set `guard.deny` to the patterns no tracked file may match: key files, dumps, spreadsheets with personal data, `wp-config.php`, `.env`. The template's list is a WordPress plugin's and includes `\\.env(\\.|$)`, `\\.pem$` and `\\.key$` even when the repository never tracked those; keep a pattern only when the repository should refuse it. Patterns match case-insensitively everywhere the guard runs (the runner, the hook with node, and the hook's `grep -Ei` fallback), so `\\.sql` also refuses `DUMP.SQL` and `dump.Sql`. That is stricter than a migrated Actions step that used case-sensitive `grep -E`: a file that used to pass under a different casing now fails. The template's patterns avoid character classes because the hook's no-node fallback cannot read a pattern containing `]` and refuses every commit under one (see *The pre-commit guard*); keep any pattern added here free of `]` for the same reason. Its `\\.env(\\.|$)` also matches `.env.example`; where the repository tracks one, narrow that pattern (for example to `(^|/)\\.env$` plus the named variants it must refuse), or the guard fails on every run. Leave `guard` out entirely only when the repository has nothing of that kind, which is rare.
+6. Run `node .claude/skills/local-ci/local-ci.mjs --dry-run` and read the plan: every job appears, selected or skipped, with its reason. Then run it for real and fix whatever fails.
+7. Commit `local-ci.json`. It is repository-owned; the sync never overwrites it.
 
-```bash
-node scripts/watch-github.mjs --once --emit-existing
-```
+### The config, field by field
 
-### 3. Bring the PR into compliance before validating it
+| Key | Meaning |
+| --- | --- |
+| `base` | The branch the diff is taken against. The runner diffs `HEAD` against its merge base with `origin/<base>`, so a base that moved under the branch does not pull its files into the diff. Default `main`. |
+| `php` | The PHP version the jobs run under, `"8.4"` style: the development PHP, which in a WordPress repository is not its supported floor. See [Toolchain](#toolchain). |
+| `chain` | `true` stops at the first failure and reports the later jobs as skipped, naming the failing job. The default `false` runs every selected job and reports all of them, so one run surfaces everything rather than one failure per run. |
+| `statusContext` | The context `--commit-status` posts under, `"local-ci"` by default. A non-empty string of at most 255 characters with no control characters. Name the same string in any branch rule that requires the status. |
+| `guard.deny` | Regular expressions (JavaScript syntax; the strings are JSON, so a backslash is doubled). When set, a `guard` job runs first on every run and fails when any tracked file matches, naming the files. The same list is what the pre-commit hook checks over staged files. The name `guard` is then reserved. |
+| `prepare` | Steps that bring a reused `--branch` slot in line with the commit before any job runs: `residue`, `submodules` and `patches`. Optional. See [Preparing a reused slot](#preparing-a-reused-slot-prepare). |
+| `jobs[].name` | Short and unique: letters, digits, `.`, `_`, `-`. It is what `--jobs` and the summary use. |
+| `jobs[].run` | A shell command, run from the repository root. When its first word is `php`, or starts with `vendor/bin/`, it runs under the resolved PHP (`vendor/bin/pint --test` becomes `<php> vendor/bin/pint --test`), so the version the config names is the one that runs, and so Windows' `.bat` shims in `vendor/bin` are never spawned directly. Any other command (`composer validate`, `node --test "scripts/*.test.mjs"`) runs as written. The shell is `/bin/sh` on macOS and Linux and `cmd.exe` on Windows, so a command that must run everywhere avoids pipes and shell-specific syntax; `each` exists for the common case. |
+| `jobs[].paths` | Globs over repository-relative paths that select the job when a changed file matches one. `*` and `?` stay inside one path segment, `**` crosses segments, `{a,b}` is a choice of literals, and a leading `!` excludes. `*.php` matches only at the root; `**/*.php` matches everywhere; `!vendor/**` keeps a committed `vendor/` out. |
+| `jobs[].each` | Globs; the command runs once per tracked file that matches, with the file appended. This is how `php -l` runs over every PHP file without a shell pipeline. When `paths` is absent, the `each` globs select the job too. Output is shown only for the files that fail, with a count at the end. |
+| `jobs[].php` | A PHP version, `"8.2"` style, that this one job runs under instead of the top-level `php`. For a floor lint: `php -l` over the shipped files on the oldest PHP the repository supports, while every other job runs on the development PHP. `run` must start with `php` or `vendor/bin/`, since nothing else runs under PHP. Resolved separately and strictly; see [Toolchain](#toolchain). |
+| `jobs[].always` | `true` selects the job on every run, whatever the diff. For a cheap job whose inputs are hard to name by path. |
+| `jobs[].requires` | Tooling the job needs, as repo-relative paths that must exist (`node_modules`, `scripts/check-no-emoji.mjs`) and `bin:<name>` entries for a command that must be on PATH (`bin:npm`). When any entry is absent the job is `SKIPPED (tooling absent: requires ..., which is absent)`: never run and never failed, so a consumer without a job's tooling is not forced to run it. A selected job is checked at run time, so `--all`, `--jobs` and `always` do not bypass it. When every selected job is skipped this way the verdict is NOTHING RAN; when some ran and passed, it is `PASS (incomplete)` naming the skipped jobs, in the summary and the comment headline alike. Neither is a bare PASS. A path may not be absolute or contain `..`. |
+| `jobs[].database` | `{"name": "app_ci", "env": "WP_TESTS_DB_NAME"}` gives the job a database of the runner's own, in that variable, and with `lock` takes the repository's suite lock for it. See [A job's own database](#a-jobs-own-database-database). |
+| `jobs[].mutation` | `{"minScore": 100}` makes the job's output part of its verdict, for a Pest mutation run. The output (ANSI stripped) must carry `N Mutations for M Files created` and `Score: N%`; the job fails when the first line is absent, when `N` or `M` is `0` (Pest exits `0` on `0 Mutations for 0 Files created`, so the exit status alone reads a run that mutated nothing as a pass), when the score line is absent, or when the score is below `minScore` (default `100`, range `0` to `100`). A run that exits non-zero fails on its own status. Output is still echoed. Not combinable with `each`. |
+| `jobs[].parallel` | `{"serialGroup": "serial", "memoryLimit": "4G", "processes": 4}` runs a Pest job as two parts: `run` plus `--parallel --exclude-group=<serialGroup>`, then `run` plus `--group=<serialGroup>` as a serial tail. `run` must start with `vendor/bin/pest`; extra arguments in it go to both parts. Both parts always run, so a red parallel part does not hide the tail; the job fails when either fails, and the summary and the comment say which (`exit 3; serial part failed`). `serialGroup` defaults to `serial`. `memoryLimit` (a PHP size such as `4G`, or `-1`) is set as `-d memory_limit` on both parts and forwarded to the parallel workers with `--passthru-php`, because the workers are separate PHP processes that otherwise run at the system CLI limit. `processes` (a positive integer) caps the worker count with `--processes=<n>` on the parallel part only, never on the serial tail; without it Pest starts one worker per logical core, which on a 12-core machine can exhaust memory. Not combinable with `each` or `mutation`; a job declaring no `parallel` runs as one command. |
+| `jobs[].installs` | `true` marks the job that installs the repository's dependencies (`composer install`). The run refuses before any job when a selected job runs a `vendor/bin` tool and `vendor/autoload.php` is absent; a selected `installs` job listed before the first such job stands that refusal down, so a fresh slot reaches the job that creates `vendor/`. The job's own failure then carries the message, and a vendor/bin job listed after a failed install fails as it would on any tree without `vendor/`. Without the key the refusal stands, and a `--jobs` selection that leaves the installer out is refused too. |
 
-For each PR entering the queue, review it against the [`writing-pull-requests`](../writing-pull-requests/SKILL.md) skill and **fix what does not comply** — `gh pr edit <n> --repo <repo> --title '…'` and `--body-file <path>` (never inline `--body`; these bodies are dense with backticks and `$` that the shell mangles). Check the title (imperative verb-first, no Conventional-Commit prefix, no internal-process references, acronym casing, inline-code handles) and the body (leading `Closes #N.`, the conventional section inventory, `-` bullets with em-dash separators, absolute-branch-URL file links, a mandatory `## Test plan` task list).
+**A key the config does not define is refused, not ignored.** The run fails before any job, naming the key, where it sits and the keys that level takes: `jobs[1] ("pest") has no "databases"; it takes "name", "run", "always", ...`. Without this a mistyped `database` (written `databases`) parsed as no database and the job ran against the repository's usual one, and a misspelled `statusContext` fell back to `local-ci` silently. The top level takes `base`, `php`, `chain`, `guard`, `jobs`, `prepare`, `statusContext` and `watch` (read by `watch-github.mjs`, which validates its contents); a job takes `name`, `run`, `always`, `each`, `paths`, `requires`, `mutation`, `parallel`, `database`, `php` and `installs`. The same refusal applies inside `guard`, `prepare`, `database`, `database.lock`, `mutation` and `parallel`, and inside `watch`, where `watch-github.mjs` refuses it at start, before any request: `"watch" has no "glyph"; it takes "repos", "issueRepos", "glyphs".`
 
-Then read the body for **companion PRs and merge order** — the `## Companion PRs` section and any explicit "Merge order" block. Treat a cross-repo companion set as **one queue unit**, ordered internally as the bodies specify; never merge half a pair. If a body's stated ordering rests on a premise you can check, **check it** — a body written from memory can assert an ordering step the repo's actual merge settings make unnecessary or wrong, and shipping a wrong instruction is worse than shipping none.
+**Annotations: a key beginning with an underscore is allowed on the top level and on a job, and is ignored** (`"_note": "why this job exists"`). That is the only exception. `$schema` and `comment` are refused: no schema is published for the file, and a word that is not a prefix cannot be told apart from a mistyped real key. An underscore key never hides a typo beside it, and an annotation inside a nested object (`guard` and `watch` included) is refused like any other key there.
 
-### 4. Update the branch, then read the required checks
+## Running it
 
-**A green local run does not make a pull request mergeable.** `main` requires `CI`, `Attribution footer` and `Closing keywords` (#337), and the decision reads those three on the head that will land. A ready pull request merges when all three are green and every test-plan item is satisfied, subject to the [`pre-merge-check`](../../rules/pre-merge-check.md) rule, which owns the rest of the decision. Anything else is handed back (section 6).
-
-**First, update a branch that is behind `main`:**
-
-```bash
-gh api repos/{o}/{r}/compare/main...<head-sha> --jq '.behind_by'
-gh api -X PUT repos/{o}/{r}/pulls/<n>/update-branch -f expected_head_sha=<head-sha>
-```
-
-A non-zero `behind_by` means update. `expected_head_sha` refuses the update if the head has moved since you read it, so a push is never overwritten. The call answers before the merge exists: read the head again, and treat every check from before the update as saying nothing about the new head. A conflict is refused, and that is a hand-back, since resolving it is the author's.
-
-**Then read the three checks on that head:**
-
-```bash
-gh api repos/{o}/{r}/commits/<head-sha>/check-runs'?per_page=100' --jq '.total_count, (.check_runs | length), (.check_runs[] | select(.name == "CI" or .name == "Attribution footer" or .name == "Closing keywords") | [.name, .status, .conclusion] | @tsv)'
-```
-
-- **Green is all three `completed` and `success`.** A name that is missing is not green, and neither is `skipped` or `neutral`: GitHub counts those two as satisfying a required check, so the merge would go through on nothing having run.
-- **Compare the first two numbers.** The job count grows with the matrix, so a list shorter than `total_count` has been cut off and a missing name proves nothing until the next page is read.
-- **A name can appear twice on one head.** A body edit runs `Attribution footer` and `Closing keywords` again, and the older result stays listed, so read the newest by `completed_at`.
-- **A run still in progress is a wait, never a hand-back.** Since #348 that wait is about an hour, for the Windows band.
-
-**The sibling repositories have no CI workflow of their own**, so a standalone sibling pull request has no required chain to read. Say so plainly in the verdict rather than implying a suite ran; validate what is actually checkable (the diff is what it claims, YAML parses, a pure rename is a pure rename) and merge on that basis. **An app pull request with a content companion** is read on the app branch: its `pest` jobs check `content/` out at the branch's gitlink, which is fetch-reachable before the companion merges, so one green app run validates the pair.
-
-### 5. Comment the verdict, then merge on green
-
-**Comment the verdict on the pull request before any merge decision, green or red.** The wording below is shared with the sibling repositories that run the same gate ([`uamswp-migration-api#153`](https://github.com/UAMS-Web/uamswp-migration-api/issues/153), [`wordpress-importer-archive#999`](https://github.com/UAMS-Web/wordpress-importer-archive/issues/999)) and is adopted rather than paraphrased, so three procedures for one obligation do not drift apart:
-
-> Comment the verdict on the pull request BEFORE any merge decision, GREEN OR RED.
->
-> Name the jobs that ACTUALLY RAN. A run that skipped jobs and a run that passed them are indistinguishable in a bare "green" — and where remote CI is disabled, skipped jobs are the normal appearance rather than a fault.
->
-> On a RED the comment IS the hand-back record: name the failing job and the output. Do not flip the pull request to draft — the gate annotates, it does not mutate. Do not re-pick an unmoved head.
->
-> A verdict that exists only outside the repository is not recorded.
-
-Three of those clauses carry more than they look like, and each is here because the reassuring reading is the wrong one:
-
-- **Name the jobs that actually ran.** *Skipped is not passed* — the same distinction the standing-authorization paragraph above draws when it withholds merge authority from a validation that is "red **or skipped**". A bare "green" cannot express it, and with remote CI off there is no second surface where a reader could notice.
-- **Do not flip the pull request to draft.** The gate annotates; it does not mutate the pull request's state. Flipping one forges the author's own signal — in the watcher's event table a ready → draft transition means *the author pulled it back*, which dequeues the PR and abandons an in-flight run. It would also fail quietly if attempted through the allow-listed path: `PATCH /repos/{o}/{r}/pulls/{n}` **silently ignores a `draft` field** and returns `200` with the value unchanged, so the gate would report a state change that never happened.
-- **Do not re-pick an unmoved head.** A red hand-back ends the gate's turn on that PR. Re-validating a head that has not moved re-runs the same failure and holds a slot; the trigger for re-entry is a new commit, which the watcher reports as `PUSH`. **That is the only way a red hand-back comes back:** the gate does not flip it to draft, so the pull request stays ready throughout and no `READY` transition will ever re-enqueue it. Record the head SHA you validated in the comment, so "has it moved?" is answered against a written baseline rather than against memory.
-
-**Post it with [`scripts/post-verdict.mjs`](../../../scripts/post-verdict.mjs), and on a hand-back pass `--hand-back`** (UAMS-Web/uams-statamic-archive#2845). One command posts the comment and, on a hand-back, applies `handed-back` in the same run, then reads the labels back and exits `1` unless they agree:
+Prerequisites: Node 20 or newer; for `vendor/bin` jobs, `composer install` has run, or a job marked `installs` runs before them (the runner refuses before any job with the remedy named when `vendor/` is missing and neither holds); PHP, found as [Toolchain](#toolchain) describes.
 
 ```bash
-node scripts/post-verdict.mjs <n> verdict.md --hand-back   # a red chain, or a finding a review caught on a green one
-node scripts/post-verdict.mjs <n> verdict.md               # a green with no finding: the labels are never touched
+# Jobs selected by the diff against origin/<base>, plus the guard and always-jobs
+node .claude/skills/local-ci/local-ci.mjs
+
+# What would run, and why, without running it
+node .claude/skills/local-ci/local-ci.mjs --dry-run
+
+# Every job; or a named subset (the guard still runs first)
+node .claude/skills/local-ci/local-ci.mjs --all
+node .claude/skills/local-ci/local-ci.mjs --jobs pint,phpstan
+
+# Diff against another base; post the summary on the pull request
+node .claude/skills/local-ci/local-ci.mjs --base dev
+node .claude/skills/local-ci/local-ci.mjs --comment
+
+# Validate a pushed branch in its own worktree (see Validating a branch in a slot)
+node .claude/skills/local-ci/local-ci.mjs --branch my-branch
 ```
 
-It exists because the label used to be a second call, and that call was the one missed: six of eight hand-backs read from their label events carried no `handed-back`. On a failure it says whether the comment posted, so only the label is retried. It calls REST only, so a spent GraphQL quota does not stop a verdict being recorded. [`.claude/settings.json`](../../settings.json) allow-lists `node scripts/post-verdict.mjs`, so the gate runs it without a prompt. A green that finds `handed-back` still on prints a warning, because a push failed to clear it. Pass `--repo <owner/name>` for a companion repository.
+The run prints `Validating: <sha> <subject>` first, then the changed-file count and the base it was diffed against, then one `==> JOB <name>: <reason>` line per job as it starts, then the summary. It runs in the tree it lives in: the copy in a worktree validates that worktree, and the shell's current directory does not matter.
 
-Since UAMS-Web/uams-statamic-archive#2339 the runner can also post a machine-readable `local-ci` commit status on the head (`--commit-status`). That is an addition, not a substitute: a status is a badge, and the comment is the record a person reads.
+**Run it on a clean tree.** When the tree has uncommitted changes the run warns at the start and the summary says `Tree: DIRTY`, because the verdict then describes the working tree and not the commit named on the `Validating:` line. The run is still useful while working; it is not a record of anything.
 
-### The `handed-back` label
+A deleted file counts as changed, so deleting a file other code requires selects the jobs whose `paths` match it; an `each` job skips a tracked file that is no longer on disk. When the branch and `origin/<base>` share no history (a shallow clone, typically), the changed files cannot be listed and the run refuses rather than selecting from an empty diff; `git fetch --unshallow`, or run `--all`. When neither `origin/<base>` nor `<base>` resolves at all (a single-branch clone of another branch), `--all` and `--jobs` warn that the changes were not read and run; any other run refuses, naming `--base <ref>` and `--all`.
 
-**The gate applies it, a push removes it, and nobody else touches it.**
+**Job selection is a speed optimization with one failure mode:** a job whose inputs the diff touches but whose `paths` do not name them is skipped, and because remote CI is off, nothing else catches it. When a diff touches something a job's `paths` do not describe, run `--all`, and fix the `paths`.
 
-- **Apply it on a hand-back**: a red chain, or a finding a review caught on a green one. It is not a step of its own: `--hand-back` on the verdict command in section 5 applies it in the same run that posts the comment, and fails if it is not there when read back.
-- **A push removes it**, because a push is the pull request re-entering the queue — not the author announcing readiness. [`.github/workflows/clear-handed-back.yml`](../../../.github/workflows/clear-handed-back.yml) does the removal on the push itself (UAMS-Web/uams-statamic-archive#2667), so the gate no longer removes it by hand. It used to, and the removal got missed: UAMS-Web/uams-statamic-archive#2619 and UAMS-Web/uams-statamic-archive#2662 kept the label after their authors pushed, and dropped out of the queue depth while they waited. The author never touches it either. Its presence does not block a push, and its absence means *not currently handed back*, never *gated and clean*. An author who thinks a pull request is wrongly marked says so to the gate rather than clearing it.
-- **Queue depth is `open AND not labelled handed-back`** — one query, with no separate hand-back list to remember.
+## Reading the verdict
 
-**The workflow removes it with `DELETE`, which the gate cannot.** `DELETE /repos/{o}/{r}/issues/{n}/labels/handed-back` removes that one label and leaves the rest alone. This repository's [`.claude/settings.json`](../../settings.json) denies `gh api -X DELETE` and `gh api --method DELETE`, so that call is refused for the gate session; the workflow runs under its own `GITHUB_TOKEN`, which that deny rule never sees. It triggers on `pull_request` `synchronize` only, so opening a pull request, applying the label and a comment cannot remove it, and a push to a pull request without the label is skipped before a runner starts. It is not gated on `RUN_REMOTE_CI`: that switch is off for months at a time, and gating this on it would bring the missed removal back for exactly that long.
+```
+================ local-ci summary ================
+  Commit:   3f9c2e1d... Add the upload guard
+  Tree:     clean: this verdict describes the commit
+--------------------------------------------------
+  guard     PASS        0.0s
+  lint      PASS        1.2s
+  pint      FAIL        3.4s  (exit 1)
+  pest      SKIPPED           (not selected: no changed file matches **/*.php, phpunit.xml*)
+--------------------------------------------------
+  Verdict:  FAIL: 1 of 3 jobs run failed: pint
+==================================================
+```
 
-**When a push did not clear it, the run is what to read.** The pull request's checks list a `Clear handed-back` run for every push to a labeled pull request. A failed run is a defect in the workflow, so ticket it — including a billing failure, which is how an exhausted Actions allowance shows up here rather than as `skipped`. A missing run means the push event never fired, and one case of that is expected rather than a defect: **a push that leaves the pull request conflicted runs no workflow at all.** GitHub runs `pull_request` workflows against the merge commit, and a pull request it cannot merge has none, so the label stays until the push that resolves the conflict, which fires the run and removes it. Measured on UAMS-Web/uams-statamic-archive#2675 with scratch pull requests against a scratch base, 2026-09-30: a push that kept a pull request conflicted produced no run of any workflow within three minutes; the push that resolved it removed the label; a clean control removed it too. So a hand-back whose branch has fallen behind `main` comes back when the author syncs, not on an earlier push, and that is the right outcome, since a conflicted pull request cannot pass the gate. For any other missing run, until it is fixed, the removal that works from a gate session is a `PATCH /repos/{o}/{r}/issues/{n}` with a `labels` array — and it **replaces the whole set**, so any label left out of the array is removed with no warning. Build the array from what is there now, then read it back:
+- **PASS** and **FAIL** are jobs that ran. **SKIPPED** is a job that did not, with the reason: not selected by the diff, not named by `--jobs`, or stopped by `chain` after an earlier failure. Skipped is not passed, in the summary, in the comment and in the merge decision.
+- **NOTHING RAN** is the verdict, and the comment's headline, when no job was selected (no guard and no `always` job, and nothing the diff touched). The exit status is `0`, because a change no job reads is not a failure, but nothing was checked and nothing says PASS.
+- **PASS (incomplete)** is the verdict, and the comment's headline, when every job that ran passed but a selected job was skipped for absent tooling (`requires`). The exit status is `0`, and the verdict names the skipped jobs. Quote it as incomplete, never as a pass.
+- **The exit status is the contract.** It is `1` when any job that ran failed and `0` otherwise, and also `1` on a refusal (no config, no PHP, `--comment` on a dirty tree), where no job ran at all and there is no summary to read. A run refused because another run holds the worktree exits `4`. A job killed by `SIGINT`, `SIGTERM` or `SIGHUP` ends the run at once with `130`, `143` or `129`, no summary and no comment; any other signal counts as that job failing. The verdict line is derived from the same results by the same test, so the two cannot disagree, and the unit tests prove it in both directions.
+- **A pipe throws the exit status away.** `$?` after `node local-ci.mjs | tail` is `tail`'s. Measured in `wordpress-importer` on macOS (Darwin 25.6.0) on 2026-09-05, reproducing a refusal: redirected to a file the status was `1`; piped to `tail` and read after the pipeline, `0`; the same pipeline under `set -o pipefail`, `1`. Set `pipefail`, or read the status with no pipe in between, and never derive a verdict from a wrapper's exit code without one of those. Read the summary as a cross-check, not as the contract.
+- **Compare the `Commit:` line with the pull request head** before quoting a green. A run on an older commit, or on a dirty tree, describes something other than what merges.
+
+## Adding a job
+
+1. Add an entry to `jobs` in `local-ci.json`: a `name`, the `run` command the repository's `composer.json` or `package.json` already defines, and the `paths` whose change should select it. Name every input: the source the tool reads, its configuration file, and `composer.lock` for a tool whose rule set depends on installed versions (Rector, PHPStan).
+2. If the tool runs per file with no option to take a directory, use `each` instead of a pipeline.
+3. Run `--dry-run` with a change that should select the job and one that should not, and read the reasons.
+4. Run `--jobs <name>` to see the job pass and, by breaking something, fail. A job that cannot fail is not a check.
+5. Where the repository also has an Actions workflow, keep its job list the same as `local-ci.json`'s, so a reader of either sees the same gate.
+
+A job with no `paths` and no `always` is reported `SKIPPED (not selected: ... runs only with --all or --jobs)`; that is for a job too slow to run by default, and the summary says so every time rather than letting it disappear.
+
+## Application jobs
+
+The `requires` field and the existing `run`, `paths`, `each` and `always` fields express the app-level jobs the application repositories run: `uams-statamic` in its own runner, and `aether-wordpress-importer` and `aether-wordpress-migration-api` through the shared runner. `templates/local-ci.app-jobs.json` is a dry-run example keyed by repository: each key is a complete `local-ci.json`, copy the block for the repository and delete the jobs it does not need. After copying a block to `local-ci.json`, run `--dry-run` to read the plan.
+
+| Job shape | Declared as | Used for |
+| --- | --- | --- |
+| npm script | `run: "npm run <script>"`, `requires: ["node_modules", "bin:npm"]` | `build`, `js`, `spell` |
+| Composer or Node validation | `run: "composer validate ..."`, `requires: ["bin:composer"]` | `validate`, `composer-validate` |
+| Repository guard script | `run: "node scripts/<guard>.mjs"`, `always: true`, `requires: ["scripts/<guard>.mjs"]` | no-emoji, encoding, glyph, load guards |
+| Shared PHP check over the installed plugin | `run: "php .claude/skills/pest-testing/scripts/check-mutate-ignore-breadth.php"`, `requires: ["vendor/pestphp/pest-plugin-mutate", ...]` | `mutate-ignore-breadth` |
+| Per-file test runner | `run: "node --test"`, `each: ["scripts/*.test.mjs"]` | `node-test` |
+| Test-suite subset | `run: "vendor/bin/pest tests/Browser"`, `requires: [..., "public/build/manifest.json"]` | `browser`, `mutate` |
+
+- **`each` carries the node-test job.** Node 20 has no glob support in `node --test`, so the glob is expanded by the runner and the command runs once per tracked file, which is the same on every platform.
+- **A `requires` path can name a build output.** The `browser` job lists `public/build/manifest.json`, so without a prior `npm run build` it is skipped with the file named rather than failing on stale assets.
+- **`mutate-ignore-breadth` belongs in every repository that runs Pest's `--mutate`.** It runs the `pest-testing` skill's breadth check, which measures how many mutants each `@pest-mutate-ignore` annotation removes and fails on one that removes more than one of a named mutator or none at all, and on a mention of the marker outside an annotation that removes mutants. It reads the installed `pest-plugin-mutate`, so `requires` names it and a repository without the plugin skips the job rather than failing it; a repository that never mutates leaves the job out. Its `paths` include `tests/mutate-ignore-breadth.baseline.json`, the baseline the check reads when it exists.
+- **Not expressed.** The `spell` jobs run the repository's own `npm run spell`, which owns any zero-files-checked floor. The `mutate` job declares `"mutation": {"minScore": 100}`, which carries the mutation smoke's non-zero-count and score assertions (see `jobs[].mutation`).
+
+## Recording the verdict on the pull request (`--comment`)
+
+**Comment the verdict on the pull request before any merge decision, green or red.** A verdict that exists only in a terminal or on a channel is not a record: the person merging has nothing to read, and neither does anyone reading the pull request next month.
+
+`--comment` posts the summary as a comment on the open pull request for the current branch (found with `gh pr view`), through `gh`, after the jobs have run. The comment carries:
+
+- **The full SHA of the commit validated,** on the first line. Remote CI is off, so the pull request shows a set of `skipped` Actions jobs, and a reader who does not know that reads `skipped` as a failure to run. A bare count ("8/8 pass") has the same defect from the other side: it reads as remote jobs passing. Naming the commit is what lets a reviewer check that the checks passed on exactly what merges, and gives "has the head moved since?" a written baseline rather than a memory. When the pull request head is not the validated commit the runner warns before posting.
+- **The jobs that actually ran,** each with PASS or FAIL and its duration, and separately the jobs that did not run, with their reasons.
+- **That the run was local,** and that the skipped Actions jobs are expected where `RUN_REMOTE_CI` is off.
+
+Two refusals and one non-event:
+
+- **A dirty tree refuses `--comment` before any job runs.** The comment names a commit, and a run on a dirty tree describes the working tree instead. Commit or stash, then run again.
+- **No open pull request for the branch** skips the comment with a warning, including when the branch's most recent pull request is merged or closed (a reused branch name). Open the pull request first, or comment by hand.
+- **A comment that cannot be posted never changes the exit status.** No `gh`, no network, no permission, a reply it cannot parse: the runner warns and the verdict stands. A comment is an annotation; letting it fail a green run, or pass a red one, would be the inverse of what it exists for.
+
+A red comment is posted on the same terms, naming the failing job. What happens next, who re-runs, and when, belongs to the repository's merge rules; the runner records, it does not decide.
+
+## Posting a commit status (`--commit-status`)
+
+`--commit-status` posts the verdict as a commit status on the commit the run validated, beside the comment. The comment is read by a person; the status is what the commit itself shows, and what a branch rule can read.
+
+- **The call.** `gh api -X POST repos/{owner}/{repo}/statuses/<sha>` (the REST API, so it does not draw on the GraphQL quota) with `state`, `context` and `description`. `<sha>` is the commit named on the `Validating:` line. In a `--branch` run that is the remote head, so the status lands on the head the pull request shows.
+- **The state follows the exit status:** `success` when the run exits `0`, `failure` when it exits `1`. The description is the verdict line (`PASS: 5 of 5 jobs run passed`), or, for a red run, the failing job names first (`pest, pint failed`), cut to the 140 characters GitHub keeps. A `PASS (incomplete)` run posts `success` with that wording in the description.
+- **A run in which no job ran posts nothing,** with a warning. Its exit status is `0`, and a green status on a commit nothing checked is the false reassurance a status exists to remove.
+- **The context** is the config's `statusContext`, `local-ci` by default.
+- **Off unless asked.** Without `--commit-status` the runner posts no status. A developer running the checks on their own branch should not write to GitHub; the gating session passes the option.
+- **A dirty tree refuses it before any job runs,** for the reason `--comment` does: a status belongs to a commit.
+- **A status that cannot be posted never changes the exit status.** No `gh`, no network, no permission: the runner warns and the verdict stands.
+- **It is only ever terminal.** The runner posts once, when the run is over, and never `pending`. A run that is killed, or that nobody started, leaves no status on the commit.
+
+**A branch rule that requires the status waits for it.** While the runner is not running, no status exists on the head, and a required status that is absent holds the merge as `Expected: waiting for status`, which reads as a run in progress and is not one. Nothing in GitHub distinguishes "the runner has not been started" from "the runner is slow". The rule's context must match `statusContext` exactly, and requiring it means every head needs a gate run before it can merge, including a one-line documentation fix. A status also describes the commit and not the pull request: a new push to the branch leaves the earlier head's status on the earlier head. Whether to require it is the repository's decision with its rulesets, and not this runner's.
+
+## Validating a branch in a slot (`--branch`)
+
+`--branch <name>` validates a branch that is already on `origin` in a worktree the runner owns, so the invoking checkout never moves: its `HEAD`, index and working tree are the same afterwards, uncommitted work included.
 
 ```bash
-keep=$(gh api repos/UAMS-Web/uams-statamic/issues/<n> --jq '{labels: [.labels[].name | select(. != "handed-back")]}')
-gh api -X PATCH repos/UAMS-Web/uams-statamic/issues/<n> --input - <<< "$keep"
-gh api repos/UAMS-Web/uams-statamic/issues/<n> --jq '[.labels[].name]'   # read back: everything but handed-back
+node .claude/skills/local-ci/local-ci.mjs --branch my-branch
+node .claude/skills/local-ci/local-ci.mjs --branch my-branch --worktree-path ../elsewhere-ci
 ```
 
-**Why a label and not a draft flip:** the gate annotates and does not mutate a pull request's state (see above), and the label clears on the event that actually happened — new code arriving — rather than on the author flipping back to ready, which is how a draft marker would clear whether or not the finding was addressed.
+- **The slot** is `<primary>-ci`, a sibling of the primary checkout (found through `git rev-parse --git-common-dir`, so a run started from any linked worktree resolves the same one). `--worktree-path` places it elsewhere. A slot that would be the checkout the run started from is refused, which includes a run started inside the slot itself.
+- **What is validated** is the remote head. The runner asks `origin` for the branch, fetches it, and detaches the slot at that commit. A local branch of the same name, and any unpushed commit on it, is never validated, and no ref is written in the invoking repository.
+- **A name `origin` does not have** is refused with `origin has no branch <name>` before a worktree is created or touched. A name that is not a valid branch name is refused before `origin` is asked.
+- **Reuse.** The runner writes a marker (`local-ci-slot`) into the slot's own git directory when it creates the slot, and moves only a slot that carries it. A worktree at the slot path that the runner did not create, such as a standing checkout a repository already keeps at `<primary>-ci`, is refused before anything is touched, with `--dry-run` included; pass `--worktree-path` to place the slot elsewhere. An existing runner-made slot is moved to the new head. A slot with uncommitted changes to tracked files is refused, because a runner-owned tree is never hand-edited. Untracked files do not block it.
+- **Runner handoff.** When the branch's copy of `local-ci.mjs` differs from the executing one (line endings aside), the run prints `Handoff:` and re-executes the branch's copy inside the slot, with `--branch` and `--worktree-path` removed, so a pull request that changes the runner or its job list is gated by its own. The branch's copy runs the whole chain and does not hand off again: it refuses `--branch` when it was started by a handoff. When the copies match, the chain runs in the same process, in the slot.
+- **`--dry-run`** still prepares the slot, since selection reads the branch's own files and config.
+- **One run at a time.** The slot is locked for the run (see *One run at a time*), and a second `--branch` run against it is refused with the holder named.
+- **`--comment`** posts on the pull request whose head is the named branch. A branch named only with digits is refused with `--comment`, because `gh` reads a bare number as a pull request number.
+- **Jobs** do not see the handoff markers, so a job that runs the runner itself is not mistaken for a handed-off run.
 
-**On a green, merge after the comment. The merge method is not uniform across the repos** — check before merging:
+What this runner leaves to the repository's own: `--fresh`, `--skip-install`, and bootstrapping the slot (`composer install`, `npm ci`). Run the repository's bootstrap in the slot once before relying on a job that needs it. Bringing a reused slot back in line with the commit (submodules, leftover files, Composer patches) is `prepare`'s job, below.
 
-| Repo | Allowed | Use | Why it matters |
-|---|---|---|---|
-| `uams-statamic` | squash only | `gh pr merge <n> --squash` | Squash is the only method the repo's merge settings permit. |
-| `uams-statamic-content` | merge commit only | `gh pr merge <n> --merge` | A **merge commit keeps the branch tip an ancestor of `main`**, so an app PR's `content/` gitlink pointing at that tip stays valid with no re-bump. The repo's merge settings enforce it: squash and rebase merging were disabled on 2026-10-09 (UAMS-Web/uams-statamic-archive#2985), so a `--squash` or `merge_method=squash` copied from app-repo practice is no longer a method the repository accepts. A content commit squashed before that date orphans any gitlink pointing at its branch tip and forces a pointer bump plus a full re-validation. |
-| `uams-statamic-users`, `-assets-public`, `-assets-private`, `-forms` | merge commit only | `gh pr merge <n> --merge` | Same reasoning wherever a superproject pins a commit; squash and rebase were disabled on these on the same date. |
+### Preparing a reused slot (`prepare`)
 
-**That table fixes the merge *method*, not the command path.** `gh pr merge <n> --<method>` and the REST `gh api -X PUT repos/{o}/{r}/pulls/{n}/merge -f merge_method=<method>` both merge the pull request that `main`'s rulesets require. What differs is whether the call runs without an approval prompt: the repo's [`.claude/settings.json`](../../settings.json) allow-lists the REST shape and carries **no** `gh pr` entry, so REST is the portable path and the one [`github-api-budget`](../../rules/github-api-budget.md) prefers. A developer's own `~/.claude/settings.json` may allow-list `Bash(gh pr *)`, but that is machine-specific and a procedure must not rest on it. **`--admin` is not a third path, and is not part of this flow**: it grants no server-side power, and the pull-request ruleset on `main` has no bypass list (UAMS-Web/uams-statamic-archive#2016), so there is nothing for it to bypass.
+A slot is reused from run to run, so it can hold what the commit being validated does not: a submodule at an older commit, files an earlier run wrote, a `vendor/` patched for an older `patches.lock.json`. `prepare` in `local-ci.json` names the steps that bring it in line. Each is opt-in, and with no `prepare` key the runner behaves as it did before.
 
-For a companion pair: merge the companion first, **verify the app's gitlink is now reachable from the companion repo's `main`** (`gh api repos/<repo>/compare/main...<gitlink-sha>` → `status` of `identical` or `behind` means it is an ancestor), then merge the app PR. Verify — do not assume the merge did what you expected.
-
-After each merge, refresh the primary checkout's `main` (`git -C <primary> pull --ff-only origin main`); a stray `M content` submodule drift there is expected and harmless.
-
-### 6. Red → comment and hand back
-
-**The verdict comment comes first** — section 5's obligation is not conditional on the outcome, and a red is the case where the comment is the only record the author gets. Name the failing job and quote its output, and post it with `scripts/post-verdict.mjs <n> verdict.md --hand-back` so the label lands with it. Then carry on below.
-
-A red ends the gate's turn on that pull request. The remedy is the author's and arrives as a push, which the watcher reports as `PUSH`; the checks then run on the new head and the pull request is read again. Never merge past a red, and never re-pick an unmoved head.
-
-Then take the next queue item. The pipeline runs one PR at a time, start to finish, and only then moves on.
-
-### What a local run is still for
-
-**A local run gates nothing.** It is how an author checks a branch before spending an hour of remote CI, how a red is reproduced on a machine someone can inspect, and how a job is run with nothing billed. Its verdict is evidence for the person running it, and the merge decision never reads it. The `/local-ci <branch>` mode is this and nothing more.
-
-Before a run whose result you will quote, bring the branch current with `origin/main` per the [`sync-pr-branch`](../../rules/sync-pr-branch.md) rule. When re-validating a branch **after pushing a remedy**, pass `--fetch` so `origin/<branch>` is current — the runner then syncs the branch to it and prints the commit it validated (UAMS-Web/uams-statamic-archive#1746). `--fresh` does **not** address a stale commit; see *Reused-worktree hazards* below.
-
-**Report progress while it runs.** A full run is ~20 minutes, most of it in `pest`, and the runner publishes no machine-readable progress. Redirect it to a log and arm [`scripts/local-ci-progress.mjs`](../../../scripts/local-ci-progress.mjs) under `Monitor` alongside it:
-
-```bash
-node scripts/local-ci.mjs --branch <branch> --jobs <jobs> > ci.log 2>&1 &
-node scripts/local-ci-progress.mjs --log ci.log --worktree ../uams-statamic-ci --interval 600
+```json
+"prepare": {
+    "residue":    ["tests", "includes"],
+    "submodules": ["content", "users"],
+    "patches":    true
+}
 ```
 
-It reports the current stage, and for `pest` the **sub-phase** — that job runs six (route cache, Stache seed, parallel suite, serial tail, then a skip-baseline check per band) whose progress signals differ. The parallel suite is paratest, which streams dots and **no** `PASS` lines; the serial tail is plain Pest, which prints one `PASS <TestClass>` line per file. Counting `PASS` lines against the whole suite is therefore wrong in a way that reads plausibly: a run whose parallel phase has already *finished* reports as barely started. The reporter counts against the serial group only (derived from the worktree, so it tracks the suite as it grows) and says which sub-phase the number belongs to. On a finished run it reports duration as birth→last-write, not "time since start" — the latter keeps climbing after the run ends and silently overstates. Idle ticks are throttled to `--idle-interval` (default hourly) so a drained queue stays quiet.
+| Step | What it does |
+| --- | --- |
+| `residue` | Paths inside the repository. The run fails before any job, naming each file, when one of them holds an untracked file that is not ignored. Nothing is deleted: delete the files, or remove the slot with `git worktree remove --force` so the next run recreates it. "Ignored" is git's reading, so a global `core.excludesFile` or `.git/info/exclude` counts as well as the commit's `.gitignore`. The check does not reach inside a submodule: a file left in an initialized submodule is that submodule's untracked file, and the runner's dirty-tree warning is the only sign of it. |
+| `submodules` | Submodule paths. Each is checked out at the gitlink the validated commit records (`git submodule update --init`), and its `HEAD` is read back against that gitlink. A path the commit does not record as a submodule is refused, and so is an uninitialized submodule directory that still holds files, which are named rather than cleared. Submodules not listed are left alone. The fetch uses the invoking user's own git credentials, and the url the slot's submodule was initialized with: when a commit changes a submodule's url in `.gitmodules`, the update fails and its message names `git -C <slot> submodule sync -- <path>` to run. The runner does not sync itself, because the sync also writes the url to the repository's shared git config, which the primary checkout reads too. |
+| `patches` | `true` keeps a reused `vendor/` in line with the commit's `patches.lock.json` (cweagans/composer-patches). The runner records the lock it last brought `vendor/` in line with at `vendor/.local-ci-patches.lock.json`. When the commit's lock differs from that record, or there is no record, it runs `composer reinstall` for every installed package either lock patches, and writes the new record only after the reinstall succeeds; a failed reinstall fails the run before any job and leaves the old record in place. A lock that differs only in line endings is the same lock. A `patches.lock.json` that is not valid JSON fails the run, naming the file; a record that is not valid JSON counts as no record. `composer` is the one first on PATH, run under whatever PHP it finds, not the PHP the config names. With no `vendor/composer/installed.json` there is nothing to bring in line and the step says so; `composer install` itself stays with the repository's bootstrap. |
 
-**Health-check the run on a fixed cadence: T+5, T+10, T+20, then every 20 minutes.** The reporter above tells you what stage a *healthy* run is in; it cannot tell you the run died, and neither can the absence of a notification. Check explicitly at those marks, and confirm three separate things:
-
-1. **A real run is alive** — `pgrep -f 'local-ci\.mjs --branch'`. Match the **invocation**, never a substring. `pgrep -f 'local-ci'` also matches `local-ci-progress.mjs`, every `until grep … ci.log` waiter, and the shell issuing the query — the same self-matching trap [`long-running-commands`](../../rules/long-running-commands.md) documents for `pkill`. Seven such matches once convinced a session that a run which had finished two hours earlier was still going, and both its status checks and its waiter agreed.
-2. **The log is advancing** — compare size or last-write time against the previous check. A live PID with a static log is a hang, not progress; a finished run's log stops growing while stray matches keep the PID check green.
-3. **It did not die at startup** — a zero-byte log a minute in means the run never began. Usual causes: the branch is already checked out elsewhere (`git worktree add` refuses), a conflicted merge was left in the tree, or an entry-guard no-op (invoking a runner copy through a symlinked path exits 0 having done nothing).
-
-The cadence is chosen against the shape of a run: **T+5** catches a startup fault before it burns the window, **T+10** and **T+20** bracket the `build` → `phpstan` stretch, and the 20-minute repeat covers `pest`, which is most of the wall clock. Report the failure the moment a check fails rather than waiting for the next one.
-
-**Reap a run's waiter when that run ends, not at session end.** A stranded `until … done` waiter polls a log that will never change again. They accumulate silently — four survived from UAMS-Web/uams-statamic-archive#1730, UAMS-Web/uams-statamic-archive#1714, UAMS-Web/uams-statamic-archive#1829 and UAMS-Web/uams-statamic-archive#1848 in a single session, which is precisely what made the broad pattern useless. `kill` by explicit PID once the run is reported, and re-check that zero remain.
-
-
-**When a local run fails, three classes are not app-code bugs** and must not be "fixed" by editing app code:
-
-- **`git worktree add failed (exit 128)` — the branch is already checked out elsewhere.** Git refuses to check one branch out into two worktrees, and it fails in seconds, before any job runs. Find which tree holds it, then pick the remedy by **what kind of tree that is** — the two are not interchangeable:
+- **Drop the record before the repository's own `composer install`.** The record is written only after the runner's reinstall, which covers that reinstall and nothing earlier. A repository's install script runs `composer install` first, and an install that re-extracts a patched package (a version change in `composer.lock`) and then fails before `cweagans/composer-patches` patches it leaves the old record standing. The next install finds the package at the locked version and does nothing, the record still equals `patches.lock.json`, and the run proceeds over an unpatched package. So the install script deletes the record first, and a failed install leaves none:
 
   ```bash
-  git worktree list                       # which tree is on <branch>
+  node .claude/skills/local-ci/local-ci.mjs --drop-patch-record   # then: composer install
   ```
 
-  - **A slot** (`../uams-statamic-a`, `-b`) — the normal case. The author was supposed to release it as their last act on the ticket, and a forgotten release is the ordinary way this happens; the slot is not litter. **Release it, never delete it:** `node scripts/worktree-slots.mjs release <slot>`, which asserts a clean tree, detaches to `origin/main`, and preserves the branch. Deleting one throws away a full bootstrap — `public/assets` alone is a genuine 170 MB clone per slot — and the [`worktrees`](../../rules/worktrees.md) rule is explicit that a slot is normally never removed.
-  - **An ephemeral worktree** under `.claude/worktrees/` — still removable, and now the rarer case: the rule keeps it for three named situations (both slots held, a genuinely file-disjoint fan-out, and subagent isolation). Confirm it is disposable first — `git -C <wt> log --oneline -1` matches `origin/<branch>`, `git -C <wt> status --short` is empty, and `git -C <wt> log origin/<branch>..HEAD` is empty — then `git worktree remove --force <wt>`, falling back to `rm -rf <wt> && git worktree prune` only when an OS handle or untracked scratch blocks it. Both preserve the branch.
+  `--drop-patch-record` deletes `vendor/.local-ci-patches.lock.json` in the tree the runner lives in, prints whether there was one, exits 0 and runs nothing else; it takes no other option. A script written in Node can import `dropPatchRecord(repoRoot)` from the runner instead, which returns whether a record was removed. Run it in the slot being installed, before the install and before the runner's own `prepare`.
 
-  **Do not read a clean tree as permission to delete.** Those three disposability checks pass on a held slot too — it is on the right commit, clean, and fully pushed — so they distinguish *safe to release* from *unsafe*, never *slot* from *ephemeral*. `git worktree list` is what tells you which you have.
+- **Order:** residue, then submodules, then patches, and every refusal comes before any job runs. The residue check runs first so files left in a listed path are reported before a step changes the tree.
+- **Only in a runner-owned slot.** A run in a developer's own checkout prints `Prepare:    not run (...)` and runs the jobs, because its untracked files are work in progress and its `vendor/` is the developer's. `prepare` takes effect in a slot `--branch` created, whether the run came through `--branch` or was started inside the slot, and after a handoff it is the branch's own copy of the runner that prepares the slot.
+- **`--dry-run`** prints `Prepare:    would run ...` and runs none of the steps.
+- A path that is absolute, contains `..`, or names the repository root is refused when the config is read, and so is a key other than these three.
 
-- **Stale `content/` pointer** — the companion content has not merged and the branch's gitlink predates it. See *Stale-submodule hazard* below for the signature and the confirmation procedure.
-- **Stale-commit validation** — the runner tested an older commit than the PR head. Confirm with `git -C <worktree> rev-parse HEAD` against the PR head before believing any result you are about to merge on.
+## One run at a time (the single-flight lock)
 
+Two runs in one worktree take the tree out from under each other: the second checks a branch out beneath the first's jobs, or a job rewrites a cache the other is reading, and both report failures no diff explains. The runner therefore holds a lock on the worktree it executes in, and refuses a second run before any job starts.
 
-## Turning remote CI off when the budget is out (`RUN_REMOTE_CI`)
-
-GitHub Actions minutes are billed at the **organization** level — one pool shared by every `UAMS-Web` repo, and only **private** repos consume it (public-repo minutes are free). When that budget is exhausted, every `ci.yml` job fails instantly on a billing error.
-
-To stop burning the queue until the monthly reset, set an Actions **variable** `RUN_REMOTE_CI` to `false`. Every job in [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) is gated on `if: vars.RUN_REMOTE_CI != 'false'` except `submodule-access`, which runs only when the workflow is started by hand (UAMS-Web/uams-statamic-archive#2497), and the aggregate `CI` job, so the jobs report `skipped` and consume zero runner minutes. Unset (or any value other than `false`) leaves CI fully on — the default is always-on (UAMS-Web/uams-statamic-archive#980).
-
-- **Where to set it:** `Settings → Secrets and variables → Actions → Variables`. Define it as an **organization** variable scoped to **Private repositories** (matches where the budget actually applies, and auto-covers new private repos). A **repository** variable overrides the org value for a single repo.
-- **Effect is per-workflow:** an org `RUN_REMOTE_CI=false` only disables a repo whose workflow has the `if:` gate. As of UAMS-Web/uams-statamic-archive#980 that is this repo; other repos honor it once they adopt the same gate.
-- **Merging while off:** nothing merges. A ruleset on `main` requires `CI`, `Attribution footer` and `Closing keywords` (#337), and `CI` carries no gate and fails on a skipped job, so with the switch off every merge is held rather than waved through. [`docs/runbooks/branch-protection.md`](../../../docs/runbooks/branch-protection.md) records what `main` enforces.
-- **Validation while off:** `scripts/local-ci.mjs` still validates a branch (no Actions minutes), and it ignores `RUN_REMOTE_CI`, but a green local run cannot satisfy `CI`.
-- **Turning CI back on:** delete the variable or set it to anything but `false`.
-
-## Prerequisites
-
-The runner is a plain Node script, so the only hard requirement beyond the project toolchain is Node — which the project already depends on. There is **no PowerShell dependency**.
-
-- **Node 22** — already required by the project; provides the `node`/`npm`/`npx` the script and the `build`/`encoding` jobs use.
-- **npm >= 11.10.0** — a HARD floor, not a preference. `.npmrc` sets `engine-strict=true` against `engines.npm`, so `npm ci` refuses anything older, and the runner asserts it up front rather than letting you hit an opaque `EBADENGINE`. **Node 22 bundles npm 10.9.x, which is below the floor**, so following the Node-22 line alone is not enough: run `npm install -g npm@^11.10.0` once per machine (CI pins it per job; a local machine does not self-upgrade). Only the `build`, `js`, `spell`, and `browser` jobs need it. See UAMS-Web/uams-statamic-archive#1826.
-- **PHP 8.4 + Composer** — via [Laravel Herd](https://herd.laravel.com) on macOS, or the Herd/Windows toolchain on Windows. On macOS the script prefers Herd's version-pinned `php84` binary, so it targets 8.4 even when your default Herd PHP is another version. Verified on **macOS 26.4** (UAMS-Web/uams-statamic-archive#1903), where a run reports `PHP: …/Herd/bin/php84 (8.4.23)`; the pin is load-bearing rather than decorative, because that Herd install carries `php74` through `php85` side by side.
-- **A coverage driver — PCOV (recommended) or Xdebug** — a HARD floor for the `mutate` job, added with UAMS-Web/uams-statamic-archive#1731. `pest --mutate` needs one: with no driver it throws `Mutation testing requires code coverage to be enabled` and exits `1`, which is loud and self-explaining. The dangerous shape is the *other* one — `0 Mutations for 0 Files created` with exit `0`, which is what a driver-present-but-tooling-broken run produced in UAMS-Web/uams-statamic-archive#1728 (a `php-code-coverage` format change, still patched in `composer.json`). The job asserts the mutation count precisely because that shape is silent. There is deliberately **no "skip when no driver" fallback** — a skip would make the job a false green about false greens. Herd ships only Xdebug (`herd coverage`); installing PCOV is a per-machine step that does **not** travel via git. See the [`pcov-setup`](../pcov-setup/SKILL.md) skill, which also documents the run gotchas (relative `--path`, worktree scoping, the Windows env-block limit). Only the `mutate` job needs it.
-- **Python 3** — for the `encoding` job, which runs the release-notes generator's own suite, `.claude/skills/writing-release-notes/gen_release_notes.test.py` (UAMS-Web/uams-statamic-archive#2850). The runner tries `python3`, then `python`, and accepts only one that reports major version 3. Only the `encoding` job needs it.
-- **The Composer `github-oauth` PAT** in your global Composer auth (already configured) — needed for the private packages and the `content/` and `users/` submodule clones.
-
-The script discovers each tool automatically and fails fast with an actionable message if one is missing or the wrong version (a version mismatch warns; an absent tool errors). Override any binary with an env var holding an absolute path: `LOCAL_CI_PHP`, `LOCAL_CI_COMPOSER`, `LOCAL_CI_NODE`, `LOCAL_CI_NPM`, `LOCAL_CI_NPX`, `LOCAL_CI_GIT`, `LOCAL_CI_PYTHON`.
-
-The `pest` and `browser` jobs run the suite with `php -d memory_limit=4G`, because the full framework-booting suite exceeds a typical local CLI cap (Herd's PHP caps at 2G here) and OOMs mid-run as the content set grows — CI doesn't hit this since `setup-php` leaves `memory_limit` unlimited. The pest **parallel workers** get the limit via paratest's `--passthru-php` (they spawn as their own PHP processes at the system CLI cap otherwise, which is where the OOM lands); the single-process serial tail takes it directly. Override the local figure with `LOCAL_CI_PHP_MEMORY_LIMIT` (e.g. `8G`, or `-1` for unlimited).
-
-## Quick start
-
-The driver is [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs). It builds a sibling worktree (default `../uams-statamic-ci`) of the named branch and runs CI there; the current checkout never moves.
-
-```bash
-# Full CI against another branch (creates ../uams-statamic-ci on first run)
-node scripts/local-ci.mjs --branch <branch>
-
-# Fast checks only, reusing an already-built worktree
-node scripts/local-ci.mjs --branch <branch> --jobs pint,encoding --skip-install
-
-# Refresh refs so the branch sync lands the pushed commit; --fresh also rebuilds vendor/
-node scripts/local-ci.mjs --branch <branch> --fetch
+```
+local-ci: Another local-ci run holds /work/repo-ci: pid 4120, validating origin/my-branch in the slot, since 2026-10-05T14:02:11.000Z. Wait for it, or run against another worktree. If pid 4120 is not a local-ci run, remove /work/repo-ci.lock and run again.
 ```
 
-On macOS/Linux the script is executable, so `./scripts/local-ci.mjs <branch>` works too (the branch may be passed positionally). There's also an npm alias — `npm run ci:local -- --branch <branch>` (note the `--` before the flags).
+- **Keyed on the worktree the run executes in.** A plain run locks the checkout it lives in. `--branch` locks the slot (`<primary>-ci`, or `--worktree-path`), and takes the lock before the slot is created or moved, so a refused run changes nothing. Two runs in different worktrees do not contend.
+- **Where it lives.** `<worktree>.lock`, a sibling directory of the worktree and never a file inside it, so a checkout or a clean of the tree cannot delete the lock a live run holds. `holder.json` inside it records `pid`, `branch` (`null` for an in-place run), `worktree` and `startedAt`. The directory is created with `mkdir`, which is the atomic step: whichever run creates it holds the lock.
+- **The refusal** exits `4` (`1` stays for failed jobs and ordinary errors), prints the holder's pid, what it is validating, and when it started, and runs no job.
+- **A dead holder is reclaimed.** When the recorded pid is no longer running, the run prints a `reclaiming the lock` warning naming it, removes the lock, and proceeds. A lock whose record is missing, empty or unreadable is never reclaimed, because a run between creating the directory and writing its record looks exactly like that; the refusal says so and names the directory to remove if no run is active. A pid that has been reused by an unrelated process reads as alive, which is why the refusal names the directory to remove.
+- **Released** on success, on failure, on an error that stops the run, and when a job is killed by `SIGINT`, `SIGTERM` or `SIGHUP` on its own (the runner stops instead of starting the next job, and exits `130`, `143` or `129`; on Windows Node reports no signal for a child, so this path is POSIX only). A terminal's Ctrl-C reaches the runner as well as the job, and Node ends the runner without running any release, so that lock is reclaimed by the next run like one left by a kill. Only a lock that still names the releasing process is removed. A run killed outright, such as `SIGKILL` or a `SIGTERM` sent to the runner alone, cannot release anything; the next run reclaims its lock because the pid is gone.
+- **`--branch` handoff.** The parent holds the slot lock across the handoff. The re-executed branch copy carries `LOCAL_CI_HANDOFF` and takes no lock of its own, so it is not refused by its parent. The marker's value is the parent's pid, and a run is treated as handed off only when that value equals its own parent process id. A marker exported in a shell, or inherited from some other process, names no parent of the run that reads it, so it neither skips the lock nor refuses `--branch` (#89). The runner removes the marker from the environment of every job.
+- **Decisions on the edges of the lock (#89).**
+    - **Pid reuse: accepted.** A recorded pid that the operating system has handed to an unrelated process reads as alive, and the lock is refused rather than reclaimed. Recording a process start time would close it, at the cost of a platform-specific read on every run, and the failure is the safe one: the refusal names the directory to remove, and nothing is deleted on a guess.
+    - **A crash between `mkdir` and the record write: accepted.** The lock directory then has no readable record and is refused, never reclaimed, by design. A run that is still between the two steps looks identical, and reclaiming it would let two runs hold one worktree, which is the failure the lock exists to prevent. The refusal names the directory to remove, and the window is a few milliseconds wide.
+    - **The handoff marker: fixed.** See the `--branch` handoff bullet above.
+- **`--dry-run`** without `--branch` changes nothing and takes no lock, so it is not refused by a run in progress. With `--branch` it prepares the slot, so it takes the lock.
+- **A test database** is locked separately, by the job that uses it: see *A job's own database*.
 
-## Job mapping (mirrors `ci.yml`)
+## A job's own database (`database`)
 
-| Job | Runs | Notes |
-|---|---|---|
-| `pest` | `pest --parallel --exclude-group=serial` then a serial `pest --group=serial` tail (paratest; each worker warms its own isolated per-`TEST_TOKEN` cache), then `check-skip-baseline.php` per band | Only job that inits the private `content/` and `users/` submodules (Composer PAT read at runtime; UAMS-Web/uams-statamic-archive#2477 added `users/`). Does the `.env`/`key:generate`/`post-autoload-dump` framework prep (shared with `phpstan` and the `browser` job) |
-| `pint` | `pint --test` on `*.php` changed vs base (`main...HEAD` merge-base) | Skips when nothing changed |
-| `rector` | `rector --dry-run` under the **gating** profile (the default; paths come from `rector.php` — **`app/` only**) | Runs in a private `TMPDIR`/`TMP`/`TEMP` so a warm cache from another profile cannot make it under-report (a false green — UAMS-Web/uams-statamic-archive#1720). Static analysis: needs `vendor/` but no framework prep, submodule, or Node |
-| `mutate` | One scoped `pest --mutate` over `App\Support\UamsAlert\AlertSiteKeyResolver`, asserting a **non-zero mutation count** and a **100% score** | Gates the mutation **tooling**, not the mutants (UAMS-Web/uams-statamic-archive#1731). The exit code alone is not enough — Pest exits `0` on `0 Mutations for 0 Files created`, which is what UAMS-Web/uams-statamic-archive#1728 actually was. **Needs a coverage driver** (see the floor above); needs `vendor/` but no framework prep, submodule, or Node |
-| `phpstan` | `composer stan` (bare `phpstan analyse` at max level, `--memory-limit=2G`; paths come from `phpstan.neon.dist` — **`app/` and `tests/`**) | Does the framework prep (larastan boots the Laravel app to resolve types); reads source not content, so no submodule or Node |
-| `build` | `npm run build` + `npm run cp:build` | Runs `npm ci` |
-| `js` | `npm run test:js` (Vitest) | Framework-free JS unit tests; needs `npm ci` but no PHP/Composer/submodule |
-| `spell` | `npm run spell` (`scripts/spell.mjs`: cspell over the whole tree, not only the diff) | Its globs are `GLOBS` in that script. No submodule needed |
-| `isolation` | `php scripts/check-parallel-safe-tests.php` — the parallel-unsafe-pattern guard over `tests/` | Dependency-free PHP. No submodule needed |
-| `browser` | `vendor/bin/pest tests/Browser` after `npx playwright install chromium`, reusing this run's `build` output or building it | Headless Control Panel and front-end smoke, plus the axe gate |
-| `encoding` | vendored cp1252 double-encoding guard, plus the decision-log order, mutate-ignore and lone-CR guards and the release-notes generator suite (`python3 .claude/skills/writing-release-notes/gen_release_notes.test.py`, UAMS-Web/uams-statamic-archive#2850) | No submodule needed. Needs Python 3 |
-| `no-emoji` | `node scripts/check-no-emoji.mjs` — emoji in `.claude/`, `docs/` and `README.md` | Its own job: `--jobs encoding` does not run it. No submodule needed |
-| `content-pointer` | `node scripts/check-content-pointer.mjs --base origin/main`: refuses a submodule pointer whose commit is not on that submodule's `main` (UAMS-Web/uams-statamic-archive#2965, UAMS-Web/uams-statamic-archive#3115) | An unchanged pointer passes on two `ls-tree` reads, with no network. A moved one costs a bare clone of that submodule, about two seconds for content, using the Composer PAT or the git credential helper. Exit 1 is "not on main", 3 is "not in the submodule at all", 2 is "could not run" |
-| `validate` | `composer validate --no-check-publish --no-check-all`, which fails when `composer.lock`'s content hash no longer matches `composer.json`, then `composer dump-autoload --optimize --dev --strict-psr --dry-run --no-scripts`, which fails on a file with no class matching its PSR-4 path (#322) | Neither step needs an install, submodule, framework, network, or private-package auth. With `vendor/` present the second scans it, which took 23s on a loaded Windows machine. The flags scope the output to an application rather than a published package; they do not change pass/fail (warnings only fail under `--strict`, which reds a clean checkout here) |
+A suite whose test installer drops every table it finds cannot share a database with another run of itself: a runner started while someone runs the suite by hand destroys that run's fixtures, and both report failures no diff explains. A job's `database` gives it a database of the runner's own and, where the repository's suite already guards its database with a lock file, takes that same file.
 
-`--jobs` accepts any subset of `isolation validate no-emoji content-pointer encoding spell js build pint rector mutate phpstan pest browser` (comma-separated, listed here in the cost-gate order they run, `CHAIN` in `scripts/local-ci.mjs`), or `all` (default). Every job is in `all` — there is no opt-in job, because a suite that runs only when somebody remembers to ask for it sits red unnoticed.
+```json
+{
+    "name": "pest",
+    "run": "vendor/bin/pest",
+    "database": {
+        "name": "app_ci",
+        "env": "WP_TESTS_DB_NAME",
+        "lock": { "prefix": "app-ci", "heldEnv": "LOCAL_CI_SUITE_LOCK_HELD" }
+    }
+}
+```
 
-## Choosing what to run
-
-`--jobs all` (the default) is always safe. Scoping down with `--jobs` is a speed optimization whose **one failure mode is skipping a job whose inputs the diff actually touches** — that job's coverage is then silently dropped, and because remote CI is off (see the `RUN_REMOTE_CI` note above), a locally-skipped job is caught nowhere else. So the rule when you scope: **include every job any changed file gates, and when in doubt include it (or just run `all`).**
-
-Map the diff — `git diff --name-only origin/main...HEAD` — to the jobs it gates:
-
-| A changed file matching… | gates |
+| Key | Meaning |
 | --- | --- |
-| **any `*.php`** — `app/`, `tests/Feature`, `tests/Unit`, **`tests/Browser`**, `database/`, `config/`, … | **`pint`** (keyed off the extension, not the test suite — see the trap below) |
-| **any `*.php`** — `app/` **and `tests/`** — or `composer.lock` | **`phpstan`** (`phpstan.neon.dist` analyzes `tests/` at the same level as `app/`, UAMS-Web/uams-statamic-archive#1344 — see the trap below) |
-| `app/**.php`, `rector.php`, `rector-sweep.php`, or `composer.lock` | **`rector`** (`rector.php` pins `withPaths([app/])`, so — unlike `phpstan` — a `tests/`-only diff does **not** gate it; `composer.lock` does, because `withComposerBased()` picks its Laravel/PHPUnit sets from *installed* versions) |
-| `app/**`, `tests/{Feature,Unit}/**`, `resources/blueprints/**`, `resources/fieldsets/**`, `resources/views/**` (Antlers render tests), `config/**`, `routes/**`, the `content` pointer, `composer.lock` | `pest` |
-| `tests/Browser/**`, or a CP-fieldtype / front-end-theme surface a CP smoke or the axe gate renders | `browser` (already in `all`; name it only for a job-scoped run) |
-| `resources/{js,css,scss}/**`, `*.vue`, `vite*.config.js`, `package*.json` | `build` |
-| a Vitest spec (`*.test.js` / `*.test.mjs`) or the `resources/js/**` it covers | `js` |
-| **any** `*.{php,js,mjs,vue,md,yml,yaml,py}` or `*.antlers.html` | `spell` (the globs are `GLOBS` in `scripts/spell.mjs`) |
-| `.claude/**`, `docs/**` or `README.md` | `no-emoji` (its own job, not a stage of `encoding`; the roots are `ROOTS` and `FILES` in `scripts/check-no-emoji.mjs`) |
-| `tests/**` | `isolation` (parallel-unsafe-pattern guard) |
-| a submodule pointer (`content`, `users`, `resources/forms` or an asset submodule) | `content-pointer` (and `pest`, above, for `content`) |
-| `composer.json` or `composer.lock` | `validate` (lock-hash freshness — a `composer.json` edit that skipped the lock refresh) |
-| any changed text file | `encoding` (cp1252 guard — cheap, always safe to include) |
-| **any diff at all** | `mutate` — the one row with no path key. It runs a single fixed command over one class regardless of what changed, so there is nothing to map it to; at ~9s it is always worth including. It gates the mutation *tooling*, which any dependency bump can break (UAMS-Web/uams-statamic-archive#1728) |
+| `name` | The database the job uses: letters, digits, `_`, `$` or `-`, at most 64 characters. Choose a name no hand-run suite uses. |
+| `env` | The environment variable that carries `name` to the job. The job runs with `name` there, whatever the invoking shell had set, and with every other variable any job's `database` names removed, so it sees no database name but its own. |
+| `lock.prefix` | The lock file prefix the repository's suite uses. The run takes `<tmpdir>/<prefix>.database.<first 16 hex digits of sha256(name)>.lock` before any job runs: created exclusively with its record already in it (written to a temporary file and linked into place, so the file is never seen empty, which the suite would read as abandoned), holding JSON whose integer `pid` names the holder. While a live process holds it, the run exits `4` before any job, naming the holder's pid, what it is, and when it started. A suite started by hand while the run holds it is refused by the suite's own guard. Optional: without `lock`, the job still gets its own name, unguarded. |
+| `lock.heldEnv` | A variable set to `1` for the job, telling the suite that its parent already holds the lock, so the job's own suite does not refuse against the run that started it. Optional, but a suite that takes the same lock needs it: without it the suite refuses its own runner on every run. It may not be the same variable as `env`, and neither may name a variable the runner relies on (`PATH`, `TEMP`, `TMPDIR`, `LOCAL_CI`, `LOCAL_CI_PHP` and the like). |
 
-**The trap this table exists to prevent: `pint` and `phpstan` are gated by the file *extension*, not by which directory or test suite the file belongs to.** A `tests/Browser/*.php` file executes in the `browser` job (not `pest`), but it is still a `.php` file — so a diff that touches it **must include `pint` and `phpstan`**. Do not reason "this `.php` is a browser test → the `browser` job covers it" and drop either of them.
+- **A job without `database`** runs with the runner's environment unchanged.
+- **A dead holder is reclaimed** with a warning, as the worktree lock is. A record that cannot be read is never reclaimed; the refusal names the file to remove if no run is using the database.
+- **One lock per file.** Jobs that declare the same `prefix` and `name` share one lock, taken once for the run. All are taken before the first job, and released on the same ways out as the worktree lock.
+- **`--dry-run`** prints each job's database and lock file and takes no lock.
+- **The temp directory has to agree.** The runner uses Node's `os.tmpdir()`, and the suite its own language's (PHP's `sys_get_temp_dir()`). On macOS and Linux both read `TMPDIR`. On Windows Node reads `TEMP` before `TMP` and PHP reads `TMP` before `TEMP`, so they agree while the two are the same, as they are by default. PHP's `sys_temp_dir` setting overrides all of these. `--dry-run` shows the path the runner will use; compare it with the path in the suite's own refusal.
+- **The runner does not create the database.** Create it once, or have the job's command create it before the suite runs.
 
-**`phpstan` shares that rule**, which is easy to miss because `composer stan` reads like an `app/` concern. It runs a bare `phpstan analyse`, so the paths come from [`phpstan.neon.dist`](../../../phpstan.neon.dist) — and that config lists **`tests` alongside `app`** (UAMS-Web/uams-statamic-archive#1344: first-party test code is analyzed at the same level, so broken mocks, wrong-typed fixtures, and dead assertions are caught like any other bug). A **test-only diff therefore gates `phpstan`**. Scoping it out on the reasoning "no `app/**` changed" is how PR UAMS-Web/uams-statamic-archive#1674 merged PHPStan-red: two real errors — a second `->not` in one Pest expectation chain (`Expectation::$not` does not exist on the object `toContain()` returns) and an unnarrowed nullable `Blueprint::find()` — reached `main` and had to be repaired in a later PR. Remote CI is off, so nothing else catches it.
+## The pre-commit guard
 
-**So: `*.php` in the diff ⇒ `pint` AND `phpstan`, always.**
+A local CI run, like an Actions run, sees a secret or personal-data file only after it has been committed, and the pull request sees it only after it has been pushed. Git history is permanent, so the check that matters most has to run before the commit exists. The runner's `guard` job stays as the backstop over every tracked file.
 
-Recipes once the mapping is satisfied:
+Setup, once per repository:
 
-- PHP-only diff: `--jobs pint,rector,phpstan,pest,spell,encoding` — including a **test-only** one, since `phpstan` analyzes `tests/` too; add `isolation` when anything under `tests/` changed. Drop `rector` only when nothing under `app/` changed (it is the one PHP job scoped to `app/` alone). `spell` is there because its globs include `php`, and `encoding` because it covers every text file.
-- Docs-only (`*.md`): `--jobs spell,encoding,no-emoji`. `no-emoji` is the one guard scoped to exactly what a docs change touches, and naming `encoding` does not reach it (UAMS-Web/uams-statamic-archive#2645).
-- Pure front-end (JS/Vue/CSS, no `.php`): `--jobs js,build,spell,encoding`. Checked against the table: `resources/` is outside `no-emoji`'s roots, so it is not needed here.
-- Lightest end-to-end proof the harness works: `--jobs encoding`.
-- `build` output is **branch-invariant** unless a PR touches JS/CSS/`vite*.config.js`/`package*.json`; when validating several such PRs, run `build` on one branch only.
-- `pest` is the slowest and the only job that needs the `content/` and `users/` submodules (`users/` since UAMS-Web/uams-statamic-archive#2477: a 2 KB pack that lets `RegistrantRecordsAreGitIgnoredTest` run in the gate rather than skip).
+1. Copy `.claude/skills/local-ci/templates/pre-commit` to `.githooks/pre-commit` and make it executable (`chmod +x .githooks/pre-commit`; on Windows, `git update-index --chmod=+x .githooks/pre-commit` after staging it). Commit it.
+2. Document the one-time step every clone needs, in `CONTRIBUTING.md` or the README: `git config core.hooksPath .githooks`. Git does not run hooks from inside the repository until told to. A repository with `composer.json` can run that command from a `post-install-cmd` script so a clone that installs is wired without reading the instructions; the `code-quality` skill's `setup-git-hooks.php` template is that script, and it runs the same command on the same path the warning checks. The runner checks this for you: when `.githooks/pre-commit` is tracked and `core.hooksPath` does not resolve to `.githooks`, it prints one warning line naming the command. The warning never changes the verdict or the exit status, and it is silent under GitHub Actions. The documented step and the `post-install-cmd` wiring stay the per-repository part; the sync also adds the same instruction to the generated `AGENTS.md` section of every target that receives this skill.
+3. Check it: stage a file named `sentinel-key.php` (or any pattern on the list) and commit; the commit is refused and the file named. Unstage it. An ordinary commit still works.
 
-## More than one developer running the pipeline
+The hook reads `guard.deny` from `local-ci.json`, so the list is maintained in one place. When `local-ci.json` is missing, the hook prints a warning to stderr that the guard was skipped (not adopted yet) and exits 0, so a clone that has the hook but no config is not blocked; once the repository has adopted local-ci, that file belongs at the root, and the warning is the signal that the guard is not running. With `node` on PATH it matches exactly as the runner does, and a config it cannot evaluate (not JSON, `guard.deny` not an array of strings, a pattern that is not a regular expression) refuses the commit. Without `node`, a small shell parser reads the array and `grep -E` matches, which agrees for the patterns in the template (none contains `]`); a pattern containing `]` (a character class) or one `grep -E` cannot compile refuses every commit rather than passing with the guard disarmed, so a repository that needs such a pattern keeps `node` on PATH. `git commit --no-verify` bypasses the hook; the runner's `guard` job fails on the same file, so the bypass only moves the failure to the pull request.
 
-The pipeline has no lock. Two sessions watching the same repo see the same `READY`, work the same branch and then race to merge, where the loser either hits a conflict or merges a branch the winner is still validating. Nothing in the runner prevents this, so the partition is a convention.
+## Gating the Actions workflow
 
-**Partition by repository: one gate session per repo.** `--repos` scopes a watcher, and a repository watched by exactly one gate cannot be double-validated no matter who a pull request is assigned to.
+A private repository whose checks moved to the runner gates its workflow rather than deleting it: every job gets `if: vars.RUN_REMOTE_CI != 'false'` and the header explains why, so the workflow stays, evaluates on every event, dispatches nothing, and comes back with a variable change. The order is: runner first, then the gate, so the repository is never without a gate. `templates/gate-workflow.md` has the snippet, the header comment, the branch-protection caveat and the steps.
 
-```bash
-node scripts/watch-github.mjs --repos UAMS-Web/uams-statamic
-```
+This repository's [`CI` workflow](../../../.github/workflows/ci.yml) already carries the gate on every job, and its header documents it.
 
-**The watcher does not filter by assignee, and deliberately so (UAMS-Web/uams-statamic-archive#2366).** It carried an `--assignee` flag until then. The flag looked like it partitioned sessions and could not: every session here authenticates as the same account, so it partitioned by *person*, which is not the axis the race runs along. It also cost two things outright — an unassigned pull request was invisible to every filtered watcher, waiting indefinitely with no error anywhere, and a pull request assigned to a second developer was invisible to the first developer's gate. Passing `--assignee` now fails as an unknown flag rather than being quietly ignored.
+## Toolchain
 
-**The evidence that the filter was never what prevented double validation** is that `wordpress-importer`'s watcher has never carried it — zero occurrences on its default branch — and has never reported the failure. One gate per repository is what does the work.
+PHP resolves, in order: `LOCAL_CI_PHP` (an absolute path to the binary; a path that does not exist or cannot be executed is an error, not a fall-through); on macOS, Herd's version-pinned binary for the config's `php` (`php84` for `"8.4"`, under `~/Library/Application Support/Herd/bin`), so a run targets the version `local-ci.json` names even when the default Herd PHP is another; then `php` on PATH, which on Windows is Herd's `php.BAT` shim. When the pinned Herd binary is not installed, resolution continues to PATH rather than failing: the runner prints which binary it chose and its version, and warns when that version is not the one `local-ci.json` names (so an `"8.1"` repository can be linted under 8.4 with only a warning). It fails before any job when none is found. PHP is resolved only when a selected job needs it, so a repository with no PHP job runs on a machine with no PHP.
 
-**A cross-repo companion set must still sit with one gate.** The queue treats a companion set as one unit and merges it in order, which it cannot do if half the set is being validated elsewhere. Where a companion set crosses repositories, one session watches all of them rather than one session per repo.
+**The development PHP's patch is enforced from `composer.json`.** Where `config.platform.php` names a patch version (`8.4.27`), the runner fails before any job when the PHP it resolved is older, naming both versions and how to upgrade (UAMS-Web/uams-claude-skills#394). `config.platform.php` alone only sets the PHP Composer resolves packages for, so without this a machine on an unpatched PHP installs and passes exactly as a patched one does. A pin of major and minor only (`8.4`), or none, checks nothing. A job with its own `php`, such as the floor lint, is not held to the pin. Measured on macOS (Darwin 27.2.0) with Herd's PHP 8.4.27: a `config.platform.php` of `8.4.28` was refused before any job, and `8.4.27` ran. Windows is covered by the runner's tests only.
 
-## Running several branches at once (concurrent)
+`--dry-run` lists those candidate sources in order (Herd pin, then PATH). When a Herd pin is listed but not present on disk, the plan notes that a real run falls through to PATH and warns on a version mismatch. Read the candidate line as the search order, not as a guarantee that the named Herd binary will be used.
 
-Submodule-in-worktree behavior is **git-version-dependent**. On git 2.32.0.windows.2 (the Windows dev machine) each worktree gets its own `content` gitdir and its own HEAD — measured once, and recorded in the [`worktrees`](../../rules/worktrees.md) rule rather than restated here — but that has not been measured under other gits, which may share **one** `.git/modules/<name>` across worktrees, where two simultaneous `content/` checkouts can corrupt shared state that also reaches your main checkout. So the isolation this procedure needs is not a property to rely on generally. Version-safe rule: **stage serially, then fan out**:
+**A job's own `php` resolves strictly**, because a floor lint that ran on the wrong PHP would pass on exactly the syntax it exists to refuse. In order: `LOCAL_CI_PHP_<major><minor>` (`LOCAL_CI_PHP_82` for `"8.2"`, an absolute path; one that does not exist or cannot be executed is an error); Herd's version-pinned binary (`~/Library/Application Support/Herd/bin/php82` on macOS, `~/.config/herd/bin/php82/php.exe` on Windows); then `php8.2` or `php82` on PATH. Never plain `php`. The runner then asks the binary its version and fails before any job when it is not the one named, or when none is found. `--dry-run` lists the candidates. Measured on 2026-10-07 on Windows 11 with Herd's PHP 8.2.33, and on macOS 26.6.2 with Herd's PHP 8.2.32: there the Herd, `php82` on PATH and `LOCAL_CI_PHP_82` candidates each resolved, a plain `php` on PATH that was itself 8.2 was refused, and an 8.4 binary named for 8.2 failed before any job. The `php8.2` name on PATH is covered by the runner's tests only.
 
-1. **Serially** add one worktree per branch (distinct `--worktree-path`) and init its `content/` and `users/` submodules — the only step that touches shared `.git` state. Each init is a **full `content/` clone** (network for a branch's new SHA; disk per copy — ~3k files each here).
-2. **Concurrently** run each branch's jobs with `--skip-submodule` (and no `--skip-install`, since fresh worktrees need their own `vendor/`/`node_modules/`). The parallel phase does only `composer install` + PHPUnit/Pint/encoding — all per-worktree, none touch the submodule gitdir. Concurrent installs safely share the global Composer cache; the private-package PAT auth works inside each worktree.
+The jobs run with `LOCAL_CI=1` and `LOCAL_CI_PHP=<resolved path>` in their environment, so a script a job runs can use the same interpreter; a job with its own `php` gets that binary in `LOCAL_CI_PHP`. Composer, Node and other tools a `run` names are resolved by the shell from PATH, as written.
+
+This repository's own runner (below) also honors `LOCAL_CI_COMPOSER`, `LOCAL_CI_NODE`, `LOCAL_CI_NPM`, `LOCAL_CI_NPX`, `LOCAL_CI_GIT` and `LOCAL_CI_PHP_MEMORY_LIMIT`. The shared runner reads none of them.
+
+## Posting the verdict and the hand-back label (`post-verdict.mjs`)
+
+`.claude/skills/local-ci/post-verdict.mjs` posts a verdict body as a comment on a pull request and, with `--hand-back`, applies the `handed-back` label in the same run. It is one file with no dependencies beyond the watcher's remote parser beside it (Node 20 or newer), and it uses REST only, so a spent GraphQL quota does not stop a verdict being recorded.
 
 ```bash
-# Serial phase: stage each worktree + its content/ and users/ submodules (touches shared .git).
-for pair in "branch-a:../uams-statamic-ci-a" "branch-b:../uams-statamic-ci-b"; do
-    b=${pair%%:*}; w=${pair#*:}
-    git worktree add "$w" "$b"
-    git -C "$w" submodule update --init --depth 1 content users
-done
-
-# Parallel phase: per-worktree jobs only — none touch the submodule gitdir.
-node scripts/local-ci.mjs --branch branch-a --worktree-path ../uams-statamic-ci-a --skip-submodule &
-node scripts/local-ci.mjs --branch branch-b --worktree-path ../uams-statamic-ci-b --skip-submodule &
-wait
+node .claude/skills/local-ci/post-verdict.mjs <n> verdict.md --hand-back   # a red chain, or a finding a review caught on a green one
+node .claude/skills/local-ci/post-verdict.mjs <n> verdict.md               # a green with no finding: the labels are not touched
+node .claude/skills/local-ci/post-verdict.mjs <n> verdict.md --repo OWNER/REPO
 ```
 
-On Windows PowerShell, run the serial phase the same way and launch the parallel phase as background jobs (`Start-Job { node scripts/local-ci.mjs --branch ... --skip-submodule }`) or simply from separate terminals.
+- **A hand-back is a red chain, or a finding a review caught on a green one.** Both pass `--hand-back`. The label used to be a second `gh api` call after the comment, and that call was the one missed: in `uams-statamic`, a read of the label events on eight recent hand-backs found the label applied on two. Folding it into the command that posts the comment removes the call that could be skipped.
+- **The repository** is `--repo OWNER/REPO`, or the `origin` remote of the current directory when the flag is absent. The run fails naming `--repo` when `origin` is not a GitHub remote.
+- **The labels are read back, not trusted.** After the writes the pull request's labels are read again, and the run exits `1` unless `handed-back` is present after a hand-back. A failure says whether the comment posted, so a retry does the label alone and does not post the comment twice.
+- **It only ever adds the label.** Removal is the `handed-back-label` skill's workflow, on a push to the pull request. A green verdict that finds the label still on prints a warning and leaves it: a push did not clear it (see *The `handed-back` label* in the `pre-merge-check` rule for the missing-run recovery).
+- **Output** is one JSON object, `{"comment", "handedBack", "labels", "warning"}`, and the exit status is `0` only when everything asked for is on the pull request.
+- **Tests** are `post-verdict.test.mjs`, with a fake `gh` and no network. They run in UAMS-Web/uams-claude-skills and are not synced to targets.
 
-A branch already checked out in another worktree **cannot** be added to a second one. Under the slot model the tree holding it is normally a slot, so **release it** — `node scripts/worktree-slots.mjs release <slot>` — rather than moving a checkout off the branch by hand; the primary holds `main` and should not be carrying a branch in the first place. Tear down the *staging* worktrees this section creates with `git worktree remove <path>` per worktree when done: those are ephemeral by construction and are the case removal is still right for.
+A repository allow-listing the command in its permission rules matches the literal prefix `node .claude/skills/local-ci/post-verdict.mjs`.
 
-### The runner refuses a second run in the same worktree, and exit 4 is that refusal
+## Watching pull requests (`watch-github.mjs`)
 
-Distinct `--worktree-path` values above are not a convention any more — the runner enforces them (UAMS-Web/uams-statamic-archive#2256). It takes a single-flight lock on the worktree at the first point that path is known, and a second invocation targeting the same tree **refuses and exits 4** rather than proceeding:
+`.claude/skills/local-ci/watch-github.mjs` prints one line per pull request lifecycle event, for a reviewing session to act on. It is one file with no dependencies (Node 20 or newer), synced with the skill like the runner, and it only reads: every call is a REST `GET` through `gh api`, so it never draws on the GraphQL quota and never comments, labels, flips a draft or merges. What to do with an event is the reading session's decision.
 
+```bash
+node .claude/skills/local-ci/watch-github.mjs                       # this repository, every 60 seconds
+node .claude/skills/local-ci/watch-github.mjs --interval 30 --emit-existing
+node .claude/skills/local-ci/watch-github.mjs --repos OWNER/REPO,OWNER/OTHER
+node .claude/skills/local-ci/watch-github.mjs --issues              # also ISSUE / ISSUE-GONE
+node .claude/skills/local-ci/watch-github.mjs --no-prs --issue-repos OWNER/REPO
+node .claude/skills/local-ci/watch-github.mjs --glyphs              # also GLYPH lines for PR bodies and new comments
+node .claude/skills/local-ci/watch-github.mjs --once                # seed and exit; --help lists every flag
 ```
-REFUSED: another local-CI run holds ../uams-statamic-ci.
-  Holder: pid 51234, branch 2256-refuse-concurrent-run, started 2026-09-06T11:42:03.118Z.
-  Reason: pid 51234 is still running.
-```
 
-**Exit 4 is the guard working, not a failure to remedy.** Do not re-run into it and do not delete the lock by hand: wait for the holder to finish, or give the new run its own `--worktree-path`, which is exactly what the fan-out recipe above already does. The exposure is the shared *tree*, so two runs on different paths are unaffected and both proceed.
+Arm it under the harness `Monitor` tool with `persistent: true`, so each stdout line becomes a notification.
 
-Two behaviors worth knowing before you meet them. A run killed hard leaves its lock behind; the next invocation **reclaims it and says so** (`WARNING: Reclaiming a stale lock … pid N is gone`), so a dead holder never deadlocks the slot. But a lock whose holder file cannot be read — truncated, empty, missing — is reported as **held** and never reclaimed, because an unreadable lock is not evidence that nobody holds it, and reclaiming on a bad read is how a guard comes to delete a live run's worktree. If you are certain the holder is gone and the file is corrupt, remove `<worktree-path>.lock` deliberately.
+- **Which repositories.** `--repos`, else `watch.repos` in `local-ci.json`, else the `origin` remote of the checkout it runs in, so a bare run watches the repository it sits in. No repository is named in the script. `--issue-repos` (or `watch.issueRepos`) scopes the issue feed separately; it defaults to the pull request list.
+- **The `watch` section** is optional and repository-owned: `{"watch": {"repos": ["OWNER/REPO"], "issueRepos": ["OWNER/REPO"], "glyphs": true}}`. The runner ignores it; a malformed one, or one with a key it does not define, stops the watcher with the field named.
+- **Events**, two spaces between fields: `READY` and `DRAFT` (opened, or flipped), `PUSH` (an open, non-draft pull request's head moved: `pushed <sha9>`), `GONE` (`merged` or `closed`), `WATCH-ERROR` (a repository that cannot be read), and, with `--issues`, `ISSUE` and `ISSUE-GONE`. A `WATCHING` line follows the first poll and names both feeds, the off one included, so a silent feed is distinguishable from a quiet repository.
+- **The first poll is silent** so arming mid-stream does not replay history; `--emit-existing` announces the open pull requests instead. Issues are not replayed either way: the first poll only sets the `updated_at` watermark.
+- **The glyph scan** (`--glyphs`, or `watch.glyphs: true`) is off by default. It enforces the `no-emoji-in-durable-records` rule on what no file sweep reaches: the body of each pull request reported as `READY` or `PUSH` (a draft is scanned once it turns ready), and each comment on the repository's issues and pull requests posted or edited since the last poll. A banned glyph prints `GLYPH  <repo>#<n>  body carries a banned glyph  line <l>: U+XXXX ...`, or `... comment carries a banned glyph  line <l>: U+XXXX ...  <url>`: one line per body or comment, code points only, never the character. The body comes from the listing the watcher already reads, so it costs no request; comments cost one `since=` read per repository per poll, and the first poll only sets that watermark.
+- **The banned class is read from the synced rule**, `.claude/rules/no-emoji-in-durable-records.md`, never restated in the scanner. It is found relative to the scanner file (`writing-comments/scripts/glyphs.mjs`), from the `.claude/skills/` copy and the `.agents/skills/` copy alike. Before the first poll the scanner proves both control arms: every bound of every range in the class is matched, and clean ASCII prose is not. If the rule cannot be read or parsed, or an arm fails, the watcher prints `WATCH-ERROR  glyphs  scan disabled, no GLYPH lines will be printed  <why>`, names the scan `glyphs FAILED` in its `WATCHING` line, and prints no `GLYPH` verdict; the other events carry on. Without the scan, the output is exactly what it was without it. `--glyphs` with `--no-prs` is refused, since the scan rides the pull request feed.
+- **Pagination walks `?page=N`**, never `--paginate`, which a cloud session's proxy refuses after page 1 with an exit status a pipe discards. A page past the ceiling, or a payload that is not an array, is a `WATCH-ERROR`, not a short list.
+- **Failures are counted per repository.** A repository that fails its first poll alerts at once (a setup error: auth, a typo, no access); one that was already seeded alerts on the third consecutive failure and every thirtieth after, and keeps its previous state in between so a transient error never produces phantom events.
+- **A pull request that leaves the listing but is still open emits nothing** and is carried forward: a page served short, or a poll that raced a reopen, is not a state change.
+- **Tests** are `watch-github.test.mjs`: recorded API responses served by a fake invoker, so no network. They run in UAMS-Web/uams-claude-skills and are not synced to targets.
 
-**Why this is in the runner rather than in a wrapper.** The local-CI lane already guarded its own invocation and that guard was correct, but it lived in one lane's calling convention: it did not cover a second lane, a future lane, or the same lane invoking the runner differently — and this skill tells people to run the runner. A guard shipped outside the artifact it guards does not travel with it. (The [`worktrees`](../../rules/worktrees.md) rule records the converse trap, where a guard shipped *inside* an artifact cannot report on states that predate it; this is the same seam from the other side.)
+Validating, commenting on and merging the pull requests it reports is not part of the watcher.
 
-The failure it prevents is not wasted CPU. Two runs in one tree produced failures that **moved between them on an identical commit** — the standard sufficient test for a flake — with `content/` at the correct revision both times. The near-miss was one step from a published "flake confirmed". A moved failure implies non-determinism only if the runs were independent.
+## Reviewing a pull request (validate, comment, merge or hand back)
 
-## Caveats
+A session that gates a repository takes the pull requests the watcher reports one at a time and, for each, validates the exact head, records the verdict on the pull request, and then either merges that head or hands the pull request back. The runner, the slot, the lock and the watcher are described above and are not repeated here; this section is the order they are used in. What to check before merging, beyond the chain, belongs to the `pre-merge-check` rule, and what a red verdict does next is that rule's too.
 
-- **First run per branch is slow** — full `composer install` (and `npm ci` for `build`) in the fresh worktree. After that, pass `--skip-install` to reuse it.
-- **The worktree persists** at `../uams-statamic-ci`. Reuse it (it syncs the branch to `origin/<branch>`, then checks it out) or remove it with `git worktree remove ../uams-statamic-ci`. `--fresh` does the removal for you — its job is stale `vendor/`, not a stale commit.
-- **Faithful, not identical** — same commands, but your local OS + PHP/Node vs CI's Ubuntu runner. Catches real failures; rare OS-specific edge cases can still differ from CI. The script warns when your local PHP/Node drifts from CI's pins (8.4 / 22) rather than blocking the run.
+**One pull request at a time, start to finish.** A queue entry is a pull request, not a push: a second `PUSH` for a pull request already queued replaces the head to validate, it does not add an entry. A `DRAFT` event is a note, not a dequeue: the author withdrew the pull request, so an in-flight validation of it is abandoned and nothing is merged. The first poll is silent, so seed the queue once with `--once --emit-existing` when the session starts.
 
-### Reused-worktree hazards — the two are *different*, and `--fresh` fixes only one
+1. **Pick the entry and read its head.** Read the full head SHA from the API, never from a short form printed elsewhere:
 
-`--fresh` and the branch sync address **different failures**. Conflating them produced UAMS-Web/uams-statamic-archive#1710's false red, which cost a full validation run and nearly sent an already-fixed bug back to its author.
+   ```bash
+   gh api repos/{o}/{r}/pulls/<n> --jq '[.draft, .head.ref, .head.sha] | @tsv'
+   ```
 
-- **Stale commit — handled by the runner, not by `--fresh`.** `git worktree add <path> <branch>` and `git checkout <branch>` both resolve the **local** ref. `--fetch` updates `origin/<branch>` but never fast-forwards the local one, and **`--fresh` removes and recreates the worktree from that same stale local ref — so it changes nothing about which commit is validated.** Only `git reset --hard origin/<branch>`, or `git branch -f <b> origin/<b>` when the branch is not checked out, actually moves it. The runner reconciles the branch with `origin/<branch>` before checkout and prints `Validating: <sha> <subject>` — compare that against the PR head. It fast-forwards when local is strictly behind, warns when local is *ahead* (you are validating work that was never pushed, which is not what the PR shows), and **refuses to run** when the two have diverged rather than guessing which side to test.
-- **Stale vendor — this *is* what `--fresh` is for.** A reused worktree installs nothing (`Nothing to install, update or remove`), so a newly added Composer patch would not be applied by the install alone; the runner detects a changed patch set and re-patches, naming the applied patches in its output. `--fresh` remains the blunt remedy for any other stale-`vendor/` state.
+   A draft is not a candidate. Keep the 40-character SHA: the merge in step 4 is pinned to it. Where a coordination channel is configured, report the pickup now (*Reporting to the coordination channel*, below).
 
-Pass `--fetch` so `origin/<branch>` is current before the sync runs; the sync can only be as fresh as your remote refs.
+2. **Validate that head in the runner's slot, with the verdict posted.**
 
-### Stale-submodule hazard — the `content/` pointer must carry companion wiring
+   ```bash
+   node .claude/skills/local-ci/local-ci.mjs --branch <head.ref> --comment > ci.log 2>&1
+   ```
 
-The `pest` (and `browser`) jobs render first-party fixtures out of the private `content/` submodule, and the runner checks that submodule out at **the gitlink the branch's superproject commit records** — whatever content commit the branch points at, *not* the tip of content `main`. So when a branch's app code or tests depend on **companion content that hasn't merged yet** (schema-template entries, blueprints, collection configs), and the branch hasn't bumped its `content/` pointer to a commit carrying that work, the run faithfully reproduces the same red remote CI would show — a dependency-ordering failure, not an app-code bug. **Do not "fix" it by editing app code.** Before assuming a red run means broken code, check whether the failures cluster in content-dependent tests and whether an unmerged companion content PR exists.
+   `--branch` validates the remote head in a slot the runner owns, so the gating session's own checkout never moves and the author's branch is never checked out by the gate. Read the summary rather than the exit code, and confirm that the commit it names (the `Validating:` line and the `Commit:` line) equals the SHA from step 1. When they differ the pull request moved during the run: discard the result and start again from step 1. A second run against a slot a live run holds is refused with exit `4`, so a gate session never has two runs in one slot.
 
-- **Signature.** A cluster of failures concentrated in **content-dependent** tests — those that render `schema_object` entries or other `content/`-resident fixtures through a service like `SchemaOutputService` — where the code and tests look correct but the rendered node is *missing* expected keys or carries a stale default. Tell-tales: `Undefined array key "<prop>"` on nearly every emitted property, or a wrong/default `@type`, while every *absence* assertion ("omits X when …") still passes (nothing is emitted, so absence checks trivially pass). That shape says the rendered fixture is the un-wired baseline — the submodule predates the companion work.
-- **Confirm it's the pointer, not the code.** Point the worktree's submodule at the companion content commit and re-run the affected tests: `git -C <worktree>/content fetch origin <content-branch>` → `git -C <worktree>/content checkout <content-sha>` → `(cd <worktree> && php artisan statamic:stache:clear)` (the Stache won't surface freshly-checked-out content until it re-indexes) → re-run just the failing file. Green = it's the pointer. **Restore afterward** (`git -C <worktree>/content checkout main`) so the worktree matches its recorded gitlink and the next run isn't silently validating divergent content.
-- **The real fix lands in git, gated on the companion.** After the companion content PR merges to content `main`, bump the branch's `content/` gitlink to that commit and commit it — from the branch checkout: `git -C content fetch origin && git -C content checkout main && git -C content pull`, then `git add content && git commit`. Until the companion merges, the app branch is expected-red on both remote and local CI; that's dependency ordering, not a defect. Record the dependency in the PR body per the `writing-pull-requests` skill's **Submodule-pointer bumps** note.
-- **When the app branch has *already* bumped its gitlink to the companion branch's commit, no workaround is needed — just run the runner.** The `==> Initializing content/ and users/ submodules` step clones the content repo and checks the recorded gitlink out directly, and that clone reaches commits that live only on a companion **branch** — an unmerged companion commit is fetch-reachable, so it resolves. Confirm it in the runner output (`Submodule path 'content': checked out '<sha>'` naming the companion commit) and, if you want the stronger check, assert the companion's actual data landed in the worktree (the moved/added files exist under `<worktree>/content/`). This is the well-formed companion-pair case and it needs none of the `--skip-submodule` setup below. **It passes every job but one:** `content-pointer` refuses a gitlink that is not yet on content `main` (UAMS-Web/uams-statamic-archive#2965), so until the companion merges, run the chain without it, as the landing bullet below says. That setup is for the *other* case: the app branch's gitlink still points at an old content-`main` commit and you want to validate against the companion branch anyway.
-- **Run local CI green *before* the companion merges *without* bumping the gitlink — point content at the companion branch + `--skip-submodule`.** When you need `pest` green locally before the content PR merges and the gitlink is bumped, set the reused worktree's submodule to the companion branch and tell the runner to leave it alone. In the worktree (`../uams-statamic-ci` by default): `git -C content fetch origin <content-branch>:refs/remotes/origin/<content-branch>` → `git -C content checkout -b <content-branch> origin/<content-branch>` → `php artisan statamic:stache:clear` (so the Stache re-indexes the swapped-in content). Then run **`node scripts/local-ci.mjs --branch <branch> --skip-submodule`** — `--skip-submodule` is **required**: a normal run does `git submodule update --init`, which resets content back to the recorded gitlink and re-reds the tests. Caveats: `--fresh` removes the worktree and re-inits at the gitlink (undoing this — redo the setup after); `git -C content pull` refreshes it if the companion branch grows; and because the worktree's `content/` is an **independent clone** (measured on git 2.32.0.windows.2 — see the concurrent-runs note above), this does not disturb the primary checkout's content or the site Herd serves. Local-only: the branch's committed gitlink is unchanged, so remote CI and the eventual proper bump are unaffected.
-- **Landing a companion-bearing PR: validate the app PR, then merge companion → app.** When an app PR declares a **Companion PRs** section (e.g. a `UAMS-Web/uams-statamic-content` content PR its `content/` pointer targets, or a `wordpress-importer` PR), authorization to merge the app PR **extends to its companion PRs**: the cross-repo change is one logical unit, so no separate approval is needed for the companion. The app PR's **green required checks are the app+companion integration test**: the `pest` job checks out the companion content at the app's gitlink (fetch-reachable even before the companion merges), so a green app run proves the companion too. **That run leaves out `content-pointer`**, which refuses the same gitlink until the companion is on content `main` (UAMS-Web/uams-statamic-archive#2965) and, as the fourth link, would otherwise skip `pest`: pass `--jobs` with every other job in `CHAIN`. Safe order: **validate the app PR green on every job except `content-pointer` → merge the companion PR to its `main` → run `--jobs content-pointer`, which confirms the app's `content` gitlink is now an ancestor of content `main` → merge the app PR.** The content repo allows **merge commits only**, enforced by its merge settings since 2026-10-09 (UAMS-Web/uams-statamic-archive#2985), so an app pointer targeting the companion *branch tip* becomes an ancestor of content `main` on merge and **stays valid with no re-bump**. A companion squashed before that setting leaves the gitlink off `main` for good; the job then names the commit it landed as, and the app PR needs a re-bump and a full re-validation. The content repo is **`UAMS-Web/uams-statamic-content`** (not `content`); the app PR body's *Companion PRs → "Merge first"* line states the order.
+   **On a first run, two things stand between that command and a verdict worth reading.**
 
-## Keeping parity with remote CI
+   - **The default slot may be taken.** The slot is the sibling `<primary>-ci`, and where that path is already a worktree the runner did not create (a standing checkout the gate keeps there, for instance) the command exits `1` with `<path> is a worktree of this repository that the runner did not create, so it will not be moved.` Pass a path of the runner's own and keep passing the same one, so later runs reuse that slot: `--branch <head.ref> --worktree-path ../<primary>-review --comment`.
+   - **A new slot has no dependencies.** The runner creates the worktree and checks out the commit; it does not install anything. A job whose tool lives in `node_modules/` or `vendor/` then fails, and the verdict reads `FAIL` on a commit that is clean, exactly as a real failure would. Where the job list installs dependencies itself, mark that job `"installs": true` (see `jobs[].installs`) and list it before the first `vendor/bin` job, and the first run on a new slot installs and then runs the rest; otherwise the run refuses before any job while `vendor/` is missing. For a tool in `node_modules/`, or a job list with no installing job, run the repository's bootstrap in the slot once (`npm ci`, `composer install`, or whatever it uses) before trusting the slot's first verdict, and again whenever a lockfile moves. Measured on Windows 11 against a clean commit (the dry walk recorded on #66): `FAIL: 2 of 5 jobs run failed` (tests, spell) in a fresh slot, then `PASS: 5 of 5` on the same commit after `npm ci` there.
 
-`scripts/local-ci.mjs` is a **hand-maintained mirror** of [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml). They have no shared source of truth, so they drift unless changed together.
+3. **Record the verdict before any merge decision, green or red.** `--comment` posts it naming the commit and the jobs that ran (see *Recording the verdict on the pull request*). A run that skipped jobs says so; `skipped` is not `passed`. `--comment` goes through `gh pr view`, which draws on the GraphQL quota; when that is exhausted, post the same text with `gh api -X POST repos/{o}/{r}/issues/<n>/comments -F body=@verdict.md`. A verdict that exists only in a terminal is not a record.
 
-- When you add/remove/change a CI job or its command, update **both** files in the same PR.
-- Every chained remote job's run step carries an inline `# PARITY:` marker (the manual-run-only `submodule-access` job has no local counterpart and no marker, UAMS-Web/uams-statamic-archive#2497) pointing at the script; the workflow's top-of-file note and the script's header block both list the full job↔command map.
-- Parity covers the **pass/fail surface only**: the six jobs' commands, the Pint diff scope (`diff-filter=ACMR`, `base...HEAD` merge-base, `*.php`), and the toolchain pins (PHP 8.4, Node 22, npm >= 11.10.0). It deliberately omits CI-only infra that doesn't change local results — OPcache/JIT ini tuning, `actions/cache` layers, clean-runner guarantees.
-- When editing this skill's job-mapping table above, re-check it against `ci.yml` so the three documents stay consistent.
+4. **Green: merge the validated head, pinned.**
 
-### Enforcement (co-change gate)
+   ```bash
+   gh api -X PUT repos/{o}/{r}/pulls/<n>/merge -f merge_method=<method> -f sha=<40-character head from step 1>
+   ```
 
-A `pre-commit` hook mechanically enforces the "change both together" rule:
+   `sha` makes GitHub refuse the merge when the head is not that commit. The refusal is `409` with `Head branch was modified`, and it reads the same whether the branch really moved or the SHA passed was never a commit; `git cat-file -t <sha>`, run in a checkout that has fetched the branch, tells them apart. A `409` is not retried with a re-derived value: go back to step 1. The merge call defaults to a merge commit, so pass the method the repository allows. Before merging, the checks `pre-merge-check` lists apply: base freshness, what the merge will close, and what the composed commit message will carry. Report the merge to the channel once it lands.
 
-- [`.githooks/pre-commit`](../../../.githooks/pre-commit) blocks any commit that stages **exactly one** of `ci.yml` / `scripts/local-ci.mjs`. It's a *co-change* gate, not a semantic diff (the two files are deliberately not byte-identical), so it just forces a human to touch both.
-- It's auto-wired in every clone: `composer install`/`update` runs [`scripts/setup-git-hooks.php`](../../../scripts/setup-git-hooks.php), which sets `git config core.hooksPath .githooks` (a no-op outside a git work tree, in a subdirectory of another repository, when `.githooks/pre-commit` is untracked, and under GitHub Actions). To activate without a Composer run: `git config core.hooksPath .githooks`.
-- **Bypass** a deliberate one-sided edit (typo in a comment, a script-only flag) with `git commit --no-verify`. The hook is a safety net, not a lock — and it costs zero CI minutes.
+5. **Red, or a finding on a green: hand it back.** Write the finding, with the head SHA it was found at, to a file (step 3's verdict names the failing job; a finding from review is a comment of its own), then post it and apply the label with one command:
 
-See `node scripts/local-ci.mjs --help` for every flag.
+   ```bash
+   node .claude/skills/local-ci/post-verdict.mjs <n> verdict.md --hand-back
+   ```
+
+   Do not flip the pull request to draft: `ready -> draft` is the author's signal, and the REST update ignores the field. Do not re-pick a head that has not moved; re-running it reproduces the same verdict. The author pushes, and the push is what returns the pull request to the queue: the `handed-back-label` skill's workflow removes the label on that push, so neither the gate nor the author removes it by hand. A push that leaves the pull request conflicted runs no workflow, so the label stays until the push that resolves the conflict. The label means a finding is outstanding; its absence does not mean the pull request is green. Report the hand-back to the channel in the same turn as the command (*Reporting to the coordination channel*, below).
+
+6. **After a merge, refresh the gating checkout** (`git fetch origin`, then bring the primary to `origin/main` per the `worktrees` rule) before taking the next entry, so the next validation diffs against the base the merge produced.
+
+### Reporting to the coordination channel
+
+Where the session is connected to a coordination channel, report each of these as it happens. The reports are operating steps of this procedure, sent with the channel's `events_narrate` call addressed to the coordinator, and they are exempt from any instruction to keep channel traffic down: a pickup or a hand-back that goes unreported leaves the pull request waiting for someone to notice it.
+
+1. **Pickup, at step 1.** One message that starts with `PICKED UP:`, then the pull request as `owner/name#N`, the full 40-character head SHA read back from the API in this turn (never a short form), and the queue depth. When validation begins, call `gate_start` with the pull request as `owner/name#N`; call `gate_finish` when the run ends, whatever the verdict. Neither call emits a feed event, so the pickup message is the only fleet-visible record that the pull request is being worked.
+2. **Merge, after step 4.** One message that starts with `LEAVES YOU:`, then the pull request, `merged`, and the merge SHA the API returned.
+3. **Hand-back, after step 5.** One message that starts with `LEAVES YOU:`, then the pull request, `handed back`, and the lane it went to (the author's, or the one the finding names). The message carries no finding text: the finding is in the verdict comment on the pull request, and the message says only that it is there and that the `handed-back` label was applied and read back.
+
+Keep each report to a line or two. The detail belongs on the pull request, where a reader without channel access can verify it.
+
+**When no coordination channel is configured,** skip the calls and say so in the reply that closes the pull request, in one clause. The verdict comment and the `handed-back` label remain the record, and nothing else in the procedure changes.
+
+**What stays with each repository.** This procedure fixes the order and the pins; it does not decide:
+
+- **Whether the gate merges at all.** A repository whose maintainers merge by hand stops after step 3 or step 5. A standing grant to merge on green is the operator's to give, per repository, and a session without one asks.
+- **The merge method**, and the settings behind it (`allow_squash_merge`, branch protection, required checks). Read them with `gh api repos/{o}/{r} --jq '[.allow_squash_merge, .allow_merge_commit, .allow_rebase_merge]'`. Changing any of them is outside this procedure.
+- **Companion pull requests and merge order**, where a change spans repositories or a submodule: the repository's own rules say which lands first.
+- **Which jobs run**, from `local-ci.json`, and any repository-specific health checks while a long run is in flight.
+- **Whether the `handed-back` label and its workflow are adopted.** A repository without them records the finding in the comment and holds the pull request out of the queue another way.
+
+## Repositories with their own runner
+
+`uams-statamic` predates the shared runner and keeps a `scripts/local-ci.mjs` of its own, hand-maintained as a mirror of that repository's `ci.yml`. The shared runner now covers most of what it does, behind configuration (#58). What follows are the differences that remain, to be checked when a repository adopts the shared runner. They are checked on that repository's adoption ticket, `UAMS-Web/uams-statamic-archive#2835`. `aether-wordpress-importer` (`UAMS-Web/wordpress-importer-archive#1319`) and `aether-wordpress-migration-api` (`UAMS-Web/uamswp-migration-api-archive#393`, which closed `UAMS-Web/uamswp-migration-api-archive#364`) have moved onto the shared runner, so neither keeps a runner of its own.
+
+- **Slot bootstrap and reconciliation:** the shared runner's `--branch` (see *Validating a branch in a slot*) validates the remote head, and its `prepare` brings submodules, leftover files and Composer patches in line. `uams-statamic`'s runner also reconciles the slot with a local branch (fast-forwarding or refusing a diverged one), takes `--fresh` and `--fetch`, and installs dependencies into the slot before the jobs run; the shared runner leaves installing to the repository's bootstrap.
+- **How the slot is prepared.** The shared runner's `prepare` (see *Preparing a reused slot*) covers the steps that runner takes before its jobs, configured rather than built in, with these differences. `uams-statamic` initializes `content/` and `users/` for its `pest` job only, shallow (`--depth 1`), authenticating with Composer's GitHub token where one is set, and clears files stranded in an uninitialized submodule directory; the shared runner initializes the listed submodules on every run with the user's own credentials and refuses stranded files rather than clearing them. For Composer patches, `uams-statamic` stamps the lock's `_hash` and re-runs `composer install` after removing the patched packages, where the shared runner runs `composer reinstall` against a recorded copy of the lock; `uams-statamic` also runs `composer install` first, which the shared runner leaves to the repository's bootstrap.
+- **The rest of the Pest job around the parallel run:** the shared runner now runs the parallel part and the serial tail (`jobs[].parallel`). `uams-statamic` also builds a route cache and a Stache seed before the suite, writes JUnit reports from each part for a skip-baseline check and a slowest-class check, keeps the run coverage-free with `-d pcov.enabled=0`, and deliberately excludes Pest's test-impact analysis from both parts.
+- **The commit status:** the shared runner posts the status (`--commit-status`, see *Posting a commit status*), under a configurable context that defaults to `local-ci`, on the commit it validated. `uams-statamic` validates the branch tip, as the shared runner does, and posts the status for the pull request head, and words the description for chain-gated jobs its own way.
+- **The merge pipeline's repository-specific parts:** the shared skill ships the validate, comment, merge-or-hand-back order (see *Reviewing a pull request*); `uams-statamic` additionally keeps companion-pull-request ordering, a standing merge grant, a pull request compliance review before validation, and health checks while a run is in flight. The pull request watcher is no longer on this list: the shared skill ships it (see *Watching pull requests*), and each repository's own `scripts/watch-github.mjs` stays in place until that repository's adoption ticket retires it.
+
+The mutation-tooling smoke `uams-statamic` runs is no longer a difference: `jobs[].mutation` fails a job whose output reports no mutations or a score below `minScore` (#53). `uams-statamic` decides, with its maintainers, whether to move to the shared runner, keep its own, or run the shared runner's `local-ci.json` beside its own for the jobs the two have in common. Until that decision is recorded on the adoption ticket, its own runner is its gate and this skill's instructions about `local-ci.json` do not apply there.
+
+This repository's runner is [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs) (`node scripts/local-ci.mjs --branch <branch>`; `--help` lists every flag). Its tests are `scripts/local-ci*.test.mjs`. Parity with [`ci.yml`](../../../.github/workflows/ci.yml) is kept by hand, with `PARITY:` markers in both files and a co-change gate in [`.githooks/pre-commit`](../../../.githooks/pre-commit).
