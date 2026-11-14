@@ -96,13 +96,10 @@ class SchemaTemplatesWarmJsonLdCache extends Command
             return false;
         }
 
-        // STDOUT must exist and support TTY detection for a spinner or bar
-        // Under PHP CLI both always hold and stream_isatty() then answers false without a TTY
-        // @pest-mutate-ignore: IfNegated, BooleanOrToBooleanAnd, RemoveNot
-        if (
-            ! defined('STDOUT')
-            || ! function_exists('stream_isatty')
-        ) {
+        // STDOUT must exist (it does not under a web SAPI) for a spinner or bar
+        // Under PHP CLI it always does, and stream_isatty() then answers false without a TTY
+        // @pest-mutate-ignore: IfNegated, RemoveNot
+        if (! defined('STDOUT')) {
             return false;
         }
 
