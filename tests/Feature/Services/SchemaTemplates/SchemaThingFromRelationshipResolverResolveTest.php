@@ -543,7 +543,10 @@ it('does not cache an untyped graph build', function (): void {
 it('records the composition profile when it is enabled', function (): void {
     Config::set('schema_templates.json_ld_compose_profile.enabled', true);
     $output = thingResolveOutput();
-    // The one graph build takes at least 20ms, so the resolve timing has a floor to check
+    // The one graph build sleeps 20ms, so the resolve timing has a floor to check. The floor is
+    // 10ms, not 20ms: on Windows `usleep()` follows the system timer, and `microtime()` read
+    // 4 of 3000 20ms sleeps as under 20ms (lowest 19.699ms) and none under 10ms (PHP 8.4.27,
+    // Windows 11). A recorded time in seconds, not milliseconds, reads 0.02 and still fails (#704).
     $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturnUsing(function (): array {
         usleep(20_000);
 
@@ -561,7 +564,7 @@ it('records the composition profile when it is enabled', function (): void {
     expect($bag['relationship_collect_direct_calls'])->toBe(2)
         ->and($bag['relationship_targets_direct'])->toBe(3)
         ->and($bag['relationship_resolve_calls'])->toBe(2)
-        ->and($bag['relationship_resolve_ms'])->toBeFloat()->toBeGreaterThanOrEqual(20.0)->toBeLessThan(60_000.0)
+        ->and($bag['relationship_resolve_ms'])->toBeFloat()->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_full_build_calls'])->toBe(2)
         ->and($bag['relationship_compact_ref_hits'])->toBe(1)
         ->and($bag['relationship_full_build_top'])->toHaveCount(2);
