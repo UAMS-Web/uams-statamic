@@ -3960,3 +3960,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Classify each row and give every survivor a home outside the consumer* (a `patches-*` repository, or a hand-checked ticket with no watcher): a hand-checked ticket trades an automated signal for a manual one that is easy to forget, and the rows have no patch to tie them to a `patches-*` repository. *Create new `patches-*` repositories* for `pestphp/pest` and for `statamic/ideas` and `statamic/docs`: they would patch nothing, which is not what a `patches-*` repository is for, and each adds a repository to maintain for a watch this one already runs.
 
 **Companion.** #667 (decision and build); `UAMS-Web/uams-claude-skills#702` (the `patch-package` skill that carries the watcher to the `patches-*` repositories).
+
+## 2026-11-14: The `group` handle is served by Statamic's own Group fieldtype, and `App\Fieldtypes\Group` is retired (#736)
+
+**Decision.** `app/Fieldtypes/Group.php` is deleted, so the `group` handle resolves to `Statamic\Fieldtypes\Group`. [`tests/Feature/Rules/UniqueIdentifierGroupedSelfExclusionTest.php`](../tests/Feature/Rules/UniqueIdentifierGroupedSelfExclusionTest.php) stays as the guard, and [`tests/Feature/Fieldtypes/GroupFieldtypeTest.php`](../tests/Feature/Fieldtypes/GroupFieldtypeTest.php) pins the registration. Nothing outside this repository changes, and no package moves. Decided by Josh, 2026-11-14.
+
+**Why.** The override existed only to pass the entry's validation replacements (`{id}`, `{collection}`, `{site}`) to the rules of a group's fields (statamic/cms#15513), and its docblock named its own retirement condition: an installed Statamic release applying `AddsEntryValidationReplacements` to `Group`. `statamic/cms` `v6.40.0` does. With the class removed, the self-exclusion test passes; with an override that skips the replacements, both of its tests fail, so the guard detects the regression it is kept for.
+
+**Rejected.** *Keep the class*: its only remaining difference from Statamic's `Group` is a set of fallbacks to `parent::extraRules()`, several of them unreachable, which #312's coverage work would then have to cover or justify under the mutation bar.
+
+**Companion.** #736 (decision), #738 (removal); UAMS-Web/uams-statamic-archive#2601 and UAMS-Web/uams-statamic-archive#2603 (the original defect and the override).
