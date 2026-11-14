@@ -47,6 +47,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
     /**
      * Width used to blank a progress bar line when ANSI erase is unavailable.
      */
+    // Read only while a progress bar is drawn, which needs a TTY that Artisan::call never has
+    // @pest-mutate-ignore: DecrementInteger, IncrementInteger
     private const int ERASE_LINE_FILL_WIDTH = 120;
 
     /**
@@ -88,15 +90,16 @@ class SchemaTemplatesWarmJsonLdCache extends Command
     private function shouldAnimateWarmProgress(): bool
     {
         // Quiet mode suppresses all progress UI
+        // Without a TTY the method answers false whichever way this branch goes
+        // @pest-mutate-ignore: IfNegated, FalseToTrue, RemoveEarlyReturn
         if ($this->output->isQuiet()) {
             return false;
         }
 
-        // STDOUT must exist and support TTY detection for a spinner or bar
-        if (
-            ! defined('STDOUT')
-            || ! function_exists('stream_isatty')
-        ) {
+        // STDOUT must exist (it does not under a web SAPI) for a spinner or bar
+        // Under PHP CLI it always does, and stream_isatty() then answers false without a TTY
+        // @pest-mutate-ignore: IfNegated, RemoveNot
+        if (! defined('STDOUT')) {
             return false;
         }
 
@@ -199,6 +202,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
                     continue;
                 }
 
+                // isset() is true for a false value too, so the stored value is never read
+                // @pest-mutate-ignore: TrueToFalse
                 $urlSeen[$url] = true;
                 $mergedUrls[] = $url;
             }
@@ -206,6 +211,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
             // Track distinct schema object entry ids seen across sites (ordered first-seen)
             foreach ($packet['schema_object_entry_ids'] as $sid) {
                 if (! isset($schemaSeen[$sid])) {
+                    // isset() is true for a false value too, so the stored value is never read
+                    // @pest-mutate-ignore: TrueToFalse
                     $schemaSeen[$sid] = true;
                     $schemaIdsOrdered[] = $sid;
                 }
@@ -214,6 +221,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
             // Track distinct people entry ids seen across sites (ordered first-seen)
             foreach ($packet['people_entry_ids'] as $pid) {
                 if (! isset($peopleSeen[$pid])) {
+                    // isset() is true for a false value too, so the stored value is never read
+                    // @pest-mutate-ignore: TrueToFalse
                     $peopleSeen[$pid] = true;
                     $peopleIdsOrdered[] = $pid;
                 }
