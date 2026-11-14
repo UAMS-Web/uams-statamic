@@ -50,6 +50,7 @@
         "uams-web/aether-alpine-csp-forms": "^0.3",
         "uams-web/aether-form-settings": "^0.5",
         "uams-web/aether-incomplete-entries": "^0.2.1",
+        "uams-web/aether-listings-management": "^0.1.2",
         "uams-web/aether-multisite-forms": "^0.7",
         "uams-web/aether-redirects": "^0.3.0",
         "uams-web/aether-search": "^0.3",
