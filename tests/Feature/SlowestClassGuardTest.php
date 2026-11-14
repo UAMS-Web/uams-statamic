@@ -418,6 +418,72 @@ it('still fails the serial band and an unnamed band over their share ceilings on
     $cleanUp($dir);
 });
 
+it('reports a serial share breach in a band of too few classes without failing', function () use ($writeReport, $runGuard, $cleanUp): void {
+    // The serial band #671's CI run measured once #557 returned most of the group to
+    // the parallel band: five timed classes, so no share could fall below 20%.
+    [$dir, $report] = $writeReport([
+        'Tests\Feature\Classifieds\UnpublishExpiredClassifiedsTest' => [22.0],
+        'Tests\Feature\SeedTestStacheCommandTest' => [17.2],
+        'Tests\Feature\ContentMirrorIsolationTest' => [5.9],
+        'Tests\Feature\PintDeclareStrictTypesEnforcementTest' => [1.2],
+        'Tests\Feature\StacheSnapshotRootStampTest' => [0.6],
+    ]);
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe(0);
+    expect($output)->toContain("reported and not failed in a band of 5 timed classes (minimum 10): serial band's Tests\Feature\Classifieds\UnpublishExpiredClassifiedsTest is 22.0s, 46.91% of 46.9s summed class time, share ceiling 40.00% (over by 6.91 points)");
+
+    $cleanUp($dir);
+});
+
+it('fails a serial share breach from the minimum class count up, and reports it just below', function (int $fillers, int $expected) use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // 250s of 500s is 50%, over the 40% serial ceiling whatever the class count.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', 250.0, 500.0, $fillers));
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe($expected);
+    expect($output)->toContain($expected === 0
+        ? "reported and not failed in a band of 9 timed classes (minimum 10): serial band's Tests\Feature\SlowTest is 250.0s, 50.00%"
+        : "Slowest class EXCEEDED: serial band's Tests\Feature\SlowTest is 50.00%");
+
+    $cleanUp($dir);
+})->with([
+    'nine classes, one under the minimum' => [8, 0],
+    'ten classes, at the minimum' => [9, 1],
+    'eleven classes' => [10, 1],
+]);
+
+it('still fails a class over the backstop in a band of too few classes', function () use ($writeReport, $runGuard, $cleanUp): void {
+    [$dir, $report] = $writeReport([
+        'Tests\Feature\SlowTest' => [1600.0],
+        'Tests\Feature\QuickTest' => [10.0],
+    ]);
+
+    [$code, $output] = $runGuard($report, band: 'serial');
+
+    expect($code)->toBe(1);
+    expect($output)->toContain("Slowest class EXCEEDED: serial band's Tests\Feature\SlowTest cost 1600.0s, backstop 1500.0s");
+    expect($output)->not->toContain('reported and not failed');
+
+    $cleanUp($dir);
+});
+
+it('gives the parallel band and an unnamed band no class minimum', function () use ($writeReport, $runGuard, $cleanUp, $band): void {
+    // Five classes, 50% share: only the serial band has a minimum to report it under.
+    [$dir, $report] = $writeReport($band('Tests\Feature\SlowTest', 250.0, 500.0, 4));
+
+    foreach (['parallel', 'suite'] as $name) {
+        [$code, $output] = $runGuard($report, band: $name);
+
+        expect($code)->toBe(1);
+        expect($output)->toContain("Slowest class EXCEEDED: {$name} band's Tests\Feature\SlowTest is 50.00%");
+    }
+
+    $cleanUp($dir);
+});
+
 it('still fails a class over the backstop on a hosted runner, share breach or not', function () use ($writeReport, $runGuard, $cleanUp, $band, $hostedRunner): void {
     // 1600s of 22600s is 7.08%, under the share ceiling; 1600s of 16000s is 10%,
     // over it. The backstop fails both, since #584 did not touch it.
