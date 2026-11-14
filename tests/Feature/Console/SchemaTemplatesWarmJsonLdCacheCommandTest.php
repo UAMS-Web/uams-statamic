@@ -273,6 +273,25 @@ it('keeps merging the URLs of a site past a duplicate, and gathers each person a
         ->and($summary['people_entry_ids'] ?? null)->toBe(['kirk', 'spock', 'mccoy']);
 });
 
+it('skips anything in the site list that is not a Statamic site', function (): void {
+    warmJsonLdSites(['alpha']);
+
+    $alpha = Site::get('alpha');
+    Site::partialMock()->shouldReceive('all')->andReturn(collect(['not-a-site', $alpha]));
+
+    EntryFacade::shouldReceive('findByUri')
+        ->andReturnUsing(fn (string $uri, string $site): EntryModel => warmJsonLdHomeEntry(true, 'https://'.$site.'.test/'));
+
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    expect(Artisan::call('schema-templates:warm-json-ld-cache'))->toBe(0);
+
+    $sent = Http::recorded()->map(fn (array $pair): string => $pair[0]->url())->all();
+
+    expect($sent)->toBe(['https://alpha.test/'])
+        ->and(warmJsonLdStoredSummary()['sites'] ?? null)->toBe(['alpha']);
+});
+
 it('warms only the site --site names', function (): void {
     warmJsonLdSites(['alpha', 'beta']);
 
