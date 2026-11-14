@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\EnumGeneration\ZipCode\ZipCodeEnumGenerator;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -355,6 +356,8 @@ it('renders the whole generated file, one attribute line and case per row', func
     expect($php)->toBe(implode("\n", [
         '<?php',
         '',
+        'declare(strict_types=1);',
+        '',
         '/**',
         ' * Generated US ZIP codes enum cases',
         ' *',
@@ -374,14 +377,13 @@ it('renders the whole generated file, one attribute line and case per row', func
         ' * This list of cases was generated on <when>',
         ' * Total ZIP records: 2',
         ' */',
-        '',
         'enum ZipCode: string',
         '{',
-        "\t#[First]",
-        "\tcase ZIP_1 = 'ZIP_1';",
+        '    #[First]',
+        "    case ZIP_1 = 'ZIP_1';",
         '',
-        "\t#[Second]",
-        "\tcase ZIP_2 = 'ZIP_2';",
+        '    #[Second]',
+        "    case ZIP_2 = 'ZIP_2';",
         '',
         '}',
         '',
@@ -530,4 +532,77 @@ it('finds the results however far they sit from the data key', function (int $ga
 })->with([
     'short' => [10],
     'past the buffer' => [12000],
+]);
+
+/**
+ * Evaluate every string literal in a rendered ZipCodeInfo attribute, in order.
+ *
+ * A literal that does not parse comes back as a `ParseError:` string, so it fails
+ * its own case rather than aborting the run.
+ *
+ * @return list<mixed>
+ */
+function zipCodeAttributeValues(string $attribute): array
+{
+    $values = [];
+    foreach (token_get_all('<?php '.$attribute) as $token) {
+        if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+            try {
+                $values[] = eval('return '.$token[1].';');
+            } catch (ParseError $error) {
+                $values[] = 'ParseError: '.$error->getMessage();
+            }
+        }
+    }
+
+    return $values;
+}
+
+it('renders output that Pint reports clean with no separate pass (#718)', function (): void {
+    $generator = new ZipCodeEnumGenerator;
+    $php = $generator->generatePhpContent($generator->buildZipRowsFromRecords([
+        ['zip' => '61744', 'city' => 'Gridley', 'state' => 'IL', 'state_geoId' => '17', 'county_geoId' => ['17113', '17105']],
+        ['zip' => '63366', 'city' => "O'Fallon", 'state' => 'MO', 'state_geoId' => '29', 'county_geoId' => []],
+        ['zip' => '72205', 'city' => 'Trailing\\', 'state' => 'AR\\', 'state_geoId' => '05\\', 'county_geoId' => ['05119\\']],
+    ]));
+
+    $root = dirname(__DIR__, 4);
+    $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'zip-enum-'.bin2hex(random_bytes(6)).'.php';
+    file_put_contents($path, $php);
+
+    try {
+        $process = new Process([
+            PHP_BINARY,
+            $root.'/vendor/bin/pint',
+            '--test',
+            '--config',
+            $root.'/pint.json',
+            $path,
+        ]);
+        $process->run();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput());
+});
+
+it('writes every attribute literal so it evaluates back to its value (#718)', function (string $value): void {
+    $row = (new ZipCodeEnumGenerator)->processZipRecordWithHudData([], [
+        'zip' => $value,
+        'city' => $value,
+        'state' => $value,
+        'state_geoId' => $value,
+        'county_geoId' => [$value, $value],
+    ]);
+
+    // zip_code, city, state_usps, state_geoId, then the two county GEOIDs
+    expect(zipCodeAttributeValues($row['attribute']))->toBe(array_fill(0, 6, $value));
+})->with([
+    'plain' => ['Gridley'],
+    'apostrophe' => ["O'Fallon"],
+    'trailing backslash' => ['end\\'],
+    'doubled backslash' => ['a\\\\b'],
+    'backslash before apostrophe' => ['x\\\'y'],
+    'lone backslash' => ['\\'],
 ]);
