@@ -43,7 +43,7 @@ final class IscedEnumWriter
     {
         $generatedAt = date('Y-m-d');
         $count = count($rows);
-        $out = "<?php\n\n";
+        $out = "<?php\n\ndeclare(strict_types=1);\n\n";
         $out .= "namespace App\\Enums;\n\n";
         $out .= "use App\\Enums\\Attributes\\IscedInfo;\n";
         $out .= "use App\\Services\\EnumGeneration\\EnumDataUtils;\n\n";
@@ -104,8 +104,8 @@ DOC."\n";
     private function phpString(string $s): string
     {
         // var_export emits single-quoted PHP string literals (with `'` and `\`
-        // escaped); matches Pint's `single_quote` rule so generated enums stay
-        // formatter-clean without a post-pass.
+        // escaped), which matches Pint's `single_quote` rule
+        // (UAMS-Web/uams-statamic#723 tests the whole file against Pint).
         return var_export($this->normalizeTypographicQuotationToAscii($s), true);
     }
 
