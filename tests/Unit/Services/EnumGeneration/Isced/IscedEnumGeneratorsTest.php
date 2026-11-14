@@ -11,6 +11,7 @@ use App\Services\EnumGeneration\Isced\IscedF2013EnumGenerator;
 use App\Services\EnumGeneration\Isced\IscedFieldsLoader;
 use App\Services\EnumGeneration\Isced\IscedP2011EnumGenerator;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -33,8 +34,8 @@ covers(
  * The writer writes to `app_path('Enums/<class>.php')`, so each test points the
  * application path at its own directory under the system temp directory and
  * nothing reaches `app/Enums`. Regenerating from the bundled fixtures reproduces
- * the committed enums except for two lines: the `Generated:` date, and the
- * `declare(strict_types=1);` that Pint adds after generation.
+ * the committed enums except for the `Generated:` date, and Pint reports the
+ * regenerated files clean with no separate pass (UAMS-Web/uams-statamic#723).
  *
  * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Isced/IscedEnumGeneratorsTest.php
  */
@@ -77,8 +78,8 @@ function iscedRows(array $rows): string
 }
 
 /**
- * The committed enum as the generator writes it on the given date: without the
- * `declare(strict_types=1);` Pint adds, and with that date on the `Generated:` line.
+ * The committed enum as the generator writes it on the given date: with that date
+ * on the `Generated:` line.
  *
  * @param  string  $enumClass  The enum's short class name.
  * @param  string  $date  The `Y-m-d` date the generator stamps.
@@ -87,9 +88,8 @@ function iscedRows(array $rows): string
 function iscedCommittedAsGenerated(string $enumClass, string $date, string $committedAppPath): string
 {
     $committed = (string) file_get_contents($committedAppPath.'/Enums/'.$enumClass.'.php');
-    $withoutDeclare = str_replace("<?php\n\ndeclare(strict_types=1);\n\n", "<?php\n\n", $committed);
 
-    return (string) preg_replace('/^ \* Generated: \d{4}-\d{2}-\d{2}$/m', ' * Generated: '.$date, $withoutDeclare);
+    return (string) preg_replace('/^ \* Generated: \d{4}-\d{2}-\d{2}$/m', ' * Generated: '.$date, $committed);
 }
 
 /**
@@ -138,6 +138,24 @@ it('regenerates each committed ISCED enum from its bundled fixture', function (I
     'ISCED-P 2011' => [new IscedP2011EnumGenerator, 'IscedP2011'],
     'ISCED-F 2013' => [new IscedF2013EnumGenerator, 'IscedF2013'],
 ]);
+
+it('writes all three enums so Pint reports them clean with no separate pass (#723)', function (): void {
+    $paths = (new IscedEnumsGenerator)->generate();
+
+    $process = new Process([
+        PHP_BINARY,
+        base_path('vendor/bin/pint'),
+        '--test',
+        '--config',
+        base_path('pint.json'),
+        ...array_values($paths),
+    ]);
+    $process->setTimeout(300);
+    $process->run();
+
+    expect($paths)->toHaveCount(3)
+        ->and($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput());
+});
 
 it('runs all three generators and returns the path each one wrote', function (): void {
     $paths = (new IscedEnumsGenerator)->generate();
@@ -364,6 +382,8 @@ it('writes the header, one attributed case per row, and the getters', function (
     expect($path)->toBe(app_path('Enums/IscedTestEnum.php'))
         ->and($php)->toStartWith(implode("\n", [
             '<?php',
+            '',
+            'declare(strict_types=1);',
             '',
             'namespace App\Enums;',
             '',

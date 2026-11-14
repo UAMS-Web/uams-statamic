@@ -876,6 +876,8 @@ final class SchemaTypeEnumGenerator
         return <<<PHP
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use App\Enums\Attributes\SchemaEnumerationMemberInfo;
@@ -1422,6 +1424,8 @@ PHP;
         return <<<PHP
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use App\Enums\Attributes\SchemaTypeInfo;
@@ -1688,6 +1692,8 @@ PHP;
         return <<<PHP
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use App\Enums\Attributes\SchemaPropertyInfo;
@@ -1860,6 +1866,8 @@ PHP."\n";
 
         return <<<PHP
 <?php
+
+declare(strict_types=1);
 
 namespace App\Enums;
 
