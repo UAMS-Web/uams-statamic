@@ -131,7 +131,7 @@ function iscedConfig(): IscedEnumConfig
 it('regenerates each committed ISCED enum from its bundled fixture', function (IscedA2011EnumGenerator|IscedP2011EnumGenerator|IscedF2013EnumGenerator $generator, string $enumClass): void {
     $path = $generator->generate();
 
-    expect($path)->toBe($this->iscedRoot.'/Enums/'.$enumClass.'.php')
+    expect($path)->toBe(app_path('Enums/'.$enumClass.'.php'))
         ->and(file_get_contents($path))->toBe(iscedCommittedAsGenerated($enumClass, date('Y-m-d'), $this->committedAppPath));
 })->with([
     'ISCED-A 2011' => [new IscedA2011EnumGenerator, 'IscedA2011'],
@@ -143,9 +143,9 @@ it('runs all three generators and returns the path each one wrote', function ():
     $paths = (new IscedEnumsGenerator)->generate();
 
     expect($paths)->toBe([
-        'a' => $this->iscedRoot.'/Enums/IscedA2011.php',
-        'p' => $this->iscedRoot.'/Enums/IscedP2011.php',
-        'f' => $this->iscedRoot.'/Enums/IscedF2013.php',
+        'a' => app_path('Enums/IscedA2011.php'),
+        'p' => app_path('Enums/IscedP2011.php'),
+        'f' => app_path('Enums/IscedF2013.php'),
     ]);
 
     foreach (['a' => 'IscedA2011', 'p' => 'IscedP2011', 'f' => 'IscedF2013'] as $key => $enumClass) {
@@ -347,7 +347,7 @@ it('reports a write it could not make, naming the path', function (): void {
 
     try {
         expect(fn (): string => (new IscedEnumWriter)->write([iscedRecord()], iscedConfig()))
-            ->toThrow(ValueError::class, 'Failed to write enum file: '.$this->iscedRoot.'/Enums/IscedTestEnum.php');
+            ->toThrow(ValueError::class, 'Failed to write enum file: '.app_path('Enums/IscedTestEnum.php'));
     } finally {
         restore_error_handler();
     }
@@ -361,7 +361,7 @@ it('writes the header, one attributed case per row, and the getters', function (
 
     $php = (string) file_get_contents($path);
 
-    expect($path)->toBe($this->iscedRoot.'/Enums/IscedTestEnum.php')
+    expect($path)->toBe(app_path('Enums/IscedTestEnum.php'))
         ->and($php)->toStartWith(implode("\n", [
             '<?php',
             '',
