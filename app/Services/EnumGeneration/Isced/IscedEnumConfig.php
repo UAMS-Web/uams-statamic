@@ -17,7 +17,6 @@ final class IscedEnumConfig
      * @param  string  $sourceTitle  Title of the publication used to populate this enum
      * @param  string  $sourceUrl  Canonical URL for the source
      * @param  string  $emitNotes  Free-form notes added to the enum class docblock
-     * @param  int  $minTierLength  Length in characters of top-tier codes (1 for ISCED-P/A, 2 for ISCED-F)
      */
     public function __construct(
         public string $enumClass,
@@ -27,6 +26,5 @@ final class IscedEnumConfig
         public string $sourceTitle,
         public string $sourceUrl,
         public string $emitNotes,
-        public int $minTierLength,
     ) {}
 }

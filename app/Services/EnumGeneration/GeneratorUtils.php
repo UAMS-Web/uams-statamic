@@ -331,7 +331,11 @@ final class GeneratorUtils
     }
 
     /**
-     * Escape single quotes for embedding inside single-quoted PHP literals.
+     * Escape a value for embedding inside a single-quoted PHP literal.
+     *
+     * Both `\` and `'` are escaped, so the result wrapped in single quotes is a
+     * literal that evaluates back to the value, including one holding `\\` or
+     * ending in `\` (#717).
      *
      * @param  string  $value  Input string
      * @return string Escaped string
@@ -339,11 +343,10 @@ final class GeneratorUtils
     public static function escapeSingleQuotes(
         string $value
     ): string {
-        // Escape single quotes
-        $escaped = \str_replace(
-            "'",
-            "\\'",
-            $value
+        // Escape backslashes and single quotes
+        $escaped = \addcslashes(
+            $value,
+            '\\\''
         );
 
         // Clean up variables to free up memory

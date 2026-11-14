@@ -168,7 +168,7 @@ final class ZipCodeEnumGenerator
         array $enumCases
     ): string {
         // Header: open PHP tag and start generated documentation block
-        $content = "<?php\n\n";
+        $content = "<?php\n\ndeclare(strict_types=1);\n\n";
 
         // Instructions block
         $content .= "/**\n";
@@ -190,7 +190,7 @@ final class ZipCodeEnumGenerator
         $content .= ' * This list of cases was generated on '.\date('Y-m-d').' at '.
             \date('H:i:s T')."\n";
         $content .= ' * Total ZIP records: '.\count($enumCases)."\n";
-        $content .= " */\n\n";
+        $content .= " */\n";
 
         // Open enum
         $content .= "enum ZipCode: string\n";
@@ -198,9 +198,9 @@ final class ZipCodeEnumGenerator
 
         // Loop through enum cases to generate case statements
         foreach ($enumCases as $c) {
-            // Emit each prepared attribute + case
-            $content .= "\t".$c['attribute']."\n";
-            $content .= "\t".$c['case']."\n\n";
+            // Emit each prepared attribute + case, indented with four spaces for Pint's `indentation_type`
+            $content .= '    '.$c['attribute']."\n";
+            $content .= '    '.$c['case']."\n\n";
         }
 
         // Close enum
@@ -251,35 +251,25 @@ final class ZipCodeEnumGenerator
         // Extract raw ZIP code value from HUD data or fallback to original data
         $zipCodeRaw = $hudComprehensiveData['zip'] ?? $zipData['zip_code'] ?? '';
 
-        // Coerce ZIP code to a string only when scalar. The cast changes no output:
-        // the value only reaches sprintf('%s') and string concatenation.
-        // @pest-mutate-ignore: RemoveStringCast
+        // Coerce ZIP code to a string only when scalar
         $zipCode = \is_scalar($zipCodeRaw) ? (string) $zipCodeRaw : '';
 
         // Extract raw city name value from HUD data or fallback to original data
         $cityRaw = $hudComprehensiveData['city'] ?? $zipData['usps_city'] ?? '';
 
-        // Extract and escape city name from HUD data or fallback to original data
-        $city = \str_replace(
-            "'",
-            "\\'",
-            \is_scalar($cityRaw) ? (string) $cityRaw : ''
-        );
+        // Extract city name from HUD data or fallback to original data
+        $city = \is_scalar($cityRaw) ? (string) $cityRaw : '';
 
         // Extract raw state USPS code value from HUD data or fallback to original data
         $stateUspsRaw = $hudComprehensiveData['state'] ?? $zipData['stusps_code'] ?? '';
 
-        // Extract state USPS code from HUD data or fallback to original data. The
-        // cast changes no output: the value only reaches sprintf('%s').
-        // @pest-mutate-ignore: RemoveStringCast
+        // Extract state USPS code from HUD data or fallback to original data
         $stateUsps = \is_scalar($stateUspsRaw) ? (string) $stateUspsRaw : '';
 
         // Extract raw state GEOID value from HUD data
         $stateGeoIdRaw = $hudComprehensiveData['state_geoId'] ?? '';
 
-        // Extract state GEOID from HUD data. The cast changes no output: the value
-        // only reaches sprintf('%s').
-        // @pest-mutate-ignore: RemoveStringCast
+        // Extract state GEOID from HUD data
         $stateGeoId = \is_scalar($stateGeoIdRaw) ? (string) $stateGeoIdRaw : '';
 
         // Get county GEOIDs directly from HUD data
@@ -292,21 +282,21 @@ final class ZipCodeEnumGenerator
         // Helper function to format arrays correctly
         // (empty arrays become [] instead of [''])
         // ---
-        $formatArray = fn (array $array): string => $array === [] ? '[]' : "['".\implode(
-            "', '",
-            \array_map(static fn (mixed $value): string => \is_scalar($value) ? (string) $value : '', $array)
-        )."']";
+        $formatArray = fn (array $array): string => '['.\implode(
+            ', ',
+            \array_map(fn (mixed $value): string => $this->phpLiteral(\is_scalar($value) ? (string) $value : ''), $array)
+        ).']';
 
         // Prepare PHP array-literals for attribute output
         $countyGeoIdArray = $formatArray($countyGeoIds);
 
         // Format the ZipCodeInfo attribute for this enum case with comprehensive data
         $attribute = \sprintf(
-            "#[ZipCodeInfo(zip_code: '%s', city: '%s', state_usps: '%s', state_geoId: '%s', county_geoId: %s)]",
-            $zipCode,
-            $city,
-            $stateUsps,
-            $stateGeoId,
+            '#[ZipCodeInfo(zip_code: %s, city: %s, state_usps: %s, state_geoId: %s, county_geoId: %s)]',
+            $this->phpLiteral($zipCode),
+            $this->phpLiteral($city),
+            $this->phpLiteral($stateUsps),
+            $this->phpLiteral($stateGeoId),
             $countyGeoIdArray
         );
 
@@ -920,5 +910,17 @@ final class ZipCodeEnumGenerator
 
         // Return true to indicate successful parsing
         return true;
+    }
+
+    /**
+     * Render a value as a single-quoted PHP string literal that evaluates back to it.
+     *
+     * {@see GeneratorUtils::escapeSingleQuotes()} escapes both `\` and `'`, so a
+     * value holding a backslash, including a trailing one, round-trips instead of
+     * losing a character or breaking the literal (#718).
+     */
+    private function phpLiteral(string $value): string
+    {
+        return "'".GeneratorUtils::escapeSingleQuotes($value)."'";
     }
 }
