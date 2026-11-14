@@ -51,7 +51,6 @@ final class IscedF2013EnumGenerator
             sourceTitle: 'Eurostat SDMX codelist ISCEDF13 (English labels), frozen as JSON',
             sourceUrl: self::SOURCE_URL,
             emitNotes: 'Codes use the canonical 2/3/4-digit UIS scheme. Refresh `isced-f-2013.json` from the Eurostat ISCEDF13 TSV when you need updated labels.',
-            minTierLength: 2,
         );
 
         return (new IscedEnumWriter)->write($records, $config);
@@ -64,7 +63,11 @@ final class IscedF2013EnumGenerator
     private function attachHierarchy(array $rows): array
     {
         $codes = array_map(static fn (array $r): string => $r['code'], $rows);
+        // Only the keys are read, through isset(), so the fill value cannot change them
+        // @pest-mutate-ignore: TrueToFalse
         $existing = array_fill_keys($codes, true);
+        // A shorter top tier only adds parents no code has, which buildChildrenMap() skips
+        // @pest-mutate-ignore: DecrementInteger
         $childrenByParent = IscedHierarchy::buildChildrenMap($codes, 2);
         $out = [];
         foreach ($rows as $row) {
@@ -73,6 +76,8 @@ final class IscedF2013EnumGenerator
                 'code' => $code,
                 'label' => $row['label'],
                 'parent' => IscedHierarchy::parentCode($code, 2),
+                // A shorter top tier only adds ancestors no code has, which ancestors() filters out
+                // @pest-mutate-ignore: DecrementInteger
                 'ancestors' => IscedHierarchy::ancestors($code, 2, $existing),
                 'children' => $childrenByParent[$code] ?? [],
                 'descendants' => IscedHierarchy::descendants($code, $childrenByParent),
