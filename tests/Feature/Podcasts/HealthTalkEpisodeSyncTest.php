@@ -803,11 +803,25 @@ function healthTalkWidgetHtml(): string
 it('runs from the console, exiting non-zero when the run changed nothing', function (): void {
     fakeHealthTalk(healthTalkFeed(['69402']));
     expect(Artisan::call('podcasts:sync-health-talk'))->toBe(0)
-        ->and(Artisan::output())->toContain('1 created');
+        ->and(Artisan::output())->toContain('1 feed items: 1 created, 0 updated, 0 unpublished, 0 re-published, 0 deferred on 0 unmapped speakers, 0 item pages failed.');
 
     fakeHealthTalk('', 503);
     expect(Artisan::call('podcasts:sync-health-talk'))->toBe(1)
         ->and(Artisan::output())->toContain('HTTP 503');
+});
+
+it('lifts the execution time limit for the console run', function (): void {
+    fakeHealthTalk(healthTalkFeed(['69402']));
+    set_time_limit(30);
+
+    try {
+        Artisan::call('podcasts:sync-health-talk');
+
+        // A backfill outlives any web-sized limit, so the command clears it rather than inheriting one
+        expect(ini_get('max_execution_time'))->toBe('0');
+    } finally {
+        set_time_limit(0);
+    }
 });
 
 it('is registered on the schedule, daily, from its configured cron', function (): void {
