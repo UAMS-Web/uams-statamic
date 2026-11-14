@@ -293,6 +293,24 @@ it('warms only the site --site names', function (): void {
         ->and($summary['failures'] ?? null)->toBe(0);
 });
 
+it('requests each URL with a 120 s timeout and a 15 s connect timeout', function (): void {
+    warmJsonLdSites(['alpha']);
+
+    EntryFacade::shouldReceive('findByUri')
+        ->andReturnUsing(fn (string $uri, string $site): EntryModel => warmJsonLdHomeEntry(true, 'https://'.$site.'.test/'));
+
+    $timeouts = [];
+
+    Http::fake(function (Request $request, array $options) use (&$timeouts) {
+        $timeouts[] = [$options['timeout'] ?? null, $options['connect_timeout'] ?? null];
+
+        return Http::response('ok', 200);
+    });
+
+    expect(Artisan::call('schema-templates:warm-json-ld-cache'))->toBe(0)
+        ->and($timeouts)->toBe([[120, 15]]);
+});
+
 it('snapshots the warm config, defaulting what is absent or malformed', function (mixed $warm, array $snapshot): void {
     warmJsonLdSites(['alpha']);
     config(['schema_templates.json_ld_cache.warm' => $warm]);

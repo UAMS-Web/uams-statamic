@@ -214,6 +214,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
             // Track distinct schema object entry ids seen across sites (ordered first-seen)
             foreach ($packet['schema_object_entry_ids'] as $sid) {
                 if (! isset($schemaSeen[$sid])) {
+                    // isset() is true for a false value too, so the stored value is never read
+                    // @pest-mutate-ignore: TrueToFalse
                     $schemaSeen[$sid] = true;
                     $schemaIdsOrdered[] = $sid;
                 }
@@ -222,6 +224,8 @@ class SchemaTemplatesWarmJsonLdCache extends Command
             // Track distinct people entry ids seen across sites (ordered first-seen)
             foreach ($packet['people_entry_ids'] as $pid) {
                 if (! isset($peopleSeen[$pid])) {
+                    // isset() is true for a false value too, so the stored value is never read
+                    // @pest-mutate-ignore: TrueToFalse
                     $peopleSeen[$pid] = true;
                     $peopleIdsOrdered[] = $pid;
                 }
