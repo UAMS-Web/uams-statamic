@@ -15,40 +15,6 @@ covers(IscedHierarchy::class, IscedEnumConfig::class);
  *
  * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Isced/IscedHierarchyTest.php
  */
-/**
- * A children map from parent and children pairs, typed the way descendants()
- * declares it. PHP stores a numeric-string key such as '3' as an integer either way.
- *
- * @param  list<array{string, list<string>}>  $pairs
- * @return array<string, array<int, string>>
- */
-function iscedChildren(array $pairs): array
-{
-    $map = [];
-    foreach ($pairs as [$parent, $children]) {
-        $map[$parent] = $children;
-    }
-
-    return $map;
-}
-
-/**
- * A set of existing codes, built the way buildChildrenMap() builds its own and
- * typed the way ancestors() declares it.
- *
- * @param  list<string>  $codes
- * @return array<string, true>
- */
-function iscedExisting(array $codes): array
-{
-    $existing = [];
-    foreach ($codes as $code) {
-        $existing[$code] = true;
-    }
-
-    return $existing;
-}
-
 it('strips the last character for a parent, and has none at or above the top tier', function (string $code, int $minTier, ?string $expected): void {
     expect(IscedHierarchy::parentCode($code, $minTier))->toBe($expected);
 })->with([
@@ -72,9 +38,9 @@ it('numbers tiers from 1 at the top tier', function (string $code, int $minTier,
 ]);
 
 it('lists ancestors root first, keeping only codes that exist', function (): void {
-    $existing = iscedExisting(['3', '34', '344']);
-    $partial = iscedExisting(['3', '344']);
-    $fields = iscedExisting(['03', '031']);
+    $existing = ['3' => true, '34' => true, '344' => true];
+    $partial = ['3' => true, '344' => true];
+    $fields = ['03' => true, '031' => true];
 
     expect(IscedHierarchy::ancestors('3441', 1, $existing))->toBe(['3', '34', '344'])
         ->and(IscedHierarchy::ancestors('3441', 1, $partial))->toBe(['3', '344'])
@@ -100,11 +66,11 @@ it('leaves out a child whose parent is not in the list', function (): void {
 });
 
 it('collects every descendant once, sorted shorter first then lexically', function (): void {
-    $children = iscedChildren([
-        ['3', ['35', '34']],
-        ['34', ['344', '342']],
-        ['342', ['3421']],
-    ]);
+    $children = [
+        '3' => ['35', '34'],
+        '34' => ['344', '342'],
+        '342' => ['3421'],
+    ];
 
     expect(IscedHierarchy::descendants('3', $children))->toBe(['34', '35', '342', '344', '3421'])
         ->and(IscedHierarchy::descendants('34', $children))->toBe(['342', '344', '3421'])
@@ -115,16 +81,31 @@ it('collects every descendant once, sorted shorter first then lexically', functi
 it('keeps walking after skipping a code it has already visited', function (): void {
     // 344 is listed under both 3 and 34, and is popped a second time while 35
     // still waits on the stack.
-    $children = iscedChildren([['3', ['35', '344', '34']], ['34', ['344']]]);
+    $children = ['3' => ['35', '344', '34'], '34' => ['344']];
 
     expect(IscedHierarchy::descendants('3', $children))->toBe(['34', '35', '344']);
 });
 
 it('visits a descendant reachable twice only once', function (): void {
     // A malformed map where 344 is listed under both 3 and 34.
-    $children = iscedChildren([['3', ['34', '344']], ['34', ['344']]]);
+    $children = ['3' => ['34', '344'], '34' => ['344']];
 
     expect(IscedHierarchy::descendants('3', $children))->toBe(['34', '344']);
+});
+
+it('finds integer-keyed and string-keyed codes alike through its own lookups (#685)', function (): void {
+    // PHP stores the one-character ISCED-P code '3' as an integer key and keeps the
+    // two-character ISCED-F code '09' as a string, so one map holds both.
+    $existing = array_fill_keys(['3', '34', '09', '091'], true);
+    $children = IscedHierarchy::buildChildrenMap(['3', '34', '341'], 1)
+        + IscedHierarchy::buildChildrenMap(['09', '091', '0912'], 2);
+
+    expect(array_map(get_debug_type(...), array_keys($existing)))->toBe(['int', 'int', 'string', 'string'])
+        ->and(array_map(get_debug_type(...), array_keys($children)))->toBe(['int', 'int', 'string', 'string'])
+        ->and(IscedHierarchy::ancestors('341', 1, $existing))->toBe(['3', '34'])
+        ->and(IscedHierarchy::ancestors('0912', 2, $existing))->toBe(['09', '091'])
+        ->and(IscedHierarchy::descendants('3', $children))->toBe(['34', '341'])
+        ->and(IscedHierarchy::descendants('09', $children))->toBe(['091', '0912']);
 });
 
 it('compares by length first, then lexically', function (string $a, string $b, int $sign): void {
