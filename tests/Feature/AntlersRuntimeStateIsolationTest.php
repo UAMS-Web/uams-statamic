@@ -6,14 +6,14 @@ use Illuminate\Support\Collection;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
-use Statamic\Facades\Stache;
 use Statamic\Stache\Query\EntryQueryBuilder;
-use Statamic\Stache\Stores\Store;
 use Statamic\View\Antlers\Language\Runtime\GlobalRuntimeState;
 use Tests\Concerns\RequiresContentSubmodule;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\IsolatesCollectionTrees;
 use Tests\TestCase;
 
-uses(TestCase::class, RequiresContentSubmodule::class);
+uses(EntriesAndTermsIsolatedTestCase::class, RequiresContentSubmodule::class, IsolatesCollectionTrees::class);
 
 const ANTLERS_ISOLATION_PREFIX = 'zz-antlers-isolation-';
 
@@ -33,7 +33,8 @@ const ANTLERS_ISOLATION_PREFIX = 'zz-antlers-isolation-';
  * `resetState()` and additionally zeroes `activeTracerCount`, so every test
  * starts with a cold runtime.
  *
- * The two tests below run in the `serial` group (one process, definition order),
+ * The two tests below run in one process in definition order, as a band worker
+ * runs a file's cases,
  * so the first genuinely warms the runtime and the second proves the reset kept
  * that warmth from bleeding across the test boundary. Mutation-verify by running
  * this whole file: the second test's guard only goes red once the first has
@@ -59,7 +60,7 @@ it('warms the process-global Antlers runtime with a front-end HTTP render', func
     // Guard the regression's own premise: if this render ever stops leaking
     // the tracer, the isolation assertion in the next test becomes vacuous.
     expect(GlobalRuntimeState::$activeTracerCount)->toBeGreaterThan(0);
-})->group('serial');
+});
 
 it('does not inherit the prior test\'s warm runtime, so an omitted-parameter render is unfiltered', function (): void {
     // The fix contract: setUp() cleared the counter the previous test leaked.
@@ -71,6 +72,11 @@ it('does not inherit the prior test\'s warm runtime, so an omitted-parameter ren
     $this->requireContentCollection('post_categories');
 
     Site::setCurrent('default');
+
+    // Saving a `post_categories` entry writes its structure tree, so move the trees onto a
+    // per-process root for this test only (#557). Not on the base: the first test's premise
+    // needs the committed trees, and under tree isolation its tracer count stays 0.
+    $this->isolateCollectionTrees();
 
     try {
         /** @var Statamic\Entries\Entry $cardiology */
@@ -152,31 +158,7 @@ it('does not inherit the prior test\'s warm runtime, so an omitted-parameter ren
                 });
         }
 
-        // Saving a `post_categories` entry builds the default-site structure tree,
-        // and `deleteQuietly()` skips the structure update that would otherwise take
-        // it back out — so the file outlives the fixtures that created it and leaves
-        // the live submodule dirty for every later run (UAMS-Web/uams-statamic-archive#1873).
-        //
-        // Removed here rather than by moving this file onto
-        // {@see \Tests\Support\CollectionTreeIsolatedTestCase}, which is the real
-        // fix: the first test above asserts that a front-end render LEAKS the Antlers
-        // tracer, and that premise depends on tree-derived output — under tree
-        // isolation the count stays 0 and the guard goes red. Tracked as residue on
-        // UAMS-Web/uams-statamic-archive#1873's follow-up; this keeps the submodule clean meanwhile.
-        //
-        // `default/post_categories.yaml` is test-authored (the committed default-site
-        // trees are facilities, logos_item_categories, organizations, pages and
-        // people_groups), so removing it can never take real content with it.
-        // `Stache::store()` and `Store::directory()` are both `mixed` to PHPStan, so
-        // each is narrowed by control flow. `assert()` is not an option — Rule E of
-        // scripts/check-parallel-safe-tests.php rejects it under tests/, and it
-        // compiles out under `zend.assertions=-1` anyway (UAMS-Web/uams-statamic-archive#1865).
-        $treeStore = mustBe(Store::class, Stache::store('collection-trees'), 'the collection-trees store');
-        $treePath = mustBeString($treeStore->directory(), 'the collection-trees directory')
-            .'default/post_categories.yaml';
-
-        if (file_exists($treePath)) {
-            @unlink($treePath);
-        }
+        // Put the shared trees back; the tree this test wrote goes with the throwaway root
+        $this->restoreCollectionTrees();
     }
-})->group('serial');
+});

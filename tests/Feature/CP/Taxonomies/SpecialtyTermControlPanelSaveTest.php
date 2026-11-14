@@ -15,7 +15,7 @@ use Statamic\Stache\Stores\TermsStore;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\Concerns\RequiresContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\patchJson;
@@ -29,14 +29,14 @@ use function Pest\Laravel\withoutMiddleware;
  * in the suite takes that path for a specialty term.
  *
  * The term under test is `shoulder-and-elbow-surgery`, whose Control Panel half of UAMS-Web/uams-statamic-archive#3179's
- * criterion closed unverified. It is a real term, so the save writes its file in the test
- * content mirror. The file's bytes are read before each test and written back after it,
- * and the file is quarantined into the `serial` group, so no parallel worker reads the
- * term while it carries the test's value.
+ * criterion closed unverified. It is a real term, so the save writes its file. The base keeps that write in a
+ * per-process copy of the content rather than the shared mirror (#557), so no parallel
+ * worker reads the term while it carries the test's value, and the file's bytes are
+ * still read before each test and written back after it.
  *
  * @command  php artisan test --compact tests/Feature/CP/Taxonomies/SpecialtyTermControlPanelSaveTest.php
  */
-uses(TestCase::class, RequiresContentSubmodule::class)->group('serial');
+uses(EntriesAndTermsIsolatedTestCase::class, RequiresContentSubmodule::class);
 
 const SPECIALTY_TERM_CP_SAVE_TAXONOMY = 'specialties_non_accredited';
 const SPECIALTY_TERM_CP_SAVE_SLUG = 'shoulder-and-elbow-surgery';

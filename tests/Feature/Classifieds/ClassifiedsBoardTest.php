@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Scopes\LiveClassifieds;
 use App\Support\Classifieds\ClassifiedExpiry;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Support\Carbon;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Blueprint;
@@ -19,9 +20,11 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Query\TermQueryBuilder;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 use Tests\TestCase;
 
-uses(TestCase::class)->group('serial');
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /**
  * The classifieds board that replaces WP Adverts on Inside UAMS (UAMS-Web/uams-statamic-archive#2096): the
@@ -189,6 +192,9 @@ function liveClassifiedSlugs(): array
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     // Noon in Little Rock, and the same calendar day in UTC, so "today" cannot
     // differ between the two unless a test moves the clock on purpose.
     Carbon::setTestNow(Carbon::parse('2026-06-15 17:00:00', 'UTC'));

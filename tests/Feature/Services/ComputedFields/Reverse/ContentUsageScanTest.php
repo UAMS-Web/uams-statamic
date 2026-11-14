@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 use App\Services\ComputedFields\Reverse\ContentUsageComputedValues;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -128,6 +130,9 @@ function usageSlugs(iterable $set): array
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::find(USAGE_COLLECTION_A) || ! Collection::find(USAGE_COLLECTION_B)) {
         ContentSubmodule::reportMissing('reusable_content + tables collections');
     }
@@ -150,7 +155,7 @@ it('finds a page that transcludes the entry nested inside a page-builder set', f
 
     expect(usageSlugs($usage->resolveUsedBy($source)))->toBe([USAGE_PREFIX.'embedder'])
         ->and($usage->isInUse($source))->toBeTrue();
-})->group('serial');
+});
 
 it('reports an unused entry as an empty list and in_use false', function (): void {
     usageMakeEmbeddingEntry(USAGE_COLLECTION_A, 'unrelated', 'content', usageTransclusion('zz-other-id'));
@@ -160,7 +165,7 @@ it('reports an unused entry as an empty list and in_use false', function (): voi
 
     expect(usageSlugs($usage->resolveUsedBy($source)))->toBe([])
         ->and($usage->isInUse($source))->toBeFalse();
-})->group('serial');
+});
 
 it('lists every page when the entry is used on multiple pages, across collections and builder fields', function (): void {
     $targetId = 'zz-usage-target-multi';
@@ -178,7 +183,7 @@ it('lists every page when the entry is used on multiple pages, across collection
         USAGE_PREFIX.'page-b',
         USAGE_PREFIX.'page-c',
     ]);
-})->group('serial');
+});
 
 it('excludes a draft embedding page from the usage list', function (): void {
     $targetId = 'zz-usage-target-draft';
@@ -189,4 +194,4 @@ it('excludes a draft embedding page from the usage list', function (): void {
     $usage = app(ContentUsageComputedValues::class);
 
     expect(usageSlugs($usage->resolveUsedBy(usageSource($targetId))))->toBe([USAGE_PREFIX.'published-user']);
-})->group('serial');
+});
