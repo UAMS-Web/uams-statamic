@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\CredentialRegistry;
 use App\Services\EnumGeneration\CredentialRegistry\CredentialRegistryEnumGenerator;
+use Symfony\Component\Process\Process;
 
 /**
  * Behavior of CredentialRegistryEnumGenerator
@@ -140,4 +141,63 @@ it('matches CTDL authority for ProfessionalDoctorate', function () {
 
     $definition = $info?->definition;
     expect(strtolower($definition ?? ''))->toContain('doctoral degree');
+});
+
+/**
+ * Render the CredentialRegistry enum source from two sample terms, no network.
+ */
+function credentialRegistrySampleSource(): string
+{
+    $build = new ReflectionMethod(CredentialRegistryEnumGenerator::class, 'buildEnumPhp');
+
+    return mustBeString($build->invoke(
+        new CredentialRegistryEnumGenerator,
+        ['ceterms:Credential', 'ceterms:Degree'],
+        ['ceterms:Degree' => ['ceterms:Credential']],
+        ['ceterms:Credential' => ['ceterms:Degree']],
+        ['ceterms:Degree' => ['ceterms:Credential', 'ceterms:Thing']],
+        ['ceterms:Credential' => ['ceterms:Degree', 'ceterms:Diploma']],
+        ['ceterms:Credential' => ['ceterms:name', 'ceterms:ownedBy']],
+        [],
+        [
+            'ceterms:Credential' => ['rdfs:label' => "Kirk's Credential", 'rdfs:comment' => 'Ends in a backslash\\'],
+            'ceterms:Degree' => null,
+        ]
+    ), 'the generated CredentialRegistry source');
+}
+
+it('renders output that Pint reports clean with no separate pass (#721)', function (): void {
+    $php = credentialRegistrySampleSource();
+
+    $root = dirname(__DIR__, 4);
+    $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'credential-enum-'.bin2hex(random_bytes(6)).'.php';
+    file_put_contents($path, $php);
+
+    try {
+        $process = new Process([
+            PHP_BINARY,
+            $root.'/vendor/bin/pint',
+            '--test',
+            '--config',
+            $root.'/pint.json',
+            $path,
+        ]);
+        $process->run();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput())
+        ->and($php)->toContain("ancestors: ['ceterms:Credential', 'ceterms:Thing']");
+});
+
+it('renders the info() method exactly as the committed enum carries it (#721)', function (): void {
+    $marker = "\n    /**\n     * CredentialRegistryTypeInfo attribute for this case";
+    $committed = mustBeString(file_get_contents(dirname(__DIR__, 4).'/app/Enums/CredentialRegistry.php'), 'the committed enum');
+    $generated = credentialRegistrySampleSource();
+
+    expect(substr_count($committed, $marker))->toBe(1)
+        ->and(substr_count($generated, $marker))->toBe(1)
+        ->and(substr($generated, (int) strpos($generated, $marker)))
+        ->toBe(substr($committed, (int) strpos($committed, $marker)));
 });
