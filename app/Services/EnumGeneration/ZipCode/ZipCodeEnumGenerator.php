@@ -915,12 +915,12 @@ final class ZipCodeEnumGenerator
     /**
      * Render a value as a single-quoted PHP string literal that evaluates back to it.
      *
-     * Both `\` and `'` are escaped, so a value holding a backslash, including a
-     * trailing one, round-trips instead of losing a character or breaking the
-     * literal (#718).
+     * {@see GeneratorUtils::escapeSingleQuotes()} escapes both `\` and `'`, so a
+     * value holding a backslash, including a trailing one, round-trips instead of
+     * losing a character or breaking the literal (#718).
      */
     private function phpLiteral(string $value): string
     {
-        return "'".\addcslashes($value, '\\\'')."'";
+        return "'".GeneratorUtils::escapeSingleQuotes($value)."'";
     }
 }
