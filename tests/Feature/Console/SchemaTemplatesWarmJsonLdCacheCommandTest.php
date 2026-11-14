@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Statamic\Contracts\Globals\GlobalSet as GlobalSetContract;
+use Statamic\Contracts\Globals\Variables as GlobalVariablesContract;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry as EntryFacade;
+use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Tests\TestCase;
 
@@ -214,6 +217,61 @@ it('merges every site\'s URLs, requests each once, and counts duplicates and fai
     'no --site option' => [[]],
     'an empty --site option' => [['--site' => '']],
 ]);
+
+it('keeps merging the URLs of a site past a duplicate, and gathers each person and schema object once', function (): void {
+    warmJsonLdSites(['alpha', 'beta']);
+
+    config(['schema_templates.json_ld_cache.warm.global_entry_fields_by_collection' => [
+        'pages' => ['settings.pages'],
+        'people' => ['settings.team'],
+        'schema_objects' => ['settings.object'],
+    ]]);
+
+    $homes = [
+        'alpha' => warmJsonLdHomeEntry(true, 'https://alpha.test/'),
+        'beta' => warmJsonLdHomeEntry(true, 'https://beta.test/'),
+    ];
+    $pages = [
+        'page-shared' => warmJsonLdHomeEntry(true, 'https://shared.test/'),
+        'page-beta' => warmJsonLdHomeEntry(true, 'https://beta-extra.test/'),
+    ];
+
+    EntryFacade::shouldReceive('findByUri')
+        ->andReturnUsing(fn (string $uri, string $site): ?EntryModel => $uri === '/' ? ($homes[$site] ?? null) : null);
+    EntryFacade::shouldReceive('find')->andReturnUsing(fn (string $id): ?EntryModel => $pages[$id] ?? null);
+
+    // beta's shared page duplicates alpha's and comes before a page only beta has, so the
+    // merge must skip the one and still reach the next
+    $variables = [
+        'alpha' => ['pages' => ['page-shared'], 'team' => ['kirk', 'spock'], 'object' => 'object-enterprise'],
+        'beta' => ['pages' => ['page-shared', 'page-beta'], 'team' => ['spock', 'mccoy'], 'object' => 'object-galileo'],
+    ];
+
+    GlobalSet::shouldReceive('findByHandle')->andReturnUsing(function (string $handle) use ($variables): GlobalSetContract {
+        $set = Mockery::mock(GlobalSetContract::class);
+        $set->shouldReceive('in')->andReturnUsing(function (string $site) use ($variables): GlobalVariablesContract {
+            $siteVariables = Mockery::mock(GlobalVariablesContract::class);
+            $siteVariables->shouldReceive('get')->andReturnUsing(fn (string $field): mixed => $variables[$site][$field] ?? null);
+
+            return $siteVariables;
+        });
+
+        return $set;
+    });
+
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    expect(Artisan::call('schema-templates:warm-json-ld-cache'))->toBe(0);
+
+    $sent = Http::recorded()->map(fn (array $pair): string => $pair[0]->url())->all();
+    expect($sent)->toBe(['https://alpha.test/', 'https://shared.test/', 'https://beta.test/', 'https://beta-extra.test/']);
+
+    $summary = warmJsonLdStoredSummary();
+    expect($summary['duplicate_urls_skipped'] ?? null)->toBe(1)
+        ->and($summary['urls_merged_count'] ?? null)->toBe(4)
+        ->and($summary['slot_schema_object_ids'] ?? null)->toBe(['object-enterprise', 'object-galileo'])
+        ->and($summary['people_entry_ids'] ?? null)->toBe(['kirk', 'spock', 'mccoy']);
+});
 
 it('warms only the site --site names', function (): void {
     warmJsonLdSites(['alpha', 'beta']);
