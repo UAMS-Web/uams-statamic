@@ -119,7 +119,7 @@ it('compares by length first, then lexically', function (string $a, string $b, i
 ]);
 
 it('keeps the enum configuration it is given', function (): void {
-    $config = new IscedEnumConfig('IscedF2013', 'ISCEDF', 'International Standard Classification of Education: Fields of education and training 2013', 'ISCED-F 2013', 'ISCED-F 2013 publication', 'https://example.org/isced-f', 'notes', 2);
+    $config = new IscedEnumConfig('IscedF2013', 'ISCEDF', 'International Standard Classification of Education: Fields of education and training 2013', 'ISCED-F 2013', 'ISCED-F 2013 publication', 'https://example.org/isced-f', 'notes');
 
     expect($config->enumClass)->toBe('IscedF2013')
         ->and($config->casePrefix)->toBe('ISCEDF')
@@ -127,6 +127,5 @@ it('keeps the enum configuration it is given', function (): void {
         ->and($config->classificationShort)->toBe('ISCED-F 2013')
         ->and($config->sourceTitle)->toBe('ISCED-F 2013 publication')
         ->and($config->sourceUrl)->toBe('https://example.org/isced-f')
-        ->and($config->emitNotes)->toBe('notes')
-        ->and($config->minTierLength)->toBe(2);
+        ->and($config->emitNotes)->toBe('notes');
 });
