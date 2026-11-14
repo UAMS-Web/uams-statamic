@@ -37,6 +37,20 @@ export const KNOWN_CONTENT_LITTER = []
 export const PARALLEL_WORKERS = 4
 
 /**
+ * The php.ini values both bands run under, the same `zend.assertions` and `pcre.jit`
+ * that ci.yml's `ini-values:` sets. Four tests run only under them and skip
+ * otherwise: two assert an AssertionError, and two induce a PCRE failure the JIT
+ * does not produce. Without them a machine whose php.ini says otherwise (Herd's PHP
+ * runs `pcre.jit=On`) skips two tests and fails the skip baseline (#688).
+ */
+export const SUITE_PHP_INI = ['zend.assertions=1', 'pcre.jit=0']
+
+/**
+ * The `-d` pairs for {@link SUITE_PHP_INI}, for a PHP command line.
+ */
+export const SUITE_PHP_INI_ARGS = SUITE_PHP_INI.flatMap((setting) => ['-d', setting])
+
+/**
  * Split what the suite just wrote into the content/ submodule from what was
  * already there, holding known debt aside.
  */
@@ -309,9 +323,11 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // removes. CI checks out fresh, so it has nothing to mirror here.
     rmSync(parallelReport, { force: true })
     rmSync(serialReport, { force: true })
-    const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], tree)
+    // SUITE_PHP_INI_ARGS mirrors ci.yml's `ini-values:` for the pest jobs, and is
+    // forwarded to the paratest workers, which start their own PHP (#688).
+    const parallelCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT} ${SUITE_PHP_INI_ARGS.join(' ')}`, '--display-all-issues', '--log-junit', parallelReport], tree)
     step('JOB pest - serial tail (group=serial)')
-    const serialCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
+    const serialCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
 
     // UAMS-Web/uams-statamic-archive#3235: each band beside the interpreter that produced it, so a
     // figure quoted from this log names its PHP. A band that wrote no report says so rather than

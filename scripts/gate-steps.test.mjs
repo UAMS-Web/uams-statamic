@@ -195,7 +195,7 @@ describe('gate-pest.mjs', () => {
 
         const parallel = callOf('--parallel').call.args
 
-        expect(parallel).toContain('--passthru-php=-d memory_limit=5G')
+        expect(parallel).toContain('--passthru-php=-d memory_limit=5G -d zend.assertions=1 -d pcre.jit=0')
         expect(parallel).toContain('pcov.enabled=0')
     })
 
@@ -206,6 +206,25 @@ describe('gate-pest.mjs', () => {
 
         expect(parallel.filter((arg) => arg.startsWith('--processes'))).toEqual(['--processes=4'])
         expect(callOf('--group=serial').call.args.some((arg) => arg.startsWith('--processes'))).toBe(false)
+    })
+
+    it('runs both bands and the paratest workers with zend.assertions=1 and pcre.jit=0 (#688)', () => {
+        runStep('gate-pest.mjs')
+
+        const pairs = ['-d', 'zend.assertions=1', '-d', 'pcre.jit=0']
+
+        for (const marker of ['--parallel', '--group=serial']) {
+            const args = callOf(marker).call.args
+            const before = args.slice(0, args.indexOf('vendor/bin/pest'))
+
+            expect(before.join(' ')).toContain(pairs.join(' '))
+        }
+
+        const passthru = callOf('--parallel').call.args.filter((arg) => arg.startsWith('--passthru-php='))
+
+        expect(passthru).toHaveLength(1)
+        expect(passthru[0]).toContain('-d zend.assertions=1')
+        expect(passthru[0]).toContain('-d pcre.jit=0')
     })
 
     it('leaves the caches alone on --no-reset', () => {
