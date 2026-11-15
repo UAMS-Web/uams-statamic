@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Cache\ScopeAliasCache as ScopeAliasCacheStore;
 use App\Enums\SchemaType;
 use App\Scopes\EntriesBySchemaType;
 use Illuminate\Support\Facades\Artisan;
@@ -74,3 +75,18 @@ it('warms the alias list from every SchemaType case, and refreshes by clearing f
     'warm' => ['warm', false],
     'refresh' => ['refresh', true],
 ]);
+
+it('refresh leaves no stale list in the cache when the warm fails', function (): void {
+    Cache::put(EntriesBySchemaType::CACHE_KEY_ALIASES, ['stale']);
+
+    // The dedicated store is written before the Laravel cache, so a refusal there stops the warm
+    // after the clear and before the Laravel cache is written again
+    $store = Mockery::mock(ScopeAliasCacheStore::class);
+    $store->shouldReceive('forget')->with(EntriesBySchemaType::CACHE_KEY_ALIASES)->once();
+    $store->shouldReceive('put')->andThrow(new RuntimeException('Alias store refused the write.'));
+    app()->instance(ScopeAliasCacheStore::class, $store);
+
+    expect(fn (): int => Artisan::call('scope-alias-cache', ['action' => 'refresh']))
+        ->toThrow(RuntimeException::class, 'Alias store refused the write.')
+        ->and(scopeAliasCacheCommandAliases())->toBeNull();
+});
