@@ -33,6 +33,13 @@ final class HasSubfieldsHarness extends Fieldtype
     public int $definitionReads = 0;
 
     /**
+     * The preset most recently passed to getSubfieldPresetIfCondition(), by subfield handle.
+     *
+     * @var array<string, ?string>
+     */
+    public array $presetArguments = [];
+
+    /**
      * Subfield rules to use in place of the trait's own, as a fieldtype overriding
      * getSubfieldValidationRules() would return them.
      *
@@ -66,6 +73,8 @@ final class HasSubfieldsHarness extends Fieldtype
     /** @return ?array<string, mixed> */
     protected function getSubfieldPresetIfCondition(string $handle, ?string $preset): ?array
     {
+        $this->presetArguments[$handle] = $preset;
+
         return $this->presetConditions[$handle] ?? null;
     }
 

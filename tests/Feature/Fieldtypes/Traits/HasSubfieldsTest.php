@@ -508,3 +508,52 @@ it('adds no value type, options, clearable or width config where the definition 
         ->and($fields)->not->toHaveKeys(['region_ca_width', 'region_us_select_value_type', 'first_name_select_value_type', 'first_name_width'])
         ->and($fields)->toHaveKey('region_us_default.type', 'text');
 });
+
+it('builds the include, required, label, placeholder and default config for every subfield', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->definitions[] = ['handle' => 'suffix', 'display' => 'Suffix', 'type' => 'text', 'visibility' => 'hidden'];
+    $us = ['region_us_include' => true, 'preset' => 'us'];
+    $ca = ['region_ca_include' => true, 'preset' => 'ca'];
+
+    expect($harness->subfieldConfigFields())->toBe([
+        'first_name_include' => ['display' => 'Include First Name', 'type' => 'toggle', 'default' => true, 'visibility' => 'visible', 'if' => null],
+        'first_name_required' => ['display' => 'First Name Required', 'type' => 'toggle', 'default' => true, 'if' => ['first_name_include' => true], 'visibility' => 'visible'],
+        'first_name_label' => ['display' => 'First Name Label', 'type' => 'text', 'placeholder' => 'First', 'if' => ['first_name_include' => true], 'visibility' => 'visible'],
+        'first_name_placeholder' => ['display' => 'First Name Placeholder', 'type' => 'text', 'placeholder' => 'Enter first name', 'if' => ['first_name_include' => true], 'visibility' => 'visible'],
+        'first_name_default' => ['type' => 'text', 'default' => '', 'display' => 'Default First Name', 'if' => ['first_name_include' => true], 'visibility' => 'visible'],
+        'region_us_include' => ['display' => 'Include State', 'type' => 'toggle', 'default' => true, 'visibility' => 'visible', 'if' => ['preset' => 'us']],
+        'region_us_required' => ['display' => 'State Required', 'type' => 'toggle', 'default' => false, 'if' => $us, 'visibility' => 'visible'],
+        'region_us_label' => ['display' => 'State Label', 'type' => 'text', 'placeholder' => 'State', 'if' => $us, 'visibility' => 'visible'],
+        'region_us_default' => ['type' => 'text', 'default' => null, 'display' => 'Default State', 'if' => $us, 'visibility' => 'visible'],
+        'region_ca_include' => ['display' => 'Include Province', 'type' => 'toggle', 'default' => true, 'visibility' => 'visible', 'if' => ['preset' => 'ca']],
+        'region_ca_required' => ['display' => 'Province Required', 'type' => 'toggle', 'default' => false, 'if' => $ca, 'visibility' => 'visible'],
+        'region_ca_label' => ['display' => 'Province Label', 'type' => 'text', 'placeholder' => 'Province', 'if' => $ca, 'visibility' => 'visible'],
+        'region_ca_default' => ['type' => 'text', 'default' => null, 'display' => 'Default Province', 'if' => $ca, 'visibility' => 'visible'],
+        'notes_include' => ['display' => 'Include Notes', 'type' => 'toggle', 'default' => false, 'visibility' => 'visible', 'if' => null],
+        'notes_required' => ['display' => 'Notes Required', 'type' => 'toggle', 'default' => false, 'if' => ['notes_include' => true], 'visibility' => 'visible'],
+        'notes_label' => ['display' => 'Notes Label', 'type' => 'text', 'placeholder' => 'Notes', 'if' => ['notes_include' => true], 'visibility' => 'visible'],
+        'notes_placeholder' => ['display' => 'Notes Placeholder', 'type' => 'text', 'placeholder' => null, 'if' => ['notes_include' => true], 'visibility' => 'visible'],
+        'notes_default' => ['type' => 'text', 'default' => null, 'display' => 'Default Notes', 'if' => ['notes_include' => true], 'visibility' => 'visible'],
+        'suffix_include' => ['display' => 'Include Suffix', 'type' => 'toggle', 'default' => true, 'visibility' => 'hidden', 'if' => null],
+        'suffix_required' => ['display' => 'Suffix Required', 'type' => 'toggle', 'default' => false, 'if' => ['suffix_include' => true], 'visibility' => 'hidden'],
+        'suffix_label' => ['display' => 'Suffix Label', 'type' => 'text', 'placeholder' => 'Suffix', 'if' => ['suffix_include' => true], 'visibility' => 'hidden'],
+        'suffix_placeholder' => ['display' => 'Suffix Placeholder', 'type' => 'text', 'placeholder' => null, 'if' => ['suffix_include' => true], 'visibility' => 'hidden'],
+        'suffix_default' => ['type' => 'text', 'default' => null, 'display' => 'Default Suffix', 'if' => ['suffix_include' => true], 'visibility' => 'hidden'],
+    ]);
+});
+
+it('asks for each subfield condition with the configured preset, else the first, else none', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->subfieldConfigFields();
+    $firstPreset = $harness->presetArguments;
+
+    $harness->subfieldConfigFields(['preset' => 'ca']);
+    $configured = $harness->presetArguments;
+
+    $harness->presets = [];
+    $harness->subfieldConfigFields(['preset' => 'ca']);
+
+    expect($firstPreset)->toBe(['first_name' => 'us', 'region_us' => 'us', 'region_ca' => 'us', 'notes' => 'us'])
+        ->and($configured)->toBe(['first_name' => 'ca', 'region_us' => 'ca', 'region_ca' => 'ca', 'notes' => 'ca'])
+        ->and($harness->presetArguments)->toBe(['first_name' => null, 'region_us' => null, 'region_ca' => null, 'notes' => null]);
+});
