@@ -67,9 +67,12 @@ class Select extends BaseSelect
     #[\Override]
     public function icon(): string
     {
+        // Statamic's base icon() is untyped, and returns the `icon` property or
+        // `fieldtype-<handle>`, both strings
+        /** @var string $icon */
         $icon = parent::icon();
 
-        return is_scalar($icon) ? (string) $icon : '';
+        return $icon;
     }
 
     /**
