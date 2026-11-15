@@ -33,9 +33,51 @@ function listsFieldtypeRules(array $config): array
     return $fieldtype->rules();
 }
 
-it("registers the application class under the list handle, keeping Statamic's icon", function (): void {
+/**
+ * The config sections the `Lists` fieldtype builds for its blueprint editor.
+ *
+ * @return array<array-key, mixed>
+ */
+function listsConfigSections(): array
+{
+    $sections = new ReflectionMethod(Lists::class, 'configFieldItems')->invoke(new Lists);
+
+    if (! is_array($sections)) {
+        throw new UnexpectedValueException('Lists::configFieldItems() did not return an array.');
+    }
+
+    return $sections;
+}
+
+it("registers the application class under the list handle, keeping Statamic's icon, selectable in forms", function (): void {
     expect(app('statamic.fieldtypes')->get('list'))->toBe(Lists::class)
-        ->and((new Lists)->icon())->toBe('fieldtype-list');
+        ->and((new Lists)->icon())->toBe('fieldtype-list')
+        ->and((new Lists)->selectableInForms())->toBeTrue();
+});
+
+it('adds a Constraints section holding the minimum and maximum item counts', function (): void {
+    $sections = listsConfigSections();
+
+    expect($sections)->toHaveCount(2)
+        ->and($sections[1] ?? null)->toBe([
+            'display' => 'Constraints',
+            'fields' => [
+                'min_items' => [
+                    'display' => 'Minimum Number of Items',
+                    'instructions' => 'Set the minimum allowed number of items for this field.',
+                    'type' => 'integer',
+                    'default' => null,
+                    'validate' => ['gte:0'],
+                ],
+                'max_items' => [
+                    'display' => 'Maximum Number of Items',
+                    'instructions' => 'Set the maximum allowed number of items for this field.',
+                    'type' => 'integer',
+                    'default' => null,
+                    'validate' => ['gt:0'],
+                ],
+            ],
+        ]);
 });
 
 it('derives :dataset', function (array $config, array $rules): void {
@@ -46,6 +88,10 @@ it('derives :dataset', function (array $config, array $rules): void {
     'min when only the minimum is set' => [['min_items' => 2], ['array', 'min:2']],
     'max when only the maximum is set' => [['max_items' => 5], ['array', 'max:5']],
     'integer bounds from numeric strings' => [['min_items' => '3', 'max_items' => '4'], ['array', 'between:3,4']],
+    'a truncated minimum from a decimal' => [['min_items' => '2.5'], ['array', 'min:2']],
+    'a truncated maximum from a decimal' => [['max_items' => '4.5'], ['array', 'max:4']],
+    'no bound from a minimum with trailing text' => [['min_items' => '5 items'], ['array']],
+    'no bound from a maximum with trailing text' => [['max_items' => '5 items'], ['array']],
     'min of one, the smallest positive bound' => [['min_items' => 1], ['array', 'min:1']],
     'max of one, the smallest positive bound' => [['max_items' => 1], ['array', 'max:1']],
     'no bound from a zero minimum' => [['min_items' => 0, 'max_items' => 5], ['array', 'max:5']],
