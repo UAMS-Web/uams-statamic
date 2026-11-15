@@ -698,6 +698,35 @@ trait HasSubfields
     }
 
     /**
+     * Whether a subfield's preset condition is met, so the subfield shows.
+     *
+     * A subfield with no condition always shows. Otherwise it shows when any one
+     * condition key matches: the `preset` key against the effective preset (the
+     * configured one, or the default when the Control Panel has stripped a
+     * default-valued `preset` from the config), any other key against the config.
+     *
+     * @param  ?array<string, mixed>  $presetIf  The subfield's preset condition, or null for none
+     * @param  ?string  $currentPreset  The effective preset
+     * @param  array<string, mixed>  $config  The current field configuration
+     * @return bool True when the subfield shows for this preset and config
+     */
+    protected function subfieldVisibleForPreset(
+        ?array $presetIf,
+        ?string $currentPreset,
+        array $config
+    ): bool {
+        // Show a subfield that carries no preset condition
+        if ($presetIf === null) {
+            return true;
+        }
+
+        // Show it when any condition key matches its effective value
+        return collect($presetIf)->contains(
+            fn (mixed $value, string $key): bool => ($key === 'preset' ? $currentPreset : ($config[$key] ?? null)) === $value
+        );
+    }
+
+    /**
      * Helper to generate validation rules for subfields.
      *
      * Only applies 'required' if parent is required and subfield is toggled on and
@@ -731,8 +760,8 @@ trait HasSubfields
             $handle = $subfield['handle'];
 
             // Get the canonical handle for this subfield (fall back to the handle)
-            $canonicalRaw = $subfield['canonical_handle'] ?? $handle;
-            $canonical_handle = \is_scalar($canonicalRaw) ? (string) $canonicalRaw : $handle;
+            /** @var string $canonical_handle */
+            $canonical_handle = $subfield['canonical_handle'] ?? $handle;
 
             // Get the include setting for this subfield from config or default
             $include = $config[$handle.'_include'] ?? $subfield['inclusion_default'] ?? true;
@@ -743,36 +772,10 @@ trait HasSubfields
                 $currentPreset
             );
 
-            // Initialize preset visible to true by default
-            $presetVisible = true;
-
-            // Check if preset-based visibility condition is defined
-            if ($presetIf !== null) {
-                // If presetIf is defined, default to not visible until condition is met
-                $presetVisible = false;
-
-                // Iterate over each preset if condition
-                foreach ($presetIf as $key => $value) {
-                    // Resolve the preset key against the effective (default-aware) preset
-                    // so a subfield gated on the default preset stays visible when the
-                    // blueprint omits an explicit `preset` (the CP strips default-valued config)
-                    $effectiveValue = $key === 'preset' ? $currentPreset : ($config[$key] ?? null);
-
-                    // Check if the effective config value matches the condition
-                    if ($effectiveValue === $value) {
-                        // Set preset visible to true when condition is met
-                        $presetVisible = true;
-
-                        // Break from loop since condition is met
-                        break;
-                    }
-                }
-            }
-
             // Skip subfields hidden by the current preset so they cannot clobber a
             // shared canonical_handle rule set by the preset-visible sibling (e.g. the
             // three state_province_region_* subfields all write 'state_province_region')
-            if (! $presetVisible) {
+            if (! $this->subfieldVisibleForPreset($presetIf, $currentPreset, $config)) {
                 continue;
             }
 
@@ -801,7 +804,6 @@ trait HasSubfields
             $include,
             $required,
             $presetIf,
-            $presetVisible,
             $currentPreset,
             $presetOptions,
             $presetOptionsRaw
@@ -859,10 +861,9 @@ trait HasSubfields
                     $handle,
                     $data
                 )
-                && ! \in_array(
+                && ! \array_key_exists(
                     $canonical_handle,
-                    $usedReturnHandles,
-                    true
+                    $usedReturnHandles
                 )
             ) {
                 // Add the subfield value to the result array with the appropriate key
@@ -911,7 +912,7 @@ trait HasSubfields
                 ];
 
                 // Mark this canonical_handle as used so we don't store it again
-                $usedReturnHandles[] = $canonical_handle;
+                $usedReturnHandles[$canonical_handle] = $handle;
             }
         }
 
@@ -1042,38 +1043,12 @@ trait HasSubfields
                 $currentPreset
             );
 
-            // Default to visible unless presetIf restricts it
-            $presetVisible = true;
-
-            // ---
-            // If presetIf is defined, check if the preset condition is met
-            // ---
-
-            // Check if preset-based visibility condition is defined
-            if ($presetIf !== null) {
-                // Default to not visible until condition is met
-                $presetVisible = false;
-
-                // ---
-                // If the config matches the presetIf condition, mark as visible
-                // ---
-
-                // Loop through each preset if condition to check visibility
-                foreach ($presetIf as $key => $value) {
-                    // Resolve the preset key against the effective (default-aware) preset
-                    // so the default-preset subfields still render when `preset` is omitted
-                    $effectiveValue = $key === 'preset' ? $currentPreset : ($config[$key] ?? null);
-
-                    // Check if the effective config value matches the condition
-                    if ($effectiveValue === $value) {
-                        // Set preset visible to true when condition is met
-                        $presetVisible = true;
-
-                        // Break from loop since condition is met
-                        break;
-                    }
-                }
-            }
+            // Check whether the current preset and config show this subfield
+            $presetVisible = $this->subfieldVisibleForPreset(
+                $presetIf,
+                $currentPreset,
+                $config
+            );
 
             // Check if subfield should be included and is visible for current preset
             if (
@@ -1320,11 +1295,6 @@ trait HasSubfields
     public function preProcessValidatable(
         $value
     ): array {
-        // Normalize absent or scalar input for validation
-        if ($value === null || $value === '') {
-            return [];
-        }
-
         // Coerce to array for subfield checks and merging
         /** @var array<string, mixed> $normalized */
         $normalized = \is_array($value) ? $value : [];
