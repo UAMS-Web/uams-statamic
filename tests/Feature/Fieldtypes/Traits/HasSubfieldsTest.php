@@ -410,3 +410,101 @@ it('offers no presets and no preset condition from the trait defaults', function
     expect($fieldtype->presetConfigField())->toBeNull()
         ->and($fieldtype->subfieldPresetIfCondition('region_us', 'us'))->toBeNull();
 });
+
+it('makes every subfield nullable when the parent field is not required', function (): void {
+    expect(hasSubfieldsHarness(['first_name_required' => true])->extraRules())->toBe([
+        'contact.first_name' => ['nullable'],
+        'contact.region' => ['nullable'],
+        'contact.notes' => ['nullable'],
+    ]);
+});
+
+it('requires a subfield only when the parent is required and it is both included and required', function (): void {
+    expect(hasSubfieldsHarness(['validate' => ['required']])->extraRules())->toBe([
+        'contact.first_name' => ['required'],
+        'contact.region' => ['nullable'],
+        'contact.notes' => ['nullable'],
+    ])->and(hasSubfieldsHarness(['validate' => ['required'], 'first_name_include' => false])->extraRules())->toBe([
+        'contact.first_name' => ['nullable'],
+        'contact.region' => ['nullable'],
+        'contact.notes' => ['nullable'],
+    ])->and(hasSubfieldsHarness(['validate' => 'required', 'first_name_required' => false, 'notes_include' => true, 'notes_required' => true])->extraRules())->toBe([
+        'contact.first_name' => ['nullable'],
+        'contact.region' => ['nullable'],
+        'contact.notes' => ['required'],
+    ]);
+});
+
+it('takes the region rule from the subfield the default preset shows, ignoring the hidden one', function (): void {
+    expect(hasSubfieldsHarness(['validate' => ['required'], 'region_us_required' => true])->extraRules())
+        ->toHaveKey('contact.region', ['required'])
+        ->and(hasSubfieldsHarness(['validate' => ['required'], 'region_ca_required' => true])->extraRules())
+        ->toHaveKey('contact.region', ['nullable'])
+        ->and(hasSubfieldsHarness(['validate' => ['required'], 'preset' => 'ca', 'region_ca_required' => true])->extraRules())
+        ->toHaveKey('contact.region', ['required']);
+});
+
+it('leaves out a subfield whose condition on another config key is not met', function (): void {
+    $harness = hasSubfieldsHarness(['validate' => ['required'], 'notes_include' => true, 'notes_required' => true]);
+    $harness->presetConditions['notes'] = ['detail' => 'full'];
+
+    $shown = hasSubfieldsHarness(['validate' => ['required'], 'notes_include' => true, 'notes_required' => true, 'detail' => 'full']);
+    $shown->presetConditions['notes'] = ['detail' => 'full'];
+
+    expect($harness->extraRules())->not->toHaveKey('contact.notes')
+        ->and($shown->extraRules())->toHaveKey('contact.notes', ['required']);
+});
+
+it('adds the value type, options, clearable and width config for a select default with a width', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->definitions[1] = [...$harness->definitions[1], 'default_type' => 'select', 'clearable' => true, 'width' => 50];
+    $if = ['region_us_include' => true, 'preset' => 'us'];
+
+    $fields = $harness->subfieldConfigFields(['preset' => 'us']);
+
+    expect($fields)->toHaveKey('region_us_include.if', ['preset' => 'us'])
+        ->and($fields['first_name_include'])->toBe([
+            'display' => 'Include First Name',
+            'type' => 'toggle',
+            'default' => true,
+            'visibility' => 'visible',
+            'if' => null,
+        ])
+        ->and($fields['region_us_select_value_type'])->toBe([
+            'display' => 'State Value Type',
+            'type' => 'radio',
+            'options' => ['label' => 'Label', 'key' => 'Key'],
+            'default' => 'label',
+            'instructions' => "Choose whether to store the selected option's key or label.",
+            'if' => $if,
+            'visibility' => 'visible',
+        ])
+        ->and($fields['region_us_default'])->toBe([
+            'type' => 'select',
+            'default' => null,
+            'display' => 'Default State',
+            'if' => $if,
+            'visibility' => 'visible',
+            'options' => ['AR' => 'Arkansas', 'TX' => 'Texas'],
+            'clearable' => true,
+        ])
+        ->and($fields['region_us_width'])->toBe([
+            'display' => 'State Width',
+            'type' => 'width',
+            'default' => 100,
+            'if' => $if,
+            'visibility' => 'visible',
+        ]);
+});
+
+it('adds no value type, options, clearable or width config where the definition sets none', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->definitions[2] = [...$harness->definitions[2], 'default_type' => 'select', 'default_choices' => null];
+
+    $fields = $harness->subfieldConfigFields();
+
+    expect($fields)->toHaveKey('region_ca_select_value_type')
+        ->and($fields['region_ca_default'])->not->toHaveKeys(['options', 'clearable'])
+        ->and($fields)->not->toHaveKeys(['region_ca_width', 'region_us_select_value_type', 'first_name_select_value_type', 'first_name_width'])
+        ->and($fields)->toHaveKey('region_us_default.type', 'text');
+});

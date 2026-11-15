@@ -99,6 +99,15 @@ final class HasSubfieldsHarness extends Fieldtype
         return $this->parseSubfieldsFromStorage($data);
     }
 
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public function subfieldConfigFields(array $config = []): array
+    {
+        return $this->getSubfieldConfigFields($config);
+    }
+
     /** @return ?array<string, mixed> */
     public function presetConfigField(): ?array
     {
