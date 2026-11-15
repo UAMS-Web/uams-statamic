@@ -47,10 +47,8 @@ class ScopeAliasCache extends Command
         }
 
         if ($action === 'refresh') {
-            // The warm below overwrites the same key in both stores, so the clear changes
-            // nothing a reader can see; it is kept so a failed warm leaves no stale list.
-            // Removing it is a surviving, equivalent mutant, and no marker can reach a
-            // mutation of the statement it sits on.
+            // The warm below overwrites the same key in both stores; the clear is what
+            // leaves no stale list behind when that warm fails part way through.
             EntriesBySchemaType::clearAliasesCache();
             $this->components->info('Scope alias cache cleared successfully.');
         }
