@@ -367,7 +367,7 @@ trait HasSubfields
             $ifInclude = [$handle.'_include' => true];
 
             // Merge presetIf into all 'if' conditions
-            $mergeIf = function ($existingIf = null) use ($presetIf, $ifInclude): array {
+            $mergeIf = function () use ($presetIf, $ifInclude): array {
                 // Start with the inclusion condition for this subfield
                 $result = $ifInclude;
 
@@ -377,15 +377,6 @@ trait HasSubfields
                     $result = \array_merge(
                         $result,
                         $presetIf
-                    );
-                }
-
-                // Check if there are any existing 'if' conditions to merge
-                if (\is_array($existingIf)) {
-                    // Merge any existing 'if' conditions
-                    return \array_merge(
-                        $result,
-                        $existingIf
                     );
                 }
 
