@@ -329,6 +329,7 @@ it('resolves the subfield handle for a canonical handle and :dataset', function 
     'the configured preset' => [['preset' => 'ca'], 'region', null, 'region_ca'],
     'no preset, so the first match' => [[], 'region', null, 'region_us'],
     'an unmatched preset, so the first match' => [[], 'region', 'mx', 'region_us'],
+    'a preset that ends a handle only without its underscore, so the first match' => [[], 'region', 'a', 'region_us'],
     'a plain handle' => [[], 'first_name', 'ca', 'first_name'],
     'an unknown canonical handle' => [[], 'country', 'ca', null],
 ]);
@@ -556,4 +557,82 @@ it('asks for each subfield condition with the configured preset, else the first,
     expect($firstPreset)->toBe(['first_name' => 'us', 'region_us' => 'us', 'region_ca' => 'us', 'notes' => 'us'])
         ->and($configured)->toBe(['first_name' => 'ca', 'region_us' => 'ca', 'region_ca' => 'ca', 'notes' => 'ca'])
         ->and($harness->presetArguments)->toBe(['first_name' => null, 'region_us' => null, 'region_ca' => null, 'notes' => null]);
+});
+
+it('builds no preset instructions when the extended options leave them out', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->presets = ['display' => 'Country', 'options' => ['us' => 'United States']];
+
+    expect($harness->presetConfigField())->toBe([
+        'preset' => ['display' => 'Country', 'type' => 'select', 'options' => ['us' => 'United States'], 'default' => 'us'],
+    ]);
+});
+
+it('falls back to the definitions and the first preset when the config leaves them out', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->definitions[0]['inclusion_default'] = false;
+    $harness->definitions[1]['required_default'] = true;
+    $harness->definitions[] = ['handle' => 'suffix', 'display' => 'Suffix', 'type' => 'text'];
+
+    expect($harness->validationRules([], true))->toBe([
+        'first_name' => 'nullable',
+        'region' => 'required',
+        'notes' => 'nullable',
+        'suffix' => 'nullable',
+    ])->and($harness->presetArguments)->toBe([
+        'first_name' => 'us', 'region_us' => 'us', 'region_ca' => 'us', 'notes' => 'us', 'suffix' => 'us',
+    ]);
+
+    $harness->definitions[0]['inclusion_default'] = null;
+    $harness->clearAllCaches();
+
+    expect($harness->validationRules([], true))->toHaveKey('first_name', 'required')
+        ->and($harness->validationRules(['suffix_required' => true], true))->toHaveKey('suffix', 'required');
+});
+
+it('takes the first preset from the extended options for validation and the Vue subfields', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->presets = ['display' => 'Country', 'options' => ['ca' => 'Canada', 'us' => 'United States']];
+    $harness->definitions[2]['required_default'] = true;
+    $harness->useConfig([]);
+
+    expect($harness->validationRules([], true))->toHaveKey('region', 'required')
+        ->and(array_column($harness->getSubfieldsForVue(), 'label', 'vue_handle'))->toHaveKey('region', 'Province');
+});
+
+it('hands the Vue component the definition defaults when the config leaves them out', function (): void {
+    $harness = hasSubfieldsHarness();
+    $harness->definitions[] = ['handle' => 'zip', 'display' => 'ZIP', 'type' => 'zip_code', 'placeholder_default' => '72205', 'default_value' => '00000'];
+    $harness->definitions[] = ['handle' => 'suffix', 'display' => 'Suffix', 'type' => 'text', 'required_default' => true];
+    $harness->definitions[] = ['handle' => 'plain', 'display' => 'Plain', 'type' => 'text'];
+    $harness->useConfig([]);
+
+    $vue = collect($harness->getSubfieldsForVue())->keyBy('vue_handle');
+
+    expect($vue->keys()->all())->toBe(['first_name', 'region', 'zip', 'suffix', 'plain'])
+        ->and($vue['region'])->toMatchArray(['label' => 'State'])
+        ->and($vue['zip'])->toMatchArray(['placeholder' => '72205', 'default' => '00000', 'required' => false, 'include' => true])
+        ->and($vue['suffix'])->toMatchArray(['required' => true, 'default' => null])
+        ->and($vue['plain'])->toMatchArray(['required' => false, 'include' => true, 'default' => null]);
+});
+
+it('keeps a non-select value and a select value with no choices as given, in either value type', function (string $valueType): void {
+    $harness = hasSubfieldsHarness(['first_name_select_value_type' => $valueType, 'region_us_select_value_type' => $valueType]);
+    $harness->definitions[0]['default_choices'] = ['Ann' => 'Annie'];
+    unset($harness->definitions[1]['default_choices']);
+
+    expect($harness->forStorage(['first_name' => 'Ann', 'region_us' => 'Annie']))->toBe([
+        ['key' => 'first_name', 'value' => 'Ann'],
+        ['key' => 'region', 'value' => 'Annie'],
+    ]);
+})->with(['label', 'key']);
+
+it('turns a label into its key only on a strict match', function (): void {
+    $harness = hasSubfieldsHarness(['region_us_select_value_type' => 'key']);
+
+    expect($harness->forStorage(['region_us' => true]))->toBe([['key' => 'region', 'value' => true]]);
+});
+
+it('treats only a literal required rule as making the parent required', function (): void {
+    expect(hasSubfieldsHarness(['validate' => [true]])->extraRules())->toHaveKey('contact.first_name', ['nullable']);
 });

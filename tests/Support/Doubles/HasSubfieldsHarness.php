@@ -84,6 +84,26 @@ final class HasSubfieldsHarness extends Fieldtype
         return $this->getCachedSubfieldDefinitions();
     }
 
+    /**
+     * Use this config as the cached config, bypassing the defaults the config
+     * fields would merge in, as when the Control Panel strips default-valued keys.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function useConfig(array $config): void
+    {
+        $this->configCache = $config;
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public function validationRules(array $config, bool $parentRequired): array
+    {
+        return $this->getSubfieldValidationRules($config, $parentRequired);
+    }
+
     /** @return array<string, mixed> */
     public function cachedConfig(): array
     {
