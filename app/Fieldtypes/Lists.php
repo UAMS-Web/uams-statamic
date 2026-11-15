@@ -55,10 +55,12 @@ class Lists extends BaseLists
     #[\Override]
     public function icon(): string
     {
-        // Narrow the untyped base return value to a string icon name
+        // Statamic's base icon() is untyped, and returns the `icon` property or
+        // `fieldtype-<handle>`, both strings
+        /** @var string $icon */
         $icon = parent::icon();
 
-        return \is_scalar($icon) || $icon instanceof \Stringable ? (string) $icon : '';
+        return $icon;
     }
 
     /**
@@ -94,7 +96,6 @@ class Lists extends BaseLists
         $additionalSections = [
             [
                 'display' => 'Constraints',
-                'instructions' => 'Rules to enforce data format, range, and length requirements.',
                 'fields' => $constraintFields,
             ],
         ];
