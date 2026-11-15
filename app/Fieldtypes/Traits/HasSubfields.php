@@ -221,28 +221,13 @@ trait HasSubfields
      */
     protected function valueContainsFilledSubfield(array $value): bool
     {
-        // Build unique storage keys (canonical handle when set, else handle)
-        $storageKeys = [];
-
-        // Collect one key per definition; duplicates share the same canonical key
+        // Check each subfield's storage key; subfields sharing a canonical key repeat a check harmlessly
         foreach ($this->getCachedSubfieldDefinitions() as $subfield) {
-            // Resolve the key used for this subfield in stored data
-            /** @var int|string $storageKey */
-            $storageKey = $subfield['canonical_handle'] ?? $subfield['handle'];
-            $storageKeys[$storageKey] = true;
-        }
+            // Resolve the key used for this subfield in stored data (canonical handle when set, else handle)
+            /** @var string $key */
+            $key = $subfield['canonical_handle'] ?? $subfield['handle'];
 
-        // Check each storage key for a non-blank value
-        foreach (array_keys($storageKeys) as $key) {
-            // Cast to string for the array-dot helpers (keys may be int|string)
-            $key = (string) $key;
-
-            // Skip when the key is absent from the value
-            if (! Arr::has($value, $key)) {
-                continue;
-            }
-
-            // Treat non-blank values as stored subfield content
+            // Treat a non-blank value as stored subfield content; an absent key reads as null
             if (filled(Arr::get($value, $key))) {
                 return true;
             }
