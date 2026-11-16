@@ -89,8 +89,7 @@ function sosPageCascade(array $slots = []): SchemaTemplatesCascadeService&MockIn
  */
 function sosPageEntry(?string $id = 'ctx-1'): EntryModel
 {
-    $entry = Entry::make();
-    assert($entry instanceof EntryModel);
+    $entry = mustBe(EntryModel::class, Entry::make(), 'a new entry');
     if ($id !== null) {
         $entry->id($id);
     }
@@ -322,10 +321,10 @@ function sosPageProfiler(bool $enabled, array &$samples, array &$lifecycle): Jso
  */
 function sosPageCall(SchemaOutputService $service, mixed ...$args): string
 {
-    $result = (new ReflectionMethod(SchemaOutputService::class, 'composeJsonLdOutputScriptTagForResolvedSlots'))->invoke($service, ...$args);
-    assert(\is_string($result));
-
-    return $result;
+    return mustBeString(
+        (new ReflectionMethod(SchemaOutputService::class, 'composeJsonLdOutputScriptTagForResolvedSlots'))->invoke($service, ...$args),
+        'the composed script tag'
+    );
 }
 
 it('composes nothing when no slot builds a node, and still closes the profile', function (): void {
