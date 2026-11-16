@@ -204,7 +204,8 @@ it('saves an existing pages entry inside the base, writing its tree only to the 
     // A blank tree is filled in entry-index order, and its root is whichever entry comes
     // first. That order differs between a snapshot and a cold rebuild (#466), so this
     // test authors the tree that makes the expertise entry the root.
-    $tree = treeIsolationCollection('pages')->structure()->in('health');
+    $structure = mustBe(CollectionStructure::class, treeIsolationCollection('pages')->structure(), 'the pages structure');
+    $tree = mustBe(CollectionTree::class, $structure->in('health'), 'the health pages tree');
     $tree->tree([['entry' => TREE_ISOLATION_EXPERTISE_ID]]);
     $tree->save();
 
