@@ -230,6 +230,8 @@ trait ResolvesSpecialHoursValues
     private function isEntirelyPast(?string $date): bool
     {
         // A missing window end never expires
+        // `Carbon::parse(null)` is now, whose start of day is not before today, so dropping this return changes nothing (RemoveEarlyReturn is equivalent)
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($date === null) {
             // Keep the entry
             return false;
