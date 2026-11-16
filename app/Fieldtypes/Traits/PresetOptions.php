@@ -399,37 +399,18 @@ trait PresetOptions
             // Get the language's scope value
             $languageScope = $language->scope();
 
-            // Initialize flag to track if language matches any selected scope
-            $matchesScope = false;
-
-            // Loop through each selected scope
-            foreach ($scopes as $scope) {
-                // Map the user-friendly scope to the appropriate enum scope value
-                $mappedScope = $this->mapLanguageScope(
+            // ---
+            // Map each user-friendly scope to the enum's scope value and compare. Neither
+            // enum's data carries an empty-string scope, and mapLanguageScope() returns
+            // only null or a non-empty string, so null and '' need no normalizing.
+            // ---
+            $matchesScope = array_any(
+                $scopes,
+                fn (string $scope): bool => $languageScope === $this->mapLanguageScope(
                     $scope,
                     $enumClass
-                );
-
-                // ---
-                // Normalize scope values for comparison (treat null and empty string as
-                // equivalent)
-                // ---
-
-                // Normalize language scope (treat empty string as null)
-                $normalizedLanguageScope = $languageScope === '' ? null : $languageScope;
-
-                // Normalize mapped scope (treat empty string as null)
-                $normalizedMappedScope = $mappedScope === '' ? null : $mappedScope;
-
-                // Check if this language matches the current scope
-                if ($normalizedLanguageScope === $normalizedMappedScope) {
-                    // Language matches this scope
-                    $matchesScope = true;
-
-                    // Exit loop early since we found a match
-                    break;
-                }
-            }
+                )
+            );
 
             // ---
             // Skip this language if it doesn't match any of the selected scopes
