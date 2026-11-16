@@ -167,8 +167,9 @@
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uamsalert.js']) }}
 
 		{{# Load the layout assets #}}
-		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073): the uams-web/statamic-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init`. As a classic deferred script ahead of the module bundle it runs first, in document order. #}}
-		<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script>
+		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073, #189): Statamic's `helpers.js` defines the evaluator, and the uams-web/aether-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init` that forwards to it. As classic deferred scripts ahead of the module bundle they run first, in document order. Without `helpers.js`, every conditional field shows. #}}
+		<script defer src="/vendor/statamic/frontend/js/helpers.js"></script>
+		<script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script>
 		{{ vite :src="( $vite_layout_assets | join('|') )"}}
 	</head>
 	{{
@@ -253,19 +254,6 @@
 			</div>
 		</div>
 
-		{{#
-			Statamic's `helpers.js` loaded here until UAMS-Web/uams-statamic-archive#1956, to supply
-			`Statamic.$conditions.showField()` for conditional form fields. It is gone
-			because its evaluator decided every comparison with `eval()` — the last
-			`'unsafe-eval'` consumer on a public page, and so the blocker on #33's
-			flip of CSP out of Report-Only. It also shipped 98 KB on every request to
-			provide that one function plus a `$passkeys` client nothing here uses.
-
-			The evaluator now lives in `resources/js/conditions/` and reaches the page
-			through the site bundle, so nothing needs loading here. Do NOT restore this
-			tag without removing the owned evaluator in the same change: two
-			definitions of `showField` would disagree silently.
-		#}}
 		<!-- Start schema_ld_json -->
 		{{ schema_ld_json }}
 		<!-- End schema_ld_json -->

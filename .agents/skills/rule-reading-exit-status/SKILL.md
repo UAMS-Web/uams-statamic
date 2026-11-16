@@ -34,7 +34,7 @@ Read that. Name the commit it printed, which is also what [`pre-merge-check`](..
 node .claude/skills/local-ci/local-ci.mjs > ci.log 2>&1
 ```
 
-Nothing follows the redirection, so no later element becomes the reported status, and `$?` is never consulted. That block writes `ci.log` by design; it is an invocation rather than a demonstration. The [`local-ci`](../../../.claude/skills/local-ci/SKILL.md) skill has the runner's options.
+Nothing follows the redirection, so no later element becomes the reported status, and `$?` is never consulted. That block writes `ci.log` by design; it is an invocation rather than a demonstration. The [`local-ci`](../local-ci/SKILL.md) skill has the runner's options.
 
 This repository's gate is its own runner, which validates a named branch in its CI tree; invoke it the same way:
 

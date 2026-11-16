@@ -15,7 +15,7 @@ uses(TestCase::class, RequiresContentSubmodule::class);
 /**
  * Coverage for UAMS-Web/uams-statamic-archive#2533: `logos_item_labels` was a flat taxonomy, and a flat term
  * exists on every site its taxonomy is enabled for, so the importer had to prefix
- * each title with its site name. `UAMS-Web/wordpress-importer#1215` settled that
+ * each title with its site name. `UAMS-Web/wordpress-importer-archive#1215` settled that
  * labels import as entries in a site-scoped collection, following UAMS-Web/uams-statamic-archive#1863 and UAMS-Web/uams-statamic-archive#2532.
  *
  * These assert the shipped configuration: a structured, non-propagating collection

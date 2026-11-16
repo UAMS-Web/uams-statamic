@@ -88,7 +88,7 @@ fields:
       # News site. A block in its default configuration therefore could not be filtered by any
       # category of the site it syndicates from, and a stored cross-site id was dropped
       # on read: measured both ways on UAMS-Web/uams-statamic-archive#2165, kept with the flag and silently lost
-      # without it. That silent drop is why `wordpress-importer#628` omits the field
+      # without it. That silent drop is why `wordpress-importer-archive#628` omits the field
       # rather than writing a value that would render completely unfiltered.
       select_across_sites: true
       if:

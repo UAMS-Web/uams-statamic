@@ -28,7 +28,8 @@
 //                              The name predates UAMS-Web/uams-statamic-archive#3115; it applies to every submodule.
 //
 // Run from the superproject's root. Auth for each clone is whatever git is
-// configured with: ci.yml and scripts/local-ci.mjs both supply an insteadOf rewrite.
+// configured with: ci.yml and the local runner's scripts/ci-job.mjs both supply an
+// insteadOf rewrite.
 //
 // EXIT CODES, each a different answer, because two of them read alike otherwise.
 // With several submodules the most specific refusal wins: 3, then 1, then 2.

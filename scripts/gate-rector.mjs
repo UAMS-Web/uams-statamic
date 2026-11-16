@@ -5,7 +5,7 @@
  *     node scripts/gate-rector.mjs [--tree <path>]
  *
  * Runs against an installed checkout, `--tree` or the working directory, and exits with Rector's
- * own status, or 2 for a wrong flag or a missing tool. `local-ci.mjs` calls `gateRector` (#295).
+ * own status, or 2 for a wrong flag or a missing tool. `local-ci.json` runs it as the `rector` job (#296).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -21,7 +21,9 @@ import { isMainModule, phpRunner, resolvePhp, runCli, step } from './gate-proces
 export function gateRector({ tree, php }) {
     const runPhp = phpRunner(php)
 
-    // PARITY: the rector job's "Run Rector (gating profile, dry-run)" step in ci.yml.
+    // PARITY: the rector job of the shared chain ci.yml calls as `checks` (#580),
+    // which runs `composer test:refactor` (`rector --dry-run`, the same config) on a
+    // fresh runner, so its temp dir starts empty without the private one below.
     //
     // Runs the DEFAULT profile — the gating one — so this asserts the
     // same zero baseline the remote job does; `rector-sweep.php` is deliberately

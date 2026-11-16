@@ -75,8 +75,8 @@ function peopleShowcaseSortOrderGroupId(): string
  * test when it is absent (the Stache returns `null` without the submodule).
  *
  * Mirrors `Tests\Concerns\RequiresContentSubmodule::requireContentCollection()`:
- * the canonical environments (`ci.yml` phpunit job, `local-ci.mjs`, a normal
- * local checkout) all initialize `content/`, so this guard never trips there; a
+ * the canonical environments (`ci.yml` phpunit job, the local runner's
+ * `dependencies` job, a normal local checkout) all initialize `content/`, so this guard never trips there; a
  * bare worktree reports a clear `SKIP` instead of the `CollectionNotFoundException`
  * the `collection:people` tag would otherwise throw.
  *

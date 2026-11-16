@@ -120,10 +120,8 @@ class Asset extends AssetModel
         }
 
         // Use current time when no other source is available
-        if ($timestamp === null) {
-            // Set timestamp from current time
-            $timestamp = time();
-        }
+        // Set timestamp from current time
+        $timestamp ??= time();
 
         // Persist last_modified alongside blueprint `data` and other meta keys
         $meta['last_modified'] = $timestamp;

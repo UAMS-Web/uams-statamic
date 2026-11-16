@@ -252,24 +252,21 @@ it('preserves Bard augmentation when selecting a real person\'s biography by han
         'title' => 'Dr Augmented',
         'bio_clinical' => [['type' => 'paragraph', 'content' => [['type' => 'text', 'text' => 'Augmented clinical bio']]]],
     ]);
-    $person->saveQuietly();
 
-    try {
-        /** @var array<string, mixed> $scope */
-        $scope = $person->toAugmentedArray();
-        $scope['bio_field'] = 'bio_clinical';
-        $out = (string) Antlers::parse(
-            "{{ \$person_bio = switch( ( bio_field == 'bio' ) => bio, ( bio_field == 'bio_clinical' ) => bio_clinical ) }}"
-            .'{{ if $person_bio }}{{ $person_bio }}{{ /if }}',
-            $scope,
-        );
-    } finally {
-        $person->delete();
-    }
+    // Augmentation reads the collection's blueprint, not the stored entry, so the
+    // fixture stays in memory and nothing is written to the shared content mirror (#537)
+    /** @var array<string, mixed> $scope */
+    $scope = $person->toAugmentedArray();
+    $scope['bio_field'] = 'bio_clinical';
+    $out = (string) Antlers::parse(
+        "{{ \$person_bio = switch( ( bio_field == 'bio' ) => bio, ( bio_field == 'bio_clinical' ) => bio_clinical ) }}"
+        .'{{ if $person_bio }}{{ $person_bio }}{{ /if }}',
+        $scope,
+    );
 
     expect($out)->toContain('<p>Augmented clinical bio</p>')
         ->and($out)->not->toContain('"type":"paragraph"');
-})->group('serial');
+});
 
 it('requires the manual body only when no person is connected', function (): void {
     // A `required` field hidden by conditions still fails Statamic validation, so the

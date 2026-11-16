@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\MigrationRedirectGenerator;
 use App\Services\Redirects\StructuralRedirectSynthesizer;
 use App\Support\Redirects\MigrationRedirect;
@@ -16,6 +15,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Services\MarketingRedirectStore;
 
 /**
  * Feature coverage for the synthesized structural WordPress redirects (UAMS-Web/uams-statamic-archive#1657).

@@ -40,7 +40,7 @@ A **change that ships** and a **claim that is published** (a figure, count, veri
 
    Mutation-verify with `--mutate` too; see *Mutation testing*.
 
-   The full chain, locally: [`local-ci`](../../../.claude/skills/local-ci/SKILL.md).
+   The full chain, locally: [`local-ci`](../local-ci/SKILL.md).
 
    Quick gate: `php artisan test --compact`.
 
@@ -90,7 +90,7 @@ Run `vendor/bin/pest --mutate --class="<Namespace>\\…\\<ChangedClass>"` diff-s
 
 **Annotate with `// @pest-mutate-ignore: <Mutator>`**, never config `ignore()`/`except()`: standalone **above** the node, reason on its own line before it, **nothing after the mutator names** (prose suppresses nothing), never **bare** (suppresses the whole subtree), no **trailing whitespace**. Run [`check-mutate-ignore.php`](../pest-testing/scripts/check-mutate-ignore.php) as a CI job (the `code-quality` template has one); clean means no annotation is inert, never that every one is effective.
 
-**Every run must show it executed** (a child that never launched scores a kill, so a dead run reads `100.00%`): any survivor; at 100%, a mutation-to-base `Duration:` ratio an order of magnitude below 1 is the failure (failures 0.03 to 0.08, healthy 0.64 to 4.67), near 1 re-run; implausible perfection; else run one child by hand with the run's own test selection:
+**Every run must show it executed** (a child that never launched scores a kill, so a dead run reads `100.00%`): any survivor; at 100%, a mutation-to-base `Duration:` ratio an order of magnitude below 1 is the failure (failures 0.03 to 0.08, healthy 0.64 to 4.67), near 1 re-run, but only once the base phase is shown to be test time (compare it with the tests run without `--mutate`; a padded base phase voids the ratio, and a low ratio is never waved off as padding without that comparison: [evidence](../evidence-behind-rules/adversarial-review.md)); implausible perfection; else run one child by hand with the run's own test selection:
 
 ```
 PEST_MUTATION_TESTING=<absolute source path> PEST_MUTATION_FILE=<replacement> vendor/bin/pest <test file> --bail --filter="<Class>::(.*)"
@@ -105,7 +105,7 @@ Or skip the only covering test, confirm it is skipped, and require the mutant to
 
 **Assert a hand-rolled mutation changed the file.** Coverage driver: PCOV or Xdebug, not phpdbg, per machine; run `php .claude/skills/pcov-setup/scripts/check-mutation-instrument.php` before trusting a score ([`pcov-setup`](../pcov-setup/SKILL.md)). Track a full-coverage ticket's passes with `build-coverage-scope-csv.php`, kept current in UAMS-Web/uams-claude-skills.
 
-Here: `composer mutate -- --class="App\<Class>"` from the main checkout. Keep `patches/pest-plugin-mutate-*.patch` applied (`composer install` does not re-patch); pre-patch Windows kills are unverified. Prefer the synced instrument check; the legacy `scripts/check-mutation-instrument.php` stays until retired; `scripts/check-mutate-ignore.php` reports inert markers. On Windows a trailing marker is inert and none suppresses a mutator on its own node: kill or restructure.
+Here: `composer mutate -- --class="App\<Class>"` from the main checkout. The patches come from the `uams-web/patches-pest-plugin-mutate` package (`vendor/uams-web/patches-pest-plugin-mutate/patches/`); keep them applied (`composer install` does not re-patch an installed `pest-plugin-mutate`); pre-patch Windows kills are unverified. Prefer the synced instrument check; the legacy `scripts/check-mutation-instrument.php` stays until retired; `scripts/check-mutate-ignore.php` reports inert markers. On Windows a trailing marker is inert and none suppresses a mutator on its own node: kill or restructure.
 
 Pass a relative `--path`; in a linked worktree, `vendor/bin/pest <test-file> --mutate --path=<source dir>/<Subdir> --class="<Namespace>\<Class>" --covered-only`; on Windows relaunch under a trimmed `env -i`; see [`pcov-setup`](../pcov-setup/SKILL.md).
 

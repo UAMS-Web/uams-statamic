@@ -4,8 +4,9 @@
 	@source Inspired by Statamic Peak's "Error: 404" template: https://github.com/studio1902/statamic-peak/blob/main/export/resources/views/errors/404.antlers.html
 #}}
 
-{{# Redirect if current_url is in the Redirects global. #}}
-{{ partial:errors/redirects }}
+{{# A rule in the Redirects global for this path has already answered before this
+    view renders: the `uams-web/aether-redirects` add-on redirects it, or renders
+    the rule's targetless error page, from Statamic's 404 hook (#398). #}}
 
 {{# Redirect a knowledge base's old un-mounted URL to its current mounted URL. #}}
 {{ partial:errors/knowledge_base_mount_redirect }}
@@ -21,9 +22,8 @@
 
 		{{# A redirect rule authored with `response: 404` carries an optional message
 		    explaining why this particular URL is gone (UAMS-Web/uams-statamic-archive#1934). It is rendered HERE,
-		    in the body, rather than aborted from `errors/redirects` — see that
-		    partial's `404` branch for why aborting re-enters this page and loses the
-		    message. The rule is re-resolved rather than passed down because a partial
+		    in the body: the add-on leaves a `404` rule's response the 404 it already
+		    is, so this page renders and shows the message itself. The rule is re-resolved rather than passed down because a partial
 		    cannot hand a value back to the view that included it, and the tag only
 		    re-reads the redirects global. #}}
 		{{ partial:errors/redirect_message }}

@@ -506,3 +506,49 @@ it('stores no article for a legacy article joiner whose scope has no name at all
     expect($result['findings'][0]['article'])->toBeNull()
         ->and($result['findings'][0]['status'])->toBe(RoleTitleScopeJoinerMigrator::COLLAPSED);
 });
+
+// ---
+// role-title:collapse-scope-joiners: the report the command prints over a scan
+// ---
+
+it('prints a row and a count per status for each legacy joiner, and says a dry run saves nothing', function (bool $write, int $saves, string $closing): void {
+    $collapsed = ['job_title' => [['title' => collapseTitle(['scope_joiner' => 'for_with_the', 'scope_name' => 'research'])]]];
+    $objectAppears = ['job_title' => [['title' => collapseTitle(['scope_joiner' => 'of_with_the', 'scope_name' => 'Academic Affairs'], 'department')]]];
+
+    app()->instance(RoleTitleScopeJoinerMigrator::class, joinerMigratorServing([
+        joinerEntry('spock', $objectAppears, $saves),
+        joinerEntry('kirk', $collapsed, $saves),
+    ]));
+
+    $options = $write ? ['--collection' => 'people', '--write' => true] : ['--collection' => 'people'];
+
+    expect(Artisan::call('role-title:collapse-scope-joiners', $options))->toBe(0);
+
+    $lines = array_map(trim(...), explode("\n", Artisan::output()));
+
+    // One table row per finding, in scan order, with the article column filled
+    $rows = array_values(array_filter($lines, fn (string $line): bool => str_starts_with($line, '| spock') || str_starts_with($line, '| kirk')));
+
+    expect($rows)->toHaveCount(2)
+        ->and(preg_split('/\s*\|\s*/', trim($rows[0], '| ')))->toBe(['spock', 'job_title.0.title', 'object_would_appear', 'of_with_the', 'of', 'the'])
+        ->and(preg_split('/\s*\|\s*/', trim($rows[1], '| ')))->toBe(['kirk', 'job_title.0.title', 'collapsed', 'for_with_the', 'for', 'the']);
+
+    // The counts follow the table, sorted by status name, then the closing line
+    $countAt = array_search('collapsed: 1', $lines, true);
+
+    expect($countAt)->toBeInt()
+        ->and($lines[$countAt + 1])->toBe('object_would_appear: 1')
+        ->and($lines)->toContain($closing)
+        // A blank line sets the closing line apart from the counts
+        ->and($lines[array_search($closing, $lines, true) - 1])->toBe('');
+})->with([
+    'a dry run' => [false, 0, 'Dry run: 2 joiner(s) would be rewritten. Re-run with --write to save them.'],
+    'a write' => [true, 1, 'Rewrote 2 joiner(s).'],
+]);
+
+it('scans the people collection when no --collection is given', function (): void {
+    app()->instance(RoleTitleScopeJoinerMigrator::class, joinerMigratorServing([]));
+
+    expect(Artisan::call('role-title:collapse-scope-joiners'))->toBe(0)
+        ->and(Artisan::output())->toContain('No legacy role_title scope joiners in `people`.');
+});

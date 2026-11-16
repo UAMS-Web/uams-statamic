@@ -39,6 +39,10 @@ class MakeWorkdayFieldsReadOnly
     /**
      * The `collections.` namespace of the `people` entry blueprints.
      */
+    // A constant expression is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, each of the three concatenation mutants fails 3 tests
+    // in WorkdayGenderTest.
+    // @pest-mutate-ignore: ConcatRemoveLeft, ConcatRemoveRight, ConcatSwitchSides
     private const string PEOPLE_NAMESPACE = 'collections.'.PeopleEditingScope::COLLECTION;
 
     /**

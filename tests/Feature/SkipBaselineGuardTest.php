@@ -17,7 +17,7 @@ use Symfony\Component\Process\Process;
  *
  * Driven as a subprocess (like `tests/Feature/ParallelSafeTestsGuardTest.php`)
  * rather than by requiring the script: that pins the real CLI contract — exit
- * code and the names it prints — which is what ci.yml and local-ci.mjs actually
+ * code and the names it prints — which is what ci.yml and scripts/gate-pest.mjs actually
  * depend on. Pure subprocess check; framework-free, and its fixtures live under
  * a per-run `sys_get_temp_dir()` path, so it is parallel-safe.
  *
@@ -234,7 +234,8 @@ it('resolves the committed baseline when --baseline is omitted', function () use
     // explicit --baseline, leaving it unexercised.
     [$dir, $report] = $writeReport(0);
 
-    $process = new Process([PHP_BINARY, $script, '--report='.$report, '--band=parallel'], $root);
+    // Linux, so the shared count is the one read on any machine running this.
+    $process = new Process([PHP_BINARY, $script, '--report='.$report, '--band=parallel', '--platform=Linux'], $root);
     $process->run();
 
     // Read the expected count rather than literalizing it: the baseline is
@@ -246,6 +247,28 @@ it('resolves the committed baseline when --baseline is omitted', function () use
     expect($process->getExitCode())->toBe(0);
     expect($process->getOutput().$process->getErrorOutput())
         ->toContain('baseline '.$baseline['bands']['parallel']['expected']);
+
+    $cleanUp($dir);
+});
+
+it('holds a platform to its own count and every other platform to the shared one', function () use ($writeReport, $script, $root, $cleanUp): void {
+    [$dir, $report] = $writeReport(5);
+    $baseline = $dir.'/skip-baseline.json';
+    file_put_contents($baseline, json_encode(['bands' => ['parallel' => [
+        'expected' => 3,
+        'platforms' => ['Windows' => ['expected' => 5]],
+    ]]]));
+
+    $run = function (string $platform) use ($script, $root, $report, $baseline): int {
+        $process = new Process([PHP_BINARY, $script, '--report='.$report, '--band=parallel', '--baseline='.$baseline, '--platform='.$platform], $root);
+        $process->run();
+
+        return $process->getExitCode() ?? -1;
+    };
+
+    expect($run('Windows'))->toBe(0)
+        ->and($run('Linux'))->toBe(1)
+        ->and($run('Darwin'))->toBe(1);
 
     $cleanUp($dir);
 });

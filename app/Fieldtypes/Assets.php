@@ -11,7 +11,7 @@ use App\Rules\AssetMinimumDimensions;
 use App\Scopes\AssetsByFileSize;
 use Statamic\Fields\Field;
 use Statamic\Fieldtypes\Assets\Assets as BaseAssets;
-use UAMSWeb\FormSettings\Fieldtypes\Traits\FormBlueprintContext;
+use UAMSWeb\Aether\Forms\Settings\Fieldtypes\Traits\FormBlueprintContext;
 
 /**
  * Custom Assets fieldtype that extends Statamic's Assets to support email

@@ -23,7 +23,7 @@ History: [the introduction](../../../.claude/history/sync-pr-branch.md).
 
 2. **Validator side: sync before the gating run when the branch is behind an interacting change**, and keep local `main` current so the diff base is right. Diff against the **remote-tracking** `origin/<base>`, never against local `main`: a stale local ref distorts the changed-file set, so a file that needs formatting can go unexamined by a diff-scoped job, and the same stale ref attributes every merge since you last pulled to the other branch, which manufactures an overlap that is not there. But that fixes the *diff base*, a different failure than a *stale branch*: a branch behind an interacting merge still needs the sync above to validate the real combined state.
 
-   The gate ([`local-ci`](../../../.claude/skills/local-ci/SKILL.md)) already diffs against `origin/<base>` (UAMS-Web/uams-statamic-archive#1079).
+   The gate ([`local-ci`](../local-ci/SKILL.md)) already diffs against `origin/<base>` (UAMS-Web/uams-statamic-archive#1079).
 
 3. **The exception: genuinely disjoint PRs need not chase every `main` advance. But disjointness is assessed against the inputs a branch's jobs READ, not only the files its diff TOUCHES.** A branch is exempt when it shares neither files *nor job inputs* with the intervening merges; this rule targets branches behind an *interacting* change, and a shared input is an interaction. Verify it rather than assume it: `git diff --name-only origin/main...HEAD` against the same list for the intervening commits, and then the question below.
 
@@ -49,7 +49,7 @@ History: [the introduction](../../../.claude/history/sync-pr-branch.md).
 
    **Pint is the instructive row**: the *job* is scoped to changed files, and its *ruleset* is not, so scoping the run says nothing about scoping the input. The other rows are shared inputs whose jobs *are* diff-scoped: a smaller and differently-shaped risk than `spell`.
 
-   **All of the inputs above exist here, so there is no carve-out.** `wordpress-importer` has no `pint.json`, so a branch there cannot be affected by a `pint` configuration change arriving through `main`. Nothing exists to change. This repository has one. The chain itself is [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) and [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs).
+   **All of the inputs above exist here, so there is no carve-out.** `aether-wordpress-importer` has no `pint.json`, so a branch there cannot be affected by a `pint` configuration change arriving through `main`. Nothing exists to change. This repository has one. The chain itself is [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) and [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs).
 
    **This is an author-side check, not a gate defect.** The gate validates the branch tip and performs no merge, so a branch behind an interacting change is validated against a base that no longer exists. Authors sync before opening a PR and before the gating run, so the exemption has to be correct on its own terms.
 
@@ -61,4 +61,4 @@ History: [the introduction](../../../.claude/history/sync-pr-branch.md).
 
 This file is the standing statement of the pre-gate branch sync. It fixes a stale *branch*, which is a different failure from the diff *base* the gate chooses; the branch → PR → merge flow itself lives in [`AGENTS.md`](../../../AGENTS.md) and the [`writing-pull-requests`](../writing-pull-requests/SKILL.md) skill; the gating commands live in the repository's own `composer.json` and `package.json`. It pairs with the [`worktrees`](../rule-worktrees/SKILL.md) rule: a worktree changes *where* you branch, this rule keeps that branch *current*. Don't restate any of them.
 
-It composes with the remote-tracking diff base in [`local-ci`](../../../.claude/skills/local-ci/SKILL.md), which fixes the diff *base*, not a stale *branch*.
+It composes with the remote-tracking diff base in [`local-ci`](../local-ci/SKILL.md), which fixes the diff *base*, not a stale *branch*.

@@ -9,7 +9,7 @@ use Statamic\Facades\Site;
 use Statamic\Forms\Form;
 use Tests\Support\FormsSubmodule;
 use Tests\TestCase;
-use UAMSWeb\MultisiteForms\Forms\Assignment;
+use UAMSWeb\Aether\Forms\Multisite\Forms\Assignment;
 
 uses(TestCase::class);
 

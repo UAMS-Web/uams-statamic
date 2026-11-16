@@ -53,8 +53,9 @@ final readonly class ProviderProfileBodyResolver
      * Bard and replicator handles whose mere presence renders a section.
      *
      * `bio_clinical`/`bio` back the About block (`:when="bio_clinical || bio"`),
-     * `clinical_focus` the Clinical Focus block, `certifications` the Credentials
-     * block, and `awards` the shared awards component.
+     * `clinical_focus` the Clinical Focus block, `certifications` and `member_of`
+     * the Credentials block (`:when="certifications || member_of"`), and `awards`
+     * the shared awards component.
      *
      * @var list<string>
      */
@@ -63,6 +64,7 @@ final readonly class ProviderProfileBodyResolver
         'bio',
         'clinical_focus',
         'certifications',
+        'member_of',
         'awards',
     ];
 

@@ -209,7 +209,7 @@ it('falls back to the Find-a-Doc global default for an empty AC appointment numb
         $variables->set('location_ac_appointments_primary', $originalPrimary);
         $variables->set('location_ac_appointments_specialty', $originalSpecialty);
     }
-})->group('serial');
+});
 
 it('does not leak the AC global fallback onto a location with the AC gate closed', function (): void {
     // Security-relevant invariant: the site-wide Arkansas Children's default
@@ -232,7 +232,7 @@ it('does not leak the AC global fallback onto a location with the AC gate closed
     } finally {
         $variables->set('location_ac_appointments_primary', $originalPrimary);
     }
-})->group('serial');
+});
 
 it('omits contactPoint when the location has no appointment or additional phones', function (): void {
     $node = buildLocationNode([

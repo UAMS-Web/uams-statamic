@@ -14,7 +14,7 @@ uses(TestCase::class);
  * division / service-line org roles, added once to the shared
  * `uamsweb_post_associations` fieldset so it resolves onto all four `posts`
  * blueprints. It is the join key a Departmental News Hub (UAMS-Web/uams-statamic-archive#1602) and its news
- * archive (UAMS-Web/uams-statamic-archive#1599) filter on; the importer crosswalk (`wordpress-importer#438`)
+ * archive (UAMS-Web/uams-statamic-archive#1599) filter on; the importer crosswalk (`wordpress-importer-archive#438`)
  * seeds it historically.
  *
  * @command  php artisan test --compact tests/Feature/Blueprints/PostRelatedOrganizationsFieldTest.php

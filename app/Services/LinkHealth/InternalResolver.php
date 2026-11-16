@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\LinkHealth;
 
-use App\Support\Redirects\RedirectRuleMatcher;
-use App\Support\Redirects\RedirectSource;
 use Illuminate\Support\Collection;
 use Statamic\Assets\Asset as AssetItem;
 use Statamic\Entries\Entry as EntryItem;
@@ -19,6 +17,8 @@ use Statamic\Facades\Term;
 use Statamic\Filesystem\FlysystemAdapter;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Taxonomies\LocalizedTerm;
+use UAMSWeb\Aether\Redirects\Support\RedirectRuleMatcher;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
 
 /**
  * Resolve every internal target in-process, without a single HTTP request (UAMS-Web/uams-statamic-archive#1765).
@@ -34,7 +34,7 @@ use Statamic\Taxonomies\LocalizedTerm;
  * may be unpublished on the next.
  *
  * Redirect awareness runs through {@see RedirectRuleMatcher}, which is the same selection
- * `App\Tags\FindRedirectRule` serves from — extracted for this purpose in UAMS-Web/uams-statamic-archive#1765. Re-deriving it
+ * `UAMSWeb\Aether\Redirects\Tags\FindRedirectRule` serves from — extracted for this purpose in UAMS-Web/uams-statamic-archive#1765. Re-deriving it
  * here would let the report and the served behavior disagree, which is the one outcome the
  * acceptance criteria rule out.
  */
@@ -88,9 +88,14 @@ final class InternalResolver
      */
     private function resolveEntry(LinkOccurrence $occurrence): Resolution
     {
-        $id = $this->referenceBody($occurrence->value, 'entry');
+        $body = $this->referenceBody($occurrence->value, 'entry');
 
-        if ($id === null) {
+        // A link may carry a query or fragment after the id (`entry::<id>#section`), which the
+        // render path keeps on the resolved URL (#582). Neither is part of the id, so looking the
+        // whole body up would report a live entry as missing.
+        $id = $body === null ? null : preg_replace('/[?#].*$/s', '', $body);
+
+        if ($id === null || $id === '') {
             return new Resolution(ResolutionState::Missing, $occurrence->value);
         }
 

@@ -61,27 +61,19 @@ class ValidateClinicalLocationsEntry
      * {@see ValidateClinicalLocationsTree::MAX_LOCATION_DEPTH}; enforced here
      * pre-persist so a Control Panel create cannot leave an orphaned entry.
      */
+    // A constant expression is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, 1 and 3 each fail tests in ValidateClinicalLocationsEntryTest.
+    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int MAX_LOCATION_DEPTH = 2;
 
     /**
      * Upper bound on the parent-location chain walk — a cycle guard for a
      * malformed tree. Real location depth never approaches this.
      */
+    // The depth is decided within MAX_LOCATION_DEPTH steps, so a bound one higher or
+    // lower still stops a cycle with the same result (applied by hand, both pass).
+    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int MAX_ANCESTOR_WALK = 10;
-
-    /**
-     * Blueprints whose entries are content pages (never valid at the subsite root).
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_BLUEPRINTS = ['basic_page', 'landing_page'];
-
-    /**
-     * Blueprints allowed to parent a content page: a location or another content page.
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_PARENT_BLUEPRINTS = ['location', 'basic_page', 'landing_page'];
 
     public function __construct(
         protected Request $request
@@ -155,7 +147,7 @@ class ValidateClinicalLocationsEntry
             // Blueprint handles are non-numeric strings or null, which loose and strict
             // in_array() compare alike.
             // @pest-mutate-ignore: TrueToFalse
-            \in_array($blueprint, self::CONTENT_PAGE_BLUEPRINTS, true)
+            \in_array($blueprint, self::contentPageBlueprints(), true)
         ) { // Validate content pages.
             // Content pages must have a parent (they can never be at the subsite root).
             if ($parentBlueprint === null) {
@@ -173,7 +165,7 @@ class ValidateClinicalLocationsEntry
                 // Blueprint handles are non-numeric strings or null, which loose and
                 // strict in_array() compare alike.
                 // @pest-mutate-ignore: TrueToFalse
-                ! \in_array($parentBlueprint, self::CONTENT_PAGE_PARENT_BLUEPRINTS, true)
+                ! \in_array($parentBlueprint, self::contentPageParentBlueprints(), true)
             ) {
                 Log::error(
                     'ValidateClinicalLocationsEntry::handle: Throwing exception: Invalid parent for content page',
@@ -327,5 +319,29 @@ class ValidateClinicalLocationsEntry
         }
 
         return $parentEntry;
+    }
+
+    /**
+     * Blueprints whose entries are content pages (never valid at the subsite root).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageBlueprints(): array
+    {
+        return ['basic_page', 'landing_page'];
+    }
+
+    /**
+     * Blueprints allowed to parent a content page: a location or another content page.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageParentBlueprints(): array
+    {
+        return ['location', 'basic_page', 'landing_page'];
     }
 }

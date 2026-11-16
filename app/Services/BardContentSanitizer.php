@@ -21,7 +21,7 @@ namespace App\Services;
  * and it is not on the path that would stop them.
  *
  * The component that actually discards unsafe markup is
- * `UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\BardParser`,
+ * `UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\BardParser`,
  * whose Tiptap schema is an allowlist: `<script>`, `<iframe>`, event-handler
  * attributes and `javascript:`/`data:` hrefs are dropped at parse time because
  * the schema never declares them. That invariant is asserted by
@@ -36,7 +36,7 @@ namespace App\Services;
  * but the importer's custom `set` node copies `data-set-attr-*` values from the
  * source HTML into `attrs.values` verbatim. Those values are therefore a
  * separate trust boundary that this allowlist does not cover — tracked as a
- * known gap in UAMS-Web/wordpress-importer#494 and pinned by
+ * known gap in UAMS-Web/wordpress-importer-archive#494 and pinned by
  * `tests/Unit/WordPressImport/BardParserSetAttributePassthroughTest.php`.
  *
  * Do not add XSS handling here, and do not read this class's presence as
@@ -180,12 +180,8 @@ class BardContentSanitizer
             // ---
             // Convert null text to empty string to prevent type issues
             // ---
-
-            // Check if text is null
-            if ($text === null) {
-                // Set text to empty string
-                $text = '';
-            }
+            // Set text to empty string
+            $text ??= '';
 
             // Coerce a non-string text value to string for consistent processing
             if (! \is_string($text)) {

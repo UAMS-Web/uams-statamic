@@ -6,12 +6,10 @@ namespace App\Jobs;
 
 use App\Support\People\ProviderEligibilityIndexRefresher;
 use Carbon\CarbonInterface;
-use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -40,15 +38,20 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * or after the cache is cleared, treats every location dated up to now as passed, which costs one wider
  * refresh and never misses a date. Each run reads only published locations.
  *
+ * The job is unique while it is queued or running. The lock expires after the {@see UniqueFor} attribute's
+ * seconds, so a run that never finished, such as one whose worker was killed, cannot block every
+ * later dispatch (#488). A location's date then takes effect at most that much later.
+ *
  * Dispatched by the schedule in `routes/console.php`, at the cadence in
  * `clinical_provider_profile.location_date_refresh.cron`.
+ *
+ * One hour is forty times the queue's default `retry_after` of 90 seconds, the longest a job can
+ * run on those settings before the queue hands it out again. No production run has been timed.
  */
+#[UniqueFor(3600)]
 final class RefreshProviderEligibilityForDatedLocations implements ShouldBeUnique, ShouldQueue
 {
-    use Dispatchable;
-    use InteractsWithQueue;
     use Queueable;
-    use SerializesModels;
 
     /**
      * The cache key holding the Unix time of the last run.

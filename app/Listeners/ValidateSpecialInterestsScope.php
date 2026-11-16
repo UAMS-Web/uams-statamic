@@ -55,15 +55,6 @@ class ValidateSpecialInterestsScope
         return [PeopleCollection::handle(), 'clinical_locations'];
     }
 
-    /**
-     * The authored special-interest override fields this listener scope-checks —
-     * the typed Condition and Service pickers. A profile's total special interests
-     * are the union of both.
-     *
-     * @var list<string>
-     */
-    private const array OVERRIDE_FIELDS = ['special_interest_clinical_conditions', 'special_interest_clinical_services'];
-
     public function __construct(
         protected ImpliedOntologyComputedValues $impliedValues
     ) {}
@@ -98,6 +89,8 @@ class ValidateSpecialInterestsScope
         // Scope-check only the ids being ADDED this save; already-persisted selections
         // are grandfathered so a later expertise change cannot retroactively block an
         // unrelated save.
+        // The keys are never read: the list is only tested for emptiness and diffed.
+        // @pest-mutate-ignore: UnwrapArrayValues
         $newlyAdded = array_values(array_diff($selectedIds, $this->previouslySavedIds($entry)));
         if ($newlyAdded === []) {
             return;
@@ -157,7 +150,7 @@ class ValidateSpecialInterestsScope
         Entry $entry
     ): array {
         $ids = [];
-        foreach (self::OVERRIDE_FIELDS as $field) {
+        foreach (self::overrideFields() as $field) {
             $selected = $entry->get($field, []);
             if (! is_array($selected)) {
                 continue;
@@ -170,6 +163,22 @@ class ValidateSpecialInterestsScope
             }
         }
 
+        // Callers only diff the list and test it for emptiness, so its keys are never read.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_unique($ids));
+    }
+
+    /**
+     * The authored special-interest override fields this listener scope-checks:
+     * the typed Condition and Service pickers. A profile's total special interests
+     * are the union of both.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function overrideFields(): array
+    {
+        return ['special_interest_clinical_conditions', 'special_interest_clinical_services'];
     }
 }

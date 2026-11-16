@@ -149,36 +149,34 @@ final class StateEnumGenerator
             $caseId = $usps;
 
             // Create the entry once per USPS code
-            if (! isset($statesByCaseId[$caseId])) {
-                $statesByCaseId[$caseId] = [
-                    'caseId' => $caseId,
-                    'fullName' => $fullName,
-                    'baseName' => $baseName,
-                    'apAbbreviation' => $uspsToAp[$usps] ?? $fullName,
-                    'type' => $uspsToType[$usps] ?? 'state',
-                    'fipsCode' => $fips,
-                    'iso3166_2' => 'US-'.$usps,
-                    'geoId' => $geoId,
-                    'nationalStandardCode' => (string) ($rec['STATENS'] ?? ''),
-                    'division' => (string) ($rec['DIVISION'] ?? ''),
-                    'region' => (string) ($rec['REGION'] ?? ''),
-                    'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
-                    'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
-                    'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
-                    'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
-                    'areaLand' => (string) ($rec['AREALAND'] ?? ''),
-                    'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
-                    'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
-                    'centroidGeo' => [
-                        (string) ($rec['CENTLAT'] ?? ''),
-                        (string) ($rec['CENTLON'] ?? ''),
-                    ],
-                    'internalPointGeo' => [
-                        (string) ($rec['INTPTLAT'] ?? ''),
-                        (string) ($rec['INTPTLON'] ?? ''),
-                    ],
-                ];
-            }
+            $statesByCaseId[$caseId] ??= [
+                'caseId' => $caseId,
+                'fullName' => $fullName,
+                'baseName' => $baseName,
+                'apAbbreviation' => $uspsToAp[$usps] ?? $fullName,
+                'type' => $uspsToType[$usps] ?? 'state',
+                'fipsCode' => $fips,
+                'iso3166_2' => 'US-'.$usps,
+                'geoId' => $geoId,
+                'nationalStandardCode' => (string) ($rec['STATENS'] ?? ''),
+                'division' => (string) ($rec['DIVISION'] ?? ''),
+                'region' => (string) ($rec['REGION'] ?? ''),
+                'functionalStatusCode' => (string) ($rec['FUNCSTAT'] ?? ''),
+                'mafTigerFeatureClassCode' => (string) ($rec['MTFCC'] ?? ''),
+                'mafTigerObjectIdentifier' => (string) ($rec['OID'] ?? ''),
+                'legalStatisticalAreaDescriptionCode' => (string) ($rec['LSADC'] ?? ''),
+                'areaLand' => (string) ($rec['AREALAND'] ?? ''),
+                'areaWater' => (string) ($rec['AREAWATER'] ?? ''),
+                'arcGisObjectIdentifier' => (string) ($rec['OBJECTID'] ?? ''),
+                'centroidGeo' => [
+                    (string) ($rec['CENTLAT'] ?? ''),
+                    (string) ($rec['CENTLON'] ?? ''),
+                ],
+                'internalPointGeo' => [
+                    (string) ($rec['INTPTLAT'] ?? ''),
+                    (string) ($rec['INTPTLON'] ?? ''),
+                ],
+            ];
 
             // Clean up variables to free up memory
             unset(
@@ -327,7 +325,7 @@ final class StateEnumGenerator
         array $dataSourceLines
     ): string {
         // Begin file and docblock header
-        $content = "<?php\n\n";
+        $content = "<?php\n\ndeclare(strict_types=1);\n\n";
         $content .= "/**\n";
         $content .= " * Generated States enum cases\n";
         $content .= " *\n";
@@ -337,8 +335,8 @@ final class StateEnumGenerator
         $content .= " * 2. Open app/Enums/State.php\n";
         $content .= " * 3. Replace the existing case list in the State enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the StateInfo attribute class and any other methods in\n";
-        $content .= " *    State.php\n";
+        $content .= " * 4. Keep any other methods in State.php; the StateInfo attribute\n";
+        $content .= " *    class is in StateInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";
@@ -352,7 +350,7 @@ final class StateEnumGenerator
         $content .= " *\n";
         $content .= ' * This list of cases was generated on '.\date('Y-m-d').' at '.\date('H:i:s T')."\n";
         $content .= ' * Total states: '.\count($states)."\n";
-        $content .= " */\n\n";
+        $content .= " */\n";
 
         // Open enum block
         $content .= "enum State: string\n";
@@ -383,9 +381,9 @@ final class StateEnumGenerator
             $intLat = isset($st['internalPointGeo'][0]) ? GeneratorUtils::escapeSingleQuotes($st['internalPointGeo'][0]) : '';
             $intLon = isset($st['internalPointGeo'][1]) ? GeneratorUtils::escapeSingleQuotes($st['internalPointGeo'][1]) : '';
 
-            // Attribute line followed by the enum case
-            $content .= "\t#[StateInfo(fullName: '{$fullName}', apAbbreviation: '{$apAbbrev}', type: '{$type}', fipsCode: '{$fips}', iso3166_2: '{$iso3166_2}', baseName: {$baseName}, geoId: '{$geoId}', nationalStandardCode: '{$ns}', division: '{$division}', region: '{$region}', functionalStatusCode: '{$func}', mafTigerFeatureClassCode: '{$mtfcc}', mafTigerObjectIdentifier: '{$oid}', legalStatisticalAreaDescriptionCode: '{$lsadc}', areaLand: '{$areaLand}', areaWater: '{$areaWater}', arcGisObjectIdentifier: '{$objectId}', centroidGeo: ['{$centLat}', '{$centLon}'], internalPointGeo: ['{$intLat}', '{$intLon}'])]\n";
-            $content .= "\tcase {$st['caseId']} = '{$st['caseId']}';\n\n";
+            // Attribute line followed by the enum case, indented with four spaces for Pint's `indentation_type`
+            $content .= "    #[StateInfo(fullName: '{$fullName}', apAbbreviation: '{$apAbbrev}', type: '{$type}', fipsCode: '{$fips}', iso3166_2: '{$iso3166_2}', baseName: {$baseName}, geoId: '{$geoId}', nationalStandardCode: '{$ns}', division: '{$division}', region: '{$region}', functionalStatusCode: '{$func}', mafTigerFeatureClassCode: '{$mtfcc}', mafTigerObjectIdentifier: '{$oid}', legalStatisticalAreaDescriptionCode: '{$lsadc}', areaLand: '{$areaLand}', areaWater: '{$areaWater}', arcGisObjectIdentifier: '{$objectId}', centroidGeo: ['{$centLat}', '{$centLon}'], internalPointGeo: ['{$intLat}', '{$intLon}'])]\n";
+            $content .= "    case {$st['caseId']} = '{$st['caseId']}';\n\n";
         }
 
         // Close enum block and return content

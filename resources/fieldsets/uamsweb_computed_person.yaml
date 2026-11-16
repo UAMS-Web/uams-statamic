@@ -44,6 +44,12 @@ fields:
       display: 'Display Name, Full With Credentials'
       localizable: false
   -
+    handle: display_name_full_with_clinical_credentials
+    field: uamsweb_computed.text_phonetic_pair
+    config:
+      display: 'Display Name, Full With Clinical Credentials'
+      localizable: false
+  -
     handle: display_name_full_with_prefix
     field: uamsweb_computed.text_phonetic_pair
     config:

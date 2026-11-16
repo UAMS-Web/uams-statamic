@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use App\Tags\FindRedirectRule;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\Support\StacheIsolatedTestCase;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Assets\AssetImporter;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Globals\Creators\RedirectRuleGlobalCreator;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Parsers\XmlParser;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\ContentProcessor;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\MetadataMapper;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Assets\AssetImporter;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Globals\Creators\RedirectRuleGlobalCreator;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Parsers\XmlParser;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\ContentProcessor;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\MetadataMapper;
 
 /**
  * Regression guard that the importer's Safe Redirect Manager handling still lands
@@ -222,6 +222,9 @@ it('lands a Safe Redirect Manager wildcard rule and serves it', function (): voi
     $served = (string) Antlers::parse(
         '{{ find_redirect_rule in="'.$siteHandle.'" }}{{ target_url }}|{{ response }}{{ /find_redirect_rule }}',
         ['current_uri' => '/old-section/Deep/Page'],
+        // Trusted: the tag ships in uams-web/aether-redirects, outside `App\Tags`, so
+        // user-content mode refuses it under the `allowedContentTags` allow-list (#398).
+        true,
     );
 
     expect(trim($served))->toBe('/new-section/Deep/Page|301');

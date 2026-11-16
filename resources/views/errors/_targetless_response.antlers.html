@@ -10,7 +10,7 @@
     it three times is how three pages drift apart.
 
     `response_message` is published on the cascade by
-    {@see \App\Exceptions\SiteHttpException}, which is the only reason this page
+    {@see \UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException}, which is the only reason this page
     has the message at all: Statamic's `View` does not hand the exception to the
     template the way Laravel's error path does.
 
@@ -18,12 +18,7 @@
     `message` textarea, and Antlers is raw-by-default — an unescaped `{{ message }}`
     here would render whatever markup an author pasted in. `nl2br` runs after
     `entities` so the textarea's own line breaks survive while its angle brackets
-    do not.
-
-    This view deliberately does NOT include `errors/_redirects`. Doing so would
-    re-run the rule that raised this error and re-enter this page — the UAMS-Web/uams-statamic-archive#1934
-    trap, which is unbounded from here because Statamic's renderer has no
-    try/catch to bottom out in. #}}
+    do not. #}}
 
 {{ partial:layout/article }}
 	{{

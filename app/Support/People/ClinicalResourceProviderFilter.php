@@ -120,7 +120,11 @@ final readonly class ClinicalResourceProviderFilter
      * The provider's patient-facing display name for the archive's filter notice,
      * falling back to the entry title.
      *
-     * `value()`, NOT `get()`. `display_name_full_with_credentials` is a
+     * The notice is a clinical surface, so it uses the same name as the clinical
+     * provider lens: `display_name_full_with_clinical_credentials`, which keeps
+     * only regulatory-designation credentials (UAMS-Web/uams-statamic#344).
+     *
+     * `value()`, NOT `get()`. `display_name_full_with_clinical_credentials` is a
      * `Collection::computed()` registration and never stored data, and
      * `ContainsData::get()` reads the stored array only — so `get()` returns null
      * for it unconditionally and the fallback fired every time. That is not a
@@ -131,7 +135,7 @@ final readonly class ClinicalResourceProviderFilter
      */
     public function displayName(Entry $provider): string
     {
-        $name = $provider->value('display_name_full_with_credentials');
+        $name = $provider->value('display_name_full_with_clinical_credentials');
 
         if ($name instanceof Value) {
             $name = $name->value();

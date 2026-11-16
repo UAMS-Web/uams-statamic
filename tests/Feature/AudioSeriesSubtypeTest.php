@@ -12,9 +12,9 @@ use Statamic\Fields\Value;
 use Statamic\Query\Builder;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 beforeEach(function (): void {
     Blink::flush();

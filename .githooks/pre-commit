@@ -34,36 +34,31 @@ fi
 
 # --- Gate 1: CI parity ------------------------------------------------------
 #
-# Keep the remote CI (.github/workflows/ci.yml) and the local CI runner
-# (scripts/local-ci.mjs) in lockstep. They are hand-maintained mirrors with no
-# shared source of truth, so they silently drift when only one is edited. This
-# blocks a commit that stages exactly ONE of them.
+# Keep the remote CI (.github/workflows/ci.yml) and the local CI runner's job
+# list (local-ci.json, with scripts/ci-job.mjs and the scripts/gate-*.mjs step
+# scripts it runs) in lockstep. They are hand-maintained mirrors with no shared
+# source of truth, so they silently drift when only one side is edited.
 #
-# It is a co-change gate, NOT a semantic check: it does not compare commands
-# (the two files are intentionally not byte-identical, e.g. CI runs
-# `vendor/bin/pest` while the script runs `php vendor/bin/pest`). It only
-# insists the two files change together so a human reviews both.
+# It is a co-change gate, NOT a semantic check: it does not compare commands. It
+# only insists the two sides change together so a human reviews both.
 #
-# It used to fire on ANY staged `scripts/local-ci.mjs`, which forced --no-verify
-# on the roughly half of that file's changes that are legitimately one-sided --
-# toolchain discovery, worktree management, argument parsing, the chain runner,
-# none of which ci.yml has a counterpart for. The cost was not the friction: the
-# same flag also skips gate 2 below, so the prescribed bypass for a routine
-# one-sided change silently disarmed an unrelated safety check (UAMS-Web/uams-statamic-archive#2376).
-#
-# It now asks whether the staged HUNKS land in a `PARITY:`-marked region, via
-# scripts/check-ci-parity.mjs. If node cannot run it, this falls back to the old
-# file-level check -- which can only OVER-fire, never under-fire. Failing the
-# other way would disable a real gate silently, which is the defect above.
+# It asks whether the staged HUNKS land in a `PARITY:`-marked region of ci.yml or
+# of a step script, or in local-ci.json or scripts/ci-job.mjs, which are wholly
+# the mirror (#296), via scripts/check-ci-parity.mjs. A step script's unmarked
+# code has no ci.yml counterpart, so changing it alone passes; firing on it forced
+# --no-verify, and that flag also skips gate 2 below (UAMS-Web/uams-statamic-archive#2376).
+# If node cannot run the check, this falls back to a file-level check, which can
+# only OVER-fire, never under-fire. Failing the other way would disable a real
+# gate silently.
 
 CI_FILE=".github/workflows/ci.yml"
-SCRIPT_FILE="scripts/local-ci.mjs"
+SCRIPT_FILE="local-ci.json"
 
 staged=$(git diff --cached --name-only)
 
 echo "$staged" | grep -qxF "$CI_FILE"     && ci=1 || ci=0
-# The gate step scripts count as the script side: they hold what the runner calls (#295).
-echo "$staged" | grep -qE '^scripts/(local-ci|gate-(browser|pest|pint|rector))[.]mjs$' && sc=1 || sc=0
+# The job list, ci-job.mjs and the gate step scripts are the local side (#295, #296).
+echo "$staged" | grep -qE '^(local-ci[.]json|scripts/(ci-job|gate-(browser|pest|pint|rector))[.]mjs)$' && sc=1 || sc=0
 
 # `command -v node` asks whether node is INSTALLED, which is not the question:
 # what can be missing is the SCRIPT. Both are checked, and the exit code is then
@@ -91,9 +86,9 @@ fi
 
 if [ "$parity_checked" -eq 0 ] && [ "$ci" -ne "$sc" ]; then
     echo "" >&2
-    echo "CI parity gate: you staged only one of the mirrored CI files:" >&2
+    echo "CI parity gate: you staged only one side of the mirrored CI files:" >&2
     echo "    $CI_FILE" >&2
-    echo "    $SCRIPT_FILE" >&2
+    echo "    $SCRIPT_FILE, scripts/ci-job.mjs or a scripts/gate-*.mjs step" >&2
     echo "" >&2
     echo "These must change together. Update the other (follow the '# PARITY:'" >&2
     echo "markers), or bypass for an intentional one-sided change:" >&2

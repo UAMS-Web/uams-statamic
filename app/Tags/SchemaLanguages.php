@@ -196,11 +196,9 @@ class SchemaLanguages extends Tags
     private function cachedNormalizedLanguageType(): ?string
     {
         // Resolve and memoize the normalized type on first use
-        if (self::$normalizedLanguageType === null) {
-            self::$normalizedLanguageType = SchemaObjectFragmentBuilder::normalizedType(
-                'Language'
-            );
-        }
+        self::$normalizedLanguageType ??= SchemaObjectFragmentBuilder::normalizedType(
+            'Language'
+        );
 
         // Return the cached normalized type URI
         return self::$normalizedLanguageType;

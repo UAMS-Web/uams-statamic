@@ -24,7 +24,10 @@ declare(strict_types=1);
  *
  * USAGE
  *     php scripts/check-skip-baseline.php --report=<junit.xml> --band=<parallel|serial>
- *                                         [--baseline=<path>]
+ *                                         [--baseline=<path>] [--platform=<PHP_OS_FAMILY>]
+ *
+ * A band may record a count under `platforms.<PHP_OS_FAMILY>` for tests that cannot
+ * run on that system (#348). `--platform` defaults to the running system.
  *
  * EXIT
  *     0  at or under baseline
@@ -120,15 +123,18 @@ function evaluateSkipBaseline(array $skippedCases, int $expected): array
  *
  * @param  string  $baselineRaw  The baseline JSON
  * @param  string  $band  The band key (`parallel` or `serial`)
+ * @param  string  $platform  A `PHP_OS_FAMILY` value, which wins over the shared count
  * @return int The expected skip count
  *
  * @throws RuntimeException When the band has no recorded baseline
  */
-function expectedSkipsForBand(string $baselineRaw, string $band): int
+function expectedSkipsForBand(string $baselineRaw, string $band, string $platform): int
 {
-    /** @var array{bands?: array<string, array{expected?: mixed}>}|null $parsed */
+    /** @var array{bands?: array<string, array{expected?: mixed, platforms?: array<string, array{expected?: mixed}>}>}|null $parsed */
     $parsed = json_decode($baselineRaw, true);
-    $expected = $parsed['bands'][$band]['expected'] ?? null;
+    $expected = $parsed['bands'][$band]['platforms'][$platform]['expected']
+        ?? $parsed['bands'][$band]['expected']
+        ?? null;
 
     if (! is_int($expected)) {
         throw new RuntimeException("No skip baseline recorded for band \"{$band}\".");
@@ -137,7 +143,7 @@ function expectedSkipsForBand(string $baselineRaw, string $band): int
     return $expected;
 }
 
-$options = getopt('', ['report:', 'band:', 'baseline::']);
+$options = getopt('', ['report:', 'band:', 'baseline::', 'platform::']);
 $report = $options['report'] ?? null;
 $band = $options['band'] ?? null;
 
@@ -163,7 +169,8 @@ if (! is_file($baselinePath)) {
 // A misconfigured guard must read as a failure, not as a stack trace — every
 // throw below names a band this run could not verify.
 try {
-    $expected = expectedSkipsForBand((string) file_get_contents($baselinePath), $band);
+    $platform = is_string($options['platform'] ?? null) ? $options['platform'] : PHP_OS_FAMILY;
+    $expected = expectedSkipsForBand((string) file_get_contents($baselinePath), $band, $platform);
     $skipped = parseSkippedCases((string) file_get_contents($report));
 } catch (RuntimeException $failure) {
     fwrite(STDERR, "Skip baseline: {$failure->getMessage()}\n");

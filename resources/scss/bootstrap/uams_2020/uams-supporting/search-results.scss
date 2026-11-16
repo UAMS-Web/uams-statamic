@@ -116,3 +116,43 @@ body.page-template-default.search {
         font-weight: 600;
     }
 }
+
+// Google's results (UAMS-Web/uams-statamic#412) sit in the same column as the scope and
+// type links. The box takes the image's shape and the image is scaled to fit it, so a
+// wide or tall thumbnail is shown whole and stays clear of the text beside it.
+.site-search-google {
+    margin-inline: auto;
+    max-width: 46rem;
+
+    .gsc-wrapper {
+        max-width: none;
+    }
+
+    // Google's gray labels are too faint to read on the page's white.
+    .gsc-control-cse .gsc-tabsArea .gsc-tabHeader,
+    .gsc-control-cse .gsc-result-info {
+        color: $body-color;
+    }
+
+    .gsc-control-cse .gs-result .gs-web-image-box,
+    .gsc-control-cse .gs-result .gs-promotion-image-box {
+        background: none;
+        height: auto;
+        margin-right: 0.75rem;
+        max-width: 6rem;
+        overflow: hidden;
+        padding: 0;
+        width: auto;
+    }
+
+    .gsc-control-cse .gs-result img.gs-image {
+        display: block;
+        height: auto;
+        max-height: 6rem;
+        max-width: 100%;
+        min-height: 0;
+        min-width: 0;
+        object-fit: contain;
+        width: auto;
+    }
+}

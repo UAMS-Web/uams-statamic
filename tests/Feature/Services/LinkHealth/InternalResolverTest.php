@@ -7,8 +7,6 @@ use App\Services\LinkHealth\InternalResolver;
 use App\Services\LinkHealth\LinkKind;
 use App\Services\LinkHealth\LinkOccurrence;
 use App\Services\LinkHealth\ResolutionState;
-use App\Support\Redirects\RedirectRuleMatcher;
-use App\Tags\FindRedirectRule;
 use Illuminate\Support\Facades\File;
 use Statamic\Entries\Collection;
 use Statamic\Facades\AssetContainer;
@@ -24,6 +22,8 @@ use Statamic\Tags\Parameters;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\StacheIsolatedTestCase;
 use Tests\Support\ThrowawayRoot;
+use UAMSWeb\Aether\Redirects\Support\RedirectRuleMatcher;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Coverage for {@see InternalResolver} — resolving internal targets by lookup rather than by
@@ -133,6 +133,20 @@ it('resolves the statamic:// scheme the same as a bare reference', function (): 
     expect(irResolver()->resolve(irOccurrence('statamic://entry::ir-live', LinkKind::EntryReference))->state)
         ->toBe(ResolutionState::Ok);
 });
+
+// A reference whose body is only a query or fragment carries no id at all. It is reported as
+// missing naming the whole reference, so the report says which link to repoint: looking up the
+// empty id instead would name nothing.
+it('reports a fragment-only or query-only entry reference as missing, naming the reference', function (string $value): void {
+    $resolution = irResolver()->resolve(irOccurrence($value, LinkKind::EntryReference));
+
+    expect($resolution->state)->toBe(ResolutionState::Missing)
+        ->and($resolution->detail)->toBe($value);
+})->with([
+    'fragment only' => ['entry::#section'],
+    'query only' => ['entry::?x=1'],
+    'fragment only, statamic:// scheme' => ['statamic://entry::#section'],
+]);
 
 // A bare id from an `entries` fieldtype has no URL to probe, so an HTTP check cannot see it at
 // all. This is the case the ticket names as only reachable by lookup.

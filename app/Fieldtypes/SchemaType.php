@@ -117,9 +117,7 @@ final class SchemaType extends Fieldtype
         // so members are selectable in the CP (not only via hand-edited YAML)
         $excludedTypeOptions = $typeOptions;
         foreach (SchemaEnumerationMember::cases() as $enumerationMember) {
-            if (! isset($excludedTypeOptions[$enumerationMember->value])) {
-                $excludedTypeOptions[$enumerationMember->value] = $enumerationMember->value.' (enumeration member)';
-            }
+            $excludedTypeOptions[$enumerationMember->value] ??= $enumerationMember->value.' (enumeration member)';
         }
 
         // Return the config field items

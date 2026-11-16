@@ -43,7 +43,11 @@ function validateCalculatorMakeEvent(array $parts, string $collectionHandle = 'c
  *
  * @covers \App\Listeners\ValidateCalculatorEntry
  *
- * Mutation: 100% on App\Listeners\ValidateCalculatorEntry (112 mutants, --covered-only).
+ * Mutation-clean on App\Listeners\ValidateCalculatorEntry (UAMS-Web/uams-statamic#315).
+ * Accepted equivalents, annotated in the listener: the string casts on array keys
+ * and on handles that only reach sprintf('%s'), the `true` stored for a handle that
+ * isset() alone reads, the empty-formula skip, and the `array_unique()` over
+ * identifiers when the first match throws.
  *
  * @command  php artisan test --compact tests/Feature/Listeners/ValidateCalculatorEntryTest.php
  */
@@ -189,3 +193,109 @@ it('passes with empty parts', function () {
 
     expect(throwableFrom(fn () => $listener->handle($event)))->toBeNull();
 });
+
+it('names each marked primary in the refusal, a missing or non-text handle as ?', function () {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 7, 'primary' => true, 'formula' => 'a + 1'],
+        ['primary' => true],
+        ['handle' => ['not', 'text'], 'primary' => true],
+    ]);
+
+    expect(fn () => $listener->handle($event))
+        ->toThrow(Exception::class, 'Only one variable may be marked Primary, but the following are: 7, ?, ?.');
+});
+
+it('names each formula variable in the refusal when none is marked primary', function () {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 7, 'formula' => 'a + 1'],
+        ['formula' => 'b + 1'],
+        ['handle' => ['not', 'text'], 'formula' => 'c + 1'],
+    ]);
+
+    expect(fn () => $listener->handle($event))
+        ->toThrow(Exception::class, 'This calculator has 3 variables with formulas (7, ?, ?); mark exactly one as Primary so the displayed equation has an unambiguous left side.');
+});
+
+it('does not count an empty handle as a handle', function () {
+    // Two variables left without a handle are not a duplicate.
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => '', 'formula' => 'a + 1'],
+        ['handle' => ''],
+    ]);
+
+    expect(throwableFrom(fn () => $listener->handle($event)))->toBeNull();
+});
+
+it('goes on to the next sub-handle after one it skips', function (mixed $skipped) {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 'weight', 'formula' => 'height * 2', 'split' => [['handle' => $skipped], ['handle' => 'weight']]],
+        ['handle' => 'height'],
+    ]);
+
+    expect(fn () => $listener->handle($event))->toThrow(Exception::class, "Handle 'weight' is used more than once");
+})->with(['a non-text sub-handle' => [['not', 'text']], 'an empty sub-handle' => ['']]);
+
+it('ignores a split whose sub-handle is not text when checking formulas', function () {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 'weight', 'formula' => 'height * 2', 'split' => [['handle' => ['not', 'text']]]],
+        ['handle' => 'height'],
+    ]);
+
+    expect(throwableFrom(fn () => $listener->handle($event)))->toBeNull();
+});
+
+it('names the composite of a referenced sub-handle as ? when it has no text handle', function (string $case) {
+    $composite = match ($case) {
+        'no handle' => [],
+        'non-text handle' => ['handle' => ['not', 'text']],
+        default => throw new InvalidArgumentException("No such composite: {$case}"),
+    };
+
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        [...$composite, 'split' => [['handle' => 'lb']]],
+        ['handle' => 'total', 'primary' => true, 'formula' => 'lb * 2'],
+    ]);
+
+    expect(fn () => $listener->handle($event))
+        ->toThrow(Exception::class, "Formula on 'total' references 'lb', which is a split sub-handle of '?'.");
+})->with(['no handle' => ['no handle'], 'a non-text handle' => ['non-text handle']]);
+
+it('names the composite of a referenced sub-handle in full', function () {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 'kg', 'split' => [['handle' => 'lb']]],
+        ['handle' => 'total', 'primary' => true, 'formula' => 'lb * 2'],
+    ]);
+
+    expect(fn () => $listener->handle($event))
+        ->toThrow(Exception::class, "Formula on 'total' references 'lb', which is a split sub-handle of 'kg'. Sub-handles are display-only; reference the composite handle 'kg' instead.");
+});
+
+it('checks the formulas after one that is empty', function () {
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 'kg', 'split' => [['handle' => 'lb']]],
+        ['handle' => 'blank', 'formula' => ''],
+        ['handle' => 'total', 'primary' => true, 'formula' => 'lb * 2'],
+    ]);
+
+    expect(fn () => $listener->handle($event))->toThrow(Exception::class, "Formula on 'total' references 'lb'");
+});
+
+it('reads a blank or code-less formula as no formula', function (mixed $formula) {
+    // The variable with the blank formula is not a second formula variable, so the
+    // other one is the implied primary.
+    $listener = new ValidateCalculatorEntry;
+    $event = validateCalculatorMakeEvent([
+        ['handle' => 'a', 'formula' => 'b + 1'],
+        ['handle' => 'c', 'formula' => $formula],
+    ]);
+
+    expect(throwableFrom(fn () => $listener->handle($event)))->toBeNull();
+})->with(['only spaces' => ['   '], 'a code field missing' => [['mode' => 'javascript']]]);

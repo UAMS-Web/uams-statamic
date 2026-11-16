@@ -23,7 +23,7 @@ So: when a characterization test in this host will be inverted by a ticket in a 
  */
 ```
 
-In `uams-statamic` the sibling package is `wordpress-importer`, and the form is `@invertsOn UAMS-Web/wordpress-importer-archive#494`.
+In `uams-statamic` the sibling package is `aether-wordpress-importer`, and the form is `@invertsOn UAMS-Web/wordpress-importer-archive#494`.
 
 History: [the introduction](../history/characterization-test-inversion.md).
 
@@ -54,10 +54,10 @@ The sibling package's release author. When that package cuts a release carrying 
 
 That is the whole point of writing the tag here: the grep runs against this host, so every hit it will ever find has to have been written by someone working in this host.
 
-For `uams-statamic` that consumer is `wordpress-importer`'s `writing-release-notes` skill.
+For `uams-statamic` that consumer is `aether-wordpress-importer`'s `writing-release-notes` skill.
 
 ## The DRY line
 
-This rule owns **when a test in this host carries the tag and what it means**. It does not own the release-time grep, where its output lands, or which changes count as breaking: those belong to the sibling package's release-notes skill and its decision log, and restating them here would be two copies to drift apart. The tag's definition is stated identically in `wordpress-importer`'s `tests/CLAUDE.md`; if the two ever disagree, that file is the original.
+This rule owns **when a test in this host carries the tag and what it means**. It does not own the release-time grep, where its output lands, or which changes count as breaking: those belong to the sibling package's release-notes skill and its decision log, and restating them here would be two copies to drift apart. The tag's definition is stated identically in `aether-wordpress-importer`'s `tests/CLAUDE.md`; if the two ever disagree, that file is the original.
 
 _Refs: `UAMS-Web/uams-statamic-archive#2080` (this rule), `UAMS-Web/wordpress-importer-archive#614` (the convention and its decision record), `UAMS-Web/wordpress-importer-archive#494` (the fix that inverted the one live instance), `UAMS-Web/uams-statamic-archive#2025` (the adopting ticket that paid for it)._

@@ -10,7 +10,7 @@ use Statamic\Fields\Fields;
 use Statamic\Forms\Form;
 use Tests\Support\FormsSubmodule;
 use Tests\TestCase;
-use UAMSWeb\FormSettings\Http\Controllers\FormsController;
+use UAMSWeb\Aether\Forms\Settings\Http\Controllers\FormsController;
 
 uses(TestCase::class);
 

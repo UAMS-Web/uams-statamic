@@ -14,7 +14,8 @@ use function Pest\Laravel\artisan;
 /**
  * Feature tests for the JSON-LD cache clear Artisan command.
  *
- * Mutation: 100% on App\Console\Commands\SchemaTemplatesClearJsonLdCache (2 mutants, --covered-only).
+ * Mutation: 2 mutants on App\Console\Commands\SchemaTemplatesClearJsonLdCache, both killed with and
+ * without --covered-only. The success line is asserted, which kills the RemoveMethodCall on `info()`.
  *
  * @command  php artisan test --compact tests/Feature/Console/SchemaTemplatesClearJsonLdCacheCommandTest.php
  */
@@ -56,7 +57,9 @@ it('clear command bumps json ld cache', function (): void {
     // Run the Artisan clear command (same effect as CP bump). Chain the assertion
     // without storing the PendingCommand so it executes synchronously here, before
     // the bust-counter assertion below.
-    schemaTemplatesClearRunCommand('schema-templates:clear-json-ld-cache')->assertExitCode(0);
+    schemaTemplatesClearRunCommand('schema-templates:clear-json-ld-cache')
+        ->expectsOutput('Schema JSON-LD cache bust counter incremented.')
+        ->assertExitCode(0);
 
     // Check the bust counter reflects one increment from the command
     expect($cache->currentBust())->toBe(1);

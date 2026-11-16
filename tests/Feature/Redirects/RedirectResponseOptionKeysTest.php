@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Support\Redirects\MarketingRedirect;
 use App\Support\Redirects\MigrationRedirect;
-use Statamic\Facades\YAML;
+use Statamic\Facades\Blueprint;
+use Statamic\Fields\Blueprint as StatamicBlueprint;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
 use Tests\TestCase;
+use UAMSWeb\Aether\Redirects\Support\MarketingRedirect;
 
 /**
  * The HTTP Response Code options in both redirect blueprints are strings, the
@@ -25,14 +26,16 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * The `response` field a blueprint file declares, built as Statamic builds it.
+ * The `response` field a blueprint declares, built as Statamic builds it.
  *
- * The `redirects` global nests its field inside a replicator set, so the file
- * is searched rather than read at a fixed path.
+ * Each blueprint is the one Statamic serves: the `redirects` global's comes from
+ * the `uams-web/aether-redirects` add-on (#398) and `redirect_domain`'s from this
+ * site. The global nests its field inside a replicator set, so the blueprint is
+ * searched rather than read at a fixed path.
  *
- * @param  string  $path  The blueprint, relative to `resources/blueprints`.
+ * @param  string  $handle  The blueprint as Statamic finds it, such as `globals.redirects`.
  */
-function redirectResponseField(string $path): Field
+function redirectResponseField(string $handle): Field
 {
     $find = function (mixed $node) use (&$find): ?array {
         if (! \is_array($node)) {
@@ -51,7 +54,11 @@ function redirectResponseField(string $path): Field
         return null;
     };
 
-    $config = $find(YAML::parse((string) file_get_contents(resource_path('blueprints/'.$path))));
+    $blueprint = Blueprint::find($handle);
+    expect($blueprint)->toBeInstanceOf(StatamicBlueprint::class);
+
+    /** @var StatamicBlueprint $blueprint */
+    $config = $find($blueprint->contents());
     expect($config)->toBeArray();
 
     /** @var array<string, mixed> $config */
@@ -61,12 +68,12 @@ function redirectResponseField(string $path): Field
 /**
  * The option values the radio receives for a blueprint's `response` field.
  *
- * @param  string  $path  The blueprint, relative to `resources/blueprints`.
+ * @param  string  $handle  The blueprint as Statamic finds it, such as `globals.redirects`.
  * @return list<mixed>
  */
-function redirectResponseOptionValues(string $path): array
+function redirectResponseOptionValues(string $handle): array
 {
-    $fieldtype = redirectResponseField($path)->fieldtype();
+    $fieldtype = redirectResponseField($handle)->fieldtype();
     expect($fieldtype)->toBeInstanceOf(Fieldtype::class);
     /** @var Fieldtype $fieldtype */
     /** @var array{options: list<array{value: mixed, label: mixed}>} $preload */
@@ -93,19 +100,19 @@ function redirectResponseWrittenCodes(): array
     ];
 }
 
-it('offers each response code as a string, the type the writers store', function (string $path) {
-    $options = redirectResponseOptionValues($path);
+it('offers each response code as a string, the type the writers store', function (string $handle) {
+    $options = redirectResponseOptionValues($handle);
     expect($options)->not->toBeEmpty();
 
     $nonStrings = array_values(array_filter($options, fn (mixed $value): bool => ! \is_string($value)));
     expect($nonStrings)->toBe([]);
 
     // The default must be one of the options exactly, or a new entry opens with none selected
-    $default = redirectResponseField($path)->defaultValue();
+    $default = redirectResponseField($handle)->defaultValue();
     expect(\in_array($default, $options, true))->toBeTrue();
 })->with([
-    'redirect_domains' => ['collections/redirect_domains/redirect_domain.yaml'],
-    'the redirects global' => ['globals/redirects.yaml'],
+    'redirect_domains' => ['collections.redirect_domains.redirect_domain'],
+    'the redirects global' => ['globals.redirects'],
 ]);
 
 it('offers every code a writer stores in the blueprint that serves it', function () {
@@ -113,9 +120,9 @@ it('offers every code a writer stores in the blueprint that serves it', function
     expect($written)->each->toBeString();
 
     // Migration and marketing redirects are rows in the redirects global, which also offers 410
-    $globalOptions = redirectResponseOptionValues('globals/redirects.yaml');
+    $globalOptions = redirectResponseOptionValues('globals.redirects');
     $missing = array_values(array_filter($written, fn (mixed $code): bool => ! \in_array($code, $globalOptions, true)));
     expect($missing)->toBe([]);
 
-    expect(\in_array('301', redirectResponseOptionValues('collections/redirect_domains/redirect_domain.yaml'), true))->toBeTrue();
+    expect(\in_array('301', redirectResponseOptionValues('collections.redirect_domains.redirect_domain'), true))->toBeTrue();
 });

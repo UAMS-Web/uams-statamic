@@ -10,7 +10,7 @@ use Statamic\Events\EntrySaving;
 use Statamic\Facades\Entry;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
-use UAMSWeb\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
+use UAMSWeb\Aether\WordPressImporter\Services\WordPressImport\Utilities\PasswordVerifier;
 
 uses(TestCase::class);
 
@@ -20,7 +20,7 @@ uses(TestCase::class);
  * editor-typed password was written to the entry's YAML verbatim and
  * `is_password_hashed` stayed unset, so password-protected pages worked only
  * through the plain-text comparison fallback in the importer's
- * `PasswordVerifier` — the fallback `UAMS-Web/wordpress-importer#5` wants to
+ * `PasswordVerifier` — the fallback `UAMS-Web/wordpress-importer-archive#5` wants to
  * delete.
  *
  * The listener keys off whether the stored value is *already a hash*, not off

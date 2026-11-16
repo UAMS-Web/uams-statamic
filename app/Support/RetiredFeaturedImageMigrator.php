@@ -10,7 +10,7 @@ namespace App\Support;
  *
  * UAMS-Web/uams-statamic-archive#1553 retired the single-image handle from `pages/{basic_page,landing_page}` in
  * favor of the 3-handle cover-image set, but entries written before that — and by
- * the importer, which kept writing it until `UAMS-Web/wordpress-importer#433` —
+ * the importer, which kept writing it until `UAMS-Web/wordpress-importer-archive#433` —
  * still hold the old key. No blueprint reads it, so those pages resolve no
  * `og:image` and no card thumbnail.
  *

@@ -404,11 +404,9 @@ class SchemaLocationContactPoints extends Tags
     private function cachedNormalizedContactPointType(): ?string
     {
         // Resolve and memoize the normalized type on first use
-        if (self::$normalizedContactPointType === null) {
-            self::$normalizedContactPointType = SchemaObjectFragmentBuilder::normalizedType(
-                'ContactPoint'
-            );
-        }
+        self::$normalizedContactPointType ??= SchemaObjectFragmentBuilder::normalizedType(
+            'ContactPoint'
+        );
 
         // Return the cached normalized type URI
         return self::$normalizedContactPointType;

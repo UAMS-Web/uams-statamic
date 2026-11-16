@@ -11,7 +11,7 @@ use Symfony\Component\Yaml\Yaml;
  * install step.
  *
  * That failure is loud, but nothing currently surfaces it: remote CI is disabled
- * org-wide via `RUN_REMOTE_CI`, and `scripts/local-ci.mjs` runs on a developer
+ * org-wide via `RUN_REMOTE_CI`, and the local CI runner runs on a developer
  * machine that installed the extension by hand. So the gap would stay invisible
  * until Actions is re-enabled — which is how the original defect survived, and why
  * the invariant is asserted here rather than left to the first red run.

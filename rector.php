@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-use Rector\CodeQuality\Rector\Class_\CompleteDynamicPropertiesRector;
 use Rector\CodeQuality\Rector\ClassMethod\LocallyCalledStaticMethodToNonStaticRector;
 use Rector\Config\RectorConfig;
-use Rector\DeadCode\Rector\ClassMethod\RemoveDuplicatedReturnSelfDocblockRector;
 use Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector;
 use Rector\Php81\Rector\Property\ReadOnlyPropertyRector;
 use Rector\Php82\Rector\Class_\ReadOnlyClassRector;
-use RectorLaravel\Set\LaravelSetProvider;
 
 // Two profiles over one rule corpus (UAMS-Web/uams-statamic-archive#1720). This file is the single source of
 // truth for the sets both share; the profile only changes which rules are
@@ -29,9 +26,8 @@ $isSweepProfile = defined('UAMS_RECTOR_SWEEP') && UAMS_RECTOR_SWEEP;
 
 // Rules excluded from the gating profile. Each is a rule whose suggestion is a
 // judgment call rather than a mechanical one, so making it mandatory would turn
-// a wrong suggestion into a change that *must* be applied or explicitly skipped
-// — the same reasoning behind the per-file `CompleteDynamicPropertiesRector`
-// carve-out below. They stay fully active under the sweep profile.
+// a wrong suggestion into a change that *must* be applied or explicitly
+// skipped. They stay fully active under the sweep profile.
 $sweepOnlyRules = [
     // `readonly` promotion is a semantic change, not a style one: it interacts
     // badly with framework code that mutates after construction, with cloning,
@@ -47,14 +43,12 @@ $sweepOnlyRules = [
     LocallyCalledStaticMethodToNonStaticRector::class,
 
     // Docblock removal conflicts with the PHPDoc-coverage convention in the
-    // `php-documentation` skill, which wants the tags these rules delete. What
-    // they reach is past what Pint owns: Pint's docblock fixers already strip a
-    // superfluous `@var` from a *typed property*, so what is left for these two
-    // is inline `@var` on local variables (pinning a value that arrives untyped
-    // — every hit in the current backlog is one of these) and `@return $this`
-    // beside a `: static`. Those are deliberate annotations, not leftovers.
+    // `php-documentation` skill, which wants the tags this rule deletes. What
+    // it reaches is past what Pint owns: Pint's docblock fixers already strip a
+    // superfluous `@var` from a *typed property*, so what is left for this rule
+    // is inline `@var` on local variables (pinning a value that arrives
+    // untyped). Those are deliberate annotations, not leftovers.
     RemoveUselessVarTagRector::class,
-    RemoveDuplicatedReturnSelfDocblockRector::class,
 ];
 
 // Large machine-generated reference-data enums — same list as phpstan.neon.dist
@@ -89,15 +83,6 @@ return RectorConfig::configure()
     ->withSkip([
         ...$generatedEnumSkips,
         ...($isSweepProfile ? [] : $sweepOnlyRules),
-        // MaskField reads `presetInputMask`/`presetTransformCase` reflectively as
-        // a subclass extension point but never *writes* them, so the PHP 8.2
-        // dynamic-property deprecation this rule guards against cannot fire. The
-        // properties are documented with class-level `@property` tags instead;
-        // declaring them for real makes `property_exists()` statically always-true
-        // (a Larastan error). Skip the rule for this one file.
-        CompleteDynamicPropertiesRector::class => [
-            __DIR__.'/app/Fieldtypes/MaskField.php',
-        ],
     ])
     ->withPreparedSets(
         deadCode: true,
@@ -108,12 +93,11 @@ return RectorConfig::configure()
         earlyReturn: true,
     )
     ->withPhpSets()
-    // Laravel-specific rules. `withSetProviders()` registers the package's
-    // version-aware set group; `withComposerBased(laravel:, phpunit:)` then
-    // activates the sets whose composer constraints the installed packages
-    // satisfy (laravel/framework v13, phpunit/phpunit v12). Without the
-    // provider line, `laravel: true` is a silent no-op.
-    ->withSetProviders(LaravelSetProvider::class)
+    // Laravel-specific rules. `withComposerBased(laravel:, phpunit:)` activates
+    // the version-aware sets whose composer constraints the installed packages
+    // satisfy (laravel/framework v13, phpunit/phpunit v12). As of Rector 2.8.4 it
+    // loads the rector-laravel set provider itself, so no `withSetProviders()`
+    // line is needed.
     ->withComposerBased(
         laravel: true,
         phpunit: true,

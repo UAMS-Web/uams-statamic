@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Statamic\Auth\User as UserAuth;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Collection;
+use Statamic\Entries\EntryCollection;
 use Statamic\Exceptions\CollectionNotFoundException;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Site as SiteFacade;
@@ -52,6 +53,33 @@ class Entries extends BaseEntries
         // The parent icon is always a string, so the narrowing cannot change the result
         // @pest-mutate-ignore: RemoveStringCast, InstanceOfToTrue, InstanceOfToFalse, EmptyStringToNotEmpty
         return \is_scalar($icon) || $icon instanceof \Stringable ? (string) $icon : '';
+    }
+
+    /**
+     * Reduce a computed value to entry ids before the Control Panel reads it.
+     *
+     * A computed `entries` field returns an `EntryCollection`, and the edit page
+     * merges computed values into the field values. The parent would wrap the
+     * collection as one item, which `findEntry()` then uses as an array key: a
+     * `TypeError` that fails the whole page, even when the collection is empty
+     * (UAMS-Web/uams-statamic#500).
+     *
+     * @param  mixed  $data  The stored ids, or a computed collection of entries
+     * @return array<int, mixed> The ids the Control Panel preloads
+     */
+    #[\Override]
+    public function preProcess($data): array
+    {
+        // Keep the ids, the only shape the relationship field can look up
+        if ($data instanceof EntryCollection) {
+            $data = $data->map->id()->values()->all();
+        }
+
+        // Every other value keeps the parent behavior
+        /** @var array<int, mixed> $processed */
+        $processed = parent::preProcess($data);
+
+        return $processed;
     }
 
     /**

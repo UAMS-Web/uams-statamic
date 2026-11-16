@@ -51,7 +51,7 @@ function fadProviderCardData(array $overrides = []): array
 {
     return array_merge([
         'url' => '/find-a-doctor/james-kirk',
-        'display_name_full_with_credentials' => ['text' => 'James Kirk, MD'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'James Kirk, MD'],
         'display_name_short_with_prefix' => ['text' => 'Dr. Kirk'],
         'clinical_title' => 'Cardiology',
     ], $overrides);
@@ -104,6 +104,25 @@ it('renders the name, clinical title, and View Profile CTA', function (): void {
         ->and($out)->toContain('aria-label="View profile for Dr. Kirk"');
 });
 
+it('shows the regulatory-designation name, not the full credentials name', function (): void {
+    // UAMS-Web/uams-statamic#344: the card is clinical, so its name, portrait alt,
+    // search key and analytics title all come from the clinical computed.
+    $out = renderFadProviderCard(fadProviderCardData([
+        'display_name_full_with_credentials' => ['text' => 'James Kirk, MD, MBA'],
+        'portrait' => ['url' => 'https://img.test/kirk.jpg'],
+        'fad_facet' => true,
+        'fad_directory' => true,
+        'person_name' => ['first_name' => ['text' => 'James'], 'last_name' => ['text' => 'Kirk']],
+    ]));
+
+    expect($out)->toContain('<span class="name">James Kirk, MD</span>')
+        ->and($out)->toContain('alt="James Kirk, MD"')
+        ->and($out)->toContain('data-name="james kirk, md"')
+        ->and($out)->toContain('data-itemtitle="James Kirk, MD"')
+        ->and($out)->not->toContain('MBA')
+        ->and($out)->not->toContain('mba');
+});
+
 it('omits the subtitle entirely when the provider has no clinical title', function (): void {
     $out = renderFadProviderCard(fadProviderCardData([
         'clinical_title' => '',
@@ -116,7 +135,7 @@ it('omits the subtitle entirely when the provider has no clinical title', functi
 
 it('escapes editor- and taxonomy-controlled text in text and attribute contexts (no raw HTML sink)', function (): void {
     $out = renderFadProviderCard(fadProviderCardData([
-        'display_name_full_with_credentials' => ['text' => '<script>alert(1)</script>'],
+        'display_name_full_with_clinical_credentials' => ['text' => '<script>alert(1)</script>'],
         'display_name_short_with_prefix' => ['text' => '"><script>alert(2)</script>'],
         'clinical_title' => '<b>onmouseover</b>',
     ]));
@@ -200,7 +219,7 @@ it('emits the wider directory facet contract when fad_directory is also set (#57
             'last_name' => ['text' => 'McCoy'],
             'first_name' => ['text' => 'Leonard'],
         ],
-        'display_name_full_with_credentials' => ['text' => 'Leonard McCoy, MD'],
+        'display_name_full_with_clinical_credentials' => ['text' => 'Leonard McCoy, MD'],
     ]));
 
     expect($out)->toContain('data-conditions="asthma diabetes"')
@@ -262,7 +281,7 @@ it('escapes malicious name text in the directory name/sort/alpha attributes (no 
             'last_name' => ['text' => '"><img src=x onerror=alert(1)>'],
             'first_name' => ['text' => 'Evil'],
         ],
-        'display_name_full_with_credentials' => ['text' => '"><script>alert(2)</script>'],
+        'display_name_full_with_clinical_credentials' => ['text' => '"><script>alert(2)</script>'],
     ]));
 
     expect($out)->not->toContain('<img src=x onerror=alert(1)>')

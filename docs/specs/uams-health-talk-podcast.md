@@ -8,7 +8,7 @@ This document records where **UAMS Health Talk** episodes actually live, what th
 
 UAMS Health Talk is produced and hosted by **DoctorPodcasting** (RadioMD, LLC d/b/a DoctorPodcasting), under client code `uams`. On the WordPress site, `uamshealth.com/podcast/` renders a third-party widget `<iframe>` — the episodes are not stored, indexed, or served by WordPress at any point.
 
-That explains the negative findings recorded in `UAMS-Web/wordpress-importer#424`: across all 259 WXR exports there is no podcast post type and no episode metadata. WordPress holds exactly three podcast-adjacent artifacts, none of them content:
+That explains the negative findings recorded in `UAMS-Web/wordpress-importer-archive#424`: across all 259 WXR exports there is no podcast post type and no episode metadata. WordPress holds exactly three podcast-adjacent artifacts, none of them content:
 
 - the `/podcast` page carrying the widget embed;
 - `podcast_guest_name_uams_health_talk` on provider records — a vendor widget filter string, not a relationship, retired by #170;
@@ -195,11 +195,11 @@ The importer is a WXR tool. Its input is a WordPress export, and the podcast epi
 - The chosen posture is **ongoing reconciliation**, not a one-shot load — a monthly episode plus a scheduled feed re-read is app-side service behavior, not a migration step.
 - The source is an RSS feed and a set of HTML pages on a vendor host, sharing no code path with WXR parsing.
 
-`UAMS-Web/wordpress-importer#424` is therefore superseded rather than blocked, and `#500` resolves as "source identified, not ours to import." `#443` is unaffected — it handles `audio_series` subtype tagging for audio that genuinely is WordPress content, such as the `heres-to-your-health` radio show.
+`UAMS-Web/wordpress-importer-archive#424` is therefore superseded rather than blocked, and `#500` resolves as "source identified, not ours to import." `#443` is unaffected — it handles `audio_series` subtype tagging for audio that genuinely is WordPress content, such as the `heres-to-your-health` radio show.
 
 ## References
 
-- `UAMS-Web/wordpress-importer#500` — source investigation; `#424` — the superseded importer mapping; `#443` — `audio_series` subtype tagging (unaffected).
+- `UAMS-Web/wordpress-importer-archive#500` — source investigation; `#424` — the superseded importer mapping; `#443` — `audio_series` subtype tagging (unaffected).
 - UAMS-Web/uams-statamic-archive#1097 — the original audio-blueprint expansion; UAMS-Web/uams-statamic-archive#1611 — the `audio_series` `subtype` model that supersedes `podcast_series`; UAMS-Web/uams-statamic-archive#1487 — `PodcastEpisode` / `PodcastSeries` JSON-LD.
 - UAMS-Web/uams-statamic-archive#1683 — the MVP RadioMD embed on the clinical provider lens; #170 — its first-party replacement, which needs the entries this document describes.
 - Podcast Namespace 1.0 — [`alternate-enclosure`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/alternate-enclosure.md), [`source`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/source.md), [`person`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/person.md), [`episode`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/episode.md), [`transcript`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/transcript.md), [`medium`](https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/tags/medium.md).

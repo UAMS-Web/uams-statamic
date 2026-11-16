@@ -9,6 +9,8 @@ use Statamic\Contracts\Auth\User;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\User as UserFacade;
+use Statamic\Fields\Blueprint;
+use Statamic\Fields\Field;
 use Tests\Support\StacheIsolatedTestCase;
 
 /**
@@ -30,6 +32,12 @@ use Tests\Support\StacheIsolatedTestCase;
  * dirty-state checks the listener relies on.
  *
  * @covers \App\Listeners\SyncEntryPublishedStatus
+ *
+ * Accepted equivalents, annotated in the listener: the filter and reindex over the
+ * schedule fields (an unchanged field put back holds the value it already had), and
+ * the strict flag on the live-status `in_array()`. The guards in `syncScheduledDate()`
+ * and `canPublish()` that a real entry never reaches are driven through reflection
+ * with entry doubles.
  *
  * @command  php artisan test --compact tests/Feature/Listeners/SyncEntryPublishedStatusTest.php
  */
@@ -341,4 +349,67 @@ it('leaves published untouched when the status field holds an empty string', fun
     $entry->save();
 
     expect($entry->published())->toBeTrue();
+});
+
+/** Call one of the listener's private methods with the given arguments. */
+function syncStatusInvoke(string $method, mixed ...$arguments): mixed
+{
+    return (new ReflectionMethod(SyncEntryPublishedStatus::class, $method))
+        ->invoke(app(SyncEntryPublishedStatus::class), ...$arguments);
+}
+
+it('does not keep a legacy published entry live when it is set to another status', function (): void {
+    // Only the draft default counts as injected; a pending choice is a real change.
+    $entry = syncStatusSavedEntry('legacy-pending', [], published: true);
+
+    $entry->set('status_and_visibility', 'pending');
+    $entry->save();
+
+    expect($entry->published())->toBeFalse()
+        ->and($entry->get('status_and_visibility'))->toBe('pending');
+});
+
+it('keeps a legacy published entry with an empty stored status live when the CP injects the draft default', function (): void {
+    $entry = syncStatusSavedEntry('legacy-empty', ['status_and_visibility' => ''], published: true);
+    expect($entry->published())->toBeTrue();
+
+    $entry->set('status_and_visibility', 'draft');
+    $entry->save();
+
+    expect($entry->published())->toBeTrue()
+        ->and($entry->get('status_and_visibility'))->toBe('published');
+});
+
+it('leaves the date alone for a scheduled entry it cannot read a scheduled date for', function (string $case): void {
+    $collection = Mockery::mock(Statamic\Entries\Collection::class);
+    $collection->shouldReceive('dated')->andReturn($case !== 'an undated collection');
+
+    $field = Mockery::mock(Field::class);
+    $field->shouldReceive('fieldtype')->andReturn(null);
+
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('field')->with('date_scheduled')->andReturn($case === 'no field' ? null : $field);
+
+    $entry = Mockery::mock(Statamic\Entries\Entry::class);
+    $entry->shouldReceive('collection')->andReturn($case === 'no collection' ? null : $collection);
+    $entry->shouldNotReceive('value');
+    $entry->shouldNotReceive('date');
+
+    // An entry outside a dated collection is left before its blueprint is read
+    if (in_array($case, ['no collection', 'an undated collection'], true)) {
+        $entry->shouldNotReceive('blueprint');
+    } else {
+        $entry->shouldReceive('blueprint')->andReturn($case === 'no blueprint' ? null : $blueprint);
+    }
+
+    expect(throwableFrom(fn () => syncStatusInvoke('syncScheduledDate', $entry)))->toBeNull();
+})->with(['no collection', 'an undated collection', 'no blueprint', 'no field', 'no fieldtype']);
+
+it('lets a user publish an entry that has no collection to withhold permission by', function (): void {
+    syncStatusActingAs(super: false);
+
+    $entry = Mockery::mock(Statamic\Entries\Entry::class);
+    $entry->shouldReceive('collection')->andReturn(null);
+
+    expect(syncStatusInvoke('canPublish', $entry))->toBeTrue();
 });

@@ -46,21 +46,10 @@ class ValidateClinicalLocationsTree
      * Deepest level a `location` entry may occupy: a root location (depth 1) and
      * one child location level (depth 2).
      */
+    // A constant expression is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, 1 and 3 each fail tests in ValidateClinicalLocationsTreeTest.
+    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int MAX_LOCATION_DEPTH = 2;
-
-    /**
-     * Blueprints whose entries are content pages (never valid at the subsite root).
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_BLUEPRINTS = ['basic_page', 'landing_page'];
-
-    /**
-     * Blueprints allowed to parent a content page: a location or another content page.
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_PARENT_BLUEPRINTS = ['location', 'basic_page', 'landing_page'];
 
     /**
      * Handle the CollectionTreeSaving event.
@@ -183,6 +172,9 @@ class ValidateClinicalLocationsTree
 
             // Retrieve the entry's title for inclusion in error messages.
             $titleValue = $entry->get('title') ?? $entryId; // Fallback to ID if title is not set.
+            // The title only reaches sprintf('%s'), which prints a scalar the same with or
+            // without the cast.
+            // @pest-mutate-ignore: RemoveStringCast
             $title = \is_scalar($titleValue) ? (string) $titleValue : $entryId;
 
             // ---
@@ -202,10 +194,20 @@ class ValidateClinicalLocationsTree
                 if ($depth > self::MAX_LOCATION_DEPTH) {
                     throw new Exception(sprintf("Location entry '%s' may be nested at most one level deep (a root location and one child location level).", $title));
                 }
-            } elseif (\in_array($blueprint, self::CONTENT_PAGE_BLUEPRINTS, true)) {
+            } elseif (
+                // A blueprint handle is never a numeric string, so a loose match finds the
+                // same handles as a strict one.
+                // @pest-mutate-ignore: TrueToFalse
+                \in_array($blueprint, self::contentPageBlueprints(), true)
+            ) {
                 // A content page must be the child of a location or another content
                 // page — a null parent (top-level) is invalid. Depth is unbounded.
-                if (! \in_array($parentBlueprint, self::CONTENT_PAGE_PARENT_BLUEPRINTS, true)) {
+                if (
+                    // The parent is a blueprint handle or null, and null matches none of the
+                    // handles loosely either, so a loose match finds the same parents.
+                    // @pest-mutate-ignore: TrueToFalse
+                    ! \in_array($parentBlueprint, self::contentPageParentBlueprints(), true)
+                ) {
                     throw new Exception(sprintf("Content page entry '%s' must be the child of a location entry or another content page (it cannot be top-level).", $title));
                 }
             } else {
@@ -220,13 +222,9 @@ class ValidateClinicalLocationsTree
                 continue;
             }
 
-            // Recursively validate children, incrementing depth and passing the
-            // current entry's blueprint as the parent.
-            if (
-                isset($node['children'])
-                && ! empty($node['children'])
-                && \is_array($node['children'])
-            ) {
+            // Recursively validate a non-empty list of children, incrementing depth and
+            // passing the current entry's blueprint as the parent.
+            if (\is_array($node['children'] ?? null) && $node['children'] !== []) {
                 /** @var array<int, array<string, mixed>> $children */
                 $children = $node['children'];
 
@@ -237,5 +235,29 @@ class ValidateClinicalLocationsTree
                 );
             }
         }
+    }
+
+    /**
+     * Blueprints whose entries are content pages (never valid at the subsite root).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageBlueprints(): array
+    {
+        return ['basic_page', 'landing_page'];
+    }
+
+    /**
+     * Blueprints allowed to parent a content page: a location or another content page.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageParentBlueprints(): array
+    {
+        return ['location', 'basic_page', 'landing_page'];
     }
 }

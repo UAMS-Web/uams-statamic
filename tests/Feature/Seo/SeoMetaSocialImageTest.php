@@ -7,13 +7,14 @@ use Statamic\Assets\Asset;
 use Statamic\Assets\AssetContainer as StatamicAssetContainer;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\AssetContainer;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
 
-// Serial because it persists a file-backed asset container into the shared content
-// mirror, on a disk that is faked only in this process: the asset-container
-// leak class (UAMS-Web/uams-statamic-archive#1120). The faked disk itself is per worker under
-// `--parallel` (UAMS-Web/uams-statamic-archive#3111), so it is not the reason (UAMS-Web/uams-statamic-archive#3205).
-uses(TestCase::class)->group('serial');
+// On StacheIsolatedTestCase because it persists a file-backed asset container on a
+// disk faked only in this process: the per-process Stache root keeps that container
+// out of the shared content mirror, the asset-container leak class
+// (UAMS-Web/uams-statamic-archive#1120; #536). The faked disk itself is per worker under
+// `--parallel` (UAMS-Web/uams-statamic-archive#3111).
+uses(StacheIsolatedTestCase::class);
 
 /**
  * The social-image half of the SEO head partial (UAMS-Web/uams-statamic-archive#2049).

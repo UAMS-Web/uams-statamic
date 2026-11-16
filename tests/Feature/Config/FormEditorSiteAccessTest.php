@@ -8,7 +8,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * UAMS-Web/uams-statamic-archive#3065: `uams-web/statamic-multisite-forms` lets a non-super user edit a form
+ * UAMS-Web/uams-statamic-archive#3065: `uams-web/aether-multisite-forms` lets a non-super user edit a form
  * only when they can access every site it is assigned to, so `form_editor`
  * holds `access {site} site` for every site in `resources/sites.yaml`. This
  * fails when a site is added without the matching grant.

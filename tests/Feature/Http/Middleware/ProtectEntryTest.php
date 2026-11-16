@@ -69,7 +69,7 @@ function protectEntryFakeEntry(bool $protected, string $id = 'entry-1', ?string 
     $entry->shouldReceive('id')->andReturn($id);
     // ---
     // Store the password the way it is actually stored now. HashVisibilityPassword
-    // hashes on EntrySaving (UAMS-Web/uams-statamic-archive#1862), and `wordpress-importer#5` then removed the
+    // hashes on EntrySaving (UAMS-Web/uams-statamic-archive#1862), and `wordpress-importer-archive#5` then removed the
     // plain-text comparison PasswordVerifier used to fall back to — so a plain
     // string here would be rejected, and this helper would be asserting against a
     // state no writer can produce.

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,7 +17,8 @@ use function Pest\Laravel\get;
  * Registers a probe route wrapped in the middleware and asserts baseline,
  * CSP, and HSTS behavior against config/security-headers.php defaults.
  *
- * Mutation: 100% on App\Http\Middleware\SecurityHeaders (87 mutants, --covered-only).
+ * Mutation: 100% on App\Http\Middleware\SecurityHeaders (87 mutants, --covered-only),
+ * measured before allowOnThisResponse() was added.
  */
 uses(TestCase::class);
 
@@ -417,4 +419,45 @@ it('disables all headers via the master switch', function (): void {
     expect($response->headers->get('Referrer-Policy'))->toBeNull();
     expect($response->headers->get('Content-Security-Policy-Report-Only'))->toBeNull();
     expect($response->headers->get('Content-Security-Policy'))->toBeNull();
+});
+
+it('adds a named allowance to the response that takes it up, and to no other', function (): void {
+    $request = Request::create('/__security_headers_allowance');
+    app()->instance('request', $request);
+
+    $response = app(SecurityHeaders::class)->handle($request, function (): Response {
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+
+        return new Response('ok');
+    });
+
+    $widened = (string) $response->headers->get('Content-Security-Policy-Report-Only');
+    $plain = (string) get('/__security_headers_probe')->headers->get('Content-Security-Policy-Report-Only');
+
+    $scriptSrc = securityHeadersMiddlewareTestDirective($widened, 'script-src');
+
+    expect($scriptSrc)->toContain("'self'")
+        ->and($scriptSrc)->toContain("'nonce-")
+        ->and(substr_count($scriptSrc, 'https://cse.google.com'))->toBe(1)
+        ->and($scriptSrc)->toContain("'unsafe-eval'")
+        ->and(securityHeadersMiddlewareTestDirective($widened, 'frame-src'))->toContain('https://cse.google.com')
+        ->and($plain)->not->toContain('https://cse.google.com')
+        ->and($plain)->not->toContain("'unsafe-eval'");
+});
+
+it('leaves a directive configured as null omitted when an allowance names it', function (): void {
+    config(['security-headers.csp.directives.connect-src' => null]);
+
+    $request = Request::create('/__security_headers_allowance');
+    app()->instance('request', $request);
+
+    $response = app(SecurityHeaders::class)->handle($request, function (): Response {
+        SecurityHeaders::allowOnThisResponse(SecurityHeaders::GOOGLE_SEARCH);
+
+        return new Response('ok');
+    });
+
+    expect((string) $response->headers->get('Content-Security-Policy-Report-Only'))
+        ->not->toContain('connect-src');
 });

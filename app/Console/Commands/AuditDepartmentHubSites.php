@@ -18,7 +18,7 @@ use Illuminate\Console\Command;
  * `schema_subject` empty would render a broken, subject-less entity node. This
  * is the data-integrity gate UAMS-Web/uams-statamic-archive#1556 asks for — the `department_organization`
  * side of the same audit the importer crosswalk runs for unmapped org
- * associations (`wordpress-importer#438`).
+ * associations (`wordpress-importer-archive#438`).
  *
  * Reports rather than blocks: it exits non-zero when any hub site is missing a
  * `schema_subject` so it can gate a pre-launch check, and zero when every hub

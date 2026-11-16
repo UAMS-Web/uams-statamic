@@ -24,6 +24,8 @@ class IndefiniteArticle extends Modifier
      */
     public function index($value, array $params, array $context): string
     {
+        // Both the empty fallback and the mutator's "PEST" phrase produce "a".
+        // @pest-mutate-ignore:EmptyStringToNotEmpty
         $following = \is_scalar($value) ? (string) $value : '';
 
         return ProviderNarrativeLanguage::indefiniteArticle($following);

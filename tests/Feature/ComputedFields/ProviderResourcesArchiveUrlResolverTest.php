@@ -6,6 +6,10 @@ use App\Services\ComputedFields\ProviderPeople\ProviderResourcesArchiveUrlResolv
 use App\Tags\ClinicalResourceFilter;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
+use Statamic\Facades\Taxonomy as TaxonomyFacade;
+use Statamic\Facades\Term as TermFacade;
+use Statamic\Taxonomies\Taxonomy;
+use Statamic\Taxonomies\Term;
 use Tests\Support\StacheIsolatedTestCase;
 
 /**
@@ -246,6 +250,36 @@ it('carries the credentials the computed appends', function (): void {
     ]);
 
     expect(archiveFilterName('doctor'))->toStartWith('Leonard McCoy');
+});
+
+it('keeps only regulatory-designation credentials, as the clinical lens does', function (): void {
+    // UAMS-Web/uams-statamic#344: the notice is a clinical surface, so it uses
+    // `display_name_full_with_clinical_credentials`. `md` answers yes to both the
+    // clinical and the regulatory-designation questions; `phd_nonclinical` is not
+    // a clinical credential.
+    $taxonomy = mustBe(Taxonomy::class, TaxonomyFacade::make('credentials'), 'the credentials taxonomy');
+    $taxonomy->title('Credentials');
+    $taxonomy->save();
+
+    foreach ([
+        'md' => ['title' => 'M.D.', 'clinical_query' => true, 'clinical_statutory_credential_query' => true],
+        'phd_nonclinical' => ['title' => 'Ph.D. (Non-Clinical)', 'clinical_query' => false],
+    ] as $slug => $data) {
+        $term = mustBe(Term::class, TermFacade::make($slug), 'a credentials term');
+        $term->taxonomy('credentials');
+        foreach ($data as $key => $value) {
+            $term->set($key, $value);
+        }
+        $term->save();
+    }
+
+    archiveUrlProvider('chapel', [
+        'title' => 'Chapel, Christine',
+        'person_name' => archiveFilterPersonName('Christine', 'Chapel'),
+        'credentials' => ['phd_nonclinical', 'md'],
+    ]);
+
+    expect(archiveFilterName('chapel'))->toBe('Christine Chapel, M.D.');
 });
 
 it('falls back to the entry title only when no display name resolves', function (): void {

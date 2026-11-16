@@ -10,7 +10,8 @@ use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
 use Statamic\Fieldtypes\Link\ArrayableLink;
 use Tests\Support\AssetReferenceSweep;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
+use Tests\Support\ThrowawayRoot;
 
 /**
  * UAMS-Web/uams-statamic-archive#16 — the shared `uamsweb_common_link.link_url` control offers the native
@@ -25,13 +26,15 @@ use Tests\TestCase;
  * field with that config actually augments a stored `asset::<container>::<path>`
  * value to the asset URL — proving the mechanism, not just the option label.
  *
- * Runs in the `serial` group: `beforeEach` persists an asset container whose
- * disk is only registered in this process (the container-leak convention — see
- * AssetsMinimumDimensionsEnforcementTest, UAMS-Web/uams-statamic-archive#1120).
+ * Runs on `StacheIsolatedTestCase`: `beforeEach` persists an asset container
+ * whose disk is only registered in this process, so the container lands in this
+ * process's own Stache root rather than the shared content mirror (the
+ * container-leak class, UAMS-Web/uams-statamic-archive#1120; #536). The disk's local root carries
+ * `ThrowawayRoot::segment()`, so two processes never write or delete one tree.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/LinkFilesAssetOptionTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(StacheIsolatedTestCase::class);
 
 const LINK_FILES_CONTAINER = 'link_files_probe';
 const LINK_FILES_DISK = 'link_files_probe_disk';
@@ -42,13 +45,13 @@ beforeEach(function (): void {
     // assert against (Storage::fake would discard the url, leaving url() null).
     config(['filesystems.disks.'.LINK_FILES_DISK => [
         'driver' => 'local',
-        'root' => storage_path('framework/testing/'.LINK_FILES_DISK),
+        'root' => storage_path('framework/testing/link-files/'.ThrowawayRoot::segment().'/'.LINK_FILES_DISK),
         'url' => LINK_FILES_URL,
         'visibility' => 'public',
     ]]);
 
-    File::ensureDirectoryExists(storage_path('framework/testing/'.LINK_FILES_DISK));
-    File::put(storage_path('framework/testing/'.LINK_FILES_DISK.'/brochure.pdf'), '%PDF-1.4 probe');
+    File::ensureDirectoryExists(storage_path('framework/testing/link-files/'.ThrowawayRoot::segment().'/'.LINK_FILES_DISK));
+    File::put(storage_path('framework/testing/link-files/'.ThrowawayRoot::segment().'/'.LINK_FILES_DISK.'/brochure.pdf'), '%PDF-1.4 probe');
 
     /** @var Statamic\Assets\AssetContainer $container */
     $container = AssetContainer::make(LINK_FILES_CONTAINER);
@@ -73,7 +76,7 @@ afterEach(function (): void {
         $container?->delete();
     });
 
-    File::deleteDirectory(storage_path('framework/testing/'.LINK_FILES_DISK));
+    File::deleteDirectory(storage_path('framework/testing/link-files/'.ThrowawayRoot::segment().'/'.LINK_FILES_DISK));
 });
 
 it('scopes the reusable link_url control to the files asset container', function (): void {

@@ -11,8 +11,9 @@ use Symfony\Component\Yaml\Yaml;
  * request, and every issue it closes, to exactly the pull request's author.
  *
  * The shape tests pin what the job runs on: `opened` and a merged `closed`,
- * never a bot's pull request, never gated on `RUN_REMOTE_CI`, and only the two
- * scopes it writes with. The behavior tests run the step's own script, read
+ * never a bot's pull request, gated on `RUN_REMOTE_CI` only in the shared form
+ * that still runs while the variable is unset (UAMS-Web/uams-claude-skills#416),
+ * and only the two scopes it writes with. The behavior tests run the step's own script, read
  * from the workflow, against a stub `gh` that records every call. The real `jq`
  * filters run, so a changed filter is exercised rather than trusted. Each
  * failure the script must report shows here as a non-zero exit: a dropped
@@ -70,6 +71,21 @@ function assignAuthorJob(): array
     }
 
     return $job;
+}
+
+/**
+ * The job's condition with the shared `RUN_REMOTE_CI` gate removed from its front.
+ *
+ * The synced template puts `vars.RUN_REMOTE_CI != 'false' && ` before the job's own
+ * condition (UAMS-Web/uams-claude-skills#416), and the copy before that sync has no gate,
+ * so both read the same here.
+ */
+function assignAuthorJobCondition(): mixed
+{
+    $condition = assignAuthorJob()['if'] ?? null;
+    $gate = "vars.RUN_REMOTE_CI != 'false' && ";
+
+    return is_string($condition) && str_starts_with($condition, $gate) ? substr($condition, strlen($gate)) : $condition;
 }
 
 /**
@@ -251,21 +267,28 @@ it('triggers on a pull request opening or closing and on nothing else', function
 });
 
 it('runs its job only for a user on an opened or merged pull request', function (): void {
-    expect(assignAuthorJob()['if'] ?? null)->toBe(
+    expect(assignAuthorJobCondition())->toBe(
         "github.event.pull_request.user.type != 'Bot' && (github.event.action == 'opened' || (github.event.action == 'closed' && github.event.pull_request.merged == true))"
     );
 });
 
-it('is not gated on RUN_REMOTE_CI', function (): void {
+it('is ungated, or gated on RUN_REMOTE_CI only in the shared form that runs while it is unset', function (): void {
     $source = file_get_contents(dirname(__DIR__, 3).'/.github/workflows/assign-author.yml');
+    $gate = "vars.RUN_REMOTE_CI != 'false'";
 
-    // Search only the YAML itself, since the header comment names the variable to explain its absence
+    // Search only the YAML itself, since the header comment names the variable
     $code = implode("\n", array_filter(
         explode("\n", (string) $source),
         fn (string $line): bool => ! str_starts_with(ltrim($line), '#'),
     ));
 
-    expect($code)->not->toContain('RUN_REMOTE_CI');
+    // Any other use of the variable, such as `== 'true'`, would stop the job while it is unset
+    expect(str_replace($gate, '', $code))->not->toContain('RUN_REMOTE_CI')
+        ->and(substr_count($code, $gate))->toBeLessThanOrEqual(1);
+
+    // Where the gate is present, it leads the job's condition rather than one branch of it
+    $condition = assignAuthorJob()['if'] ?? null;
+    expect(! str_contains($code, $gate) || (is_string($condition) && str_starts_with($condition, $gate.' && ')))->toBeTrue();
 });
 
 it('grants no permission beyond writing issues and pull requests', function (): void {

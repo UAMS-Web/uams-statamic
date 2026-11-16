@@ -15,7 +15,7 @@ use Statamic\Fields\Field;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\patchJson;
@@ -30,7 +30,7 @@ use function Pest\Laravel\withoutMiddleware;
  * a stored `gcid` on every save, while a term with none may still be given one, which is
  * how a seed or a backfill writes it.
  */
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /**
  * Slugs of the throwaway terms a test saved, deleted in afterEach.

@@ -13,15 +13,15 @@ The form-config blueprint (CP) carries, on each form:
 
 ## How a confirmation is selected
 
-[`UAMSWeb\FormSettings\Support\FormConfirmationResolver`](../../vendor/uams-web/statamic-form-settings/src/Support/FormConfirmationResolver.php) picks the confirmation for a submission:
+[`UAMSWeb\Aether\Forms\Settings\Support\FormConfirmationResolver`](../../vendor/uams-web/aether-form-settings/src/Support/FormConfirmationResolver.php) picks the confirmation for a submission:
 
-1. It walks `confirmation_additional` in order and returns the **first** set whose `conditional_logic` passes against the submitted values — evaluated by [`ConditionalLogicEvaluator`](../../vendor/uams-web/statamic-form-settings/src/Support/ConditionalLogicEvaluator.php), the shared UAMS-Web/uams-statamic-archive#202 engine (a set with empty conditional logic always matches).
+1. It walks `confirmation_additional` in order and returns the **first** set whose `conditional_logic` passes against the submitted values — evaluated by [`ConditionalLogicEvaluator`](../../vendor/uams-web/aether-form-settings/src/Support/ConditionalLogicEvaluator.php), the shared UAMS-Web/uams-statamic-archive#202 engine (a set with empty conditional logic always matches).
 2. If none match, it returns `confirmation_settings_default`.
 3. If the form has no confirmation config at all, it returns `null` — and the pipeline leaves Statamic's built-in post-submit behavior untouched.
 
 ## How a confirmation is applied
 
-Statamic's `FormController::submit()` flashes the submission and a generic success message, then redirects back. [`UAMSWeb\FormSettings\Http\Middleware\ApplyFormConfirmation`](../../vendor/uams-web/statamic-form-settings/src/Http/Middleware/ApplyFormConfirmation.php) — pushed onto the `web` group by the form settings add-on's [service provider](../../vendor/uams-web/statamic-form-settings/src/ServiceProvider.php) while its `confirmations` switch is on, so it wraps the `/!/forms/{form}` submit route after the session middleware — post-processes a **successful** submission (detected by the flashed `submission`) and applies the resolved confirmation:
+Statamic's `FormController::submit()` flashes the submission and a generic success message, then redirects back. [`UAMSWeb\Aether\Forms\Settings\Http\Middleware\ApplyFormConfirmation`](../../vendor/uams-web/aether-form-settings/src/Http/Middleware/ApplyFormConfirmation.php) — pushed onto the `web` group by the form settings add-on's [service provider](../../vendor/uams-web/aether-form-settings/src/ServiceProvider.php) while its `confirmations` switch is on, so it wraps the `/!/forms/{form}` submit route after the session middleware — post-processes a **successful** submission (detected by the flashed `submission`) and applies the resolved confirmation:
 
 | `confirmation_type` | Effect |
 | --- | --- |

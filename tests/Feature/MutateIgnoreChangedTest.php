@@ -9,7 +9,7 @@ use Symfony\Component\Process\Process;
  * `composer mutate-ignore`, which runs the text check and the breadth check on a branch's
  * changed files and fails when either flags.
  *
- * The breadth arms reuse `MutateIgnoreBreadthTest`'s fixtures: the `faf7dac66` copy of
+ * The breadth arms use the fixtures in `tests/Fixtures/MutateIgnoreBreadth`: the `faf7dac66` copy of
  * `ConditionalLogicEvaluator.php` carries an annotation that removes three mutants and that
  * the text check passes, and the `2ee8781cf` copy is clean for both. The text arm is a
  * finding only the text check makes, so neither half's exit code can stand in for the other.
@@ -120,14 +120,18 @@ it('passes a file both checks pass', function () use ($run, $fixtures) {
         ->and($output)->toContain('text check exited 0, breadth check exited 0');
 });
 
-it('fails on a file only the text check flags', function () use ($script) {
+it('fails on a bare marker with a trailing space, which both checks flag', function () use ($script) {
     // A bare marker with a trailing space, against a stand-in for an unpatched plugin. The
-    // text check flags it as suppressing nothing, while the breadth check runs the installed
-    // plugin, which trims the tail (UAMS-Web/uams-statamic-archive#2327), so the marker removes every mutant and passes.
-    // Breadth stays clean, so the exit code can only come from the text check.
+    // text check flags it as suppressing nothing. The breadth check runs the installed
+    // plugin, which trims the tail (UAMS-Web/uams-statamic-archive#2327), so the marker removes
+    // every mutant on its node and below; since the uams-claude-skills@b9ef3a4 sync it reports
+    // that as a bare marker suppressing every mutator there, where it used to pass (#684).
+    // The marker is assembled from two halves so this file holds no literal occurrence: the
+    // CI breadth sweep over `tests/` would otherwise read it as a mention that removes mutants.
+    $marker = '@pest-mutate-'.'ignore';
     $dir = sys_get_temp_dir().'/mutate-ignore-changed-text-'.bin2hex(random_bytes(6));
     mkdir($dir, 0777, true);
-    file_put_contents($dir.'/Fixture.php', "<?php\n\nfunction a(int \$n): bool\n{\n    // @pest-mutate-ignore \n    return \$n > 10;\n}\n");
+    file_put_contents($dir.'/Fixture.php', "<?php\n\nfunction a(int \$n): bool\n{\n    // {$marker} \n    return \$n > 10;\n}\n");
     file_put_contents($dir.'/NodeVisitor.php', "<?php if (\$matches[1] === '') {}");
 
     $process = new Process([PHP_BINARY, $script, $dir.'/Fixture.php'], null, ['MUTATE_IGNORE_VISITOR_PATH' => $dir.'/NodeVisitor.php']);
@@ -138,7 +142,7 @@ it('fails on a file only the text check flags', function () use ($script) {
     rmdir($dir);
 
     expect($process->getExitCode())->toBe(1)
-        ->and($process->getOutput())->toContain('text check exited 1, breadth check exited 0');
+        ->and($process->getOutput())->toContain('text check exited 1, breadth check exited 1');
 });
 
 it('exits 2 when a check cannot run', function () use ($run) {
@@ -214,7 +218,9 @@ it('checks a committed change on the branch when given no paths', function () us
 
 it('passes when nothing under app/ or tests/ changed', function () use ($run, $repository, $remove) {
     $dir = $repository();
-    file_put_contents($dir.'/notes.php', "<?php\n// @pest-mutate-ignore: not a mutator\n");
+    // Assembled from two halves for the same reason as the text-check fixture above
+    $marker = '@pest-mutate-'.'ignore';
+    file_put_contents($dir.'/notes.php', "<?php\n// {$marker}: not a mutator\n");
 
     try {
         [$code, $output] = $run(['--base=HEAD'], $dir);

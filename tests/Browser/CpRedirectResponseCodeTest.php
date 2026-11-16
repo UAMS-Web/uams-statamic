@@ -12,7 +12,7 @@ use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Stache;
-use Statamic\Facades\YAML;
+use Statamic\Fields\Blueprint as StatamicBlueprint;
 
 /*
  | Does the HTTP Response Code radio show the code a redirect stores (#326)?
@@ -23,8 +23,9 @@ use Statamic\Facades\YAML;
  | an imported entry and on a new one alike.
  |
  | The two fields here carry the `response` configuration read from the
- | `redirect_domain` blueprint and from the `redirects` global's replicator, so
- | the test follows those files. The global's field is lifted out of its
+ | `redirect_domain` blueprint and from the `redirects` global's replicator, as
+ | Statamic serves them (the global's from the `uams-web/aether-redirects`
+ | add-on), so the test follows those blueprints. The global's field is lifted out of its
  | replicator because the radio is the same fieldtype with the same config there.
  |
  | @command vendor/bin/pest tests/Browser/CpRedirectResponseCodeTest.php
@@ -33,12 +34,12 @@ use Statamic\Facades\YAML;
 $collectionHandle = 'redirect_response_code';
 
 /**
- * Find the `response` field configuration in a blueprint file.
+ * Find the `response` field configuration in a blueprint.
  *
- * @param  string  $path  The blueprint, relative to `resources/blueprints`.
- * @return array<string, mixed> The field's configuration as the file declares it.
+ * @param  string  $handle  The blueprint as Statamic finds it, such as `globals.redirects`.
+ * @return array<string, mixed> The field's configuration as the blueprint declares it.
  */
-function redirectResponseFieldConfig(string $path): array
+function redirectResponseFieldConfig(string $handle): array
 {
     $find = function (mixed $node) use (&$find): ?array {
         if (! \is_array($node)) {
@@ -57,31 +58,15 @@ function redirectResponseFieldConfig(string $path): array
         return null;
     };
 
-    $config = $find(YAML::parse((string) file_get_contents(resource_path('blueprints/'.$path))));
+    $blueprint = Blueprint::find($handle);
+    expect($blueprint)->toBeInstanceOf(StatamicBlueprint::class);
+
+    /** @var StatamicBlueprint $blueprint */
+    $config = $find($blueprint->contents());
     expect($config)->toBeArray();
 
     /** @var array<string, mixed> $config */
     return $config;
-}
-
-/**
- * Snooze Statamic's trial-mode licensing alert when it opens, since it covers the publish form.
- *
- * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
- */
-function redirectResponseDismissLicensingAlert($page): void
-{
-    for ($waited = 0.0; $waited <= 10.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
-
-        if ($open === true) {
-            $page->click('Snooze');
-
-            break;
-        }
-
-        $page->wait(0.2);
-    }
 }
 
 /**
@@ -110,8 +95,8 @@ beforeEach(function () use ($collectionHandle) {
 
     $blueprint = Blueprint::makeFromFields([
         'title' => ['type' => 'text', 'display' => 'Title'],
-        'domain_response' => redirectResponseFieldConfig('collections/redirect_domains/redirect_domain.yaml'),
-        'global_response' => redirectResponseFieldConfig('globals/redirects.yaml'),
+        'domain_response' => redirectResponseFieldConfig('collections.redirect_domains.redirect_domain'),
+        'global_response' => redirectResponseFieldConfig('globals.redirects'),
     ]);
     $blueprint->setHandle($collectionHandle);
     $blueprint->setNamespace('collections.'.$collectionHandle);
@@ -170,13 +155,10 @@ it('shows the stored code and saves it back unchanged', function (string $code) 
 
     $page = loginToCp($email, $password)->navigate('/cp/collections/'.$collectionHandle.'/entries/'.$entryId);
     waitToSee($page, '301 Moved Permanently', 60.0);
-    redirectResponseDismissLicensingAlert($page);
 
     expect(redirectResponseSelectedCodes($page))->toBe([$code, $code]);
 
-    // Save without touching any field. The licensing alert can open late, so
-    // it is snoozed again first. The save shows as a new `updated_at`.
-    redirectResponseDismissLicensingAlert($page);
+    // Save without touching any field. The save shows as a new `updated_at`.
     $page->click('Save & Publish');
 
     $saved = null;

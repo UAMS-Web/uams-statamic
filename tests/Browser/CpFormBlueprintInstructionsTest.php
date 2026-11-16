@@ -12,11 +12,11 @@ use Statamic\Facades\Stache;
  * Pins where the Control Panel DISPLAYS a form blueprint's `instructions`: on a SECTION, yes;
  * on a TAB, no.
  *
- * `UAMS-Web/wordpress-importer#831` writes a trace — a note naming the fields an import had to
+ * `UAMS-Web/wordpress-importer-archive#831` writes a trace — a note naming the fields an import had to
  * drop — into blueprint metadata rather than into a field, precisely so it cannot reach the
  * public form: the renderer iterates fields and never reads tab or section metadata. That
  * makes the Control Panel the note's ONLY audience, so WHERE the note is written decides
- * whether it has a reader at all. `UAMS-Web/wordpress-importer#857` and `#859` are built on
+ * whether it has a reader at all. `UAMS-Web/wordpress-importer-archive#857` and `#859` are built on
  * the answer below — qualified because both numbers also exist in THIS repo, on unrelated
  * blueprint and test tickets that read as plausible destinations.
  *

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -15,9 +16,11 @@ use Statamic\Facades\User;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /**
  * Image uploads on the classifieds posting form (UAMS-Web/uams-statamic-archive#2519): where they land, which become
@@ -158,6 +161,9 @@ beforeEach(function (): void {
     if (! Collection::findByHandle('classifieds')) {
         ContentSubmodule::reportMissing('classifieds collection');
     }
+
+    // Deleting a listing records a redirect in the redirects global, which stays on the shared mirror (#558)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
 
     Carbon::setTestNow(Carbon::parse('2026-06-15 17:00:00', 'UTC'));
     Site::setCurrent('inside_classifieds');

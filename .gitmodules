@@ -1,16 +1,16 @@
 [submodule "content"]
 	path = content
-	url = https://github.com/UAMS-Web/uams-statamic-content.git
+	url = https://github.com/UAMS-Web/aether-submodule-content.git
 	ignore = dirty
 [submodule "users"]
 	path = users
-	url = https://github.com/UAMS-Web/uams-statamic-users.git
+	url = https://github.com/UAMS-Web/aether-submodule-users.git
 [submodule "public/assets"]
 	path = public/assets
-	url = https://github.com/UAMS-Web/uams-statamic-assets-public.git
+	url = https://github.com/UAMS-Web/aether-submodule-assets-public.git
 [submodule "app/private/assets"]
 	path = app/private/assets
-	url = https://github.com/UAMS-Web/uams-statamic-assets-private.git
+	url = https://github.com/UAMS-Web/aether-submodule-assets-private.git
 [submodule "resources/forms"]
 	path = resources/forms
-	url = https://github.com/UAMS-Web/uams-statamic-forms.git
+	url = https://github.com/UAMS-Web/aether-submodule-form-definitions.git

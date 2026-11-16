@@ -208,9 +208,7 @@ final class SchemaJsonLdStructureAnalyzer
                 }
 
                 foreach ($types as $t) {
-                    if (! isset($this->keysPerNodeType[$t][$key])) {
-                        $this->keysPerNodeType[$t][$key] = 0;
-                    }
+                    $this->keysPerNodeType[$t][$key] ??= 0;
 
                     $this->keysPerNodeType[$t][$key]++;
                 }
@@ -463,9 +461,7 @@ final class SchemaJsonLdStructureAnalyzer
 
                     $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
                     $this->ensureKey($key);
-                    if (! isset($this->keyStats[$key]['nested_keys'][$childKey])) {
-                        $this->keyStats[$key]['nested_keys'][$childKey] = true;
-                    }
+                    $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
 
                     $this->walk($childPath, $childValue);
                 }
@@ -485,9 +481,7 @@ final class SchemaJsonLdStructureAnalyzer
 
                 $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
                 $this->ensureKey($key);
-                if (! isset($this->keyStats[$key]['nested_keys'][$childKey])) {
-                    $this->keyStats[$key]['nested_keys'][$childKey] = true;
-                }
+                $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
 
                 $this->walk($childPath, $childValue);
             }
@@ -496,16 +490,14 @@ final class SchemaJsonLdStructureAnalyzer
 
     private function ensureKey(string $key): void
     {
-        if (! isset($this->keyStats[$key])) {
-            $this->keyStats[$key] = [
-                'value_types' => [],
-                'array_element_types' => [],
-                'object_shapes' => [],
-                'count' => 0,
-                'examples' => [],
-                'nested_keys' => [],
-            ];
-        }
+        $this->keyStats[$key] ??= [
+            'value_types' => [],
+            'array_element_types' => [],
+            'object_shapes' => [],
+            'count' => 0,
+            'examples' => [],
+            'nested_keys' => [],
+        ];
     }
 
     private function recordArrayLength(string $key, mixed $value, string $phpType): void

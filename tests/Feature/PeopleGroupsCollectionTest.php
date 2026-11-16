@@ -18,7 +18,7 @@ uses(TestCase::class, RequiresContentSubmodule::class);
  * (`uamspeople-categories` alone carries 9,261 assignments, department to
  * division to group). UAMS-Web/uams-statamic-archive#252 settled that hierarchy is delivered by native
  * structured collections, so both convert — following the `post_categories`
- * pattern (UAMS-Web/uams-statamic-archive#1433) — and `UAMS-Web/wordpress-importer#13` can then create
+ * pattern (UAMS-Web/uams-statamic-archive#1433) — and `UAMS-Web/wordpress-importer-archive#13` can then create
  * parented entries in each.
  *
  * These assert the shipped configuration and blueprints: that each is a

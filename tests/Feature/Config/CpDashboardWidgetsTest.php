@@ -14,7 +14,8 @@ uses(TestCase::class);
  * UAMS-Web/uams-statamic-archive#2506 moved the scan off-request — the widget now only reads the result of the
  * scheduled `cp:scan-incomplete-published-entries` run — so the guard is inverted:
  * the widget is registered again, and the property that made its absence necessary
- * is asserted where it lives, in `IncompletePublishedEntriesOffRequestTest`.
+ * is asserted where it lives, in the `uams-web/aether-incomplete-entries` add-on's
+ * `IncompletePublishedEntriesOffRequestTest` (#517).
  */
 it('registers the incomplete-published-entries widget', function (): void {
     /** @var list<string> $widgets */

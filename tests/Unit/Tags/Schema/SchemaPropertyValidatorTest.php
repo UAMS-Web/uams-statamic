@@ -80,6 +80,7 @@ it('falls back to the Spatie class when the enum has no properties for the type'
         'image',
         'mainEntityOfPage',
         'name',
+        'owner',
         'potentialAction',
         'productReturnDays',
         'productReturnLink',
@@ -148,5 +149,5 @@ it('skips Spatie methods that do not take exactly one argument', function () {
 
 it('keeps scanning past an inherited method declared first', function () {
     // ThreeDimensionalModel declares getType(), a BaseType name, before its setters.
-    expect(SchemaPropertyValidator::validPropertiesForType('ThreeDimensionalModel'))->toHaveCount(141);
+    expect(SchemaPropertyValidator::validPropertiesForType('ThreeDimensionalModel'))->toHaveCount(143);
 });

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Http\Request;
-use Statamic\Facades\Antlers;
+use Illuminate\Http\Response;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Search;
 use Statamic\Facades\Site;
@@ -12,7 +13,9 @@ use Statamic\Search\QueryBuilder as SearchQueryBuilder;
 use Statamic\Sites\Site as SiteObject;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
+use UAMSWeb\Aether\Search\Tags\AetherSearch;
 
+// cspell:ignore gcse searchresults
 uses(TestCase::class);
 
 /**
@@ -21,7 +24,7 @@ uses(TestCase::class);
  * name>", and the root site offers only the second. Which hits each scope returns is
  * covered by `SiteSearchScopeResultsTest`.
  *
- * @covers \App\Tags\SiteSearchScope
+ * @covers \UAMSWeb\Aether\Search\Tags\AetherSearch
  *
  * @command  php artisan test --compact tests/Feature/Search/SiteSearchScopeTest.php
  */
@@ -29,13 +32,14 @@ uses(TestCase::class);
 /**
  * Render the search page as a reader on a site sees it.
  *
- * @param  array<string, mixed>  $get  The query string.
+ * @param  array<array-key, mixed>  $get  The query string.
  */
 function renderScopedSearch(string $site, array $get = []): string
 {
     Site::setCurrent($site);
+    stubEmptySearchIndex();
 
-    return view('search/index', ['get' => $get])->render();
+    return renderAetherSearchPage($get);
 }
 
 /**
@@ -121,13 +125,13 @@ function searchThroughPage(string $site, array $get): array
     });
     Search::shouldReceive('index')->andReturn($index);
 
-    app()->instance('request', Request::create('/search', 'GET', $get));
+    Site::setCurrent($site);
 
-    return ['html' => renderScopedSearch($site, $get), 'sites' => array_values($sites->getArrayCopy())];
+    return ['html' => renderAetherSearchPage($get), 'sites' => array_values($sites->getArrayCopy())];
 }
 
 it('offers only all of the root site on the root site, as the default', function (): void {
-    expect(Antlers::parse('{{ site_search_scope:active }}')->__toString())->toBe('all');
+    expect((new AetherSearch)->active())->toBe('all');
 
     $html = renderScopedSearch('default', ['q' => 'kirk']);
 
@@ -158,8 +162,9 @@ it('keeps the chosen scope in the tabs, the form and the type-ahead links on a s
 it('falls back to the default for a scope the site does not offer', function (array $scope): void {
     Site::setCurrent('health');
 
-    expect((string) Antlers::parse('{{ site_search_scope:active :requested="requested" }}', ['requested' => $scope['value']]))
-        ->toBe('site');
+    app()->instance('request', Request::create('/health/search', 'GET', ['scope' => $scope['value']]));
+
+    expect((new AetherSearch)->active())->toBe('site');
 
     expect(scopeLinks(renderScopedSearch('health', ['q' => 'kirk', 'scope' => $scope['value']]))['This site'])
         ->toBe('/health/search?q=kirk&amp;index=default');
@@ -225,6 +230,12 @@ it('serves the search page under a sub-site prefix, as that site', function (): 
         ContentSubmodule::reportMissing('the layout render');
     }
 
+    // The page would otherwise search this process's real `default` index, which an
+    // earlier test in the same worker can leave as an empty file, as
+    // `NavExcludesNonPublicEntriesTest` does; Comb then throws `Empty haystack` (#552).
+    // The test asserts the layout, not the hits, as `SiteSearchTabsTest` does.
+    stubEmptySearchIndex();
+
     /** @var TestCase $test */
     $test = $this->withoutVite();
 
@@ -239,9 +250,108 @@ it('serves the search page under a sub-site prefix, as that site', function (): 
 it('resolves each site to its own search path', function (): void {
     Site::setCurrent('default');
 
-    expect((string) Antlers::parse('{{ site_search_scope:path }}'))->toBe('/search');
+    expect((new AetherSearch)->path())->toBe('/search');
 
     Site::setCurrent('health');
 
-    expect((string) Antlers::parse('{{ site_search_scope:path }}'))->toBe('/health/search');
+    expect((new AetherSearch)->path())->toBe('/health/search');
+});
+
+it('offers all UAMS websites on every site once a Google search engine is configured', function (): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+
+    expect(scopeLinks(renderScopedSearch('default', ['q' => 'kirk'])))->toBe([
+        rootSiteLabel() => '/search?q=kirk&amp;index=default',
+        'All UAMS websites' => '/search?q=kirk&amp;index=default&amp;scope=google',
+    ])->and(scopeLinks(renderScopedSearch('health', ['q' => 'kirk'])))->toBe([
+        'This site' => '/health/search?q=kirk&amp;index=default',
+        rootSiteLabel() => '/health/search?q=kirk&amp;index=default&amp;scope=all',
+        'All UAMS websites' => '/health/search?q=kirk&amp;index=default&amp;scope=google',
+    ]);
+});
+
+it('does not offer all UAMS websites without an engine ID, even when the URL asks', function (mixed $engine): void {
+    config(['aether-search.external.providers.google.engine_id' => $engine]);
+
+    $html = renderScopedSearch('health', ['scope' => 'google']);
+
+    expect(scopeLinks($html))->not->toHaveKey('All UAMS websites')
+        ->and($html)->toMatch('#aria-current="page">This site</a>#')
+        ->and($html)->not->toContain('cse.google.com');
+})->with([
+    'none' => [null],
+    'empty' => [''],
+    'blank' => ['  '],
+]);
+
+it('shows Google results in place of the site results and hides the type tabs', function (): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+    Search::shouldReceive('index')->never();
+
+    $html = renderScopedSearch('health', ['q' => 'kirk', 'scope' => 'google']);
+
+    expect($html)
+        ->toContain('src="https://cse.google.com/cse.js?cx=engine%3Aone"')
+        ->toContain('<div class="gcse-searchresults-only" data-queryParameterName="q"></div>')
+        ->toContain('Search results for&nbsp;&ldquo;kirk&rdquo;')
+        ->toContain('<input type="hidden" name="scope" value="google">')
+        ->toMatch('#aria-current="page">All UAMS websites</a>#')
+        ->not->toContain('site-search-tabs mx-auto');
+});
+
+it('loads Google only on that scope, and only with a query to search', function (array $get): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+
+    expect(renderScopedSearch('health', $get))->not->toContain('cse.google.com');
+})->with([
+    'the scope with no query' => [['scope' => 'google']],
+    'an array query' => [['q' => ['kirk'], 'scope' => 'google']],
+    'knowledge-base search' => [['q' => 'kirk', 'scope' => 'google', 'index' => 'knowledge_bases', 'kb_scope' => 'root']],
+]);
+
+it('keeps Google out of the site scopes', function (string $scope): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+
+    expect(searchThroughPage('health', ['q' => 'kirk', 'scope' => $scope])['html'])
+        ->not->toContain('cse.google.com')
+        ->toContain('site-search-tabs mx-auto');
+})->with(['site', 'all']);
+
+it('widens the content security policy for Google results and for no other search', function (): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+
+    // The page's `get` values are not hydrated from a test request, so the render is
+    // run inside the middleware rather than through the route.
+    $policyFor = function (array $get): string {
+        $request = Request::create('/health/search', 'GET', $get);
+        app()->instance('request', $request);
+        Site::setCurrent('health');
+
+        // Rendered on this request, which is the one the allowance is recorded on
+        $response = app(SecurityHeaders::class)->handle(
+            $request,
+            fn (): Response => new Response(view('aether-search::index')->render())
+        );
+
+        return (string) $response->headers->get('Content-Security-Policy-Report-Only');
+    };
+
+    expect($policyFor(['q' => 'kirk', 'scope' => 'google']))->toContain('https://cse.google.com')
+        ->and($policyFor(['scope' => 'google']))->not->toContain('https://cse.google.com');
+});
+
+it('searches the site when the URL asks for Google and no engine is configured', function (): void {
+    config(['aether-search.external.providers.google.engine_id' => null]);
+
+    expect(searchThroughPage('health', ['q' => 'kirk', 'scope' => 'google'])['html'])
+        ->not->toContain('cse.google.com')
+        ->toContain('site-search-tabs mx-auto');
+});
+
+it('does not describe the type tabs before a Google search', function (): void {
+    config(['aether-search.external.providers.google.engine_id' => 'engine:one']);
+
+    expect(renderScopedSearch('health', ['scope' => 'google']))
+        ->toContain('Enter a search term above to get started.')
+        ->not->toContain('You can search people');
 });

@@ -476,7 +476,7 @@ class SchemaOutputService
      * @param  string|null  $webpageEntryId  Normalized webpage schema_objects id
      * @param  string|null  $mainContentEntryId  Normalized main content schema_objects id
      */
-    private function composeJsonLdOutputScriptTagForResolvedSlots(
+    protected function composeJsonLdOutputScriptTagForResolvedSlots(
         EntryContract|Term $entity,
         ?string $subjectEntryId,
         ?string $websiteEntryId,
@@ -3845,74 +3845,6 @@ class SchemaOutputService
     }
 
     /**
-     * If the property value is the Antlers replicator set, parse template and return
-     * string.
-     *
-     * @param  array<int, array<string, mixed>>  $rows  Replicator rows for the property
-     * @param  EntryContract|Term|null  $contextEntity  Current entry/term for Antlers context
-     * @return string|null Parsed string, or null if not an Antlers set or no template
-     */
-    protected function resolveAntlersPropertyValue(
-        array $rows,
-        EntryContract|Term|null $contextEntity
-    ): ?string {
-        foreach ($rows as $row) {
-            $enabled = $row['enabled'] ?? true;
-            if (! $enabled) {
-                continue;
-            }
-
-            $rowType = $row['type'] ?? null;
-            if ($rowType !== 'antlers') {
-                return null;
-            }
-
-            $val = $row['value'] ?? null;
-            if (! \is_array($val) || ! isset($val['code']) || ! \is_string($val['code'])) {
-                return null;
-            }
-
-            $template = trim($val['code']);
-            if ($template === '') {
-                return null;
-            }
-
-            // Build context from merged values (includes computed collection fields)
-            $context = array_merge(
-                $this->buildAntlersContextFromEntity($contextEntity)
-            );
-
-            $parsed = Parse::template(
-                $template,
-                $context,
-                [],
-                false
-            );
-
-            $out = (string) $parsed;
-
-            // Unset local variables to free up memory
-            unset(
-                $context,
-                $parsed,
-                $row,
-                $rowType,
-                $template,
-                $val
-            );
-
-            return $out;
-        }
-
-        // Unset local variables to free up memory
-        unset(
-            $row
-        );
-
-        return null;
-    }
-
-    /**
      * Build the Antlers variable bag for an entry or term.
      *
      * Build context from merged `values()` / `data()` (includes computed fields)
@@ -4789,11 +4721,9 @@ class SchemaOutputService
             // Skip overlay keys this template cannot read (avoids term queries for
             // unrelated snapshot fields unless primary-term wiring needs them).
             if (! $templateReferencesPrimaryRelatedTaxonomyTerm) {
-                if ($referencedIdentifiers === null) {
-                    $referencedIdentifiers = $this->antlersTemplateReferencedIdentifierSet(
-                        $template
-                    );
-                }
+                $referencedIdentifiers ??= $this->antlersTemplateReferencedIdentifierSet(
+                    $template
+                );
 
                 if (! isset($referencedIdentifiers[$overlayKey])) {
                     unset($overlayKey);

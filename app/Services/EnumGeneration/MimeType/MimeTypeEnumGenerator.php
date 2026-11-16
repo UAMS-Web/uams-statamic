@@ -66,11 +66,8 @@ final class MimeTypeEnumGenerator
         // Fetch from mime-db (primary source)
         $mimeDbRecords = $this->fetchMimeDbRecords();
 
-        // Check if mime-db fetch failed
-        if ($mimeDbRecords === null) {
-            // Initialize empty array to prevent null errors
-            $mimeDbRecords = [];
-        }
+        // Initialize empty array to prevent null errors
+        $mimeDbRecords ??= [];
 
         // Fetch from IANA media types (secondary source)
         $ianaRecords = $this->fetchIanaMediaTypeRecords();
@@ -78,11 +75,8 @@ final class MimeTypeEnumGenerator
         // Fetch from Apache MIME types (tertiary source)
         $apacheRecords = $this->fetchApacheMimeTypeRecords();
 
-        // Check if the Apache fetch failed
-        if ($apacheRecords === null) {
-            // Initialize empty array to prevent null errors
-            $apacheRecords = [];
-        }
+        // Initialize empty array to prevent null errors
+        $apacheRecords ??= [];
 
         // ---
         // Merge records from all sources with proper deduplication.
@@ -96,11 +90,8 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
-            if (! isset($recordsByMimeType[$mimeType])) {
-                // Add record to the map
-                $recordsByMimeType[$mimeType] = $record;
-            }
+            // Add record to the map
+            $recordsByMimeType[$mimeType] ??= $record;
         }
 
         // Loop through the IANA records (medium priority)
@@ -108,11 +99,8 @@ final class MimeTypeEnumGenerator
             // Extract MIME type from the record
             $mimeType = $record['mimeType'];
 
-            // Check if this MIME type is not already in the records
-            if (! isset($recordsByMimeType[$mimeType])) {
-                // Add record to the map
-                $recordsByMimeType[$mimeType] = $record;
-            }
+            // Add record to the map
+            $recordsByMimeType[$mimeType] ??= $record;
         }
 
         // Loop through the mime-db records (highest priority)
@@ -1807,7 +1795,7 @@ final class MimeTypeEnumGenerator
         array $dataSourceLines = []
     ): string {
         // Header: open PHP tag and start generated documentation block
-        $content = "<?php\n\n";
+        $content = "<?php\n\ndeclare(strict_types=1);\n\n";
         $content .= "/**\n";
         $content .= " * Generated MIME Types enum cases\n";
         $content .= " *\n";
@@ -1817,8 +1805,8 @@ final class MimeTypeEnumGenerator
         $content .= " * 2. Open app/Enums/MimeType.php\n";
         $content .= " * 3. Replace the existing case list in the MimeType enum with the\n";
         $content .= " *    copied cases\n";
-        $content .= " * 4. Keep the MimeTypeInfo attribute class and any other methods in\n";
-        $content .= " *    MimeType.php\n";
+        $content .= " * 4. Keep any other methods in MimeType.php; the MimeTypeInfo attribute\n";
+        $content .= " *    class is in MimeTypeInfo.php\n";
         $content .= " * 5. Save the file\n";
         $content .= " *\n";
         $content .= " * Data Source:\n";
@@ -1839,48 +1827,26 @@ final class MimeTypeEnumGenerator
         $content .= " *\n";
         $content .= ' * This list of cases was generated on '.\date('Y-m-d').' at '.\date('H:i:s T')."\n";
         $content .= ' * Total MIME types: '.\count($mimeTypes)."\n";
-        $content .= " */\n\n";
+        $content .= " */\n";
         $content .= "enum MimeType: string\n";
         $content .= "{\n";
 
         // Loop through MIME types to generate enum cases
         foreach ($mimeTypes as $mimeType) {
-            // Escape single quotes in the mimeType for valid PHP string literal
-            $escapedMimeType = \str_replace(
-                "'",
-                "\\'",
-                $mimeType['mimeType']
-            );
+            // Render each extension as a literal inside a PHP array literal
+            $extensionsArray = '['.\implode(
+                ', ',
+                \array_map(
+                    $this->phpLiteral(...),
+                    $mimeType['extensions']
+                )
+            ).']';
 
-            // Check if the extensions array is empty
-            if (empty($mimeType['extensions'])) {
-                // Set the extensions array to an empty array
-                $extensionsArray = '[]';
-            } else { // Otherwise
-                // Prepare extensions array as PHP array literal
-                $extensionsArray = "['".\implode(
-                    "', '",
-                    \array_map(
-                        fn ($ext): string => \str_replace(
-                            "'",
-                            "\\'",
-                            $ext
-                        ),
-                        $mimeType['extensions']
-                    )
-                )."']";
-            }
-
-            // Escape single quotes in the category for valid PHP string literal
-            $escapedCategory = \str_replace(
-                "'",
-                "\\'",
-                $mimeType['category']
-            );
-
-            // Attribute + case line
-            $content .= "\t#[MimeTypeInfo(mimeType: '{$escapedMimeType}', extensions: {$extensionsArray}, category: '{$escapedCategory}')]\n";
-            $content .= "\tcase {$mimeType['caseId']} = '{$mimeType['caseId']}';\n\n";
+            // Attribute + case line, indented with four spaces as Pint expects
+            $content .= '    #[MimeTypeInfo(mimeType: '.$this->phpLiteral($mimeType['mimeType'])
+                .', extensions: '.$extensionsArray
+                .', category: '.$this->phpLiteral($mimeType['category']).")]\n";
+            $content .= "    case {$mimeType['caseId']} = ".$this->phpLiteral($mimeType['caseId']).";\n\n";
         }
 
         // Close enum definition
@@ -1888,5 +1854,16 @@ final class MimeTypeEnumGenerator
 
         // Return full file content for writing
         return $content;
+    }
+
+    /**
+     * Render a value as a single-quoted PHP string literal that evaluates back to it.
+     *
+     * Both `\` and `'` are escaped, so a value ending in a backslash cannot
+     * swallow its closing quote (UAMS-Web/uams-statamic#719).
+     */
+    private function phpLiteral(string $value): string
+    {
+        return "'".GeneratorUtils::escapeSingleQuotes($value)."'";
     }
 }

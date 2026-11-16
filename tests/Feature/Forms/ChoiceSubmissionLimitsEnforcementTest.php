@@ -158,3 +158,22 @@ it('rejects a direct POST of a full choice that bypassed the disabled option', f
         ->assertSessionHasErrors(['slot' => 'That slot is full.'], null, 'form.'.$choiceLimitHandle);
     expect(choiceLimitStoredCount($choiceLimitHandle))->toBe(1);
 });
+
+it('reports the form\'s restriction when the restriction and a full choice both refuse', function () use (&$choiceLimitHandle): void {
+    $form = makeForm($choiceLimitHandle);
+    $form->store(true);
+    $form->save();
+
+    // Fill the capped choice while the form is still open
+    post('/!/forms/'.$choiceLimitHandle, ['slot' => 'morning'])->assertRedirect();
+
+    // Close the form to guests, so the next "morning" is refused twice over
+    $form->merge(['require_login_query' => true, 'require_login_message' => 'Sign in first.']);
+    $form->save();
+
+    // The add-on's listener runs first, so the reader sees the restriction, not the full choice
+    post('/!/forms/'.$choiceLimitHandle, ['slot' => 'morning'])
+        ->assertSessionHasErrors([$choiceLimitHandle => 'Sign in first.'], null, 'form.'.$choiceLimitHandle)
+        ->assertSessionDoesntHaveErrors(['slot'], null, 'form.'.$choiceLimitHandle);
+    expect(choiceLimitStoredCount($choiceLimitHandle))->toBe(1);
+});

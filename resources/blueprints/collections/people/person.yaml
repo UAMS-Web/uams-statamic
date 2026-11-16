@@ -410,9 +410,6 @@ tabs:
               postal_code_include: false
               if:
                 home_country_query: 'equals us'
-              if_any:
-                resident_query: 'equals true'
-                fellow_query: 'equals true'
               validate:
                 - sometimes
                 - required
@@ -428,9 +425,6 @@ tabs:
               postal_code_include: false
               if:
                 home_country_query: 'equals canada'
-              if_any:
-                resident_query: 'equals true'
-                fellow_query: 'equals true'
               validate:
                 - sometimes
                 - required
@@ -447,9 +441,6 @@ tabs:
               state_province_region_international_required: false
               if:
                 home_country_query: 'equals other'
-              if_any:
-                resident_query: 'equals true'
-                fellow_query: 'equals true'
               validate:
                 - sometimes
                 - required

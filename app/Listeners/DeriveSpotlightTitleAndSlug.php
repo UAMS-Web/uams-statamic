@@ -24,7 +24,7 @@ use Statamic\Stache\Query\EntryQueryBuilder;
  * a live URL is never rewritten by a later provider change.
  *
  * Imported spotlights carry their own WordPress title and slug
- * (`UAMS-Web/wordpress-importer#419`), so a WordPress console import is bypassed
+ * (`UAMS-Web/wordpress-importer-archive#419`), so a WordPress console import is bypassed
  * and its titles/slugs preserved; derivation applies to CP-authored spotlights
  * (and any later CP re-save), mirroring the clinical-collection validation
  * listeners' `import:wordpress` bypass.
@@ -95,6 +95,9 @@ final class DeriveSpotlightTitleAndSlug
 
         $base = $this->spotlight->autoSlug($entry);
 
+        // autoSlug() returns null or a slug that begins `get-to-know-`, never an empty
+        // string, so this half of the guard never decides anything.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         if ($base === null || $base === '') {
             return;
         }

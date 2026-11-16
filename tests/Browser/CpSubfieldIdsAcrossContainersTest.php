@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-use Pest\Browser\Api\ArrayablePendingAwaitablePage;
-use Pest\Browser\Api\AwaitableWebpage;
-use Pest\Browser\Api\PendingAwaitablePage;
-use Pest\Browser\Api\Webpage;
 use Statamic\Auth\User;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
@@ -74,27 +70,6 @@ const SUBFIELD_IDS_SCRIPT = <<<'JS'
 })()
 JS;
 
-/**
- * Snooze Statamic's trial-mode licensing alert when it opens. It is a modal
- * over the publish form, so every click behind it times out.
- *
- * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
- */
-function subfieldIdsDismissLicensingAlert($page): void
-{
-    for ($waited = 0.0; $waited <= 3.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
-
-        if ($open === true) {
-            $page->click('Snooze');
-
-            break;
-        }
-
-        $page->wait(0.2);
-    }
-}
-
 beforeEach(function () use ($collectionHandle) {
     $this->cpEmail = 'subfield-ids-'.uniqid().'@example.test';
     $this->cpPassword = 'subfield-ids-password-'.uniqid();
@@ -151,7 +126,6 @@ it('gives each publish container its own field ids, with every label on its own 
     $page = loginToCp($email, $password)->navigate('/cp/collections/'.$collectionHandle.'/entries/create/default');
 
     waitToSee($page, 'Postal Address');
-    subfieldIdsDismissLicensingAlert($page);
 
     // The page heading also reads "Create Entry", so press the field's button directly.
     $page->script('(() => [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Create Entry").click())()');

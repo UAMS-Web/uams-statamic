@@ -24,13 +24,14 @@
  *
  * `refresh` takes `primary` as well as a slot name; `release` and `provision` do not, because the
  * primary must keep `main` checked out and is the clone rather than a worktree of it. Each tree is
- * judged against its own kind: the CI slot is runner-owned, so `scripts/local-ci.mjs` bootstrapping
- * only `content` and `users` there is the expected state and not drift (UAMS-Web/uams-statamic-archive#1952, UAMS-Web/uams-statamic-archive#2477).
+ * judged against its own kind: the CI slot is runner-owned, so the runner's `dependencies` job
+ * (`scripts/prepare-dependencies.mjs`) initializing only the gate submodules there is the expected state and not drift (UAMS-Web/uams-statamic-archive#1952, UAMS-Web/uams-statamic-archive#2477).
  *
  * `composer install` is idempotent and cheap, so refresh simply runs it. `npm ci` is NOT — it
  * deletes `node_modules` first, so running it unconditionally turns a no-op into a multi-minute
  * rebuild. It is therefore gated on a lockfile-hash stamp, following the patch-stamp idiom
- * `local-ci.mjs` uses for the same shape of problem (UAMS-Web/uams-statamic-archive#1743).
+ * of UAMS-Web/uams-statamic-archive#1743, the same shape of problem, which the local runner now
+ * answers with its `vendor/.local-ci-patches.lock.json` record.
  *
  * A submodule is judged on **two** axes, because matching one proves nothing about the other. Its
  * recorded-vs-actual revision answers "is this tree pointing where the branch says", and its
@@ -54,6 +55,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 // Imported, not re-derived: UAMS-Web/uams-statamic-archive#1743 solved this exact problem for the local-CI worktree, and two
@@ -246,8 +248,8 @@ export function treeKind(treePath, repoRoot) {
  * script owns. Two exceptions, both deliberate:
  *
  * The **CI slot** is runner-owned. `.claude/rules/worktrees.md` holds it out of pre-provisioning
- * because no session's working directory sits in it and `scripts/local-ci.mjs` bootstraps it on
- * every run — initializing only `content`, `users` and `resources/forms` (UAMS-Web/uams-statamic-archive#2477, UAMS-Web/uams-statamic-archive#2818), and running its own installs
+ * because no session's working directory sits in it and the local runner's `dependencies` job
+ * (`scripts/prepare-dependencies.mjs`) bootstraps it on every run — initializing only `content`, `users` and `resources/forms` (UAMS-Web/uams-statamic-archive#2477, UAMS-Web/uams-statamic-archive#2818), and running its own installs
  * without writing this script's stamp. Judging it by a slot's expectations reported four permanent
  * drift lines for a tree in exactly the state it is supposed to be in, which is half of why
  * `--check` could never exit 0 (UAMS-Web/uams-statamic-archive#1952). A missing `content/`, `users/` or `resources/forms/` there
@@ -259,7 +261,7 @@ export function treeKind(treePath, repoRoot) {
  *
  * The **base** check follows the same ownership logic rather than a new one. A slot and the primary
  * are trees this script parks at `origin/main`, so their base is its to judge. The CI slot's base
- * is the runner's — `local-ci.mjs` checks arbitrary branches in and out of it — and an ephemeral
+ * is the runner's (the shared runner checks arbitrary branches in and out of it), and an ephemeral
  * tree's is whoever made it. Judging either would report permanent drift on a tree doing exactly
  * what it is for, which is the UAMS-Web/uams-statamic-archive#1952 failure this function exists to prevent.
  *
@@ -292,7 +294,7 @@ export function expectationsFor(kind) {
  * @param  string  $treePath
  * @param  string  $repoRoot
  * @param  {{lockHash: ?string, stampHash: ?string, composerHash: ?string, stampComposerHash: ?string, submodules: array}}  $probe
- * @return {{kind: string, drift: array<int, string>}}
+ * @return {{kind: string, drift: array<int, string>, notices: array<int, string>}}
  */
 export function judgeTree(treePath, repoRoot, probe) {
     const kind = treeKind(treePath, repoRoot);
@@ -303,7 +305,9 @@ export function judgeTree(treePath, repoRoot, probe) {
     // Notices are reported and NOT counted toward `--check`. Folding them into `drift` would fault
     // a tree for a measurement that failed rather than for a state that is wrong; dropping them
     // would restore the silence UAMS-Web/uams-statamic-archive#2148 is about. They are a third category on purpose.
-    return { kind, drift: driftReasons({ ...probe, expected }), notices: notice ? [notice] : [] };
+    const notices = [notice, expected.checkInstall ? puppeteerBrowserNotice(probe.puppeteerBrowser) : null].filter(Boolean);
+
+    return { kind, drift: driftReasons({ ...probe, expected }), notices };
 }
 
 /**
@@ -362,13 +366,13 @@ export function installStaleReason(lockHash, stampHash) {
  * returned separately from a `reason`. Faulting it would red `--check` permanently on a checkout
  * whose remote-tracking ref is merely stale — the UAMS-Web/uams-statamic-archive#1952 shape `expectationsFor` exists to prevent, arriving through
  * a new door — and staying silent is the opposite error, the one UAMS-Web/uams-statamic-archive#2148 is about. So it is neither
- * faulted nor hidden. `wordpress-importer#878` reached the same split on its own copy.
+ * faulted nor hidden. `wordpress-importer-archive#878` reached the same split on its own copy.
  *
  * ⚠ **The notice does not say WHY, because this cannot know why.** A missing `origin/main` and a
  * git invocation that simply failed both arrive as a null count and are indistinguishable here — an
  * extra field would not help, since the one this returns answers a different question. Naming a
  * cause the probe never checked is its own defect, and the sibling shipped it: see
- * `wordpress-importer#880`, where the message reads "no origin/main ref" on a repository where the
+ * `wordpress-importer-archive#880`, where the message reads "no origin/main ref" on a repository where the
  * ref exists.
  *
  * An absent probe is a third thing: a tree inspected before this check existed carries no `base`
@@ -416,7 +420,7 @@ export function baseState(base) {
  * The remote refs read are the checkout's LOCAL remote-tracking refs; nothing is fetched. A branch
  * pushed since the last fetch therefore still reports as absent until the checkout is fetched.
  *
- * @param  string  $relativePath  e.g. `vendor/uams-web/wordpress-importer`
+ * @param  string  $relativePath  e.g. `vendor/uams-web/aether-wordpress-importer`
  * @param  ?string  $toplevel      `git rev-parse --show-toplevel` output, or null when it failed.
  * @param  string  $packagePath   The directory's absolute path, to compare against `$toplevel`.
  * @param  ?string  $branch        `git symbolic-ref --short -q HEAD`, or null when detached.
@@ -662,6 +666,67 @@ export function contentMirrorReason(mirror) {
     return mirror.drifted
         ? `content mirror: built from a different content/, rebuild it with \`${CONTENT_MIRROR_SEED.command}\``
         : null;
+}
+
+/** The browser Puppeteer launches headless, which is also its folder in Puppeteer's cache. */
+const PUPPETEER_BROWSER = 'chrome-headless-shell';
+
+/** What installs that browser: `.npmrc` keeps `npm ci` from doing it (UAMS-Web/uams-statamic#457). */
+const PUPPETEER_BROWSER_INSTALL = `npx --no-install puppeteer browsers install ${PUPPETEER_BROWSER}`;
+
+/**
+ * The browser version the installed Puppeteer asks for, read from the source that pins it
+ * (UAMS-Web/uams-statamic#457). The file is an ES module, so it is read as text: `status` is
+ * synchronous, and importing a dependency would run its code in every tree.
+ *
+ * @param  ?string  $revisions  The text of Puppeteer's `revisions.js`
+ * @return ?string
+ */
+export function pinnedBrowserVersion(revisions) {
+    return revisions?.match(new RegExp(`['"]${PUPPETEER_BROWSER}['"]:\\s*['"]([^'"]+)['"]`))?.[1] ?? null;
+}
+
+/**
+ * Whether the browser the tree's Puppeteer asks for is in the machine's Puppeteer cache.
+ *
+ * `ignore-scripts=true` in `.npmrc` keeps Puppeteer's postinstall from running, so `npm ci` never
+ * downloads the browser. The cache is per machine and per user, not per tree, and resolves as
+ * Puppeteer's own `getConfiguration()` does. It holds `<browser>/<platform>-<version>`, and this
+ * checks that folder exists, so a download interrupted part way through still reads as installed.
+ *
+ * @param  string  $treePath
+ * @param  {{PUPPETEER_CACHE_DIR?: string}}  $env
+ * @param  string  $home
+ * @return {{version: ?string, installed: bool}}
+ */
+export function puppeteerBrowserStateOf(treePath, env = process.env, home = homedir()) {
+    const revisions = join(treePath, 'node_modules', 'puppeteer-core', 'lib', 'puppeteer', 'revisions.js');
+    const version = pinnedBrowserVersion(existsSync(revisions) ? readFileSync(revisions, 'utf8') : null);
+    const root = join(env.PUPPETEER_CACHE_DIR ?? join(home, '.cache', 'puppeteer'), PUPPETEER_BROWSER);
+
+    return {
+        version,
+        installed: version !== null && existsSync(root) && readdirSync(root).some((name) => name.endsWith(`-${version}`)),
+    };
+}
+
+/**
+ * Why a tree cannot render a news-release PDF, or null when it can (UAMS-Web/uams-statamic#457).
+ *
+ * A null state is a tree the probe was not run on. An unread version is reported rather than
+ * passed: a Puppeteer upgrade that moves the pin must not turn this check silently clean.
+ *
+ * @param  {{version: ?string, installed: bool}|null}  $browser
+ * @return ?string
+ */
+export function puppeteerBrowserNotice(browser) {
+    if (!browser || browser.installed) {
+        return null;
+    }
+
+    return browser.version === null
+        ? 'Puppeteer browser: could not read the version Puppeteer asks for'
+        : `Puppeteer browser: ${PUPPETEER_BROWSER} ${browser.version} is not installed, so news release PDFs fail; run \`${PUPPETEER_BROWSER_INSTALL}\``;
 }
 
 /**
@@ -1086,9 +1151,8 @@ function composerHashOf(treePath) {
 /**
  * The patch set a tree DECLARES, as `patches.lock.json`'s own `_hash`.
  *
- * Read through `readPatchLockHash` rather than hashing the file, because that is the hash
- * `local-ci.mjs` stamps — sharing the derivation is what lets the two gates agree about what
- * "the same patch set" means.
+ * Read through `readPatchLockHash` rather than hashing the file, so the stamp this script writes
+ * and the value it compares against share one derivation of what "the same patch set" means.
  *
  * Neither lockfile can stand in for this. A patch is declared in `composer.json`'s
  * `extra.patches` and lives in `patches/*.patch`, so adding one moves `composer.lock` not at
@@ -1409,7 +1473,7 @@ function submoduleStateOf(treePath) {
  * variable is a reported state, not a silent skip: the check going quiet is exactly the failure
  * this exists to prevent.
  */
-const PINNED_PACKAGE = 'uams-web/wordpress-importer';
+const PINNED_PACKAGE = 'uams-web/aether-wordpress-importer';
 const PINNED_CLONE_ENV = 'UAMS_WORDPRESS_IMPORTER_CLONE';
 
 /**
@@ -1583,6 +1647,7 @@ function inspect(repoRoot) {
             // Only over an initialized `content/`: an absent one is already a submodule drift line,
             // and the walk would fail on a directory that is not there
             contentMirror: existsSync(join(tree.path, 'content', '.git')) ? contentMirrorStateOf(tree.path) : null,
+            puppeteerBrowser: puppeteerBrowserStateOf(tree.path),
         });
 
         return {

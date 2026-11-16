@@ -58,8 +58,8 @@ it('writes the state enum from the TIGERweb records and reports the path', funct
 
     expect($layers)->toBe([0])
         ->and($written->php)->toContain("case AR = 'AR';")
-        ->and($output)->toStartWith("Fetching TIGERweb state attributes...\n")
-        ->and($output)->toContain('Wrote '.$written->path."\n");
+        ->and($output)->toStartWith('Fetching TIGERweb state attributes...'.PHP_EOL)
+        ->and($output)->toContain('Wrote '.$written->path.PHP_EOL);
 });
 
 it('reports a failed state fetch and exits 1 without writing', function (): void {
@@ -89,8 +89,8 @@ it('writes the county enum from the TIGERweb records and reports the path', func
 
     expect($layers)->toBe([1, 55])
         ->and($written->php)->toContain('05119')
-        ->and($output)->toStartWith("Fetching TIGERweb county data...\n")
-        ->and($output)->toContain('Wrote '.$written->path."\n");
+        ->and($output)->toStartWith('Fetching TIGERweb county data...'.PHP_EOL)
+        ->and($output)->toContain('Wrote '.$written->path.PHP_EOL);
 });
 
 it('reports a failed county fetch and exits 1 without writing', function (): void {

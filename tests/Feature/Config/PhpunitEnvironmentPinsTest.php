@@ -86,8 +86,9 @@ function environmentSeenByChild(string $phpunitXml, array $environment, array $n
     // loads only the environment and configuration bootstrap classes.
     $script = <<<'PHP'
         require $argv[1].'/vendor/autoload.php';
-        $configuration = (new PHPUnit\TextUI\XmlConfiguration\Loader)->load($argv[2]);
-        (new PHPUnit\TextUI\Configuration\PhpHandler)->handle($configuration->php());
+        $emitter = PHPUnit\Event\Facade::emitter();
+        $configuration = (new PHPUnit\TextUI\XmlConfiguration\Loader($emitter))->load($argv[2]);
+        (new PHPUnit\TextUI\Configuration\PhpHandler($emitter))->handle($configuration->php());
         $app = require $argv[1].'/bootstrap/app.php';
         $app->bootstrapWith([
             Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,

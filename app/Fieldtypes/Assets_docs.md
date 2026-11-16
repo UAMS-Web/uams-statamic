@@ -231,7 +231,7 @@ The fieldtype includes comprehensive unit tests that verify:
 - Statamic CMS
 - Laravel Framework
 - `App\Fieldtypes\Traits\ConfigSectionWrapper` trait
-- `UAMSWeb\FormSettings\Fieldtypes\Traits\FormBlueprintContext` trait (from `uams-web/statamic-form-settings`)
+- `UAMSWeb\Aether\Forms\Settings\Fieldtypes\Traits\FormBlueprintContext` trait (from `uams-web/aether-form-settings`)
 - `App\Enums\MimeType` enum
 
 ## Notes

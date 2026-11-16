@@ -12,14 +12,14 @@ use Statamic\Facades\Blueprint;
 use Statamic\Fields\BlueprintRepository;
 use Tests\Support\ThrowawayRoot;
 use Tests\TestCase;
-use UAMSWeb\AlpineCspForms\JsDrivers\AlpineCsp;
+use UAMSWeb\Aether\Forms\AlpineCsp\JsDrivers\AlpineCsp;
 
 use function Pest\Laravel\get;
 
 uses(TestCase::class);
 
 /**
- * The host side of the `uams-web/statamic-alpine-csp-forms` add-on (UAMS-Web/uams-statamic-archive#3073).
+ * The host side of the `uams-web/aether-alpine-csp-forms` add-on (UAMS-Web/uams-statamic-archive#3073).
  *
  * The CSP-safe `alpine_csp` driver and its field-conditions evaluator moved from
  * this app into the add-on, which carries their own tests. What stays here is what
@@ -33,7 +33,7 @@ uses(TestCase::class);
 const ALPINE_CSP_ADDON_FORM_HANDLE = 'alpine_csp_addon_conditions';
 
 /** The URL the add-on's front-end script is published at. */
-const ALPINE_CSP_ADDON_SCRIPT = '/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js';
+const ALPINE_CSP_ADDON_SCRIPT = '/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js';
 
 $alpineCspAddonFormsDir = '';
 
@@ -117,6 +117,15 @@ it('loads the add-on script before the bundle that starts alpine', function (str
     expect(substr_count($template, $bundle))->toBe(1);
     expect(strpos($template, $script))->toBeLessThan((int) strpos($template, $bundle));
 
+    // ---
+    // `$showField` forwards to `Statamic.$conditions.showField()`, which `helpers.js`
+    // defines, so that tag comes first. Without it every conditional field shows (#189).
+    // ---
+    $evaluator = '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script>';
+
+    expect(substr_count($template, $evaluator))->toBe(1);
+    expect(strpos($template, $evaluator))->toBeLessThan((int) strpos($template, $script));
+
     // The bundle the tag precedes is the one carrying site.js.
     expect($template)->toContain("merge_array(['resources/js/site.js'])");
 })->with([
@@ -125,8 +134,8 @@ it('loads the add-on script before the bundle that starts alpine', function (str
 ]);
 
 it('points the layout at the path the add-on publishes its script to', function (): void {
-    // The add-on publishes resources/dist/frontend into public/vendor/statamic-alpine-csp-forms/frontend.
-    $source = base_path('vendor/uams-web/statamic-alpine-csp-forms/resources/dist/frontend/alpine-csp.js');
+    // The add-on publishes resources/dist/frontend into public/vendor/aether-alpine-csp-forms/frontend.
+    $source = base_path('vendor/uams-web/aether-alpine-csp-forms/resources/dist/frontend/alpine-csp.js');
 
     expect(File::exists($source))->toBeTrue();
     expect(File::get($source))->toContain('alpine:init');

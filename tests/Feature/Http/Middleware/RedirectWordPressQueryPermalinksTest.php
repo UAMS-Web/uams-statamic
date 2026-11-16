@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Exceptions\SiteHttpException;
 use App\Http\Middleware\RedirectWordPressQueryPermalinks;
-use App\Support\Redirects\RedirectStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Statamic\Facades\GlobalSet;
@@ -12,6 +10,8 @@ use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException;
+use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
 
 /**
  * Feature coverage for {@see RedirectWordPressQueryPermalinks} (UAMS-Web/uams-statamic-archive#1657).
@@ -229,8 +229,8 @@ it('raises an empty message for a gone rule that carries none', function (): voi
 });
 
 it('raises the site-rendered exception for every targetless code it serves', function (string $response, int $status): void {
-    // `ABORT_RESPONSES` and `RespondWithStatus::SITE_RENDERED_CODES` must stay the
-    // same set: a code in one but not the other renders through the wrong path.
+    // `ABORT_RESPONSES` and the codes the add-on's 404 resolver renders must stay
+    // the same set: a code in one but not the other renders through the wrong path.
     seedQueryPermalinkRows([queryPermalinkRow(['response' => $response, 'target_url' => null])]);
 
     $thrown = null;

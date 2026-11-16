@@ -24,6 +24,7 @@ use Statamic\Search\QueryBuilder as SearchQueryBuilder;
 use Statamic\Search\Result;
 use Tests\Support\Doubles\RecordingCallerSearchScope;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Search\Tags\AetherSearch;
 
 use function Pest\Laravel\actingAs;
 
@@ -195,17 +196,18 @@ it('leaves the query untouched when no entry is private', function (): void {
     expect($query->count())->toBe(1);
 });
 
-it('keeps a private entry out of the rendered results listing, alongside a caller scope', function (?string $callerScope): void {
-    $private = privateSearchEntry('people', 'janice-rand', 'Janice Rand', 'private');
-    $public = privateSearchEntry('people', 'leonard-mccoy', 'Leonard McCoy', 'published');
-
-    // A stubbed index whose search returns both entries by reference, so the tag's
-    // own pipeline (status, scopes, pagination, cards) runs over real entries
+/**
+ * Answer every search with these entries, by reference, so the tag's own pipeline
+ * (status, scopes, pagination, cards) runs over real entries.
+ *
+ * @param  list<string>  $ids  The entry ids.
+ */
+function stubSearchHitsFor(array $ids): void
+{
     $index = Mockery::mock(Index::class);
     $index->shouldReceive('name')->andReturn('default');
     $index->shouldReceive('ensureExists')->andReturnSelf();
     $index->shouldReceive('extraAugmentedResultData')->andReturn([]);
-    $ids = [mustBeString($private->id(), 'id'), mustBeString($public->id(), 'id')];
     $index->shouldReceive('search')->andReturnUsing(function (string $query) use ($index, $ids): SearchQueryBuilder {
         $builder = new class($index, $ids) extends SearchQueryBuilder
         {
@@ -230,14 +232,21 @@ it('keeps a private entry out of the rendered results listing, alongside a calle
         return $builder;
     });
     Search::shouldReceive('index')->andReturn($index);
+}
+
+it('keeps a private entry out of the rendered results listing, alongside a caller scope', function (?string $callerScope): void {
+    $private = privateSearchEntry('people', 'janice-rand', 'Janice Rand', 'private');
+    $public = privateSearchEntry('people', 'leonard-mccoy', 'Leonard McCoy', 'published');
+
+    stubSearchHitsFor([mustBeString($private->id(), 'id'), mustBeString($public->id(), 'id')]);
 
     app()->instance('request', Request::create('/search', 'GET', ['q' => 'rand']));
     app('statamic.scopes')->put('recording_caller_search_scope', RecordingCallerSearchScope::class);
     RecordingCallerSearchScope::$applied = false;
 
     $html = (string) Antlers::parse(
-        '{{ partial:search/results index="default" :query_scope="caller_scope" }}',
-        ['caller_scope' => $callerScope]
+        '{{ partial:aether-search::listing/results index="default" :query_scope="caller_scope" :always_scope="always_scope" }}',
+        ['caller_scope' => $callerScope, 'always_scope' => config('aether-search.always_scope')]
     );
 
     expect($html)->toContain('Leonard McCoy')
@@ -247,3 +256,37 @@ it('keeps a private entry out of the rendered results listing, alongside a calle
     'no caller scope' => [null],
     'a caller scope' => ['recording_caller_search_scope'],
 ]);
+
+it('keeps a private entry off the rendered page, in site and knowledge-base search', function (array $query): void {
+    $private = privateSearchEntry('people', 'janice-rand', 'Janice Rand', 'private');
+    $public = privateSearchEntry('people', 'leonard-mccoy', 'Leonard McCoy', 'published');
+
+    stubSearchHitsFor([mustBeString($private->id(), 'id'), mustBeString($public->id(), 'id')]);
+
+    // The subtree scope would find nothing here, and the page's own wiring is the subject
+    app('statamic.scopes')->put('recording_caller_search_scope', RecordingCallerSearchScope::class);
+    config(['aether-search.scoped.query_scope' => 'recording_caller_search_scope']);
+
+    expect(renderAetherSearchPage($query))
+        ->toContain('Leonard McCoy')
+        ->not->toContain('Janice Rand');
+})->with([
+    'site search' => [['q' => 'rand']],
+    'knowledge-base search' => [['q' => 'rand', 'index' => 'knowledge_bases', 'kb_scope' => 'root-id']],
+]);
+
+it('labels a real entry hit by its collection and finds its type card', function (): void {
+    $public = privateSearchEntry('people', 'leonard-mccoy', 'Leonard McCoy', 'published');
+
+    stubSearchHitsFor([mustBeString($public->id(), 'id')]);
+
+    expect(renderAetherSearchPage(['q' => 'mccoy']))
+        ->toContain('<p class="search-result-type text-uppercase text-muted small mb-1">Person</p>');
+
+    // On a hit `collection` is the Collection object, not its handle
+    $tag = new AetherSearch;
+    $tag->setContext([]);
+    $tag->setParameters(['collection' => $public->collection()]);
+
+    expect($tag->card())->toBe('aether-search::cards/people');
+});

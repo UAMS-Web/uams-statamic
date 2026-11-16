@@ -6,6 +6,7 @@ use App\Search\AreaOfExpertiseSectionDocument;
 use App\Search\AreaOfExpertiseSectionProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\View;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection as CollectionFacade;
@@ -183,13 +184,13 @@ it('types the result and keeps a published, current-site subpage past the tag fi
 
 it('dispatches AoE-section hits by result_type to the escaping section card', function (): void {
     // The listing renders each hit through the `_result` partial, which holds the dispatch.
-    $listing = File::get(resource_path('views/search/_results.antlers.html'));
-    $result = File::get(resource_path('views/search/_result.antlers.html'));
+    $listing = File::get(base_path('vendor/uams-web/aether-search/resources/views/listing/_results.antlers.html'));
+    $result = File::get(base_path('vendor/uams-web/aether-search/resources/views/listing/_result.antlers.html'));
 
-    expect($listing)->toContain('partial:search/result')
+    expect($listing)->toContain('partial:aether-search::listing/result')
         ->and($result)
-        ->toContain("result_type == 'clinical_expertise_section'")
-        ->toContain('partial:search/cards/clinical_expertise_section');
+        ->toContain('aether_search:card :result_type="result_type"')
+        ->and(View::exists('aether-search::cards._clinical_expertise_section'))->toBeTrue();
 });
 
 it('renders the section card as a link to the subpage URL, escaping the title', function (): void {
@@ -197,7 +198,7 @@ it('renders the section card as a link to the subpage URL, escaping the title', 
     // is raw by default.
     $doc = new AreaOfExpertiseSectionDocument('id-1', 'locations', '<b>Cancer</b> — Related Clinical Locations', '/cancer-care/locations', 'default');
 
-    $card = File::get(resource_path('views/search/cards/_clinical_expertise_section.antlers.html'));
+    $card = File::get(resource_path('views/vendor/aether-search/cards/_clinical_expertise_section.antlers.html'));
     $out = (string) Antlers::parse($card, $doc->augmentedArrayData(), true);
 
     expect($out)->toContain('href="/cancer-care/locations"')

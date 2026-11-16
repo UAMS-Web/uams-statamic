@@ -104,11 +104,9 @@ class Today extends Tags
         // Extract full year (e.g., "2025")
         $year = $date->format('Y');
 
-        // Resolve running-text AP month label from the full English name.
-        // Carbon's `F` always matches an enum case, so the nullsafe never sees
-        // null on this path (defensive only).
-        // @pest-mutate-ignore: RemoveNullSafeOperator
-        $monthAbbr = ApStyleGregorianMonth::tryFrom($month)?->runningTextLabel(true) ?? $month;
+        // Resolve running-text AP month label from the full English name, which
+        // Carbon's `F` always gives, so every value is an enum case.
+        $monthAbbr = ApStyleGregorianMonth::from($month)->runningTextLabel(true);
 
         // Return formatted date string
         return sprintf('%s %s, %s', $monthAbbr, $day, $year);

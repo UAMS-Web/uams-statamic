@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Facades\URL;
 use Statamic\Globals\Variables;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException;
+use UAMSWeb\Aether\Redirects\Services\NotFoundRedirectResolver;
 
 /**
  * End-to-end coverage for serving a stored redirect rule (UAMS-Web/uams-statamic-archive#1933 / UAMS-Web/uams-statamic-archive#1934).
  *
- * The tag tests drive `FindRedirectRule` directly; this file drives the rest of
- * the chain — the real `errors/_redirects` partial, rendered through the real
- * view engine, and the response it aborts with. That is the only place the
- * partial's own branches run, so a rule whose match is correct but whose target
- * the partial drops still fails here.
+ * A rule is served by the `uams-web/aether-redirects` add-on's
+ * {@see NotFoundRedirectResolver}, which answers a request that is about to render
+ * a 404 (#398). This file drives it against this site's own rules, error views and
+ * layout, so a rule the site stores but the add-on serves wrongly still fails here.
  *
- * The partial is rendered rather than requested over HTTP because the isolated
- * Stache base fakes the item filesystem, which a full kernel pass discards; the
- * `current_uri` handed in is derived exactly as `Statamic\View\Cascade` derives it.
+ * The resolver is called rather than requested over HTTP because the isolated
+ * Stache base fakes the item filesystem, which a full kernel pass discards.
  *
  * @command  php artisan test --compact tests/Feature/Redirects/RedirectServingTest.php
  */
@@ -85,41 +85,31 @@ function storedRedirectRule(string $source, array $overrides = []): array
 }
 
 /**
- * Render the redirects partial for a request URI and report what it produced.
+ * Ask the add-on's 404 resolver what it answers a request URI with.
  *
  * @param  string  $requestUri  The request URI, query string included
- * @return array{status: int, location: string|null} The status and Location the partial aborted with
+ * @return array{status: int, location: string|null} The status and Location it answered with, or 200 when it left the 404 to render
  */
 function serveRedirectFor(string $requestUri): array
 {
-    // Bind the request the tag reads its path and query string from.
+    // Bind the request the resolver reads its path, query string and site from.
     $request = Request::create($requestUri);
     app()->instance('request', $request);
 
-    // Derive current_uri exactly as the Statamic cascade does.
-    $currentUri = URL::tidy($request->path());
+    $response = app(NotFoundRedirectResolver::class)->responseFor($request);
 
-    try {
-        // Render the real partial; a match aborts out of the render.
-        view('errors/_redirects', ['current_uri' => $currentUri])->render();
-    } catch (HttpResponseException $e) {
-        // A move: the redirect tag aborted with a redirect response.
+    // No answer, so the 404 render carries on.
+    if ($response === null) {
         return [
-            'status' => $e->getResponse()->getStatusCode(),
-            'location' => $e->getResponse()->headers->get('Location'),
-        ];
-    } catch (HttpException $e) {
-        // A targetless error response from respond_with_status.
-        return [
-            'status' => $e->getStatusCode(),
+            'status' => 200,
             'location' => null,
         ];
     }
 
-    // Nothing matched, so the 404 render would have continued.
+    // A move carries its target; a targetless error page carries none.
     return [
-        'status' => 200,
-        'location' => null,
+        'status' => $response->getStatusCode(),
+        'location' => $response->isRedirection() ? $response->headers->get('Location') : null,
     ];
 }
 
@@ -127,9 +117,9 @@ function serveRedirectFor(string $requestUri): array
  * Render the body-side message partial for `$requestUri` and return its output.
  *
  * The 404 template includes this inside `layout/entry-content`, where a `404`
- * rule's message is actually visible; `errors/_redirects` deliberately renders
- * nothing for that code. Rendered directly for the same reason the partial above
- * is — see this file's header.
+ * rule's message is actually visible; the resolver leaves a `404` rule alone.
+ * Rendered directly for the same reason the resolver is called directly; see this
+ * file's header.
  *
  * @param  string  $requestUri  The request URI, query string included
  * @return string The partial's rendered output
@@ -319,20 +309,10 @@ it('serves the corpus regex shape that optionally captures a query', function ()
     ]);
 });
 
-it('does not abort on a 404 rule, because aborting re-enters the 404 page', function (): void {
-    // `404` is the one response code this partial must NOT abort with, and the
-    // reason is specific rather than stylistic. `abort(404)` raises a plain Symfony
-    // NotFoundHttpException, which carries no `render()`, so Laravel falls through
-    // to `Handler::renderHttpException()` — and that resolves `errors::404` to this
-    // partial's own parent view and renders it inside a try/catch. The rule matches
-    // and aborts a second time, and the catch either rethrows (a 500 under
-    // `app.debug`) or answers from the ORIGINAL exception, discarding the message
-    // either way. Measured against the running site: HTTP 500 with debug on, a
-    // generic error page with it off, and the message never rendered once.
-    //
-    // Not aborting is what makes it work: the partial only ever runs while the 404
-    // page is being built, so the response is already 404 and the rule's message is
-    // rendered into the body by `errors/_redirect_message` instead.
+it('leaves a 404 rule to the 404 page', function (): void {
+    // A `404` rule answers nothing: the response is already 404, and the rule's
+    // message is rendered into the 404 page's body by `errors/_redirect_message`
+    // (UAMS-Web/uams-statamic-archive#1934).
     seedRedirectRules([
         storedRedirectRule('/retired-page', [
             'target_url' => '',
@@ -341,8 +321,7 @@ it('does not abort on a 404 rule, because aborting re-enters the 404 page', func
         ]),
     ]);
 
-    // 200 is this helper's "the partial aborted with nothing", i.e. the 404 render
-    // it was called from carries on — which is the whole point.
+    // 200 is this helper's "no answer": the 404 page renders.
     expect(serveRedirectFor('/retired-page'))->toBe([
         'status' => 200,
         'location' => null,
@@ -350,9 +329,8 @@ it('does not abort on a 404 rule, because aborting re-enters the 404 page', func
 });
 
 it('does not let a 404 rule redirect to its target either', function (): void {
-    // The inert branch has to swallow the rule, not merely skip the abort. Falling
-    // through to the `target_type == 'url'` arm would turn a rule authored to stay
-    // put into a redirect.
+    // A rule authored to stay put must not become a redirect because it has a
+    // target.
     seedRedirectRules([
         storedRedirectRule('/retired-page', [
             'target_url' => '/somewhere-else',
@@ -368,8 +346,8 @@ it('does not let a 404 rule redirect to its target either', function (): void {
 });
 
 it('renders a 404 rule message into the page body', function (): void {
-    // The other half of the fix: the message the abort used to carry is rendered by
-    // `errors/_redirect_message`, which the 404 template includes inside its body.
+    // The message is rendered by `errors/_redirect_message`, which the 404
+    // template includes inside its body.
     seedRedirectRules([
         storedRedirectRule('/retired-page', [
             'target_url' => '',
@@ -458,7 +436,34 @@ it('still renders the other targetless error responses', function (string $code,
         ]),
     ]);
 
-    expect(serveRedirectFor('/blocked-page')['status'])->toBe($status);
+    // The site's error page needs the full layout, which the isolated Stache base
+    // cannot render; `TargetlessErrorPageTest` renders it through the real
+    // handler. Here the handler only records what the resolver hands it.
+    $handler = new class implements ExceptionHandler
+    {
+        public ?Throwable $rendered = null;
+
+        public function report(Throwable $e): void {}
+
+        public function shouldReport(Throwable $e): bool
+        {
+            return false;
+        }
+
+        public function render($request, Throwable $e): Response
+        {
+            $this->rendered = $e;
+
+            return new Response('', $e instanceof SiteHttpException ? $e->getStatusCode() : 500);
+        }
+
+        public function renderForConsole($output, Throwable $e): void {}
+    };
+    app()->instance(ExceptionHandler::class, $handler);
+
+    expect(serveRedirectFor('/blocked-page')['status'])->toBe($status)
+        ->and($handler->rendered)->toBeInstanceOf(SiteHttpException::class)
+        ->and($handler->rendered?->getMessage())->toBe('Nope.');
 })->with([
     'forbidden' => ['403', 403],
     'gone' => ['410', 410],

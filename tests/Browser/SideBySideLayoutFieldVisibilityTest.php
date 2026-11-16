@@ -205,24 +205,25 @@ function sxsSelectLayout($page, string $layout): void
 }
 
 /**
- * Snooze Statamic's trial-mode licensing alert when it opens. It is a modal over the
- * publish form, so every click on a field behind it times out.
+ * Type a value into a field and confirm the field holds it.
+ *
+ * A fill() reports success even when the text went nowhere: the run that #507 records
+ * had `button_text` empty 30 seconds after filling it, because the licensing alert
+ * had opened over the form and held focus. loginToCp() now keeps that alert closed,
+ * and this check fails at the fill, naming where focus was, if a value is lost again.
  *
  * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
  */
-function sxsDismissLicensingAlert($page): void
+function sxsFill($page, string $handle, string $value): void
 {
-    for ($waited = 0.0; $waited <= 3.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
+    $page->fill('#field_base_'.$handle, $value);
 
-        if ($open === true) {
-            $page->click('Snooze');
+    $held = $page->script('(() => { const input = document.getElementById('.json_encode('field_base_'.$handle).');'
+        .' return input ? input.value : null; })()');
+    $focus = $page->script('(() => { const focused = document.activeElement;'
+        .' return focused ? (focused.id || focused.tagName + "." + String(focused.className).slice(0, 60)) : null; })()');
 
-            break;
-        }
-
-        $page->wait(0.2);
-    }
+    expect($held)->toBe($value, "{$handle} after fill(), focus on ".var_export($focus, true));
 }
 
 beforeEach(function (): void {
@@ -267,7 +268,6 @@ it('shows each Side-by-Side layout its own fields in the Control Panel, the two 
         ->navigate('/cp/collections/'.SXS_VISIBILITY_COLLECTION.'/entries/create/default');
 
     waitToSee($page, 'Text Configuration', 20.0);
-    sxsDismissLicensingAlert($page);
 
     // Every conditional field must have rendered a label, or its visibility is unread.
     expect(sxsRenderedFields($page))->toBe(SXS_CONDITIONAL_FIELDS);
@@ -281,7 +281,7 @@ it('shows each Side-by-Side layout its own fields in the Control Panel, the two 
     }
 
     // Button text shows the button's other three fields.
-    $page->fill('#field_base_button_text', 'Learn More');
+    sxsFill($page, 'button_text', 'Learn More');
     sxsAssertVisible($page, sxsExpectedVisible('paragraph_and_button', true, false), 'paragraph_and_button, with button text');
 
     // The plain blockquote hides all five button fields, though the button text holds
@@ -290,14 +290,14 @@ it('shows each Side-by-Side layout its own fields in the Control Panel, the two 
     sxsAssertVisible($page, sxsExpectedVisible('blockquote_with_citation', true, false), 'blockquote_with_citation');
 
     // The speaker title waits for a speaker name.
-    $page->fill('#field_base_speaker_name', 'Michael Miller, DC, MS');
+    sxsFill($page, 'speaker_name', 'Michael Miller, DC, MS');
     sxsAssertVisible($page, sxsExpectedVisible('blockquote_with_citation', true, true), 'blockquote_with_citation, with a speaker name');
 
     // The with-link blockquote shows all five button fields and its own quote.
     sxsSelectLayout($page, 'blockquote_with_citation_and_link');
     sxsAssertVisible($page, sxsExpectedVisible('blockquote_with_citation_and_link', true, true), 'blockquote_with_citation_and_link');
 
-    $page->fill('#field_base_speaker_name', '');
+    sxsFill($page, 'speaker_name', '');
     sxsAssertVisible($page, sxsExpectedVisible('blockquote_with_citation_and_link', true, false), 'blockquote_with_citation_and_link, speaker name cleared');
 
     // Back through the other layouts with button text set: each still shows only its own.

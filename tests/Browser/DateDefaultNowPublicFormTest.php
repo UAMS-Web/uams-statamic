@@ -47,7 +47,7 @@ function writeDateDefaultNowBrowserFixture(string $viewsDir): void
     File::put(dateDefaultNowBrowserFixturePath(), implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Date default now fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Date default now fixture</h1>',
         (string) View::make('date_default_now_browser::form')->render(),
         '</body></html>',

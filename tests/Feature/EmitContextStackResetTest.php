@@ -52,7 +52,7 @@ function emitContextStackResetContext(?string $atId = null): SchemaTemplateEmitC
  */
 function runEmitContextStackReset(TestCase $testCase): void
 {
-    Closure::bind(fn () => $this->resetAntlersRuntimeState(), $testCase, TestCase::class)();
+    (new ReflectionMethod(TestCase::class, 'resetAntlersRuntimeState'))->invoke($testCase);
 }
 
 afterEach(function (): void {

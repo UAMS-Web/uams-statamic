@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Support\Forms\FormRequestContext;
 use App\Tags\GlobalOrigin;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Contracts\Data\Localization;
@@ -11,6 +10,7 @@ use Statamic\Contracts\Globals\Variables as GlobalVariablesContract;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Tests\TestCase;
+use UAMSWeb\Aether\Forms\Settings\Support\FormRequestContext;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 

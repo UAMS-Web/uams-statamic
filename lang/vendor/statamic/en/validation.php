@@ -471,11 +471,6 @@ return [
     ],
     'latitude' => 'The value must be a decimal number between -90.0 and 90.0.',
     'legal_entity_identifier' => 'The value must be a valid Legal Entity Identifier with exactly 18 uppercase alphanumeric characters followed by exactly two digits (e.g., \'123456789ABCDEFGHI12\').',
-    'likert_scale' => [
-        'not_on_scale' => 'Choose a rating from the scale.',
-        'row_label_required' => 'Each row label must have a value.',
-        'unknown_row' => 'Rate only the rows this question lists.',
-    ],
     'longitude' => 'The value must be a decimal number between -180.0 and 180.0.',
     'luhn' => [
         'format' => 'The value must contain only numeric digits for Luhn algorithm validation.',
@@ -502,14 +497,6 @@ return [
             'unverified' => 'The value is not a valid PubMed Identifier or could not be verified due to an API error.',
         ],
         'pubmed_author_id' => 'The value must be a valid PubMed Author Identifier. If using the last name plus initials, the value must begin with the author\'s last name followed by a space and the initials without punctuation (e.g., "o\'brien ja" or "de vries ja"). If using the full name, the value must be the author\'s name in natural order (e.g., "john a o\'brien" or "john a de vries") or inverted order without punctuation other than an optional comma after the last name (e.g., "o\'brien john a" or "de vries, john a").',
-    ],
-    'quiz_answer' => [
-        'array' => 'The quiz answers must be an array.',
-        'not_an_option' => 'Choose an answer from the ones this question offers.',
-        'marked_correct' => [
-            'exactly_one' => 'Exactly one answer must be marked as correct.',
-            'at_least_one' => 'At least one answer must be marked as correct.',
-        ],
     ],
     'replicator' => [
         'at_least_one_enabled_set' => 'At least one set must be enabled.',

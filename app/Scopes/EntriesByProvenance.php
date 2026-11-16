@@ -104,6 +104,8 @@ class EntriesByProvenance extends Scope
             }
 
             $suffix = strtolower(substr($queryScope, \strlen($prefix)));
+            // A string suffix cannot loosely equal a different nonnumeric allowed value.
+            // @pest-mutate-ignore:TrueToFalse
             if (\in_array($suffix, self::PROVENANCES, true)) {
                 $provenances[] = $suffix;
             }
@@ -111,6 +113,8 @@ class EntriesByProvenance extends Scope
 
         unset($queryScope);
 
+        // whereIn() selects the same records regardless of duplicate values or keys.
+        // @pest-mutate-ignore:UnwrapArrayUnique,UnwrapArrayValues
         return array_values(array_unique($provenances));
     }
 }

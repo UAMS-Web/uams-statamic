@@ -18,9 +18,10 @@ use Symfony\Component\Yaml\Yaml;
  *   pull request is skipped rather than spending a runner. An `edited` event
  *   clears it only when the body changed and the sender is not a bot, so a
  *   title-only edit, or a bot rewriting the body, leaves it in place.
- * - It is not gated on `RUN_REMOTE_CI`, unlike the jobs `ci.yml` aggregates. That
- *   switch is off for months at a time, and gating on it would bring back the
- *   missed removal for exactly that long.
+ * - It is gated on `RUN_REMOTE_CI` only in the shared form, `!= 'false'`, which
+ *   still runs while the variable is unset (UAMS-Web/uams-claude-skills#416). Any
+ *   form that stops it while the switch is unset would bring back the missed
+ *   removal for as long as the switch stays that way.
  *
  * The workflow is a byte copy of the synced `handed-back-label` skill's
  * template, which is shared with `uamswp-migration-api` and
@@ -70,16 +71,31 @@ function clearHandedBackJob(): array
     return $job;
 }
 
+/**
+ * The job's condition with the shared `RUN_REMOTE_CI` gate removed from its front.
+ *
+ * The synced template puts `vars.RUN_REMOTE_CI != 'false' && ` before the job's own
+ * condition (UAMS-Web/uams-claude-skills#416), and the copy before that sync has no gate,
+ * so both read the same here.
+ */
+function clearHandedBackJobCondition(): mixed
+{
+    $condition = clearHandedBackJob()['if'] ?? null;
+    $gate = "vars.RUN_REMOTE_CI != 'false' && ";
+
+    return is_string($condition) && str_starts_with($condition, $gate) ? substr($condition, strlen($gate)) : $condition;
+}
+
 it('triggers on a pull request push or edit and on nothing else', function (): void {
     expect(clearHandedBackWorkflow()['on'] ?? null)->toBe(['pull_request' => ['types' => ['synchronize', 'edited']]]);
 });
 
 it('runs its job only when the pull request carries handed-back', function (): void {
-    expect(clearHandedBackJob()['if'] ?? null)->toStartWith("contains(github.event.pull_request.labels.*.name, 'handed-back') && ");
+    expect(clearHandedBackJobCondition())->toStartWith("contains(github.event.pull_request.labels.*.name, 'handed-back') && ");
 });
 
 it('clears on an edit only when a non-bot sender changed the body', function (): void {
-    expect(clearHandedBackJob()['if'] ?? null)->toBe(
+    expect(clearHandedBackJobCondition())->toBe(
         "contains(github.event.pull_request.labels.*.name, 'handed-back') "
         ."&& (github.event.action == 'synchronize' "
         ."|| (github.event.action == 'edited' "
@@ -88,16 +104,23 @@ it('clears on an edit only when a non-bot sender changed the body', function ():
     );
 });
 
-it('is not gated on RUN_REMOTE_CI', function (): void {
+it('is ungated, or gated on RUN_REMOTE_CI only in the shared form that runs while it is unset', function (): void {
     $source = file_get_contents(dirname(__DIR__, 3).'/.github/workflows/clear-handed-back.yml');
+    $gate = "vars.RUN_REMOTE_CI != 'false'";
 
-    // Search only the YAML itself, since the header comment names the variable to explain its absence
+    // Search only the YAML itself, since the header comment names the variable
     $code = implode("\n", array_filter(
         explode("\n", (string) $source),
         fn (string $line): bool => ! str_starts_with(ltrim($line), '#'),
     ));
 
-    expect($code)->not->toContain('RUN_REMOTE_CI');
+    // Any other use of the variable, such as `== 'true'`, would stop the job while it is unset
+    expect(str_replace($gate, '', $code))->not->toContain('RUN_REMOTE_CI')
+        ->and(substr_count($code, $gate))->toBeLessThanOrEqual(1);
+
+    // Where the gate is present, it leads the job's condition rather than one branch of it
+    $condition = clearHandedBackJob()['if'] ?? null;
+    expect(! str_contains($code, $gate) || (is_string($condition) && str_starts_with($condition, $gate.' && ')))->toBeTrue();
 });
 
 it('grants no permission beyond editing pull request labels', function (): void {

@@ -13,7 +13,7 @@ use Statamic\Facades\YAML;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
 
 /**
  * UAMS-Web/uams-statamic-archive#1487 / UAMS-Web/uams-statamic-archive#1611 — an audio entry (`posts/audio` or `clinical_resources/audio`) whose selected
@@ -30,7 +30,7 @@ use Tests\TestCase;
  *
  * @command php artisan test --compact tests/Feature/SchemaJsonLdPodcastEpisodeTest.php
  */
-uses(TestCase::class, MockeryPHPUnitIntegration::class);
+uses(EntriesAndTermsIsolatedTestCase::class, MockeryPHPUnitIntegration::class);
 
 /** The `posts/audio` Article content node co-typed as PodcastEpisode when its series is a podcast. */
 const POSTS_AUDIO_ARTICLE_NODE = 'b0b53c78-b13c-4a71-9388-aa68e6adeb93';

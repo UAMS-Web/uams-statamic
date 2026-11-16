@@ -11,7 +11,7 @@ use Statamic\Assets\QueryBuilder;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Stache;
 use Tests\Support\AssetReferenceSweep;
-use Tests\TestCase;
+use Tests\Support\StacheIsolatedTestCase;
 
 /**
  * Exercises `App\Scopes\AssetsByFileType` against a REAL file-backed asset
@@ -23,15 +23,16 @@ use Tests\TestCase;
  * the browser returned NOTHING. A mocked-builder test that only asserts the call
  * shape stays green through that bug; a real query does not.
  *
- * Runs in the `serial` group: `beforeEach` persists a file-backed container whose
- * disk is only `Storage::fake`d in this process (the container-leak convention —
- * see AssetsMinimumDimensionsEnforcementTest, UAMS-Web/uams-statamic-archive#1120).
+ * Runs on `StacheIsolatedTestCase`: `beforeEach` persists a file-backed container
+ * whose disk is only `Storage::fake`d in this process, so the container lands in
+ * this process's own Stache root rather than the shared content mirror (the
+ * container-leak class, UAMS-Web/uams-statamic-archive#1120; #536).
  *
  * @covers \App\Scopes\AssetsByFileType
  *
  * @command  php artisan test --compact tests/Feature/Scopes/AssetsByFileTypeScopeTest.php
  */
-uses(TestCase::class)->group('serial');
+uses(StacheIsolatedTestCase::class);
 
 const FILE_TYPE_CONTAINER = 'file_type_probe';
 const FILE_TYPE_DISK = 'file_type_probe_disk';

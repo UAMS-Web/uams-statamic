@@ -50,7 +50,7 @@ function writeNonFormControlsFixture(string $bodyHtml): string
     File::put($fixture, implode('', [
         '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
         '<title>Non-form Alpine controls fixture</title>',
-        '<script defer src="/vendor/statamic-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
+        '<script defer src="/vendor/statamic/frontend/js/helpers.js"></script><script defer src="/vendor/aether-alpine-csp-forms/frontend/alpine-csp.js"></script><script type="module" src="'.$siteJs.'"></script>',
         '</head><body><h1>Non-form Alpine controls fixture</h1>',
         $bodyHtml,
         '</body></html>',
@@ -412,10 +412,10 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
     // The shipped /search view, rendered with no query. `fetch` is stubbed on the page
     // before anything is typed, so the suggestions come from the stub rather than an
     // index: what is under test is the binding of siteSearchTypeahead's handlers and
-    // ARIA attributes under the CSP build, which resources/js/site-search-typeahead.test.js
+    // ARIA attributes under the CSP build, which the add-on's site-search-typeahead.test.js
     // cannot reach from jsdom. Keys are REAL key presses, not synthetic events, because
     // a browser's own Escape on a search field clears it and only a real press shows it.
-    $page = (string) view('search/index', ['get' => ['index' => 'people']])->render();
+    $page = renderAetherSearchPage(['index' => 'people']);
 
     expect($page)->toContain('x-data="siteSearchTypeahead"')
         ->toContain('data-index="people"');
@@ -445,8 +445,14 @@ it('binds the site-search type-ahead to the /search input, keyboard included', f
     // fires against the index of the page's active tab
     $page->type('#site-search-q', 'card');
 
+    // Wait on what the assertions below read: the options, which x-for renders, AND the
+    // listbox's visibility, which the x-show effect applies. They need not land in the
+    // same read, so polling on the options alone let a macOS run see 3 options in a
+    // listbox still at display:none (#591).
     for ($waited = 0.0; $waited <= 15.0; $waited += 0.2) {
-        if ($page->script('(() => document.querySelectorAll("#site-search-suggestions [role=option]").length)()') === 3) {
+        if ($page->script('(() => { const list = document.querySelector("#site-search-suggestions");'
+            .' return list.querySelectorAll("[role=option]").length === 3'
+            .' && getComputedStyle(list).display !== "none"; })()') === true) {
             break;
         }
 

@@ -1,0 +1,15 @@
+<?php
+
+// The control for scripts/check-one-class-per-file.php (#555). It declares two
+// classes, and the check exits 2 unless it reports SecondShip. The extension keeps
+// it out of the scan, the autoloader and every PHP tool.
+
+namespace Tests\Fixtures\OneClassPerFile;
+
+class FirstShip
+{
+}
+
+class SecondShip
+{
+}

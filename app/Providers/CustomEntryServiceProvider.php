@@ -108,8 +108,7 @@ class CustomEntryServiceProvider extends ServiceProvider
     {
         // Dynamically bind the EntryContract to instantiate the appropriate entry class.
         $this->app->bind(
-            EntryContract::class,
-            function (Container $app, array $parameters): BaseEntry {
+            function (Container $app, array $parameters): EntryContract {
                 // ---
                 // Extract the collection handle from the parameters, defaulting to null if not
                 // provided.

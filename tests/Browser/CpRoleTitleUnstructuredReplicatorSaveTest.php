@@ -36,27 +36,6 @@ use Statamic\Facades\Stache;
 $collectionHandle = 'role_title_unstructured_save';
 
 /**
- * Snooze Statamic's trial-mode licensing alert when it opens. It is a modal
- * over the publish form, so every click behind it times out.
- *
- * @param  AwaitableWebpage|Webpage|PendingAwaitablePage|ArrayablePendingAwaitablePage  $page  The page returned from navigate().
- */
-function roleTitleDismissLicensingAlert($page): void
-{
-    for ($waited = 0.0; $waited <= 3.0; $waited += 0.2) {
-        $open = $page->script('(() => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Snooze"))()');
-
-        if ($open === true) {
-            $page->click('Snooze');
-
-            break;
-        }
-
-        $page->wait(0.2);
-    }
-}
-
-/**
  * Add a row to one of the role title's unstructured replicators by its add button.
  *
  * Each replicator has a single set, so its add button inserts the row with no
@@ -179,7 +158,6 @@ it('keeps a row added to each of the four unstructured replicators through a Con
         ->navigate('/cp/collections/'.$collectionHandle.'/entries/'.$entryId);
 
     waitToSee($page, 'Add ISCO-08 Code', 60.0);
-    roleTitleDismissLicensingAlert($page);
 
     // One row in each replicator; the two reference-webpage replicators share a button label
     roleTitleAddRow($page, 'Add ISCO-08 Code', 0);

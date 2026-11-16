@@ -10,7 +10,7 @@ declare(strict_types=1);
  * specified them as a required host-app step, and they had been documented and
  * never added — so `--source=api` could not run and nothing here noticed.
  *
- * `UAMS-Web/wordpress-importer#982` removed that seam. The address and the key are
+ * `UAMS-Web/wordpress-importer-archive#982` removed that seam. The address and the key are
  * now supplied per run and stored nowhere, because the estate is 26 separate
  * multisite networks each issuing its own key. `Client::fromConfig()` no longer
  * exists; `Client::forRun($baseUrl, $key)` replaced it.
@@ -64,7 +64,7 @@ it('still defines the migration API block, for the paging the importer reads', f
 });
 
 it('does not configure the migration API address or key', function (): void {
-    // Inverted by UAMS-Web/uams-statamic-archive#2358. These were required until UAMS-Web/wordpress-importer#982
+    // Inverted by UAMS-Web/uams-statamic-archive#2358. These were required until UAMS-Web/wordpress-importer-archive#982
     // stopped reading them; re-adding either would present as configuration that
     // does nothing, and would put a credential on disk for a value that is supplied
     // per run and stored nowhere.

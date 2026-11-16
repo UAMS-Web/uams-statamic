@@ -144,9 +144,10 @@ it('disables every option of a read_only radio', function () {
 
 it('disables every option of a read_only likert scale', function () {
     // Likert reads the list-shaped `options` from LikertScale::extraRenderableFieldData(),
-    // not the `value => label` map the shared radio context supplies.
+    // not the `value => label` map the shared radio context supplies. The view ships in
+    // the form settings add-on, so it is found the way a public form finds it.
     $out = (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/likert_scale.antlers.html')),
+        File::get(view('statamic::forms.fields.likert_scale')->getPath()),
         [
             'handle' => 'rating',
             'id' => 'form-rating',

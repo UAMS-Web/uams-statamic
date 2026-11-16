@@ -6,11 +6,11 @@ namespace App\Services\Redirects;
 
 use App\Http\Middleware\RedirectWordPressQueryPermalinks;
 use App\Support\Redirects\MigrationRedirect;
-use App\Support\Redirects\RedirectSource;
-use App\Tags\FindRedirectRule;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Support\Str;
+use UAMSWeb\Aether\Redirects\Support\RedirectSource;
+use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
  * Plans the *structural* WordPress migration redirects (UAMS-Web/uams-statamic-archive#1657).

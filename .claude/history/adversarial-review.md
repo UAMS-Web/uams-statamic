@@ -10,7 +10,7 @@ Observed here: three parallel bands were launched to satisfy a ticket's acceptan
 
 ## Tooling that raises the floor (so the review can reach the ceiling)
 
-Observed on `UAMS-Web/wordpress-importer#739`, where two "survivors" were `perl` substitutions that never fired — re-run with an asserted replacement, both were killed.
+Observed on `UAMS-Web/wordpress-importer-archive#739`, where two "survivors" were `perl` substitutions that never fired — re-run with an asserted replacement, both were killed.
 
 Measured on Windows against `v5.0.2`, one class in one tree: the two forward-slashed forms reported `20 tested, 0 untested, 100.00%` while two separator-correct forms reported `14 tested, 6 untested, 70.00%` (UAMS-Web/uams-statamic-archive#2322).
 
