@@ -1,35 +1,35 @@
 {
-    "_hash": "8d5c17a887f57d1462ab267173d0bf902d1746d7722ceecebcc31e0830fc156d",
+    "_hash": "6b9c01fa61fee7f4e08a194b752d06eda957174b181ccfe6f82ba88299de475b",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
                 "package": "pestphp/pest-plugin-browser",
-                "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see UAMS-Web/uams-statamic-archive#1816)",
+                "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)",
                 "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
                 "sha256": "e3e12e7fea395155120aab77be5ece38c9433689470e83950336f49d61d94191",
                 "depth": 1,
                 "extra": {
-                    "provenance": "dependency:pestphp/pest-plugin-browser"
+                    "provenance": "root"
                 }
             },
             {
                 "package": "pestphp/pest-plugin-browser",
-                "description": "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see UAMS-Web/uams-statamic-archive#1818)",
+                "description": "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)",
                 "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch",
                 "sha256": "2be97e8163df9ff3f65febd5829943eb9c150325e487467b5e738cbdfa100a56",
                 "depth": 1,
                 "extra": {
-                    "provenance": "dependency:pestphp/pest-plugin-browser"
+                    "provenance": "root"
                 }
             },
             {
                 "package": "pestphp/pest-plugin-browser",
-                "description": "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see UAMS-Web/uams-statamic#585)",
+                "description": "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)",
                 "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch",
                 "sha256": "9e915751dd4e9527699772eef6161f16368e7827b237877492f558167a71a36c",
                 "depth": 1,
                 "extra": {
-                    "provenance": "dependency:pestphp/pest-plugin-browser"
+                    "provenance": "root"
                 }
             }
         ],
