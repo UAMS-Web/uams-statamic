@@ -17,7 +17,7 @@ uses(TestCase::class);
  */
 
 /** Call one private helper of the trait on a fresh host. */
-function identifierHostCall(string $method, mixed ...$arguments): mixed
+function resolvesIdentifierHostCall(string $method, mixed ...$arguments): mixed
 {
     $host = new class
     {
@@ -40,7 +40,7 @@ function identifierHostCall(string $method, mixed ...$arguments): mixed
  *
  * @param  mixed  $data  What `data()` returns
  */
-function identifierEntry(mixed $id, mixed $data = [], mixed $title = null): ConcreteEntry
+function resolvesIdentifierEntry(mixed $id, mixed $data = [], mixed $title = null): ConcreteEntry
 {
     $entry = Mockery::mock(ConcreteEntry::class);
     $entry->shouldReceive('id')->andReturn($id);
@@ -51,8 +51,8 @@ function identifierEntry(mixed $id, mixed $data = [], mixed $title = null): Conc
 }
 
 it('reduces a value to its comparison and display forms', function (mixed $value, ?array $expected): void {
-    expect(identifierHostCall('identifierForms', $value))->toBe($expected)
-        ->and(identifierHostCall('normalizeIdentifier', $value))->toBe($expected['compare'] ?? null);
+    expect(resolvesIdentifierHostCall('identifierForms', $value))->toBe($expected)
+        ->and(resolvesIdentifierHostCall('normalizeIdentifier', $value))->toBe($expected['compare'] ?? null);
 })->with([
     'plain' => ['ABC123', ['compare' => 'abc123', 'display' => 'ABC123']],
     'trimmed' => ["  Wd-9 \n", ['compare' => 'wd-9', 'display' => 'Wd-9']],
@@ -70,28 +70,28 @@ it('reduces a value to its comparison and display forms', function (mixed $value
 ]);
 
 it('reads a single-value field, resolving a dotted path into a group', function (): void {
-    $entry = identifierEntry('e1', [
+    $entry = resolvesIdentifierEntry('e1', [
         'npi' => ' 1234567890 ',
         'uams_workday_id' => ['workday_universal_id' => 'WD-42'],
         'blank' => '   ',
     ]);
 
-    expect(identifierHostCall('identifierValuesOn', $entry, 'npi', null))->toBe(['1234567890' => '1234567890'])
-        ->and(identifierHostCall('identifierValuesOn', $entry, 'uams_workday_id.workday_universal_id', null))->toBe(['wd-42' => 'WD-42'])
-        ->and(identifierHostCall('identifierValuesOn', $entry, 'workday_universal_id', null))->toBe([])
-        ->and(identifierHostCall('identifierValuesOn', $entry, 'blank', null))->toBe([])
-        ->and(identifierHostCall('identifierValuesOn', $entry, 'missing', null))->toBe([]);
+    expect(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'npi', null))->toBe(['1234567890' => '1234567890'])
+        ->and(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'uams_workday_id.workday_universal_id', null))->toBe(['wd-42' => 'WD-42'])
+        ->and(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'workday_universal_id', null))->toBe([])
+        ->and(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'blank', null))->toBe([])
+        ->and(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'missing', null))->toBe([]);
 });
 
 it('reads nothing when the entry data is not a collection', function (): void {
-    $entry = identifierEntry('e1', 'not a collection');
+    $entry = resolvesIdentifierEntry('e1', 'not a collection');
 
-    expect(identifierHostCall('identifierValuesOn', $entry, 'npi', null))->toBe([])
-        ->and(identifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([]);
+    expect(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'npi', null))->toBe([])
+        ->and(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([]);
 });
 
 it('reads one pair per usable replicator row and keeps the first spelling', function (): void {
-    $entry = identifierEntry('e1', [
+    $entry = resolvesIdentifierEntry('e1', [
         'ids' => [
             ['value' => ' Abc '],
             ['value' => ''],
@@ -104,7 +104,7 @@ it('reads one pair per usable replicator row and keeps the first spelling', func
         ],
     ]);
 
-    expect(identifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([
+    expect(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([
         'abc' => 'Abc',
         'loose' => 'Loose',
         'def' => 'def',
@@ -113,9 +113,9 @@ it('reads one pair per usable replicator row and keeps the first spelling', func
 });
 
 it('reads no rows when a list field is not an array', function (mixed $raw): void {
-    $entry = identifierEntry('e1', ['ids' => $raw]);
+    $entry = resolvesIdentifierEntry('e1', ['ids' => $raw]);
 
-    expect(identifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([]);
+    expect(resolvesIdentifierHostCall('identifierValuesOn', $entry, 'ids', 'value'))->toBe([]);
 })->with([
     'string' => ['abc'],
     'null' => [null],
@@ -123,16 +123,16 @@ it('reads no rows when a list field is not an array', function (mixed $raw): voi
 ]);
 
 it('returns every entry in the collection except the one being saved', function (?string $exceptId, array $expectedIds): void {
-    $first = identifierEntry('first');
-    $second = identifierEntry('second');
-    $numeric = identifierEntry(7);
+    $first = resolvesIdentifierEntry('first');
+    $second = resolvesIdentifierEntry('second');
+    $numeric = resolvesIdentifierEntry(7);
 
     $query = Mockery::mock(EntryQueryBuilder::class);
     $query->shouldReceive('where')->once()->with('collection', 'people')->andReturnSelf();
     $query->shouldReceive('get')->once()->andReturn(collect([$first, 'not an entry', $second, $numeric]));
     Entry::shouldReceive('query')->once()->andReturn($query);
 
-    $others = identifierHostCall('otherEntriesIn', 'people', $exceptId);
+    $others = resolvesIdentifierHostCall('otherEntriesIn', 'people', $exceptId);
 
     $ids = [];
 
@@ -149,7 +149,7 @@ it('returns every entry in the collection except the one being saved', function 
 ]);
 
 it('normalizes the except parameter into an entry id', function (?string $except, ?string $expected): void {
-    expect(identifierHostCall('exceptEntryId', $except))->toBe($expected);
+    expect(resolvesIdentifierHostCall('exceptEntryId', $except))->toBe($expected);
 })->with([
     'null' => [null, null],
     'empty' => ['', null],
@@ -162,7 +162,7 @@ it('normalizes the except parameter into an entry id', function (?string $except
 ]);
 
 it('labels an entry by its trimmed title and falls back to its id', function (mixed $id, mixed $title, string $expected): void {
-    expect(identifierHostCall('identifierEntryLabel', identifierEntry($id, [], $title)))->toBe($expected);
+    expect(resolvesIdentifierHostCall('identifierEntryLabel', resolvesIdentifierEntry($id, [], $title)))->toBe($expected);
 })->with([
     'title' => ['e1', ' Dr. Ann Smith ', 'Dr. Ann Smith'],
     'blank title' => ['e1', '  ', 'e1'],
@@ -173,7 +173,7 @@ it('labels an entry by its trimmed title and falls back to its id', function (mi
 ]);
 
 it('reads an entry id as a string', function (mixed $id, string $expected): void {
-    expect(identifierHostCall('entryIdAsString', identifierEntry($id)))->toBe($expected);
+    expect(resolvesIdentifierHostCall('entryIdAsString', resolvesIdentifierEntry($id)))->toBe($expected);
 })->with([
     'string' => ['abc', 'abc'],
     'integer' => [5, '5'],
