@@ -14,6 +14,8 @@ The lifecycle those patches move through (write it, report it upstream, offer th
 
 `cweagans/composer-patches` reads a package's own `extra.patches` only from the production `packages` section of `composer.lock`. The browser package is a test dependency, so it is required in `require-dev` and its patches are listed in the root `composer.json` instead; requiring it in `require` would have moved `pestphp/pest`, `phpunit/phpunit` and 46 other test packages into every production install (#642).
 
+**Run `composer patches-relock` and `composer patches-repatch` on a dev install.** On a tree installed with `--no-dev` the browser package is absent, so a relock cannot read its three patch paths: it exits 100 and deletes `patches.lock.json` (restore it with `git checkout -- patches.lock.json`). An install from the committed lock, which is what a deploy runs, applies the `statamic/cms` and `pest-plugin-mutate` patches with or without `--no-dev`.
+
 Each package's `README.md` lists its patches in application order and names the ticket that tracks each upstream fix.
 
 ## Guard tests
