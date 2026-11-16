@@ -7,7 +7,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * Guards `patches/statamic-updates-overview-badge.patch` on `statamic/cms`.
+ * Guards `vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch` on `statamic/cms`.
  *
  * Remove this file when the patch is removed; see **When removing this patch**
  * in `patches/README.md` (CP updates nav badge section).

@@ -8,7 +8,7 @@ use Pest\Browser\Playwright\Playwright;
 use PHPUnit\Framework\ExpectationFailedException;
 
 /**
- * Guards `patches/pest-plugin-browser-per-attempt-timeout.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch`.
  *
  * Remove this file when the patch is removed; see **`pest-plugin-browser`
  * per-attempt retry timeout** in `patches/README.md` for the retirement

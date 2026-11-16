@@ -6,7 +6,7 @@ use Pest\Browser\Playwright\NavigationRetry;
 use PHPUnit\Framework\ExpectationFailedException;
 
 /**
- * Guards `patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`.
  *
  * Remove this file when the patch is removed; see **`pest-plugin-browser`
  * navigation retry on `net::ERR_NO_BUFFER_SPACE`** in `patches/README.md` for

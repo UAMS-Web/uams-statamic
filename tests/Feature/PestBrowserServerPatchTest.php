@@ -7,7 +7,7 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * Guards `patches/pest-plugin-browser-server-no-shell.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch`.
  *
  * Remove this file when the patch is removed; see **`pest-plugin-browser`
  * shell-free Playwright server start** in `patches/README.md` for the retirement
