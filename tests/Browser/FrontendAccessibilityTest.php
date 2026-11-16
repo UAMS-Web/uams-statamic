@@ -8,8 +8,8 @@ use Statamic\Facades\Antlers;
  | §504 / WCAG automated accessibility gate (issue UAMS-Web/uams-statamic-archive#1046, part of epic #54).
  |
  | The pest-plugin-browser bundles axe-core, which runAxe() loads into the page,
- | so this gate needs no npm dependency. It runs in the opt-in `browser` job
- | (`vendor/bin/pest tests/Browser`, mirrored in scripts/local-ci.mjs) and fails
+ | so this gate needs no npm dependency. It runs in the `browser` job
+ | (`vendor/bin/pest tests/Browser`, mirrored in scripts/gate-browser.mjs) and fails
  | on any serious/critical violation; moderate/minor are reported, not failed.
  |
  | Why controlled surfaces rather than the live multisite front-end:

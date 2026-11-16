@@ -17,12 +17,12 @@ Some `Feature/` tests render real committed content — a specific person, a
 populated taxonomy group, a media-contact term — that lives only in the
 `content/` submodule. The canonical environments always initialize it: the
 `phpunit` job in [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and
-[`scripts/local-ci.mjs`](../../scripts/local-ci.mjs) both
+the local runner's `dependencies` job
+([`scripts/prepare-dependencies.mjs`](../../scripts/prepare-dependencies.mjs)) both
 `git submodule update --init … content` before running, and a normal local
 checkout has it too. So these guards never trip there.
 
-A **bare worktree** or a `local-ci --skip-submodule` run, however, has no
-`content/`. Without it `Collection::find('people')` returns `null` and the test
+A **bare worktree**, however, has no `content/`. Without it `Collection::find('people')` returns `null` and the test
 either trips a hard assertion or throws out of the Antlers render — noisy
 `FAIL`/`ERROR` output that masks real regressions. The trait converts that into a
 clear `SKIP` with a reason naming the missing dependency.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Listeners\ValidateClinicalLocationsTree;
 use Illuminate\Support\Facades\Log;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\LegacyMockInterface;
 use Statamic\Entries\Entry;
 use Statamic\Events\CollectionTreeSaving;
 use Statamic\Facades\Entry as EntryFacade;
@@ -26,6 +27,12 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 |
 | @covers \App\Listeners\ValidateClinicalLocationsTree
 |
+| Accepted equivalents, annotated in the listener: the strict flags on the two
+| blueprint `in_array()` calls, whose needles are a blueprint handle or a null
+| parent and whose lists hold only non-numeric handles. The depth cap and the
+| blueprint lists are constants, which the mutation runner skips as uncovered;
+| each was changed by hand and fails a test here, and the annotation says so.
+|
 | @command  php artisan test --compact tests/Feature/Listeners/ValidateClinicalLocationsTreeTest.php
 */
 
@@ -44,7 +51,7 @@ function locationsTreeEvent(array $tree, string $handle = 'clinical_locations'):
 }
 
 /** Register an entry (by id) with EntryFacade::find, exposing the given blueprint + title. */
-function locationsTreeEntry(string $id, string $blueprint, string $title = 'X'): void
+function locationsTreeEntry(string $id, string $blueprint, mixed $title = 'X'): void
 {
     $entry = Mockery::mock(Entry::class);
 
@@ -204,4 +211,134 @@ it('logs and skips when a tree node references a missing entry', function () {
     $tree = [['entry' => 'ghost']];
 
     expect(throwableFrom(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent($tree))))->toBeNull();
+});
+
+/** Run `$callback` with `$_SERVER['argv']` set to `$argv`, restoring it after. */
+function locationsTreeWithArgv(mixed $argv, callable $callback): mixed
+{
+    $had = array_key_exists('argv', $_SERVER);
+    $original = $_SERVER['argv'] ?? null;
+    $_SERVER['argv'] = $argv;
+
+    try {
+        return $callback();
+    } finally {
+        if ($had) {
+            $_SERVER['argv'] = $original;
+        } else {
+            unset($_SERVER['argv']);
+        }
+    }
+}
+
+it('rejects either kind of content page at the subsite root', function (string $blueprint) {
+    locationsTreeEntry('cp1', $blueprint, 'Root Page');
+
+    expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry 'Root Page' must be the child");
+})->with(['a basic page' => ['basic_page'], 'a landing page' => ['landing_page']]);
+
+it('accepts a content page nested under either kind of content page', function (string $parent) {
+    locationsTreeEntry('l1', 'location');
+    locationsTreeEntry('cp1', $parent);
+    locationsTreeEntry('cp2', 'basic_page');
+
+    $tree = [['entry' => 'l1', 'children' => [['entry' => 'cp1', 'children' => [['entry' => 'cp2']]]]]];
+
+    expect(throwableFrom(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent($tree))))->toBeNull();
+})->with(['a basic page' => ['basic_page'], 'a landing page' => ['landing_page']]);
+
+it('names an entry by its id when its title is missing or not text', function (mixed $title) {
+    locationsTreeEntry('cp1', 'basic_page', $title);
+
+    expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry 'cp1' must be the child");
+})->with(['null' => [null], 'array' => [['not', 'text']]]);
+
+it('reads a numeric title as text', function () {
+    locationsTreeEntry('cp1', 'basic_page', 2024);
+
+    expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry '2024' must be the child");
+});
+
+it('logs the node it skips for a missing entry id', function () {
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+
+    (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['children' => [['entry' => 'cp1']]]]));
+
+    $log->shouldHaveReceived('warning')->once()->with(
+        'ValidateClinicalLocationsTree::validateTree: Missing entry ID in tree node',
+        ['node' => ['children' => [['entry' => 'cp1']]]]
+    );
+});
+
+it('reads a numeric node id as text, and a non-scalar one as empty', function () {
+    Log::spy();
+    // Matched by identity, so an id passed through as an integer would not match.
+    EntryFacade::shouldReceive('find')->withArgs(fn (mixed $id): bool => $id === '9917')->once()->andReturn(null);
+    EntryFacade::shouldReceive('find')->withArgs(fn (mixed $id): bool => $id === '')->once()->andReturn(null);
+
+    (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 9917], ['entry' => ['not', 'an', 'id']]]));
+});
+
+it('goes on to the next sibling after a node it skips', function (string $skippedNode) {
+    // A skipped node is passed over, not the end of its level: the invalid content page
+    // after it is still reached.
+    locationsTreeEntry('x1', 'some_other_blueprint');
+    locationsTreeEntry('cp1', 'basic_page', 'Sibling Page');
+    EntryFacade::shouldReceive('find')->with('ghost')->andReturn(null);
+    Log::spy();
+
+    $skipped = match ($skippedNode) {
+        'no id' => ['children' => []],
+        'not found' => ['entry' => 'ghost'],
+        'unknown blueprint' => ['entry' => 'x1'],
+        default => throw new InvalidArgumentException("No such skipped node: {$skippedNode}"),
+    };
+
+    expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([$skipped, ['entry' => 'cp1']])))
+        ->toThrow(Exception::class, "Content page entry 'Sibling Page' must be the child");
+})->with([
+    'a node with no entry id' => ['no id'],
+    'an entry it cannot find' => ['not found'],
+    'an entry of an unknown blueprint' => ['unknown blueprint'],
+]);
+
+it('does not descend into empty or non-list children', function (mixed $children) {
+    locationsTreeEntry('l1', 'location');
+
+    expect(throwableFrom(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'l1', 'children' => $children]]))))
+        ->toBeNull();
+})->with(['empty list' => [[]], 'not a list' => ['children']]);
+
+it('validates a console run that is not the WordPress import', function (mixed $argv) {
+    locationsTreeEntry('cp1', 'basic_page', 'Console Page');
+
+    locationsTreeWithArgv($argv, function (): void {
+        expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'cp1']])))
+            ->toThrow(Exception::class, "Content page entry 'Console Page' must be the child");
+    });
+})->with([
+    'another command' => [['artisan', 'statamic:stache:warm']],
+    'a non-text argument' => [['artisan', 42]],
+    'no argument list' => ['not a list'],
+]);
+
+it('validates outside the console even when argv names the import', function () {
+    locationsTreeEntry('cp1', 'basic_page', 'Web Page');
+
+    // A web request carries no import; only a console argv can bypass validation.
+    $running = new ReflectionProperty(app(), 'isRunningInConsole');
+    $running->setValue(app(), false);
+
+    try {
+        locationsTreeWithArgv(['artisan', 'import:wordpress'], function (): void {
+            expect(fn () => (new ValidateClinicalLocationsTree)->handle(locationsTreeEvent([['entry' => 'cp1']])))
+                ->toThrow(Exception::class, "Content page entry 'Web Page' must be the child");
+        });
+    } finally {
+        $running->setValue(app(), null);
+    }
 });

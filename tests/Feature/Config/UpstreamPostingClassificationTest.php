@@ -39,7 +39,9 @@ it('lists the filing and pull request installments as afk with a human approving
     expect($skill)
         ->toContain('| 2 | File the bug upstream | `afk` (a human approves the post) | 1 |')
         ->toContain('| 3 | Open the upstream PR that closes that upstream issue | `afk` (a human approves the post) | 2 |')
-        ->toContain('posts only after that approval');
+        // The prose under the table says the same, since the skill's rewrite moved the rest
+        // of the posting procedure to the `patch-package` skill (#684).
+        ->toContain('Tickets 2 and 3 are `afk`, each with a human approving the post');
 });
 
 it('no longer classifies an upstream installment as hitl', function () use ($root): void {

@@ -16,13 +16,13 @@ use Statamic\Stache\Stores\AggregateStore;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 use Tests\TestCase;
 
-// Tree-isolated: each test writes the collection's structure tree, and a tree
+// Entries, terms and trees isolated (#557): each test writes the collection's structure tree, and a tree
 // write needs a root no sibling worker shares.
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -205,4 +205,4 @@ it('keeps an unplaced entry out of the sitemap until the router serves it', func
     fn (string $handle, string $routePrefix): array => [$handle, $routePrefix],
     array_keys(SITEMAP_ORPHAN_COLLECTIONS),
     SITEMAP_ORPHAN_COLLECTIONS,
-))->group('serial');
+));

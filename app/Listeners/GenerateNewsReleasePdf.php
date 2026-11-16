@@ -25,6 +25,9 @@ class GenerateNewsReleasePdf
      * When true, {@see self::handle()} returns immediately to avoid nested PDF
      * generation while {@see NewsReleasePdfGenerator::syncPdfForEntry()} runs.
      */
+    // A property default is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, `true` fails GenerateNewsReleasePdfListenerTest.
+    // @pest-mutate-ignore: FalseToTrue
     private static bool $generating = false;
 
     /**

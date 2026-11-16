@@ -63,7 +63,7 @@ describe('coverageRefusal', () => {
 
 describe('the wiring', () => {
     it('is what `npm run spell` invokes, so both gates go through the guard', () => {
-        // `ci.yml` and `local-ci.mjs` both call `npm run spell` rather than cspell
+        // `ci.yml` and `local-ci.json` both call `npm run spell` rather than cspell
         // directly, so this one line is the seam. If it is ever pointed back at
         // cspell, the guard is bypassed everywhere at once with nothing to notice.
         const pkg = JSON.parse(readFileSync(resolve(HERE, '..', 'package.json'), 'utf8'))

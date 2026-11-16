@@ -89,7 +89,7 @@ class GenerateInternationalCodeDesignatorEnum extends Command
      */
     private function buildEnumPhpContent(array $records, string $generatedAt): string
     {
-        $out = "<?php\n\n";
+        $out = "<?php\n\ndeclare(strict_types=1);\n\n";
         $out .= "namespace App\\Enums;\n\n";
         $out .= "use App\\Services\\EnumGeneration\\EnumDataUtils;\n\n";
 
@@ -105,7 +105,7 @@ class GenerateInternationalCodeDesignatorEnum extends Command
             $nameEsc = GeneratorUtils::escapeSingleQuotes($rec['name']);
             $descEsc = GeneratorUtils::escapeSingleQuotes($rec['description']);
             $out .= "    #[IcdInfo(id: '{$idEsc}', name: '{$nameEsc}', description: '{$descEsc}')]\n";
-            $out .= "    case {$caseName} = '{$rec['id']}';\n\n";
+            $out .= "    case {$caseName} = '{$idEsc}';\n\n";
         }
 
         // icdData() and getters
@@ -139,7 +139,8 @@ class GenerateInternationalCodeDesignatorEnum extends Command
         $out .= " *\n";
         $out .= " * Repository: https://github.com/OpenPEPPOL/peppol-bis-invoice-3\n";
         $out .= " *\n";
-        $out .= sprintf(' * Generated: %s%s', $generatedAt, PHP_EOL);
+        // "\n" rather than PHP_EOL: on Windows PHP_EOL is CRLF, one stray line ending among LF lines
+        $out .= ' * Generated: '.$generatedAt."\n";
         $out .= " * Regenerate with: php artisan generate:international-code-designator-enum\n";
         $out .= " *\n";
         $out .= " * Each case's backing value is the 4-digit ICD code. Case names use\n";

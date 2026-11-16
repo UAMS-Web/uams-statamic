@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\EnumGeneration\County\CountyEnumGenerator;
+use Symfony\Component\Process\Process;
 
 /**
  * Unit tests for the extracted {@see CountyEnumGenerator} (UAMS-Web/uams-statamic-archive#876).
@@ -120,3 +121,84 @@ it('escapes single quotes in rendered county names', function () {
 
     expect($php)->toContain("fullName: 'Prince George\\'s County'");
 });
+
+/**
+ * One county row for the rendering tests, with every attribute set to `$name`'s
+ * shape so a literal escaping defect shows up in the output.
+ *
+ * @return array{fullName: string, baseName: string, fipsCode: string, parentUspsCode: string, parentFipsCode: string, geoId: string, nationalStandardCode: string, fipsClassCode: string, functionalStatusCode: string, mafTigerFeatureClassCode: string, mafTigerObjectIdentifier: string, legalStatisticalAreaDescriptionCode: string, areaLand: string, areaWater: string, arcGisObjectIdentifier: string, centroidGeo: array{string, string}, internalPointGeo: array{string, string}, caseId: string}
+ */
+function countyRenderRow(string $name, string $caseId): array
+{
+    return [
+        'fullName' => $name,
+        'baseName' => $name,
+        'fipsCode' => '119',
+        'parentUspsCode' => 'AR',
+        'parentFipsCode' => '05',
+        'geoId' => '05119',
+        'nationalStandardCode' => '00069902',
+        'fipsClassCode' => 'H1',
+        'functionalStatusCode' => 'A',
+        'mafTigerFeatureClassCode' => 'G4020',
+        'mafTigerObjectIdentifier' => '1',
+        'legalStatisticalAreaDescriptionCode' => '06',
+        'areaLand' => '1',
+        'areaWater' => '2',
+        'arcGisObjectIdentifier' => '3',
+        'centroidGeo' => ['34.7', '-92.3'],
+        'internalPointGeo' => ['34.8', '-92.4'],
+        'caseId' => $caseId,
+    ];
+}
+
+it('renders output that Pint reports clean with no separate pass (#716)', function () {
+    $php = (new CountyEnumGenerator)->generatePhpContent([
+        countyRenderRow('Pulaski County', 'AR_PULASKI_COUNTY'),
+        countyRenderRow("Prince George's County", 'MD_PRINCE_GEORGES_COUNTY'),
+        countyRenderRow('Trailing\\', 'AR_TRAILING'),
+    ], ['Example Source Line']);
+
+    $root = dirname(__DIR__, 4);
+    $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'county-enum-'.bin2hex(random_bytes(6)).'.php';
+    file_put_contents($path, $php);
+
+    try {
+        $process = new Process([
+            PHP_BINARY,
+            $root.'/vendor/bin/pint',
+            '--test',
+            '--config',
+            $root.'/pint.json',
+            $path,
+        ]);
+        $process->run();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput());
+});
+
+it('writes a fullName literal that evaluates back to the value (#716)', function (string $value) {
+    $php = (new CountyEnumGenerator)->generatePhpContent([countyRenderRow($value, 'AR_CASE')]);
+
+    // The first string literal in the file is the fullName argument; the docblock is a comment token
+    $literal = null;
+    foreach (token_get_all($php) as $token) {
+        if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+            $literal = $token[1];
+            break;
+        }
+    }
+
+    expect($literal)->not->toBeNull()
+        ->and(mustBeString(eval('return '.$literal.';'), 'evaluated fullName literal'))->toBe($value);
+})->with([
+    'plain' => ['Pulaski County'],
+    'apostrophe' => ["Prince George's County"],
+    'trailing backslash' => ['end\\'],
+    'doubled backslash' => ['a\\\\b'],
+    'backslash before apostrophe' => ['x\\\'y'],
+    'lone backslash' => ['\\'],
+]);

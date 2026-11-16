@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\EnumGeneration\State\StateEnumGenerator;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -349,10 +350,12 @@ it('renders the whole generated file, one attribute line and case per state', fu
         $php
     );
 
-    $attributes = static fn (string $id, string $centroid, string $internal): string => "\t#[StateInfo(fullName: 'Full {$id}', apAbbreviation: 'Ap {$id}', type: 'type-{$id}', fipsCode: 'fips-{$id}', iso3166_2: 'US-{$id}', baseName: 'Base {$id}', geoId: 'geo-{$id}', nationalStandardCode: 'ns-{$id}', division: 'div-{$id}', region: 'reg-{$id}', functionalStatusCode: 'fs-{$id}', mafTigerFeatureClassCode: 'mtfcc-{$id}', mafTigerObjectIdentifier: 'oid-{$id}', legalStatisticalAreaDescriptionCode: 'lsadc-{$id}', areaLand: 'land-{$id}', areaWater: 'water-{$id}', arcGisObjectIdentifier: 'obj-{$id}', centroidGeo: [{$centroid}], internalPointGeo: [{$internal}])]";
+    $attributes = static fn (string $id, string $centroid, string $internal): string => "    #[StateInfo(fullName: 'Full {$id}', apAbbreviation: 'Ap {$id}', type: 'type-{$id}', fipsCode: 'fips-{$id}', iso3166_2: 'US-{$id}', baseName: 'Base {$id}', geoId: 'geo-{$id}', nationalStandardCode: 'ns-{$id}', division: 'div-{$id}', region: 'reg-{$id}', functionalStatusCode: 'fs-{$id}', mafTigerFeatureClassCode: 'mtfcc-{$id}', mafTigerObjectIdentifier: 'oid-{$id}', legalStatisticalAreaDescriptionCode: 'lsadc-{$id}', areaLand: 'land-{$id}', areaWater: 'water-{$id}', arcGisObjectIdentifier: 'obj-{$id}', centroidGeo: [{$centroid}], internalPointGeo: [{$internal}])]";
 
     expect($php)->toBe(implode("\n", [
         '<?php',
+        '',
+        'declare(strict_types=1);',
         '',
         '/**',
         ' * Generated States enum cases',
@@ -374,19 +377,109 @@ it('renders the whole generated file, one attribute line and case per state', fu
         ' * This list of cases was generated on <when>',
         ' * Total states: 3',
         ' */',
-        '',
         'enum State: string',
         '{',
         $attributes('AA', "'10', '20'", "'30', '40'"),
-        "\tcase AA = 'AA';",
+        "    case AA = 'AA';",
         '',
         $attributes('BB', "'50', ''", "'', '60'"),
-        "\tcase BB = 'BB';",
+        "    case BB = 'BB';",
         '',
         $attributes('CC', "'', '70'", "'80', ''"),
-        "\tcase CC = 'CC';",
+        "    case CC = 'CC';",
         '',
         '}',
         '',
     ]));
 });
+
+/**
+ * One state row for the rendering tests, with every text attribute set to `$name`
+ * so a literal escaping defect shows up in the output.
+ *
+ * @return array{caseId: string, fullName: string, baseName: string, apAbbreviation: string, type: string, fipsCode: string, iso3166_2: string, geoId: string, nationalStandardCode: string, division: string, region: string, functionalStatusCode: string, mafTigerFeatureClassCode: string, mafTigerObjectIdentifier: string, legalStatisticalAreaDescriptionCode: string, areaLand: string, areaWater: string, arcGisObjectIdentifier: string, centroidGeo: array<int, string>, internalPointGeo: array<int, string>}
+ */
+function stateEnumRenderRow(string $name, string $caseId): array
+{
+    return [
+        'caseId' => $caseId,
+        'fullName' => $name,
+        'baseName' => $name,
+        'apAbbreviation' => $name,
+        'type' => 'state',
+        'fipsCode' => '05',
+        'iso3166_2' => 'US-AR',
+        'geoId' => '05',
+        'nationalStandardCode' => '00068085',
+        'division' => '7',
+        'region' => '3',
+        'functionalStatusCode' => 'A',
+        'mafTigerFeatureClassCode' => 'G4000',
+        'mafTigerObjectIdentifier' => '1',
+        'legalStatisticalAreaDescriptionCode' => '00',
+        'areaLand' => '1',
+        'areaWater' => '2',
+        'arcGisObjectIdentifier' => '3',
+        'centroidGeo' => ['34.9', '-92.4'],
+        'internalPointGeo' => ['34.8', '-92.3'],
+    ];
+}
+
+it('renders output that Pint reports clean with no separate pass (#717)', function (): void {
+    $php = (new StateEnumGenerator)->generatePhpContent([
+        stateEnumRenderRow('Arkansas', 'AR'),
+        stateEnumRenderRow("O'Hare", 'XX'),
+        stateEnumRenderRow('Trailing\\', 'YY'),
+    ], ['Example Source Line']);
+
+    $root = dirname(__DIR__, 4);
+    $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'state-enum-'.bin2hex(random_bytes(6)).'.php';
+    file_put_contents($path, $php);
+
+    try {
+        $process = new Process([
+            PHP_BINARY,
+            $root.'/vendor/bin/pint',
+            '--test',
+            '--config',
+            $root.'/pint.json',
+            $path,
+        ]);
+        $process->run();
+    } finally {
+        @unlink($path);
+    }
+
+    expect($process->getExitCode())->toBe(0, $process->getOutput().$process->getErrorOutput());
+});
+
+it('writes a fullName literal that evaluates back to the value (#717)', function (string $value): void {
+    $php = (new StateEnumGenerator)->generatePhpContent([stateEnumRenderRow($value, 'XX')], []);
+
+    // The first string literal in the file is the fullName argument; the docblock is a comment token
+    $literal = null;
+    foreach (token_get_all($php) as $token) {
+        if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+            $literal = $token[1];
+            break;
+        }
+    }
+
+    expect($literal)->not->toBeNull();
+
+    // A literal that does not parse is a failure of this case, not of the run
+    try {
+        $evaluated = eval('return '.$literal.';');
+    } catch (ParseError $error) {
+        $evaluated = 'ParseError: '.$error->getMessage();
+    }
+
+    expect($evaluated)->toBe($value);
+})->with([
+    'plain' => ['Arkansas'],
+    'apostrophe' => ["O'Hare"],
+    'trailing backslash' => ['end\\'],
+    'doubled backslash' => ['a\\\\b'],
+    'backslash before apostrophe' => ['x\\\'y'],
+    'lone backslash' => ['\\'],
+]);

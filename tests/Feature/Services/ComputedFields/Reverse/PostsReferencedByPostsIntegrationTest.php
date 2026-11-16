@@ -3,14 +3,16 @@
 declare(strict_types=1);
 
 use App\Services\ComputedFields\Reverse\PostsReverseReferenceComputedValues;
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -107,6 +109,9 @@ function referencedByIds(iterable $set): array
 }
 
 beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::find('posts')) {
         ContentSubmodule::reportMissing('posts collection');
     }
@@ -130,7 +135,7 @@ it('resolves the inverse: A lists B as related, so B is referenced-by A', functi
     // B's reverse contains A (which points at B); A's reverse is empty (nobody points at A).
     expect(referencedByIds($service->resolveReferencedByPosts($b)))->toContain($a->id())
         ->and($service->resolveReferencedByPosts($a))->toBeEmpty();
-})->group('serial');
+});
 
 it('does not mutate the manual related_posts override when resolving the reverse', function (): void {
     $b = referencedByMakePost('b', null);
@@ -151,7 +156,7 @@ it('does not mutate the manual related_posts override when resolving the reverse
 
     expect($relatedA)->toBe([$b->id()])
         ->and($relatedB)->toBeNull();
-})->group('serial');
+});
 
 it('excludes an unpublished referencing post from the inverse', function (): void {
     $b = referencedByMakePost('b', null);
@@ -160,4 +165,4 @@ it('excludes an unpublished referencing post from the inverse', function (): voi
     Blink::flush();
     // The resolver restricts the reverse to published pointing entries by default.
     expect(app(PostsReverseReferenceComputedValues::class)->resolveReferencedByPosts($b))->toBeEmpty();
-})->group('serial');
+});

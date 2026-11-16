@@ -187,12 +187,12 @@ it('allows a content page nested under a location', function () {
     $listener->handle(new EntrySaving($entry));
 })->throwsNoExceptions();
 
-it('allows a content page nested under another content page', function () {
+it('allows a content page nested under another content page', function (string $parent) {
     $entry = locationEntry('landing_page');
-    $listener = locationsListenerWithParent(locationEntry('basic_page'));
+    $listener = locationsListenerWithParent(locationEntry($parent));
 
     $listener->handle(new EntrySaving($entry));
-})->throwsNoExceptions();
+})->with(['a basic page' => ['basic_page'], 'a landing page' => ['landing_page']])->throwsNoExceptions();
 
 it('rejects a content page under a parent that is neither location nor a content page', function () {
     $entry = locationEntry('basic_page');

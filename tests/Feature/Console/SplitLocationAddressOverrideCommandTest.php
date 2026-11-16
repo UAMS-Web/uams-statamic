@@ -99,6 +99,28 @@ it('leaves alone a child with the override off and a child already split', funct
         ->assertSuccessful();
 });
 
+it('keeps going past a location it skips, so a later child is still split', function (): void {
+    // The skipped entry comes first: the loop must move on to the next location, not stop
+    $off = splitLocationMock('off1', ['parent_address_override_query' => false]);
+    $off->shouldNotReceive('set');
+    $off->shouldNotReceive('saveQuietly');
+
+    $migrated = splitLocationMock('child2', ['parent_address_override_query' => true]);
+
+    foreach (LocationInheritedAddressService::GROUP_OVERRIDE as $toggle) {
+        $migrated->shouldReceive('set')->with($toggle, true)->once();
+    }
+
+    $migrated->shouldReceive('saveQuietly')->once();
+
+    fakeSplitLocationQuery([$off, $migrated]);
+
+    splitRunCommand('content:split-location-address-override')
+        ->expectsOutput('Split child2')
+        ->expectsOutput('Split 1 location.')
+        ->assertSuccessful();
+});
+
 it('leaves alone a top-level location carrying a leftover override', function (): void {
     // A location moved up from a child can keep the master; owning every group already,
     // it needs no toggles, and the docblock promises to change children only.

@@ -5,12 +5,8 @@
 // than whatever line follows it. The band totals are summed over testcases, so both a
 // single-file report and a merged one with nested suites are covered.
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
 import { bandFromJunit, bandLine, interpreterFromLog } from './local-ci-bands.mjs'
-import { commitStatusDescription, pestBandLines } from './local-ci.mjs'
 
 /**
  * A runner header, with the fetch section one line longer or shorter.
@@ -60,6 +56,12 @@ describe('interpreterFromLog', () => {
         expect(interpreterFromLog(log)).toEqual({ path: 'C:\\Program Files (x86)\\php84\\php.exe', version: '8.4.25' })
     })
 
+
+    it('reads the shared runner\'s header, whose parentheses also name the source', () => {
+        const log = 'PHP:        /opt/herd/bin/php84 (8.4.27, from Herd php84)\nComposer:  composer\n'
+
+        expect(interpreterFromLog(log)).toEqual({ path: '/opt/herd/bin/php84', version: '8.4.27' })
+    })
     it('ignores a line that only mentions PHP further along', () => {
         const log = 'Warning: PHP: 8.3.0 (old)\nPHP:       /opt/php84 (8.4.27)\n'
 
@@ -120,53 +122,5 @@ describe('bandLine', () => {
     it('names failures and leaves out a zero skip count', () => {
         expect(bandLine('serial', { tests: 166, skipped: 0, failed: 2, assertions: 540 }, '8.4.25'))
             .toBe('serial: 164 passed, 2 failed (540 assertions) under PHP 8.4.25')
-    })
-})
-
-describe('pestBandLines', () => {
-    let tree
-
-    beforeEach(() => {
-        tree = mkdtempSync(join(tmpdir(), 'local-ci-bands-'))
-    })
-
-    afterEach(() => {
-        rmSync(tree, { recursive: true, force: true })
-    })
-
-    it('reads both reports when pest ran', () => {
-        writeFileSync(join(tree, 'junit-parallel.xml'), '<testcase assertions="2"/><testcase assertions="3"/>')
-        writeFileSync(join(tree, 'junit-serial.xml'), '<testcase assertions="1"/>')
-
-        expect(pestBandLines(tree, new Map([['pest', 0]]), '8.4.27')).toEqual([
-            'parallel: 2 passed (5 assertions) under PHP 8.4.27',
-            'serial: 1 passed (1 assertions) under PHP 8.4.27',
-        ])
-    })
-
-    it('names a band whose report is missing rather than leaving it out', () => {
-        writeFileSync(join(tree, 'junit-parallel.xml'), '<testcase assertions="2"/>')
-
-        expect(pestBandLines(tree, new Map([['pest', 1]]), '8.4.27')).toEqual([
-            'parallel: 1 passed (2 assertions) under PHP 8.4.27',
-            'serial: no report written under PHP 8.4.27',
-        ])
-    })
-
-    it('reads no report left by an earlier run when pest did not run in this one', () => {
-        writeFileSync(join(tree, 'junit-parallel.xml'), '<testcase assertions="2"/>')
-
-        expect(pestBandLines(tree, new Map([['pint', 0]]), '8.4.27')).toEqual([])
-        expect(pestBandLines(tree, new Map([['pest', 'skipped']]), '8.4.27')).toEqual([])
-    })
-})
-
-describe('commitStatusDescription with the runner\'s own results', () => {
-    it('accepts the Map the runner holds, and names the interpreter', () => {
-        // The summary passes a Map; an array-only builder threw here.
-        const results = new Map([['spell', 0], ['js', 'skipped'], ['pest', 1]])
-
-        expect(commitStatusDescription(true, results, '8.4.27')).toBe('pest failed; 1 chain-gated under PHP 8.4.27')
-        expect(commitStatusDescription(false, new Map([['spell', 0]]), '8.4.27')).toBe('1 of 1 jobs passed under PHP 8.4.27')
     })
 })

@@ -57,9 +57,17 @@ final class PeopleDuplicateUnionFind
 
     /**
      * Merge the sets containing the two elements.
+     *
+     * An element not yet in the structure joins it first as its own singleton, so
+     * every parent pointer this writes targets a key and `groups()` reports both
+     * elements (#682). `find()` alone still adds nothing.
      */
     public function union(string $a, string $b): void
     {
+        // Register unknown elements so the root written below is always a key
+        $this->parent[$a] ??= $a;
+        $this->parent[$b] ??= $b;
+
         $rootA = $this->find($a);
         $rootB = $this->find($b);
 

@@ -23,7 +23,7 @@ use Statamic\Contracts\Entries\Entry as EntryContract;
  * what the guards key on now:
  *
  * - `content/` absent → `markTestSkipped()` exactly as before, preserving the
- *   bare-worktree and `local-ci --skip-submodule` behavior UAMS-Web/uams-statamic-archive#856 and UAMS-Web/uams-statamic-archive#900 were
+ *   bare-worktree behavior UAMS-Web/uams-statamic-archive#856 and UAMS-Web/uams-statamic-archive#900 were
  *   built for.
  * - `content/` present but the lookup returned `null` → **fail**, naming what
  *   did not resolve.

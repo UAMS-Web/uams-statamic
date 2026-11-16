@@ -46,6 +46,9 @@ class StripProviderPeopleVirtualFieldsOnEntrySaving
         $entry = $event->entry;
 
         // Check if the entry belongs to a supported collection
+        // collectionHandle() returns a string or null, and collection handles are never
+        // numeric strings, so a loose match finds the same handles as a strict one.
+        // @pest-mutate-ignore: TrueToFalse
         if (! \in_array(
             $entry->collectionHandle(),
             self::collectionHandles(),

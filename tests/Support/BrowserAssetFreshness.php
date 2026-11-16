@@ -23,8 +23,9 @@ use RuntimeException;
  *    failing an assertion in a test merged the same day, so it read as
  *    "UAMS-Web/uams-statamic-archive#2063 shipped broken".
  *
- * **Local runs only, by design.** `scripts/local-ci.mjs`'s chain runs `build` at
- * job 6 and `browser` at job 12, so a gated run cannot reach this state — six
+ * **Local runs only, by design.** The local CI runner's chain runs `build` ahead
+ * of `browser` (and `scripts/ci-local.mjs` adds `build` to any `--jobs` subset
+ * naming `browser`), so a gated run cannot reach this state — six
  * merged-state gates were measured doing exactly that. The exposure is a bare
  * `vendor/bin/pest tests/Browser`, which is how a browser test is normally
  * written. Putting the check in the chain would arm it against a state the chain
