@@ -230,7 +230,7 @@ function registerValidationProbe(
  *
  * @param  string  $rule  The rule string
  */
-function validationProbeError(string $rule): ?string
+function validationProbeError(string $rule): string
 {
     return Validator::make(['field' => 'value'], ['field' => $rule])->errors()->first('field');
 }

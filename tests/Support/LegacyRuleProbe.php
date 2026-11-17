@@ -31,7 +31,7 @@ final class LegacyRuleProbe implements Rule
      */
     public function __construct(mixed ...$arguments)
     {
-        self::$constructedWith = $arguments;
+        self::$constructedWith = array_values($arguments);
     }
 
     /**

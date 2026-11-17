@@ -34,7 +34,7 @@ final class ValidatorAwareRuleProbe implements ValidationRule, ValidatorAwareRul
      */
     public function __construct(mixed ...$arguments)
     {
-        self::$constructedWith = $arguments;
+        self::$constructedWith = array_values($arguments);
     }
 
     /**
