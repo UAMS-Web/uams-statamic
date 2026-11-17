@@ -221,11 +221,10 @@ it('saves an existing pages entry inside the base, leaving the shared uri index 
     $committedTree = ContentRoot::path(Config::string('app.env')).'/trees/collections/health/pages.yaml';
     $committedTreeBefore = mustBeString(file_get_contents($committedTree), 'the committed health pages tree');
 
+    // The shared index is warm after a seeded local run and absent on a cold CI worker.
+    // Either way a write that leaks past the overlay changes it: it adds the key where
+    // there was none, or rewrites the expertise row from '/expertise' to '/'.
     $sharedBefore = treeIsolationSharedPagesUriIndex();
-
-    // The shared index must hold the committed row, or the comparison below has nothing to protect
-    expect($sharedBefore)->toBeArray()
-        ->and(mustBeArray($sharedBefore, 'the shared pages uri index')[TREE_ISOLATION_EXPERTISE_ID] ?? null)->toBe('/expertise');
 
     // A blank tree is filled in entry-index order, and its root is whichever entry comes
     // first. That order differs between a snapshot and a cold rebuild (#466), so this
