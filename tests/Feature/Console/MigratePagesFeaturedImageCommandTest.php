@@ -159,3 +159,74 @@ it('reports a value-less key for review instead of touching it', function (): vo
 
     expect(migratePagesFiRead('block-value.md'))->toBe($before);
 });
+
+/**
+ * The path the command prints for a fixture.
+ */
+function migratePagesFiPath(string $name): string
+{
+    return migratePagesFiDir().\DIRECTORY_SEPARATOR.$name;
+}
+
+it('goes on past every entry it skips to migrate the ones after them, naming each', function (): void {
+    // An entry with no path, one whose file is missing, one already migrated
+    // and one needing review all come before the two that change
+    $noPath = Mockery::mock(Entry::class);
+    $noPath->shouldReceive('path')->andReturn(null);
+    $missing = Mockery::mock(Entry::class);
+    $missing->shouldReceive('path')->andReturn(migratePagesFiPath('missing.md'));
+
+    migratePagesFiFakeQuery([
+        $noPath,
+        $missing,
+        migratePagesFiEntry('already-migrated.md', migratePagesFiFixture('featured_image_16_9: default/bridge.jpg')),
+        migratePagesFiEntry('block-value.md', migratePagesFiFixture("featured_image:\n  - default/chekov.jpg")),
+        migratePagesFiEntry('kirk.md', migratePagesFiFixture('featured_image: default/kirk.jpg')),
+        migratePagesFiEntry('spock.md', migratePagesFiFixture('featured_image: default/spock.jpg')),
+    ]);
+
+    pendingArtisan('content:migrate-pages-featured-image')
+        ->expectsOutput('Needs review: '.migratePagesFiPath('block-value.md').' carries the handle with no inline value.')
+        ->expectsOutput('Migrated '.migratePagesFiPath('kirk.md').' (moved)')
+        ->expectsOutput('Migrated '.migratePagesFiPath('spock.md').' (moved)')
+        ->expectsOutput('Moved 2 entries; dropped 0 empty or already-replaced keys.')
+        ->expectsOutputToContain('1 entry left untouched')
+        ->assertSuccessful();
+
+    expect(migratePagesFiRead('kirk.md'))->toBe(migratePagesFiFixture('featured_image_16_9: default/kirk.jpg'))
+        ->and(migratePagesFiRead('spock.md'))->toBe(migratePagesFiFixture('featured_image_16_9: default/spock.jpg'))
+        ->and(is_file(migratePagesFiPath('missing.md')))->toBeFalse();
+});
+
+it('counts a dropped key apart from a moved one, in the singular', function (): void {
+    migratePagesFiFakeQuery([
+        migratePagesFiEntry('uhura.md', migratePagesFiFixture("featured_image: default/old-uhura.jpg\nfeatured_image_16_9: default/new-uhura.jpg")),
+    ]);
+
+    pendingArtisan('content:migrate-pages-featured-image')
+        ->expectsOutput('Migrated '.migratePagesFiPath('uhura.md').' (dropped)')
+        ->expectsOutput('Moved 0 entries; dropped 1 empty or already-replaced key.')
+        ->doesntExpectOutputToContain('left untouched')
+        ->assertSuccessful();
+
+    expect(migratePagesFiRead('uhura.md'))->toBe(migratePagesFiFixture('featured_image_16_9: default/new-uhura.jpg'));
+});
+
+it('names each entry a dry run would change, and counts dropped keys in the plural', function (): void {
+    $sulu = migratePagesFiFixture("featured_image: null\ntitle_alias: Sulu");
+    $scott = migratePagesFiFixture('featured_image: ~');
+    migratePagesFiFakeQuery([
+        migratePagesFiEntry('sulu.md', $sulu),
+        migratePagesFiEntry('scott.md', $scott),
+    ]);
+
+    pendingArtisan('content:migrate-pages-featured-image --dry-run')
+        ->expectsOutput('[dry-run] '.migratePagesFiPath('sulu.md').' (dropped)')
+        ->expectsOutput('[dry-run] '.migratePagesFiPath('scott.md').' (dropped)')
+        ->expectsOutput('Would move 0 entries; dropped 2 empty or already-replaced keys.')
+        ->doesntExpectOutputToContain('Migrated')
+        ->assertSuccessful();
+
+    expect(migratePagesFiRead('sulu.md'))->toBe($sulu)
+        ->and(migratePagesFiRead('scott.md'))->toBe($scott);
+});
