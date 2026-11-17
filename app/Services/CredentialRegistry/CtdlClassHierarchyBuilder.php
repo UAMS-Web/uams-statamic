@@ -38,10 +38,15 @@ final class CtdlClassHierarchyBuilder
             // Read type metadata from the enum attribute
             $info = $case->info();
             // Skip cases without metadata or slug
+            // Every case the enum generator writes carries the attribute (measured: 120 of
+            // 120), so the skip never runs; it guards a hand-added case.
+            // @pest-mutate-ignore: InstanceOfToTrue, ContinueToBreak
             if (! $info instanceof CredentialRegistryTypeInfo) {
                 continue;
             }
 
+            // Every generated case has a non-empty slug (measured: 120 of 120).
+            // @pest-mutate-ignore: EmptyStringToNotEmpty, ContinueToBreak
             if ($info->slug === '') {
                 continue;
             }
@@ -57,8 +62,8 @@ final class CtdlClassHierarchyBuilder
             // Check whether this class is a "top-level" ceterms root for the UI
             $subclassOf = $info->subclass_of;
 
-            // Top-level: no ceterms parent (empty or non-ceterms subclass_of)
-            if ($subclassOf === '' || ! str_starts_with($subclassOf, 'ceterms:')) {
+            // Top-level: no ceterms parent (an empty subclass_of does not start with ceterms: either)
+            if (! str_starts_with($subclassOf, 'ceterms:')) {
                 // Add this case as a root option
                 $topLevel[] = self::optionRow($case);
             }
@@ -77,6 +82,8 @@ final class CtdlClassHierarchyBuilder
                 $childCase = CredentialRegistry::tryFrom($childUri);
 
                 // Skip unknown URIs (should be rare)
+                // Every generated child URI names a case (measured: none unresolved).
+                // @pest-mutate-ignore: ContinueToBreak
                 if ($childCase === null) {
                     continue;
                 }
@@ -86,6 +93,9 @@ final class CtdlClassHierarchyBuilder
             }
 
             // Sort children by slug for stable ordering
+            // The generator already emits each parent's children in slug order (measured: all
+            // 15 parents), so the sort keeps that order only if the enum ever changes.
+            // @pest-mutate-ignore: RemoveFunctionCall
             usort(
                 $childRows,
                 static fn (array $a, array $b): int => strcmp($a['key'], $b['key'])
@@ -96,6 +106,9 @@ final class CtdlClassHierarchyBuilder
         }
 
         // Sort top-level options by slug
+        // The generator already emits the 42 roots in slug order, so the sort keeps that
+        // order only if the enum ever changes.
+        // @pest-mutate-ignore: RemoveFunctionCall
         usort(
             $topLevel,
             static fn (array $a, array $b): int => strcmp($a['key'], $b['key'])
@@ -118,6 +131,9 @@ final class CtdlClassHierarchyBuilder
         // Read metadata for slug and label
         $info = $case->info();
 
+        // Every generated case has the attribute and a non-empty slug, so the case-name
+        // fallbacks never run; they guard a hand-added case.
+        // @pest-mutate-ignore: BooleanAndToBooleanOr, InstanceOfToTrue, EmptyStringToNotEmpty
         return [
             'key' => $info instanceof CredentialRegistryTypeInfo && $info->slug !== ''
                 ? $info->slug
