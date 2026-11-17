@@ -16,7 +16,7 @@ uses(TestCase::class);
 /**
  * Unit tests for PDF Info / XMP metadata extraction helpers.
  *
- * Mutation: 100% on App\Services\Assets\PdfDocumentMetadataReader (41 mutants, --covered-only).
+ * Mutation: 100% on App\Services\Assets\PdfDocumentMetadataReader (85 mutants, all tested; Windows, #884).
  *
  * @command  php artisan test --compact tests/Feature/Services/Assets/PdfDocumentMetadataReaderTest.php
  */
@@ -112,11 +112,30 @@ function pdfReaderAsset(object $filesystem, mixed $path = 'docs/report.pdf', boo
 /**
  * The reader's temporary copies currently in the system temp directory.
  *
+ * `tempnam()` keeps only the first three characters of its prefix on Windows (`sta1A2B.tmp`)
+ * and all of it elsewhere, so the stem is read off a probe rather than assumed. A glob on the
+ * full prefix matches nothing on Windows, which made every leftover-copy check pass there.
+ *
  * @return list<string>
  */
 function pdfReaderTempCopies(): array
 {
-    return glob(sys_get_temp_dir().'/statamic-pdf-meta-*') ?: [];
+    $prefix = 'statamic-pdf-meta-';
+    $probe = (string) tempnam(sys_get_temp_dir(), $prefix);
+    $name = basename($probe);
+    unlink($probe);
+
+    $stem = '';
+
+    foreach (str_split($prefix) as $index => $character) {
+        if (($name[$index] ?? null) !== $character) {
+            break;
+        }
+
+        $stem .= $character;
+    }
+
+    return glob(sys_get_temp_dir().'/'.$stem.'*') ?: [];
 }
 
 beforeEach(function (): void {
@@ -240,6 +259,34 @@ it('reads past a numeric detail key to a title-like one', function () {
     // @phpstan-ignore argument.type (deliberately off-contract: an int key must not break the string comparison)
     expect((new PdfDocumentMetadataReader)->firstTitleFromDetails([0 => 'Untitled scan', 'pdf:Title' => 'Scan Title']))
         ->toBe('Scan Title');
+});
+
+it('sees a temporary copy the reader would leave behind', function () {
+    $before = pdfReaderTempCopies();
+    $copy = (string) tempnam(sys_get_temp_dir(), 'statamic-pdf-meta-');
+
+    try {
+        $seen = array_map(realpath(...), array_values(array_diff(pdfReaderTempCopies(), $before)));
+
+        expect($seen)->toBe([realpath($copy)]);
+    } finally {
+        unlink($copy);
+    }
+});
+
+it('tries the named title keys before any other title-like key', function (array $details, string $expected) {
+    /** @var array<string, mixed> $typedDetails */
+    $typedDetails = $details;
+
+    expect((new PdfDocumentMetadataReader)->firstTitleFromDetails($typedDetails))->toBe($expected);
+})->with([
+    'Title after a namespaced title' => [['pdf:Title' => 'Namespaced', 'Title' => 'Info'], 'Info'],
+    'title after a namespaced title' => [['pdf:Title' => 'Namespaced', 'title' => 'Lower-case'], 'Lower-case'],
+]);
+
+it('reads a lower-case subject key', function () {
+    expect((new PdfDocumentMetadataReader)->subjectFromDetailsArray(['subject' => 'Lower-case subject']))
+        ->toBe('Lower-case subject');
 });
 
 it('reads the second of two detail values when the first is blank', function () {
