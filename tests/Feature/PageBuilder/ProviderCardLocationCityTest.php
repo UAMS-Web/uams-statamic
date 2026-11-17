@@ -56,7 +56,7 @@ it('depends on clinical_locations being an entries field, so it augments', funct
     // nor the blueprint.
     $blueprint = mustBe(
         Blueprint::class,
-        BlueprintFacade::find('collections/people/person'),
+        BlueprintFacade::find('collections.people::person'),
         'the people person blueprint'
     );
 

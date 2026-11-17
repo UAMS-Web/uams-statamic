@@ -12,13 +12,10 @@ use App\Listeners\DeriveSpotlightTitleAndSlug;
 use App\Listeners\DisambiguateEntryTitle;
 use App\Listeners\DispatchLocationRegionBackfill;
 use App\Listeners\EnforceChoiceSubmissionLimits;
-use App\Listeners\EnforcePeopleEditingScope;
-use App\Listeners\EnforcePeopleScopeOnProviderSync;
 use App\Listeners\FlattenLogoOrderValues;
 use App\Listeners\GenerateNewsReleasePdf;
 use App\Listeners\HashVisibilityPassword;
 use App\Listeners\InvalidateSchemaJsonLdCache;
-use App\Listeners\MakeWorkdayFieldsReadOnly;
 use App\Listeners\MirrorSpotlightFeaturedProviderRelationships;
 use App\Listeners\PreserveGoogleBusinessProfileCategoryGcid;
 use App\Listeners\PreventDeletingMounts;
@@ -26,13 +23,10 @@ use App\Listeners\PreventMountingToTreeRoot;
 use App\Listeners\RedirectOrphanedDescendants;
 use App\Listeners\RedirectSuppressedDependents;
 use App\Listeners\RefreshKnowledgeBaseMountUris;
-use App\Listeners\RefreshProviderEligibilityForLocation;
 use App\Listeners\RemoveNewsReleasePdfOnDelete;
-use App\Listeners\RestoreWorkdayManagedFields;
 use App\Listeners\ScanLinksOnPublish;
 use App\Listeners\SetAssetMetadataFromUpload;
 use App\Listeners\SetCurrentEntryForTitleFormat;
-use App\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving;
 use App\Listeners\SyncAreaOfExpertiseSectionSearchIndex;
 use App\Listeners\SyncEntryPublishedStatus;
 use App\Listeners\ValidateCalculatorEntry;
@@ -58,7 +52,6 @@ use Statamic\Events\EntrySaving;
 use Statamic\Events\FormSubmitted;
 use Statamic\Events\GlobalSetSaved;
 use Statamic\Events\ResponseCreated;
-use Statamic\Events\RevisionSaving;
 use Statamic\Events\TermSaved;
 use Statamic\Events\TermSaving;
 
@@ -86,22 +79,15 @@ class EventServiceProvider extends BaseServiceProvider
         // validate clinical expertise (Areas of Expertise) entries when saving
         // (parent-blueprint rules; unbounded depth);
         // validate calculator entries when saving (primary uniqueness,
-        // sub-handle reference rules, handle collisions);
-        // keep a scoped editor's people entry inside their organizations (UAMS-Web/uams-statamic-archive#3182),
-        // and refuse a relationship sync that would change one outside them (UAMS-Web/uams-statamic-archive#3223);
-        // keep the Workday-managed people fields at their stored values (UAMS-Web/uams-statamic-archive#3186).
-        // The virtual computed fields are stripped first, as they were when a
-        // provider registered that listener (UAMS-Web/uams-statamic-archive#3240).
+        // sub-handle reference rules, handle collisions). The people listeners
+        // (editing scope, Workday-managed fields, the computed fields' virtual
+        // values) are registered by `uams-web/aether-people` (#696).
         EntrySaving::class => [
-            StripProviderPeopleVirtualFieldsOnEntrySaving::class,
             SetCurrentEntryForTitleFormat::class,
             ValidateKnowledgeBaseEntry::class,
             ValidateClinicalExpertiseEntry::class,
             ValidateClinicalLocationsEntry::class,
             ValidateSpecialInterestsScope::class,
-            EnforcePeopleEditingScope::class,
-            EnforcePeopleScopeOnProviderSync::class,
-            RestoreWorkdayManagedFields::class.'@handleEntrySaving',
             ValidateCalculatorEntry::class,
             FlattenLogoOrderValues::class,
             SyncEntryPublishedStatus::class,
@@ -130,13 +116,6 @@ class EventServiceProvider extends BaseServiceProvider
         EntryBlueprintFound::class => [
             AppendOrphanBanner::class,
             AppendPublishDependencyBanner::class,
-            MakeWorkdayFieldsReadOnly::class,
-        ],
-
-        // Keep the Workday-managed people fields at their stored values in a
-        // working copy, as on a save (UAMS-Web/uams-statamic-archive#3186)
-        RevisionSaving::class => [
-            RestoreWorkdayManagedFields::class.'@handleRevisionSaving',
         ],
 
         // Redirect a published front-end entry orphaned by an unpublished
@@ -172,7 +151,6 @@ class EventServiceProvider extends BaseServiceProvider
         // disambiguate duplicate entry titles (append (2), (3), ...);
         // clear current entry used by {{ disambiguate_title }} tag;
         // queue a location's Arkansas region derivation off the save path (UAMS-Web/uams-statamic-archive#1112)
-        // re-index linked people's eligibility when a practice location changes (UAMS-Web/uams-statamic-archive#3123)
         EntrySaved::class => [
             ScanLinksOnPublish::class,
             DisambiguateEntryTitle::class,
@@ -182,19 +160,16 @@ class EventServiceProvider extends BaseServiceProvider
             RefreshKnowledgeBaseMountUris::class,
             DispatchLocationRegionBackfill::class,
             SyncAreaOfExpertiseSectionSearchIndex::class,
-            RefreshProviderEligibilityForLocation::class,
         ],
 
         // Re-stamp mounted knowledge base URIs when a mount-parent page is deleted;
         // remove a deleted news release's public PDF; drop a deleted Area of Expertise's
-        // synthetic section search documents (UAMS-Web/uams-statamic-archive#1527); re-index linked people's
-        // eligibility when a practice location is deleted (UAMS-Web/uams-statamic-archive#3123)
+        // synthetic section search documents (UAMS-Web/uams-statamic-archive#1527)
         EntryDeleted::class => [
             CaptureRedirectOnEntryDelete::class,
             RefreshKnowledgeBaseMountUris::class,
             RemoveNewsReleasePdfOnDelete::class,
             SyncAreaOfExpertiseSectionSearchIndex::class,
-            RefreshProviderEligibilityForLocation::class,
         ],
 
         // Refuse deleting an entry another collection is mounted on

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Services\ComputedFields\DepartmentHub;
 
 use App\Services\ComputedFields\Reverse\ReverseEntryReferenceResolver;
-use App\Support\Collections\PeopleCollection;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Derives a Departmental News Hub's leadership/people zone from the existing

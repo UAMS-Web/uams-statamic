@@ -43,7 +43,7 @@ it('gives each scheduled blueprint publish_at and unpublish_at, and no date fiel
     // The sidebar date the dated collections used is gone
     expect($blueprint->hasField('date'))->toBeFalse();
 })->with([
-    'person' => ['collections/people/person'],
+    'person' => ['collections.people::person'],
     'basic page' => ['collections/pages/basic_page'],
     'landing page' => ['collections/pages/landing_page'],
 ]);
@@ -56,7 +56,7 @@ it('offers no Scheduled status on a people or pages blueprint', function (string
     expect(array_column(mustBeArray($options, "{$handle} status options"), 'key'))
         ->toBe(['draft', 'pending', 'private', 'published']);
 })->with([
-    'person' => ['collections/people/person'],
+    'person' => ['collections.people::person'],
     'basic page' => ['collections/pages/basic_page'],
     'landing page' => ['collections/pages/landing_page'],
     'child site link' => ['collections/pages/child_site_link'],

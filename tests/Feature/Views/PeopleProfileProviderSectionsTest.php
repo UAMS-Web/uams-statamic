@@ -90,7 +90,7 @@ it('escapes markup in award notes so injected tags render as inert text', functi
 // escape on that shape too, so the ticket's central assertion is not resting on
 // a harness-only value shape (the adversarial-review fold-in on UAMS-Web/uams-statamic-archive#1672).
 it('escapes markup in an award title on the augmented replicator shape', function (): void {
-    $awardsField = Blueprint::find('collections/people/person')?->field('awards');
+    $awardsField = Blueprint::find('collections.people::person')?->field('awards');
 
     if (! $awardsField instanceof Field) {
         $this->markTestSkipped('Requires the people blueprint with an `awards` field.');

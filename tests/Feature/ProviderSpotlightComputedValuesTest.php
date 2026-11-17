@@ -267,7 +267,7 @@ it('gates the appointment CTA on the provider eligibility', function (array $pro
     expect(spotlightService()->isBookable(spotlightFixture(['featured_provider' => ['prov-gate']])))->toBe($expected);
 })->with([
     'bookable: appointments + accepting, not resident' => [
-        ['appointments_query' => true, 'accepting_patients_query' => true, 'resident_query' => false],
+        ['appointments_query' => true, 'accepting_patients_query' => true, 'trainee_type' => 'none'],
         true,
     ],
     'not accepting new patients' => [
@@ -279,22 +279,28 @@ it('gates the appointment CTA on the provider eligibility', function (array $pro
         false,
     ],
     'resident is never bookable' => [
-        ['appointments_query' => true, 'accepting_patients_query' => true, 'resident_query' => true],
+        ['appointments_query' => true, 'accepting_patients_query' => true, 'trainee_type' => 'resident'],
         false,
+    ],
+    // Only a resident is held back; a fellow books like any other provider
+    'fellow is bookable' => [
+        ['appointments_query' => true, 'accepting_patients_query' => true, 'trainee_type' => 'fellow'],
+        true,
     ],
     // true_false values can arrive as strings; the coercion must treat "0" /
     // "false" as false (a naive (bool) cast would make "0" truthy).
     'bookable via string "1"/"true"' => [
-        ['appointments_query' => '1', 'accepting_patients_query' => 'true', 'resident_query' => '0'],
+        ['appointments_query' => '1', 'accepting_patients_query' => 'true'],
         true,
     ],
     'not bookable via string "0"' => [
         ['appointments_query' => 'true', 'accepting_patients_query' => '0'],
         false,
     ],
-    'resident via string "1"' => [
-        ['appointments_query' => 'true', 'accepting_patients_query' => 'true', 'resident_query' => '1'],
-        false,
+    // The pre-#696 yes/no field no longer decides it; the carry-over script moves it to `trainee_type`
+    'legacy resident_query alone does not gate' => [
+        ['appointments_query' => 'true', 'accepting_patients_query' => 'true', 'resident_query' => true],
+        true,
     ],
 ]);
 

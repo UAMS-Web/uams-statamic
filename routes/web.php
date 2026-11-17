@@ -8,14 +8,12 @@ use App\Http\Controllers\ClinicalExpertiseSectionController;
 use App\Http\Controllers\Feed\PostsFeedController;
 use App\Http\Controllers\KnowledgeBase\ArticleReactionController;
 use App\Http\Controllers\KnowledgeBase\ArticleViewController;
-use App\Http\Controllers\People\PeopleLensController;
 use App\Http\Controllers\Seo\RobotsController;
 use App\Http\Controllers\Seo\SitemapIndexController;
 use App\Http\Middleware\RedirectGuestToLogin;
 use App\Providers\AppServiceProvider;
 use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
 use App\Services\NewsRelease\NewsReleasePdfGenerator;
-use App\Support\People\Lenses\PeopleLensRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -65,25 +63,6 @@ if ($postsCollection !== null) {
         }));
 }
 
-// People lens routes (UAMS-Web/uams-statamic-archive#1635 / UAMS-Web/uams-statamic-archive#1636). A lens renders one canonical `people` entry
-// (which lives only on the canonical site) through a site-specific template at its
-// own URL — the clinical `/provider/{slug}` on `health`, the org-derived lenses on
-// their sites. Registered per active site's URL prefix (mirroring the per-site feed
-// routes above) and before Statamic's catch-all, so a lens URL reaches
-// PeopleLensController; a non-lens URL under the same prefix falls through to the
-// front end without shadowing a real page. The registry is the single source of the lens set.
-foreach (app(PeopleLensRegistry::class)->all() as $lens) {
-    Site::all()
-        ->filter(fn ($site) => $lens->activeOnSite($site->handle()))
-        ->map(fn ($site) => URL::makeRelative($site->url()))
-        ->unique()
-        ->each(fn ($prefix) => Route::prefix($prefix)->group(function () use ($lens) {
-            Route::get($lens->route, PeopleLensController::class)
-                ->defaults('lens', $lens->handle)
-                ->middleware('statamic.web');
-        }));
-}
-
 // Classifieds posting (UAMS-Web/uams-statamic-archive#2519): a signed-in user's own listings on Inside UAMS, and the
 // forms to post, edit and remove one. Registered under the classifieds site's URL
 // prefix and before Statamic's catch-all, so `statamic.web` resolves the site from the
@@ -125,9 +104,13 @@ Route::get('entries/{entry}', [FrontendController::class, 'route'])
 // and otherwise DELEGATES to the normal front end for the full URL — so it never
 // discloses draft/restricted content and never 404s (shadows) a real page whose
 // last segment merely happens to be a section token (e.g. `/about/locations`).
+//
+// `{entry}` never starts with `api/`: the Find-a-Doc read API, which `uams-web/aether-people`
+// registers after these routes (#696), serves `/api/v1/find-a-doc/providers`, and
+// `providers` is a section token, so an unconstrained `{entry}` would take that URL.
 Route::get('{entry}/{section}', ClinicalExpertiseSectionController::class)
     ->middleware('statamic.web')
-    ->where('entry', '.*')
+    ->where('entry', '(?!api/).*')
     ->where('section', ClinicalExpertiseSectionResolver::routeConstraint());
 
 /**
