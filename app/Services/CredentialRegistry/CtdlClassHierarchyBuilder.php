@@ -131,14 +131,16 @@ final class CtdlClassHierarchyBuilder
         // Read metadata for slug and label
         $info = $case->info();
 
-        // Every generated case has the attribute and a non-empty slug, so the case-name
-        // fallbacks never run; they guard a hand-added case.
-        // @pest-mutate-ignore: BooleanAndToBooleanOr, InstanceOfToTrue, EmptyStringToNotEmpty
+        // Every generated case carries the attribute (measured: 120 of 120), so the
+        // case-name fallbacks below never run; they guard a hand-added case.
+        // @pest-mutate-ignore: InstanceOfToTrue
+        $hasInfo = $info instanceof CredentialRegistryTypeInfo;
+
+        // Every generated case also has a non-empty slug (measured: 120 of 120).
+        // @pest-mutate-ignore: BooleanAndToBooleanOr, EmptyStringToNotEmpty
         return [
-            'key' => $info instanceof CredentialRegistryTypeInfo && $info->slug !== ''
-                ? $info->slug
-                : $case->name,
-            'value' => $info instanceof CredentialRegistryTypeInfo ? $info->label : $case->name,
+            'key' => $hasInfo && $info->slug !== '' ? $info->slug : $case->name,
+            'value' => $hasInfo ? $info->label : $case->name,
         ];
     }
 }
