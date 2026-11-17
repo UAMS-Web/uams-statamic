@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f56e3e26d17692b1b8cdf2f4eff41bbd",
+    "content-hash": "9a588e109aec35bf6be590cea60fb5de",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12519,16 +12519,16 @@
         },
         {
             "name": "uams-web/aether-redirects",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-redirects.git",
-                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1"
+                "reference": "e0d1d95a3bc7a805fc1d8835e476473470a9a3fa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
-                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/e0d1d95a3bc7a805fc1d8835e476473470a9a3fa",
+                "reference": "e0d1d95a3bc7a805fc1d8835e476473470a9a3fa",
                 "shasum": ""
             },
             "require": {
@@ -12589,7 +12589,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-redirects/issues",
                 "source": "https://github.com/UAMS-Web/aether-redirects"
             },
-            "time": "2026-11-12T16:50:44+00:00"
+            "time": "2026-11-14T02:03:55+00:00"
         },
         {
             "name": "uams-web/aether-search",
