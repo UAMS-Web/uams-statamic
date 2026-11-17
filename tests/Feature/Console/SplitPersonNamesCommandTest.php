@@ -26,15 +26,22 @@ beforeEach(function (): void {
 /**
  * Persist a `people` entry with the given data and return its id.
  *
- * @param  array<string, mixed>  $data
+ * @param  string|null  $slug  The slug, or null for an entry with none
+ * @param  array<string, mixed>  $data  The entry data
+ * @param  string|null  $id  A fixed id, so the order the query returns entries in is known
  */
-function splitPersonNamesPerson(string $slug, array $data): string
+function splitPersonNamesPerson(?string $slug, array $data, ?string $id = null): string
 {
     /** @var EntryInstance $entry */
     $entry = Entry::make();
     $entry->collection('people');
+
+    if ($id !== null) {
+        $entry->id($id);
+    }
+
     $entry->slug($slug);
-    $entry->data(['title' => ucfirst($slug), ...$data]);
+    $entry->data(['title' => ucfirst($slug ?? 'untitled'), ...$data]);
     $entry->saveQuietly();
 
     return mustBeString($entry->id(), 'the entry id');
@@ -116,4 +123,43 @@ it('leaves an entry already split, and one with no name, alone', function (): vo
         ->assertSuccessful();
 
     expect(splitPersonNamesFind($split)->get('person_name'))->toBe(splitPersonNamesWholeName());
+});
+
+it('goes on past an entry with no name and one already split to split the entries after them', function (): void {
+    splitPersonNamesPerson('chapel', [], 'split-person-names-a');
+    splitPersonNamesPerson('sulu', [
+        'person_name' => splitPersonNamesWholeName(),
+        'nickname' => ['text' => 'Hikaru', 'phonetic_text' => null],
+    ], 'split-person-names-b');
+    $kirk = splitPersonNamesPerson('kirk', ['person_name' => splitPersonNamesWholeName()], 'split-person-names-c');
+
+    pendingArtisan('content:split-person-names')
+        ->expectsOutput('Split kirk')
+        ->expectsOutput('Split 1 entry.')
+        ->assertSuccessful();
+
+    expect(splitPersonNamesFind($kirk)->get('name_display_format'))->toBe('nickname_only@ns');
+});
+
+it('names every entry a dry run would split', function (): void {
+    splitPersonNamesPerson('uhura', ['person_name' => splitPersonNamesWholeName()], 'split-person-names-a');
+    splitPersonNamesPerson('scott', ['person_name' => splitPersonNamesWholeName()], 'split-person-names-b');
+
+    pendingArtisan('content:split-person-names --dry-run')
+        ->expectsOutput('[dry-run] uhura')
+        ->expectsOutput('[dry-run] scott')
+        ->expectsOutput('Would split 2 entries.')
+        ->doesntExpectOutputToContain('Split ')
+        ->assertSuccessful();
+});
+
+it('names an entry with no slug by an empty string', function (): void {
+    $id = splitPersonNamesPerson(null, ['person_name' => splitPersonNamesWholeName()]);
+
+    pendingArtisan('content:split-person-names')
+        ->expectsOutput('Split ')
+        ->expectsOutput('Split 1 entry.')
+        ->assertSuccessful();
+
+    expect(splitPersonNamesFind($id)->get('name_display_format'))->toBe('nickname_only@ns');
 });

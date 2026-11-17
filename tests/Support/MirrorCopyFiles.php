@@ -9,11 +9,13 @@ use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * The two file steps {@see EntriesAndTermsIsolatedTestCase} takes when it brings its
- * per-process copy in line with the shared content mirror (UAMS-Web/uams-statamic#558).
+ * per-process copy in line with its source (UAMS-Web/uams-statamic#558).
  *
- * The mirror is shared by every parallel worker, and a test on a base that does not
- * isolate entries still saves into it, so a file can vanish between the copy's
- * listing and its next read. Both steps then treat the file as gone, as the Stache
+ * The source was the shared content mirror, which every parallel worker reads and a
+ * test on a base that does not isolate entries still saves into, so a file could
+ * vanish between the copy's listing and its next read. The source is now `content/`
+ * (UAMS-Web/uams-statamic#576), which no test writes, and the tolerance stays for a
+ * source that changes anyway. Both steps then treat the file as gone, as the Stache
  * traverser's vanished-file skip does (UAMS-Web/uams-statamic-archive#2639): only
  * when a fresh listing of its directory no longer holds it. Every other failure still
  * raises.

@@ -28,9 +28,9 @@ use Tests\TestCase;
  * paratest worker reads the same one. A test on the plain {@see TestCase} that saves
  * an entry or a term writes it there, where a sibling worker's cold Stache warm or a
  * listing that enumerates the collection reads it as committed content. This base
- * gives each process a copy of the mirror's `collections/` and `taxonomies/` and
- * points the `entries` and `terms` stores at the copy, so a save lands where only
- * this process reads.
+ * gives each process a copy of `collections/` and `taxonomies/` and points the
+ * `entries` and `terms` stores at the copy, so a save lands where only this process
+ * reads.
  *
  * ## The invariant it keeps
  *
@@ -59,14 +59,25 @@ use Tests\TestCase;
  * outright, which costs nothing there because its stores are empty; here the stores
  * hold all of `content/`, and rebuilding their indexes per test would cost a cold
  * warm. Indexes other than the paths hold content values, not paths, and the copy is
- * byte-identical to the mirror when a test starts, so they stay correct.
+ * byte-identical to `content/`, which the mirror was seeded from, when a test starts,
+ * so they stay correct.
  *
  * ## The copy is kept current, not rebuilt
  *
- * {@see setUp()} brings the copy back in line with the mirror before each test:
+ * {@see setUp()} brings the copy back in line with `content/` before each test:
  * files the last test added are removed, and files it changed or removed are copied
  * again, judged by size and modification time. The first test in a process copies
  * everything. The copy is removed when the process exits; a killed process leaves it.
+ *
+ * The copy is built from `content/`, not from the mirror (UAMS-Web/uams-statamic#576).
+ * Other workers write the mirror while this one copies it, so a copy taken from it
+ * could hold a sibling's half-finished save. `content/` is the committed submodule,
+ * which no test writes. The mirror is still the root the cached paths are rewritten
+ * from, because the worker's Stache was warmed from it: every cached entry and term
+ * path names the mirror, and the part after the mirror root names the same file,
+ * with the same bytes, under `content/` (measured on #576). That holds while the
+ * mirror is current with `content/`, and a `content/` that moved after the seed is
+ * the drift `ContentMirrorFreshnessTest` fails a run on.
  *
  * ## What it does not isolate
  *
@@ -117,7 +128,8 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
     private static bool $copyCleanupRegistered = false;
 
     /**
-     * This process's copy of the mirror, standing in for it for entries and terms.
+     * This process's copy of `content/`'s `collections/` and `taxonomies/`, standing in for
+     * the mirror for entries and terms.
      */
     protected string $isolatedContentRoot;
 
@@ -144,7 +156,7 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
 
         $sharedRoot = $this->normalize(ContentRoot::path(Config::string('app.env')));
 
-        $this->syncCopy($sharedRoot);
+        $this->syncCopy();
         $this->registerCopyCleanup();
         $this->installOverlayCache();
 
@@ -157,26 +169,27 @@ abstract class EntriesAndTermsIsolatedTestCase extends TestCase
 
     /**
      * Bring this process's copy of `collections/` and `taxonomies/` in line with
-     * the shared mirror.
+     * `content/`.
      *
-     * Removes what the copy has and the mirror does not, then copies every file
-     * whose size or modification time differs, keeping the mirror's modification
-     * time so the next comparison can skip it. A file a sibling worker removes
-     * mid-sync is treated as gone ({@see MirrorCopyFiles}).
-     *
-     * @param  string  $sharedRoot  The shared mirror, normalized to forward slashes.
+     * Removes what the copy has and `content/` does not, then copies every file
+     * whose size or modification time differs, keeping the source's modification
+     * time so the next comparison can skip it. The source is `content/` rather than
+     * the shared mirror, which other workers write while this one copies (see the
+     * class docblock). A file removed mid-sync is still treated as gone
+     * ({@see MirrorCopyFiles}).
      */
-    private function syncCopy(string $sharedRoot): void
+    private function syncCopy(): void
     {
+        $sourceRoot = $this->normalize(base_path('content'));
         $copyRoot = $this->normalize($this->isolatedContentRoot);
 
         foreach (self::ISOLATED_STORES as $subdirectory) {
-            $source = $sharedRoot.'/'.$subdirectory;
+            $source = $sourceRoot.'/'.$subdirectory;
             $target = $copyRoot.'/'.$subdirectory;
 
             // Fail rather than isolate against nothing, which would hide every real entry
             if (! is_dir($source)) {
-                static::fail("The shared content mirror has no {$subdirectory}/ directory at \"{$source}\" to copy.");
+                static::fail("content/ has no {$subdirectory}/ directory at \"{$source}\" to copy. If content/ is empty, run: git submodule update --init content");
             }
 
             $sourceFiles = MirrorCopyFiles::stamps(File::allFiles($source, true));

@@ -27,10 +27,11 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Build a mock clinical_locations entry the command's gate can read.
  *
+ * @param  string|null  $id  The value `id()` returns
  * @param  mixed  $regions  The value `get('regions')` returns
  * @param  mixed  $map  The value `get('map')` returns
  */
-function queryLocationMock(string $id, $regions, $map): Entry
+function queryLocationMock(?string $id, $regions, $map): Entry
 {
     $collection = Mockery::mock(Collection::class);
     $collection->shouldReceive('handle')->andReturn('clinical_locations');
@@ -98,6 +99,58 @@ it('queues nothing on a dry run', function (): void {
 
     backfillRunCommand('content:backfill-location-regions --dry-run')
         ->expectsOutputToContain('Would queue 1 location')
+        ->assertSuccessful();
+
+    Queue::assertNothingPushed();
+});
+
+it('goes on past the locations it skips to queue the ones after them, naming each', function (): void {
+    Queue::fake();
+
+    fakeLocationQuery([
+        queryLocationMock('already-set', 'central-arkansas', ['lat' => 34.7465, 'lng' => -92.2896]),
+        queryLocationMock('no-coordinate', null, null),
+        queryLocationMock(null, null, ['lat' => 34.7465, 'lng' => -92.2896]),
+        queryLocationMock('needs-region-kirk', null, ['lat' => 34.7465, 'lng' => -92.2896]),
+        queryLocationMock('needs-region-spock', null, ['lat' => 36.0626, 'lng' => -94.1574]),
+    ]);
+
+    backfillRunCommand('content:backfill-location-regions')
+        ->expectsOutput('Queued needs-region-kirk')
+        ->expectsOutput('Queued needs-region-spock')
+        ->expectsOutput('Queued 2 locations.')
+        ->assertSuccessful();
+
+    Queue::assertPushed(BackfillLocationRegion::class, 2);
+    Queue::assertPushed(fn (BackfillLocationRegion $job): bool => $job->entryId === 'needs-region-kirk');
+    Queue::assertPushed(fn (BackfillLocationRegion $job): bool => $job->entryId === 'needs-region-spock');
+});
+
+it('names the location a dry run would queue, in the singular', function (): void {
+    Queue::fake();
+
+    fakeLocationQuery([
+        queryLocationMock('needs-region', null, ['lat' => 34.7465, 'lng' => -92.2896]),
+    ]);
+
+    backfillRunCommand('content:backfill-location-regions --dry-run')
+        ->expectsOutput('[dry-run] needs-region')
+        ->expectsOutput('Would queue 1 location.')
+        ->doesntExpectOutputToContain('Queued')
+        ->assertSuccessful();
+
+    Queue::assertNothingPushed();
+});
+
+it('reports no locations when none needs a region', function (): void {
+    Queue::fake();
+
+    fakeLocationQuery([
+        queryLocationMock('already-set', 'central-arkansas', ['lat' => 34.7465, 'lng' => -92.2896]),
+    ]);
+
+    backfillRunCommand('content:backfill-location-regions')
+        ->expectsOutput('Queued 0 locations.')
         ->assertSuccessful();
 
     Queue::assertNothingPushed();
