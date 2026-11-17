@@ -1,11 +1,11 @@
 {
-    "_hash": "60f2d77dc85ce7dc9bfef4b2d601bbaf5b26f1d9064155cc1cc5a3e983bca578",
+    "_hash": "6b9c01fa61fee7f4e08a194b752d06eda957174b181ccfe6f82ba88299de475b",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
                 "package": "pestphp/pest-plugin-browser",
                 "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)",
-                "url": "patches/pest-plugin-browser-per-attempt-timeout.patch",
+                "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
                 "sha256": "e3e12e7fea395155120aab77be5ece38c9433689470e83950336f49d61d94191",
                 "depth": 1,
                 "extra": {
@@ -15,7 +15,7 @@
             {
                 "package": "pestphp/pest-plugin-browser",
                 "description": "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)",
-                "url": "patches/pest-plugin-browser-server-no-shell.patch",
+                "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch",
                 "sha256": "2be97e8163df9ff3f65febd5829943eb9c150325e487467b5e738cbdfa100a56",
                 "depth": 1,
                 "extra": {
@@ -25,110 +25,8 @@
             {
                 "package": "pestphp/pest-plugin-browser",
                 "description": "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)",
-                "url": "patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch",
+                "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch",
                 "sha256": "9e915751dd4e9527699772eef6161f16368e7827b237877492f558167a71a36c",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            }
-        ],
-        "statamic/cms": [
-            {
-                "package": "statamic/cms",
-                "description": "Add blueprint-aware collection create labels",
-                "url": "patches/statamic-collection-create-label-blueprint.patch",
-                "sha256": "795ddc21d85270e1e2b642dd9ec5fa2a483ce5642bdb8623ecbf295f4da63278",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Add blueprint-aware taxonomy create labels",
-                "url": "patches/statamic-taxonomy-create-label-blueprint.patch",
-                "sha256": "97c8ac5b5de383513981adeb14c0c725beb1f74c22b832a630fddf9e263dd5fe",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Align CP updates badge with updater availableUpdatesCount",
-                "url": "patches/statamic-updates-overview-badge.patch",
-                "sha256": "8a89d44c84095f3e0a2560f0419d017bf58d090a46e14639d2ff3c9161a9fe6c",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see #2241)",
-                "url": "patches/statamic-stache-traverser-vanished-file.patch",
-                "sha256": "97cb35eae5d57869c5a7476684a29c1570823079e56853c035ab0cdfdc602556",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see #2643)",
-                "url": "patches/statamic-stache-store-vanished-file-paths.patch",
-                "sha256": "10610d3761d3a4f5b7d412e0e3926af052180807e92eeebb31c7da543dd6d8bf",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see #2643)",
-                "url": "patches/statamic-stache-store-vanished-file-modified.patch",
-                "sha256": "13ddb6ba19ca9f90e9049e73bf5ae0dbe2970fb2c65b2f5ae6f3fff5295c4292",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see #2643)",
-                "url": "patches/statamic-stache-terms-vanished-file-modified.patch",
-                "sha256": "4b9ba9c167faaf7bae52a246e16fbc67d73057d96c372668d8b711633a8541b3",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)",
-                "url": "patches/statamic-stache-terms-vanished-file-paths.patch",
-                "sha256": "b57bbb7673fcbd5cbd6cad05754a8397202643e297ea79d2804e14926111dc4e",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)",
-                "url": "patches/statamic-stache-terms-vanished-file-get-item.patch",
-                "sha256": "54a321a6e6ba825e97866ac9add0dc9631df18c35c79a4b745dcf976a5dd1396",
-                "depth": 1,
-                "extra": {
-                    "provenance": "root"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)",
-                "url": "patches/statamic-stache-basic-vanished-file-get-item.patch",
-                "sha256": "edb5b63794a9508c335872c3dd9fa9357d0a68082efff1313d690a2e25f252be",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"
@@ -264,6 +162,118 @@
                 "depth": 1,
                 "extra": {
                     "provenance": "dependency:pestphp/pest-plugin-mutate"
+                }
+            }
+        ],
+        "statamic/cms": [
+            {
+                "package": "statamic/cms",
+                "description": "Add blueprint-aware collection create labels",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-collection-create-label-blueprint.patch",
+                "sha256": "795ddc21d85270e1e2b642dd9ec5fa2a483ce5642bdb8623ecbf295f4da63278",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Add blueprint-aware taxonomy create labels",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-taxonomy-create-label-blueprint.patch",
+                "sha256": "97c8ac5b5de383513981adeb14c0c725beb1f74c22b832a630fddf9e263dd5fe",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Align CP updates badge with updater availableUpdatesCount",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch",
+                "sha256": "8a89d44c84095f3e0a2560f0419d017bf58d090a46e14639d2ff3c9161a9fe6c",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see UAMS-Web/uams-statamic-archive#2241)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-traverser-vanished-file.patch",
+                "sha256": "97cb35eae5d57869c5a7476684a29c1570823079e56853c035ab0cdfdc602556",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-paths.patch",
+                "sha256": "10610d3761d3a4f5b7d412e0e3926af052180807e92eeebb31c7da543dd6d8bf",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-modified.patch",
+                "sha256": "13ddb6ba19ca9f90e9049e73bf5ae0dbe2970fb2c65b2f5ae6f3fff5295c4292",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-modified.patch",
+                "sha256": "4b9ba9c167faaf7bae52a246e16fbc67d73057d96c372668d8b711633a8541b3",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-paths.patch",
+                "sha256": "b57bbb7673fcbd5cbd6cad05754a8397202643e297ea79d2804e14926111dc4e",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-get-item.patch",
+                "sha256": "54a321a6e6ba825e97866ac9add0dc9631df18c35c79a4b745dcf976a5dd1396",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-basic-vanished-file-get-item.patch",
+                "sha256": "edb5b63794a9508c335872c3dd9fa9357d0a68082efff1313d690a2e25f252be",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch",
+                "sha256": "0b15638367a8a3fc3a6bd95ac840edea2c07887234d36e06cdca1ef91379ae11",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
                 }
             }
         ]

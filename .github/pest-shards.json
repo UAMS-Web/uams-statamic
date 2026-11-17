@@ -552,7 +552,6 @@
         "Tests\\Feature\\Services\\CredentialRegistry\\CtdlClassHierarchyBuilderTest": 0.2173,
         "Tests\\Feature\\Services\\Facilities\\FacilityInheritedAddressServiceTest": 2.6799,
         "Tests\\Feature\\Services\\Facilities\\FacilityInheritedParkingServiceTest": 3.8912,
-        "Tests\\Feature\\Services\\GenerateStatamicPatch\\StatamicPatchGeneratorTest": 0.9032,
         "Tests\\Feature\\Services\\IptcDigitalSourceValueResolverTest": 1.0341,
         "Tests\\Feature\\Services\\KnowledgeBase\\ArticleEngagementMissingTableTest": 0.3175,
         "Tests\\Feature\\Services\\KnowledgeBase\\ArticleEngagementRequestResolverTest": 0.6573,
