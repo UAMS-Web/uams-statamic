@@ -10,21 +10,47 @@
  * and runs no step before it.
  *
  * The reset deletes every ignored file under `storage/framework` and `bootstrap/cache`, sessions
- * included, so `--no-reset` is for a tree where that matters, and for a tree already reset, which
- * is how `local-ci.mjs` calls `gatePest` (#295). It keeps the served site's asset metadata
+ * included, so `--no-reset` is for a tree where that matters, and for a tree already reset.
+ * `local-ci.json` runs it without `--no-reset`, as the `pest` job (#296). It keeps the served site's asset metadata
  * database, which `migrate` cannot rebuild, and it refuses while a test process in the tree holds
  * the content mirror band lock.
  *
  * It exits non-zero when any stage fails, or 2 for a wrong flag or a missing tool.
  */
 
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
-import { captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
+import { capture, captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
 import { GATE_SUBMODULES } from './gate-slot.mjs'
+import { bandFromJunit, bandLine } from './local-ci-bands.mjs'
 
 export const KNOWN_CONTENT_LITTER = []
+
+/**
+ * The parallel band's worker count. Without `--processes`, paratest starts one
+ * worker per logical core: 12 on the Windows 11 machine (6 physical cores, 63.9 GB)
+ * that runs this gate, where a full band on 2026-11-01 left 2.6 GB free and other
+ * work on the machine stopped for low memory. Local runs use 4 workers on every
+ * platform; CI's shards on GitHub-hosted runners keep their own default (#482).
+ */
+export const PARALLEL_WORKERS = 4
+
+/**
+ * The php.ini values both bands run under, the same `zend.assertions` and `pcre.jit`
+ * that ci.yml's `ini-values:` sets. Four tests run only under them and skip
+ * otherwise: two assert an AssertionError, and two induce a PCRE failure the JIT
+ * does not produce. Without them a machine whose php.ini says otherwise (Herd's PHP
+ * runs `pcre.jit=On`) skips two tests and fails the skip baseline (#688).
+ */
+// PARITY: the values ci.yml's two `ini-values:` lines set for the pest jobs (#699).
+export const SUITE_PHP_INI = ['zend.assertions=1', 'pcre.jit=0']
+
+/**
+ * The `-d` pairs for {@link SUITE_PHP_INI}, for a PHP command line.
+ */
+export const SUITE_PHP_INI_ARGS = SUITE_PHP_INI.flatMap((setting) => ['-d', setting])
+// PARITY-END
 
 /**
  * Split what the suite just wrote into the content/ submodule from what was
@@ -156,13 +182,12 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // switches the check off rather than failing a run that legitimately has
     // none.
     //
-    // Keyed on the submodule being ON DISK, NOT on `--skip-submodule`. That
-    // flag means "content/ is already materialized, don't re-init it" — the
-    // multi-worktree recipe in the local-ci skill stages every submodule
-    // serially and then fans out WITH the flag — so treating it as "no
-    // content/" would switch the gate off for precisely the concurrent runs
-    // that do have content and do run the bands. An initialized submodule
-    // leaves a `<name>/.git` gitdir file; an uninitialized one leaves
+    // Keyed on the submodule being ON DISK, NOT on how the run was invoked.
+    // The multi-worktree recipe in the local-ci skill stages every submodule
+    // serially and then fans out without re-initializing them, so reading an
+    // invocation as "no content/" would switch the gate off for precisely the
+    // concurrent runs that do have content and do run the bands. An initialized
+    // submodule leaves a `<name>/.git` gitdir file; an uninitialized one leaves
     // nothing, which is the fact worth reading.
     //
     // `users/` is probed the same way since UAMS-Web/uams-statamic-archive#2477 checked it out: the suite
@@ -209,8 +234,8 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // otherwise (~2G on Herd), which the growing content set now OOMs mid-run;
     // the single-process serial tail takes it directly.
     // Build the Stache seed once before the parallel suite so each of the
-    // ~12 paratest workers copies it into its own per-worker cache instead
-    // of running statamic:stache:warm: 12 concurrent warms saturate the
+    // paratest workers (PARALLEL_WORKERS of them) copies it into its own per-worker cache instead
+    // of running statamic:stache:warm: 12 concurrent warms saturated the
     // disk (~168s each vs 21s alone), the dominant parallel cost (UAMS-Web/uams-statamic-archive#1537).
     // DB_DATABASE=:memory: mirrors phpunit.xml: the warm probes the DB for
     // computed-field indexes, so it needs a connectable database (a fresh
@@ -287,9 +312,10 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // Windows, a per-shard `--configuration` (#504), and merges
     // the four reports in its `pest-report` job before the band checks
     // (#387); this runner runs the band whole, so it has nothing to shard
-    // or merge. scripts/local-ci.chain.test.mjs pins that the two commands
-    // differ only by --shard, and on Windows only by the shard's
-    // --configuration (#504).
+    // or merge. The two commands differ only by --shard, and on Windows
+    // only by the shard's --configuration (#504). LOCAL-ONLY: --processes
+    // caps the workers at PARALLEL_WORKERS on this machine; CI's runners
+    // take paratest's default, one per logical core (#482).
     step('JOB pest - parallel suite (excluding serial group)')
     const parallelReport = join(tree, 'junit-parallel.xml')
     const serialReport = join(tree, 'junit-serial.xml')
@@ -299,9 +325,21 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // removes. CI checks out fresh, so it has nothing to mirror here.
     rmSync(parallelReport, { force: true })
     rmSync(serialReport, { force: true })
-    const parallelCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--parallel', '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT}`, '--display-all-issues', '--log-junit', parallelReport], tree)
+    // SUITE_PHP_INI_ARGS mirrors ci.yml's `ini-values:` for the pest jobs, and is
+    // forwarded to the paratest workers, which start their own PHP (#688).
+    const parallelCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT} ${SUITE_PHP_INI_ARGS.join(' ')}`, '--display-all-issues', '--log-junit', parallelReport], tree)
     step('JOB pest - serial tail (group=serial)')
-    const serialCode = runPhp(['-d', 'pcov.enabled=0', 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
+    const serialCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
+
+    // UAMS-Web/uams-statamic-archive#3235: each band beside the interpreter that produced it, so a
+    // figure quoted from this log names its PHP. A band that wrote no report says so rather than
+    // being left out.
+    const phpVersion = capture(php, ['-r', 'echo PHP_VERSION;'], tree) || 'unknown'
+    for (const [band, report] of [['parallel', parallelReport], ['serial', serialReport]]) {
+        console.log(existsSync(report)
+            ? bandLine(band, bandFromJunit(readFileSync(report, 'utf8')), phpVersion)
+            : `${band}: no report written under PHP ${phpVersion}`)
+    }
 
     // UAMS-Web/uams-statamic-archive#1744 — a band that silently skips tests would otherwise report PASS
     // having tested less than it should have. Only meaningful when the band

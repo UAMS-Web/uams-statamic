@@ -5,7 +5,9 @@ description: >-
   (`--mutate`) and code coverage (`--coverage`) under Laravel Herd on macOS and Windows, and
   how to tell a mutation run that executed from one that did not. Activate when `--mutate`
   errors with "Mutation testing requires code coverage to be enabled" or reports "0 Mutations
-  for 0 Files created", when a run reports 100% in implausible time, when mutation or coverage
+  for 0 Files created", when a run reports 100% in implausible time, when a mutation or
+  coverage run reports every file outside `src/`, `lib/` or `app/` as uncovered (`pcov.directory`),
+  when mutation or coverage
   runs are slow or falling back to Xdebug (`herd coverage`), when every `php` on a Mac dies
   with `Killed: 9`, when setting up a new machine for the adversarial-review mutation step,
   when deciding which PHP to run a mutation pass on, or when the user asks how PCOV was set up
@@ -363,10 +365,54 @@ PCOV is set up in Herd's Windows `php84` as a per-machine install (the same shap
 - **`--everything` overrides `--class`: never combine them.** With `--everything`, the run mutates every file under `--path` and ignores what `--class` names, so a command that reads as class-scoped takes hours over the whole directory and its score describes files nobody asked about. Measured in `UAMS-Web/aether-wordpress-importer` at `e6ea8a3` on macOS (Darwin 27.2.0), PHP 8.4 with PCOV, `pestphp/pest-plugin-mutate` `v5.0.1`, both runs with `--testsuite=Unit,Integration --path=src/Services/WordPressImport/Utilities`: `--class` naming one class reported `8 Mutations for 1 Files created`, and `--everything` with `--class` naming another class reported `10227 Mutations for 100 Files created`. Read the `Files created` count before letting a run continue. Without `--everything`, measured in the same repository at `018064f` on Windows 11, PHP 8.4.20 with PCOV, `pest-plugin-mutate` `v5.0.1`, same `--testsuite` and `--path`: a comma-separated `--class` list naming two classes reported `10 Mutations for 2 Files created`, so a list scopes a run. `--ignore` naming one of those two classes beside the list changed nothing (still `10 Mutations for 2 Files created`, and both files ran), so `--ignore` given a namespace-qualified class name did not drop it from a run that names classes. `--ignore` naming a sub-namespace with no `--class` printed no `Files created` line in 12 minutes, though the run had reached `Mutating application files...`, and was stopped, so whether it scopes a run is not measured. The `Files created` line prints only after the initial test run, about 6.5 minutes here, so a bound shorter than that sees no count at all.
 - **Never pass `--filter` to a `--mutate` run; scope it with `--path`.** The plugin sets every child's timeout from the initial run (its duration plus the larger of 5 seconds and 20%) and scores a timeout as caught (`(tested + timedOut) / total`). Unfiltered, the initial run is the whole suite and each child runs only the tests covering its mutant, so a survivor finishes in time. A narrow `--filter` makes the initial run and a child's tests nearly the same set, and a survivor's child overruns on its own start-up. Anything else that narrows the initial run, such as `--group` or a test-file argument, should do the same; that is inferred from the formula, not measured.
 - **Coverage report:** `vendor/bin/pest --coverage-html=build/coverage` (fast under PCOV).
+- **Every file outside `src/`, `lib/` or `app/` reported as uncovered** is a `pcov.directory` problem, not a test problem: see [When covered code sits outside the directory PCOV watches](#when-covered-code-sits-outside-the-directory-pcov-watches).
 
 - In a Laravel application, `php artisan test --coverage` is the coverage report.
 
 - **Convenience script:** `composer mutate -- --class="App\<Class>"` bakes in `--path=app`; works from the **main checkout**. From a linked worktree even `--path=app` finds 0 files; use the sub-path form above with `--path=app/<Subdir>`.
+
+## When covered code sits outside the directory PCOV watches
+
+**PCOV records coverage only for files under `pcov.directory`, and when that is unset it guesses.** It looks in the working directory for `src`, then `lib`, then `app`, takes the first it finds, and falls back to the working directory itself only when none exists (PCOV's README, `v1.0.12`). Herd's `pcov.ini` leaves the value unset. So in a repository that has one of those directories and also keeps tested code outside it (a WordPress theme's root templates, for example), every file outside the chosen directory is invisible to coverage.
+
+**The symptom: every mutant in those files reported as uncovered, with `0 tested`, while the same command on a file inside the watched directory scores normally.** It reads as tests that cover nothing; the tests are fine. Measured in `UAMS-Web/uams-2020` ([UAMS-Web/uams-2020#693](https://github.com/UAMS-Web/uams-2020/pull/693#issuecomment-6741882844)), where PCOV watched `<project>/lib`:
+
+```
+composer mutate -- --path=lib/favicon.php                        1 tested    100.00%
+composer mutate -- --path=home.php,templates/marketing.php      86 uncovered, 0 tested, 0.00%, exit 1
+```
+
+**Passing `-d pcov.directory=.` does not fix it.** A `-d` flag sets the value in the process you start, and a mutation run's workers are separate PHP processes that do not inherit it: `php -d pcov.directory=. tests/mutate.php --path=home.php,templates/marketing.php` still reported 86 uncovered. A probe shows the mechanism without a test suite: a parent script started with the flag prints `parent=[.]`, and the PHP process it starts prints `child=[]`. It works in a fresh temporary directory, so it leaves nothing in yours:
+
+```bash
+(
+  cd "$(mktemp -d)" &&
+  printf '<?php echo "child=[", ini_get("pcov.directory"), "]\\n";\n' > child.php &&
+  printf '<?php echo "parent=[", ini_get("pcov.directory"), "] "; passthru(escapeshellarg(PHP_BINARY) . " " . escapeshellarg(__DIR__ . DIRECTORY_SEPARATOR . "child.php"));\n' > parent.php &&
+  php -d pcov.directory=. parent.php
+)
+```
+
+The child's code lives in a file rather than in a nested `-r` argument because on Windows `escapeshellarg()` replaces each `"` inside an argument with a space, so a nested `-r` probe dies with a parse error there. This block was run as printed under bash and zsh on macOS; the same two-script form was measured on Windows 11 under Git Bash (Herd PHP 8.4, PCOV 1.0.12) and printed `parent=[.] child=[]`.
+
+**The fix: put `pcov.directory` in an ini file that every PHP process reads**, and run from the repository root, since `.` is the working directory. The macOS (Herd) form, the one the measurement used:
+
+```bash
+PCOV_DIR_INI="$HOME/.config/pcov-directory"
+mkdir -p "$PCOV_DIR_INI"
+printf 'pcov.directory=.\n' > "$PCOV_DIR_INI/pcov-directory.ini"
+
+HERD84="$HOME/Library/Application Support/Herd/config/php/84"
+PHP_INI_SCAN_DIR="$HERD84:$PCOV_DIR_INI" php -r 'echo phpversion("pcov") ?: "pcov NOT LOADED", " pcov.directory=[", ini_get("pcov.directory"), "]\n";'
+```
+
+The last line must print PCOV's version and `pcov.directory=[.]`. Then prefix the mutation command the same way: `PHP_INI_SCAN_DIR="$HERD84:$PCOV_DIR_INI" composer mutate -- --path=<files>`. With it, the 86-mutant run above tested 86 and scored 100.00%. The variable is inherited by every worker, which is what the `-d` flag is not.
+
+**`PHP_INI_SCAN_DIR` replaces the scan directory rather than adding to it, so it must name Herd's own directory first.** Leave Herd's out and the replacement drops `pcov.ini`, and PCOV with it: the check above prints `pcov NOT LOADED`. The leading-colon form (`PHP_INI_SCAN_DIR=":$PCOV_DIR_INI"`) does not help either: it appends to the scan directory the binary was configured with (`/usr/local/etc/php/conf.d` in Herd's build), not to Herd's own directory, which Herd's binary uses only while the variable is unset, and drops PCOV the same way. Measured on macOS, Herd PHP 8.4.27, PCOV 1.0.12; adjust `84` to the PHP version you run.
+
+**Not measured:** Windows, where Herd's PHP reads its `php.ini` and the equivalent form has not been tried; Xdebug coverage mode; and writing `pcov.directory=.` into Herd's own `pcov.ini` instead, which would apply to every project on the machine and, in a repository where the default had chosen `src/`, widen collection to the whole working directory. In `uams-2020`, `acf_fields/` and `blocks/` also sit outside `lib/` and are expected to fail the same way, which is inferred rather than measured.
+
+**CI is unaffected** where its setup sets the value itself (in `uams-2020` on its `dev` branch, the setup action passes `pcov.directory` through `setup-php`'s `ini-values`). A repository that documents its own mutation command should point its README at this section rather than restating it.
 
 ## Coverage population and instrument scripts
 
@@ -448,6 +494,10 @@ composer mutate        (separator)      14 tested,  6 untested    70.00%   execu
 
 Confirmed directly in `uamswp-migration-api`, isolated from Pest and from any real file: a minimal `Process(['vendor/bin/pest', ...])` fails to launch with `'vendor' is not recognized as an internal or external command`; the identical call with backslashes launches correctly. Composer's `@php` handler rewrites the separator before PHP ever sees it, which is what makes `composer mutate` and `composer exec -- pest …` the safe forms. **Never invoke `vendor/bin/pest` bare, or through its `.bat`, for a `--mutate` run on Windows.** A bare invocation can report `100.00%` in a wall-clock time that reads as plausible (each failed launch costs a couple of seconds under `cmd.exe`, so a whole file's worth of failures still takes a convincing minute or two) with every mutant marked killed and none of them actually run.
 
+**The same defect is reported and fixed upstream, and the fix there takes a different route.** The cause is `pestphp/pest#1937` and the fix is `pestphp/pest-plugin-mutate#45`, which starts each child through `PHP_BINARY` instead of rewriting `argv[0]`. Read on 2026-11-14 through the REST API, the issue is open and the pull request is open and unmerged. The `PHP_BINARY` change was absent from tags `v4.0.1` and `v5.0.2` and from the default branch `5.x` when `UAMS-Web/uams-claude-skills#544` was investigated. Until it ships, the patch in the section below is what protects a repository.
+
+**What a Windows false kill looks like, and the control that shows it fixed.** Measured on Windows 11 with PHP 8.4, in a scratch clone of `UAMS-Web/aether-wordpress-importer-cleanup` (`UAMS-Web/uams-claude-skills#544`): a bare `vendor/bin/pest --mutate` over one 81-mutant class printed `Score: 100.00%` in 3.24 s, about 0.04 s per mutant, and a log line in `hasFinished()` showed all 81 children exiting 1 with empty output and the `'vendor' is not recognized` message. With `PHP_BINARY` prepended to the child command, the same class printed `79 tested, 2 untested`, `Score: 97.53%` in 93.83 s, the two untested mutants being the two control mutants (`UnwrapStrtolower`, `EmptyStringToNotEmpty`), identical to the Linux and macOS legs. The fix as carried in that repository was then shown on a pull request that changed only a comment in that file (`UAMS-Web/aether-wordpress-importer-cleanup#46`, closed unmerged): its Windows mutate leg reported the same 2 untested of 81, where Windows had scored 100.00% before. A repository adopting the patch can repeat that control: plant a mutant no test kills and expect it to survive on Windows as it does on Linux.
+
 **A Unit suite whose bootstrap loads Patchwork loses every child that scans a directory.** The `wordpress-plugin` template's `tests/bootstrap.php.dist` requires `vendor/antecedent/patchwork/Patchwork.php` for Brain Monkey. Patchwork and the plugin's mutation stream wrapper both replace `file://`, and a directory read through the pair fails with `readdir(): Argument #1 ($dir_handle) must be of type resource or null, true given` in `Patchwork\CodeManipulation\Stream`. A child that collects tests by scanning `tests/Unit` dies before any test, exits non-zero, and is scored as a kill, so a run with no test file named can report 100.00% on a suite that kills nothing. Naming the test file avoids the scan: `pest tests/Unit/SettingsTest.php --mutate --covered-only --path=<source file>`. The check above runs an identical-copy child through the repository's own invocation (add `--arg=<test file>` to match a run that names one) and exits `1`, naming the cause, when it dies; its control is the same child without the mutation variables, which must list tests. Measured on Windows 11 with Pest 5.3.0, pest-plugin-mutate 5.0.2 and Patchwork 2.2.3 in a one-class scratch project (default invocation 100.00% against 33.33% with the file named, on a test file weakened to leave two mutants alive); the original report was on macOS (UAMS-Web/uams-claude-skills#131). Whether a Feature suite is affected is not measured: it does not load Patchwork in the template.
 
 **A child that launches can still run nothing, and on Windows it did.** Further plugin defects produce false kills even once the child starts:
@@ -475,10 +525,10 @@ php .claude/skills/pcov-setup/scripts/check-mutation-instrument.php     # 0 = a 
 
 ### This repository's patches and checks
 
-- **The launch defect is patched away** ([`patches/pest-plugin-mutate-mutant-process-launch.patch`](../../../patches/pest-plugin-mutate-mutant-process-launch.patch), UAMS-Web/uams-statamic-archive#2322): `argv[0]` is normalized to the platform separator, and a child that still cannot start **aborts the run with exit 1** instead of scoring. On a patched `vendor/` every invocation form above executes. The instrument check above is the synced copy; this repository also still carries a legacy root [`scripts/check-mutation-instrument.php`](../../../scripts/check-mutation-instrument.php) until that path is retired after sync lands.
+- **The launch defect is patched away** ([`pest-plugin-mutate-mutant-process-launch.patch`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/blob/v1.0.0/patches/pest-plugin-mutate-mutant-process-launch.patch), UAMS-Web/uams-statamic-archive#2322): `argv[0]` is normalized to the platform separator, and a child that still cannot start **aborts the run with exit 1** instead of scoring. On a patched `vendor/` every invocation form above executes. The instrument check above is the synced copy; this repository also still carries a legacy root [`scripts/check-mutation-instrument.php`](../../../scripts/check-mutation-instrument.php) until that path is retired after sync lands.
 
-- **The filter pipe and the shared-lock write are patched** ([`patches/pest-plugin-mutate-windows-mutant-child.patch`](../../../patches/pest-plugin-mutate-windows-mutant-child.patch), UAMS-Web/uams-statamic-archive#2524). The launch check above cannot see either one, because the child *starts*.
-- **The over-long command line is patched** ([`patches/pest-plugin-mutate-windows-filter-length.patch`](../../../patches/pest-plugin-mutate-windows-filter-length.patch), UAMS-Web/uams-statamic-archive#2578): an over-long filter is widened to the covering test classes, and if even that does not fit, the run stops and names the mutant. Kills of heavily covered mutants taken on Windows before UAMS-Web/uams-statamic-archive#2578 are **unverified**, with or without the two patches above.
+- **The filter pipe and the shared-lock write are patched** ([`pest-plugin-mutate-windows-mutant-child.patch`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/blob/v1.0.0/patches/pest-plugin-mutate-windows-mutant-child.patch), UAMS-Web/uams-statamic-archive#2524). The launch check above cannot see either one, because the child *starts*.
+- **The over-long command line is patched** ([`pest-plugin-mutate-windows-filter-length.patch`](https://github.com/UAMS-Web/patches-pest-plugin-mutate/blob/v1.0.0/patches/pest-plugin-mutate-windows-filter-length.patch), UAMS-Web/uams-statamic-archive#2578): an over-long filter is widened to the covering test classes, and if even that does not fit, the run stops and names the mutant. Kills of heavily covered mutants taken on Windows before UAMS-Web/uams-statamic-archive#2578 are **unverified**, with or without the two patches above.
 - **Which of the Windows measurements above ran is unverified.** The "executed" rows in the UAMS-Web/uams-statamic-archive#2322 table predate the later two patches. Any of their kills may be false: the filter defect reaches mutants covered by two or more tests, and the lock defect reaches any child that writes a locked file.
 
 ## Mutation cannot reach a class that is already loaded

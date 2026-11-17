@@ -24,9 +24,8 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const CARRIED = [
     'assign-author.yml',
-    'check-attribution-footer.yml',
-    'check-closing-keyword-across-lines.yml',
     'clear-handed-back.yml',
+    'pr-body-checks.yml',
 ]
 
 describe('workflow copies match their shared templates (#3107)', () => {
@@ -61,7 +60,16 @@ describe('workflow copies match their shared templates (#3107)', () => {
 
     it('fails when a carried copy is deleted', () => {
         const root = scratchRoot('missing')
-        rmSync(join(root, '.github', 'workflows', 'check-closing-keyword-across-lines.yml'))
+        rmSync(join(root, '.github', 'workflows', 'pr-body-checks.yml'))
+
+        expect(checkCopies({ root, required: CARRIED }).status).toBe(1)
+    })
+
+    // #752: the two body checks moved into pr-body-checks.yml, and a retired copy left
+    // beside it is a full workflow nothing updates any more.
+    it('fails when a retired copy is still present', () => {
+        const root = scratchRoot('retired')
+        writeFileSync(join(root, '.github', 'workflows', 'check-attribution-footer.yml'), 'name: retired\n')
 
         expect(checkCopies({ root, required: CARRIED }).status).toBe(1)
     })

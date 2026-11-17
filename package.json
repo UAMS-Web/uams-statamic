@@ -15,7 +15,7 @@
         "cp:build": "vite build --config vite-cp.config.js",
         "test:js": "vitest run",
         "spell": "node scripts/spell.mjs",
-        "ci:local": "node scripts/local-ci.mjs"
+        "ci:local": "node scripts/ci-local.mjs"
     },
     "overrides": {
         "shell-quote": "^1.8.4",

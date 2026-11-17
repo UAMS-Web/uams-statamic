@@ -526,6 +526,8 @@ final class CredentialRegistryEnumGenerator
         return <<<PHP
 <?php
 
+declare(strict_types=1);
+
 namespace App\Enums;
 
 use App\Enums\Attributes\CredentialRegistryTypeInfo;
@@ -549,8 +551,6 @@ enum CredentialRegistry: string
 
     /**
      * CredentialRegistryTypeInfo attribute for this case (via reflection).
-     *
-     * @return \App\Enums\Attributes\CredentialRegistryTypeInfo|null
      */
     public function info(): ?CredentialRegistryTypeInfo
     {
@@ -874,7 +874,7 @@ PHP;
     }
 
     /**
-     * Emit a compact single-quoted string array: ['a','b'].
+     * Emit a single-quoted string array, a space after each comma as Pint expects: ['a', 'b'].
      *
      * @param  list<string>  $strings
      */
@@ -889,7 +889,7 @@ PHP;
             $parts[] = $this->exportPhpStringLiteral($s);
         }
 
-        return '['.implode(',', $parts).']';
+        return '['.implode(', ', $parts).']';
     }
 
     /**

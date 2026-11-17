@@ -22,6 +22,11 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * (`publish_depends_on`) and belongs to an enabled collection — and to nothing
  * else. Mocked blueprint + collection + resolver — no content/ submodule required.
  *
+ * Accepted equivalent mutants, annotated in the listener: in `collectionFor()`,
+ * the `instanceof Blueprint` guard always holds because `handle()` returns first
+ * for anything else, and the namespace path's `instanceof Collection` guard
+ * returns `findByHandle()`'s `?Collection` result unchanged either way.
+ *
  * @command  php artisan test --compact tests/Feature/Listeners/AppendPublishDependencyBannerTest.php
  */
 
@@ -127,4 +132,27 @@ it('does nothing and never dereferences a non-blueprint event', function (): voi
     }
 
     expect($threw)->toBeNull();
+});
+
+it('does nothing when the entry reports something other than a collection', function (): void {
+    // `Entry::collection()` is untyped, so its value is checked before it is
+    // returned as a `?Collection`, and the resolver is never asked about it.
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collection')->andReturn('clinical_resources');
+
+    $blueprint = dependencyBannerBlueprint(hasBanner: false, hasTether: true, expectPrepend: false);
+
+    (new AppendPublishDependencyBanner(dependencyBannerResolver(enabled: true, expectCall: false)))
+        ->handle(new EntryBlueprintFound($blueprint, $entry));
+});
+
+it('does nothing, and looks nothing up, when the blueprint namespace is not a collection', function (): void {
+    // A lookup of the namespace's tail would also find nothing, so only the
+    // missing call shows the guard held.
+    CollectionFacade::shouldReceive('findByHandle')->never();
+
+    $blueprint = dependencyBannerBlueprint(hasBanner: false, hasTether: true, expectPrepend: false, namespace: 'globals.settings');
+
+    (new AppendPublishDependencyBanner(dependencyBannerResolver(enabled: true, expectCall: false)))
+        ->handle(new EntryBlueprintFound($blueprint));
 });

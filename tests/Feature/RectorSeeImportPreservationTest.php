@@ -31,7 +31,7 @@ it('leaves an import referenced only by a {@see} docblock tag untouched', functi
     // Point the Rector subprocess at a private temp dir so its cache
     // (`sys_get_temp_dir()/rector_cached_files`, otherwise machine-global) is
     // isolated per run. Without this, a concurrent Rector process — parallel
-    // afk-wave worktrees, `scripts/local-ci.mjs`, or a `composer refactor` while
+    // afk-wave worktrees, the local runner's `rector` job, or a `composer refactor` while
     // the suite runs — races the shared cache directory and fails this guard
     // spuriously. A fresh dir starts empty, so no `--clear-cache` (and its
     // delete race) is needed; a config regression still changes the cache key

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
@@ -12,10 +13,11 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -34,7 +36,7 @@ uses(CollectionTreeIsolatedTestCase::class);
 |
 | The depth-gate cannot be proven without real structure, so the URL cases
 | create clinical_expertise entries + a tree against the real Stache and tear
-| them down (serial, self-cleaning). They never re-save the committed landing
+| them down (self-cleaning, on a per-process copy of the content, #557). They never re-save the committed landing
 | entry — saving it would rewrite a committed content file.
 | Config/search cases are hermetic.
 */
@@ -110,6 +112,9 @@ function setExpertiseTree(array $tree): void
 }
 
 beforeEach(function () {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Entry::find(EXPERTISE_MOUNT_LANDING_ID)) {
         ContentSubmodule::reportMissing('the expertise mount landing entry');
     }
@@ -182,7 +187,7 @@ it('emits the mount path exactly once across depths (root, child, grandchild)', 
     /** @var string $grandUrl */
     $grandUrl = $foundGrand->url();
     expect(substr_count($grandUrl, '/expertise/'))->toBe(1);
-})->group('serial');
+});
 
 it('indexes clinical_expertise by the singular alternate_name field, aligned with the blueprint handle', function () {
     /** @var array{fields: array<int, string>, transformers: array<string, mixed>} $index */

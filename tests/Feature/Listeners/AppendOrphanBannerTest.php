@@ -22,10 +22,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * hierarchical, not opted-out) collections, and to nothing else. Mocked
  * blueprint + collection + resolver — no content/ submodule required.
  *
- * Accepted equivalent mutants: the defensive `instanceof` / boolean guards inside
- * `collectionFor()` are masked by `handle()`'s own downstream
- * `! $collection instanceof Collection` check (a non-Collection there is caught
- * either way), so mutating them changes no observable outcome.
+ * Accepted equivalent mutants, annotated in the listener: in `collectionFor()`,
+ * the `instanceof Blueprint` guard always holds because `handle()` returns first
+ * for anything else, and the namespace path's `instanceof Collection` guard
+ * returns `findByHandle()`'s `?Collection` result unchanged either way.
  *
  * @command  php artisan test --compact tests/Feature/Listeners/AppendOrphanBannerTest.php
  */
@@ -113,6 +113,10 @@ it('resolves the collection from the blueprint namespace when no entry is presen
 });
 
 it('does nothing when the blueprint namespace is not a collection', function () {
+    // The guard stops before any lookup: a lookup of the namespace's tail would
+    // also find nothing, so only the missing call shows the guard held.
+    CollectionFacade::shouldReceive('findByHandle')->never();
+
     $blueprint = bannerBlueprint(hasField: false, expectPrepend: false, namespace: 'globals.settings');
 
     (new AppendOrphanBanner(bannerResolver(handles: true, expectCall: false)))
@@ -132,4 +136,16 @@ it('does nothing and never dereferences a non-blueprint event', function () {
     }
 
     expect($threw)->toBeNull();
+});
+
+it('does nothing when the entry reports something other than a collection', function () {
+    // `Entry::collection()` is untyped, so its value is checked before it is
+    // returned as a `?Collection`.
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collection')->andReturn('pages');
+
+    $blueprint = bannerBlueprint(hasField: false, expectPrepend: false);
+
+    (new AppendOrphanBanner(bannerResolver(handles: true, expectCall: false)))
+        ->handle(new EntryBlueprintFound($blueprint, $entry));
 });

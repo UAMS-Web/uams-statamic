@@ -9,7 +9,7 @@ import { checkWorkflow, TEMPLATE_PATH, WORKFLOW_PATH } from '../.claude/skills/h
 // whole file, header comments included. workflow-copies.test.mjs compares only what
 // follows the header (UAMS-Web/uams-statamic-archive#3107), so a copy whose comments
 // drifted from the template passed there. Running the skill's check here puts it
-// in the js job, which both scripts/local-ci.mjs and ci.yml run.
+// in the js job, which both the local runner and ci.yml run.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 

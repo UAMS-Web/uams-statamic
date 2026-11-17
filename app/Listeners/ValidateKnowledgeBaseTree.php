@@ -282,21 +282,11 @@ class ValidateKnowledgeBaseTree
             // Recursively validate children, incrementing the depth and passing the current entry's blueprint as the parent.
             // ---
 
-            // Check if node has children
-            // Mutation testing reports one BooleanAndToBooleanOr here as a survivor, and it is
-            // equivalent: the plugin rewrites the inner `&&`, giving
-            // `(isset(...) || ! empty(...)) && \is_array(...)`, where `\is_array()` still gates
-            // the block and an empty list recurses into nothing. The other one, on the outer
-            // `&&`, enters for a non-empty string and is killed, so it is left unmarked: a
-            // marker would suppress both.
+            // Check if node has a non-empty list of children
             // Depth only has to reach the minimums, which the parent rules already guarantee,
             // so starting a level deeper changes no outcome.
             // @pest-mutate-ignore: IncrementInteger
-            if (
-                isset($node['children'])
-                && ! empty($node['children'])
-                && \is_array($node['children'])
-            ) {
+            if (\is_array($node['children'] ?? null) && $node['children'] !== []) {
                 /** @var array<int, array<string, mixed>> $children */
                 $children = $node['children'];
 

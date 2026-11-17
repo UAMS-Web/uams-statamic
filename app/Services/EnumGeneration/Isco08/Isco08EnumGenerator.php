@@ -112,8 +112,8 @@ final class Isco08EnumGenerator
     ): array {
         $union = array_unique(
             array_merge(
-                array_keys($definitionsByCode),
-                array_keys($titlesByCode),
+                $this->codeKeys($definitionsByCode),
+                $this->codeKeys($titlesByCode),
             )
         );
         if ($union === []) {
@@ -173,7 +173,7 @@ final class Isco08EnumGenerator
     private function ensureHierarchyUnitsFromPrefixes(array &$byCode): void
     {
         $needed = [];
-        foreach (array_keys($byCode) as $u) {
+        foreach ($this->codeKeys($byCode) as $u) {
             $needed[$u] = true;
             $walk = $u;
             while (strlen($walk) > 1) {
@@ -182,7 +182,7 @@ final class Isco08EnumGenerator
             }
         }
 
-        foreach (array_keys($needed) as $code) {
+        foreach ($this->codeKeys($needed) as $code) {
             if (isset($byCode[$code])) {
                 continue;
             }
@@ -355,6 +355,7 @@ final class Isco08EnumGenerator
     ): array {
         $out = [];
         foreach ($structureRows as $code => $row) {
+            $code = (string) $code;
             $h = $this->hierarchyFromCode($code);
             $def = $definitionsByCode[$code] ?? null;
             $titles = $titlesByCode[$code] ?? [];
@@ -386,7 +387,10 @@ final class Isco08EnumGenerator
             ];
         }
 
-        uksort($out, $this->compareIscoCodes(...));
+        uksort(
+            $out,
+            fn (int|string $a, int|string $b): int => $this->compareIscoCodes((string) $a, (string) $b),
+        );
 
         return $out;
     }
@@ -396,7 +400,7 @@ final class Isco08EnumGenerator
      */
     private function attachHierarchy(array &$merged): void
     {
-        $units = array_keys($merged);
+        $units = $this->codeKeys($merged);
         usort($units, $this->compareIscoCodes(...));
         $unitSet = array_fill_keys($units, true);
         $childrenByParent = [];
@@ -483,6 +487,21 @@ final class Isco08EnumGenerator
         }
 
         return substr($code, 0, -1);
+    }
+
+    /**
+     * The keys of a code-keyed array, as strings.
+     *
+     * PHP stores a decimal-integer string key such as `'1111'` as the int `1111`, so
+     * `array_keys()` over a code-keyed array returns ints, which the strictly typed
+     * string helpers here reject (#713).
+     *
+     * @param  array<array-key, mixed>  $byCode
+     * @return list<string>
+     */
+    private function codeKeys(array $byCode): array
+    {
+        return array_map(strval(...), array_keys($byCode));
     }
 
     private function compareIscoCodes(string $a, string $b): int
@@ -646,6 +665,7 @@ final class Isco08EnumGenerator
         $generatedAt = date('Y-m-d');
         $count = count($merged);
         $out = "<?php\n\n";
+        $out .= "declare(strict_types=1);\n\n";
         $out .= "namespace App\\Enums;\n\n";
         $out .= "use App\\Enums\\Attributes\\Isco08Info;\n";
         $out .= "use App\\Services\\EnumGeneration\\EnumDataUtils;\n\n";
@@ -722,14 +742,38 @@ DOC."\n";
         return implode("\n", $lines)."\n";
     }
 
+    /**
+     * A PHP string literal that evaluates to `$s`, in the form Pint's `laravel` preset
+     * leaves alone (#715).
+     *
+     * Single-quoted unless the value holds a control character or a single quote, which
+     * Pint's `single_quote` rule keeps double-quoted. This used to emit `json_encode()`
+     * output, whose `\/` escape is not a PHP escape, so every `/` reached the enum as `\/`.
+     */
     private function phpString(string $s): string
     {
-        $encoded = json_encode($s, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-        if ($encoded === false) {
-            return '""';
+        $s = mb_scrub($s, 'UTF-8');
+
+        if (preg_match("/[\\x00-\\x1F\\x7F']/", $s) !== 1) {
+            return "'".str_replace('\\', '\\\\', $s)."'";
         }
 
-        return $encoded;
+        $escaped = strtr($s, [
+            '\\' => '\\\\',
+            '"' => '\\"',
+            '$' => '\\$',
+            "\n" => '\\n',
+            "\r" => '\\r',
+            "\t" => '\\t',
+        ]);
+
+        $escaped = (string) preg_replace_callback(
+            '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/',
+            static fn (array $m): string => sprintf('\\x%02X', ord($m[0])),
+            $escaped,
+        );
+
+        return '"'.$escaped.'"';
     }
 
     private function phpNullableString(mixed $s): string
@@ -792,6 +836,7 @@ DOC."\n";
 
         return $result;
     }
+
 
 PHP;
     }

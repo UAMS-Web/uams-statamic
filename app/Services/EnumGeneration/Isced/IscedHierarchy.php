@@ -39,7 +39,12 @@ final class IscedHierarchy
      * Ancestor codes from broadest (root) to immediate parent, filtered to
      * those that actually exist in `$existing`.
      *
-     * @param  array<string, true>  $existing
+     * Keyed by `array-key`, not `string`: PHP stores a one-character ISCED-P or
+     * ISCED-A code such as `'3'` as an integer key, while a two-character ISCED-F
+     * code such as `'09'` stays a string (#685). Every read is an `isset()`,
+     * which finds either.
+     *
+     * @param  array<array-key, true>  $existing
      * @return array<int, string>
      */
     public static function ancestors(string $code, int $minTierLength, array $existing): array
@@ -66,11 +71,16 @@ final class IscedHierarchy
      * Build a parent-keyed children map from a list of codes, sorted by
      * length-then-lex within each parent.
      *
+     * Keyed by `array-key` for the reason `ancestors()` gives (#685).
+     *
      * @param  array<int, string>  $codes
-     * @return array<string, array<int, string>>
+     * @return array<array-key, array<int, string>>
      */
     public static function buildChildrenMap(array $codes, int $minTierLength): array
     {
+        // Only the keys are read, through isset(), which is true for false as well
+        // as for true, so the fill value cannot change the result.
+        // @pest-mutate-ignore: TrueToFalse
         $existing = array_fill_keys($codes, true);
         $byParent = [];
         foreach ($codes as $c) {
@@ -97,7 +107,7 @@ final class IscedHierarchy
     /**
      * Collect all transitive descendants of `$code`, sorted by length-then-lex.
      *
-     * @param  array<string, array<int, string>>  $childrenByParent
+     * @param  array<array-key, array<int, string>>  $childrenByParent  Keyed as `buildChildrenMap()` returns it.
      * @return array<int, string>
      */
     public static function descendants(string $code, array $childrenByParent): array
@@ -106,11 +116,17 @@ final class IscedHierarchy
         $stack = $childrenByParent[$code] ?? [];
         $seen = [];
         while ($stack !== []) {
+            // Taking from either end visits the same set of codes, and the result is
+            // sorted below, so the visiting order cannot change it.
+            // @pest-mutate-ignore: ArrayPopToArrayShift
             $c = array_pop($stack);
             if (isset($seen[$c])) {
                 continue;
             }
 
+            // Only the key is read, through isset() above, which is true for false as
+            // well as for true.
+            // @pest-mutate-ignore: TrueToFalse
             $seen[$c] = true;
             $out[] = $c;
             foreach ($childrenByParent[$c] ?? [] as $next) {

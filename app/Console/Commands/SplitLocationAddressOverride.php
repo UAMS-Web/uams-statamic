@@ -42,6 +42,8 @@ class SplitLocationAddressOverride extends Command
      */
     public function handle(): int
     {
+        // A VALUE_NONE option is already a bool, so dropping the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         $dryRun = (bool) $this->option('dry-run');
         $changed = 0;
 

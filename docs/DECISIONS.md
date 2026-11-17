@@ -3928,3 +3928,65 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** The driver applies site and scope filters after the hit cap, so a scoped search can show fewer results than match; #646 owns the fix. Document insertion alone took 618s at launch size and the index is 1.7GB on disk, both well past #161's 60s and 75 to 100MB thresholds. Concurrency, hydration and the production host are not measured.
 
 **Companion.** #511 (measurements), #646 (build), #645 (spike branch, not for merge).
+
+## 2026-11-12: The shared local CI runner replaces this repository's own (#296, #256)
+
+**Decision.** Supersedes the 2026-10-04 entry (UAMS-Web/uams-statamic-archive#2835). The shared runner the sync delivers (`.claude/skills/local-ci/local-ci.mjs`) runs this repository's checks from [`local-ci.json`](../local-ci.json), and `scripts/local-ci.mjs` and its tests are removed. [`scripts/ci-local.mjs`](../scripts/ci-local.mjs) runs it, adding to a `--jobs` subset the jobs it depends on (`php`, which makes the shared runner resolve and check PHP, `dependencies`, and `build` for `browser`) and refusing the retired runner's flags with what to do instead. Every job sets `always: true` and none declares `requires`; `chain` stops at the first failure, as the private runner did.
+
+**Why.** The capabilities the keep decision named now exist on one side or the other. The shared runner gained a runner-owned `--branch` slot with a handoff to the branch's own copy, a single-flight lock on the tree it runs in, `prepare` and `mutation`, and commit statuses, all documented in the delivered runner's header (`UAMS-Web/uams-claude-skills#26` landed the job shapes this repository needed). What is specific to this repository moved into scripts the jobs run: the gate steps ([`scripts/gate-*.mjs`](../scripts), #295), the multi-command jobs ([`scripts/ci-job.mjs`](../scripts/ci-job.mjs)), and the slot install ([`scripts/prepare-dependencies.mjs`](../scripts/prepare-dependencies.mjs)), which installs only in the runner's slot and anywhere else reports drift, including patched packages `vendor/` is not recorded as carrying the patches of. [`scripts/ci-local.chain.test.mjs`](../scripts/ci-local.chain.test.mjs) keeps the job list in step with `ci.yml`, and `.githooks/pre-commit` treats `local-ci.json` and `scripts/ci-job.mjs` as wholly the mirror.
+
+**Rejected.** *A thin wrapper that keeps `scripts/local-ci.mjs` as the runner*: two job lists for one gate. *Declaring `requires` on jobs whose tool can be absent*: the runner reports such a job skipped and exits 0, so a missing tool would pass. *Letting `prepare.patches` re-sync patched packages*: `prepare` runs before any job, so it would reinstall the slot's old package version against the commit's new patch; the `dependencies` job installs first and re-syncs second.
+
+**Companion.** #296 (the slice) and #256 (the staged adoption); `UAMS-Web/uams-claude-skills#711` (the sync change that delivers the runner here).
+
+## 2026-11-12: `brianium/paratest` is pinned to `~7.27.5` and ignored in Dependabot until Pest accommodates `v7.28.0` (#658)
+
+**Decision.** `composer.json` pins `brianium/paratest` to `~7.27.5`, with the reason under `extra.pinned`, and the composer entry of `.github/dependabot.yml` ignores the package, each naming #658 and `pestphp/pest#2024`. An upstream watch row on `pestphp/pest#2024` comments on #659, which retires the pin, the `ignore` entry and the row once a Pest release accommodates `7.28.0`. No other package moves.
+
+**Why.** `brianium/paratest` `v7.28.0` regroups `SuiteLoader::$tests`, and Pest `v5.3.5`'s `WrapperRunner` reads that property as a flat list of filenames, so the parallel runner dies before any test runs (`WrapperRunner.php:646`). Pest's own `^7.27.5` constraint admits `7.28.0`, so an ordinary resolve reaches the broken pair; when #658 was filed, #655 was red on all 14 parallel-band shards while its 44 other updates were fine. The pin keeps the constraint visible where the resolver and a reader both see it; the `ignore` keeps Dependabot from re-proposing a bump that cannot pass, and takes the package out of its group so the rest still updates. Decided by Josh, 2026-11-12.
+
+**Rejected.** *Pin only*: Dependabot keeps re-proposing the bump and the chain reds each time. *Ignore only*: the reason is invisible in `composer.json`. *Hold the whole group*: 44 safe updates wait on one package, for as long as upstream takes.
+
+**Residual.** `composer.json` cannot carry a comment, so the reason sits in an `extra.pinned` key that no tool reads. The watch fires when `pestphp/pest#2024` changes, not when a release ships; #659 names the release when it acts.
+
+**Companion.** #658 (decision), #659 (removal), #655 (the bump it was found on).
+
+## 2026-11-14: An upstream watch row moves to a `patches-*` repository only when that repository patches the upstream it watches (#667)
+
+**Decision.** A watcher moves to a `uams-web/patches-*` repository only when it watches an upstream that repository patches; a watcher not tied to a patch stays in the consumer that acts on it. So `pestphp/pest-plugin-mutate#43` is watched from `UAMS-Web/patches-pest-plugin-mutate`, the rows for the closed trackers #212, #213 and #215 are removed, and the seven rows on unpatched upstreams stay in [`.github/upstream-watches/`](../.github/upstream-watches) with the workflow and scripts that run them: `pestphp/pest#1820`, `#1813` and `#2024` (#192, #193, #659), `statamic/ideas#1490`, `#1491` and `#140` (#7, #17, #9), and `statamic/docs#2003` (#229). They are a named exception to consumers keeping no upstream watcher.
+
+**Why.** No patch exists for any of the seven, so no `patches-*` repository has a reason to hold the row, and each row's signal is acted on in this repository. If a second consumer starts watching the same upstream item, the placement is revisited, since one shared home would then avoid duplicate rows.
+
+**Rejected.** *Classify each row and give every survivor a home outside the consumer* (a `patches-*` repository, or a hand-checked ticket with no watcher): a hand-checked ticket trades an automated signal for a manual one that is easy to forget, and the rows have no patch to tie them to a `patches-*` repository. *Create new `patches-*` repositories* for `pestphp/pest` and for `statamic/ideas` and `statamic/docs`: they would patch nothing, which is not what a `patches-*` repository is for, and each adds a repository to maintain for a watch this one already runs.
+
+**Companion.** #667 (decision and build); `UAMS-Web/uams-claude-skills#702` (the `patch-package` skill that carries the watcher to the `patches-*` repositories).
+
+## 2026-11-14: The `group` handle is served by Statamic's own Group fieldtype, and `App\Fieldtypes\Group` is retired (#736)
+
+**Decision.** `app/Fieldtypes/Group.php` is deleted, so the `group` handle resolves to `Statamic\Fieldtypes\Group`. [`tests/Feature/Rules/UniqueIdentifierGroupedSelfExclusionTest.php`](../tests/Feature/Rules/UniqueIdentifierGroupedSelfExclusionTest.php) stays as the guard, and [`tests/Feature/Fieldtypes/GroupFieldtypeTest.php`](../tests/Feature/Fieldtypes/GroupFieldtypeTest.php) pins the registration. Nothing outside this repository changes, and no package moves. Decided by Josh, 2026-11-14.
+
+**Why.** The override existed only to pass the entry's validation replacements (`{id}`, `{collection}`, `{site}`) to the rules of a group's fields (statamic/cms#15513), and its docblock named its own retirement condition: an installed Statamic release applying `AddsEntryValidationReplacements` to `Group`. `statamic/cms` `v6.40.0` does. With the class removed, the self-exclusion test passes; with an override that skips the replacements, both of its tests fail, so the guard detects the regression it is kept for.
+
+**Rejected.** *Keep the class*: its only remaining difference from Statamic's `Group` is a set of fallbacks to `parent::extraRules()`, several of them unreachable, which #312's coverage work would then have to cover or justify under the mutation bar.
+
+**Companion.** #736 (decision), #738 (removal); UAMS-Web/uams-statamic-archive#2601 and UAMS-Web/uams-statamic-archive#2603 (the original defect and the override).
+
+## 2026-11-17: The Find-a-Doc filter block's clinical title select lists only the titles its own providers carry (#258)
+
+**Decision.** The clinical title select in [`resources/views/page_builder/components/_block_fad_filter.antlers.html`](../resources/views/page_builder/components/_block_fad_filter.antlers.html) offers only the `clinical_specializations` entries that would return at least one provider when selected, among the providers the block itself is configured to show. A block narrowed to a subset of providers (by `expertise` or `recognition_lists`) lists only the titles that subset carries, and a title no shown provider carries is not in the markup at all, with or without JavaScript. Decided 2026-11-17; the build is #769.
+
+**Why.** The Providers block renders the filter partial and its own card list together from one `collection:people` query ([`_uamsweb_block_fad_providers.antlers.html`](../resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html)), so the block's own list is the set a reader filters and the one the options should match, as UAMS-Web/uams-statamic-archive#2962 did for the Areas of Expertise section filter. #258's "Current behavior" said a separate Providers block renders the cards; read on `main` on 2026-11-17, it does not.
+
+**Rejected.** *Every clinical provider on the site*: it would list titles that return no provider in this block. *A precomputed site-wide list of carried slugs*: the same mismatch, plus a cache to keep fresh.
+
+**Companion.** #258 (decision), #769 (build); UAMS-Web/uams-statamic-archive#2962 (the Areas of Expertise precedent).
+
+## 2026-11-17: Site search caps Loupe at 1000 hits, and site-scoped loss is measured separately (#646)
+
+**Decision.** The `default` index runs `loupe` with `max_total_hits` at 1000, Loupe's own default, in place of the 200 the 2026-11-12 entry chose. How much site-scoped searches lose to the cap is measured on #967. Decided by Josh, 2026-11-17.
+
+**Why.** The cap is a `LIMIT` on each search word's matching documents in storage order, applied before ranking and before any filter, so a lower cap drops relevant results rather than only trimming the tail. Measured on #511 at 46,777 documents, Windows 11, PHP 8.4.27, `loupe/loupe` 1.1.7: at 1000 the p95 per lookup is 313 to 329ms, under the 400ms gate, and 6 of 32 queries show a different first page than uncapped; at 200 it is 16 of 32. Handing the site to Loupe as a filter does not get past the cap, so a site-scoped search also loses the site's matches that fall past it; #511's rows carry no site, so that loss is not yet measured.
+
+**Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
+
+**Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).

@@ -7,7 +7,6 @@ namespace App\Providers;
 use App\Policies\CustomUserPolicy;
 use App\Policies\ScopedEntryPolicy;
 use App\Services\LinkHealth\LinkClassifier;
-use App\Services\Tables\TableCellSanitizer; // Added by studio1902/statamic-peak
 use App\Support\Forms\MultisiteSubmissionSite;
 use App\Support\Imaging\BrandLogoRasterizer;
 use App\Support\Imaging\SvgRasterizer;
@@ -120,10 +119,6 @@ class AppServiceProvider extends ServiceProvider
 
             return new LinkClassifier(array_keys($hosts), $ids);
         });
-
-        // Share one table-cell sanitizer so its compiled HTML definition is
-        // built once and reused across every cell rendered in a request.
-        $this->app->singleton(TableCellSanitizer::class);
 
         // Brand-logo SVG→PNG raster fallback (UAMS-Web/uams-statamic-archive#50). Caches generated PNGs under
         // the web root (mirroring Glide's `public/img` cache) so no storage:link

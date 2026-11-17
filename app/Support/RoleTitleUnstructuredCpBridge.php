@@ -123,6 +123,8 @@ final class RoleTitleUnstructuredCpBridge
 
     public static function isCpInternalKey(string $key): bool
     {
+        // The CP keys are non-numeric strings, so loose and strict string comparison agree (TrueToFalse is equivalent)
+        // @pest-mutate-ignore: TrueToFalse
         return \in_array($key, self::cpKeys(), true);
     }
 
@@ -241,6 +243,8 @@ final class RoleTitleUnstructuredCpBridge
             return [];
         }
 
+        // `Isco_08::process()` reads no field config, so dropping the type entry changes nothing (RemoveArrayItem is equivalent)
+        // @pest-mutate-ignore: RemoveArrayItem
         $field = new Field('code', ['type' => 'isco_08']);
         /** @var Isco_08 $isco */
         $isco = (new Isco_08)->setField($field);
@@ -260,6 +264,8 @@ final class RoleTitleUnstructuredCpBridge
             $processed = $isco->process($inner);
             $v = $processed['value'] ?? null;
 
+            // `Isco_08::process()` omits `value` rather than storing '', so the empty-string guard never decides (EmptyStringToNotEmpty is equivalent)
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if (\is_string($v) && $v !== '') {
                 $out[] = $v;
             }

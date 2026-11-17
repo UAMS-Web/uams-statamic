@@ -27,7 +27,6 @@ final class IscedA2011EnumGenerator
             sourceTitle: 'UNESCO Institute for Statistics — ISCED 2011, Annex III (coding of educational attainment)',
             sourceUrl: self::SOURCE_URL,
             emitNotes: 'Codes use the UIS digit scheme (1–3 digit strings). Top-tier codes are single digits.',
-            minTierLength: 1,
         );
 
         return (new IscedEnumWriter)->write($records, $config);
@@ -40,7 +39,11 @@ final class IscedA2011EnumGenerator
     private function attachHierarchy(array $rows): array
     {
         $codes = array_map(static fn (array $r): string => $r['code'], $rows);
+        // Only the keys are read, through isset(), so the fill value cannot change them
+        // @pest-mutate-ignore: TrueToFalse
         $existing = array_fill_keys($codes, true);
+        // A shorter top tier only adds parents no code has, which buildChildrenMap() skips
+        // @pest-mutate-ignore: DecrementInteger
         $childrenByParent = IscedHierarchy::buildChildrenMap($codes, 1);
         $out = [];
         foreach ($rows as $row) {
@@ -48,7 +51,12 @@ final class IscedA2011EnumGenerator
             $out[] = [
                 'code' => $code,
                 'label' => $row['label'],
+                // A zero-length top tier gives a single-digit code the parent '', which the writer
+                // emits as null, the same as no parent
+                // @pest-mutate-ignore: DecrementInteger
                 'parent' => IscedHierarchy::parentCode($code, 1),
+                // A shorter top tier only adds ancestors no code has, which ancestors() filters out
+                // @pest-mutate-ignore: DecrementInteger
                 'ancestors' => IscedHierarchy::ancestors($code, 1, $existing),
                 'children' => $childrenByParent[$code] ?? [],
                 'descendants' => IscedHierarchy::descendants($code, $childrenByParent),

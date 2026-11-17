@@ -51,4 +51,4 @@ Closes #
 <!-- Mandatory, and always last. `- [x]` = verified locally; `- [ ]` = deferred to CI, review,
      or staging. Name the command, URL, or observation. -->
 
-- [ ] Local CI green (`node scripts/local-ci.mjs --branch <branch>`).
+- [ ] Local CI green (`node scripts/ci-local.mjs --branch <branch>`).

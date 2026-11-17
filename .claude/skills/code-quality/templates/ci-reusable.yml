@@ -51,10 +51,25 @@ name: CI chain
 # `vitest` and `mutation-smoke` run on all three, on the seeded-fault evidence in
 # UAMS-Web/uams-claude-skills#478 (see the code-quality skill).
 #
+# Three more optional jobs serve a WordPress plugin (UAMS-Web/uams-claude-skills#607): `floor-lint` (inputs
+# `floor-lint-php` and `floor-lint-command`), `download-archive` (`download-archive-command`) and `phpcs`
+# (`phpcs-command`). Each is off until its boolean input is `true` and Linux only. A plugin caller passes
+# `linux-only: true`, `mutate: false`, those three jobs on, and `pest-command: composer test:unit` when its unit suite is
+# that script. A plugin that does not receive the `pest-testing` skill also passes `mutate: false`, which skips the
+# `mutate-ignore` job, and `global-test-symbols: false`. Its WordPress integration matrix (a MySQL service, a WordPress download, single and multisite) stays a
+# plain job in the caller beside the call, listed in the `needs:` of its `CI` job; this chain does not run it.
+#
+# Two more optional jobs serve any repository (UAMS-Web/uams-claude-skills#620), each off until its boolean input is `true` and
+# Linux only: `guard` (input `guard-patterns`, extra patterns added to the built-in ones) fails when a tracked file looks like a
+# secret or personal data, and `dev-lint` (input `dev-lint-exclude`, paths to skip) runs `php -l` on every PHP file under the
+# development PHP.
+#
 # The `mutate` job is on unless the caller passes `mutate: false`. A repository whose source holds no code a
 # mutator changes (an add-on template with a stub) has nothing to mutate, and the job fails a run that created
-# no mutants, so it needs a way to opt out. `mutate: false` skips the job on every leg and changes nothing else:
-# the `mutate-ignore` annotation check still runs.
+# no mutants, so it needs a way to opt out. `mutate: false` skips the job on every leg, and skips the `mutate-ignore` job with it (UAMS-Web/uams-claude-skills#612):
+# the check runs a script of the `pest-testing` skill, which a caller without that skill does not have.
+# A caller that has the skill and carries `@pest-mutate-ignore` annotations keeps the check with `mutate-ignore: true`
+# (UAMS-Web/uams-ci-workflows#40): the check only tokenizes source and runs no suite, so it does not need `mutate`.
 #
 # The `mutate-ignore` job scans whichever of `app`, `src` and `tests` exist unless the caller names paths in
 # `mutate-ignore-paths` (UAMS-Web/uams-claude-skills#534), for a source tree elsewhere such as a plugin's `includes`.
@@ -62,7 +77,7 @@ name: CI chain
 # What the `mutate` job mutates depends on the caller's event (UAMS-Web/uams-claude-skills#532). A pull request and
 # a push mutate only the PHP files under `mutate-paths` that the commit adds, changes or renames, so a run costs what
 # the change costs and not what the code base has grown to. A `schedule` or `workflow_dispatch` run mutates everything
-# `composer mutate` covers, under `mutate-full-timeout-minutes` (default 180) in place of the 45 minutes the others get.
+# `composer mutate` covers, under `mutate-full-timeout-minutes` (default 180) in place of the `mutate-timeout-minutes` (default 45) the others get.
 # The full pass is what catches drift from a dependency or tooling change, so a caller adds a `schedule:` trigger to its
 # own `ci.yml` (the caller template shows one). Any other event, and a pushed commit with no parent, mutates everything.
 #
@@ -70,7 +85,9 @@ name: CI chain
 # chain cannot give it (private submodules, a secret, a sharded run with its own reports) keeps its own Pest
 # jobs as plain jobs beside the call and lists them in the `needs:` of its `CI` job. `pest: false` skips the job
 # on every leg and changes nothing else. A `pest` job that is skipped while the input is true (a cancelled run,
-# say) still fails the `result` job.
+# say) still fails the `result` job. `pest-command` (default `composer test`) names the command it runs; the default
+# runs with a JUnit report and the skip-baseline and slowest-class checks, and any other command runs as given with
+# those two checks skipped, since it writes no report.
 #
 # The final `result` job `needs:` every job, runs `if: always()`, and fails unless each needed job succeeded.
 # A needed job reports `skipped` only when its input switched it off, and that is the one skip it accepts.
@@ -102,10 +119,18 @@ on:
         description: Run the mutate job. Pass false in a repository whose source holds no code a mutator changes.
         type: boolean
         default: true
+      mutate-ignore:
+        description: Run the mutate-ignore job even when mutate is false, which audits the `@pest-mutate-ignore` annotations without running a mutation pass (UAMS-Web/uams-ci-workflows#40). The job runs whenever mutate is true, so this input only matters with mutate false. Needs the `pest-testing` skill's check-mutate-ignore.php, so a caller without that skill leaves it false.
+        type: boolean
+        default: false
       mutate-full-timeout-minutes:
-        description: The timeout, in minutes, of the mutate job on a scheduled or manually dispatched run, which mutates everything composer mutate covers (UAMS-Web/uams-claude-skills#532). A pull request or a push mutates only changed files and keeps 45.
+        description: The timeout, in minutes, of the mutate job on a scheduled or manually dispatched run, which mutates everything composer mutate covers (UAMS-Web/uams-claude-skills#532). A pull request or a push mutates only changed files and takes mutate-timeout-minutes.
         type: number
         default: 180
+      mutate-timeout-minutes:
+        description: The timeout, in minutes, of the mutate job on a pull request or a push, which mutates the whole of every changed PHP file (UAMS-Web/uams-ci-workflows#59). A change to a large file, such as one of about 3,800 mutants, needs more than the default. A value above 360, the longest job GitHub runs, is clamped to 360. A scheduled or manually dispatched run takes mutate-full-timeout-minutes instead.
+        type: number
+        default: 45
       mutate-ignore-paths:
         description: Space-separated paths the mutate-ignore job scans for `@pest-mutate-ignore` annotations (UAMS-Web/uams-claude-skills#534). Empty keeps the script's own default, whichever of app, src and tests exist. A WordPress plugin names its source directory, such as includes.
         type: string
@@ -150,6 +175,58 @@ on:
         description: An npm version range to install globally before npm ci in the Node jobs; empty keeps the one Node ships.
         type: string
         default: ''
+      pest-command:
+        description: The command the pest job runs (UAMS-Web/uams-claude-skills#607). The default, composer test, runs with a JUnit report and the skip-baseline and slowest-class checks that read it; any other command runs as given and those two checks are skipped, because no report is written.
+        type: string
+        default: composer test
+      global-test-symbols:
+        description: Run the Global test symbols step of the pest job (UAMS-Web/uams-claude-skills#612). It runs check-global-test-symbols.php from the pest-testing skill, which guards `pest --parallel`. Pass false in a repository that does not receive that skill.
+        type: boolean
+        default: true
+      floor-lint:
+        description: Run the floor-lint job, which parses the shipped PHP files under the repository's supported floor.
+        type: boolean
+        default: false
+      floor-lint-php:
+        description: The PHP version the floor-lint job installs, the repository's supported floor.
+        type: string
+        default: '8.2'
+      floor-lint-command:
+        description: The command the floor-lint job runs.
+        type: string
+        default: php scripts/lint-floor.php
+      download-archive:
+        description: Run the download-archive job, which checks that the repository's GitHub download holds only what the plugin runs.
+        type: boolean
+        default: false
+      download-archive-command:
+        description: The command the download-archive job runs.
+        type: string
+        default: node scripts/check-download-archive.mjs
+      phpcs:
+        description: Run the phpcs job, which runs phpcs-command after a locked Composer install.
+        type: boolean
+        default: false
+      phpcs-command:
+        description: The command the phpcs job runs, the WordPress security sniffs.
+        type: string
+        default: composer test:phpcs
+      guard:
+        description: Run the guard job, which fails when a tracked file looks like a secret or personal data (UAMS-Web/uams-claude-skills#620).
+        type: boolean
+        default: false
+      guard-patterns:
+        description: Extra patterns for the guard job, extended regular expressions separated by spaces or newlines, matched against each tracked path. They add to the built-in ones (wp-config.php, .sql, .csv, .tsv, .xlsx, .env, .pem, .key) and never replace them.
+        type: string
+        default: ''
+      dev-lint:
+        description: Run the dev-lint job, which runs php -l on every PHP file under the development PHP (UAMS-Web/uams-claude-skills#620).
+        type: boolean
+        default: false
+      dev-lint-exclude:
+        description: Paths the dev-lint job skips, space-separated and relative to the repository root, with no spaces inside a path. vendor and node_modules are always skipped.
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -167,11 +244,37 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ steps.php.outputs.minor }}
           coverage: none
           tools: composer:v2
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       # Fails when composer.json and composer.lock have drifted apart.
       - run: composer validate --no-check-publish --no-check-all
@@ -194,6 +297,9 @@ jobs:
 
       # Fails, naming the file, when a synced rule or skill was edited by hand.
       - run: node .claude/skills/synced-files/scripts/check-synced-files.mjs
+
+      # Fails, naming the file, when a copy of a shared workflow differs from its template. A repository with no copy passes.
+      - run: node .claude/skills/synced-files/scripts/check-workflow-copies.mjs
 
   no-emoji:
     name: No emoji in durable records (${{ matrix.os }})
@@ -246,7 +352,35 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
       - run: composer test:pint
 
   rector:
@@ -261,7 +395,35 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
       - run: composer test:refactor
 
   phpstan:
@@ -276,11 +438,40 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
       - run: composer stan
 
   mutate-ignore:
     name: Mutation annotations (none inert) (${{ matrix.os }})
+    if: inputs.mutate || inputs.mutate-ignore
     needs: [pint]
     # Legs: all three. The check has a branch for a CRLF runtime, and a Windows checkout can be CRLF.
     runs-on: ${{ matrix.os }}
@@ -291,7 +482,35 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       # Fails, naming the file and line, on a bare marker, a tail that names no mutator,
       # prose after a mutator list, and (on a CRLF runtime) a trailing marker. Prints the
@@ -314,9 +533,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-    # 45 minutes for the changed files a pull request or a push selects; a scheduled or manually dispatched run
-    # mutates everything and takes the longer `mutate-full-timeout-minutes`. The event is the caller's.
-    timeout-minutes: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && inputs.mutate-full-timeout-minutes || 45 }}
+    # `mutate-timeout-minutes` (default 45) for the changed files a pull request or a push selects, clamped to GitHub's
+    # 360-minute maximum; a scheduled or manually dispatched run mutates everything and takes the longer
+    # `mutate-full-timeout-minutes`. The event is the caller's.
+    timeout-minutes: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && inputs.mutate-full-timeout-minutes || (inputs.mutate-timeout-minutes > 360 && 360 || inputs.mutate-timeout-minutes) }}
     # An explicit `bash` runs each step with `-eo pipefail`; the default, `bash -e`, does not,
     # and the run step's `| tee` would then report tee's status in place of Pest's.
     defaults:
@@ -328,9 +548,46 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ steps.php.outputs.minor }}
+      # PCOV is loaded here and not through the caller's setup action, which declares only `php-version` and installs
+      # with `coverage: none` (UAMS-Web/uams-ci-workflows#31). Re-running setup-php on the installed minor only adds the driver.
+      - name: Load PCOV
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
           coverage: pcov
+      - name: Check PCOV is loaded
+        run: |
+          php -m | tr -d '\015' | grep -qix pcov || { echo "::error::PCOV is not loaded after setup-php coverage: pcov"; exit 1; }
+          php -r 'echo "PCOV ", phpversion("pcov"), " on PHP ", PHP_VERSION, PHP_EOL;'
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       # On a pull request or a push, mutate only the PHP files under mutate-paths that it adds,
       # changes or renames, read from HEAD against its first parent: the merge commit on a pull
@@ -437,10 +694,40 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
-      # Optional: delete this step in a repository that does not run `pest --parallel`.
+      # Optional: a repository that does not run `pest --parallel`, or does not receive the pest-testing
+      # skill, passes `global-test-symbols: false`.
       - name: Global test symbols
+        if: inputs.global-test-symbols
         run: php .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
 
       # `composer test` passes the extra argument to Pest, which writes the JUnit report the two
@@ -448,18 +735,31 @@ jobs:
       # a cancelled run, so a test failure is reported by the tests and a missing or empty
       # report is reported by the checks.
       - name: Pest
+        if: inputs.pest-command == 'composer test'
         run: composer test -- --log-junit=junit.xml
+
+      # A `pest-command` other than the default runs as given. It writes no report, so the two checks
+      # below are skipped with it (UAMS-Web/uams-claude-skills#607). An empty command is a configuration
+      # error and fails, never a silent pass.
+      - name: Pest (custom command)
+        if: inputs.pest-command != 'composer test'
+        shell: bash
+        env:
+          COMMAND: ${{ inputs.pest-command }}
+        run: |
+          if [ -z "$COMMAND" ]; then echo "::error::pest-command is empty"; exit 1; fi
+          bash -c "$COMMAND"
 
       # Fails when more tests were skipped than tests/skip-baseline.json records.
       - name: Skip baseline
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.pest-command == 'composer test' }}
         run: php .claude/skills/pest-testing/scripts/check-skip-baseline.php --report=junit.xml --baseline=tests/skip-baseline.json
 
       # Fails when one class takes over 25 percent of the summed class time, or over 900 seconds.
       # The share check is skipped, and the step says so, when the summed class time is under the
       # share-floor-seconds input; the 900-second backstop is checked either way.
       - name: Slowest class
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.pest-command == 'composer test' }}
         run: php .claude/skills/pest-testing/scripts/check-slowest-class.php --report=junit.xml --share-ceiling=25 --ceiling=900 --share-floor=${{ inputs.share-floor-seconds }}
 
   encoding-guard:
@@ -478,7 +778,35 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       - uses: actions/setup-node@v7
         with:
@@ -543,7 +871,35 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       - uses: actions/setup-node@v7
         with:
@@ -579,9 +935,46 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
       - uses: ./.github/actions/setup
         with:
+          php-version: ${{ steps.php.outputs.minor }}
+      # PCOV is loaded here and not through the caller's setup action, which declares only `php-version` and installs
+      # with `coverage: none` (UAMS-Web/uams-ci-workflows#31). Re-running setup-php on the installed minor only adds the driver.
+      - name: Load PCOV
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
           coverage: pcov
+      - name: Check PCOV is loaded
+        run: |
+          php -m | tr -d '\015' | grep -qix pcov || { echo "::error::PCOV is not loaded after setup-php coverage: pcov"; exit 1; }
+          php -r 'echo "PCOV ", phpversion("pcov"), " on PHP ", PHP_VERSION, PHP_EOL;'
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
 
       - name: Run the mutation-tooling smoke
         env:
@@ -590,11 +983,231 @@ jobs:
           if [ -z "$COMMAND" ]; then echo "::error::mutation-smoke is on but mutation-smoke-command is empty"; exit 1; fi
           bash -c "$COMMAND"
 
+  floor-lint:
+    name: Floor lint (PHP ${{ inputs.floor-lint-php }}) (${{ matrix.os }})
+    if: inputs.floor-lint
+    # Legs: Linux only. Decided on UAMS-Web/uams-claude-skills#607 from what the job reads, not from a seeded fault: it parses the shipped PHP files under one pinned PHP version, and the parser reads the same bytes the same way on any platform. A caller that wants more names it in `all-platform-jobs`.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(contains(format(' {0} ', inputs.all-platform-jobs), ' floor-lint ') && '["ubuntu-latest","windows-latest","macos-latest"]' || contains(format(' {0} ', inputs.windows-jobs), ' floor-lint ') && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.floor-lint-php }}
+          coverage: none
+
+      # Parses every shipped PHP file under the supported floor. An empty command is a configuration error and fails, never a silent pass.
+      - name: Lint under the floor
+        env:
+          COMMAND: ${{ inputs.floor-lint-command }}
+        run: |
+          if [ -z "$COMMAND" ]; then echo "::error::floor-lint is on but floor-lint-command is empty"; exit 1; fi
+          bash -c "$COMMAND"
+
+  download-archive:
+    name: Download archive (${{ matrix.os }})
+    if: inputs.download-archive
+    # Legs: Linux only. Decided on UAMS-Web/uams-claude-skills#607 from what the job reads, not from a seeded fault: it runs `git archive` on `HEAD` and lists the result, and the repository pins line endings, so the list is the same on any platform. A caller that wants more names it in `all-platform-jobs`.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(contains(format(' {0} ', inputs.all-platform-jobs), ' download-archive ') && '["ubuntu-latest","windows-latest","macos-latest"]' || contains(format(' {0} ', inputs.windows-jobs), ' download-archive ') && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Fails, naming each path, when the download holds a file the plugin does not run. An empty command is a configuration error and fails, never a silent pass.
+      - name: Check the download
+        env:
+          COMMAND: ${{ inputs.download-archive-command }}
+        run: |
+          if [ -z "$COMMAND" ]; then echo "::error::download-archive is on but download-archive-command is empty"; exit 1; fi
+          bash -c "$COMMAND"
+
+  phpcs:
+    name: phpcs (WordPress security sniffs) (${{ matrix.os }})
+    if: inputs.phpcs
+    needs: [composer-validate]
+    # Legs: Linux only. Decided on UAMS-Web/uams-claude-skills#607 from what the job reads, not from a seeded fault: phpcs reads PHP source and its own ruleset, the same files the same way on any platform. A caller that wants more names it in `all-platform-jobs`.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(contains(format(' {0} ', inputs.all-platform-jobs), ' phpcs ') && '["ubuntu-latest","windows-latest","macos-latest"]' || contains(format(' {0} ', inputs.windows-jobs), ' phpcs ') && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
+      - uses: ./.github/actions/setup
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
+
+      # An empty command is a configuration error and fails, never a silent pass.
+      - name: Run phpcs
+        env:
+          COMMAND: ${{ inputs.phpcs-command }}
+        run: |
+          if [ -z "$COMMAND" ]; then echo "::error::phpcs is on but phpcs-command is empty"; exit 1; fi
+          bash -c "$COMMAND"
+
+  guard:
+    name: Guard against tracked secrets or personal data (${{ matrix.os }})
+    if: inputs.guard
+    # Legs: Linux only. Decided on UAMS-Web/uams-claude-skills#620 from what the job reads, not from a seeded fault: it matches the names `git ls-files` prints against patterns, and the list reads the same on any platform. A caller that wants more names it in `all-platform-jobs`.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(contains(format(' {0} ', inputs.all-platform-jobs), ' guard ') && '["ubuntu-latest","windows-latest","macos-latest"]' || contains(format(' {0} ', inputs.windows-jobs), ' guard ') && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # Fails, naming each path, when a tracked file matches a built-in pattern or one of guard-patterns. An empty file list is a failure, never a pass over nothing, and so is a pattern grep cannot read (status 2).
+      - name: Fail on a tracked secret or personal-data file
+        env:
+          EXTRA: ${{ inputs.guard-patterns }}
+        run: |
+          builtin='wp-config\.php$ \.sql(\.gz)?$ \.(csv|tsv|xlsx?)$ \.env(\.|$) \.pem$ \.key$'
+          pattern=$(printf '%s %s' "$builtin" "$EXTRA" | tr -s ' \t\n\r' '\n' | sed '/^$/d' | paste -sd '|' -)
+          files=$(git ls-files)
+          if [ -z "$files" ]; then echo "::error::git ls-files listed no tracked files, so the guard checked nothing"; exit 1; fi
+          echo "Checking $(printf '%s\n' "$files" | wc -l | tr -d ' ') tracked paths against: $pattern"
+          status=0
+          bad=$(printf '%s\n' "$files" | grep -E -- "$pattern") || status=$?
+          if [ "$status" -eq 0 ]; then
+            echo "::error::Tracked secret or personal-data file(s) detected:"
+            echo "$bad"
+            exit 1
+          fi
+          if [ "$status" -ne 1 ]; then echo "::error::grep could not run the guard pattern (status $status): $pattern"; exit 1; fi
+          echo "No tracked path matches."
+
+  dev-lint:
+    name: PHP lint (development PHP) (${{ matrix.os }})
+    if: inputs.dev-lint
+    # Legs: Linux only. Decided on UAMS-Web/uams-claude-skills#620 from what the job reads, not from a seeded fault: `php -l` parses source under one PHP version and reads the same bytes the same way on any platform. A caller that wants more names it in `all-platform-jobs`.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(contains(format(' {0} ', inputs.all-platform-jobs), ' dev-lint ') && '["ubuntu-latest","windows-latest","macos-latest"]' || contains(format(' {0} ', inputs.windows-jobs), ' dev-lint ') && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the PHP pin
+        id: php
+        shell: bash
+        run: |
+          pin=""
+          if [ -f composer.json ]; then pin=$(jq -r '.config.platform.php // empty' composer.json); fi
+          if [ -z "$pin" ]; then
+            echo "pinned=none" >> "$GITHUB_OUTPUT"
+            echo "minor=8.4" >> "$GITHUB_OUTPUT"
+            echo "No config.platform.php in composer.json; installing the default PHP 8.4."
+          else
+            # The whole value must be a version: a prefix match let `8.4.x` through, and a newline in the pin wrote extra lines to GITHUB_OUTPUT.
+            if ! [[ "$pin" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then echo "::error::config.platform.php is '$pin', which is not a version of the form major.minor or major.minor.patch"; exit 1; fi
+            minor=$(printf '%s' "$pin" | grep -oE '^[0-9]+\.[0-9]+')
+            echo "pinned=$pin" >> "$GITHUB_OUTPUT"
+            echo "minor=$minor" >> "$GITHUB_OUTPUT"
+            echo "config.platform.php is $pin; installing PHP $minor."
+          fi
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php.outputs.minor }}
+          coverage: none
+      - name: Report pinned and installed PHP
+        shell: bash
+        env:
+          PINNED: ${{ steps.php.outputs.pinned }}
+        run: |
+          installed=$(php -r 'echo PHP_VERSION;')
+          echo "PHP pinned: $PINNED, installed: $installed"
+          case "$PINNED" in none|"$installed") ;; *) echo "::warning::config.platform.php pins $PINNED but the runner installed $installed; setup-php installs the newest patch of a minor" ;; esac
+
+      # Runs php -l on every PHP file outside vendor, node_modules and dev-lint-exclude. No file found is a failure, never a pass over nothing, and so is a syntax error in any file, which is named in the log whatever the runner's log_errors setting (php -l runs with log_errors off and display_errors on, so its message is on stdout and is printed only for a file that fails).
+      - name: php -l every PHP file
+        env:
+          EXCLUDE: ${{ inputs.dev-lint-exclude }}
+        run: |
+          skip=(-not -path './vendor/*' -not -path './node_modules/*')
+          for path in $EXCLUDE; do
+            path=${path#./}
+            path=${path%/}
+            if [ -z "$path" ]; then continue; fi
+            skip+=(-not -path "./$path" -not -path "./$path/*")
+          done
+          find . -name '*.php' "${skip[@]}" -print0 > php-files.list
+          count=$(tr -cd '\0' < php-files.list | wc -c | tr -d ' ')
+          if [ "$count" -eq 0 ]; then echo "::error::No PHP files found to lint"; exit 1; fi
+          echo "Linting $count PHP files under PHP $(php -r 'echo PHP_VERSION;')"
+          failed=0
+          while IFS= read -r -d '' file; do
+            if ! out=$(php -d log_errors=0 -d display_errors=1 -l "$file" 2>&1); then
+              echo "::error file=${file#./}::php -l failed on ${file#./}"
+              echo "$out"
+              failed=$((failed + 1))
+            fi
+          done < php-files.list
+          if [ "$failed" -ne 0 ]; then echo "::error::$failed PHP file(s) failed php -l"; exit 1; fi
+
   # The one job that reads every other job's result. Keep `needs:` listing every other job in the
   # file; scripts/check-templates.mjs in UAMS-Web/uams-claude-skills checks it.
   result:
     name: Chain result
-    needs: [composer-validate, synced-files, no-emoji, aggregate-needs, pint, rector, phpstan, mutate-ignore, mutate, pest, encoding-guard, vitest, vite-build, mutation-smoke]
+    needs: [composer-validate, synced-files, no-emoji, aggregate-needs, pint, rector, phpstan, mutate-ignore, mutate, pest, encoding-guard, vitest, vite-build, mutation-smoke, floor-lint, download-archive, phpcs, guard, dev-lint]
     if: always()
     # Legs: Linux only. It reads job results with jq.
     runs-on: ubuntu-latest
@@ -605,7 +1218,7 @@ jobs:
       - name: Every needed job succeeded
         env:
           NEEDS: ${{ toJSON(needs) }}
-          SWITCHED_OFF: ${{ format('{0}{1}{2}{3}{4}{5}', !inputs.pest && 'pest ' || '', !inputs.mutate && 'mutate ' || '', !inputs.encoding-guard && 'encoding-guard ' || '', !inputs.vitest && 'vitest ' || '', !inputs.vite-build && 'vite-build ' || '', !inputs.mutation-smoke && 'mutation-smoke ' || '') }}
+          SWITCHED_OFF: ${{ format('{0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}', !inputs.pest && 'pest ' || '', !inputs.mutate && 'mutate ' || '', (!inputs.mutate && !inputs.mutate-ignore) && 'mutate-ignore ' || '', !inputs.encoding-guard && 'encoding-guard ' || '', !inputs.vitest && 'vitest ' || '', !inputs.vite-build && 'vite-build ' || '', !inputs.mutation-smoke && 'mutation-smoke ' || '', !inputs.floor-lint && 'floor-lint ' || '', !inputs.download-archive && 'download-archive ' || '', !inputs.phpcs && 'phpcs ' || '', !inputs.guard && 'guard ' || '', !inputs.dev-lint && 'dev-lint ' || '') }}
         run: |
           results=$(echo "$NEEDS" | jq -r 'to_entries[] | "\(.key) \(.value.result)"')
           echo "Needed job results:"

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Collection;
@@ -9,10 +10,16 @@ use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Concerns\RequiresContentSubmodule;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class, RequiresContentSubmodule::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class, RequiresContentSubmodule::class);
+
+beforeEach(function (): void {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+});
 
 const POSTS_LISTING_TEST_PREFIX = 'zz-posts-listing-test-';
 
@@ -234,7 +241,7 @@ it('renders only the given category\'s posts when filtered, and every post when 
                 ->each(fn (Statamic\Entries\Entry $e) => $e->delete());
         }
     }
-})->group('serial');
+});
 
 it('renders only the given tag\'s posts when filtered, resolving the slug on the current site (#2532)', function (): void {
     if (! Collection::findByHandle('post_tags') || ! Collection::findByHandle('posts')) {
@@ -296,7 +303,7 @@ it('renders only the given tag\'s posts when filtered, resolving the slug on the
                 ->each(fn (Statamic\Entries\Entry $e) => $e->deleteQuietly());
         }
     }
-})->group('serial');
+});
 
 it('pages the listing by posts_per_page, newest first', function (): void {
     if (! Collection::findByHandle('posts')) {
@@ -345,4 +352,4 @@ it('pages the listing by posts_per_page, newest first', function (): void {
             })
             ->each(fn (Statamic\Entries\Entry $e) => $e->delete());
     }
-})->group('serial');
+});

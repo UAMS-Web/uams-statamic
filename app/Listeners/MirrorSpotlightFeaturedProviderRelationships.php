@@ -43,19 +43,6 @@ final class MirrorSpotlightFeaturedProviderRelationships
     private const string COLLECTION = 'clinical_resources';
 
     /**
-     * The spotlight ontology relationships, each mapped to the featured
-     * provider's own source relationship they are overwritten from.
-     *
-     * @var array<string, string>
-     */
-    private const array ONTOLOGY_MAP = [
-        'clinical_locations' => 'clinical_locations',
-        'clinical_expertise' => 'expertise',
-        'clinical_conditions' => 'conditions',
-        'clinical_services' => 'treatments',
-    ];
-
-    /**
      * Mirror the featured provider and its ontology into the spotlight before it
      * is persisted.
      */
@@ -118,7 +105,7 @@ final class MirrorSpotlightFeaturedProviderRelationships
     private function mirrorOntology(Entry $entry, ?string $providerId): void
     {
         if ($providerId === null) {
-            foreach (array_keys(self::ONTOLOGY_MAP) as $field) {
+            foreach (array_keys(self::ontologyMap()) as $field) {
                 $this->setIfChanged($entry, $field, []);
             }
 
@@ -131,7 +118,7 @@ final class MirrorSpotlightFeaturedProviderRelationships
             return;
         }
 
-        foreach (self::ONTOLOGY_MAP as $field => $source) {
+        foreach (self::ontologyMap() as $field => $source) {
             $this->setIfChanged($entry, $field, $this->ids($provider->get($source)));
         }
     }
@@ -171,5 +158,23 @@ final class MirrorSpotlightFeaturedProviderRelationships
         }
 
         return $ids;
+    }
+
+    /**
+     * The spotlight ontology relationships, each mapped to the featured
+     * provider's own source relationship they are overwritten from.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return array<string, string>
+     */
+    private static function ontologyMap(): array
+    {
+        return [
+            'clinical_locations' => 'clinical_locations',
+            'clinical_expertise' => 'expertise',
+            'clinical_conditions' => 'conditions',
+            'clinical_services' => 'treatments',
+        ];
     }
 }

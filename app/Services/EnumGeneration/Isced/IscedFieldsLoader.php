@@ -23,6 +23,10 @@ final class IscedFieldsLoader
         }
 
         $raw = file_get_contents($jsonPath);
+
+        // Check whether the read failed. is_readable() above already passed, and a
+        // directory reads as an empty string rather than false, so no test can reach it.
+        // @pest-mutate-ignore: FalseToTrue,ConcatRemoveLeft,ConcatRemoveRight,ConcatSwitchSides
         if ($raw === false) {
             throw new ValueError('Failed to read ISCED-F fixture: '.$jsonPath);
         }
@@ -59,9 +63,9 @@ final class IscedFieldsLoader
             throw new ValueError('ISCED-F fixture produced no valid rows: '.$jsonPath);
         }
 
-        $rows = array_values($out);
-        usort($rows, static fn (array $a, array $b): int => IscedHierarchy::compareCodes((string) $a['code'], (string) $b['code']));
+        // Sort by code; usort() also reindexes the code-keyed rows into a list
+        usort($out, static fn (array $a, array $b): int => IscedHierarchy::compareCodes($a['code'], $b['code']));
 
-        return $rows;
+        return $out;
     }
 }

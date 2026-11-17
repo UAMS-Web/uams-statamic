@@ -16,6 +16,11 @@ uses(StacheIsolatedTestCase::class);
 /**
  * UAMS-Web/uams-statamic-archive#865: the `pubmed:warm` command gathers PMIDs from the providers/people
  * collections and dispatches the warming job out of band.
+ *
+ * Mutation: 31 mutants on the command. 29 run and are killed. The other 2 sit on the
+ * `BATCH_SIZE` constant, whose line the coverage driver never marks as executed, so Pest
+ * reports them uncovered and runs neither. Applied by hand, 99 and 101 each fail the
+ * one-job-per-hundred case (1 failed each).
  */
 beforeEach(function () {
     foreach (['clinical_providers', 'people'] as $handle) {

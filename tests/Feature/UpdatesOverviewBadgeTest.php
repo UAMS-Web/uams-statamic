@@ -7,10 +7,11 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * Guards `patches/statamic-updates-overview-badge.patch` on `statamic/cms`.
+ * Guards `vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch` on `statamic/cms`.
  *
  * Remove this file when the patch is removed; see **When removing this patch**
- * in `patches/README.md` (CP updates nav badge section).
+ * in `patches/README.md` as of `38c79391f`
+ * (`git show 38c79391f:patches/README.md`, CP updates nav badge section).
  *
  * This asserts the contents of the patched `statamic/cms` vendor file; there is
  * no backing App\ PHP class, so there is no mutable PHP surface to mutation-test.

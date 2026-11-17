@@ -16,7 +16,8 @@
 // This lives beside the file rather than in `scripts/` as a check invoked from
 // the runner, because `vitest.config.js` already collects `scripts/**/*.test.mjs`
 // into the `js` job — so it gates with no wiring, and without touching
-// `local-ci.mjs` or `ci.yml`, which a parked pull request holds.
+// the local runner's `local-ci.json` or `ci.yml`, which a parked pull request
+// holds.
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'

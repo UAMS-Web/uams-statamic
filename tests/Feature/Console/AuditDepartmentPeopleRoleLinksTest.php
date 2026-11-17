@@ -18,6 +18,11 @@ use function Pest\Laravel\artisan;
  * config, table columns, leadership skip, derive-vs-curate threshold, percent
  * formatting) can be pinned with `expectsTable` / exact line output.
  *
+ * Mutation: 49 mutants on the command. 47 run and are killed. The other 2 sit on the
+ * `DERIVE_THRESHOLD` constant, whose line the coverage driver never marks as executed,
+ * so Pest reports them uncovered and runs neither. Applied by hand, each fails this file:
+ * 1.8 fails the 8-of-10 derive case and -0.2 fails the 7-of-10 curate case (2 failed each).
+ *
  * @command  php artisan test --compact tests/Feature/Console/AuditDepartmentPeopleRoleLinksTest.php
  */
 uses(TestCase::class, MockeryPHPUnitIntegration::class);

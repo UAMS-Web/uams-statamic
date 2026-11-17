@@ -54,10 +54,15 @@ declare(strict_types=1);
  *                                         [--ceiling=<seconds>]
  *
  * EXIT
- *     0  the costliest class is within both its share ceiling and the backstop, or
+ *     0  the costliest class is within its share ceiling and every backstop that
+ *        applies to its band, or
  *        the parallel band's share alone is over its ceiling on a GitHub-hosted
- *        runner, where the breach is reported and does not fail (#584)
- *     1  it is over either one anywhere else, over the backstop anywhere, or the
+ *        runner, where the breach is reported and does not fail (#584), or the
+ *        serial band's share alone is over its ceiling in a band of fewer timed
+ *        classes than its minimum, where the breach is reported and does not fail
+ *        (#557)
+ *     1  it is over either one anywhere else, over the backstop anywhere, over the
+ *        small-band backstop in a band below its minimum class count (#695), or the
  *        report is missing, unparseable, or carries no durations: a band that
  *        produced no usable report has not been verified, and passing it would
  *        reinstate the silence this guard exists to remove.
@@ -73,6 +78,20 @@ declare(strict_types=1);
  * and the absolute backstop still fail there, since #584 decided only the parallel
  * share. See hostedRunnerReportsShareBreach() for how a hosted runner is told apart
  * from the gate host.
+ *
+ * SMALL BANDS (#557). A share has a floor: in a band of N timed classes the costliest
+ * class takes at least 100/N percent, however evenly the time is spread. Once #557
+ * returned most of the serial group to the parallel band, the serial band held five
+ * timed classes, so its floor was 20%, half the 40% ceiling, and a class of twenty
+ * evenly timed tests (UnpublishExpiredClassifiedsTest, 22.0s, about 1s a test) read
+ * 46.48% on #671's CI run with no straggler in it. So below a band's minimum class
+ * count a share breach is printed and the guard exits 0. The absolute backstop
+ * still fails there. See SLOWEST_CLASS_SHARE_MINIMUM_CLASSES for the number.
+ *
+ * That left a gap (#695): with the share report-only, a class in the small serial
+ * band could grow tenfold and fail nothing short of the 1500s backstop. So below its
+ * minimum class count the serial band also carries a smaller per-class backstop,
+ * which fails. See SLOWEST_CLASS_SMALL_BAND_BACKSTOP_SECONDS for the number.
  */
 
 /**
@@ -108,8 +127,15 @@ declare(strict_types=1);
  * by under 0.3 points, and across two machines the share stays between 5.0% and
  * 5.9%. The costliest class did inflate a little faster than the mean (x2.22 against
  * x2.13 in round 3), which is why the ceiling is not pressed against the readings.
- * 7.5% sits 27% above the worst observed and below 8.33%, the 1/12 point at which a
- * class starts binding the gate's twelve workers — so it fires before a class binds.
+ * 7.5% sits 27% above the worst observed, and it is a warning on growth rather than
+ * the binding point itself. It was set below 8.33%, the 1/12 point at which a class
+ * bound the gate's band when the gate ran twelve workers. The gate now runs
+ * PARALLEL_WORKERS = 4 (scripts/gate-pest.mjs, #482), where a class binds at 1/4,
+ * 25%, so 7.5% fires long before a class binds the local band. The ceiling did not
+ * move with the worker count: the share is a ratio of summed work, which the worker
+ * count does not change, so the readings above still apply; the margin below 1/4 is
+ * what keeps a class split before it binds; and CI runs the same check over its
+ * merged shard report, whose runners keep paratest's default count.
  * UAMS-Web/uams-statamic-archive#1797's 1085.3s class, against the 10797s of summed work UAMS-Web/uams-statamic-archive#1890 later measured,
  * would have read about 10% and failed it.
  *
@@ -125,7 +151,9 @@ declare(strict_types=1);
  * window holds one class, so a spike slowing it about 2.7x takes round 1 past 40%.
  * In the parallel band the same window also slows the classes running beside it on
  * the other workers, so the share tends toward 1/workers: from 5.11% it takes about
- * 2.9x on ten workers and 5.7x on twelve to pass 7.5%. UAMS-Web/uams-statamic-archive#2525 inflated its costliest
+ * 2.9x on ten workers and 5.7x on twelve to pass 7.5%, but only about 1.7x on the
+ * gate's four, because fewer workers dilute the spike less. Four workers also leave
+ * the machine less contended, which is what produces such spikes. UAMS-Web/uams-statamic-archive#2525 inflated its costliest
  * class 2.98x, but alongside every other class, which is the case the share absorbs.
  *
  * A band name without its own entry takes the parallel ceiling, the stricter one.
@@ -142,6 +170,22 @@ const SLOWEST_CLASS_SHARE_CEILING_PERCENT = [
 ];
 
 /**
+ * The fewest timed classes a band must hold before its share ceiling fails (#557).
+ *
+ * Only the serial band has one. At ten classes the share's floor is 10%, a quarter of
+ * the serial ceiling and half the lowest reading the ceiling was set from (19.7%, see
+ * SLOWEST_CLASS_SHARE_CEILING_PERCENT). At five the floor is 20%, already above that
+ * reading, so an even spread of time decides the verdict rather than a straggler. The
+ * parallel band holds hundreds of classes, so it has no minimum, and a band name
+ * without an entry has none either, so a misspelled band cannot reach this.
+ *
+ * @var array<string, int>
+ */
+const SLOWEST_CLASS_SHARE_MINIMUM_CLASSES = [
+    'serial' => 10,
+];
+
+/**
  * The absolute backstop, in seconds, for any single test class.
  *
  * This was the guard's only ceiling (700s, UAMS-Web/uams-statamic-archive#1890) until UAMS-Web/uams-statamic-archive#2530 showed contention
@@ -153,6 +197,38 @@ const SLOWEST_CLASS_SHARE_CEILING_PERCENT = [
  * the whole suite — reaches it.
  */
 const SLOWEST_CLASS_BACKSTOP_SECONDS = 1500.0;
+
+/**
+ * The per-class backstop, in seconds, for a band holding fewer timed classes than its
+ * share minimum (#695). It fails, where the share there only reports.
+ *
+ * Only the serial band has one, since only it has a minimum (see
+ * SLOWEST_CLASS_SHARE_MINIMUM_CLASSES); a band at or above its minimum, the parallel
+ * band and a band name without an entry keep the 1500s backstop alone.
+ *
+ * Set from recorded serial-band readings, with the headroom the 1500s figure was
+ * given (3.6x the worst quiet reading, 1.9x the worst contended one):
+ *
+ *     source                                            samples   costliest class
+ *     CI serial job, green runs 2026-11-06 to 11-14,     450       80.9s (windows and
+ *       ubuntu, windows and macos, every band size                macOS, each once)
+ *     of those, the six-class band after #671             12       72.7s (windows)
+ *     the gate host's serial band at 1585ec4fd             1      122.9s
+ *       (the #688 local gate run, 2026-11-13)
+ *     macOS at local-ci parity, 2026-09-25, contended      1      123.5s
+ *       (round 3, see SLOWEST_CLASS_SHARE_CEILING_PERCENT)
+ *
+ * 450s is 3.7x the worst quiet reading (122.9s) and 3.6x the worst contended one
+ * (123.5s), and 5.6x the worst CI reading. The classes in the six-class band read
+ * 21.7s to 72.7s in CI, so it fails a class that has grown about 6x to 21x, where
+ * the 1500s backstop needed 21x to 69x. A smaller figure would sit inside the 2.98x
+ * inflation UAMS-Web/uams-statamic-archive#2525 recorded on a contended gate host.
+ *
+ * @var array<string, float>
+ */
+const SLOWEST_CLASS_SMALL_BAND_BACKSTOP_SECONDS = [
+    'serial' => 450.0,
+];
 
 /**
  * Whether this process runs on a GitHub-hosted Actions runner (#586).
@@ -187,6 +263,39 @@ function runsOnGitHubHostedRunner(array $environment): bool
 function hostedRunnerReportsShareBreach(string $band, array $environment): bool
 {
     return $band === 'parallel' && runsOnGitHubHostedRunner($environment);
+}
+
+/**
+ * Whether a share breach in this band is reported rather than failed because the
+ * band holds too few timed classes for its share to mean anything (#557).
+ *
+ * @param  string  $band  The band name passed with --band
+ * @param  int  $classCount  The number of timed classes in the band's report
+ * @return bool True when the band has a minimum and holds fewer classes than it
+ */
+function smallBandReportsShareBreach(string $band, int $classCount): bool
+{
+    return isset(SLOWEST_CLASS_SHARE_MINIMUM_CLASSES[$band])
+        && $classCount < SLOWEST_CLASS_SHARE_MINIMUM_CLASSES[$band];
+}
+
+/**
+ * The small-band backstop that applies to this band, if any (#695).
+ *
+ * It applies exactly where a share breach is reported for want of classes, so the
+ * band that loses its failing share gains this failing bound in its place.
+ *
+ * @param  string  $band  The band name passed with --band
+ * @param  int  $classCount  The number of timed classes in the band's report
+ * @return float|null The bound in seconds, or null when the band is not below its minimum
+ */
+function smallBandBackstop(string $band, int $classCount): ?float
+{
+    if (! smallBandReportsShareBreach($band, $classCount)) {
+        return null;
+    }
+
+    return SLOWEST_CLASS_SMALL_BAND_BACKSTOP_SECONDS[$band] ?? null;
 }
 
 /**
@@ -259,9 +368,10 @@ function slowestClassTotals(string $xml): array
  * @param  array<string, float>  $totals  Total seconds per class, highest first
  * @param  float  $shareCeiling  The share ceiling, in percent of summed class time
  * @param  float  $backstop  The absolute per-class backstop in seconds
- * @return array{ok: bool, class: string, seconds: float, summed: float, share: float, shareCeiling: float, shareOk: bool, backstop: float, backstopOk: bool}
+ * @param  float|null  $smallBandBackstop  The small-band backstop in seconds, or null where none applies
+ * @return array{ok: bool, class: string, seconds: float, summed: float, share: float, shareCeiling: float, shareOk: bool, backstop: float, backstopOk: bool, smallBandBackstop: float|null, smallBandBackstopOk: bool}
  */
-function evaluateSlowestClass(array $totals, float $shareCeiling, float $backstop): array
+function evaluateSlowestClass(array $totals, float $shareCeiling, float $backstop, ?float $smallBandBackstop = null): array
 {
     $class = (string) array_key_first($totals);
     $seconds = $totals[$class];
@@ -270,9 +380,10 @@ function evaluateSlowestClass(array $totals, float $shareCeiling, float $backsto
 
     $shareOk = $share <= $shareCeiling;
     $backstopOk = $seconds <= $backstop;
+    $smallBandBackstopOk = $smallBandBackstop === null || $seconds <= $smallBandBackstop;
 
     return [
-        'ok' => $shareOk && $backstopOk,
+        'ok' => $shareOk && $backstopOk && $smallBandBackstopOk,
         'class' => $class,
         'seconds' => $seconds,
         'summed' => $summed,
@@ -281,6 +392,8 @@ function evaluateSlowestClass(array $totals, float $shareCeiling, float $backsto
         'shareOk' => $shareOk,
         'backstop' => $backstop,
         'backstopOk' => $backstopOk,
+        'smallBandBackstop' => $smallBandBackstop,
+        'smallBandBackstopOk' => $smallBandBackstopOk,
     ];
 }
 
@@ -331,7 +444,8 @@ try {
     exit(1);
 }
 
-$result = evaluateSlowestClass($totals, $shareCeiling, $backstop);
+$smallBand = smallBandReportsShareBreach($band, count($totals));
+$result = evaluateSlowestClass($totals, $shareCeiling, $backstop, smallBandBackstop($band, count($totals)));
 
 // On a GitHub-hosted runner a parallel share breach is a signal, not a verdict
 // (#584): report it, as a workflow warning so it shows on the run's summary, and
@@ -359,9 +473,28 @@ if (! $result['shareOk'] && $result['backstopOk'] && hostedRunnerReportsShareBre
     exit(0);
 }
 
+// In a band of too few classes a share breach is a signal, not a verdict (#557):
+// report it and pass. Neither backstop is covered, so a class over the 1500s one or
+// the small-band one (#695) still fails below.
+if (! $result['shareOk'] && $result['backstopOk'] && $result['smallBandBackstopOk'] && $smallBand) {
+    printf(
+        "Slowest class over its share ceiling, reported and not failed in a band of %d timed classes (minimum %d): %s band's %s is %.1fs, %.2f%% of %.1fs summed class time, share ceiling %.2f%% (over by %.2f points). A share cannot fall below 100/N, so with this few classes it does not single out a straggler (#557).\n",
+        count($totals),
+        SLOWEST_CLASS_SHARE_MINIMUM_CLASSES[$band],
+        $band,
+        $result['class'],
+        $result['seconds'],
+        $result['share'],
+        $result['summed'],
+        $result['shareCeiling'],
+        $result['share'] - $result['shareCeiling'],
+    );
+    exit(0);
+}
+
 if ($result['ok']) {
     printf(
-        "Slowest class OK: %s band's costliest class is %s at %.1fs, %.2f%% of %.1fs summed class time (share ceiling %.2f%%, backstop %.1fs).\n",
+        "Slowest class OK: %s band's costliest class is %s at %.1fs, %.2f%% of %.1fs summed class time (share ceiling %.2f%%, backstop %.1fs%s).\n",
         $band,
         $result['class'],
         $result['seconds'],
@@ -369,11 +502,14 @@ if ($result['ok']) {
         $result['summed'],
         $result['shareCeiling'],
         $result['backstop'],
+        $result['smallBandBackstop'] === null ? '' : sprintf(', small-band backstop %.1fs', $result['smallBandBackstop']),
     );
     exit(0);
 }
 
-if (! $result['shareOk']) {
+// In a small band the share does not fail (#557), so it is not named as a breach
+// here even when a backstop fails the run.
+if (! $result['shareOk'] && ! $smallBand) {
     fwrite(STDERR, sprintf(
         "Slowest class EXCEEDED: %s band's %s is %.2f%% of %.1fs summed class time, share ceiling %.2f%% (over by %.2f points).\n",
         $band,
@@ -393,6 +529,19 @@ if (! $result['backstopOk']) {
         $result['seconds'],
         $result['backstop'],
         $result['seconds'] - $result['backstop'],
+    ));
+}
+
+if (! $result['smallBandBackstopOk']) {
+    fwrite(STDERR, sprintf(
+        "Slowest class EXCEEDED: %s band's %s cost %.1fs, small-band backstop %.1fs in a band of %d timed classes (minimum %d), over by %.1fs. Below its minimum class count the band's share does not fail, so this bound does (#695).\n",
+        $band,
+        $result['class'],
+        $result['seconds'],
+        (float) $result['smallBandBackstop'],
+        count($totals),
+        SLOWEST_CLASS_SHARE_MINIMUM_CLASSES[$band] ?? 0,
+        $result['seconds'] - (float) $result['smallBandBackstop'],
     ));
 }
 
