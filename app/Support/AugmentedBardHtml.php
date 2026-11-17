@@ -131,16 +131,6 @@ class AugmentedBardHtml
         string $element
     ): string {
         // ---
-        // Return unchanged when there is no HTML to change
-        // ---
-
-        // Check if the HTML is empty
-        if ($html === '') {
-            // Return the HTML unchanged
-            return $html;
-        }
-
-        // ---
         // Build a case-insensitive pattern for the first opening tag of this type
         // ---
 
@@ -153,11 +143,13 @@ class AugmentedBardHtml
         // Build a case-insensitive pattern for the first opening tag of this type
         $pattern = sprintf('/^(\s*)<(%s)(\s[^>]*)?>/i', $quoted);
 
-        // Replace once so only the first matching element is affected
-        $result = preg_replace(
+        // Replace once so only the first matching element is affected; a callback keeps `$n` and `\n` in the injected text literal
+        $result = preg_replace_callback(
             $pattern,
-            '$1<$2$3>'.$injected,
+            static fn (array $match): string => $match[0].$injected,
             $html,
+            // The pattern is anchored at the start, so it can match at most once and any higher limit is equivalent (IncrementInteger)
+            // @pest-mutate-ignore: IncrementInteger
             1
         );
 
@@ -190,16 +182,6 @@ class AugmentedBardHtml
         string $element
     ): string {
         // ---
-        // Return unchanged when there is no HTML to change
-        // ---
-
-        // Check if the HTML is empty
-        if ($html === '') {
-            // Return the HTML unchanged
-            return $html;
-        }
-
-        // ---
         // Match closing tags with optional whitespace before {@code >}
         // ---
 
@@ -210,17 +192,14 @@ class AugmentedBardHtml
         $pattern = sprintf('/<\/%s\s*>/i', $quoted);
 
         // Collect every match so we can edit only the final closing tag
-        $matchCount = preg_match_all($pattern, $html, $matches, PREG_OFFSET_CAPTURE);
+        preg_match_all($pattern, $html, $matches, PREG_OFFSET_CAPTURE);
 
         // ---
         // Leave the fragment unchanged when the closing tag never appears
         // ---
 
-        // Check if there are no matches or the matches are empty
-        if (
-            $matchCount === 0
-            || empty($matches[0])
-        ) {
+        // Check if there are no matches (a PCRE failure leaves the list empty too)
+        if (empty($matches[0])) {
             // Return the HTML unchanged
             return $html;
         }
@@ -248,21 +227,21 @@ class AugmentedBardHtml
     public static function normalizeElementName(
         mixed $candidate
     ): string {
-        // Coerce non-string parameters to string for validation
-        $name = \is_string($candidate) ? trim($candidate) : '';
+        // Check if the parameter is not a string
+        if (! \is_string($candidate)) {
+            // Return the default element name
+            return 'p';
+        }
+
+        // Trim surrounding whitespace before validation
+        $name = trim($candidate);
 
         // ---
         // Fall back when empty or not a simple HTML local name
         // ---
 
-        // Check if the name is empty or not a simple HTML local name
-        if (
-            $name === ''
-            || ! preg_match(
-                '/^[a-zA-Z][a-zA-Z0-9]*$/',
-                $name
-            )
-        ) {
+        // Check if the name is not a simple HTML local name (an empty name never matches)
+        if (! preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $name)) {
             // Return the default element name
             return 'p';
         }
@@ -276,6 +255,8 @@ class AugmentedBardHtml
      *
      * @param  mixed  $row  The row to check
      * @return bool True if the row is a Bard prose (text) block
+     *
+     * @phpstan-assert-if-true Values|array<mixed> $row
      */
     private static function isTextRow(
         mixed $row
@@ -307,11 +288,11 @@ class AugmentedBardHtml
     /**
      * Read the HTML string from a text-type Bard row.
      *
-     * @param  mixed  $row  The row to read the HTML string from
+     * @param  Values|array<mixed>  $row  The row to read the HTML string from
      * @return string The HTML string from the row
      */
     private static function textHtmlFromRow(
-        mixed $row
+        Values|array $row
     ): string {
         // ---
         // Handle Statamic Values instances (augmented Bard with sets)
@@ -330,34 +311,28 @@ class AugmentedBardHtml
         // Handle plain associative arrays
         // ---
 
-        // Check if the row is an array
-        if (\is_array($row)) {
-            // Get the text from the row
-            $text = $row['text'] ?? '';
+        // Get the text from the row
+        $text = $row['text'] ?? '';
 
-            // Check if the text is a Value instance
-            if ($text instanceof Value) {
-                // Return the text as a string
-                return self::scalarToString($text->raw());
-            }
-
+        // Check if the text is a Value instance
+        if ($text instanceof Value) {
             // Return the text as a string
-            return self::scalarToString($text);
+            return self::scalarToString($text->raw());
         }
 
-        // Return an empty string as the row is not a Bard prose (text) block
-        return '';
+        // Return the text as a string
+        return self::scalarToString($text);
     }
 
     /**
      * Build a replacement row with updated HTML for the text field.
      *
-     * @param  mixed  $row  The row to build the replacement for
+     * @param  Values|array<mixed>  $row  The row to build the replacement for
      * @param  string  $html  The HTML string to replace the text with
      * @return array<string, mixed> The replacement row
      */
     private static function rowWithUpdatedText(
-        mixed $row,
+        Values|array $row,
         string $html
     ): array {
         // ---
@@ -380,19 +355,10 @@ class AugmentedBardHtml
         // Handle plain associative arrays
         // ---
 
-        // Check if the row is an array
-        if (\is_array($row)) {
-            /** @var array<string, mixed> $row */
-            // Return the row with the updated HTML
-            return [
-                ...$row,
-                'text' => $html,
-            ];
-        }
-
+        /** @var array<string, mixed> $row */
         // Return the row with the updated HTML
         return [
-            'type' => 'text',
+            ...$row,
             'text' => $html,
         ];
     }
@@ -406,37 +372,7 @@ class AugmentedBardHtml
     private static function scalarToString(
         mixed $value
     ): string {
-        // ---
-        // Handle null values
-        // ---
-
-        // Check if the value is null
-        if ($value === null) {
-            // Return an empty string as the value is null
-            return '';
-        }
-
-        // ---
-        // Handle string values
-        // ---
-
-        // Check if the value is a string
-        if (\is_string($value)) {
-            // Return the value as is (already a string)
-            return $value;
-        }
-
-        // ---
-        // Handle scalar values
-        // ---
-
-        // Check if the value is a scalar
-        if (\is_scalar($value)) {
-            // Return the value as a string (coerced to string)
-            return (string) $value;
-        }
-
-        // Return an empty string as the value is not a scalar
-        return '';
+        // Return a scalar as a string, and an empty string for null or a non-scalar
+        return \is_scalar($value) ? (string) $value : '';
     }
 }
