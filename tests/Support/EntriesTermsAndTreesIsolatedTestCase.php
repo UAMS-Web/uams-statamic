@@ -10,7 +10,7 @@ namespace Tests\Support;
  * (UAMS-Web/uams-statamic#558).
  *
  * {@see EntriesAndTermsIsolatedTestCase} moves the `entries` and `terms` stores onto a
- * per-process copy of the mirror, and says that an entry saved in a structured
+ * per-process copy of their content, and says that an entry saved in a structured
  * collection also saves that collection's tree, which it leaves on the shared mirror.
  * {@see CollectionTreeIsolatedTestCase} moves the trees and leaves the entries. A test
  * that authors a tree and saves entries into it needs both, which this base applies in
