@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Actions\MergePeople;
-use App\Services\People\PeopleMergeService;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Support\Collection;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -11,6 +9,8 @@ use Statamic\Contracts\Auth\User as UserContract;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Actions\MergePeople;
+use UAMSWeb\Aether\People\Merge\PeopleMergeService;
 
 /**
  * Behavioral coverage for the `MergePeople` bulk action (UAMS-Web/uams-statamic-archive#838): it is offered

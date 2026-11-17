@@ -135,7 +135,7 @@ fields:
               icon: user-multiple
               fields:
                 -
-                  import: uamsweb_set_people
+                  import: aether-people::uamsweb_set_people
         text:
           display: Text
           instructions: 'Text based sets.'

@@ -45,8 +45,8 @@ function nonFormAlpineSurfaces(): array
         'liteVideo' => ['resources/views/sets/_video.antlers.html'],
         'fadFilter' => [
             'resources/views/clinical_expertise/section.antlers.html',
-            'resources/views/page_builder/_uamsweb_block_fad_clinical_resources.antlers.html',
-            'resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html',
+            'vendor/uams-web/aether-people/resources/views/page_builder/_uamsweb_block_fad_clinical_resources.antlers.html',
+            'vendor/uams-web/aether-people/resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html',
         ],
         'calculator' => ['resources/views/sets/_calculator.antlers.html'],
         'siteSearchTypeahead' => ['vendor/uams-web/aether-search/resources/views/index.antlers.html'],
@@ -70,7 +70,8 @@ function alpineComponentIsDeclaredIn(string $source, string $component): bool
 }
 
 /**
- * Every view this application serves: its own, and the search add-on's.
+ * Every view this application serves: its own, the search add-on's, and the people
+ * add-on's (#696).
  *
  * @return list<SplFileInfo>
  */
@@ -79,6 +80,7 @@ function viewsServedByThisApplication(): array
     return array_values([
         ...File::allFiles(base_path('resources/views')),
         ...File::allFiles(base_path('vendor/uams-web/aether-search/resources/views')),
+        ...File::allFiles(base_path('vendor/uams-web/aether-people/resources/views')),
     ]);
 }
 

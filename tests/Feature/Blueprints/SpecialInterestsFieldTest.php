@@ -173,7 +173,7 @@ it('names the special-interest fields with one handle per collection across the 
     // Both blueprints import each fieldset field under the same handle.
     foreach (['collections/people/person', 'collections/clinical_locations/location'] as $blueprintPath) {
         /** @var array{tabs: array<int, array{sections?: array<int, array{fields?: array<int, array<string, mixed>>}>}>} $parsed */
-        $parsed = Yaml::parseFile(base_path("resources/blueprints/{$blueprintPath}.yaml"));
+        $parsed = Yaml::parseFile(servedResourcePath("blueprints/{$blueprintPath}.yaml"));
         $tabs = $parsed['tabs'];
 
         foreach ($handles as $handle) {

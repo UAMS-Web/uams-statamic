@@ -304,7 +304,7 @@ it('offers no clinical title when no listed provider carries one', function (arr
 
 it('reads the specialty options from the providers in the section bar, and the whole collection in the Find-a-Doc block', function (): void {
     $section = (string) file_get_contents(resource_path('views/clinical_expertise/_section_filter.antlers.html'));
-    $block = (string) file_get_contents(resource_path('views/page_builder/components/_block_fad_filter.antlers.html'));
+    $block = (string) file_get_contents(aetherPeopleResourcePath('views/page_builder/components/_block_fad_filter.antlers.html'));
     $page = (string) file_get_contents(resource_path('views/clinical_expertise/section.antlers.html'));
 
     expect($section)->not->toContain('collection:clinical_specializations')
@@ -332,7 +332,7 @@ it('lists a person\'s specializations as knows-about entries, and no longer as t
 
     expect($computer->computeEntries($person))->toBe([$id])
         ->and(array_filter($computer->computeTerms($person), fn (string $term): bool => str_starts_with($term, 'clinical_specializations::')))->toBe([])
-        ->and(clinicalSpecializationFieldsetField('uamsweb_computed_person', 'knows_about_terms')->get('taxonomies'))
+        ->and(clinicalSpecializationFieldsetField('aether-people::uamsweb_computed_person', 'knows_about_terms')->get('taxonomies'))
         ->not->toContain('clinical_specializations');
 });
 

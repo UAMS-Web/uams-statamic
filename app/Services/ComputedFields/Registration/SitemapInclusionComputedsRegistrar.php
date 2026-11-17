@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\Registration;
 
-use App\Entries\PersonEntry;
 use App\Http\Middleware\ProtectEntry;
 use App\Services\OrphanedAncestors\OrphanedAncestorResolver;
 use App\Support\Collections\CollectionExtensions;
@@ -14,6 +13,7 @@ use Statamic\Facades\Stache;
 use Statamic\Stache\Indexes\Index;
 use Statamic\Stache\Stores\AggregateStore;
 use Statamic\Stache\Stores\Store;
+use UAMSWeb\Aether\People\Entries\PersonEntry;
 
 /**
  * Registers the `meta_include_in_xml_sitemap` computed on every routable, public
