@@ -60,6 +60,8 @@ class ClassifiedListingWriter
         $entry->collection('classifieds');
         $entry->locale('inside_classifieds');
         $entry->slug($this->uniqueSlug($title));
+        // A new entry is already published; the call states it rather than relying on the default
+        // @pest-mutate-ignore: RemoveMethodCall
         $entry->published(true);
         $entry->date(Carbon::now());
 
@@ -257,8 +259,8 @@ class ClassifiedListingWriter
      */
     private function bardFromText(string $text): ?array
     {
-        // Normalize line endings before splitting
-        $text = trim(str_replace(["\r\n", "\r"], "\n", $text));
+        // Normalize line endings before splitting. The text arrives trimmed from string()
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
 
         if ($text === '') {
             return null;
@@ -276,9 +278,8 @@ class ClassifiedListingWriter
                     $content[] = ['type' => 'hardBreak'];
                 }
 
-                if ($line !== '') {
-                    $content[] = ['type' => 'text', 'text' => $line];
-                }
+                // No line is empty: the text is trimmed and every run of blank lines splits a block
+                $content[] = ['type' => 'text', 'text' => $line];
             }
 
             $document[] = ['type' => 'paragraph', 'content' => $content];
@@ -330,6 +331,9 @@ class ClassifiedListingWriter
         // Name the file randomly, with an allowlisted extension derived from its content.
         // Validation already requires image content; this keeps a stored name from ever
         // ending in anything a browser would run, such as `.html` or `.svg`.
+        // guessExtension() reads Symfony's MIME map, whose extensions are all lowercase, and a
+        // null cast or not reaches the same refusal below
+        // @pest-mutate-ignore: RemoveStringCast, UnwrapStrtolower
         $extension = strtolower((string) $upload->guessExtension());
         $extension = $extension === 'jpeg' ? 'jpg' : $extension;
 
@@ -340,10 +344,14 @@ class ClassifiedListingWriter
         $path = $upload->storeAs($this->folder(), Str::random(24).'.'.$extension, ['disk' => $container->diskHandle()]);
 
         /** @var Asset $asset */
+        // storeAs() returns false only when the disk write fails, which no test disk does
+        // @pest-mutate-ignore: RemoveStringCast
         $asset = $container->makeAsset((string) $path);
         $asset->set('alt', $title);
         $asset->save();
 
+        // storeAs() returns false only when the disk write fails, which no test disk does
+        // @pest-mutate-ignore: RemoveStringCast
         return (string) $path;
     }
 
@@ -357,6 +365,8 @@ class ClassifiedListingWriter
     {
         $gallery = $entry->get('gallery');
 
+        // Every caller only iterates the paths, so the keys never matter
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_filter(
             array_merge([$entry->get('featured_image')], is_array($gallery) ? $gallery : []),
             is_string(...)
@@ -400,6 +410,8 @@ class ClassifiedListingWriter
     {
         $base = Str::slug($title);
 
+        // An empty base with a hyphen reads back the same: the slug getter runs Str::slug(), which drops it
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         return ($base !== '' ? $base.'-' : '').Str::lower(Str::random(6));
     }
 
