@@ -31,7 +31,7 @@ function providerLensMembershipsField(string $handle): Field
 {
     return mustBe(
         Field::class,
-        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people.person'), 'the person blueprint')->field($handle),
+        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people::person'), 'the person blueprint')->field($handle),
         'the '.$handle.' field'
     );
 }

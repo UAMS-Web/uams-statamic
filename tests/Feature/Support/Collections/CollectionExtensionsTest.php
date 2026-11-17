@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use App\Entries\KnowledgeBaseEntry;
-use App\Entries\PersonEntry;
 use App\Jobs\ApplyScheduledPublishing;
 use App\Services\ComputedFields\Registration\DocumentTitleComputedsRegistrar;
 use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar;
 use App\Support\Collections\CollectionExtensions;
-use App\Support\Collections\PeopleCollection;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Entries\PersonEntry;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 uses(TestCase::class);
 
@@ -24,7 +24,7 @@ uses(TestCase::class);
  * named collection. A collection registered here as `widgets` stands in for one a package adds.
  *
  * @covers \App\Support\Collections\CollectionExtensions
- * @covers \App\Support\Collections\PeopleCollection
+ * @covers \UAMSWeb\Aether\People\Support\PeopleCollection
  * @covers \App\Providers\PeopleCollectionServiceProvider
  *
  * @command  php artisan test --compact tests/Feature/Support/Collections/CollectionExtensionsTest.php

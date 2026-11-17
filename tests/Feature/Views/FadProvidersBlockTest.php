@@ -92,8 +92,7 @@ function providerBaseFields(): array
         'uams_worker_query' => true,
         'uams_worker_subtype' => 'employee',
         'uams_employee_subtype' => 'regular',
-        'resident_query' => false,
-        'fellow_query' => false,
+        'trainee_type' => 'none',
         'clinical_role_query' => true,
         'direct_patient_care_query' => true,
         'clinical_locations' => [ClinicalProviderFixtures::publishedLocationId()],
@@ -177,7 +176,7 @@ function fadProvidersBlockRender(array $overrides = []): string
 }
 
 it('wires the block: guard removed, enable_filtering conditional, facet contract, no theme stub', function (): void {
-    $src = file_get_contents(__DIR__.'/../../../resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html');
+    $src = file_get_contents(aetherPeopleResourcePath('views/page_builder/_uamsweb_block_fad_providers.antlers.html'));
 
     // The disabled implementation guard is gone — the block renders live now.
     expect($src)->not->toContain('fad_providers_implemented');
@@ -362,7 +361,7 @@ it('suppresses the section when the only provider is published but ineligible (#
     $residentDoc->published(true);
     $residentDoc->data([
         ...providerBaseFields(),
-        'resident_query' => true, // fails the eligibility base rule — not a clinical provider
+        'trainee_type' => 'resident', // fails the eligibility base rule — not a clinical provider
         'title' => 'Resident Doc',
         'credentials' => ['md'],
     ]);

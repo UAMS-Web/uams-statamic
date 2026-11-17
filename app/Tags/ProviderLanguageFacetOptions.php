@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Tags;
 
 use App\Enums\LanguageBCP47;
-use App\Support\Collections\PeopleCollection;
 use Illuminate\Support\Collection;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Antlers tag: the distinct BCP-47 languages spoken across the `people` collection,

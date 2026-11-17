@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Seo;
 
 use App\Enums\State;
-use App\Services\ComputedFields\ProviderPeople\ClinicalTitleResolver;
 use App\Services\Locations\LocationInheritedAddressService;
 use App\Services\TitleDisambiguator;
 use Illuminate\Support\Collection;
 use Statamic\Entries\Entry;
 use Statamic\Stache\Repositories\EntryRepository as StacheEntryRepository;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ClinicalTitleResolver;
 
 /**
  * Composes the SEO `<title>` for the templated `people` (provider profiles) and

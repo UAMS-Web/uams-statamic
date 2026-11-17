@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Sleep;
 use RuntimeException;
+use UAMSWeb\Aether\People\Contracts\PublicationCitations;
 
 /**
  * Fetches and caches PubMed E-summary rows for a PMID, builds HTML citations for
@@ -20,7 +21,7 @@ use RuntimeException;
  * (HTTP failure or missing record) so callers can distinguish outcomes without
  * colliding with legacy cache entries that mixed unrelated payloads.
  */
-class PubMedEsummaryService
+class PubMedEsummaryService implements PublicationCitations
 {
     /**
      * Cache key namespace prefix for decoded E-summary rows (versioned to avoid

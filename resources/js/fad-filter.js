@@ -2,10 +2,10 @@
  * Find-a-Doc facet filter — the `fadFilter` Alpine.data component (UAMS-Web/uams-statamic-archive#1242).
  *
  * Progressive enhancement for the Find-a-Doc Providers page-builder block
- * (`resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html`), the
+ * (`page_builder/_uamsweb_block_fad_providers.antlers.html`, served by `uams-web/aether-people`), the
  * sibling ontology blocks (#140/UAMS-Web/uams-statamic-archive#61/UAMS-Web/uams-statamic-archive#62/UAMS-Web/uams-statamic-archive#63), and — via the same contract, with the
  * extra directory chrome below — the shipped `/providers` provider directory (UAMS-Web/uams-statamic-archive#570,
- * `resources/views/people/provider/_listing.antlers.html`).
+ * `people/provider/_listing.antlers.html` in the same add-on).
  *
  * The block renders a bounded, editor-curated set of cards, each carrying its facet
  * values as space-delimited term/entry slugs in `data-<facet>` attributes

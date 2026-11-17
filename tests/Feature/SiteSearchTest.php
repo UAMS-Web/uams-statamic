@@ -257,7 +257,7 @@ it('dispatches each hit to a per-type card and paginates via the shared componen
 
     // People render the compact card with a portrait (UAMS-Web/uams-statamic-archive#1510); the other wrappers pass
     // through to the existing native card partials.
-    expect(File::get(resource_path('views/vendor/aether-search/cards/_people.antlers.html')))
+    expect(File::get(aetherPeopleResourcePath('views/vendor/aether-search/cards/_people.antlers.html')))
         ->toContain('partial:aether-search::cards/compact :portrait_url="portrait:url"')
         ->not->toContain('partial:page_builder/components/fad_provider_card');
     expect(File::get(resource_path('views/vendor/aether-search/cards/_posts.antlers.html')))
