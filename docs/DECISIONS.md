@@ -3980,3 +3980,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Every clinical provider on the site*: it would list titles that return no provider in this block. *A precomputed site-wide list of carried slugs*: the same mismatch, plus a cache to keep fresh.
 
 **Companion.** #258 (decision), #769 (build); UAMS-Web/uams-statamic-archive#2962 (the Areas of Expertise precedent).
+
+## 2026-11-17: Site search caps Loupe at 1000 hits, and site-scoped loss is measured separately (#646)
+
+**Decision.** The `default` index runs `loupe` with `max_total_hits` at 1000, Loupe's own default, in place of the 200 the 2026-11-12 entry chose. How much site-scoped searches lose to the cap is measured on #967. Decided by Josh, 2026-11-17.
+
+**Why.** The cap is a `LIMIT` on each search word's matching documents in storage order, applied before ranking and before any filter, so a lower cap drops relevant results rather than only trimming the tail. Measured on #511 at 46,777 documents, Windows 11, PHP 8.4.27, `loupe/loupe` 1.1.7: at 1000 the p95 per lookup is 313 to 329ms, under the 400ms gate, and 6 of 32 queries show a different first page than uncapped; at 200 it is 16 of 32. Handing the site to Loupe as a filter does not get past the cap, so a site-scoped search also loses the site's matches that fall past it; #511's rows carry no site, so that loss is not yet measured.
+
+**Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
+
+**Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
