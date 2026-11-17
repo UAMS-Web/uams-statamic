@@ -69,7 +69,7 @@ function certificationRowKindField(): Field
 {
     return mustBe(
         Field::class,
-        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people.person'), 'the person blueprint')->field('certifications'),
+        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people::person'), 'the person blueprint')->field('certifications'),
         'the certifications field'
     );
 }

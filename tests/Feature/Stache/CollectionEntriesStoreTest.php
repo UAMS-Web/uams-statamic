@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Entries\KnowledgeBaseEntry;
-use App\Entries\PersonEntry;
 use App\Stache\CollectionEntriesStore;
 use Carbon\CarbonInterface;
 use Statamic\Entries\Entry;
@@ -14,6 +13,7 @@ use Statamic\Facades\Stache;
 use Statamic\Fields\Blueprint;
 use Statamic\Stache\Stores\AggregateStore;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Entries\PersonEntry;
 
 uses(StacheIsolatedTestCase::class);
 

@@ -147,6 +147,9 @@ beforeEach(function (): void {
         $collection->routes($route);
         $collection->save();
     }
+
+    // The person blueprint's portrait fields need their containers to render a hit (#696)
+    makePersonPortraitContainers();
 });
 
 it('is registered under the handle the results listing names', function (): void {

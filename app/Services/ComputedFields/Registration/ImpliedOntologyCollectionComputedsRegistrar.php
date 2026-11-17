@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\ComputedFields\Registration;
 
 use App\Services\ComputedFields\Ontology\ImpliedOntologyComputedValues;
-use App\Support\Collections\PeopleCollection;
 use Statamic\Facades\Collection;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Registers the transitive implied-ontology computeds (D9, UAMS-Web/uams-statamic-archive#1063) on the Provider

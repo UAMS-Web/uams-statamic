@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Support\Collections\PeopleCollection;
-use App\Support\People\PersonNameComposite;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -13,6 +11,8 @@ use Illuminate\Support\Collection;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
+use UAMSWeb\Aether\People\Support\PersonNameComposite;
 
 /**
  * One-shot move of each `people` entry's name into the fields UAMS-Web/uams-statamic-archive#3186 adds.

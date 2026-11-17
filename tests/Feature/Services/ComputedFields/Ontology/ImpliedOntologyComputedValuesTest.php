@@ -401,7 +401,7 @@ it('reports has_special_interest_services true only for a service override, not 
 function impliedSpecialtyEdgeHandle(string $blueprintPath): ?string
 {
     /** @var array{tabs?: array<array-key, array{sections?: array<array-key, array{fields?: array<array-key, array{field?: mixed, handle?: string}>}>}>} $parsed */
-    $parsed = Yaml::parseFile(base_path($blueprintPath));
+    $parsed = Yaml::parseFile(servedResourcePath($blueprintPath));
     $tabs = $parsed['tabs'] ?? [];
 
     foreach ($tabs as $tab) {

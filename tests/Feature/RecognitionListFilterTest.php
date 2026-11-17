@@ -79,7 +79,7 @@ function recFilterMatchedSlugs(string $recognitionParam): Collection
 
 it('exposes an optional recognition-list entries control on the provider block', function () {
     // Read the fieldset field directly (the block imports it into the page builder set).
-    $fieldset = mustBe(Statamic\Fields\Fieldset::class, Fieldset::find('uamsweb_block_fad_providers'), 'fieldset');
+    $fieldset = mustBe(Statamic\Fields\Fieldset::class, Fieldset::find('aether-people::uamsweb_block_fad_providers'), 'fieldset');
 
     /** @var array<int, array<string, mixed>> $fields */
     $fields = $fieldset->contents()['fields'];
@@ -95,7 +95,7 @@ it('exposes an optional recognition-list entries control on the provider block',
 });
 
 it('wires the recognition_list_membership scope into the provider block query', function () {
-    $partial = File::get(resource_path('views/page_builder/_uamsweb_block_fad_providers.antlers.html'));
+    $partial = File::get(aetherPeopleResourcePath('views/page_builder/_uamsweb_block_fad_providers.antlers.html'));
 
     // The block composes the recognition filter with the expertise pre-filter as a
     // pipe-listed second scope, passing the block's selected ids.

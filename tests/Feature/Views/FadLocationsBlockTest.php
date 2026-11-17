@@ -61,7 +61,7 @@ function fadLocationsRender(): string
 
 it('wires the block to the shared list body, gating the filter, with no ontology delegation', function (): void {
     $src = file_get_contents(
-        __DIR__.'/../../../resources/views/page_builder/_uamsweb_block_fad_locations.antlers.html'
+        aetherPeopleResourcePath('views/page_builder/_uamsweb_block_fad_locations.antlers.html')
     );
 
     // The full block validity gate (not just a prefix) and the FaD wrapper are present.

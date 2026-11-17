@@ -39,7 +39,7 @@ beforeEach(function (): void {
     $collection->title('People');
     $collection->save();
 
-    $contents = Yaml::parseFile(base_path('resources/blueprints/collections/people/person.yaml'));
+    $contents = Yaml::parseFile(aetherPeopleResourcePath('blueprints/collections/people/person.yaml'));
 
     $blueprint = mustBe(StatamicBlueprint::class, Blueprint::make('person'), 'the person blueprint');
     $blueprint->setNamespace('collections.people');

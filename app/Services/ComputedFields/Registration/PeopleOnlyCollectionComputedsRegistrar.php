@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\Registration;
 
-use App\Services\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
-use App\Support\Collections\PeopleCollection;
 use App\Support\People\CertificationActivityValidity;
 use App\Support\People\PersonKnowsAboutComputer;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Registers people-only collection computeds: certifications merge, clinical profile

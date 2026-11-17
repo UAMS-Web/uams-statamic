@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Services\People\PeopleMergeService;
-use App\Support\References\EntryReferenceRepointer;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Assert;
 use Statamic\Facades\Blueprint;
@@ -13,6 +11,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Merge\PeopleMergeService;
 use UAMSWeb\Aether\Redirects\Tags\FindRedirectRule;
 
 /**
@@ -131,7 +130,9 @@ beforeEach(function (): void {
 
 function pmcsService(): PeopleMergeService
 {
-    return new PeopleMergeService(new EntryReferenceRepointer);
+    // Resolve through the container, so the site's bindings of the add-on's contracts
+    // (the reference repointer and the redirects writer, #696) are what runs
+    return app(PeopleMergeService::class);
 }
 
 it('serves a people-merge redirect on the non-default site the loser was reachable in', function (): void {

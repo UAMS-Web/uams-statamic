@@ -141,7 +141,7 @@ tabs:
         fields:
           -
             handle: gender_suggested
-            field: uamsweb_common_people.gender
+            field: aether-people::uamsweb_common_people.gender
             config:
               display: 'Suggested Gender'
               localizable: false
@@ -149,7 +149,7 @@ tabs:
                 schema_type.value: 'contains_any PeopleAudience,MedicalAudience,Patient,ParentAudience'
           -
             handle: gender_required
-            field: uamsweb_common_people.gender
+            field: aether-people::uamsweb_common_people.gender
             config:
               display: 'Required Gender'
               localizable: false

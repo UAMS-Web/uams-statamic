@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Rules\PersonNameDisplayFormatRule;
 use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Rules\PersonNameDisplayFormatRule;
 
 /**
  * The `name_display_format` field's rule (UAMS-Web/uams-statamic-archive#3186): the format kept beside
