@@ -476,7 +476,7 @@ class SchemaOutputService
      * @param  string|null  $webpageEntryId  Normalized webpage schema_objects id
      * @param  string|null  $mainContentEntryId  Normalized main content schema_objects id
      */
-    private function composeJsonLdOutputScriptTagForResolvedSlots(
+    protected function composeJsonLdOutputScriptTagForResolvedSlots(
         EntryContract|Term $entity,
         ?string $subjectEntryId,
         ?string $websiteEntryId,
