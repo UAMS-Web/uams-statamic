@@ -997,15 +997,19 @@ class PartialDate extends Fieldtype
     ): int {
         // Return 31 for a month below 1. Moving the bound by one is equivalent:
         // Carbon rolls month 0 to December and month 1 is January, both 31 days.
-        // @pest-mutate-ignore: SmallerToSmallerOrEqual, IncrementInteger, DecrementInteger
-        if ($month < 1) {
+        if (
+            // @pest-mutate-ignore: SmallerToSmallerOrEqual, IncrementInteger, DecrementInteger
+            $month < 1
+        ) {
             return 31;
         }
 
         // Return 31 for a month above 12. Moving the bound by one is equivalent:
         // month 12 is December and Carbon rolls month 13 to January, both 31 days.
-        // @pest-mutate-ignore: GreaterToGreaterOrEqual, IncrementInteger, DecrementInteger
-        if ($month > 12) {
+        if (
+            // @pest-mutate-ignore: GreaterToGreaterOrEqual, IncrementInteger, DecrementInteger
+            $month > 12
+        ) {
             return 31;
         }
 
