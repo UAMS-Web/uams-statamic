@@ -2017,6 +2017,14 @@ tabs:
               validate:
                 - required
           -
+            handle: google_business_profile_exclude_providers_query
+            field: uamsweb_common.true_false
+            config:
+              display: 'Should providers at this location be excluded from any bulk imports and updates in Google Business Profiles?'
+              default: false
+              validate:
+                - required
+          -
             handle: google_business_profile_prefix_query
             field: uamsweb_common.true_false
             config:
