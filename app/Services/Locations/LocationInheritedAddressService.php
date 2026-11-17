@@ -12,6 +12,7 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\LabeledValue;
 use Statamic\Fields\Value;
 use Statamic\Structures\Page;
+use UAMSWeb\Aether\People\Contracts\LocationRegions;
 
 /**
  * Resolves the effective street address for a `clinical_locations` entry (UAMS-Web/uams-statamic-archive#1269).
@@ -51,7 +52,7 @@ use Statamic\Structures\Page;
  * The location profile reads these computeds since UAMS-Web/uams-statamic-archive#2389, and the location card and a
  * provider's primary location since UAMS-Web/uams-statamic-archive#2608, so no template reimplements the walk.
  */
-final readonly class LocationInheritedAddressService
+final readonly class LocationInheritedAddressService implements LocationRegions
 {
     /**
      * Blueprint handle of a clinical location, which is what a parent must be to inherit from.

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Support\People\Lenses\Gates\ClinicalProviderLensGate;
 use Statamic\Entries\Entry as EntryInstance;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Tests\Support\ClinicalProviderFixtures;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Lenses\Gates\ClinicalProviderLensGate;
 
 /**
  * Coverage for {@see ClinicalProviderLensGate} — the clinical provider lens gate
@@ -16,7 +16,7 @@ use Tests\Support\StacheIsolatedTestCase;
  * when they are eligible for a UAMS Health clinical provider profile (UAMS-Web/uams-statamic-archive#919), so the
  * clinical lens is expressed as an ordinary gate with no special-cased branch.
  *
- * @covers \App\Support\People\Lenses\Gates\ClinicalProviderLensGate
+ * @covers \UAMSWeb\Aether\People\Lenses\Gates\ClinicalProviderLensGate
  *
  * @command php artisan test --compact tests/Feature/Support/People/Lenses/ClinicalProviderLensGateTest.php
  */
@@ -40,8 +40,7 @@ function gateEligibleBaseFields(): array
         'uams_worker_query' => true,
         'uams_worker_subtype' => 'employee',
         'uams_employee_subtype' => 'regular',
-        'resident_query' => false,
-        'fellow_query' => false,
+        'trainee_type' => 'none',
         'clinical_role_query' => true,
         'direct_patient_care_query' => true,
         'clinical_locations' => [ClinicalProviderFixtures::publishedLocationId()],
@@ -85,7 +84,7 @@ it('admits an eligible provider to the clinical lens', function (): void {
 });
 
 it('rejects an ineligible person (a resident) from the clinical lens', function (): void {
-    $person = makeGatePerson('pavel-chekov', ['resident_query' => true]);
+    $person = makeGatePerson('pavel-chekov', ['trainee_type' => 'resident']);
 
     expect(app(ClinicalProviderLensGate::class)->passes($person, clinicalGateSite()))->toBeFalse();
 });

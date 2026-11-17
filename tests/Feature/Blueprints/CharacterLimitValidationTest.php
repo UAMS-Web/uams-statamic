@@ -59,7 +59,6 @@ const CHARACTER_LIMIT_HINT_ONLY = [
     'resources/blueprints/collections/knowledge_bases/knowledge_base.yaml' => 1,
     'resources/blueprints/collections/knowledge_bases/topic.yaml' => 1,
     'resources/blueprints/collections/logo_list_items/logo_list_item.yaml' => 1,
-    'resources/blueprints/collections/people/person.yaml' => 1,
     'resources/blueprints/globals/uams_fad_settings.yaml' => 75,
     'resources/fieldsets/uamsweb_block_action_bar.yaml' => 3,
     'resources/fieldsets/uamsweb_block_button.yaml' => 1,
@@ -69,12 +68,13 @@ const CHARACTER_LIMIT_HINT_ONLY = [
     'resources/fieldsets/uamsweb_block_stacked.yaml' => 2,
     'resources/fieldsets/uamsweb_common_block.yaml' => 3,
     'resources/fieldsets/uamsweb_common_fad.yaml' => 2,
-    'resources/fieldsets/uamsweb_common_people_background.yaml' => 1,
     'resources/fieldsets/uamsweb_common_table.yaml' => 1,
     'resources/fieldsets/uamsweb_header_graphic.yaml' => 1,
     'resources/fieldsets/uamsweb_header_hero.yaml' => 3,
     'resources/fieldsets/uamsweb_header_marketing_landing_page.yaml' => 2,
     'resources/fieldsets/uamsweb_post_curation.yaml' => 1,
+    'vendor/uams-web/aether-people/resources/collection-blueprints/people/person.yaml' => 1,
+    'vendor/uams-web/aether-people/resources/fieldsets/uamsweb_common_people_background.yaml' => 1,
 ];
 
 /**
@@ -105,17 +105,6 @@ const CHARACTER_LIMIT_KNOWN_RULE_DROPS = [
     // re-break the importer path this override exists to allow.
     'resources/blueprints/collections/tables/table.yaml#table_data drops `required` from uamsweb_common_table.table_data',
 
-    // TAXONOMY REPOINTED, so the inherited term-type rule no longer applies. Each
-    // of these three overrides the field onto a different taxonomy than the one
-    // `specialty_taxonomy_term_type:specialty` pins: `subspecialty` for the
-    // subspecialty site, `specialties_non_accredited` for the non-accredited one,
-    // and `research_specialties_acgme` + `research_specialties_non_accredited`
-    // (display "Specialty/Subspecialty") for the research one. Restating the
-    // inherited rule would reject valid selections at all three.
-    'resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from uamsweb_common_people_background.specialty',
-    'resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from uamsweb_common_people_background.specialty',
-    'resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from uamsweb_common_people_background.specialty',
-
     // NARROWED TO ONE PROVIDER. `uams_video_url` is literally
     // `YouTubeUrl || VimeoUrl || BoxSharedStaticVideoUrl` (see App\Rules\UamsVideoUrl),
     // and each of these overrides names exactly the one arm its set accepts. A URL
@@ -126,6 +115,18 @@ const CHARACTER_LIMIT_KNOWN_RULE_DROPS = [
     'resources/fieldsets/uamsweb_set_video_vimeo.yaml#url drops `uams_video_url` from uamsweb_common_video.video_url',
     'resources/fieldsets/uamsweb_video_segment_box.yaml#url drops `uams_video_url` from uamsweb_common_video.video_url',
     'resources/fieldsets/uamsweb_video_segment_vimeo.yaml#url drops `uams_video_url` from uamsweb_common_video.video_url',
+
+    // TAXONOMY REPOINTED, so the inherited term-type rule no longer applies. Each
+    // of these three overrides the field onto a different taxonomy than the one
+    // `specialty_taxonomy_term_type:specialty` pins: `subspecialty` for the
+    // subspecialty site, `specialties_non_accredited` for the non-accredited one,
+    // and `research_specialties_acgme` + `research_specialties_non_accredited`
+    // (display "Specialty/Subspecialty") for the research one. Restating the
+    // inherited rule would reject valid selections at all three. The fieldset moved
+    // into `uams-web/aether-people` (#696).
+    'vendor/uams-web/aether-people/resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from aether-people::uamsweb_common_people_background.specialty',
+    'vendor/uams-web/aether-people/resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from aether-people::uamsweb_common_people_background.specialty',
+    'vendor/uams-web/aether-people/resources/fieldsets/uamsweb_common_people_background.yaml#specialty drops `specialty_taxonomy_term_type:specialty` from aether-people::uamsweb_common_people_background.specialty',
 ];
 
 /**
@@ -196,7 +197,8 @@ function characterLimitYamlFiles(): array
 
     $files = [];
 
-    foreach (['resources/fieldsets', 'resources/blueprints'] as $directory) {
+    // The site's own YAML, and the people add-on's, which the site serves (#696)
+    foreach (['resources/fieldsets', 'resources/blueprints', 'vendor/uams-web/aether-people/resources/fieldsets', 'vendor/uams-web/aether-people/resources/collection-blueprints'] as $directory) {
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(base_path($directory)));
 
         /** @var SplFileInfo $file */
@@ -252,8 +254,18 @@ function fieldsetReferenceMap(): array
     $aliases = [];
     $rules = [];
 
+    // The site's fieldsets by bare handle, and the people add-on's under its namespace (#696)
+    $fieldsets = [];
+
     foreach (glob(resource_path('fieldsets/*.yaml')) ?: [] as $file) {
-        $set = basename($file, '.yaml');
+        $fieldsets[$file] = basename($file, '.yaml');
+    }
+
+    foreach (glob(base_path('vendor/uams-web/aether-people/resources/fieldsets/*.yaml')) ?: [] as $file) {
+        $fieldsets[$file] = 'aether-people::'.basename($file, '.yaml');
+    }
+
+    foreach ($fieldsets as $file => $set) {
 
         /** @var array{fields?: array<int, mixed>} $parsed */
         $parsed = Yaml::parseFile($file);
@@ -374,8 +386,17 @@ function sharedLimitImportSites(): array
 
     $sites = [];
 
+    $addonBlueprints = 'vendor/uams-web/aether-people/resources/collection-blueprints/';
+
     foreach (fieldsetImportSites() as $site) {
-        if (! str_starts_with($site['file'], 'resources/blueprints/')) {
+        // Name the blueprint the way `Blueprint::find()` takes it: the site's by path, the
+        // people add-on's under its `collections.<handle>` namespace (#696)
+        if (str_starts_with($site['file'], 'resources/blueprints/')) {
+            $blueprint = str_replace('/', '.', substr($site['file'], strlen('resources/blueprints/'), -5));
+        } elseif (str_starts_with($site['file'], $addonBlueprints)) {
+            [$collection, $file] = explode('/', substr($site['file'], strlen($addonBlueprints), -5), 2);
+            $blueprint = "collections.{$collection}::{$file}";
+        } else {
             continue;
         }
 
@@ -386,7 +407,7 @@ function sharedLimitImportSites(): array
         }
 
         $sites[] = [
-            'blueprint' => str_replace('/', '.', substr($site['file'], strlen('resources/blueprints/'), -5)),
+            'blueprint' => $blueprint,
             'handle' => $site['handle'],
             'limit' => $limit,
         ];
@@ -574,7 +595,7 @@ it('resolves the restored image minimum on the location blueprint', function ():
 });
 
 it('rejects a short biography one character over the limit', function (): void {
-    $errors = validateAgainstBlueprintForCharacterLimit('collections.people.person', [
+    $errors = validateAgainstBlueprintForCharacterLimit('collections.people::person', [
         'bio_short' => str_repeat('a', 161),
     ])->errors();
 
@@ -582,7 +603,7 @@ it('rejects a short biography one character over the limit', function (): void {
 });
 
 it('accepts a short biography at exactly the limit', function (): void {
-    $errors = validateAgainstBlueprintForCharacterLimit('collections.people.person', [
+    $errors = validateAgainstBlueprintForCharacterLimit('collections.people::person', [
         'bio_short' => str_repeat('a', 160),
     ])->errors();
 

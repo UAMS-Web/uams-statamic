@@ -83,6 +83,9 @@ yarn-error.log
 # uams-web/aether-listings-management published assets (#705)
 /public/vendor/aether-listings-management
 
+# uams-web/aether-people published assets (#696)
+/public/vendor/aether-people
+
 # Where those add-ons published before their rename (#435); an existing checkout still has them
 /public/vendor/statamic-alpine-csp-forms
 /public/vendor/statamic-multisite-forms

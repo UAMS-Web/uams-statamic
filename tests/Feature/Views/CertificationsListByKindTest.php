@@ -33,7 +33,7 @@ function certificationsListByKindField(): Field
 {
     return mustBe(
         Field::class,
-        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people.person'), 'the person blueprint')->field('certifications'),
+        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people::person'), 'the person blueprint')->field('certifications'),
         'the certifications field'
     );
 }
@@ -177,7 +177,7 @@ it('renders board and other-certification rows exactly as before', function () {
 });
 
 it('orders certifications by kind on both profiles', function (string $template) {
-    expect(file_get_contents(resource_path($template)))->toContain(':activities_list="certifications | certifications_by_kind"');
+    expect(file_get_contents(servedResourcePath($template)))->toContain(':activities_list="certifications | certifications_by_kind"');
 })->with([
     'the general people profile' => 'views/people/show.antlers.html',
     'the provider Credentials block' => 'views/people/provider/_profile.antlers.html',

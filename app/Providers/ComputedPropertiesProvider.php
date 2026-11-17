@@ -27,7 +27,6 @@ use App\Services\ComputedFields\Registration\PeopleOnlyCollectionComputedsRegist
 use App\Services\ComputedFields\Registration\PeopleReverseReferenceComputedsRegistrar;
 use App\Services\ComputedFields\Registration\PostsReadingMetricsCollectionComputedsRegistrar;
 use App\Services\ComputedFields\Registration\PostsReverseReferenceComputedsRegistrar;
-use App\Services\ComputedFields\Registration\ProvidersPeopleSharedCollectionComputedsRegistrar;
 use App\Services\ComputedFields\Registration\QuantitativeValueDurationComputedsRegistrar;
 use App\Services\ComputedFields\Registration\RecognitionListTaxonomyAugmentedRegistrar;
 use App\Services\ComputedFields\Registration\RoleTitleMirroredComputedsRegistrar;
@@ -44,7 +43,6 @@ use Illuminate\Support\ServiceProvider;
  *
  * @see AugmentedAssetComputedPipelinesRegistrar
  * @see RecognitionListTaxonomyAugmentedRegistrar
- * @see ProvidersPeopleSharedCollectionComputedsRegistrar
  * @see KnowledgeBaseCollectionComputedsRegistrar
  * @see PostsReadingMetricsCollectionComputedsRegistrar
  * @see RoleTitleMirroredComputedsRegistrar
@@ -64,9 +62,6 @@ class ComputedPropertiesProvider extends ServiceProvider
 
         // Register recognition list taxonomy augmented term routing
         $this->app->make(RecognitionListTaxonomyAugmentedRegistrar::class)->register();
-
-        // Register providers and people shared collection computeds
-        $this->app->make(ProvidersPeopleSharedCollectionComputedsRegistrar::class)->register();
 
         // Register knowledge_bases structural and ancestor-inherited computeds
         $this->app->make(KnowledgeBaseCollectionComputedsRegistrar::class)->register();

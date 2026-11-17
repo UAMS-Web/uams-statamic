@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaTemplates;
 
-use App\Support\Collections\PeopleCollection;
 use Statamic\Contracts\Globals\Variables as VariablesContract;
 use Statamic\Entries\Collection;
 use Statamic\Entries\Entry as StatamicEntry;
@@ -17,6 +16,7 @@ use Statamic\Sites\Site as StatamicSite;
 use Statamic\Stache\Query\TermQueryBuilder;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Builds front-end URLs and audit ids for warming JSON-LD output cache across sites.

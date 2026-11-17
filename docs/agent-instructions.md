@@ -52,6 +52,12 @@ Before shipping any non-trivial change, run an adversarial review per [`.claude/
 
 Branch work happens in one of a fixed set of long-lived, **pre-bootstrapped worktree slots** — never in a worktree created for a ticket and thrown away after — per [`.claude/rules/worktrees.md`](../.claude/rules/worktrees.md). The primary checkout holds `main`, serves the site, and is not a work surface; the slots (`../uams-statamic-a`, `../uams-statamic-b`) rest detached at `origin/main` and are claimed one at a time; `../uams-statamic-ci` belongs to the [`local-ci`](../.claude/skills/local-ci/SKILL.md) runner and is never hand-driven. **Refresh a slot before trusting any check run in it** whenever its base has moved — this is the one risk the model adds, and it is silent: a stale slot passes its tests against the wrong dependency versions, where a fresh worktree failed loudly on a missing `vendor/`. **Releasing a slot is the author's last act on a ticket**, because git allows a branch in one worktree only — a slot still holding `<N>-<slug>` blocks the validating run from checking that branch out at all. **On a fresh clone the slots do not exist yet** — `node scripts/worktree-slots.mjs provision a` (and `b`) stands each one up, once, and the rule covers what that does and why each step is there. It is roughly half a minute per slot on macOS; budget longer on Windows, where `public/assets` clones over the network.
 
+### Dedicated supervised Amp slot
+
+`../uams-statamic-amp` is a dedicated slot for one supervised Amp build seat; what the reservation does and does not authorize, and who may use the slot, are in [`.claude/rules/worktrees.md`](../.claude/rules/worktrees.md), which is edited in `UAMS-Web/uams-claude-skills` and synced here, never edited in this repository.
+
+Once its provisioning is separately approved, `scripts/worktree-slots.mjs` drives it by the name `amp` like any other slot: `provision amp` creates it at `../uams-statamic-amp`, and `refresh amp` and `release amp --branch <N>-<slug>` keep it current and release it.
+
 ## Sync PR branches before the gating run
 
 Bring every PR branch current with `origin/main` before its gating validation and before opening the PR, per [`.claude/rules/sync-pr-branch.md`](../.claude/rules/sync-pr-branch.md), so a branch behind an *interacting* merge is never validated (or merged) against stale code. Genuinely file-disjoint branches are exempt.

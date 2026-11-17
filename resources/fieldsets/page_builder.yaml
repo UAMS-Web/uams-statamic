@@ -99,7 +99,7 @@ fields:
               icon: user-multiple
               fields:
                 -
-                  import: uamsweb_block_people
+                  import: aether-people::uamsweb_block_people
             uamsweb_block_rss:
               display: 'RSS Feed'
               instructions: 'Display entries from any RSS or Atom feed.'
@@ -199,7 +199,7 @@ fields:
               icon: user-avatar
               fields:
                 -
-                  import: uamsweb_block_fad_providers
+                  import: aether-people::uamsweb_block_fad_providers
         reusable_content:
           display: 'Reusable Content'
           icon: content-book-open

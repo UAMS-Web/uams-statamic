@@ -36,7 +36,7 @@ function formFieldXssPayload(): string
 function renderFormFieldView(string $view, array $scope): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$view}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$view}.antlers.html")),
         $scope,
         true,
     );
@@ -168,7 +168,13 @@ dataset('all form field views', function () {
     // (tests/Feature/Views -> repo root) rather than the resource_path() helper.
     $dir = dirname(__DIR__, 3).'/resources/views/vendor/statamic/forms/fields';
 
-    return array_map('basename', glob($dir.'/*.antlers.html') ?: []);
+    // The person-name field views ship in `uams-web/aether-people` (#696) and are served too
+    $addonDir = dirname(__DIR__, 3).'/vendor/uams-web/aether-people/resources/field-views/forms/fields';
+
+    return array_values(array_unique(array_map('basename', [
+        ...(glob($dir.'/*.antlers.html') ?: []),
+        ...(glob($addonDir.'/*.antlers.html') ?: []),
+    ])));
 });
 
 it('reflects no breakout payload as live HTML in any field view', function (string $file): void {
@@ -176,7 +182,7 @@ it('reflects no breakout payload as live HTML in any field view', function (stri
     // view they forget (the `list` x-data sink was exactly this) stays green. This renders
     // EVERY field view with a breakout payload and fails if any reflects it as live HTML.
     $payload = formFieldBreakoutPayload();
-    $template = File::get(resource_path("views/vendor/statamic/forms/fields/{$file}"));
+    $template = File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$file}"));
 
     // Provide the payload as a scalar and under every subfield key / index a composite
     // view might echo, so each view reflects it somewhere it can.

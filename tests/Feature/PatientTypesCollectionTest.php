@@ -177,7 +177,7 @@ it('lists the same filter options, by slug, on the health site as on default', f
 })->with(['default', 'health']);
 
 it('reads the patient-type options through that loop in both filter bars', function (string $path): void {
-    $source = (string) file_get_contents(resource_path($path));
+    $source = (string) file_get_contents(servedResourcePath($path));
 
     expect($source)->toContain('{{ collection:patient_types site="default" sort="title:asc" }}')
         ->and($source)->not->toContain('taxonomy:patient_types');
