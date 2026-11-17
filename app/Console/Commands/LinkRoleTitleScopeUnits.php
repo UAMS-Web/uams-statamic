@@ -37,6 +37,8 @@ class LinkRoleTitleScopeUnits extends Command
     public function handle(): int
     {
         $collection = (string) $this->option('collection');
+        // A VALUE_NONE option is already a bool, so dropping the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         $write = (bool) $this->option('write');
 
         $findings = $this->linker->scan($collection, $write);
