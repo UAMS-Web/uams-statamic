@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Entries\PersonEntry;
 use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Entries\PersonEntry;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 

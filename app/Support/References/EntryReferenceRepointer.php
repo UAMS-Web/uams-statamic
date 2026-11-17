@@ -12,6 +12,8 @@ use Statamic\Facades\Site;
 use Statamic\Facades\Term;
 use Statamic\Globals\Variables;
 use Statamic\Taxonomies\LocalizedTerm;
+use UAMSWeb\Aether\People\Contracts\EntryReferenceRepointer as EntryReferenceRepointerContract;
+use UAMSWeb\Aether\People\Support\ReferenceRepointSummary;
 
 /**
  * Re-points inbound references from one entry id to another across all content.
@@ -40,8 +42,12 @@ use Statamic\Taxonomies\LocalizedTerm;
  * Out of scope (documented, not silently dropped): legacy numeric CSV include
  * lists (e.g. a Bard "people" set's `id_include: "7,11,15"`) hold WordPress ids,
  * not Statamic entry ids, so they are not entry references and are not rewritten.
+ *
+ * It is the host's binding for `uams-web/aether-people`'s `EntryReferenceRepointer`
+ * contract, which the people merge resolves (UAMS-Web/aether-people#97), so it
+ * returns the add-on's `ReferenceRepointSummary`.
  */
-class EntryReferenceRepointer
+class EntryReferenceRepointer implements EntryReferenceRepointerContract
 {
     /**
      * The inline-entry-link token prefix stored by Bard / Markdown / Link.

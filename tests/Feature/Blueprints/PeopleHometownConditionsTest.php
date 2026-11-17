@@ -34,7 +34,7 @@ const HOMETOWN_FIELDS = ['hometown_us', 'hometown_canada', 'hometown_internation
 function peopleHometownBlueprint(): StatamicBlueprint
 {
     /** @var array<string, mixed> $contents */
-    $contents = Yaml::parseFile(base_path('resources/blueprints/collections/people/person.yaml'));
+    $contents = Yaml::parseFile(aetherPeopleResourcePath('blueprints/collections/people/person.yaml'));
 
     $blueprint = Blueprint::make('person');
     Assert::assertInstanceOf(StatamicBlueprint::class, $blueprint);
@@ -75,7 +75,7 @@ function peopleHometownReportedFields(array $data): array
     $collection->save();
 
     // Copy the chain from the live blueprint, so the case follows its conditions
-    $handles = ['uams_worker_query', 'resident_query', 'fellow_query', 'home_country_query', ...HOMETOWN_FIELDS];
+    $handles = ['uams_worker_query', 'trainee_type', 'home_country_query', ...HOMETOWN_FIELDS];
     $fields = (new Collection($handles))
         ->mapWithKeys(fn (string $handle): array => [$handle => peopleHometownFieldConfig($handle)])
         ->all();
@@ -115,17 +115,17 @@ it('gives each hometown field one condition key, if on home_country_query', func
     'hometown_international' => ['hometown_international', 'other'],
 ]);
 
-it('keeps the resident-or-fellow if_any on home_country_query', function (): void {
-    expect(peopleHometownFieldConfig('home_country_query')['if_any'] ?? null)->toBe([
-        'resident_query' => 'equals true',
-        'fellow_query' => 'equals true',
+it('asks the home country of a resident or a fellow, through trainee_type', function (): void {
+    // `trainee_type` replaced the two yes/no fields the old `if_any` read (#696)
+    expect(peopleHometownFieldConfig('home_country_query')['if'] ?? null)->toBe([
+        'trainee_type' => 'includes_any resident, fellow',
     ]);
 });
 
 it('reports an empty hometown_us for a resident whose home country is us', function (): void {
     expect(peopleHometownReportedFields([
         'uams_worker_query' => true,
-        'resident_query' => true,
+        'trainee_type' => 'resident',
         'home_country_query' => 'us',
     ]))->toBe(['hometown_us']);
 });
@@ -133,7 +133,6 @@ it('reports an empty hometown_us for a resident whose home country is us', funct
 it('reports no hometown field for a person who is neither a resident nor a fellow', function (): void {
     expect(peopleHometownReportedFields([
         'uams_worker_query' => true,
-        'resident_query' => false,
-        'fellow_query' => false,
+        'trainee_type' => 'none',
     ]))->toBe([]);
 });

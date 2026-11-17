@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ViewErrorBag;
@@ -32,9 +33,14 @@ use Tests\TestCase;
  * unaffected pass-through cases. The multisite origin-fallback (`value()` vs
  * `get()`) is covered end-to-end by {@see ProtectEntryLocalizationTest}.
  *
- * Mutation: 100% on App\Http\Middleware\ProtectEntry (57 mutants, --covered-only,
- * across this file + ProtectEntryLocalizationTest), re-measured on 2026-08-04 with
- * passwordFieldOwner() in place (UAMS-Web/uams-statamic-archive#1884).
+ * They also pin the two responses the static cache must never store (the
+ * `X-Statamic-Private` / `X-Statamic-Protected` headers on every gated response)
+ * and the per-client, per-entry cap on password submissions.
+ *
+ * Mutation: no unexplained survivors on App\Http\Middleware\ProtectEntry (--covered-only,
+ * across this file, ProtectEntryLocalizationTest and ProtectEntryStaticCacheHeadersTest),
+ * re-measured on 2026-11-17 with the cache headers and the password throttle in place;
+ * each survivor left carries a `@pest-mutate-ignore` with its reason in the class.
  *
  * @command  php artisan test --compact tests/Feature/Http/Middleware/ProtectEntryTest.php
  */
@@ -58,7 +64,7 @@ function protectEntryMiddleware(): ProtectEntry
 /**
  * Build a Mockery entry double mirroring the original `fakeEntry` helper.
  */
-function protectEntryFakeEntry(bool $protected, string $id = 'entry-1', ?string $password = null, ?string $status = null, string $collectionHandle = 'posts'): Entry
+function protectEntryFakeEntry(bool $protected, string|int|null $id = 'entry-1', ?string $password = null, ?string $status = null, string $collectionHandle = 'posts', bool $selfOrigin = false): Entry
 {
     $entry = Mockery::mock(Entry::class);
     // The middleware reads the gate fields via value() (origin fallback for the
@@ -78,7 +84,8 @@ function protectEntryFakeEntry(bool $protected, string $id = 'entry-1', ?string 
         ->andReturn($password === null ? null : Hash::make($password));
     $entry->shouldReceive('get')->with('is_password_hashed', false)->andReturn(true);
     // A root entry: passwordFieldOwner() walks the origin chain before verifying (UAMS-Web/uams-statamic-archive#1884).
-    $entry->shouldReceive('origin')->andReturn(null);
+    // $selfOrigin points the origin at the entry itself, as cyclic stored content can.
+    $entry->shouldReceive('origin')->andReturn($selfOrigin ? $entry : null);
 
     $collection = Mockery::mock(Collection::class);
     $collection->shouldReceive('handle')->andReturn($collectionHandle);
@@ -345,4 +352,314 @@ it('uses the route entry parameter without the url fallback', function (): void 
     $body = $response->getContent();
     $body = is_string($body) ? $body : '';
     expect($body)->toContain('Password Required');
+});
+
+/**
+ * A password post for an entry from a fixed client address, with a matched route
+ * that has no `entry` parameter.
+ */
+function protectEntryPasswordPost(string $url, string $password, string $ip): Request
+{
+    $request = Request::create($url, 'POST', ['password' => $password], [], [], ['REMOTE_ADDR' => $ip]);
+    protectEntryBindRouteWithoutEntryParameter($request);
+
+    return $request;
+}
+
+it('marks a private entry served to a privileged user as uncacheable', function (): void {
+    // The static cache keys on the URL alone and runs before this middleware, so
+    // an unmarked 200 for a super user would be stored and served to guests.
+    $entry = protectEntryFakeEntry(protected: false, status: 'private');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/secret-page');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    protectEntryActingAs(super: true);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PRIVATE BODY'));
+
+    expect($response->headers->get('X-Statamic-Private'))->toBe('true');
+    expect($response->headers->has('X-Statamic-Protected'))->toBeFalse();
+});
+
+it('leaves an unprotected entry response without the cache-skip headers', function (): void {
+    $entry = protectEntryFakeEntry(protected: false, status: 'published');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/about');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PUBLIC BODY'));
+
+    expect($response->headers->has('X-Statamic-Private'))->toBeFalse();
+    expect($response->headers->has('X-Statamic-Protected'))->toBeFalse();
+});
+
+it('carries the private header on the 404 so a half-measure cache cannot pin it', function (): void {
+    $entry = protectEntryFakeEntry(protected: false, status: 'private');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/secret-page');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    protectEntryActingAs(super: null);
+
+    try {
+        protectEntryMiddleware()->handle($request, fn () => response('PRIVATE BODY'));
+    } catch (NotFoundHttpException $e) {
+        expect($e->getHeaders())->toHaveKey('X-Statamic-Private');
+        expect($e->getHeaders()['X-Statamic-Private'])->toBe('true');
+
+        return;
+    }
+
+    throw new RuntimeException('The private entry was served to a guest.');
+});
+
+it('marks the password prompt as uncacheable', function (): void {
+    $entry = protectEntryFakeEntry(protected: true);
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/2024/01/01/secret');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PROTECTED BODY'));
+
+    expect($response->headers->get('X-Statamic-Protected'))->toBe('true');
+    expect($response->headers->has('X-Statamic-Private'))->toBeFalse();
+});
+
+it('marks unlocked protected content as uncacheable', function (): void {
+    // One visitor's unlock must not warm a cache every later visitor reads.
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-unlocked');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/2024/01/01/secret');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    Session::put('entry_password_verified_entry-unlocked', true);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PROTECTED BODY'));
+
+    expect($response->headers->get('X-Statamic-Protected'))->toBe('true');
+    expect($response->headers->has('X-Statamic-Private'))->toBeFalse();
+});
+
+it('marks a private, password-protected entry with both headers once unlocked', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-both', status: 'private');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/secret-page');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    protectEntryActingAs(super: true);
+    Session::put('entry_password_verified_entry-both', true);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PRIVATE PROTECTED BODY'));
+
+    expect($response->headers->get('X-Statamic-Private'))->toBe('true');
+    expect($response->headers->get('X-Statamic-Protected'))->toBe('true');
+});
+
+it('refuses the eleventh password post in a minute with the prompt, a 429 and Retry-After', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-throttled', password: 'audit-secret-pw');
+    $url = 'http://localhost/2024/01/01/secret';
+    $ip = '203.0.113.10';
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+
+    // The suite's file cache outlives a run, so start this client's count at zero.
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-throttled', $ip));
+
+    // Ten wrong passwords are each answered as a wrong password, the tenth included.
+    foreach (range(1, 10) as $attempt) {
+        $response = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'wrong-'.$attempt, $ip), fn () => response('PROTECTED BODY'));
+
+        expect($response)->toBeInstanceOf(RedirectResponse::class, 'Attempt '.$attempt.' was not answered as a wrong password.');
+    }
+
+    // The eleventh is refused before the password is compared: the correct one is
+    // refused too, and nothing is recorded in the session.
+    $response = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', $ip), fn () => response('PROTECTED BODY'));
+
+    expect($response->getStatusCode())->toBe(429);
+    expect((int) $response->headers->get('Retry-After'))->toBeGreaterThan(0);
+    expect($response->headers->get('X-Statamic-Protected'))->toBe('true');
+    expect(Session::get('entry_password_verified_entry-throttled'))->toBeNull();
+
+    $body = $response->getContent();
+    $body = is_string($body) ? $body : '';
+    expect($body)->toContain('Password Required');
+    expect($body)->toContain('Too many password attempts');
+    expect($body)->not->toContain('PROTECTED BODY');
+});
+
+it('counts password posts per client address and entry', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-counted', password: 'audit-secret-pw');
+    $url = 'http://localhost/2024/01/01/secret';
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-counted', '203.0.113.20'));
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-counted', '203.0.113.21'));
+
+    foreach (range(1, 10) as $attempt) {
+        protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'wrong-'.$attempt, '203.0.113.20'), fn () => response('PROTECTED BODY'));
+    }
+
+    // The exhausted client is refused; another client at the same entry is not.
+    $refused = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', '203.0.113.20'), fn () => response('PROTECTED BODY'));
+    expect($refused->getStatusCode())->toBe(429);
+
+    $allowed = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', '203.0.113.21'), fn () => response('PROTECTED BODY'));
+    expect($allowed)->toBeInstanceOf(RedirectResponse::class);
+    expect(Session::get('entry_password_verified_entry-counted'))->toBeTrue();
+});
+
+it('resets the attempt count on a correct password', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-reset', password: 'audit-secret-pw');
+    $url = 'http://localhost/2024/01/01/secret';
+    $ip = '203.0.113.30';
+    $key = ProtectEntry::passwordAttemptKey('entry-reset', $ip);
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear($key);
+
+    foreach (range(1, 3) as $attempt) {
+        protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'wrong-'.$attempt, $ip), fn () => response('PROTECTED BODY'));
+    }
+    expect(RateLimiter::attempts($key))->toBe(3);
+
+    $response = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', $ip), fn () => response('PROTECTED BODY'));
+
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    expect(RateLimiter::attempts($key))->toBe(0);
+});
+
+it('keys the password-attempt count by a namespaced entry id and client address', function (): void {
+    // The prefix keeps the count apart from every other RateLimiter key in the
+    // shared cache, and the separators keep `a` + `b|c` apart from `a|b` + `c`.
+    expect(ProtectEntry::passwordAttemptKey('entry-9', '203.0.113.9'))->toBe('entry_password_attempts|entry-9|203.0.113.9');
+});
+
+it('counts one entry\'s password posts apart from another entry\'s for the same client', function (): void {
+    $exhausted = protectEntryFakeEntry(protected: true, id: 'entry-scope-a', password: 'audit-secret-pw');
+    $other = protectEntryFakeEntry(protected: true, id: 'entry-scope-b', password: 'audit-secret-pw');
+    $url = 'http://localhost/2024/01/01/secret';
+    $ip = '203.0.113.40';
+
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-scope-a', $ip));
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-scope-b', $ip));
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $exhausted, $other);
+
+    foreach (range(1, 10) as $attempt) {
+        protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'wrong-'.$attempt, $ip), fn () => response('PROTECTED BODY'));
+    }
+
+    // The exhausted entry refuses this client; a second entry still takes its password.
+    $refused = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', $ip), fn () => response('PROTECTED BODY'));
+    expect($refused->getStatusCode())->toBe(429);
+
+    $allowed = protectEntryMiddleware()->handle(protectEntryPasswordPost($url, 'audit-secret-pw', $ip), fn () => response('PROTECTED BODY'));
+    expect($allowed)->toBeInstanceOf(RedirectResponse::class);
+    expect(Session::get('entry_password_verified_entry-scope-b'))->toBeTrue();
+});
+
+it('flashes the invalid-password error on a wrong password post', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-wrong', password: 'audit-secret-pw');
+    $ip = '203.0.113.50';
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-wrong', $ip));
+
+    $response = protectEntryMiddleware()->handle(protectEntryPasswordPost('http://localhost/2024/01/01/secret', 'not-it', $ip), fn () => response('PROTECTED BODY'));
+
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    $errors = mustBe(ViewErrorBag::class, Session::get('errors'), 'the flashed error bag');
+    expect($errors->first('password'))->toBe('Invalid password');
+});
+
+it('shows the prompt for a get request that carries a password parameter', function (): void {
+    // Only a POST is a submission: a password in the query string is not compared or counted.
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-get', password: 'audit-secret-pw');
+    $request = protectEntryRequestWithoutEntryParameter('http://localhost/2024/01/01/secret?password=audit-secret-pw');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PROTECTED BODY'));
+
+    expect($response->getStatusCode())->toBe(200);
+    expect(Session::get('entry_password_verified_entry-get'))->toBeNull();
+    $body = $response->getContent();
+    expect(is_string($body) ? $body : '')->toContain('Password Required');
+});
+
+it('counts a password post that arrives with no client address', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-no-ip', password: 'audit-secret-pw');
+    $request = protectEntryPasswordPost('http://localhost/2024/01/01/secret', 'not-it', '203.0.113.60');
+    $request->server->remove('REMOTE_ADDR');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-no-ip', ''));
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PROTECTED BODY'));
+
+    expect($request->ip())->toBeNull();
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    expect(RateLimiter::attempts(ProtectEntry::passwordAttemptKey('entry-no-ip', '')))->toBe(1);
+});
+
+it('unlocks an entry whose id is an integer', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: 42, password: 'audit-secret-pw');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('42', '203.0.113.70'));
+
+    $response = protectEntryMiddleware()->handle(protectEntryPasswordPost('http://localhost/2024/01/01/secret', 'audit-secret-pw', '203.0.113.70'), fn () => response('PROTECTED BODY'));
+
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    expect(Session::get('entry_password_verified_42'))->toBeTrue();
+});
+
+it('keys the unlock under an empty id when the entry has none', function (): void {
+    $entry = protectEntryFakeEntry(protected: true, id: null, password: 'audit-secret-pw');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('', '203.0.113.80'));
+
+    protectEntryMiddleware()->handle(protectEntryPasswordPost('http://localhost/2024/01/01/secret', 'audit-secret-pw', '203.0.113.80'), fn () => response('PROTECTED BODY'));
+
+    expect(Session::get('entry_password_verified_'))->toBeTrue();
+});
+
+it('compares a password submitted as a number', function (): void {
+    // A JSON body can carry the password as a number; it is compared as its digits.
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-numeric', password: '12345');
+    $request = Request::create('http://localhost/2024/01/01/secret', 'POST', ['password' => 12345], [], [], ['REMOTE_ADDR' => '203.0.113.90']);
+    protectEntryBindRouteWithoutEntryParameter($request);
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-numeric', '203.0.113.90'));
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('PROTECTED BODY'));
+
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    expect(Session::get('entry_password_verified_entry-numeric'))->toBeTrue();
+});
+
+it('passes a request with no matched route through', function (): void {
+    $request = Request::create('http://localhost/no-route');
+
+    Data::shouldReceive('findByRequestUrl')->andReturn(null);
+
+    $response = protectEntryMiddleware()->handle($request, fn () => response('OPEN BODY'));
+
+    expect($request->route())->toBeNull();
+    expect($response->getContent())->toBe('OPEN BODY');
+});
+
+it('stops at an entry whose origin is itself when verifying a password', function (): void {
+    // Stored content can point an origin at its own entry; a public password post
+    // must still be answered instead of walking the chain forever.
+    $entry = protectEntryFakeEntry(protected: true, id: 'entry-cycle', password: 'audit-secret-pw', selfOrigin: true);
+
+    Data::shouldReceive('findByRequestUrl')->andReturn($entry);
+    RateLimiter::clear(ProtectEntry::passwordAttemptKey('entry-cycle', '203.0.113.100'));
+
+    $response = protectEntryMiddleware()->handle(protectEntryPasswordPost('http://localhost/2024/01/01/secret', 'audit-secret-pw', '203.0.113.100'), fn () => response('PROTECTED BODY'));
+
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
+    expect(Session::get('entry_password_verified_entry-cycle'))->toBeTrue();
 });

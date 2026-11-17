@@ -22,10 +22,10 @@ uses(TestCase::class);
  * @command php artisan test --compact tests/Feature/Views/FadOntologyListBlockTest.php
  */
 
-/** Absolute path to the page_builder view directory. */
+/** Absolute path to the page_builder views the Find-a-Doc blocks live in, in `uams-web/aether-people` (#696). */
 function fadOntologyViewDir(): string
 {
-    $path = mustNotBeFalse(realpath(__DIR__.'/../../../resources/views/page_builder'), 'path');
+    $path = mustNotBeFalse(realpath(base_path('vendor/uams-web/aether-people/resources/views/page_builder')), 'path');
 
     return $path;
 }
@@ -52,8 +52,9 @@ it('drops the dead dispatcher wrappers while keeping the real wrapper chain', fu
 });
 
 it('retires the shared ontology-list partial with no block left referencing it', function () {
-    // The partial file is gone.
-    expect(file_exists(fadOntologyViewDir().'/components/_block_fad_ontology_list.antlers.html'))->toBeFalse();
+    // The partial file is gone, from the add-on and from the site, which could shadow it
+    expect(file_exists(fadOntologyViewDir().'/components/_block_fad_ontology_list.antlers.html'))->toBeFalse()
+        ->and(file_exists(resource_path('views/page_builder/components/_block_fad_ontology_list.antlers.html')))->toBeFalse();
 
     // No Find-a-Doc block still delegates to it (a dangling include would 500 on render).
     foreach ([

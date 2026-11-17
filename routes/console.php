@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Jobs\ApplyScheduledPublishing;
-use App\Jobs\RefreshProviderEligibilityForDatedLocations;
 use App\Jobs\ScanLinkHealth;
 use App\Jobs\SyncHealthTalkEpisodes;
 use App\Jobs\UnpublishExpiredClassifieds;
@@ -56,17 +55,6 @@ if (config('classifieds.expiry.enabled')) {
 if (config('scheduled_publishing.schedule.enabled')) {
     Schedule::job(new ApplyScheduledPublishing)
         ->cron((string) config('scheduled_publishing.schedule.cron'))
-        ->timezone(Statamic::displayTimezone());
-}
-
-// Re-index provider eligibility for the people linked to practice locations whose date has
-// passed since the last run (UAMS-Web/uams-statamic-archive#3178): a scheduled location counts toward eligibility only from
-// its date (UAMS-Web/uams-statamic-archive#3176), and nothing is saved when that date arrives. The cadence is
-// `clinical_provider_profile.location_date_refresh.cron`, every fifteen minutes by default, read
-// in the display timezone as the scheduled publishing cadence is.
-if (config('clinical_provider_profile.location_date_refresh.enabled')) {
-    Schedule::job(new RefreshProviderEligibilityForDatedLocations)
-        ->cron(config()->string('clinical_provider_profile.location_date_refresh.cron'))
         ->timezone(Statamic::displayTimezone());
 }
 

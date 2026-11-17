@@ -46,8 +46,7 @@ function eligibilityBasePassFields(): array
         'uams_worker_query' => true,
         'uams_worker_subtype' => 'employee',
         'uams_employee_subtype' => 'regular',
-        'resident_query' => false,
-        'fellow_query' => false,
+        'trainee_type' => 'none',
         'clinical_role_query' => true,
         'direct_patient_care_query' => true,
         'clinical_locations' => [ClinicalProviderFixtures::publishedLocationId()],
@@ -94,12 +93,12 @@ it('renders an eligible, searchable provider', function (): void {
 });
 
 it('excludes a person who fails clinical-provider eligibility (a resident)', function (): void {
-    // An eligible-looking person except `resident_query` fails a base rule, so the
+    // An eligible-looking person except `trainee_type` (a resident) fails a base rule, so the
     // computed eligibility flag is false and the eligibility filter drops them —
     // even though they are searchable and carry an M.D. credential.
     saveEligibilityPerson('pavel-chekov', [
         ...eligibilityBasePassFields(),
-        'resident_query' => true,
+        'trainee_type' => 'resident',
         'title' => 'Pavel Chekov',
         'credentials' => ['md'],
     ]);
@@ -133,7 +132,7 @@ it('renders only the eligible, searchable provider from a mixed population', fun
     // Ineligible (resident) -> excluded.
     saveEligibilityPerson('pavel-chekov', [
         ...eligibilityBasePassFields(),
-        'resident_query' => true,
+        'trainee_type' => 'resident',
         'title' => 'Pavel Chekov',
         'credentials' => ['md'],
     ]);

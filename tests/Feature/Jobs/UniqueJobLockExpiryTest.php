@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Jobs\RefreshProviderEligibilityForDatedLocations;
 use App\Jobs\UnpublishExpiredClassifieds;
 use Illuminate\Queue\Attributes\UniqueFor;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Jobs\RefreshProviderEligibilityForDatedLocations;
 
 /**
  * Tests that a unique job's lock holds during a run and expires after one that never finished (#488).
@@ -16,7 +16,7 @@ use Tests\TestCase;
  * A faked queue never runs the job, so nothing releases the lock, which is the state a killed worker
  * leaves. The array store keeps the lock inside this process, so a parallel worker cannot see it.
  *
- * @covers \App\Jobs\RefreshProviderEligibilityForDatedLocations
+ * @covers \UAMSWeb\Aether\People\Jobs\RefreshProviderEligibilityForDatedLocations
  * @covers \App\Jobs\UnpublishExpiredClassifieds
  *
  * @command  php artisan test --compact tests/Feature/Jobs/UniqueJobLockExpiryTest.php
