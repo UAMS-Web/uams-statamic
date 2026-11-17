@@ -2269,6 +2269,8 @@ That leaves the choice as a bet on a *future* failure, not a security decision. 
 
 **Companion.** UAMS-Web/uams-statamic-archive#2321 (the ticket; decided in its 2026-09-08 comment, recorded here 2026-09-28); UAMS-Web/uams-statamic-archive#2168 (where the collision was found at intake); UAMS-Web/uams-statamic-archive#2234 (the CI check, which needs no exception); UAMS-Web/uams-statamic-archive#2185 (the corpus sweep, out of scope).
 
+**Scope (2026-11-17, #628).** This entry covers pull-request and issue bodies only; commit messages were not in its scope. Whether a tool session link may appear in a commit message was decided separately, in the #628 entry below.
+
 ## 2026-09-09 — A deleted entry's redirect is captured automatically and disabled, for an editor to complete (UAMS-Web/uams-statamic-archive#301)
 
 **Decision.** Deleting an entry with a public URL writes a `redirect` row into the `redirects` global immediately, carrying the URI it occupied and **no destination**, with `enabled: false`. An editor supplies the target and turns the row on as one deliberate act. The row is written on `EntryDeleted`, so a cancelled delete records nothing.
@@ -3981,6 +3983,16 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #258 (decision), #769 (build); UAMS-Web/uams-statamic-archive#2962 (the Areas of Expertise precedent).
 
+## 2026-11-17: People and the clinical provider layer move into one add-on, `uams-web/aether-people` (#696, UAMS-Web/uams-statamic-archive#3135)
+
+**Decision.** The `people` collection, its person-only fieldsets, fieldtypes, templates, Control Panel tools and the clinical provider layer (the provider lenses, the eligibility scopes, the `ProviderPeople` computed values and the Find-a-Doc API) live in one Statamic add-on, `uams-web/aether-people`, with the provider layer behind the `people.features.provider_layer` config flag. The site requires it at `^0.3` and keeps what it shares with organizations: `RoleTitle`, `TextPhoneticPair`, `TermsSearchIndex`, `Isco08`, `CredentialRegistry`, the `unique_identifier` rule, the identifier mergers and the clinical collections. The add-on declares a contract for each thing it reads from the site, and [`app/Providers/PeopleCollectionServiceProvider.php`](../app/Providers/PeopleCollectionServiceProvider.php) binds them: `EntryReferenceRepointer` (UAMS-Web/aether-people#97), `MergeRedirectWriter` (UAMS-Web/aether-people#101), `LocationRegions`, `PublicationCitations` and `DepartmentHubRoster`. Every collection, field, fieldset and config handle keeps its name; fieldsets are imported as `aether-people::<handle>`. Decided 2026-10-20 by the repository owner on UAMS-Web/uams-statamic-archive#3135; the add-on was named `uams-web/statamic-people` there and ships as `uams-web/aether-people`.
+
+**Why.** The provider layer is the main reason `people` exists and will not be retired apart from it, and the clinical collections that stay in the site point into it, so one package keeps every dependency running from the site to the add-on. `statamic-form-settings` (one add-on, a config flag per feature) is the shape it follows. The shared fieldtypes and rules stay because organizations use them, and moving them would make organizations depend on the people add-on. Handles stay fixed because `UAMS-Web/wordpress-importer` writes about 25 person fields and templates and other blueprints reference the rest.
+
+**Rejected.** *A people core add-on and a separate provider add-on*: its only gain is retiring the provider layer separately, which is not expected, and the provider add-on would either take the clinical collections' relationships with it or depend on site code. *Keeping people in the application*: contradicts the settled move of people-specific code into an add-on, as the forms customizations were (UAMS-Web/uams-statamic-archive#3071). *Moving the shared fieldsets and fieldtypes too*: organizations would then depend on the people add-on. *Freezing only the importer's handles*: a rename anywhere else breaks templates and blueprints for no gain.
+
+**Companion.** UAMS-Web/uams-statamic-archive#3135 (decision), UAMS-Web/uams-statamic-archive#3180 (the extension points added first), #281 (the boundary), #696 (requiring the add-on and deleting the moved code); UAMS-Web/aether-people#58 (the `trainee_type` carry-over script), UAMS-Web/aether-people#97 and UAMS-Web/aether-people#101 (the host bindings).
+
 ## 2026-11-17: Site search caps Loupe at 1000 hits, and site-scoped loss is measured separately (#646)
 
 **Decision.** The `default` index runs `loupe` with `max_total_hits` at 1000, Loupe's own default, in place of the 200 the 2026-11-12 entry chose. How much site-scoped searches lose to the cap is measured on #967. Decided by Josh, 2026-11-17.
@@ -3990,3 +4002,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
 
 **Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
+
+## 2026-11-17: A commit message carries no tool session link, while a `Co-authored-by` trailer naming the tool stays allowed (#628)
+
+**Decision.** A commit message may not carry a trailer whose value is a tool session URL (for example `Amp-Thread-ID: https://ampcode.com/threads/...`), on any surface: branch commits, the pull request's commit list, and the composed squash message. A `Co-authored-by` trailer naming the tool stays permitted and remains the commit convention's attribution. A gate that finds a session link hands the pull request back to its author to reword the commit; the gate does not rewrite an author's commits. Already-merged commits, #606's included, are not rewritten. Decided 2026-11-17 (reading A, narrowed to links); the shared rule and a commit-message check are `UAMS-Web/uams-claude-skills#819`.
+
+**Why.** Both trailers are provenance, but only the session trailer is a link to an outside tool's conversation, readable by anyone holding the URL, and it stays readable on the branch indefinitely because this repository keeps merged branches (`delete_branch_on_merge` is false). The exposure is the URL, not the credit. Measured on #606's merge (`02a6df6`), a composed squash message carried `Co-authored-by` twice and `Amp-Thread-ID` not at all, against one `Amp-Thread-ID` in the branch commits, so the surface is the branch and its commit list rather than `main`.
+
+**Rejected.** *Reading B, the session trailer is provenance and allowed*: it keeps a durable external link that the body rule (UAMS-Web/uams-statamic-archive#2321) already bans on the neighboring surface. *Record only, since the squash already drops it from `main`*: branch commits and the commit list stay readable, so the link would still persist.
+
+**Companion.** #628 (decision); `UAMS-Web/uams-claude-skills#819` (the shared rule and the commit-message check); #606 (where the trailer was found); UAMS-Web/uams-statamic-archive#2321 (the body-scoped ban, whose entry above now states its scope).

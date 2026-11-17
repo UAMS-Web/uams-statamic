@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Services\People\MergeReconciliation;
-use App\Services\People\MergeResult;
-use App\Support\References\ReferenceRepointSummary;
+use UAMSWeb\Aether\People\Merge\MergeReconciliation;
+use UAMSWeb\Aether\People\Merge\MergeResult;
+use UAMSWeb\Aether\People\Support\ReferenceRepointSummary;
 
 covers(MergeReconciliation::class, MergeResult::class);
 

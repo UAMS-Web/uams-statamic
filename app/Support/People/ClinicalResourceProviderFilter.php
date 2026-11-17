@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Support\People;
 
-use App\Support\Collections\PeopleCollection;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Facades\Site;
 use Statamic\Fields\Value;
 use Statamic\Sites\Site as SiteObject;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Resolves the `?provider=` slug the `clinical_resources` archive filters on

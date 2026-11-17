@@ -99,7 +99,7 @@ function identifierRulesFor(string $relative, string $handle): array
 
 const SEMANTICS = 'compared ignoring capitalization and surrounding spaces';
 
-const PERSON_BLUEPRINT = 'resources/blueprints/collections/people/person.yaml';
+const PERSON_BLUEPRINT = 'vendor/uams-web/aether-people/resources/collection-blueprints/people/person.yaml';
 const LOCATION_BLUEPRINT = 'resources/blueprints/collections/clinical_locations/location.yaml';
 const PROVIDER_BLUEPRINT = 'resources/blueprints/collections/clinical_providers/provider.yaml';
 

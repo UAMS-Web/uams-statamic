@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving;
 use App\Services\ComputedFields\Registration\QuantitativeValueDurationComputedsRegistrar;
 use App\Services\ComputedFields\Registration\RecognitionListTaxonomyAugmentedRegistrar;
 use App\Services\ComputedFields\Registration\RoleTitleMirroredComputedsRegistrar;
@@ -10,6 +9,7 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
 use Statamic\Events\EntrySaving;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -27,7 +27,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * QuantitativeValueDurationComputedsRegistrar are covered by their own tests under
  * tests/Feature/Services/ComputedFields/Registration/.
  *
- * Mutation-clean on App\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving
+ * Mutation-clean on UAMSWeb\Aether\People\Listeners\StripProviderPeopleVirtualFieldsOnEntrySaving
  * (UAMS-Web/uams-statamic#315), with one accepted equivalent annotated in the
  * listener: the strict flag on the collection-handle `in_array()`, since a string
  * or null handle matches the non-numeric collection handles loosely or strictly alike.

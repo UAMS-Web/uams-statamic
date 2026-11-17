@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Services\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 use App\Services\ComputedFields\Registration\IptcDigitalSourceCollectionComputedsRegistrar;
 use App\Services\ComputedFields\Registration\PostsReadingMetricsCollectionComputedsRegistrar;
 use App\Services\KnowledgeBase\KnowledgeBaseComputedFieldsService;
@@ -11,6 +10,7 @@ use Mockery\MockInterface;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 
 uses(TestCase::class);
 
@@ -23,7 +23,7 @@ uses(TestCase::class);
  * stored values, and that providers/people person-name computeds behave as
  * expected.
  *
- * Mutation: 100% on App\Services\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues
+ * Mutation: 100% on UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues
  * (123 mutants) and App\Services\KnowledgeBase\KnowledgeBaseComputedFieldsService (165 mutants), both --covered-only.
  *
  * Windows:
@@ -735,190 +735,6 @@ it('joins phonetic subfields in getDisplayNameFull per display format', function
         'text' => 'Leslie Taylor',
         'phonetic_text' => 'ˈlɛsli ˈteɪlər',
     ]);
-});
-
-it('uses letter IPA for the initial first-name segment in getDisplayNameFull phonetic text', function (): void {
-    $provider = new ProviderPeoplePersonNameComputedValues;
-    $entry = Mockery::mock(Entry::class);
-    $entry->shouldReceive('get')
-        ->andReturnUsing(
-            function (string $key, mixed $default = null): mixed {
-                $map = [
-                    'person_name' => [
-                        'first_name' => [
-                            'text' => 'John Paul',
-                            'phonetic_text' => 'ignored_for_this_pattern',
-                        ],
-                        'no_middle_name' => false,
-                        'middle_name' => [
-                            'text' => 'Robert',
-                            'phonetic_text' => 'ˈrɑbərt',
-                        ],
-                        'no_nickname' => true,
-                        'nickname' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'last_name' => [
-                            'text' => 'Doe',
-                            'phonetic_text' => 'doʊ',
-                        ],
-                        'no_generational_suffix' => true,
-                        'generational_suffix' => null,
-                        'display_format' => 'first_initial_full_middle@ns',
-                    ],
-                ];
-
-                return $map[$key] ?? $default;
-            }
-        );
-
-    $reflection = new ReflectionClass($provider);
-    $method = $reflection->getMethod('resolveDisplayNameFullPhoneticText');
-    $result = $method->invoke(
-        $provider,
-        $entry
-    );
-
-    expect($result)->toBe('ʤeɪ pi ˈrɑbərt doʊ');
-});
-
-it('uses stored subfield phonetics in getFullNamePhoneticText for initial formats', function (): void {
-    $provider = new ProviderPeoplePersonNameComputedValues;
-    $entry = Mockery::mock(Entry::class);
-    $entry->shouldReceive('get')
-        ->andReturnUsing(
-            function (string $key, mixed $default = null): mixed {
-                $map = [
-                    'person_name' => [
-                        'first_name' => [
-                            'text' => 'John Paul',
-                            'phonetic_text' => 'ˈʤɑn pɔl',
-                        ],
-                        'no_middle_name' => true,
-                        'middle_name' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'no_nickname' => true,
-                        'nickname' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'last_name' => [
-                            'text' => 'Doe',
-                            'phonetic_text' => 'doʊ',
-                        ],
-                        'no_generational_suffix' => true,
-                        'generational_suffix' => null,
-                        'display_format' => 'first_initial_full_middle@ns',
-                    ],
-                ];
-
-                return $map[$key] ?? $default;
-            }
-        );
-
-    $reflection = new ReflectionClass($provider);
-    $method = $reflection->getMethod('resolveFullNamePhoneticText');
-    $result = $method->invoke(
-        $provider,
-        $entry
-    );
-
-    expect($result)->toBe('ˈʤɑn pɔl doʊ');
-});
-
-it('maps the pedigree Jr. label in getDisplayNameFull phonetic text', function (): void {
-    $provider = new ProviderPeoplePersonNameComputedValues;
-    $entry = Mockery::mock(Entry::class);
-    $entry->shouldReceive('get')
-        ->andReturnUsing(
-            function (string $key, mixed $default = null): mixed {
-                $map = [
-                    'person_name' => [
-                        'first_name' => [
-                            'text' => 'John',
-                            'phonetic_text' => 'ʤɑn',
-                        ],
-                        'no_middle_name' => true,
-                        'middle_name' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'no_nickname' => true,
-                        'nickname' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'last_name' => [
-                            'text' => 'Doe',
-                            'phonetic_text' => 'doʊ',
-                        ],
-                        'no_generational_suffix' => false,
-                        'generational_suffix' => 'Jr.',
-                        'display_format' => 'full_first_only@ws',
-                    ],
-                ];
-
-                return $map[$key] ?? $default;
-            }
-        );
-
-    $reflection = new ReflectionClass($provider);
-    $method = $reflection->getMethod('resolveDisplayNameFullPhoneticText');
-    $result = $method->invoke(
-        $provider,
-        $entry
-    );
-
-    expect($result)->toBe('ʤɑn doʊ ˈʤunjər');
-});
-
-it('prefers the pedigree label map IPA in getDisplayNameFull phonetic text', function (): void {
-    $provider = new ProviderPeoplePersonNameComputedValues;
-    $entry = Mockery::mock(Entry::class);
-    $entry->shouldReceive('get')
-        ->andReturnUsing(
-            function (string $key, mixed $default = null): mixed {
-                $map = [
-                    'person_name' => [
-                        'first_name' => [
-                            'text' => 'John',
-                            'phonetic_text' => 'ʤɑn',
-                        ],
-                        'no_middle_name' => true,
-                        'middle_name' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'no_nickname' => true,
-                        'nickname' => [
-                            'text' => '',
-                            'phonetic_text' => '',
-                        ],
-                        'last_name' => [
-                            'text' => 'Doe',
-                            'phonetic_text' => 'doʊ',
-                        ],
-                        'no_generational_suffix' => false,
-                        'generational_suffix' => 'Jr.',
-                        'display_format' => 'full_first_only@ws',
-                    ],
-                ];
-
-                return $map[$key] ?? $default;
-            }
-        );
-
-    $reflection = new ReflectionClass($provider);
-    $method = $reflection->getMethod('resolveDisplayNameFullPhoneticText');
-    $result = $method->invoke(
-        $provider,
-        $entry
-    );
-
-    expect($result)->toBe('ʤɑn doʊ ˈʤunjər');
 });
 
 it('prepends doctor IPA in display_name_full_with_prefix phonetic text when md credential', function (): void {
