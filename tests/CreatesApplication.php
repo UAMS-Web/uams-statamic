@@ -311,7 +311,7 @@ trait CreatesApplication
         (new Filesystem)->deleteDirectory($directory);
 
         if (is_dir($directory)) {
-            throw new \RuntimeException(\sprintf('The search index directory %s could not be removed, so this test would search the previous test\'s indexes.', $directory));
+            throw new RuntimeException(\sprintf('The search index directory %s could not be removed, so this test would search the previous test\'s indexes.', $directory));
         }
 
         if (self::$searchIndexCleanupRegistered) {
