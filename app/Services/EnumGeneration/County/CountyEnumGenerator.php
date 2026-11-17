@@ -105,20 +105,10 @@ final class CountyEnumGenerator
         array $records,
         array $layer55Records
     ): array {
-        // Create a lookup map of existing records by geoId for efficient matching
-        $existingGeoIds = [];
-
-        // Loop through existing records to build geoId lookup map
-        foreach ($records as $index => $record) {
-            // Extract geoId from the record
-            $geoId = $record['GEOID'] ?? '';
-
-            // Check if geoId is present
-            if ($geoId !== '') {
-                // Add geoId to lookup map with its index
-                $existingGeoIds[$geoId] = $index;
-            }
-        }
+        // Look up existing records by geoId. array_column() skips a record with
+        // no GEOID, and an empty GEOID is never looked up, because the loop below
+        // skips layer 55 records without one.
+        $existingGeoIds = array_flip(array_column($records, 'GEOID'));
 
         // Loop through layer 55 records to find missing counties
         foreach ($layer55Records as $layer55Record) {
@@ -223,14 +213,15 @@ final class CountyEnumGenerator
                 $rec
             );
 
-            // Encourage GC during large loops
+            // Encourage GC during large loops. Collecting changes memory use only, never
+            // the rows returned, so removing the call is an equivalent mutant.
+            // @pest-mutate-ignore: RemoveFunctionCall
             gc_collect_cycles();
         }
 
-        // Flatten associative map into list for sorting and output
-        $counties = \array_values($countiesByCaseId);
-
-        // Sort by state (parentUspsCode) then by county full name for stable output order
+        // Sort by state (parentUspsCode) then by county full name for stable output
+        // order. usort() reindexes, so the caseId keys are dropped here.
+        $counties = $countiesByCaseId;
         usort(
             $counties,
             function (array $a, array $b): int {
@@ -286,7 +277,9 @@ final class CountyEnumGenerator
 
             // Check if StateInfo attribute is missing
             if (empty($attributes)) {
-                // Skip cases without StateInfo attribute
+                // Skip cases without StateInfo attribute. Every State case carries
+                // one, so this never runs and breaking out instead changes nothing.
+                // @pest-mutate-ignore: ContinueToBreak
                 continue;
             }
 
@@ -294,9 +287,13 @@ final class CountyEnumGenerator
             /** @var StateInfo $info */
             $info = $attributes[0]->newInstance();
 
-            // Check if FIPS code is present and non-empty
+            // Check if FIPS code is present and non-empty. Every State case has a
+            // FIPS code, so comparing against any other string skips nothing.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if ($info->fipsCode !== '') {
-                // Map FIPS code to USPS code (string backing value)
+                // Map FIPS code to USPS code. State is string-backed, so the backing
+                // value is already a string and dropping the cast changes nothing.
+                // @pest-mutate-ignore: RemoveStringCast
                 $map[$info->fipsCode] = (string) $case->getBackingValue();
             }
         }
