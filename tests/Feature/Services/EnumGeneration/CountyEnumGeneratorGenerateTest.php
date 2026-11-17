@@ -67,7 +67,9 @@ it('fetches layers 1 and 55, merges the new layer 55 county, and writes the enum
 
     // GeneratorUtils builds the path the same way, so it matches on Windows too
     $prefix = app_path('Enums/County_generated_');
-    assert($prefix !== '');
+    if ($prefix === '') {
+        throw new RuntimeException('app_path() returned an empty path');
+    }
 
     expect($layers)->toBe([1, 55])
         ->and($path)->toBe($written->path)
