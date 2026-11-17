@@ -481,3 +481,48 @@ it('ignores a malformed row without letting it mask a later matching one', funct
         'clinical_locations' => [ontologySuppressionLocation('northwest-clinic', 'northwest-arkansas')],
     ]))->toBeTrue();
 });
+
+it('reads past an all-empty row to a later matching one', function (): void {
+    // The all-empty guard skips its row; it must not end the scan.
+    ontologySuppressionSettings([
+        ontologySuppressionRow(),
+        ontologySuppressionRow(serviceLine: 'surgical-specialties'),
+    ]);
+
+    expect(ontologySuppressionResolves([
+        'service_line' => 'surgical-specialties',
+    ]))->toBeTrue();
+});
+
+it('reads past a row whose region does not match to a later matching one', function (): void {
+    ontologySuppressionSettings([
+        ontologySuppressionRow(region: 'central-arkansas'),
+        ontologySuppressionRow(serviceLine: 'surgical-specialties'),
+    ]);
+
+    expect(ontologySuppressionResolves([
+        'service_line' => 'surgical-specialties',
+        'clinical_locations' => [ontologySuppressionLocation('northwest-clinic', 'northwest-arkansas')],
+    ]))->toBeTrue();
+});
+
+it('reads a non-string criterion as unset, widening its row to the other criterion', function (): void {
+    // The sharp edge the resolver's singleValue() docblock records: an int criterion is
+    // not unusable, it is unset, so the row matches on its region alone.
+    ontologySuppressionSettings([ontologySuppressionRow(serviceLine: 5, region: 'northwest-arkansas')]);
+
+    expect(ontologySuppressionResolves([
+        'service_line' => 'surgical-specialties',
+        'clinical_locations' => [ontologySuppressionLocation('northwest-clinic', 'northwest-arkansas')],
+    ]))->toBeTrue();
+});
+
+it('reads an empty-string criterion as unset rather than as a value', function (): void {
+    // Read as a value, '' would match no provider and silently disable the region half.
+    ontologySuppressionSettings([ontologySuppressionRow(serviceLine: '', region: 'northwest-arkansas')]);
+
+    expect(ontologySuppressionResolves([
+        'service_line' => 'surgical-specialties',
+        'clinical_locations' => [ontologySuppressionLocation('northwest-clinic', 'northwest-arkansas')],
+    ]))->toBeTrue();
+});

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Listeners\MakeWorkdayFieldsReadOnly;
+use App\Listeners\RestoreWorkdayManagedFields;
 use App\Support\People\WorkdayManagedFields;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\File;
@@ -12,8 +13,10 @@ use Statamic\Auth\File\User as FileStatamicUser;
 use Statamic\Auth\UserGroup as StatamicUserGroup;
 use Statamic\Contracts\Auth\RoleRepository as RoleRepositoryContract;
 use Statamic\Contracts\Auth\UserGroupRepository as UserGroupRepositoryContract;
+use Statamic\Contracts\Revisions\Revision;
 use Statamic\Entries\Entry as EntryItem;
 use Statamic\Events\EntryBlueprintFound;
+use Statamic\Events\RevisionSaving;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection as CollectionFacade;
@@ -42,6 +45,12 @@ use function Pest\Laravel\withoutVite;
  * field otherwise. Administrators, and saves with no signed-in user, are not
  * held. Gender and the nickname kept beside the legal name are not among the
  * fields and stay editable.
+ *
+ * The last cases call `RestoreWorkdayManagedFields::handleRevisionSaving()`
+ * directly with a revision double, for the revisions it must leave alone. Its
+ * accepted equivalents are annotated in the listener: the `instanceof Entry`
+ * guard on a saving entry, which `governs()` repeats, and the `instanceof`
+ * guard on `$entry->data()`, which is always a collection.
  *
  * @command  php artisan test --compact tests/Feature/CP/People/WorkdayManagedFieldsTest.php
  */
@@ -523,4 +532,72 @@ it('leaves alone a blueprint that is not a Statamic blueprint, whatever its name
     app(MakeWorkdayFieldsReadOnly::class)->handle(new EntryBlueprintFound($lookAlike));
 
     expect($lookAlike->fieldsRead)->toBe([]);
+});
+
+/**
+ * A revision double with the given key and attributes, failing the test if its
+ * attributes are ever written back.
+ *
+ * @param  mixed  $attributes  What `attributes()` returns
+ */
+function workdayFieldsRevision(mixed $key, mixed $attributes = []): Revision
+{
+    $revision = Mockery::mock(Revision::class);
+    $revision->shouldReceive('key')->andReturn($key);
+    $revision->shouldReceive('attributes')->withNoArgs()->andReturn($attributes);
+    $revision->shouldReceive('attributes')->with(Mockery::any())->never();
+
+    return $revision;
+}
+
+it('ignores a revision event that carries no revision', function (): void {
+    actingAs(workdayFieldsEditor());
+
+    // The event's revision is untyped; anything else is a no-op, not an error.
+    expect(throwableFrom(fn () => app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving(null))))
+        ->toBeNull();
+});
+
+it('leaves alone the revision of an entry in another collection', function (): void {
+    actingAs(workdayFieldsEditor());
+    Entry::shouldReceive('find')->never();
+
+    $revision = workdayFieldsRevision('collections/pages/nyota', ['id' => 'nyota', 'data' => ['uams_worker_query' => false]]);
+
+    app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving($revision));
+});
+
+it('leaves alone the revision of a collection whose handle only begins with people', function (): void {
+    actingAs(workdayFieldsEditor());
+    Entry::shouldReceive('find')->never();
+
+    $revision = workdayFieldsRevision('collections/people_archive/nyota', ['id' => 'nyota', 'data' => ['uams_worker_query' => false]]);
+
+    app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving($revision));
+});
+
+it('leaves alone a people revision when no user is signed in', function (): void {
+    Entry::shouldReceive('find')->never();
+
+    $revision = workdayFieldsRevision('collections/people/nyota', ['id' => 'nyota', 'data' => ['uams_worker_query' => false]]);
+
+    app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving($revision));
+});
+
+it('leaves alone a people revision that carries no data', function (): void {
+    actingAs(workdayFieldsEditor());
+    Entry::shouldReceive('find')->never();
+
+    $revision = workdayFieldsRevision('collections/people/nyota', ['id' => 'nyota']);
+
+    app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving($revision));
+});
+
+it('leaves alone a people revision whose entry no longer exists', function (): void {
+    actingAs(workdayFieldsEditor());
+
+    $revision = workdayFieldsRevision('collections/people/gone', ['id' => 'gone', 'data' => ['uams_worker_query' => false]]);
+
+    expect(throwableFrom(fn () => app(RestoreWorkdayManagedFields::class)->handleRevisionSaving(new RevisionSaving($revision))))
+        ->toBeNull();
 });

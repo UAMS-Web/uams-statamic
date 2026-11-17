@@ -2,8 +2,9 @@
 """
 Generate a GitHub Release note body per the `writing-release-notes` skill:
 em-dash-title-ready, milestone lead + optional breaking-change callout, a closed
-heading vocabulary, and one linked bullet per change (a `[#N]` PR link, or a
-backticked short SHA for a direct commit).
+heading vocabulary, and one linked bullet per distinct title (a `[#N]` PR link, or a
+backticked short SHA for a direct commit; a title repeated within a bucket is one bullet
+carrying every ref).
 
 One script, shared by every UAMS-Web repository that carries the skill. Nothing in
 it names a repository: `--repo` is required, and the routing roots, word lists and
@@ -22,7 +23,7 @@ skill, the live titles are already clean; this tool only strips residual noise
 Usage:
   gen_release_notes.py [options] <prev-ref> <new-ref> --repo OWNER/NAME
 
-Example (cut v0.27.0 from the previous tag):
+Example (cut v0.27.0 from the previous tag; use `py -3` in place of `python3` on Windows):
   python3 .claude/skills/writing-release-notes/gen_release_notes.py \\
       v0.26.0 v0.27.0 --repo UAMS-Web/<repo> \\
       --lead "One-sentence milestone theme." \\
@@ -573,7 +574,10 @@ def render(log, a, github, signals=diff_signals):
     # (a no-op over REST).
     github.prime([n for _sha, s in log for n in [subject_pull(s.strip())] if n and n not in excl])
 
-    buckets = {"new": [], "fix": [], "sec": [], "maint": []}
+    # Each bucket maps a rendered title to the refs that carry it, in the order the titles
+    # first appeared: a title repeated within a bucket becomes ONE bullet with every ref.
+    # Python dicts keep insertion order, so the merged bullet sits where its first member sat.
+    buckets = {"new": {}, "fix": {}, "sec": {}, "maint": {}}
     for sha, s in log:
         s = s.strip()
         if not s or any(r.search(s) for r in skips):
@@ -601,9 +605,15 @@ def render(log, a, github, signals=diff_signals):
         b = bucket(s, title, labels, paths, forced_sec=(pr is not None and pr in forced),
                    issue_type=issue_type, test_lines=test_lines, other_lines=other_lines,
                    routing=routing)
-        bullet = f"- {noamp(disp)} {link}".rstrip()
-        if bullet not in buckets[b]:
-            buckets[b].append(bullet)
+        # Pull requests sort ahead of direct commits, by number; commits keep log order.
+        ref = (0, pr, 0, link) if pr is not None else (1, 0, len(buckets[b].get(noamp(disp), [])), link)
+        refs = buckets[b].setdefault(noamp(disp), [])
+        if not any(r[3] == link for r in refs):
+            refs.append(ref)
+
+    def bullets(bucket_refs):
+        return [f"- {title} {', '.join(r[3] for r in sorted(refs))}".rstrip()
+                for title, refs in bucket_refs.items()]
 
     parts = [noamp(a.lead) if a.lead else "TODO: one-sentence milestone lead."]
     if a.breaking:
@@ -616,10 +626,10 @@ def render(log, a, github, signals=diff_signals):
             parts.extend(["", f"## {title}", *items])
 
     section("Breaking changes", [f"- {noamp(b)}" for b in a.breaking_item])
-    section("What's new", buckets["new"])
-    section("What's fixed", buckets["fix"])
-    section("Security", buckets["sec"])
-    section("Maintenance and tooling", buckets["maint"])
+    section("What's new", bullets(buckets["new"]))
+    section("What's fixed", bullets(buckets["fix"]))
+    section("Security", bullets(buckets["sec"]))
+    section("Maintenance and tooling", bullets(buckets["maint"]))
     if a.verification:
         parts += ["", "## Verification at this tag", a.verification]
     if a.known_gaps:

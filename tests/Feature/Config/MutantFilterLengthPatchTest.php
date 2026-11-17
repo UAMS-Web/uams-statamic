@@ -184,6 +184,12 @@ it('restores the error handler it replaced while compiling', function (): void {
  * reported 5 timeouts against a 26.51 s initial run, counted as kills. A widened child now gets at
  * least three times the initial run; any other child keeps the plugin's limit, so a mutant that
  * really loops still times out.
+ *
+ * Since `uams-web/patches-pest-plugin-mutate` v1.3.0 the figure childTimeout() is given is not the
+ * initial run itself but serialBasis() of it: the initial run times the process count, because a
+ * `--parallel` initial run takes about 1/N of the serial time a child needs
+ * (UAMS-Web/patches-pest-plugin-mutate#2). A run that is not parallel has a process count of 1, so
+ * its limits are the ones above.
  */
 
 it('gives each child the limit the seam computes, from whether its filter was widened', function () use ($mutationTestSource): void {
@@ -195,9 +201,17 @@ it('gives each child the limit the seam computes, from whether its filter was wi
 
     // Absent means the patch is not applied: `composer install` does not re-patch an installed
     // package, so run `composer patches-repatch`.
-    expect($source)->toContain("timeout: self::childTimeout(\$this->initialTestSuiteDuration(), \$filter !== implode('|', \$filters)),")
+    expect($source)->toContain("timeout: self::childTimeout(self::serialBasis(\$this->initialTestSuiteDuration(), \$configuration->processes), \$filter !== implode('|', \$filters)),")
         ->and($source)->not->toContain('calculateTimeout');
 });
+
+it('restates the initial run as the serial work it stands for', function (float $initial, int $processes, float $basis): void {
+    expect(MutationTest::serialBasis($initial, $processes))->toBe($basis);
+})->with([
+    'a run that is not parallel keeps the initial run' => [2.5, 1, 2.5],
+    'a parallel run scales by its process count' => [2.5, 12, 30.0],
+    'a process count below one is treated as one' => [2.5, 0, 2.5],
+]);
 
 it("keeps the plugin's limit for a child that was not widened", function (float $initial, int $limit): void {
     expect(MutationTest::childTimeout($initial, false))->toBe($limit);

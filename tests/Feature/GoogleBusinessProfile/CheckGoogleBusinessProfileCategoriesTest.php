@@ -407,3 +407,24 @@ it('shows a check recorded before the unreadable count existed as none unreadabl
 
     expect(gbpCheckWidgetHtml())->toContain('1 new, 2 renamed, 3 removed, 0 listed but unreadable, 4 with no GCID, 5 malformed lines.');
 });
+
+it('prints the listed but unreadable section as a table of GCID, term and title', function (): void {
+    $path = mustBeString(tempnam(sys_get_temp_dir(), 'gbp'), 'the category file path');
+    // The acupuncturist GCID reads, but the line has no name, so the term is listed but unreadable
+    file_put_contents($path, "acupuncturist\t\nacupuncture_clinic\tAcupuncture clinic\ndiscontinued_category\tDiscontinued category\n");
+
+    Artisan::call('gbp:check-categories', ['file' => $path]);
+    unlink($path);
+    $output = str_replace("\r\n", "\n", Artisan::output());
+
+    // Each row, read back as its cells in column order
+    $rows = collect(explode("\n", $output))
+        ->map(fn (string $line): array => array_values(array_filter(array_map('trim', explode('|', $line)), fn (string $cell): bool => $cell !== '')))
+        ->filter(fn (array $cells): bool => $cells !== [])
+        ->values()
+        ->all();
+
+    expect($output)->toContain("\n\nListed but unreadable (Google lists the GCID on a line that was skipped, so the term is not removed):\n")
+        ->and($rows)->toContain(['GCID', 'Term', 'Title'])
+        ->toContain(['acupuncturist', 'acupuncturist', 'Acupuncturist']);
+});

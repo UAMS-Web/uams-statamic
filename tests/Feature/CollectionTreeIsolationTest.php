@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Support\ContentRoot;
 use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Support\Collection as IlluminateCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Statamic\Entries\Collection as StatamicCollection;
 use Statamic\Entries\Entry as StatamicEntry;
@@ -14,16 +15,20 @@ use Statamic\Facades\Stache;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\CollectionTree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 use Tests\Support\NullDeletedEntryRedirectCapture;
 use Tests\Support\ThrowawayRoot;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /**
- * UAMS-Web/uams-statamic-archive#1873 — the contract {@see CollectionTreeIsolatedTestCase} holds: a tree saved
- * by a test on it lands in a throwaway directory, the real committed tree is never
- * touched, and everything else in `content/` still resolves.
+ * UAMS-Web/uams-statamic-archive#1873: the contract the trees half of
+ * {@see EntriesTermsAndTreesIsolatedTestCase} holds. A tree saved by a test on it lands
+ * in a throwaway directory, the real committed tree is never touched, and the rest of
+ * the content still resolves. Since #571 the file runs on the combined base, so its
+ * entry saves land in the per-process entries copy and its Stache cache writes in the
+ * per-test overlay, and the cases that guarded the trees-only base's `uri` restore now
+ * assert that the shared cache is left alone instead.
  *
  * The third case is the one a reader will be tempted to call redundant. It is
  * not: the earlier cut of this ticket re-rooted the tree directory while leaving
@@ -195,31 +200,55 @@ function treeIsolationCachedExpertiseUri(): mixed
     return \is_array($cached) ? ($cached[TREE_ISOLATION_EXPERTISE_ID] ?? null) : null;
 }
 
-it('saves an existing pages entry inside the base, writing its tree only to the throwaway directory', function (): void {
+/**
+ * The `pages` URI index as the shared Stache cache holds it, read past the per-test
+ * overlay the combined base points the Stache at.
+ */
+function treeIsolationSharedPagesUriIndex(): mixed
+{
+    return Cache::store()->get('stache::indexes::entries::pages::uri');
+}
+
+/** The path the shared Stache cache's keys hold for the health `pages` tree, empty when they have none. */
+function treeIsolationSharedHealthTreeKeyPath(): string
+{
+    $keys = Cache::store()->get('stache::keys/collection-trees');
+
+    return \is_array($keys) ? mustBeString($keys['pages::health'] ?? '', 'the shared health pages tree key') : '';
+}
+
+it('saves an existing pages entry inside the base, leaving the shared uri index and the committed tree alone', function (): void {
     $committedTree = ContentRoot::path(Config::string('app.env')).'/trees/collections/health/pages.yaml';
     $committedTreeBefore = mustBeString(file_get_contents($committedTree), 'the committed health pages tree');
 
-    expect(treeIsolationCachedExpertiseUri())->toBe('/expertise');
+    // The shared index is warm after a seeded local run and absent on a cold CI worker.
+    // Either way a write that leaks past the overlay changes it: it adds the key where
+    // there was none, or rewrites the expertise row from '/expertise' to '/'.
+    $sharedBefore = treeIsolationSharedPagesUriIndex();
+
+    // A blank tree is filled in entry-index order, and its root is whichever entry comes
+    // first. That order differs between a snapshot and a cold rebuild (#466), so this
+    // test authors the tree that makes the expertise entry the root.
+    $structure = mustBe(CollectionStructure::class, treeIsolationCollection('pages')->structure(), 'the pages structure');
+    $tree = mustBe(CollectionTree::class, $structure->in('health'), 'the health pages tree');
+    $tree->tree([['entry' => TREE_ISOLATION_EXPERTISE_ID]]);
+    $tree->save();
 
     $entry = mustBe(StatamicEntry::class, Entry::find(TREE_ISOLATION_EXPERTISE_ID), 'the expertise entry');
 
     expect($entry->save())->toBeTrue();
 
-    // The hazard UAMS-Web/uams-statamic-archive#3227 exists for: with the committed tree hidden, the save writes the
-    // URI of a blank tree into the shared index. The case after this one asserts that
-    // the base puts the committed value back before the next test reads it.
+    // The save did write the index, with the throwaway tree's root URI, so the shared
+    // index staying put is the overlay's doing rather than a save that wrote nothing.
+    // UAMS-Web/uams-statamic-archive#3227 is that write reaching the shared cache.
     expect(treeIsolationCachedExpertiseUri())->toBe('/')
+        ->and(treeIsolationSharedPagesUriIndex())->toBe($sharedBefore)
         ->and(file_get_contents($committedTree))->toBe($committedTreeBefore);
 });
 
-it('reads the committed URI in the test after a save inside the base', function (): void {
-    $entry = mustBe(StatamicEntry::class, Entry::find(TREE_ISOLATION_EXPERTISE_ID), 'the expertise entry');
+it('creates and deletes a pages entry inside the base, leaving the shared tree keys alone', function (): void {
+    $sharedKeyBefore = treeIsolationSharedHealthTreeKeyPath();
 
-    expect(treeIsolationCachedExpertiseUri())->toBe('/expertise')
-        ->and($entry->uri())->toBe('/expertise');
-})->depends('it saves an existing pages entry inside the base, writing its tree only to the throwaway directory');
-
-it('creates and deletes a pages entry inside the base', function (): void {
     $entry = mustBe(StatamicEntry::class, Entry::make(), 'a new entry');
     $entry->id(TREE_ISOLATION_TRANSIENT_ID);
     $entry->collection('pages');
@@ -230,18 +259,19 @@ it('creates and deletes a pages entry inside the base', function (): void {
 
     $entry->delete();
 
-    // The delete saved a blank tree, so the shared keys now hold its throwaway path.
-    // Asserted here so a changed cache key cannot pass the case after this one
+    // The delete saved a blank tree, so the Stache's keys now hold its throwaway path.
+    // Asserted so a changed cache key cannot pass the shared-cache check vacuously
     expect(Entry::find(TREE_ISOLATION_TRANSIENT_ID))->toBeNull()
-        ->and(treeIsolationHealthTreeKeyPath())->toContain('framework/testing/collection-trees/');
+        ->and(treeIsolationHealthTreeKeyPath())->toContain('framework/testing/collection-trees/')
+        ->and(treeIsolationSharedHealthTreeKeyPath())->toBe($sharedKeyBefore)
+        ->and($sharedKeyBefore)->not->toContain('framework/testing/collection-trees/');
 });
 
 // A throwaway path left here hides the committed tree from every later test in the
 // process: `PreventMountingToTreeRoot` then resolves the wrong root for `pages` (#329)
 it('leaves no throwaway tree key for the next test', function (): void {
     expect(treeIsolationHealthTreeKeyPath())->not->toContain('framework/testing/collection-trees/');
-})->depends('it creates and deletes a pages entry inside the base');
-
+})->depends('it creates and deletes a pages entry inside the base, leaving the shared tree keys alone');
 it('leaves no uri row for an entry an earlier test created and deleted', function (): void {
     $checked = 0;
     $leaked = [];
@@ -269,4 +299,4 @@ it('leaves no uri row for an entry an earlier test created and deleted', functio
     // Asserted once over the whole sweep: which indexes are cached depends on what the
     // worker ran first, so a per-index assertion moves the band's total (#335).
     expect($leaked)->toBe([]);
-})->depends('it creates and deletes a pages entry inside the base');
+})->depends('it creates and deletes a pages entry inside the base, leaving the shared tree keys alone');

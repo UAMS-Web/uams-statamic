@@ -5,7 +5,6 @@ declare(strict_types=1);
 // The slug a real duplicate set's dropped post carries (UAMS-Web/uams-statamic-archive#2960)
 // cspell:ignore formerstudent
 
-use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\MigrationRedirectGenerator;
 use App\Services\Redirects\MigrationRedirectReport;
 use Illuminate\Support\Facades\Artisan;
@@ -16,6 +15,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Redirects\Services\MarketingRedirectStore;
 
 /**
  * Coverage for UAMS-Web/uams-statamic-archive#2943: the WXR cleaner's duplicate redirect pairs become one `301` each, from a

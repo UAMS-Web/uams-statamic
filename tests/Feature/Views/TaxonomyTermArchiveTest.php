@@ -11,11 +11,11 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
 use Tests\Concerns\RequiresContentSubmodule;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
 use Tests\TestCase;
 
-uses(CollectionTreeIsolatedTestCase::class, RequiresContentSubmodule::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class, RequiresContentSubmodule::class);
 
 const POST_TAGS_ARCHIVE_TEST_PREFIX = 'zz-posttags-archive-test-';
 
@@ -159,7 +159,7 @@ it('renders a self-provisioned post_tags archive with a descriptive title, headi
     } finally {
         tearDownPostTagsArchiveFixtures();
     }
-})->group('serial');
+});
 
 /**
  * Render the shared term-archive listing partial with the given scope.

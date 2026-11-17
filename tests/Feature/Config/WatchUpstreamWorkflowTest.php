@@ -9,13 +9,14 @@ use Symfony\Component\Yaml\Yaml;
  * Pins the `pestphp/pest-plugin-mutate` watch in `.github/workflows/watch-upstream.yml` (UAMS-Web/uams-statamic-archive#2677).
  *
  * UAMS-Web/uams-statamic-archive#2576 decided to report the five local `pest-plugin-mutate` patches upstream once the plugin
- * shows activity, and relies on this workflow to notice it. The row in
- * `.github/upstream-watches/227-pestphp-pest-plugin-mutate-43.json` watches two signals for
- * #227: `pestphp/pest-plugin-mutate#43` being merged or closed, and a Packagist release past the
- * version `composer.lock` installs.
+ * shows activity. Its row, which watches two signals for #227 (`pestphp/pest-plugin-mutate#43`
+ * being merged or closed, and a Packagist release past the version `composer.lock` installs), moved
+ * to `UAMS-Web/patches-pest-plugin-mutate` with the patches (#667). A fixture copy in
+ * `tests/Fixtures/upstream-watches/` keeps both signals exercised here, because no row that stays
+ * in this repository carries a `composer` key.
  *
  * The tests run the workflow's own step script, read from the YAML, in a scratch directory that
- * holds the real loader, the real row file and the real `composer.lock`. `gh`, `curl` and `date`
+ * holds the real loader, the staged row file and the real `composer.lock`. `gh`, `curl` and `date`
  * are stubs on `PATH`; the real `jq`, `node` and `sort` run, so a changed filter or comparison is
  * exercised rather than trusted. Each comment the script posts is appended to `posted.log`.
  *
@@ -32,9 +33,14 @@ use Symfony\Component\Yaml\Yaml;
  */
 
 /**
- * The row file under test, relative to the repository root.
+ * The `composer` row under test, as it is staged in the scratch directory.
  */
 const WATCH_UPSTREAM_MUTATE_ROW = '.github/upstream-watches/227-pestphp-pest-plugin-mutate-43.json';
+
+/**
+ * The fixture copy of the moved `pest-plugin-mutate` row, relative to the repository root (#667).
+ */
+const WATCH_UPSTREAM_MUTATE_FIXTURE = 'tests/Fixtures/upstream-watches/227-pestphp-pest-plugin-mutate-43.json';
 
 /**
  * The `released` row under test, as it is staged in the scratch directory (UAMS-Web/uams-statamic-archive#2727).
@@ -151,7 +157,7 @@ function watchUpstreamPackagist(array $versions): string
  * @param  array<string, string>  $files  Stub control files overriding the defaults, by name
  * @param  string  $row  The row file to load, relative to the repository root
  * @param  string|null  $source  The file to stage as `$row`, relative to the repository root;
- *                               `$row` itself when null
+ *                               the `pest-plugin-mutate` fixture for that row, else `$row` itself, when null
  * @return array{exit: int|null, output: string, posted: list<string>, compared: list<string>} The exit code, output, posted comments and compare paths
  */
 function runWatchUpstream(array $files = [], string $row = WATCH_UPSTREAM_MUTATE_ROW, ?string $source = null): array
@@ -165,7 +171,7 @@ function runWatchUpstream(array $files = [], string $row = WATCH_UPSTREAM_MUTATE
     // Stage the real loader, row file and lockfile where the script expects them
     copy($root.'/scripts/load-upstream-watches.mjs', $directory.'/scripts/load-upstream-watches.mjs');
     copy($root.'/scripts/check-upstream-release.mjs', $directory.'/scripts/check-upstream-release.mjs');
-    $source ??= $row;
+    $source ??= $row === WATCH_UPSTREAM_MUTATE_ROW ? WATCH_UPSTREAM_MUTATE_FIXTURE : $row;
     copy($root.'/'.$source, $directory.'/'.$row);
 
     // The stub `gh issue comment` accepts only the row's own tracker
@@ -247,8 +253,8 @@ function runWatchUpstream(array $files = [], string $row = WATCH_UPSTREAM_MUTATE
     ];
 }
 
-it('watches pest-plugin-mutate#43 and the plugin releases against #227', function (): void {
-    $row = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/'.WATCH_UPSTREAM_MUTATE_ROW), true);
+it('stages the moved pest-plugin-mutate#43 row as the composer-signal fixture', function (): void {
+    $row = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/'.WATCH_UPSTREAM_MUTATE_FIXTURE), true);
 
     expect($row)->toBe([
         'tracker' => 227,

@@ -288,8 +288,9 @@ class PdfDocumentMetadataReader
 
         // Check that tempnam succeeded
         // tempnam() fails only when the system temp directory cannot be written, which no
-        // test can arrange without breaking the run around it.
-        // @pest-mutate-ignore: FalseToTrue
+        // test can arrange without breaking the run around it, so neither the comparison nor
+        // the return under it can be reached.
+        // @pest-mutate-ignore: FalseToTrue, RemoveEarlyReturn
         if ($tempPath === false) {
             return null;
         }

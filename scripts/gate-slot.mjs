@@ -2,9 +2,8 @@
  * gate-slot.mjs: what the local CI gate checks out into its slot, and whether a slot's
  * applied Composer patches are the ones its commit declares.
  *
- * Kept apart from local-ci.mjs because scripts/worktree-slots.mjs judges the CI slot by the
- * same rules and imports them, and local-ci.mjs is retired when this repository moves onto
- * the shared runner (#256). A second copy of either rule would drift silently.
+ * Kept in one module because scripts/gate-pest.mjs, scripts/prepare-dependencies.mjs and
+ * scripts/worktree-slots.mjs all read these rules (#296). A second copy would drift silently.
  */
 
 // The submodules every gate checks out ahead of the pest job (UAMS-Web/uams-statamic-archive#2477), in the order
@@ -14,8 +13,9 @@
 // .gitignore allowlist, a 2 KB pack. `resources/forms` holds the form configurations
 // (UAMS-Web/uams-statamic-archive#2818), which the tests that read the real forms need. The two asset submodules stay out: binary-heavy,
 // and nothing in the suite reads them. One list, read from three places: the init
-// step and the post-suite litter probe in scripts/local-ci.mjs, and scripts/worktree-slots.mjs, whose
-// CI-slot expectations must name exactly what local-ci.mjs initializes. ci.yml's pest
+// step in scripts/prepare-dependencies.mjs, the post-suite litter probe in scripts/gate-pest.mjs,
+// and scripts/worktree-slots.mjs, whose CI-slot expectations must name exactly what the init step
+// initializes. ci.yml's pest
 // job names the same three by hand, and tests/Feature/GatesInitializeUsersSubmoduleTest.php
 // pins both copies.
 export const GATE_SUBMODULES = Object.freeze(['content', 'users', 'resources/forms'])

@@ -134,6 +134,20 @@ it('resolves the statamic:// scheme the same as a bare reference', function (): 
         ->toBe(ResolutionState::Ok);
 });
 
+// A reference whose body is only a query or fragment carries no id at all. It is reported as
+// missing naming the whole reference, so the report says which link to repoint: looking up the
+// empty id instead would name nothing.
+it('reports a fragment-only or query-only entry reference as missing, naming the reference', function (string $value): void {
+    $resolution = irResolver()->resolve(irOccurrence($value, LinkKind::EntryReference));
+
+    expect($resolution->state)->toBe(ResolutionState::Missing)
+        ->and($resolution->detail)->toBe($value);
+})->with([
+    'fragment only' => ['entry::#section'],
+    'query only' => ['entry::?x=1'],
+    'fragment only, statamic:// scheme' => ['statamic://entry::#section'],
+]);
+
 // A bare id from an `entries` fieldtype has no URL to probe, so an HTTP check cannot see it at
 // all. This is the case the ticket names as only reachable by lookup.
 it('resolves a bare entries-relation id, which has no URL to probe', function (): void {

@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(TestCase::class)->group('serial');
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -23,7 +25,8 @@ uses(TestCase::class)->group('serial');
 |  - service.schema_duplicate_therapy (symmetric self)
 |
 | clinical_conditions + clinical_services are flat health-scoped collections, so
-| no tree setup is needed; serial + self-cleaning, skipped when content/ is absent.
+| no tree setup is needed; self-cleaning, on a per-process copy of the content
+| (#557), skipped when content/ is absent.
 | `clinical_services.schema_subtest` is intentionally excluded (one-directional).
 */
 
@@ -83,6 +86,9 @@ function og1363MakeService(string $suffix, array $data = []): Statamic\Entries\E
 }
 
 beforeEach(function () {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::find('clinical_conditions') || ! Collection::find('clinical_services')) {
         ContentSubmodule::reportMissing('clinical ontology collections');
     }

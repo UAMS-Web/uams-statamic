@@ -6,7 +6,7 @@ description: >-
   would-be-major-at-1.0 callout, who may cut a release (only with the operator's authorization,
   given in the session's own chat or recorded as a standing grant, and within its bounds), and a
   CLOSED, ordered heading vocabulary (`## Breaking changes`, `## What's new`, `## What's fixed`,
-  `## Security`, `## Maintenance and tooling`) with one bullet per change formatted as
+  `## Security`, `## Maintenance and tooling`) with one bullet per distinct title formatted as
   `- <PR title> [#N](…/pull/N)`: using the API PR title (never the branch-name merge-commit
   subject), no `by @author`, inline code preserved. Covers the label-and-path routing rules, the
   bundled generator `gen_release_notes.py` (`--repo` required; per-repository routing by option),
@@ -113,7 +113,18 @@ re-import content, install a package, review framework compatibility.
 
 ## Line format
 
-- One bullet per change: `- <PR title> [#N](https://github.com/UAMS-Web/<repo>/pull/N)`.
+- One bullet per distinct title: `- <PR title> [#N](https://github.com/UAMS-Web/<repo>/pull/N)`.
+  Within one heading, changes whose title is identical after the generator's own cleanup
+  (prefix and `[skip ci]` stripping, casing, `&` to "and"), compared byte for byte, become one
+  bullet that carries every ref, each its own link, separated by a comma and a space: pull
+  requests first in ascending order, then direct commits in the order they landed. The merged
+  bullet sits where its first member sat, so the other bullets do not move. Example, from the
+  `aether-tables` `v0.1.0` notes, where one title was five bullets:
+  `- Sync shared skills and rules from uams-claude-skills [#5](…/pull/5), [#18](…/pull/18), [#23](…/pull/23), [#24](…/pull/24), [#25](…/pull/25)`.
+  A title that differs in any character, including a version number or a count (Dependabot
+  titles), stays its own bullet, as does the same title under a different heading, because
+  placement is a routing decision the reader relies on. A `--breaking-item` bullet is
+  hand-written and is never merged or rewritten.
 - **Use the PR title from the GitHub API**, **never the merge-commit subject**: those are branch
   slugs (`Merge pull request #N from UAMS-Web/…`), not titles. For a change pushed straight to
   `main` with no PR, use the commit subject (strip any Conventional-Commit prefix and `[skip ci]`
@@ -133,6 +144,22 @@ re-import content, install a package, review framework compatibility.
   every bullet (`Maps, Areas of Expertise, and Launch Prep`, not `Maps … & Launch Prep`).
 - **Use the Oxford comma**: `redirects, nav visibility, and a render guard`, not
   `redirects, nav visibility and a render guard`.
+
+## Running the generator and its tests: `py3`
+
+The commands below start with `py3`, a one-line shell function, because the interpreter's name
+differs by platform. On macOS and Linux it is `python3`. On Windows `python3` is usually the
+Microsoft Store alias (a zero-byte `python3.exe` in the `WindowsApps` folder) that
+does not run scripts, and the python.org installer creates no `python3.exe` at all; the `py -3`
+launcher (or `python`) is the interpreter there. Define it once per shell (Git Bash, bash or zsh):
+
+```bash
+py3() { if python3 -c '' >/dev/null 2>&1; then python3 "$@"; else py -3 "$@"; fi; }
+```
+
+A function rather than a variable, so it behaves the same under zsh, which does not split an
+unquoted `$PY` into a command and its argument. In PowerShell, call `py -3` directly in place of
+`py3`.
 
 ## Routing (which bucket): labels, paths and the diff, never a title prefix
 
@@ -210,7 +237,7 @@ both the keyword list and the path rule say *not security*. It had to be moved b
 `v0.18.0` was cut, and there was no supported way to say so.
 
 ```
-python3 .claude/skills/writing-release-notes/gen_release_notes.py v0.17.0 v0.18.0 \
+py3 .claude/skills/writing-release-notes/gen_release_notes.py v0.17.0 v0.18.0 \
     --repo UAMS-Web/<repo> \
     --lead "One-sentence milestone theme." \
     --security-item 1080
@@ -232,7 +259,7 @@ Oxford comma, `[#N]` PR links, and backticked-short-SHA links for direct commits
 on `git`, `gh`, and Python 3: no other setup.
 
 ```
-python3 .claude/skills/writing-release-notes/gen_release_notes.py <prev-tag> <new-tag> \
+py3 .claude/skills/writing-release-notes/gen_release_notes.py <prev-tag> <new-tag> \
     --repo UAMS-Web/<repo> \
     --lead "One-sentence milestone theme." \
     --breaking "<impact and required action>." \
@@ -273,7 +300,7 @@ quota: see [`github-api-budget`](../../rules/github-api-budget.md).
 This repository's invocation:
 
 ```
-python3 .claude/skills/writing-release-notes/gen_release_notes.py <prev-tag> <new-tag> \
+py3 .claude/skills/writing-release-notes/gen_release_notes.py <prev-tag> <new-tag> \
     --repo UAMS-Web/uams-statamic \
     --product-path app --product-path resources --product-path routes \
     --skip 'iteration[- ]planning|audit-run|audit note|exhaustive-audit|pacing/resume|refresh .*afk.*catalog' \
@@ -295,7 +322,7 @@ hand is expected. Create or edit the release with it (below).
 **After touching the generator, run its tests**, from the repository root:
 
 ```bash
-python3 .claude/skills/writing-release-notes/gen_release_notes.test.py
+py3 .claude/skills/writing-release-notes/gen_release_notes.test.py
 ```
 
 They are offline: the script runs over an empty range, and the routing, casing, rendering and

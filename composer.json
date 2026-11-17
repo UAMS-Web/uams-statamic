@@ -12,6 +12,16 @@
     ],
     "repositories": [
         {
+            "name": "patches-statamic-cms",
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/patches-statamic-cms.git"
+        },
+        {
+            "name": "patches-pest-plugin-browser",
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/patches-pest-plugin-browser.git"
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git"
         },
@@ -24,6 +34,7 @@
         "php": "^8.4",
         "ext-imagick": "*",
         "cweagans/composer-patches": "^2.0",
+        "daun/statamic-loupe": "^4.2",
         "el-schneider/statamic-admin-bar": "^0.3.2",
         "ezyang/htmlpurifier": "^4.19",
         "jacksleight/statamic-bard-mutator": "^3.0.5",
@@ -49,13 +60,18 @@
         "studio1902/statamic-peak-tools": "9.2.3",
         "uams-web/aether-alpine-csp-forms": "^0.3",
         "uams-web/aether-form-settings": "^0.5",
+        "uams-web/aether-incomplete-entries": "^0.2.1",
+        "uams-web/aether-listings-management": "^0.1.2",
         "uams-web/aether-multisite-forms": "^0.7",
-        "uams-web/aether-redirects": "^0.2.0",
+        "uams-web/aether-redirects": "^0.3.0",
         "uams-web/aether-search": "^0.3",
-        "uams-web/aether-wordpress-importer": "^0.34"
+        "uams-web/aether-tables": "^0.2",
+        "uams-web/aether-wordpress-importer": "^0.34",
+        "uams-web/patches-pest-plugin-mutate": "^1.4.1",
+        "uams-web/patches-statamic-cms": "^1.1"
     },
     "require-dev": {
-        "brianium/paratest": "^7.23",
+        "brianium/paratest": "~7.27.5",
         "driftingly/rector-laravel": "^2.0",
         "fakerphp/faker": "^1.23",
         "fruitcake/laravel-debugbar": "^4.0",
@@ -73,7 +89,8 @@
         "phpstan/phpstan-mockery": "^2.0",
         "phpunit/phpunit": "^13.0",
         "rector/rector": "^2.5",
-        "spatie/laravel-ignition": "^2.9.1"
+        "spatie/laravel-ignition": "^2.9.1",
+        "uams-web/patches-pest-plugin-browser": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -154,32 +171,14 @@
     },
     "extra": {
         "composer-exit-on-patch-failure": true,
+        "pinned": {
+            "brianium/paratest": "Held at ~7.27.5 because v7.28.0 breaks Pest's parallel runner (pestphp/pest#2024; decision #658). Also ignored in .github/dependabot.yml. Remove both once a Pest release accommodates 7.28.0 (#659)."
+        },
         "patches": {
             "pestphp/pest-plugin-browser": {
-                "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch",
-                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
-            },
-            "pestphp/pest-plugin-mutate": {
-                "Launch each mutant child process so a run cannot score every mutant killed without executing one (temporary; see #2322)": "patches/pest-plugin-mutate-mutant-process-launch.patch",
-                "Stop three silent @pest-mutate-ignore parsing defects suppressing nothing or the wrong set (temporary; see #2327)": "patches/pest-plugin-mutate-annotation-parsing.patch",
-                "Let a mutant child on Windows run its tests and write files, so its failure is a real kill (temporary; see #2524)": "patches/pest-plugin-mutate-windows-mutant-child.patch",
-                "Drop the run's own --filter from each mutant child so a filtered run cannot score every mutant killed (temporary; see #2570)": "patches/pest-plugin-mutate-drop-run-filter.patch",
-                "Widen or refuse a mutant child's filter that PCRE cannot compile, or that would pass cmd.exe's command-line limit on Windows, so it cannot score a kill without running a test (temporary; see #2578, #3114)": "patches/pest-plugin-mutate-windows-filter-length.patch",
-                "Create the mutations directory and fail on a mutated source that cannot be written, so a run cannot score mutants it never applied (temporary; see #2812)": "patches/pest-plugin-mutate-write-mutated-source.patch",
-                "Drop the parallel runner's options (--passthru-php, --processes and the rest) from each mutant child so a parallel run given one cannot score every mutant killed (temporary; see #2926, #2947)": "patches/pest-plugin-mutate-drop-parallel-runner-options.patch"
-            },
-            "statamic/cms": {
-                "Add blueprint-aware collection create labels": "patches/statamic-collection-create-label-blueprint.patch",
-                "Add blueprint-aware taxonomy create labels": "patches/statamic-taxonomy-create-label-blueprint.patch",
-                "Align CP updates badge with updater availableUpdatesCount": "patches/statamic-updates-overview-badge.patch",
-                "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see #2241)": "patches/statamic-stache-traverser-vanished-file.patch",
-                "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-paths.patch",
-                "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-modified.patch",
-                "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-modified.patch",
-                "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-paths.patch",
-                "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-get-item.patch",
-                "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-basic-vanished-file-get-item.patch"
+                "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
+                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch",
+                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
             }
         },
         "laravel": {
@@ -188,6 +187,9 @@
     },
     "config": {
         "optimize-autoloader": true,
+        "platform": {
+            "php": "8.4.27"
+        },
         "preferred-install": "dist",
         "process-timeout": 0,
         "sort-packages": true,

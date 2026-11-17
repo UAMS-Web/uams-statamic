@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Fields\Blueprint;
 use Statamic\Structures\CollectionStructure;
 use Tests\Support\ContentSubmodule;
-use Tests\TestCase;
+use Tests\Support\EntriesAndTermsIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(TestCase::class);
+uses(EntriesAndTermsIsolatedTestCase::class);
 
 /**
  * The sibling-collection mounts (UAMS-Web/uams-statamic-archive#1068 / UAMS-Web/uams-statamic-archive#1069): `clinical_locations` and
@@ -23,6 +25,12 @@ uses(TestCase::class);
  * entry (created then deleted). They require the `content/` submodule (which
  * carries the mount config + landing entries) and self-skip without it.
  *
+ * The entry save and delete stay out of the shared content mirror (#574): the
+ * entries base points the `entries` store at this process's copy, and the delete's
+ * redirect capture, which would save the `redirects` global into the mirror, is
+ * bound to one that records nothing. `clinical_resources` is not structured, so no
+ * tree is saved and the entries base is enough.
+ *
  * @command  php artisan test --compact tests/Feature/Mounts/SiblingCollectionMountRouteTest.php
  */
 beforeEach(function () {
@@ -32,6 +40,9 @@ beforeEach(function () {
     if (! Collection::find('clinical_resources')->mount()) {
         ContentSubmodule::reportMissing('#1068/#1069 mount pointer bump');
     }
+
+    // Deleting the entry records a redirect in the redirects global, which stays on the shared mirror (#574)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
 });
 
 it('mounts clinical_resources flat at its landing entry ({mount}/{slug})', function () {

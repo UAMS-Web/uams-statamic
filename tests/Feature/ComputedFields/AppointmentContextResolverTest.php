@@ -603,22 +603,10 @@ it('skips a non-string id in the locations list', function (): void {
         ->and($context['primary_location_id'])->toBe('sickbay');
 });
 
-// --- Equivalent mutants (documented, not killable) ---------------------------
-// `--mutate` leaves five survivors on this class that are EQUIVALENT mutants: the
-// mutation cannot change observable behavior, so no test can kill them (forcing a
-// kill would mean contorting production code to satisfy the tool). Named here so
-// the ~97% score is understood rather than silently accepted:
-//
-//   - resolve() `$count === 1 && $primary instanceof Entry` -> `... && true`:
-//     `$count === 1` only holds when a published location exists, so `$primary`
-//     is always an Entry at that point.
-//   - publishedLocations() `$id === ''` -> `$id === '...'`: an empty id that slips
-//     past is caught downstream by `find('') === null`, so the count is identical.
-//   - portalTerm() `$reference === ''` -> `$reference === '...'`: an empty
-//     reference falls through to `Term::find('portals::')`, which resolves to
-//     null, so no portal resolves either way.
-//   - portalTerm() `$found instanceof LocalizedTerm` -> `true`: `Term::find`
-//     returns a LocalizedTerm here, and the `TaxonomyTerm` branch resolves the
-//     same term data via `inDefaultLocale()`.
-//   - displayNumber() `substr($digits, 6, 4)` -> `..., 5`: a validated ten-digit
-//     string has exactly four characters from offset 6.
+// --- Equivalent mutants -------------------------------------------------------
+// The mutants no input can kill are annotated in the resolver with
+// `@pest-mutate-ignore`, each with its reason on the lines above it. Two former
+// survivors were removed from the source instead: the `$primary instanceof Entry`
+// conjunct of `show_portal` (a portal term already implies the primary location)
+// and the length argument of the last `substr()` in displayNumber() (a validated
+// ten-digit string has exactly four characters from offset 6).

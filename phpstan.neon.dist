@@ -32,15 +32,17 @@ parameters:
     # Neither obvious remedy works. `clear-result-cache` drops resultCache.php
     # and reports success for a directory it has substantially not cleared —
     # measured 2026-07-31, 6,883 files / 1.3 GB left under `cache/PHPStan/**`,
-    # every one naming the dead worktree. `--fresh` rebuilds the worktree and
-    # vendor/; the cache lives outside both. And `rm -rf` on the shared directory
+    # every one naming the dead worktree. Removing the local CI runner's slot so
+    # its next run recreates it rebuilds the worktree and vendor/; the cache
+    # lives outside both. And `rm -rf` on the shared directory
     # races whatever concurrent session is mid-analysis in it.
     #
     # A RELATIVE path here resolves against THIS file's directory, so each
     # checkout gets its own cache and a deleted one takes only its own with it.
     # There is no `--tmp-dir` CLI flag, so the config key is the only lever.
-    # Git-ignored via `/storage/phpstan` — which also keeps it out of the
-    # reused-worktree drift check in scripts/local-ci.mjs (UAMS-Web/uams-statamic-archive#1889).
+    # Git-ignored via `/storage/phpstan`, and outside the directories the shared
+    # runner's reused-slot residue check reads (`prepare.residue` in local-ci.json;
+    # UAMS-Web/uams-statamic-archive#1889).
     # Pinned by tests/Feature/PhpstanTmpDirTest.php so an edit cannot silently
     # restore the shared default.
     tmpDir: storage/phpstan

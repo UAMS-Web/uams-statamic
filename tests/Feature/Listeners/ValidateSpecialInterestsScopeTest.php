@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Listeners\ValidateSpecialInterestsScope;
 use App\Services\ComputedFields\Ontology\ImpliedOntologyComputedValues;
+use Illuminate\Support\Facades\Log;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\LegacyMockInterface;
 use Statamic\Entries\Entry;
 use Statamic\Events\EntrySaving;
 use Statamic\Facades\Entry as EntryFacade;
@@ -27,6 +29,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 | decision from the overlap query (covered in the resolver test).
 |
 | @covers \App\Listeners\ValidateSpecialInterestsScope
+|
+| Accepted equivalents, annotated in the listener: the two `array_values()` calls
+| whose keys nothing reads, since the lists are only diffed and tested for
+| emptiness. The logged `out_of_scope` list is reindexed, and that one is pinned.
 |
 | @command php artisan test --compact tests/Feature/Listeners/ValidateSpecialInterestsScopeTest.php
 */
@@ -251,4 +257,40 @@ it('still rejects a NEWLY-ADDED out-of-scope id even when other selections are g
 
     expect(fn () => $listener->handle($event))
         ->toThrow(Exception::class, 'must be a condition or service associated');
+});
+
+it('reads no saved copy when nothing is authored', function () {
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('collectionHandle')->andReturn('people');
+    $entry->shouldReceive('get')->andReturn([]);
+    $entry->shouldReceive('id')->andReturn('entry-1');
+    EntryFacade::shouldReceive('find')->never();
+
+    expect(throwableFrom(fn () => specialInterestsListener([], expectResolverCall: false)->handle(new EntrySaving($entry))))
+        ->toBeNull();
+});
+
+it('reads no saved copy of a new entry', function () {
+    // A lookup of a null id would also find nothing, so only the missing call shows
+    // that a new entry is taken to have no prior selection without one.
+    $event = specialInterestsSavingEvent('people', ['svc-a'], id: null);
+    EntryFacade::shouldReceive('find')->never();
+
+    expect(throwableFrom(fn () => specialInterestsListener(['svc-a'])->handle($event)))->toBeNull();
+});
+
+it('logs each out-of-scope id once, as a list, with the entry and collection', function () {
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+    // svc-x is second in the selection and in both fields, so a log that kept the
+    // diff's keys or the duplicate would differ from a plain one-item list.
+    $event = specialInterestsSavingEventFields('people', ['svc-a', 'svc-x'], ['svc-x']);
+
+    expect(fn () => specialInterestsListener(['svc-a'])->handle($event))
+        ->toThrow(Exception::class, 'must be a condition or service associated');
+
+    $log->shouldHaveReceived('error')->once()->with(
+        'ValidateSpecialInterestsScope::handle: Throwing exception: Special interest outside specialty scope',
+        ['entry_id' => 'entry-1', 'collection' => 'people', 'out_of_scope' => ['svc-x']],
+    );
 });

@@ -19,6 +19,7 @@ use Statamic\Sites\Sites;
 use Tests\Support\CachedSites;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\ParallelParent;
+use Tests\Support\StatamicStaticRegistries;
 use Tests\Support\ThrowawayRoot;
 use Tests\Support\WorkerCacheDirectory;
 use Throwable;
@@ -140,6 +141,13 @@ trait CreatesApplication
      */
     public function createApplication(): Application
     {
+        // Drop the route and install callbacks every earlier boot in this process
+        // pushed onto Statamic's statics, so this boot registers its routes once
+        // rather than once per earlier test (UAMS-Web/uams-statamic#540). Done before
+        // the boot rather than in `tearDown()` so that any caller of this trait, not
+        // only `Tests\TestCase`, gets a flat per-boot cost.
+        StatamicStaticRegistries::reset();
+
         /** @var Application $app */
         $app = require __DIR__.'/../bootstrap/app.php';
 
@@ -285,13 +293,26 @@ trait CreatesApplication
         $directory = storage_path('framework/testing/search/'.ThrowawayRoot::segment());
 
         $app['config']->set('statamic.search.drivers.local.path', $directory);
+        // The site search's Loupe databases, under the same per-process directory (#646)
+        $app['config']->set('statamic.search.drivers.loupe.path', $directory.'/loupe');
 
         // Start every test with no index (#572). The directory outlives the test that wrote
         // it, and an index built from one test's Stache, or a delete that left it `[]`, is
         // wrong for the next: a real search there reads a partial set or throws `Empty
         // haystack`. With no file, a search builds the index from the content this test
         // booted with, and a save rebuilds once and then inserts, as a fresh process did.
+        //
+        // A Loupe index holds its SQLite database open until the index object is freed, and
+        // the previous test's application is freed only when the collector reaches its
+        // cycles. Windows will not delete an open file, so without collecting first the
+        // previous test's Loupe databases survive the delete below and the next test searches
+        // them (#646).
+        gc_collect_cycles();
         (new Filesystem)->deleteDirectory($directory);
+
+        if (is_dir($directory)) {
+            throw new RuntimeException(\sprintf('The search index directory %s could not be removed, so this test would search the previous test\'s indexes.', $directory));
+        }
 
         if (self::$searchIndexCleanupRegistered) {
             return;
@@ -308,7 +329,7 @@ trait CreatesApplication
      * Make sure the disposable `content/` mirror the test env reads through
      * exists before anything indexes it (UAMS-Web/uams-statamic-archive#1916).
      *
-     * `test:seed-stache` builds it, and both CI and `scripts/local-ci.mjs` run
+     * `test:seed-stache` builds it, and both CI and `scripts/gate-pest.mjs` run
      * that first — so in a normal band this finds the mirror present and does
      * nothing but take a lock. It is here for the path that skips the seed: a
      * developer running one test file, or a fresh checkout. Without it the

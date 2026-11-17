@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Stache;
@@ -9,10 +10,11 @@ use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
-use Tests\Support\CollectionTreeIsolatedTestCase;
 use Tests\Support\ContentSubmodule;
+use Tests\Support\EntriesTermsAndTreesIsolatedTestCase;
+use Tests\Support\NullDeletedEntryRedirectCapture;
 
-uses(CollectionTreeIsolatedTestCase::class);
+uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -29,8 +31,8 @@ uses(CollectionTreeIsolatedTestCase::class);
 | people.expertise ↔ clinical_expertise.clinical_providers (the table's
 | `clinical_expertise.physician_expertise` does not exist and would no-op).
 |
-| These exercise the real Stache (clinical_expertise is structured), so they are
-| serial + self-cleaning and skip when content/ is absent. The provider-eligibility
+| These exercise the real Stache (clinical_expertise is structured), so they run on a
+| per-process copy of it (#557), self-cleaning, and skip when content/ is absent. The provider-eligibility
 | CP-selection scope from UAMS-Web/uams-statamic-archive#1361's AC is NOT covered here — see the issue: it is
 | deferred to coordinate with UAMS-Web/uams-statamic-archive#919's (still-open) searchable eligibility pattern.
 */
@@ -88,6 +90,9 @@ function og1361MakePerson(string $suffix, array $data = []): Statamic\Entries\En
 }
 
 beforeEach(function () {
+    // Deleting a fixture records a redirect in the redirects global, which stays on the shared mirror (#557)
+    app()->instance(DeletedEntryRedirectCapture::class, new NullDeletedEntryRedirectCapture);
+
     if (! Collection::find('people') || ! Collection::find('clinical_conditions') || ! Collection::find('clinical_expertise')) {
         ContentSubmodule::reportMissing('people + clinical ontology collections');
     }
@@ -124,7 +129,7 @@ describe('people ↔ ontology sync (#1361)', function () {
         /** @var Statamic\Entries\Entry $storedCondition */
         $storedCondition = Entry::find($condition->id());
         expect($storedCondition->get('clinical_providers'))->toContain($person->id());
-    })->group('serial');
+    });
 
     it('writes a provider onto an expertise via the corrected clinical_providers handle', function () {
         // Published AoE entries need a controlled certifying-org anchor (UAMS-Web/uams-statamic-archive#1066); inert to the sync under test.
@@ -142,7 +147,7 @@ describe('people ↔ ontology sync (#1361)', function () {
         /** @var Statamic\Entries\Entry $storedSpecialty */
         $storedSpecialty = Entry::find($specialty->id());
         expect($storedSpecialty->get('clinical_providers'))->toContain($person->id());
-    })->group('serial');
+    });
 
     it('removes the reciprocal when the person clears the edge', function () {
         /** @var Statamic\Entries\Entry $condition */
@@ -165,5 +170,5 @@ describe('people ↔ ontology sync (#1361)', function () {
         /** @var Statamic\Entries\Entry $refreshedCondition */
         $refreshedCondition = Entry::find($condition->id());
         expect($refreshedCondition->get('clinical_providers') ?? [])->not->toContain($person->id());
-    })->group('serial');
+    });
 });

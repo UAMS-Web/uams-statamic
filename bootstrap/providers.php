@@ -12,7 +12,6 @@ use App\Providers\EventServiceProvider;
 use App\Providers\HealthTalkServiceProvider;
 use App\Providers\KnowledgeBaseServiceProvider;
 use App\Providers\MapsServiceProvider;
-use App\Providers\MarketingRedirectServiceProvider;
 use App\Providers\PeopleCollectionServiceProvider;
 use App\Providers\PeopleMergeServiceProvider;
 use App\Providers\SchemaObjectServiceProvider;
@@ -33,7 +32,6 @@ return [
     CustomEntryServiceProvider::class,
     KnowledgeBaseServiceProvider::class,
     MapsServiceProvider::class,
-    MarketingRedirectServiceProvider::class,
     ValidationServiceProvider::class,
     CustomFieldComposerServiceProvider::class,
     PeopleMergeServiceProvider::class,

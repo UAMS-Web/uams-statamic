@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Services\Redirects\MarketingRedirectStore;
 use App\Services\Redirects\StructuralRedirectSynthesizer;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use UAMSWeb\Aether\Redirects\Exceptions\SiteHttpException;
+use UAMSWeb\Aether\Redirects\Services\MarketingRedirectStore;
 use UAMSWeb\Aether\Redirects\Services\NotFoundRedirectResolver;
 use UAMSWeb\Aether\Redirects\Support\RedirectStatus;
 use UAMSWeb\Aether\Redirects\Support\ValidityWindow;

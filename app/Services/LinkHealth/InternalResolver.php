@@ -88,9 +88,14 @@ final class InternalResolver
      */
     private function resolveEntry(LinkOccurrence $occurrence): Resolution
     {
-        $id = $this->referenceBody($occurrence->value, 'entry');
+        $body = $this->referenceBody($occurrence->value, 'entry');
 
-        if ($id === null) {
+        // A link may carry a query or fragment after the id (`entry::<id>#section`), which the
+        // render path keeps on the resolved URL (#582). Neither is part of the id, so looking the
+        // whole body up would report a live entry as missing.
+        $id = $body === null ? null : preg_replace('/[?#].*$/s', '', $body);
+
+        if ($id === null || $id === '') {
             return new Resolution(ResolutionState::Missing, $occurrence->value);
         }
 

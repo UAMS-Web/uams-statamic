@@ -9,6 +9,7 @@ use App\Services\People\RoleTitleScopeUnitLinker;
 use App\Support\RoleTitleDefinition;
 use App\Support\RoleTitleScopeUnit;
 use App\Support\RoleTitleValue;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Assert;
 use Statamic\Contracts\Auth\User as StatamicUser;
@@ -1077,4 +1078,69 @@ it('reads a padded article the way the composer reads it', function (): void {
 
     expect(array_column(linkScopeRows([$row], ['UAMS College of Medicine' => ['com']], false)['findings'], 'status'))
         ->toBe([RoleTitleScopeUnitLinker::MATCH]);
+});
+
+// ---
+// role-title:link-scope-units: the report the command prints over a scan
+// ---
+
+it('prints a row and a count per status for each unit-naming scope, and closes on the links made', function (bool $write, bool $withMatch, string $closing): void {
+    $medicine = labeledUnit('com', 'UAMS College of Medicine');
+    serveScopeUnits([$medicine]);
+    $saves = new ArrayObject;
+    $people = [scanPerson('spock', [typedScopeRow('of', 'Starfleet Academy')], $saves)];
+
+    if ($withMatch) {
+        $people[] = scanPerson('kirk', [typedScopeRow('of', 'UAMS College of Medicine')], $saves);
+    }
+
+    app()->instance(RoleTitleScopeUnitLinker::class, scanLinker(['people' => $people, 'organizations' => [$medicine]]));
+
+    $options = $write ? ['--collection' => 'people', '--write' => true] : ['--collection' => 'people'];
+
+    expect(Artisan::call('role-title:link-scope-units', $options))->toBe(0);
+
+    $lines = array_map(trim(...), explode("\n", Artisan::output()));
+    $cells = fn (string $entry): ?array => ($row = array_values(array_filter($lines, fn (string $line): bool => str_starts_with($line, '| '.$entry.' ')))[0] ?? null) === null
+        ? null
+        : array_map(trim(...), explode('|', trim($row, '| ')));
+
+    // The header names every column, in order
+    expect($cells('Entry'))->toBe(['Entry', 'Path', 'Status', 'Typed name', 'Unit name']);
+
+    // The unit name column is blank where no unit was found
+    expect($cells('spock'))->toBe(['spock', 'job_title.0.title', 'no_unit', 'Starfleet Academy'])
+        ->and($cells('kirk'))->toBe($withMatch ? ['kirk', 'job_title.0.title', 'match', 'UAMS College of Medicine', 'UAMS College of Medicine'] : null);
+
+    // The counts follow the table, sorted by status name, then the closing line
+    $countAt = array_search('no_unit: 1', $lines, true);
+
+    expect($countAt)->toBeInt()
+        // With no match the counts start right below the table's closing border
+        ->and($withMatch ? $lines[$countAt - 1] : $lines[$countAt - 1][0])->toBe($withMatch ? 'match: 1' : '+')
+        ->and($lines)->toContain($closing)
+        // A blank line sets the closing line apart from the counts
+        ->and($lines[array_search($closing, $lines, true) - 1])->toBe('')
+        ->and($saves['kirk'] ?? 0)->toBe($write && $withMatch ? 1 : 0);
+})->with([
+    'a dry run' => [false, true, 'Dry run: 1 scope(s) would be linked. Re-run with --write to link them.'],
+    'a write' => [true, true, 'Linked 1 scope(s); everything else was left as it is.'],
+    'a dry run with no match' => [false, false, 'Dry run: 0 scope(s) would be linked. Re-run with --write to link them.'],
+]);
+
+it('reads a --collection given no value as an empty handle, which names no collection', function (): void {
+    serveScopeUnits([]);
+    app()->instance(RoleTitleScopeUnitLinker::class, scanLinker(['organizations' => []]));
+
+    expect(Artisan::call('role-title:link-scope-units', ['--collection' => null]))->toBe(0)
+        ->and(Artisan::output())->toContain('No unit-naming role_title scopes in ``.');
+});
+
+it('scans the people collection when no --collection is given, and says when it finds nothing', function (): void {
+    serveScopeUnits([]);
+    app()->instance(RoleTitleScopeUnitLinker::class, scanLinker(['people' => [], 'organizations' => []]));
+
+    expect(Artisan::call('role-title:link-scope-units'))->toBe(0)
+        // The message alone: no table, no counts and no closing line follow it
+        ->and(array_values(array_filter(array_map(trim(...), explode("\n", Artisan::output())))))->toBe(['No unit-naming role_title scopes in `people`.']);
 });

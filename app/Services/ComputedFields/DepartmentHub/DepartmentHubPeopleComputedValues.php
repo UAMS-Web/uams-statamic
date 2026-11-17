@@ -175,26 +175,38 @@ class DepartmentHubPeopleComputedValues
         $orgId = $organization->id();
 
         // An unsaved or id-less org cannot be named by anyone's job_title yet.
+        // An empty id that got past this guard still matches nobody: normalizeIds()
+        // drops empty ids, so the scan returns the same empty collection.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         if (! \is_string($orgId) || $orgId === '') {
             return EntryCollection::make();
         }
 
         $role = $organization->value(self::ORG_ROLE_FIELD);
+        // Any non-empty fallback names no configured role either, so
+        // descriptorsForRole() returns [] for it just as it does for ''.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $role = \is_string($role) ? $role : '';
 
         $descriptors = $this->descriptorsForRole($role, $leadershipOnly);
 
         // A non-entity / unmapped org (or leadership-only with no leadership set)
         // has no people zone — the hub degrades to news-only.
+        // Without the early return the scan matches no person against an empty
+        // descriptor list and returns the same empty collection.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($descriptors === []) {
             return EntryCollection::make();
         }
 
+        // Swapping the two labels keeps the two reads on distinct keys, so the
+        // memo returns the same collections either way.
+        // @pest-mutate-ignore: TernaryNegated
         $cacheKey = sprintf(
-            'department_hub_people_%s_%s_%d',
+            'department_hub_people_%s_%s_%s',
             $orgId,
             $role,
-            $leadershipOnly ? 1 : 0
+            $leadershipOnly ? 'leadership' : 'people'
         );
 
         /** @var EntryCollection<int, Entry> $result */
@@ -336,6 +348,9 @@ class DepartmentHubPeopleComputedValues
                 continue;
             }
 
+            // The flag is read only for truthiness below and in matchLevel(), so a
+            // truthy value that was never cast selects the same descriptors.
+            // @pest-mutate-ignore: RemoveBooleanCast
             $leadership = (bool) ($descriptor['leadership'] ?? false);
 
             if ($leadershipOnly && ! $leadership) {
@@ -420,6 +435,8 @@ class DepartmentHubPeopleComputedValues
 
         $ids = \is_array($value) ? $value : [$value];
 
+        // Callers test the list for emptiness and membership only, never by key.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_filter(
             $ids,
             fn (mixed $id): bool => \is_string($id) && $id !== ''

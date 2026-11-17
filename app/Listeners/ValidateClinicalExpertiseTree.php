@@ -31,21 +31,6 @@ use Statamic\Structures\CollectionTree;
 class ValidateClinicalExpertiseTree
 {
     /**
-     * Blueprints whose entries are content pages (never valid at the subsite root).
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_BLUEPRINTS = ['basic_page', 'landing_page'];
-
-    /**
-     * Blueprints allowed to parent a content page: an Area of Expertise or another
-     * content page.
-     *
-     * @var list<string>
-     */
-    private const array CONTENT_PAGE_PARENT_BLUEPRINTS = ['clinical_expertise', 'basic_page', 'landing_page'];
-
-    /**
      * Handle the CollectionTreeSaving event.
      *
      * @param  CollectionTreeSaving  $event  The event containing the collection tree being saved
@@ -164,6 +149,9 @@ class ValidateClinicalExpertiseTree
 
             // Retrieve the entry's title for inclusion in error messages.
             $titleValue = $entry->get('title') ?? $entryId; // Fallback to ID if title is not set.
+            // The title only reaches sprintf('%s'), which prints a scalar the same with or
+            // without the cast.
+            // @pest-mutate-ignore: RemoveStringCast
             $title = \is_scalar($titleValue) ? (string) $titleValue : $entryId;
 
             // ---
@@ -177,10 +165,20 @@ class ValidateClinicalExpertiseTree
                 ) {
                     throw new Exception(sprintf("Area of Expertise entry '%s' must be top-level or the child of another Area of Expertise entry.", $title));
                 }
-            } elseif (\in_array($blueprint, self::CONTENT_PAGE_BLUEPRINTS, true)) {
+            } elseif (
+                // A blueprint handle is never a numeric string, so a loose match finds the
+                // same handles as a strict one.
+                // @pest-mutate-ignore: TrueToFalse
+                \in_array($blueprint, self::contentPageBlueprints(), true)
+            ) {
                 // A content page must be the child of an Area of Expertise or another
                 // content page — a null parent (top-level) is invalid.
-                if (! \in_array($parentBlueprint, self::CONTENT_PAGE_PARENT_BLUEPRINTS, true)) {
+                if (
+                    // The parent is a blueprint handle or null, and null matches none of the
+                    // handles loosely either, so a loose match finds the same parents.
+                    // @pest-mutate-ignore: TrueToFalse
+                    ! \in_array($parentBlueprint, self::contentPageParentBlueprints(), true)
+                ) {
                     throw new Exception(sprintf("Content page entry '%s' must be the child of an Area of Expertise entry or another content page (it cannot be top-level).", $title));
                 }
             } else {
@@ -195,12 +193,9 @@ class ValidateClinicalExpertiseTree
                 continue;
             }
 
-            // Recursively validate children, passing the current entry's blueprint as the parent.
-            if (
-                isset($node['children'])
-                && ! empty($node['children'])
-                && \is_array($node['children'])
-            ) {
+            // Recursively validate a non-empty list of children, passing the current entry's
+            // blueprint as the parent.
+            if (\is_array($node['children'] ?? null) && $node['children'] !== []) {
                 /** @var array<int, array<string, mixed>> $children */
                 $children = $node['children'];
 
@@ -210,5 +205,30 @@ class ValidateClinicalExpertiseTree
                 );
             }
         }
+    }
+
+    /**
+     * Blueprints whose entries are content pages (never valid at the subsite root).
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageBlueprints(): array
+    {
+        return ['basic_page', 'landing_page'];
+    }
+
+    /**
+     * Blueprints allowed to parent a content page: an Area of Expertise or another
+     * content page.
+     *
+     * A method rather than a constant, so the mutation runner tests each item.
+     *
+     * @return list<string>
+     */
+    private static function contentPageParentBlueprints(): array
+    {
+        return ['clinical_expertise', 'basic_page', 'landing_page'];
     }
 }

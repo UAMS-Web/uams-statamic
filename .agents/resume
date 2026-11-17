@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# SQLite and file-backed caches need no daemon or per-user authentication.
+# Keep dependency installation in setup so snapshots remain fast to activate.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+php -r 'exit(PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 4 ? 0 : 1);'
+test -f vendor/autoload.php
+test -d node_modules
+printf 'Orb dependencies are available.\n'

@@ -12,10 +12,11 @@ uses(TestCase::class);
  * `composer stan` runs `phpstan analyse` as a Composer *script*, so it inherits
  * Composer's `process-timeout` (default 300s). PHPStan over `app/` plus `tests/`
  * (extended at UAMS-Web/uams-statamic-archive#1344) exceeds that cap on a typical machine, and because the
- * local-CI runner chain-gates `phpunit` on `larastan`, the timeout does not just
- * mislabel `larastan` — it silently *skips* `phpunit`, the load-bearing job.
+ * local-CI runner runs its jobs as a chain that stops at the first failure, with
+ * `phpstan` ahead of `pest`, the timeout does not just mislabel `phpstan` — it
+ * silently *skips* `pest`, the load-bearing job.
  * A job that can silently not run is a real hole. Disabling the cap in the `config` block
- * applies it uniformly wherever `composer stan` runs (shell, `local-ci.mjs`).
+ * applies it uniformly wherever `composer stan` runs (shell, the local runner's `phpstan` job).
  *
  * No mutable App\ PHP surface under test — this asserts a `composer.json`
  * invariant, so there is no class to target for mutation testing. It is a

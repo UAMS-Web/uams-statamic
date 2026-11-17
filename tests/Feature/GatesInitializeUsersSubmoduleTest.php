@@ -267,11 +267,11 @@ it('finds a browser suite run that lacks the checkout, or runs it too late', fun
         ->and($browserSuiteJobs(['other' => ['steps' => [$checkout]]]))->toBe([]);
 });
 
-it('checks out content, users and resources/forms through GATE_SUBMODULES in scripts/local-ci.mjs', function () use ($root, $readFile): void {
-    $script = $readFile($root.'/scripts/local-ci.mjs');
+it('checks out content, users and resources/forms through GATE_SUBMODULES in scripts/prepare-dependencies.mjs', function () use ($root, $readFile): void {
+    $script = $readFile($root.'/scripts/prepare-dependencies.mjs');
     $module = $readFile($root.'/scripts/gate-slot.mjs');
 
-    // scripts/gate-slot.mjs keeps the one exported list, and the runner imports it
+    // scripts/gate-slot.mjs keeps the one exported list, and the dependencies job imports it
     // and spreads it into the one argv its init step builds, so this pins three
     // things: the list's members, that the runner takes the list from that module,
     // and that the init argv reads the list rather than carrying literals of its own.
@@ -293,28 +293,27 @@ it('checks out content, users and resources/forms through GATE_SUBMODULES in scr
     }
 });
 
-it('clears a stranded, uninitialized gate submodule directory before the init in scripts/local-ci.mjs', function () use ($root, $readFile): void {
-    $script = $readFile($root.'/scripts/local-ci.mjs');
+it('clears a stranded, uninitialized gate submodule directory before the init in scripts/prepare-dependencies.mjs', function () use ($root, $readFile): void {
+    $script = $readFile($root.'/scripts/prepare-dependencies.mjs');
 
-    // The UAMS-Web/uams-statamic-archive#1999 trap on the runner's reused worktree: the file user driver writes
+    // The UAMS-Web/uams-statamic-archive#1999 trap on the runner's reused slot: the file user driver writes
     // into an uninitialized `users/`, and `submodule update --init` then refuses the
     // clone. The guard loops over the same list the init spreads, skips anything
-    // that carries a `.git`, and removes only a plain, non-empty directory. It must
-    // sit BEFORE the init argv is built, or it guards nothing.
-    $guard = strpos($script, "for (const name of GATE_SUBMODULES) {\n            const path = join(worktreePath, name)");
-    $init = strpos($script, "const submoduleInit = ['submodule', 'update', '--init'");
+    // that carries a `.git`, and removes only a non-empty directory. It must sit
+    // BEFORE the init runs, or it guards nothing.
+    $guard = strpos($script, "for (const name of GATE_SUBMODULES) {\n        const stranded = strandedEntries(join(tree, name))");
+    $init = strpos($script, "'submodule', 'update', '--init'");
+    $helper = strpos($script, 'export function strandedEntries(path) {');
 
-    if ($guard === false || $init === false) {
-        $this->fail('The stranded-directory guard or the init argv is no longer in scripts/local-ci.mjs.');
+    if ($guard === false || $init === false || $helper === false) {
+        $this->fail('The stranded-directory guard, its helper or the init argv is no longer in scripts/prepare-dependencies.mjs.');
     }
 
     expect($guard)->toBeLessThan($init);
 
-    $body = substr($script, $guard, $init - $guard);
-
-    expect($body)->toContain("existsSync(join(path, '.git'))")
-        ->and($body)->toContain('readdirSync(path)')
-        ->and($body)->toContain('rmSync(path, { recursive: true, force: true })');
+    expect(substr($script, $guard, $init - $guard))->toContain('rmSync(join(tree, name), { recursive: true, force: true })')
+        ->and(substr($script, $helper, 400))->toContain("existsSync(join(path, '.git'))")
+        ->and(substr($script, $helper, 400))->toContain('readdirSync(path)');
 });
 
 it('parses the checkout shapes it guards and refuses the ones it must not', function () use ($submodulesInitializedBy): void {

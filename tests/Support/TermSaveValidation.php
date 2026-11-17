@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Services\EntryValidation\EntryValidator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Statamic\Fields\Blueprint;
@@ -12,6 +11,7 @@ use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Statamic\Fields\Validator;
 use Statamic\Taxonomies\LocalizedTerm;
+use UAMSWeb\Aether\IncompleteEntries\Services\EntryValidation\EntryValidator;
 
 /**
  * Validates a committed taxonomy term the way the Control Panel term editor saves it.

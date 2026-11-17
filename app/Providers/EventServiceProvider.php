@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Events\TriggerActivated;
 use App\Listeners\AppendOrphanBanner;
 use App\Listeners\AppendPublishDependencyBanner;
 use App\Listeners\CaptureRedirectOnEntryDelete;
@@ -17,8 +16,6 @@ use App\Listeners\EnforcePeopleEditingScope;
 use App\Listeners\EnforcePeopleScopeOnProviderSync;
 use App\Listeners\FlattenLogoOrderValues;
 use App\Listeners\GenerateNewsReleasePdf;
-use App\Listeners\HandlePasteTableDataTrigger;
-use App\Listeners\HandleTableDataImporterTrigger;
 use App\Listeners\HashVisibilityPassword;
 use App\Listeners\InvalidateSchemaJsonLdCache;
 use App\Listeners\MakeWorkdayFieldsReadOnly;
@@ -26,7 +23,6 @@ use App\Listeners\MirrorSpotlightFeaturedProviderRelationships;
 use App\Listeners\PreserveGoogleBusinessProfileCategoryGcid;
 use App\Listeners\PreventDeletingMounts;
 use App\Listeners\PreventMountingToTreeRoot;
-use App\Listeners\RecordIncompletePublishedEntriesContentChange;
 use App\Listeners\RedirectOrphanedDescendants;
 use App\Listeners\RedirectSuppressedDependents;
 use App\Listeners\RefreshKnowledgeBaseMountUris;
@@ -85,13 +81,6 @@ class EventServiceProvider extends BaseServiceProvider
      * @var array<string, array<int, string>> Array mapping event classes to arrays of listener classes
      */
     protected $listen = [
-        // Map TriggerActivated event to its listeners; each ignores triggers it
-        // does not own, and the route uses the first non-empty response
-        TriggerActivated::class => [
-            HandleTableDataImporterTrigger::class,
-            HandlePasteTableDataTrigger::class,
-        ],
-
         // Store current entry for {{ disambiguate_title }} when id is null (new entries);
         // validate knowledge base entries when saving;
         // validate clinical expertise (Areas of Expertise) entries when saving
@@ -179,14 +168,12 @@ class EventServiceProvider extends BaseServiceProvider
         // `schema_templates.json_ld_cache.ttl_seconds` instead.
         // ---
 
-        // Invalidate Incomplete Published Entries widget cache when content changes;
         // Invalidate schema JSON-LD cache when entry is saved;
         // disambiguate duplicate entry titles (append (2), (3), ...);
         // clear current entry used by {{ disambiguate_title }} tag;
         // queue a location's Arkansas region derivation off the save path (UAMS-Web/uams-statamic-archive#1112)
         // re-index linked people's eligibility when a practice location changes (UAMS-Web/uams-statamic-archive#3123)
         EntrySaved::class => [
-            RecordIncompletePublishedEntriesContentChange::class,
             ScanLinksOnPublish::class,
             DisambiguateEntryTitle::class,
             SetCurrentEntryForTitleFormat::class,
