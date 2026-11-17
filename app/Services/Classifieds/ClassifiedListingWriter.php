@@ -408,11 +408,8 @@ class ClassifiedListingWriter
      */
     private function uniqueSlug(string $title): string
     {
-        $base = Str::slug($title);
-
-        // An empty base with a hyphen reads back the same: the slug getter runs Str::slug(), which drops it
-        // @pest-mutate-ignore: EmptyStringToNotEmpty
-        return ($base !== '' ? $base.'-' : '').Str::lower(Str::random(6));
+        // Slug the title and suffix together, so a title with no letters or digits leaves the suffix alone
+        return Str::slug($title.' '.Str::random(6));
     }
 
     /**
