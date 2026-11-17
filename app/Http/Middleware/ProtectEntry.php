@@ -111,6 +111,8 @@ class ProtectEntry
             if (! $this->privateEntryAccess->canView($entry)) {
                 // The header keeps the half-measure cache, which stores 404s, from
                 // pinning this refusal at a URL an editor may open.
+                // The 404 page does not render the exception message, so its text is never sent.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
                 abort(404, '', ['X-Statamic-Private' => 'true']);
             }
         }
@@ -157,10 +159,14 @@ class ProtectEntry
             if (RateLimiter::tooManyAttempts($attemptKey, self::MAX_PASSWORD_ATTEMPTS)) {
                 $retryAfter = RateLimiter::availableIn($attemptKey);
 
+                // The header bag casts the value to a string itself, so the header sent is the same.
+                // @pest-mutate-ignore: RemoveStringCast
+                $retryAfterHeader = (string) $retryAfter;
+
                 return $this->uncacheable(
                     $this->prompt($entry, sprintf('Too many password attempts. Try again in %d seconds.', $retryAfter))
                         ->setStatusCode(Response::HTTP_TOO_MANY_REQUESTS)
-                        ->header('Retry-After', (string) $retryAfter),
+                        ->header('Retry-After', $retryAfterHeader),
                     $private,
                     true
                 );
@@ -170,6 +176,9 @@ class ProtectEntry
 
             // Get the submitted password from the request
             $submittedPassword = $request->input('password');
+            // A non-scalar submission must fail; the empty string and any other fixed
+            // fallback both fail against a stored password, so the fallback text is unobservable.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             $inputPassword = is_scalar($submittedPassword) ? (string) $submittedPassword : '';
 
             // Verify the submitted password against the entry's password. The
@@ -228,6 +237,9 @@ class ProtectEntry
      */
     protected function prompt(Entry $entry, ?string $error = null): HttpResponse
     {
+        // The shipped `password_prompt` view does not read `entry`; it is passed for a
+        // published override of the view, as it was before the error line was added.
+        // @pest-mutate-ignore: RemoveArrayItem
         $data = ['entry' => $entry];
 
         if ($error !== null) {
@@ -294,16 +306,22 @@ class ProtectEntry
             $id = $owner->id();
 
             if (is_scalar($id)) {
+                // An int id and its string form are the same array key, so the cast is unobservable.
+                // @pest-mutate-ignore: RemoveStringCast
                 if (isset($visited[(string) $id])) {
                     break;
                 }
 
+                // isset() is true for a stored false too, and an int id and its string form are one key.
+                // @pest-mutate-ignore: RemoveStringCast, TrueToFalse
                 $visited[(string) $id] = true;
             }
 
             $origin = $owner->origin();
 
             if (! $origin instanceof Entry) {
+                // A continue re-reads the same owner, whose id is now visited, and breaks there.
+                // @pest-mutate-ignore: BreakToContinue
                 break;
             }
 
