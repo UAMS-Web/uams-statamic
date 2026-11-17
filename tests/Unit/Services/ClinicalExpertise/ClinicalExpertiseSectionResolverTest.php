@@ -3,12 +3,20 @@
 declare(strict_types=1);
 
 use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
+use Illuminate\Support\Facades\Facade;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Entries\Entry;
+use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Fields\Blueprint;
+use Statamic\Stache\Query\EntryQueryBuilder;
 
 uses(MockeryPHPUnitIntegration::class);
+
+// No application is booted here, so nothing else resets a facade a test swaps for a mock.
+afterEach(function (): void {
+    Facade::clearResolvedInstances();
+});
 
 /**
  * @covers \App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver
@@ -18,6 +26,8 @@ uses(MockeryPHPUnitIntegration::class);
  * also constrains the route), the blueprint guard, and the populated-vs-empty
  * decision, using a mocked Entry so no Stache is required. The structure-children
  * branch is driven through the protected `hasPublishedExpertiseChildren` seam.
+ *
+ * Mutation: 100% on App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver (87 mutants, all tested; Windows, #885).
  *
  * @command  php artisan test --compact tests/Unit/Services/ClinicalExpertise/ClinicalExpertiseSectionResolverTest.php
  */
@@ -162,7 +172,61 @@ it('reads the descendant-prefixed overrides for the structure-children section',
     expect($payload['source'])->toBe('@children');
     expect($payload['is_children'])->toBeTrue();
     expect($payload['override_prefix'])->toBe('clinical_expertise_descendant');
+    expect($payload['section_label'])->toBe('Sub-specialties');
     expect($payload['section_intro'])->toBe('Sub-specialties.');
+});
+
+it('resolves each relationship section with its own label and override prefix', function (string $section, string $source, string $label) {
+    $entry = fakeExpertiseEntry('clinical_expertise', [
+        $source => ['item-1'],
+        $source.'_fpage_intro' => 'Intro for '.$section,
+    ]);
+
+    $payload = mustExist((new ClinicalExpertiseSectionResolver)->resolve($entry, $section), 'payload');
+
+    expect($payload['section_label'])->toBe($label)
+        ->and($payload['source'])->toBe($source)
+        ->and($payload['override_prefix'])->toBe($source)
+        ->and($payload['section_intro'])->toBe('Intro for '.$section);
+})->with([
+    'locations' => ['locations', 'clinical_locations', 'Related Clinical Locations'],
+    'related' => ['related', 'clinical_expertise_related', 'Related Areas of Expertise'],
+    'resources' => ['resources', 'clinical_resources', 'Related Clinical Resources'],
+]);
+
+/**
+ * Swap the Entry facade's query for a builder that expects exactly the published-children
+ * filter on the given parent id, and answers with the given count.
+ */
+function expectPublishedChildrenQuery(string $parentId, int $count): void
+{
+    $query = Mockery::mock(EntryQueryBuilder::class);
+    $query->expects('where')->with('collection', 'clinical_expertise')->andReturnSelf();
+    $query->expects('where')->with('parent', $parentId)->andReturnSelf();
+    $query->expects('where')->with('blueprint', 'clinical_expertise')->andReturnSelf();
+    $query->expects('whereStatus')->with('published')->andReturnSelf();
+    $query->expects('count')->andReturn($count);
+
+    EntryFacade::shouldReceive('query')->once()->andReturn($query);
+}
+
+it('counts published clinical_expertise children of the entry for the specialties section', function (int $count, bool $populated) {
+    expectPublishedChildrenQuery('aoe-1', $count);
+
+    $sections = (new ClinicalExpertiseSectionResolver)->populatedSections(fakeExpertiseEntry('clinical_expertise', []));
+
+    expect(in_array('specialties', $sections, true))->toBe($populated);
+})->with([
+    'no children' => [0, false],
+    'one child' => [1, true],
+    'several children' => [3, true],
+]);
+
+it('treats an entry with no string id as having no children, without querying', function () {
+    EntryFacade::shouldReceive('query')->never();
+
+    expect((new ClinicalExpertiseSectionResolver)->resolve(fakeExpertiseEntry('clinical_expertise', [], id: null), 'specialties'))
+        ->toBeNull();
 });
 
 it('404s the specialties section when the entry has no published expertise children', function () {
