@@ -306,6 +306,108 @@ it('reads a preset definition as static unless it says it has config', function 
     expect($fieldtype->options())->toBe(PRESET_OPTIONS_MANUAL);
 });
 
+it('offers every built-in preset with its config fields shown only for that preset', function (): void {
+    $languageScope = [
+        'display' => __('Language Scope'),
+        'instructions' => __('Choose which types of languages to include.'),
+        'type' => 'checkboxes',
+        'options' => [
+            'individual' => __('Individual Languages'),
+            'collective' => __('Collective Languages'),
+            'macrolanguages' => __('Macrolanguages'),
+        ],
+        'default' => ['individual'],
+        'validate' => ['required'],
+        'if' => ['preset' => 'languages'],
+    ];
+    $languageStandard = [
+        'display' => __('Language Standard'),
+        'instructions' => __('Choose the language standard to use.'),
+        'type' => 'select',
+        'options' => [
+            'iso639' => __('ISO 639'),
+            'bcp47' => __('BCP 47'),
+        ],
+        'default' => 'iso639',
+        'validate' => ['required'],
+        'if' => ['preset' => 'languages'],
+    ];
+    $stateTypes = [
+        'display' => __('State Types'),
+        'instructions' => __('Choose which types of U.S. states to include.'),
+        'type' => 'checkboxes',
+        'options' => [
+            'state' => __('States'),
+            'territory' => __('Territories'),
+            'district' => __('Districts'),
+        ],
+        'default' => ['state'],
+        'validate' => ['required'],
+        'if' => ['preset' => 'us_states'],
+    ];
+    $mimeTypeCategories = [
+        'display' => __('MIME Type Categories'),
+        'instructions' => __('Choose which MIME type categories to include.'),
+        'type' => 'checkboxes',
+        'options' => [
+            'application' => __('Application'),
+            'audio' => __('Audio'),
+            'font' => __('Font'),
+            'image' => __('Image'),
+            'message' => __('Message'),
+            'model' => __('Model'),
+            'text' => __('Text'),
+            'video' => __('Video'),
+        ],
+        'default' => ['application', 'audio', 'font', 'image', 'message', 'model', 'text', 'video'],
+        'validate' => ['required'],
+        'if' => ['preset' => 'mime_types'],
+    ];
+
+    $fields = presetOptionsHarness()->presetConfigField();
+
+    expect(data_get($fields, 'preset.options'))->toBe([
+        'none' => __('No Preset (Use Manual Options)'),
+        'us_states' => __('U.S. States, Territories and Districts'),
+        'canadian_provinces' => __('Canadian Provinces'),
+        'countries' => __('Countries'),
+        'languages' => __('Languages'),
+        'currencies' => __('Currencies'),
+        'months' => __('Months'),
+        'days_of_week' => __('Days of Week'),
+        'yes_no' => __('Yes/No'),
+        'true_false' => __('True/False'),
+        'mime_types' => __('MIME Types'),
+        'mime_categories' => __('MIME Type Categories'),
+    ])
+        ->and(array_slice($fields, 1))->toBe([
+            'language_scope' => $languageScope,
+            'language_standard' => $languageStandard,
+            'state_types' => $stateTypes,
+            'mime_type_categories' => $mimeTypeCategories,
+        ]);
+});
+
+it('hides the Select config fields each built-in preset makes irrelevant', function (): void {
+    $fields = [];
+
+    foreach (presetOptionsHarness()->parentConfig() as $section) {
+        expect($section)->toBeArray()->toHaveKey('fields');
+        /** @var array{fields: array<string, array<string, mixed>>} $section */
+        $fields = [...$fields, ...$section['fields']];
+    }
+
+    $everyPreset = 'contains_any us_states,canadian_provinces,countries,languages,currencies,months,days_of_week,yes_no,true_false,mime_types,mime_categories';
+
+    expect($fields)->toHaveKeys(['options', 'taggable', 'placeholder', 'multiple', 'max_items', 'cast_booleans'])
+        ->and($fields['options']['if'])->toBe(['preset' => 'custom isEmptyOrValue:none'])
+        ->and($fields['taggable']['unless'])->toBe(['preset' => $everyPreset])
+        ->and($fields['cast_booleans']['unless'])->toBe(['preset' => $everyPreset])
+        ->and($fields['multiple']['unless'])->toBe(['preset' => 'contains_any yes_no,true_false'])
+        ->and($fields['max_items']['unless'])->toBe(['preset' => 'contains_any yes_no,true_false'])
+        ->and($fields['placeholder'])->not->toHaveKey('unless');
+});
+
 it('builds the preset select from the definitions, then the preset config fields', function (): void {
     $fieldtype = presetOptionsHarness();
     $fieldtype->definitions = ['shapes' => ['display' => 'Shapes'], 'blank' => []];
@@ -330,8 +432,8 @@ it('builds the preset select from the definitions, then the preset config fields
 it('hides the parent fields a preset makes irrelevant', function (): void {
     $fieldtype = presetOptionsHarness();
     $fieldtype->definitions = [
-        'shapes' => ['config' => ['cast_booleans' => false, 'multiple' => false]],
-        'colors' => ['config' => ['cast_booleans' => true]],
+        'shapes' => ['config' => ['cast_booleans', ['not a name'], 'multiple']],
+        'colors' => ['config' => ['cast_booleans']],
         'sizes' => ['config' => 'not an array'],
         'weights' => [],
     ];
