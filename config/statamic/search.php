@@ -50,12 +50,15 @@ return [
                 'title',
                 'page_builder', // Added by studio1902/statamic-peak
             ],
-            // Loupe returns at most this many hits per search. 200 keeps a lookup inside the
-            // 400ms p95 gate at the launch size of 46,777 documents (#511). The site filter is
-            // applied inside Loupe, before this cap (App\Search\Loupe\SiteFilteredLoupeIndex),
-            // so it counts only the sites a search covers (#646). Loupe's own ranking rules
-            // order the hits; the Comb `match_weights` this index carried do not apply to it.
-            'max_total_hits' => 200,
+            // Loupe keeps at most this many matching documents per search word, cut before
+            // ranking, so a word matching more can lose some of its best results. 1000, Loupe's
+            // own default, keeps a lookup at a 313 to 329ms p95 at the launch size of 46,777
+            // documents, under the 400ms gate, and changes the first page of 6 of 32 measured
+            // queries (#511, decided on #646). The cap applies before the site filter, so a
+            // site-scoped search can also lose the site's matches that fall past it. Loupe's own
+            // ranking rules order the hits; the Comb `match_weights` this index carried do not
+            // apply to it.
+            'max_total_hits' => 1000,
         ],
 
         // Collection Entries

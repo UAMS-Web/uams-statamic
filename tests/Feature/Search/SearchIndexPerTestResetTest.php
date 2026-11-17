@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+// cspell:ignore quadrotriticale Tribble
+
 use App\Search\Loupe\SiteFilteredLoupeIndex;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Search;
 use Tests\TestCase;
@@ -29,13 +32,26 @@ function perTestResetDefaultIndex(): SiteFilteredLoupeIndex
     return mustBe(SiteFilteredLoupeIndex::class, Search::index('default'), 'the default search index');
 }
 
+/**
+ * The raw hits the default index returns for a query, without loading their entries.
+ *
+ * @return Collection<array-key, mixed>
+ */
+function perTestResetHits(SiteFilteredLoupeIndex $index, string $query): Collection
+{
+    $builder = $index->search($query);
+    $builder->withoutData();
+
+    return mustBe(Collection::class, $builder->get(), 'the search hits');
+}
+
 it('leaves a default index behind holding a document no content has, as an earlier test could', function (): void {
     $index = perTestResetDefaultIndex();
 
     $index->client()->addDocuments([['id' => 'entry::not-in-any-content', 'title' => 'Tribble quadrotriticale']]);
 
     expect(File::exists($index->path()))->toBeTrue()
-        ->and($index->search('quadrotriticale')->withoutData()->get())->toHaveCount(1);
+        ->and(perTestResetHits($index, 'quadrotriticale'))->toHaveCount(1);
 });
 
 it('starts with no index and searches one built from the booted content', function (): void {
@@ -46,6 +62,6 @@ it('starts with no index and searches one built from the booted content', functi
 
     $index->ensureExists();
 
-    expect($index->search('quadrotriticale')->withoutData()->get())->toBeEmpty()
-        ->and($index->search('uams')->withoutData()->get())->not->toBeEmpty();
+    expect(perTestResetHits($index, 'quadrotriticale'))->toBeEmpty()
+        ->and(perTestResetHits($index, 'uams'))->not->toBeEmpty();
 });

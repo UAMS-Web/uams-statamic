@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Search\Loupe;
 
+use App\Providers\SearchServiceProvider;
 use Daun\StatamicLoupe\Loupe\Index;
 use Illuminate\Support\Collection;
 use Loupe\Loupe\Configuration;
@@ -12,21 +13,22 @@ use Statamic\Contracts\Query\ContainsQueryableValues;
 use Statamic\Contracts\Search\Searchable;
 
 /**
- * A `loupe` search index that filters by site inside Loupe, before its hit cap (#646).
+ * A `loupe` search index that stores each document's site and hands Loupe the site filter (#646).
  *
- * `daun/statamic-loupe` asks Loupe for at most `max_total_hits` hits and leaves every
- * `where` to Statamic, which applies them to those hits afterwards. With the cap at 200 a
- * site-scoped search for a term that matches more than 200 documents across all sites then
- * shows only the share of the first 200 that belongs to the site, however many more the site
- * holds. This index stores each document's site as a Loupe filterable attribute, and
- * {@see SiteFilteredLoupeQuery} hands the query's site constraint to Loupe, so the cap counts
- * only documents of the sites asked for.
+ * This index stores each document's site as a Loupe filterable attribute, and
+ * {@see SiteFilteredLoupeQuery} hands the query's site constraint to Loupe as a filter. The
+ * stored site is also what Statamic's own `site` filter reads on a hit returned without its
+ * entry ({@see ContainsQueryableValues::getQueryableValue()}), so the two filters agree.
+ *
+ * Handing the filter to Loupe does not get past `max_total_hits`. Loupe limits each search
+ * word's matching documents to the cap before it applies the filter, so a site-scoped search
+ * for a word that matches more documents across all sites than the cap shows only those of the
+ * site's matches that survived the cap (#511).
  *
  * The site is stored under {@see SITE_ATTRIBUTE} rather than as a searchable field, so a query
- * never matches a site handle. It is the value Statamic's own `site` filter reads afterwards
- * ({@see ContainsQueryableValues::getQueryableValue()}), so the two filters agree.
+ * never matches a site handle.
  *
- * Bound in place of the add-on's index in {@see \App\Providers\SearchServiceProvider}, so every
+ * Bound in place of the add-on's index in {@see SearchServiceProvider}, so every
  * index on the `loupe` driver is one of these.
  */
 class SiteFilteredLoupeIndex extends Index
@@ -44,7 +46,10 @@ class SiteFilteredLoupeIndex extends Index
     #[\Override]
     public function search($query): SiteFilteredLoupeQuery
     {
-        return new SiteFilteredLoupeQuery($this)->query($query);
+        $builder = new SiteFilteredLoupeQuery($this);
+        $builder->query($query);
+
+        return $builder;
     }
 
     /**
@@ -102,22 +107,28 @@ class SiteFilteredLoupeIndex extends Index
             return collect();
         }
 
+        $highlightTags = $this->configStrings('highlight_tags');
+
+        if (\count($highlightTags) !== 2) {
+            throw $this->invalidSetting('highlight_tags', 'an opening and a closing tag');
+        }
+
         $parameters = SearchParameters::create()
             ->withQuery($query)
             ->withMatchingStrategy($this->matchingStrategy())
             ->withHitsPerPage($this->hitsPerPage())
             ->withShowRankingScore(true)
-            ->withRankingScoreThreshold($this->config['ranking_score_threshold'])
+            ->withRankingScoreThreshold((float) $this->configNumber('ranking_score_threshold'))
             ->withAttributesToHighlight(
-                array_unique([...$this->config['highlight_attributes'], ...array_keys($this->snippetAttributes())]),
-                $this->config['highlight_tags'][0],
-                $this->config['highlight_tags'][1]
+                array_values(array_unique([...$this->configStrings('highlight_attributes'), ...array_keys($this->snippetAttributes())])),
+                $highlightTags[0],
+                $highlightTags[1]
             )
             ->withAttributesToCrop(
                 $this->snippetAttributes(),
-                $this->config['snippet_length'],
-                $this->config['snippet_marker'],
-                $this->config['snippet_max_fragments']
+                (int) $this->configNumber('snippet_length'),
+                $this->configString('snippet_marker'),
+                (int) $this->configNumber('snippet_max_fragments')
             );
 
         if ($sites !== null) {
@@ -132,8 +143,87 @@ class SiteFilteredLoupeIndex extends Index
             ->map(fn (array $hit): array => [
                 ...$hit,
                 'reference' => $hit[$primaryKey],
-                'search_score' => floor($hit['_rankingScore'] * 100),
+                'search_score' => floor((is_numeric($hit['_rankingScore'] ?? null) ? (float) $hit['_rankingScore'] : 0.0) * 100),
             ]);
+    }
+
+    /**
+     * One setting of this index, after the add-on's defaults are merged in.
+     *
+     * @param  string  $key  The config key.
+     */
+    private function setting(string $key): mixed
+    {
+        $config = $this->config();
+
+        return \is_array($config) ? ($config[$key] ?? null) : null;
+    }
+
+    /**
+     * The error for a setting that does not hold what the search needs, naming the index.
+     *
+     * @param  string  $key  The config key.
+     * @param  string  $expected  What the setting must hold.
+     */
+    private function invalidSetting(string $key, string $expected): \UnexpectedValueException
+    {
+        $name = $this->name();
+
+        return new \UnexpectedValueException(\sprintf(
+            'Search index [%s] setting [%s] must hold %s.',
+            \is_string($name) ? $name : '?',
+            $key,
+            $expected
+        ));
+    }
+
+    /**
+     * A numeric setting of this index.
+     *
+     * @param  string  $key  The config key.
+     */
+    private function configNumber(string $key): int|float
+    {
+        $value = $this->setting($key);
+
+        if (! is_numeric($value)) {
+            throw $this->invalidSetting($key, 'a number');
+        }
+
+        return $value + 0;
+    }
+
+    /**
+     * A string setting of this index.
+     *
+     * @param  string  $key  The config key.
+     */
+    private function configString(string $key): string
+    {
+        $value = $this->setting($key);
+
+        if (! \is_string($value)) {
+            throw $this->invalidSetting($key, 'a string');
+        }
+
+        return $value;
+    }
+
+    /**
+     * A list-of-strings setting of this index; absent reads as empty.
+     *
+     * @param  string  $key  The config key.
+     * @return list<string>
+     */
+    private function configStrings(string $key): array
+    {
+        $value = $this->setting($key) ?? [];
+
+        if (! \is_array($value) || array_filter($value, \is_string(...)) !== $value) {
+            throw $this->invalidSetting($key, 'a list of strings');
+        }
+
+        return array_values($value);
     }
 
     /**

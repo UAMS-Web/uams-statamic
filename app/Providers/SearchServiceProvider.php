@@ -40,7 +40,7 @@ final class SearchServiceProvider extends ServiceProvider
         $this->app->bind(ResponseAllowance::class, SecurityHeadersResponseAllowance::class);
 
         // The `loupe` driver makes its index through the container, so every `loupe` index
-        // filters by site before its hit cap (#646)
+        // stores each document's site and hands Loupe the site filter (#646)
         $this->app->bind(LoupeIndex::class, SiteFilteredLoupeIndex::class);
     }
 

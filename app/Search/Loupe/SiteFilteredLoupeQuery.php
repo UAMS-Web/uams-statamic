@@ -8,12 +8,14 @@ use Daun\StatamicLoupe\Loupe\Query;
 use Illuminate\Support\Collection;
 
 /**
- * A `loupe` search query that hands its site constraint to Loupe before the hit cap (#646).
+ * A `loupe` search query that hands its site constraint to Loupe (#646).
  *
  * Statamic applies a query's `where` clauses to the hits the driver returns. This builder reads
- * the clauses on `site` and passes the sites they allow to {@see SiteFilteredLoupeIndex}, so
- * Loupe caps the hits of those sites only. The clauses also stay on the query, so Statamic still
- * applies them afterwards and the result is the same whether or not they were handed down.
+ * the clauses on `site` and passes the sites they allow to {@see SiteFilteredLoupeIndex} as a
+ * Loupe filter. Loupe applies that filter after it limits each search word's matches to
+ * `max_total_hits`, so it does not recover a site's matches the cap has already cut (#511).
+ * The clauses also stay on the query, so Statamic still applies them afterwards and the result
+ * is the same whether or not they were handed down.
  *
  * Only a query whose clauses are all joined by `and` is narrowed: under an `or`, a site clause
  * does not bound the result, so the search then runs across every site as before.
@@ -48,8 +50,11 @@ class SiteFilteredLoupeQuery extends Query
     {
         $sites = null;
 
-        foreach ($this->wheres as $where) {
-            if (($where['boolean'] ?? 'and') !== 'and') {
+        $wheres = \is_array($this->wheres) ? $this->wheres : [];
+
+        foreach ($wheres as $where) {
+            // A clause Statamic stores in a shape this builder does not know leaves the site unbounded
+            if (! \is_array($where) || ($where['boolean'] ?? 'and') !== 'and') {
                 return null;
             }
 
@@ -72,7 +77,7 @@ class SiteFilteredLoupeQuery extends Query
     /**
      * The site handles one `site` clause allows, or null when it is not one this builder reads.
      *
-     * @param  array<string, mixed>  $where  The clause, as Statamic's query builder stores it.
+     * @param  array<mixed>  $where  The clause, as Statamic's query builder stores it.
      * @return list<string>|null
      */
     private static function siteValues(array $where): ?array
