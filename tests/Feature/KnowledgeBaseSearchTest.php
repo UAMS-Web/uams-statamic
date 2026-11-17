@@ -23,7 +23,7 @@ it('registers a knowledge_bases search index over the collection', function (): 
     /** @var array{driver: string, searchables: string, fields: array<int, string>} $index */
     $index = config('statamic.search.indexes.knowledge_bases');
 
-    expect($index['driver'])->toBe('local')
+    expect($index['driver'])->toBe('loupe')
         ->and($index['searchables'])->toBe('collection:knowledge_bases')
         // The article body/summary fields are indexed so KB search matches content,
         // not just titles.

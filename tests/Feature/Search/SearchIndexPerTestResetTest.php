@@ -2,66 +2,50 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Collection;
+use App\Search\Loupe\SiteFilteredLoupeIndex;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Search;
-use Statamic\Search\Comb\Index;
-use Statamic\Search\QueryBuilder;
 use Tests\TestCase;
 
 /**
  * Each test starts with no search index, whatever the previous test in the process left (#572).
  *
  * The per-process index directory used to outlive every test, so a test that saved or deleted
- * entries left `default` built from its own Stache, and a later real search read that. A delete
- * that emptied the index left `[]`, on which Comb throws `Empty haystack`.
+ * entries left `default` built from its own Stache, and a later real search read that. The
+ * `default` index is a Loupe database since #646, and it lives under the same per-process
+ * directory, so the reset covers it too.
  *
- * The two tests below run in order in one process, as Pest runs a file. The first leaves the
- * empty index; the second boots after it and searches the real index. Run alone, the second
- * passes trivially, so it is the pair that carries the regression.
+ * The two tests below run in order in one process, as Pest runs a file. The first leaves a
+ * `default` index holding a document no content has; the second boots after it and searches the
+ * real index. Run alone, the second passes trivially, so it is the pair that carries the
+ * regression.
  *
  * @command  php artisan test --compact tests/Feature/Search/SearchIndexPerTestResetTest.php
  */
 uses(TestCase::class);
 
-function perTestResetDefaultIndex(): Index
+function perTestResetDefaultIndex(): SiteFilteredLoupeIndex
 {
-    return mustBe(Index::class, Search::index('default'), 'the default search index');
+    return mustBe(SiteFilteredLoupeIndex::class, Search::index('default'), 'the default search index');
 }
 
-function perTestResetDefaultIndexPath(): string
-{
-    return mustBeString(perTestResetDefaultIndex()->path(), 'the default search index path');
-}
+it('leaves a default index behind holding a document no content has, as an earlier test could', function (): void {
+    $index = perTestResetDefaultIndex();
 
-it('leaves an empty default index behind, as an earlier test that deleted entries could', function (): void {
-    $path = perTestResetDefaultIndexPath();
+    $index->client()->addDocuments([['id' => 'entry::not-in-any-content', 'title' => 'Tribble quadrotriticale']]);
 
-    File::ensureDirectoryExists(dirname($path));
-    File::put($path, '[]');
-
-    expect(File::get($path))->toBe('[]');
+    expect(File::exists($index->path()))->toBeTrue()
+        ->and($index->search('quadrotriticale')->withoutData()->get())->toHaveCount(1);
 });
 
 it('starts with no index and searches one built from the booted content', function (): void {
     $index = perTestResetDefaultIndex();
 
-    // Searched before anything else touches the index: with the previous test's `[]` still in
-    // place, this is the call that throws `Empty haystack`.
-    $built = mustBe(Index::class, $index->ensureExists(), 'the built default index');
-    $results = mustBe(QueryBuilder::class, $built->search('uams'), 'the search query')->get();
+    // Nothing is on disk before this test touches the index: the previous test's database is gone
+    expect(File::exists($index->path()))->toBeFalse();
 
-    /** @var array<string, mixed> $builtDocuments */
-    $builtDocuments = json_decode(File::get(perTestResetDefaultIndexPath()), true, flags: JSON_THROW_ON_ERROR);
-    $builtCount = count($builtDocuments);
+    $index->ensureExists();
 
-    // The same index a fresh build from this test's content produces, not a partial one.
-    $index->update();
-
-    /** @var array<string, mixed> $fresh */
-    $fresh = json_decode(File::get(perTestResetDefaultIndexPath()), true, flags: JSON_THROW_ON_ERROR);
-
-    expect($builtCount)->toBeGreaterThan(0)
-        ->and($builtCount)->toBe(count($fresh))
-        ->and($results)->toBeInstanceOf(Collection::class);
+    expect($index->search('quadrotriticale')->withoutData()->get())->toBeEmpty()
+        ->and($index->search('uams')->withoutData()->get())->not->toBeEmpty();
 });

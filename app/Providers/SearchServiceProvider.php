@@ -6,8 +6,10 @@ namespace App\Providers;
 
 use App\Search\AreaOfExpertiseSectionProvider;
 use App\Search\AreaOfExpertiseSuggestionPresenter;
+use App\Search\Loupe\SiteFilteredLoupeIndex;
 use App\Search\PrivateEntryVisibility;
 use App\Search\SecurityHeadersResponseAllowance;
+use Daun\StatamicLoupe\Loupe\Index as LoupeIndex;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Facades\Search;
 use UAMSWeb\Aether\Search\Contracts\EntryVisibility;
@@ -36,6 +38,10 @@ final class SearchServiceProvider extends ServiceProvider
         $this->app->bind(EntryVisibility::class, PrivateEntryVisibility::class);
         $this->app->bind(SuggestionPresenter::class, AreaOfExpertiseSuggestionPresenter::class);
         $this->app->bind(ResponseAllowance::class, SecurityHeadersResponseAllowance::class);
+
+        // The `loupe` driver makes its index through the container, so every `loupe` index
+        // filters by site before its hit cap (#646)
+        $this->app->bind(LoupeIndex::class, SiteFilteredLoupeIndex::class);
     }
 
     /**

@@ -293,13 +293,26 @@ trait CreatesApplication
         $directory = storage_path('framework/testing/search/'.ThrowawayRoot::segment());
 
         $app['config']->set('statamic.search.drivers.local.path', $directory);
+        // The site search's Loupe databases, under the same per-process directory (#646)
+        $app['config']->set('statamic.search.drivers.loupe.path', $directory.'/loupe');
 
         // Start every test with no index (#572). The directory outlives the test that wrote
         // it, and an index built from one test's Stache, or a delete that left it `[]`, is
         // wrong for the next: a real search there reads a partial set or throws `Empty
         // haystack`. With no file, a search builds the index from the content this test
         // booted with, and a save rebuilds once and then inserts, as a fresh process did.
+        //
+        // A Loupe index holds its SQLite database open until the index object is freed, and
+        // the previous test's application is freed only when the collector reaches its
+        // cycles. Windows will not delete an open file, so without collecting first the
+        // previous test's Loupe databases survive the delete below and the next test searches
+        // them (#646).
+        gc_collect_cycles();
         (new Filesystem)->deleteDirectory($directory);
+
+        if (is_dir($directory)) {
+            throw new \RuntimeException(\sprintf('The search index directory %s could not be removed, so this test would search the previous test\'s indexes.', $directory));
+        }
 
         if (self::$searchIndexCleanupRegistered) {
             return;
