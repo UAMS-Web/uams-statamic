@@ -19,6 +19,10 @@ The primary and work slots **A** and **B**, plus at most one tree for a specific
 
 Siblings in Herd's parked directory: `../uams-statamic-a`, `-b`, `-importer` (see *The importer slot*) and `-ci` (the runner's).
 
+**Approved exception to the slot count:** on the machine that holds it, `../uams-statamic-amp` is a permanent, dedicated work slot for one supervised Amp build seat, capacity 1. A clone on a machine with no such sibling reads this paragraph as not applying. It is not a shared overflow slot or a per-ticket worktree. Its reservation does not authorize creating or provisioning it, installing dependencies, starting a seat, or taking work. Those steps need separate operator approval.
+
+The dedicated seat uses only `../uams-statamic-amp`, never A, B, C, the primary, the importer tree, or the CI tree. Other sessions do not take the dedicated slot, even when it is detached and clean. Existing ownership is unchanged. After separate provisioning approval, the ordinary refresh, branch, clean-tree, and release rules apply within the dedicated slot; the A-then-B fallback does not apply to its owner.
+
 ## Which tree does the work
 
 - **All branch work goes to a slot**, solo or concurrent. Claim, work, release.
