@@ -3970,3 +3970,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Keep the class*: its only remaining difference from Statamic's `Group` is a set of fallbacks to `parent::extraRules()`, several of them unreachable, which #312's coverage work would then have to cover or justify under the mutation bar.
 
 **Companion.** #736 (decision), #738 (removal); UAMS-Web/uams-statamic-archive#2601 and UAMS-Web/uams-statamic-archive#2603 (the original defect and the override).
+
+## 2026-11-17: The Find-a-Doc filter block's clinical title select lists only the titles its own providers carry (#258)
+
+**Decision.** The clinical title select in [`resources/views/page_builder/components/_block_fad_filter.antlers.html`](../resources/views/page_builder/components/_block_fad_filter.antlers.html) offers only the `clinical_specializations` entries that would return at least one provider when selected, among the providers the block itself is configured to show. A block narrowed to a subset of providers (by `expertise` or `recognition_lists`) lists only the titles that subset carries, and a title no shown provider carries is not in the markup at all, with or without JavaScript. Decided 2026-11-17; the build is #769.
+
+**Why.** The Providers block renders the filter partial and its own card list together from one `collection:people` query ([`_uamsweb_block_fad_providers.antlers.html`](../resources/views/page_builder/_uamsweb_block_fad_providers.antlers.html)), so the block's own list is the set a reader filters and the one the options should match, as UAMS-Web/uams-statamic-archive#2962 did for the Areas of Expertise section filter. #258's "Current behavior" said a separate Providers block renders the cards; read on `main` on 2026-11-17, it does not.
+
+**Rejected.** *Every clinical provider on the site*: it would list titles that return no provider in this block. *A precomputed site-wide list of carried slugs*: the same mismatch, plus a cache to keep fresh.
+
+**Companion.** #258 (decision), #769 (build); UAMS-Web/uams-statamic-archive#2962 (the Areas of Expertise precedent).

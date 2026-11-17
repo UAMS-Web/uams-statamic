@@ -7,11 +7,12 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 /**
- * Guards `patches/pest-plugin-browser-server-no-shell.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch`.
  *
- * Remove this file when the patch is removed; see **`pest-plugin-browser`
- * shell-free Playwright server start** in `patches/README.md` for the retirement
- * condition.
+ * Remove this file when the patch is removed. Its retirement condition is in
+ * the section **`pest-plugin-browser` shell-free Playwright server start**
+ * of `patches/README.md` as of `38c79391f`
+ * (`git show 38c79391f:patches/README.md`).
  *
  * Unlike the sibling `Client.php` and `Execution.php` guards, this one asserts
  * the patched vendor source rather than driving behavior. What the patch changes
