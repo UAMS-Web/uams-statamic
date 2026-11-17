@@ -13,14 +13,11 @@ use Tests\TestCase;
 /**
  * Unit tests for TermsToTitleTransformer search transformer.
  *
- * Mutation: ~90% on App\SearchTransformers\TermsToTitleTransformer
- * (--covered-only). The surviving mutants are equivalent: the instanceof
- * mutation on the `! $searchable instanceof Term || ! $blueprint` guard is
- * caught by the second operand; `get('taxonomies', [])` always returns an
- * array so the `! is_array || === []` short-circuit and its early return fall
- * through to the same final `return $value`; and the `(string)` cast before a
- * `sprintf('%s…')` interpolation / the non-scalar-value narrowing are no-ops
- * for the coerced output.
+ * Mutation on App\SearchTransformers\TermsToTitleTransformer (Windows, #876): a
+ * run before the cases for a non-scalar value, a string `taxonomies` config and a
+ * `false` taxonomy handle tested 45 of 50 mutants. Those cases kill four of the
+ * five it left; the fifth was a redundant `instanceof` operand in the blueprint
+ * guard, now removed.
  */
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -28,9 +25,9 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * Build a searchable Term whose blueprint reports the given field type +
  * taxonomies, for exercising the slug -> title resolution path.
  *
- * @param  list<mixed>  $taxonomies
+ * @param  mixed  $taxonomies  the field's `taxonomies` config, normally a list of handles
  */
-function termsToTitleSearchable(string $fieldHandle, string $fieldType, array $taxonomies): Term
+function termsToTitleSearchable(string $fieldHandle, string $fieldType, mixed $taxonomies): Term
 {
     $field = Mockery::mock(Field::class);
     $field->shouldReceive('type')->andReturn($fieldType);
@@ -67,6 +64,35 @@ it('returns the original value when the searchable is not a term', function () {
             new stdClass
         )
     )->toBe('slug');
+});
+
+it('narrows a truthy non-scalar value to an empty string', function () {
+    // A truthy array passes the empty-value guard but is not a slug, so it is
+    // narrowed to '' rather than indexed.
+    expect((new TermsToTitleTransformer)->handle(['nested'], 'field', new stdClass))->toBe('');
+});
+
+it('returns the raw slug when the taxonomies config is a string, not a list', function () {
+    $searchable = termsToTitleSearchable('series', 'terms_search_index', 'recognition_lists_series');
+
+    TermFacade::shouldReceive('find')->never();
+
+    expect((new TermsToTitleTransformer)->handle('slug', 'series', $searchable))->toBe('slug');
+});
+
+it('skips a false taxonomy handle rather than looking up a handle-less id', function () {
+    // `false` casts to '' and is skipped; without the cast it would interpolate to `::us-news`.
+    $searchable = termsToTitleSearchable('data_source', 'terms_search_index', [false, 'recognition_lists_publications']);
+
+    TermFacade::shouldReceive('find')->with('::us-news')->never();
+
+    $resolved = Mockery::mock(Term::class);
+    $resolved->shouldReceive('title')->andReturn('U.S. News');
+    TermFacade::shouldReceive('find')
+        ->with('recognition_lists_publications::us-news')
+        ->andReturn($resolved);
+
+    expect((new TermsToTitleTransformer)->handle('us-news', 'data_source', $searchable))->toBe('U.S. News');
 });
 
 it('returns the original value when the term has no blueprint', function () {
