@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6af2b56f34ce0ea38410d0fab95105ea",
+    "content-hash": "9062571d4c58a797aaa54853358fc173",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12248,6 +12248,56 @@
             "time": "2026-11-13T20:06:05+00:00"
         },
         {
+            "name": "uams-web/patches-statamic-cms",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/patches-statamic-cms.git",
+                "reference": "67e6527c136cb6a578cc89110a192c03ab03211b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-statamic-cms/zipball/67e6527c136cb6a578cc89110a192c03ab03211b",
+                "reference": "67e6527c136cb6a578cc89110a192c03ab03211b",
+                "shasum": ""
+            },
+            "require": {
+                "statamic/cms": "6.40.0"
+            },
+            "type": "library",
+            "extra": {
+                "patches": {
+                    "statamic/cms": {
+                        "Add blueprint-aware collection create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-collection-create-label-blueprint.patch",
+                        "Add blueprint-aware taxonomy create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-taxonomy-create-label-blueprint.patch",
+                        "Align CP updates badge with updater availableUpdatesCount": "vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch",
+                        "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see UAMS-Web/uams-statamic-archive#2241)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-traverser-vanished-file.patch",
+                        "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-paths.patch",
+                        "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-modified.patch",
+                        "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-modified.patch",
+                        "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-paths.patch",
+                        "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-get-item.patch",
+                        "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-basic-vanished-file-get-item.patch",
+                        "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281)": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch"
+                    }
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "description": "Patches UAMS-Web repositories apply to statamic/cms",
+            "keywords": [
+                "composer",
+                "patches",
+                "statamic"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/patches-statamic-cms/issues",
+                "source": "https://github.com/UAMS-Web/patches-statamic-cms"
+            },
+            "time": "2026-11-12T21:36:28+00:00"
+        },
+        {
             "name": "ueberdosis/tiptap-php",
             "version": "2.2.1",
             "source": {
@@ -18189,6 +18239,49 @@
                 "source": "https://github.com/ta-tikoma/phpunit-architecture-test/tree/0.8.7"
             },
             "time": "2026-02-17T17:25:14+00:00"
+        },
+        {
+            "name": "uams-web/patches-pest-plugin-browser",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/patches-pest-plugin-browser.git",
+                "reference": "256d01425050d84eb80a3662a446d65942553c82"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-pest-plugin-browser/zipball/256d01425050d84eb80a3662a446d65942553c82",
+                "reference": "256d01425050d84eb80a3662a446d65942553c82",
+                "shasum": ""
+            },
+            "require": {
+                "pestphp/pest-plugin-browser": "5.2.0"
+            },
+            "type": "library",
+            "extra": {
+                "patches": {
+                    "pestphp/pest-plugin-browser": {
+                        "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see UAMS-Web/uams-statamic-archive#1816)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
+                        "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see UAMS-Web/uams-statamic-archive#1818)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch",
+                        "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see UAMS-Web/uams-statamic#585)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
+                    }
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Patches UAMS-Web repositories apply to pestphp/pest-plugin-browser",
+            "keywords": [
+                "browser-testing",
+                "composer",
+                "patches",
+                "pest"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/patches-pest-plugin-browser/issues",
+                "source": "https://github.com/UAMS-Web/patches-pest-plugin-browser"
+            },
+            "time": "2026-11-11T21:01:58+00:00"
         }
     ],
     "aliases": [],
