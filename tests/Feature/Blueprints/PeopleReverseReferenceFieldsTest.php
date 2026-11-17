@@ -28,7 +28,7 @@ uses(TestCase::class);
  */
 function computedPersonField(string $handle): ?array
 {
-    $path = resource_path('fieldsets/uamsweb_computed_person.yaml');
+    $path = aetherPeopleResourcePath('fieldsets/uamsweb_computed_person.yaml');
     /** @var array<string, mixed> $parsed */
     $parsed = Yaml::parseFile($path);
 

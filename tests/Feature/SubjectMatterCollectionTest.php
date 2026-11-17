@@ -110,14 +110,18 @@ function subjectMatterPickerDefinitions(): array
         ...(glob(resource_path('blueprints/**/*.yaml')) ?: []),
         ...(glob(resource_path('blueprints/*/*/*.yaml')) ?: []),
         ...(glob(resource_path('fieldsets/*.yaml')) ?: []),
+        // The people add-on's fieldsets and blueprints, which the site serves (#696)
+        ...(glob(base_path('vendor/uams-web/aether-people/resources/fieldsets/*.yaml')) ?: []),
+        ...(glob(base_path('vendor/uams-web/aether-people/resources/collection-blueprints/*/*.yaml')) ?: []),
     ];
 
     // On Windows resource_path() and glob() join with backslashes, so both sides are
     // normalized to forward slashes before the prefix is stripped (UAMS-Web/uams-statamic-archive#3175)
     $resources = str_replace('\\', '/', resource_path()).'/';
+    $addon = str_replace('\\', '/', base_path('vendor/uams-web/aether-people/resources')).'/';
 
     foreach (array_unique($paths) as $path) {
-        $relative = str_replace($resources, '', str_replace('\\', '/', $path));
+        $relative = str_replace([$resources, $addon], ['', 'aether-people::'], str_replace('\\', '/', $path));
         $walk = function (mixed $node) use (&$walk, &$pickers, $relative): void {
             if (! \is_array($node)) {
                 return;
@@ -268,6 +272,7 @@ it('gives every picker the collections #2823 assigns it, reachable from every si
     // `about` and `mentions` on posts, articles, audio, video and the series
     // terms reuse `uamsweb_common.subject_matter` and so inherit its config.
     expect(array_keys($pickers))->toBe([
+        'aether-people::fieldsets/uamsweb_common_people_research.yaml:subject_matter',
         'blueprints/taxonomies/credentials/credential.yaml:subject_matter',
         'blueprints/taxonomies/fields_of_study/field_of_study.yaml:subject_matter',
         'blueprints/taxonomies/other_specialties/other_specialty.yaml:subject_matter',
@@ -278,7 +283,6 @@ it('gives every picker the collections #2823 assigns it, reachable from every si
         'blueprints/taxonomies/specialties_aoa/specialty_aoa.yaml:subject_matter',
         'blueprints/taxonomies/specialties_non_accredited/specialty_non_accredited.yaml:subject_matter',
         'fieldsets/uamsweb_common.yaml:subject_matter',
-        'fieldsets/uamsweb_common_people_research.yaml:subject_matter',
     ]);
 
     // UAMS-Web/uams-statamic-archive#2823's decision table: training specialties name a clinical concept, other

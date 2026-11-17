@@ -124,7 +124,7 @@ it('preserves the existing terms as entries', function (string $handle, int $exp
 
 it('points every blueprint field at the collection instead of the taxonomy', function (string $path, string $handle, string $collection): void {
     /** @var array<string, mixed> $parsed */
-    $parsed = Yaml::parseFile(resource_path($path));
+    $parsed = Yaml::parseFile(servedResourcePath($path));
 
     $field = findFieldConfig($parsed, $handle);
 
@@ -153,7 +153,8 @@ it('sources each search index from the collection', function (string $handle): v
 })->with(['people_groups', 'logos_item_categories']);
 
 it('moves each blueprint out of the taxonomies namespace', function (string $handle, string $file): void {
-    expect(file_exists(resource_path("blueprints/collections/{$handle}/{$file}")))->toBeTrue();
+    // `people_groups` ships in `uams-web/aether-people` (#696); the resolver reads the served copy
+    expect(servedResourcePath("blueprints/collections/{$handle}/{$file}"))->toBeFile();
     expect(file_exists(resource_path("blueprints/taxonomies/{$handle}/{$file}")))->toBeFalse();
 })->with([
     ['people_groups', 'people_group.yaml'],

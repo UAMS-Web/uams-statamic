@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Exceptions\PeopleMergeException;
+use UAMSWeb\Aether\People\Merge\PeopleMergeException;
 
 /**
  * Empty marker exception (UAMS-Web/uams-statamic-archive#838): no executable lines to mutate.

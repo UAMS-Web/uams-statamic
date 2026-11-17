@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\ProviderSpotlight;
 
-use App\Services\ComputedFields\ProviderPeople\ClinicalTitleResolver;
-use App\Services\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 use App\Services\PhoneUtil;
-use App\Support\People\ProviderNarrativeLanguage;
 use Illuminate\Support\Str;
 use Statamic\Assets\Asset;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Asset as AssetFacade;
 use Statamic\Facades\Entry as EntryFacade;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ClinicalTitleResolver;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
+use UAMSWeb\Aether\People\Support\ProviderNarrativeLanguage;
+use UAMSWeb\Aether\People\Support\TraineeType;
 
 /**
  * Provider-derived values for the `provider_spotlight` clinical-resource type
@@ -239,7 +240,8 @@ final class ProviderSpotlightComputedValues
      * Whether the featured provider is bookable, gating the appointment CTA
      * (UAMS-Web/uams-statamic-archive#1425 §4): they take scheduled appointments and are accepting new
      * patients, and are not a resident. Residents are never bookable, mirroring
-     * the provider profile's own appointment eligibility.
+     * the provider profile's own appointment eligibility. Whether a person is a
+     * resident is read from `trainee_type`, which replaced `resident_query` (#696).
      */
     public function isBookable(Entry $spotlight): bool
     {
@@ -249,7 +251,8 @@ final class ProviderSpotlightComputedValues
             return false;
         }
 
-        if ($this->truthy($provider->get('resident_query'))) {
+        // Residents are never bookable
+        if (TraineeType::isResident($provider->get(TraineeType::FIELD))) {
             return false;
         }
 

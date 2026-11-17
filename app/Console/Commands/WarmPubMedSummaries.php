@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Jobs\WarmPubMedSummaries as WarmPubMedSummariesJob;
-use App\Support\Collections\PeopleCollection;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -13,6 +12,7 @@ use Illuminate\Support\Collection;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Warms the PubMed E-summary cache out of band so the request-time

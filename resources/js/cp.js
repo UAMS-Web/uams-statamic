@@ -95,18 +95,6 @@ Statamic.booting(() => {
 });
 
 /**
- * Person Name Fieldtype (text + phonetic text pairs, display format key)
- */
-
-import PersonNameFieldtype from './components/fieldtypes/PersonNameFieldtype.vue';
-import PersonNameDisplayFormatFieldtype from './components/fieldtypes/PersonNameDisplayFormatFieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('person_name-fieldtype', PersonNameFieldtype);
-    Statamic.$components.register('person_name_display_format-fieldtype', PersonNameDisplayFormatFieldtype);
-});
-
-/**
  * Partial date (year / month / day parts with configurable granularity)
  */
 
@@ -556,14 +544,4 @@ Statamic.booting(() => {
     Statamic.$inertia.register('app::SchemaTemplatesSectionDefaultsIndex', SchemaTemplatesSectionDefaultsIndex);
     Statamic.$inertia.register('app::SchemaTemplatesBlueprintDefaultsIndex', SchemaTemplatesBlueprintDefaultsIndex);
     Statamic.$inertia.register('app::SchemaTemplatesJsonLdCache', SchemaTemplatesJsonLdCache);
-});
-
-// ---------------------------------------
-// People (Merge duplicate people entries)
-// ---------------------------------------
-
-import PeopleMerge from './pages/People/Merge.vue';
-
-Statamic.booting(() => {
-    Statamic.$inertia.register('app::PeopleMerge', PeopleMerge);
 });

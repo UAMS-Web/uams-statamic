@@ -49,7 +49,6 @@ use App\Rules\Luhn;
 use App\Rules\NaicsCode;
 use App\Rules\Name;
 use App\Rules\NationalPhone;
-use App\Rules\NotTopLevelOrganization;
 use App\Rules\Npi;
 use App\Rules\OnetSocOccupationCode;
 use App\Rules\OpeId;
@@ -621,11 +620,6 @@ class ValidationServiceProvider extends ServiceProvider
             'credential_type_certification',
             CredentialTypeCertification::class,
             'Credential term (CTDL credential type Certification)'
-        );
-        $this->registerCustomRule(
-            'not_top_level_organization',
-            NotTopLevelOrganization::class,
-            'Organization below the top of the organizations tree'
         );
     }
 

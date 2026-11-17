@@ -86,8 +86,7 @@ function s1070EligibleBaseFields(): array
         'uams_worker_query' => true,
         'uams_worker_subtype' => 'employee',
         'uams_employee_subtype' => 'regular',
-        'resident_query' => false,
-        'fellow_query' => false,
+        'trainee_type' => 'none',
         'clinical_role_query' => true,
         'direct_patient_care_query' => true,
         'clinical_locations' => [ClinicalProviderFixtures::publishedLocationId()],
@@ -120,7 +119,7 @@ function makeS1070Person(string $slug, string $title, array $fields = []): Entry
 
 it('lists only eligible, searchable providers via the collection conditions', function (): void {
     $mccoy = makeS1070Person('leonard-mccoy', 'Leonard McCoy');
-    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['resident_query' => true]);
+    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['trainee_type' => 'resident']);
     makeS1070Person('hikaru-sulu', 'Hikaru Sulu', [
         'clinical_separated_query' => true,
         'separated_start_date' => Carbon::yesterday()->toDateString(),
@@ -145,7 +144,7 @@ it('lists only eligible, searchable providers via the collection conditions', fu
 
 it('renders one provider card per eligible provider in the listing partial', function (): void {
     makeS1070Person('leonard-mccoy', 'Leonard McCoy');
-    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['resident_query' => true]);
+    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['trainee_type' => 'resident']);
 
     $out = (string) Antlers::parse('{{ partial:people/provider/listing }}', [], true);
 
@@ -157,7 +156,7 @@ it('renders one provider card per eligible provider in the listing partial', fun
 });
 
 it('shows the empty state when no provider is eligible', function (): void {
-    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['resident_query' => true]);
+    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['trainee_type' => 'resident']);
 
     $out = (string) Antlers::parse('{{ partial:people/provider/listing }}', [], true);
 
@@ -256,7 +255,7 @@ it('renders the result count, client-side empty state, and pager scaffolding (#5
 });
 
 it('keeps the server-side empty state and no filter chrome when no provider is eligible (#570)', function (): void {
-    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['resident_query' => true]);
+    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['trainee_type' => 'resident']);
 
     $out = (string) Antlers::parse('{{ partial:people/provider/listing }}', [], true);
 
@@ -277,7 +276,7 @@ it('surfaces the default-site providers when the directory renders on the health
     // explicitly so the directory surfaces providers on the mount, not just when a
     // test happens to render in the default-site context (the prior false-green).
     makeS1070Person('leonard-mccoy', 'Leonard McCoy');
-    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['resident_query' => true]);
+    makeS1070Person('pavel-chekov', 'Pavel Chekov', ['trainee_type' => 'resident']);
 
     Site::setCurrent('health');
 

@@ -13,7 +13,6 @@ use App\Providers\HealthTalkServiceProvider;
 use App\Providers\KnowledgeBaseServiceProvider;
 use App\Providers\MapsServiceProvider;
 use App\Providers\PeopleCollectionServiceProvider;
-use App\Providers\PeopleMergeServiceProvider;
 use App\Providers\SchemaObjectServiceProvider;
 use App\Providers\SchemaTemplatesServiceProvider;
 use App\Providers\SearchServiceProvider;
@@ -34,7 +33,6 @@ return [
     MapsServiceProvider::class,
     ValidationServiceProvider::class,
     CustomFieldComposerServiceProvider::class,
-    PeopleMergeServiceProvider::class,
     HealthTalkServiceProvider::class,
     SchemaObjectServiceProvider::class,
     SchemaTemplatesServiceProvider::class,

@@ -67,7 +67,7 @@ function membershipLevelField(): Field
 {
     return mustBe(
         Field::class,
-        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people.person'), 'the person blueprint')->field('member_of'),
+        mustBe(Statamic\Fields\Blueprint::class, Blueprint::find('collections.people::person'), 'the person blueprint')->field('member_of'),
         'the member_of field'
     );
 }
