@@ -6,11 +6,13 @@ use Pest\Browser\Playwright\NavigationRetry;
 use PHPUnit\Framework\ExpectationFailedException;
 
 /**
- * Guards `patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch`.
  *
- * Remove this file when the patch is removed; see **`pest-plugin-browser`
- * navigation retry on `net::ERR_NO_BUFFER_SPACE`** in `patches/README.md` for
- * the retirement condition.
+ * Remove this file when the patch is removed. Its retirement condition is in
+ * the section **`pest-plugin-browser` navigation retry on
+ * `net::ERR_NO_BUFFER_SPACE`**
+ * of `patches/README.md` as of `38c79391f`
+ * (`git show 38c79391f:patches/README.md`).
  *
  * `NavigationRetry::onNoBufferSpace()` takes the navigation and the sleep as
  * callables, so the retry is asserted without a browser and without waiting:

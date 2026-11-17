@@ -8,11 +8,12 @@ use Pest\Browser\Playwright\Playwright;
 use PHPUnit\Framework\ExpectationFailedException;
 
 /**
- * Guards `patches/pest-plugin-browser-per-attempt-timeout.patch`.
+ * Guards `vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch`.
  *
- * Remove this file when the patch is removed; see **`pest-plugin-browser`
- * per-attempt retry timeout** in `patches/README.md` for the retirement
- * condition.
+ * Remove this file when the patch is removed. Its retirement condition is in
+ * the section **`pest-plugin-browser` per-attempt retry timeout**
+ * of `patches/README.md` as of `38c79391f`
+ * (`git show 38c79391f:patches/README.md`).
  *
  * `Execution::waitForExpectation()` takes a plain callable and drives the retry
  * loop, so the load-bearing behavior can be asserted without a browser: the

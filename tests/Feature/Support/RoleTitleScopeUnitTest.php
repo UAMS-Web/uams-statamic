@@ -1105,6 +1105,9 @@ it('prints a row and a count per status for each unit-naming scope, and closes o
         ? null
         : array_map(trim(...), explode('|', trim($row, '| ')));
 
+    // The header names every column, in order
+    expect($cells('Entry'))->toBe(['Entry', 'Path', 'Status', 'Typed name', 'Unit name']);
+
     // The unit name column is blank where no unit was found
     expect($cells('spock'))->toBe(['spock', 'job_title.0.title', 'no_unit', 'Starfleet Academy'])
         ->and($cells('kirk'))->toBe($withMatch ? ['kirk', 'job_title.0.title', 'match', 'UAMS College of Medicine', 'UAMS College of Medicine'] : null);
@@ -1125,10 +1128,19 @@ it('prints a row and a count per status for each unit-naming scope, and closes o
     'a dry run with no match' => [false, false, 'Dry run: 0 scope(s) would be linked. Re-run with --write to link them.'],
 ]);
 
+it('reads a --collection given no value as an empty handle, which names no collection', function (): void {
+    serveScopeUnits([]);
+    app()->instance(RoleTitleScopeUnitLinker::class, scanLinker(['organizations' => []]));
+
+    expect(Artisan::call('role-title:link-scope-units', ['--collection' => null]))->toBe(0)
+        ->and(Artisan::output())->toContain('No unit-naming role_title scopes in ``.');
+});
+
 it('scans the people collection when no --collection is given, and says when it finds nothing', function (): void {
     serveScopeUnits([]);
     app()->instance(RoleTitleScopeUnitLinker::class, scanLinker(['people' => [], 'organizations' => []]));
 
     expect(Artisan::call('role-title:link-scope-units'))->toBe(0)
-        ->and(Artisan::output())->toContain('No unit-naming role_title scopes in `people`.');
+        // The message alone: no table, no counts and no closing line follow it
+        ->and(array_values(array_filter(array_map(trim(...), explode("\n", Artisan::output())))))->toBe(['No unit-naming role_title scopes in `people`.']);
 });
