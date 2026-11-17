@@ -5710,6 +5710,7 @@ class SchemaOutputService
      *   across all taxonomies. If more than one term shares that slug, the first
      *   after sorting by `id` is used so the choice is stable (prefer qualified
      *   storage when slugs collide across taxonomies).
+     * - The slug `0` is skipped. Every caller passes non-empty strings only.
      *
      * @param  list<string>  $slugs
      * @return Collection<int, LocalizedTerm|TaxonomyTerm>|null
@@ -5720,10 +5721,6 @@ class SchemaOutputService
         $out = collect();
 
         foreach ($slugs as $raw) {
-            if ($raw === '') {
-                continue;
-            }
-
             if ($raw === '0') {
                 continue;
             }
