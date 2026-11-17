@@ -34,7 +34,7 @@ return [
     'indexes' => [
 
         'default' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             // Collections only — taxonomy terms and assets are deliberately kept
             // out of the unified site search. The `ExcludeNonSearchableCollections`
             // scope then removes the infrastructure / non-reader-facing collections
@@ -50,20 +50,15 @@ return [
                 'title',
                 'page_builder', // Added by studio1902/statamic-peak
             ],
-            // Relevance weighting for the default index — tunes how strongly
-            // each match type scores when ranking results. Honored by the
-            // `local` driver's Comb matcher (Statamic\Search\Comb\Comb).
-            'match_weights' => [
-                'partial_word' => 1,
-                'partial_first_word' => 2,
-                'partial_word_start' => 1,
-                'partial_first_word_start' => 2,
-                'whole_word' => 5,
-                'whole_first_word' => 5,
-                'partial_whole' => 2,
-                'partial_whole_start' => 2,
-                'whole' => 10,
-            ],
+            // Loupe keeps at most this many matching documents per search word, cut before
+            // ranking, so a word matching more can lose some of its best results. 1000, Loupe's
+            // own default, keeps a lookup at a 313 to 329ms p95 at the launch size of 46,777
+            // documents, under the 400ms gate, and changes the first page of 6 of 32 measured
+            // queries (#511, decided on #646). The cap applies before the site filter, so a
+            // site-scoped search can also lose the site's matches that fall past it. Loupe's own
+            // ranking rules order the hits; the Comb `match_weights` this index carried do not
+            // apply to it.
+            'max_total_hits' => 1000,
         ],
 
         // Collection Entries
@@ -88,7 +83,7 @@ return [
         ],
 
         'people' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:people',
             'fields' => [
                 'alternate_name_list',
@@ -105,7 +100,7 @@ return [
         ],
 
         'clinical_locations' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_locations',
             'fields' => [
                 'title',
@@ -138,7 +133,7 @@ return [
         ],
 
         'clinical_expertise' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_expertise',
             // Drop Areas of Expertise an editor has flagged out of interactive
             // search (UAMS-Web/uams-statamic-archive#1060/UAMS-Web/uams-statamic-archive#1438) while they stay published, routable, and in the
@@ -167,7 +162,7 @@ return [
         ],
 
         'clinical_resources' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:clinical_resources',
             'fields' => [
                 'title',
@@ -177,7 +172,7 @@ return [
         ],
 
         'posts' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:posts',
             'fields' => [
                 'title',
@@ -193,7 +188,7 @@ return [
         // topic/root entries carry only `title` here and are filtered out of the
         // results (the scope restricts hits to published `article` entries).
         'knowledge_bases' => [
-            'driver' => 'local',
+            'driver' => 'loupe',
             'searchables' => 'collection:knowledge_bases',
             'fields' => [
                 'title',
@@ -873,6 +868,11 @@ return [
 
         'local' => [
             'path' => storage_path('statamic/search'),
+        ],
+
+        // The site search's indexes, one SQLite database per index (#646).
+        'loupe' => [
+            'path' => storage_path('statamic/loupe'),
         ],
 
         'algolia' => [

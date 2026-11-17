@@ -3990,3 +3990,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *A people core add-on and a separate provider add-on*: its only gain is retiring the provider layer separately, which is not expected, and the provider add-on would either take the clinical collections' relationships with it or depend on site code. *Keeping people in the application*: contradicts the settled move of people-specific code into an add-on, as the forms customizations were (UAMS-Web/uams-statamic-archive#3071). *Moving the shared fieldsets and fieldtypes too*: organizations would then depend on the people add-on. *Freezing only the importer's handles*: a rename anywhere else breaks templates and blueprints for no gain.
 
 **Companion.** UAMS-Web/uams-statamic-archive#3135 (decision), UAMS-Web/uams-statamic-archive#3180 (the extension points added first), #281 (the boundary), #696 (requiring the add-on and deleting the moved code); UAMS-Web/aether-people#58 (the `trainee_type` carry-over script), UAMS-Web/aether-people#97 and UAMS-Web/aether-people#101 (the host bindings).
+
+## 2026-11-17: Site search caps Loupe at 1000 hits, and site-scoped loss is measured separately (#646)
+
+**Decision.** The `default` index runs `loupe` with `max_total_hits` at 1000, Loupe's own default, in place of the 200 the 2026-11-12 entry chose. How much site-scoped searches lose to the cap is measured on #967. Decided by Josh, 2026-11-17.
+
+**Why.** The cap is a `LIMIT` on each search word's matching documents in storage order, applied before ranking and before any filter, so a lower cap drops relevant results rather than only trimming the tail. Measured on #511 at 46,777 documents, Windows 11, PHP 8.4.27, `loupe/loupe` 1.1.7: at 1000 the p95 per lookup is 313 to 329ms, under the 400ms gate, and 6 of 32 queries show a different first page than uncapped; at 200 it is 16 of 32. Handing the site to Loupe as a filter does not get past the cap, so a site-scoped search also loses the site's matches that fall past it; #511's rows carry no site, so that loss is not yet measured.
+
+**Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
+
+**Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
