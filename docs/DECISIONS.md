@@ -2269,6 +2269,8 @@ That leaves the choice as a bet on a *future* failure, not a security decision. 
 
 **Companion.** UAMS-Web/uams-statamic-archive#2321 (the ticket; decided in its 2026-09-08 comment, recorded here 2026-09-28); UAMS-Web/uams-statamic-archive#2168 (where the collision was found at intake); UAMS-Web/uams-statamic-archive#2234 (the CI check, which needs no exception); UAMS-Web/uams-statamic-archive#2185 (the corpus sweep, out of scope).
 
+**Scope (2026-11-17, #628).** This entry covers pull-request and issue bodies only; commit messages were not in its scope. Whether a tool session link may appear in a commit message was decided separately, in the #628 entry below.
+
 ## 2026-09-09 — A deleted entry's redirect is captured automatically and disabled, for an editor to complete (UAMS-Web/uams-statamic-archive#301)
 
 **Decision.** Deleting an entry with a public URL writes a `redirect` row into the `redirects` global immediately, carrying the URI it occupied and **no destination**, with `enabled: false`. An editor supplies the target and turns the row on as one deliberate act. The row is written on `EntryDeleted`, so a cancelled delete records nothing.
@@ -3990,3 +3992,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
 
 **Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
+
+## 2026-11-17: A commit message carries no tool session link, while a `Co-authored-by` trailer naming the tool stays allowed (#628)
+
+**Decision.** A commit message may not carry a trailer whose value is a tool session URL (for example `Amp-Thread-ID: https://ampcode.com/threads/...`), on any surface: branch commits, the pull request's commit list, and the composed squash message. A `Co-authored-by` trailer naming the tool stays permitted and remains the commit convention's attribution. A gate that finds a session link hands the pull request back to its author to reword the commit; the gate does not rewrite an author's commits. Already-merged commits, #606's included, are not rewritten. Decided 2026-11-17 (reading A, narrowed to links); the shared rule and a commit-message check are `UAMS-Web/uams-claude-skills#819`.
+
+**Why.** Both trailers are provenance, but only the session trailer is a link to an outside tool's conversation, readable by anyone holding the URL, and it stays readable on the branch indefinitely because this repository keeps merged branches (`delete_branch_on_merge` is false). The exposure is the URL, not the credit. Measured on #606's merge (`02a6df6`), a composed squash message carried `Co-authored-by` twice and `Amp-Thread-ID` not at all, against one `Amp-Thread-ID` in the branch commits, so the surface is the branch and its commit list rather than `main`.
+
+**Rejected.** *Reading B, the session trailer is provenance and allowed*: it keeps a durable external link that the body rule (UAMS-Web/uams-statamic-archive#2321) already bans on the neighboring surface. *Record only, since the squash already drops it from `main`*: branch commits and the commit list stay readable, so the link would still persist.
+
+**Companion.** #628 (decision); `UAMS-Web/uams-claude-skills#819` (the shared rule and the commit-message check); #606 (where the trailer was found); UAMS-Web/uams-statamic-archive#2321 (the body-scoped ban, whose entry above now states its scope).
