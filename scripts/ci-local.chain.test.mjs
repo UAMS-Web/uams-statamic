@@ -197,7 +197,8 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan'])
         expect(listed(workflow).includes('mutate-ignore')).toBe(runsMutateIgnore(workflow))
         // And it names the job that carries the annotation audit instead.
-        expect(checksComment(workflow)).toContain('the `mutate` job above')
+        expect(checksComment(workflow)).toContain('the `encoding-guard` job above runs `scripts/check-mutate-ignore.php`')
+        expect(jobText(workflow, 'encoding-guard')).toContain('php scripts/check-mutate-ignore.php app tests')
         expect(JOBS.encoding.map(([label]) => label)).toContain('mutate-ignore auditor')
 
         // Control: switching the input on makes the same comparison disagree.

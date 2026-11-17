@@ -170,8 +170,8 @@ defaults:
 # and `no-emoji` jobs run the first two, its composer-validate job runs the command
 # the local `validate` job runs, and the chain test runs the aggregate-needs
 # comparison. The chain's mutate-ignore job does not run for this caller (see the
-# `checks` job); the `mutate` job runs the annotation audit, as the local
-# `encoding` job does.
+# `checks` job); the `encoding-guard` job runs the annotation audit, as the
+# local `encoding` job does.
 # REMOTE-ONLY (intentionally no job in local-ci.json): `submodule-access` runs only on
 # a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
 # the private submodules. That secret exists only on GitHub, and the local runner
@@ -1892,9 +1892,9 @@ jobs:
   # The chain's mutate-ignore job runs only when `mutate` or `mutate-ignore` is true
   # (#749). This caller passes `mutate: false` and leaves `mutate-ignore` at its
   # default, false, so `checks / Mutation annotations (none inert)` reports skipped.
-  # The annotation audit is not missing: the `mutate` job above (`Mutation tooling
-  # smoke`) runs `scripts/check-mutate-ignore.php` and the breadth check on all
-  # three platforms, so setting `mutate-ignore: true` would only run it twice.
+  # The annotation audit is not missing: the `encoding-guard` job above runs
+  # `scripts/check-mutate-ignore.php` and the breadth check on all three
+  # platforms, so setting `mutate-ignore: true` would only run it twice.
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only
