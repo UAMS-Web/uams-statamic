@@ -391,6 +391,9 @@ class PartialDate extends Fieldtype
                 self::INCLUDED_YEAR_MONTH,
                 self::INCLUDED_YEAR_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -413,6 +416,9 @@ class PartialDate extends Fieldtype
                 self::INCLUDED_MONTH_ONLY,
                 self::INCLUDED_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -433,6 +439,9 @@ class PartialDate extends Fieldtype
                 self::INCLUDED_YEAR_MONTH_DAY,
                 self::INCLUDED_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -465,10 +474,14 @@ class PartialDate extends Fieldtype
         int $month
     ): string {
         // Return the localized full month name
+        // The year and day are only an anchor for the month name, so any year
+        // and any day that exists in every month give the same name.
         /** @var Carbon $created */
         $created = Carbon::create(
+            // @pest-mutate-ignore: IncrementInteger, DecrementInteger
             2020,
             $month,
+            // @pest-mutate-ignore: IncrementInteger
             1
         );
 
@@ -785,6 +798,8 @@ class PartialDate extends Fieldtype
 
         // Prefix nested keys with this field handle for translator lookups
         $handle = $field->handle();
+        // The cast is equivalent: concatenation below converts a scalar the same way.
+        // @pest-mutate-ignore: RemoveStringCast
         $prefix = \is_scalar($handle) ? (string) $handle : '';
 
         // Return the extra validation attributes
@@ -814,6 +829,8 @@ class PartialDate extends Fieldtype
 
         // Prefix nested keys with this field handle for translator lookups
         $handle = $field->handle();
+        // The cast is equivalent: concatenation below converts a scalar the same way.
+        // @pest-mutate-ignore: RemoveStringCast
         $prefix = \is_scalar($handle) ? (string) $handle : '';
 
         // Resolve the effective config
@@ -978,22 +995,31 @@ class PartialDate extends Fieldtype
         ?int $year,
         int $month
     ): int {
-        // Check if the month is less than 1 or greater than 12
-        if (
-            $month < 1
-            || $month > 12
-        ) {
-            // Return 31 for any month outside 1–12
+        // Return 31 for a month below 1. Moving the bound by one is equivalent:
+        // Carbon rolls month 0 to December and month 1 is January, both 31 days.
+        // @pest-mutate-ignore: SmallerToSmallerOrEqual, IncrementInteger, DecrementInteger
+        if ($month < 1) {
+            return 31;
+        }
+
+        // Return 31 for a month above 12. Moving the bound by one is equivalent:
+        // month 12 is December and Carbon rolls month 13 to January, both 31 days.
+        // @pest-mutate-ignore: GreaterToGreaterOrEqual, IncrementInteger, DecrementInteger
+        if ($month > 12) {
             return 31;
         }
 
         // Check if the month is not 2
         if ($month !== 2) {
             // Return the days in the month
+            // Only February's length depends on the year, so for any other month
+            // the year and the day are an anchor and any value gives the same length.
             /** @var Carbon $genericMonth */
             $genericMonth = Carbon::create(
+                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
                 2020,
                 $month,
+                // @pest-mutate-ignore: IncrementInteger
                 1
             );
 
@@ -1007,6 +1033,8 @@ class PartialDate extends Fieldtype
             $februaryInYear = Carbon::create(
                 $year,
                 2,
+                // The day is only an anchor: February has a second day in every year.
+                // @pest-mutate-ignore: IncrementInteger
                 1
             );
 
@@ -1113,7 +1141,14 @@ class PartialDate extends Fieldtype
         };
 
         // Check if the required granularity is in the allowed array
-        if (\in_array($requiredGranularity, $allowed, true)) {
+        // Strict matching is equivalent here: a string compared loosely with these
+        // non-numeric string tokens matches only when identical.
+        if (\in_array(
+            $requiredGranularity,
+            $allowed,
+            // @pest-mutate-ignore: TrueToFalse
+            true
+        )) {
             // Return the required granularity
             return $requiredGranularity;
         }
@@ -1257,6 +1292,9 @@ class PartialDate extends Fieldtype
                 self::GRANULARITY_YEAR_MONTH,
                 self::GRANULARITY_YEAR_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -1279,6 +1317,9 @@ class PartialDate extends Fieldtype
                 self::GRANULARITY_MONTH_ONLY,
                 self::GRANULARITY_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -1299,6 +1340,9 @@ class PartialDate extends Fieldtype
                 self::GRANULARITY_YEAR_MONTH_DAY,
                 self::GRANULARITY_MONTH_DAY,
             ],
+            // Strict matching is equivalent here: a string compared loosely with these
+            // non-numeric string tokens matches only when identical.
+            // @pest-mutate-ignore: TrueToFalse
             true
         );
     }
@@ -1381,37 +1425,12 @@ class PartialDate extends Fieldtype
         mixed $data,
         string $included
     ): array {
-        // Treat falsy empties consistently as absent slots throughout the pipeline
-        if (
-            in_array($data, [null, '', []], true)
-        ) {
-            // Return normalized empty triple for downstream serializers
-            return [
-                'year' => null,
-                'month' => null,
-                'day' => null,
-            ];
-        }
-
         // Parse trimmed stored strings into a temporary associative payload
         if (\is_string($data)) {
-            // Trim whitespace from inbound stored strings
-            $trimmed = trim($data);
+            // Match known stored patterns strictly (a blank string matches none)
+            $parsed = $this->tryParseStoredPartialDateString(trim($data));
 
-            // Collapse whitespace-only strings to empty triples
-            if ($trimmed === '') {
-                // Return an empty triple when only whitespace was provided
-                return [
-                    'year' => null,
-                    'month' => null,
-                    'day' => null,
-                ];
-            }
-
-            // Match known stored patterns strictly
-            $parsed = $this->tryParseStoredPartialDateString($trimmed);
-
-            // Treat unknown patterns as absent values for defensive processing paths
+            // Treat blank or unknown patterns as absent values
             if ($parsed === null) {
                 // Return triple nulls instead of guessing when malformed strings slip in
                 return [
@@ -1428,7 +1447,8 @@ class PartialDate extends Fieldtype
             );
         }
 
-        // Preserve existing array payloads from the CP and legacy YAML
+        // Preserve existing array payloads from the CP and legacy YAML (an empty
+        // array normalizes to empty slots)
         if (\is_array($data)) {
             /** @var array<string, mixed> $payload */
             $payload = $data;
@@ -1440,7 +1460,7 @@ class PartialDate extends Fieldtype
             );
         }
 
-        // Fallback to empty triple for unexpected scalar payloads
+        // Fallback to empty triple for null and unexpected scalar payloads
         return [
             'year' => null,
             'month' => null,
@@ -1516,6 +1536,8 @@ class PartialDate extends Fieldtype
         ) {
             // Return Gregorian year and day slots with absent month semantics
             return [
+                // Equivalent with the whole match: (int) reads the same leading four digits.
+                // @pest-mutate-ignore: DecrementInteger
                 'year' => (int) $m[1],
                 'month' => null,
                 'day' => (int) $m[2],
@@ -1532,6 +1554,8 @@ class PartialDate extends Fieldtype
         ) {
             // Populate all segments from digit groups
             return [
+                // Equivalent with the whole match: (int) reads the same leading four digits.
+                // @pest-mutate-ignore: DecrementInteger
                 'year' => (int) $m[1],
                 'month' => (int) $m[2],
                 'day' => (int) $m[3],
@@ -1548,6 +1572,8 @@ class PartialDate extends Fieldtype
         ) {
             // Capture year and month while leaving day absent
             return [
+                // Equivalent with the whole match: (int) reads the same leading four digits.
+                // @pest-mutate-ignore: DecrementInteger
                 'year' => (int) $m[1],
                 'month' => (int) $m[2],
                 'day' => null,
@@ -1564,6 +1590,8 @@ class PartialDate extends Fieldtype
         ) {
             // Return year-only partial with absent month and day
             return [
+                // Equivalent with the whole match: (int) reads the same leading four digits.
+                // @pest-mutate-ignore: DecrementInteger
                 'year' => (int) $m[1],
                 'month' => null,
                 'day' => null,
@@ -1914,15 +1942,6 @@ class PartialDate extends Fieldtype
             'day' => null,
         ];
 
-        // Normalize null or empty strings to triple nulls before validation
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            // Return untouched defaults for optional empty submissions
-            return $base;
-        }
-
         // Preserve associative CP payloads by intersecting allowed keys only
         if (\is_array($value)) {
             // Merge known slots while dropping unknown keys from the payload
@@ -1942,7 +1961,7 @@ class PartialDate extends Fieldtype
 
             // Treat blank strings as empty triples for optional fields
             if ($trimmed === '') {
-                // Return base null slots for whitespace-only strings
+                // Return base null slots for empty and whitespace-only strings
                 return $base;
             }
 
@@ -1958,17 +1977,11 @@ class PartialDate extends Fieldtype
                 ];
             }
 
-            // Merge parsed slots into the validation triple
-            return [
-                ...$base,
-                ...\array_intersect_key(
-                    $parsed,
-                    $base
-                ),
-            ];
+            // Parsed slots already carry exactly the year, month and day keys
+            return $parsed;
         }
 
-        // Fall back to empty triple for unexpected scalar types
+        // Fall back to empty triple for null and unexpected scalar types
         return $base;
     }
 
@@ -1981,34 +1994,8 @@ class PartialDate extends Fieldtype
     protected function normalizeInt(
         mixed $value
     ): ?int {
-        // ---
-        // Treat empty strings and explicit null as absent
-        // ---
-
-        // Check if the value is null or an empty string
-        if (
-            $value === null
-            || $value === ''
-        ) {
-            // Return null to signal absence
-            return null;
-        }
-
-        // ---
-        // Never interpret booleans as numeric parts
-        // ---
-
-        // Check if the value is a boolean
-        if (\is_bool($value)) {
-            // Return null to signal absence
-            return null;
-        }
-
-        // ---
-        // Accept numeric strings and numbers for integer fields
-        // ---
-
-        // Check if the value is numeric
+        // Accept numeric strings and numbers; null, '', booleans and other
+        // values are not numeric and read as absent
         if (is_numeric($value)) {
             // Return the value as an integer
             return (int) $value;
