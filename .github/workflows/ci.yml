@@ -125,8 +125,8 @@ defaults:
 # failure neither skips nor delays another, and a run reports every fault it
 # found rather than only the first. The `checks` call starts with the others, but
 # the chain it calls orders its own jobs, which this file does not control: pint
-# needs composer-validate and synced-files, and rector, phpstan and mutate-ignore
-# need pint. A failure early in that chain therefore skips the later ones, so a run
+# needs composer-validate and synced-files, and rector and phpstan need pint. A
+# failure early in that chain therefore skips the later ones, so a run
 # reports a PHPStan error only once a hand-edited synced file, say, is fixed (#580).
 # Until #373 these ran as a strict sequential chain, cost-ordered shortest to
 # longest, each job entered through `needs:` on the one before it, so an early
@@ -166,11 +166,12 @@ defaults:
 # `scripts/ci-local.chain.test.mjs` fails until it does. `submodule-access` alone stays
 # out, named with its reason in `.github/aggregate-needs-allow.json`.
 # REMOTE-ONLY (no ci.yml job of its own): the `checks` call's synced-files,
-# no-emoji, aggregate-needs and mutate-ignore jobs run shared checks. Locally the
-# `synced-files` and `no-emoji` jobs run the first two, its composer-validate job
-# runs the command the local `validate` job runs, its mutate-ignore job overlaps
-# the local `encoding` job's auditor, and the chain test runs the aggregate-needs
-# comparison.
+# no-emoji and aggregate-needs jobs run shared checks. Locally the `synced-files`
+# and `no-emoji` jobs run the first two, its composer-validate job runs the command
+# the local `validate` job runs, and the chain test runs the aggregate-needs
+# comparison. The chain's mutate-ignore job does not run for this caller (see the
+# `checks` job); the `mutate` job runs the annotation audit, as the local
+# `encoding` job does.
 # REMOTE-ONLY (intentionally no job in local-ci.json): `submodule-access` runs only on
 # a manual `workflow_dispatch` and checks that `secrets.COMPOSER_AUTH_TOKEN` can clone
 # the private submodules. That secret exists only on GitHub, and the local runner
@@ -1881,16 +1882,23 @@ jobs:
         run: php .claude/skills/pest-testing/scripts/check-global-test-symbols.php tests
 
   # The shared job chain (#580), called from UAMS-Web/uams-ci-workflows at a release
-  # tag, so this file takes a change to it only when the tag below moves. It runs
-  # composer-validate, synced-files, no-emoji, aggregate-needs, pint, rector, phpstan
-  # and mutate-ignore, and reports each check as `checks / <job> (<os>)`, ending in
-  # `checks / Chain result`. Each job checks out THIS repository; pint, rector,
-  # phpstan and mutate-ignore install through `.github/actions/setup`, which this
-  # repository carries, and the others set up PHP or Node themselves.
+  # tag, so this file takes a change to it only when the tag below moves. For this
+  # caller it runs composer-validate, synced-files, no-emoji, aggregate-needs, pint,
+  # rector and phpstan, and reports each check as `checks / <job> (<os>)`, ending in
+  # `checks / Chain result`. Each job checks out THIS repository; pint, rector and
+  # phpstan install through `.github/actions/setup`, which this repository carries,
+  # and the others set up PHP or Node themselves.
+  #
+  # The chain's mutate-ignore job runs only when `mutate` or `mutate-ignore` is true
+  # (#749). This caller passes `mutate: false` and leaves `mutate-ignore` at its
+  # default, false, so `checks / Mutation annotations (none inert)` reports skipped.
+  # The annotation audit is not missing: the `mutate` job above (`Mutation tooling
+  # smoke`) runs `scripts/check-mutate-ignore.php` and the breadth check on all
+  # three platforms, so setting `mutate-ignore: true` would only run it twice.
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only
-  # (UAMS-Web/uams-claude-skills#454), and mutate-ignore on all three. Nothing here
+  # (UAMS-Web/uams-claude-skills#454). Nothing here
   # overrides it, so `linux-only`, `all-platform-jobs` and `windows-jobs` are left
   # at their defaults.
   #
