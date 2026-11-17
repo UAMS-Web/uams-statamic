@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Person Name fieldtype — publish UI and validation attribute labels.
+ * Custom fieldtype publish UI and validation attribute labels.
  *
- * Keys are referenced from `App\Fieldtypes\PersonName::extraValidationAttributes()`
- * and `PersonNameFieldtype.vue` via `__('statamic::fieldtypes.person_name.field.*')`.
+ * The Person Name fieldtype's labels moved with it into `uams-web/aether-people`,
+ * which reads them as `aether-people::fieldtypes.person_name.*` (#696).
  *
  * Quantitative Value (`App\Fieldtypes\QuantitativeValue`, `QuantitativeValueFieldtype.vue`):
  * `statamic::fieldtypes.quantitative_value.*`.
@@ -27,23 +27,6 @@ return [
     |
     */
 
-    // Person Name Fieldtype
-
-    'person_name.field.display_format_instructions' => 'Choose how the name should be displayed.',
-    'person_name.field.first_name_phonetic_text' => 'Full First Name (Phonetic Text)',
-    'person_name.field.first_name_text' => 'Full First Name (Text)',
-    'person_name.field.last_name_phonetic_text' => 'Full Last Name (Phonetic Text)',
-    'person_name.field.last_name_text' => 'Full Last Name (Text)',
-    'person_name.field.middle_name_phonetic_text' => 'Full Middle Name (Phonetic Text)',
-    'person_name.field.middle_name_text' => 'Full Middle Name (Text)',
-    'person_name.field.generational_suffix' => 'Generational Suffix',
-    'person_name.field.nickname_phonetic_text' => 'Nickname (Phonetic Text)',
-    'person_name.field.nickname_text' => 'Nickname (Text)',
-    'person_name.field.no_generational_suffix' => 'No Generational Suffix',
-    'person_name.field.no_middle_name' => 'No Middle Name',
-    'person_name.field.no_nickname' => 'No Nickname',
-    'person_name.field.phonetic_alert_heading' => 'Phonetic Text Transcription Instructions',
-
     /*
     | Shared IPA help (PhoneticTextInstructions; PersonName; TextPhoneticPair).
     */
@@ -53,13 +36,6 @@ return [
     'phonetic_instructions.p3_html' => 'Example: <code>təˈmeɪtoʊ</code> — stored without wrapping slashes; presentation may add them.',
     'phonetic_instructions.p4_html' => '<strong>Note:</strong> Do not use "phonetic respelling" (e.g., <code>tuh-MAY-toh</code>).',
     'phonetic_instructions.p5_html' => 'If you are unsure of the correct symbols, use a tool like <a href="https://tophonetics.com/" target="_blank" rel="noopener noreferrer">toPhonetics</a> / <a href="https://ipa-reader.com/" target="_blank" rel="noopener noreferrer">IPA Reader</a> or an IPA keyboard like <a href="https://ipa.typeit.org/full/" target="_blank" rel="noopener noreferrer">https://ipa.typeit.org/full/</a>.',
-    'person_name.field.preferred_display_format' => 'Preferred Display Format',
-    'person_name.checklist.before_display_format' => 'Before you can select a display format, complete the following fields:',
-    'person_name.checklist.first_name' => 'First name',
-    'person_name.checklist.generational_suffix' => 'Generational suffix (or mark that there is no generational suffix)',
-    'person_name.checklist.last_name' => 'Last name',
-    'person_name.checklist.middle' => 'Middle name (or mark that there is no middle name)',
-    'person_name.checklist.nickname' => 'Nickname (or mark that there is no nickname)',
 
     // Text Phonetic Pair Fieldtype
 

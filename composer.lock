@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f4e8c9c556614e6e9801b3a1d13b563",
+    "content-hash": "f56e3e26d17692b1b8cdf2f4eff41bbd",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -654,8 +654,7 @@
                 "issues": "https://github.com/daun/statamic-loupe/issues",
                 "source": "https://github.com/daun/statamic-loupe/tree/4.2.0"
             },
-            "time": "2026-09-06T20:01:40+00:00",
-            "published-time": "2026-09-06T20:01:52+00:00"
+            "time": "2026-09-06T20:01:40+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -837,8 +836,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-14T18:08:09+00:00",
-            "published-time": "2026-11-14T18:18:19+00:00"
+            "time": "2026-11-14T18:08:09+00:00"
         },
         {
             "name": "doctrine/deprecations",
@@ -2369,8 +2367,7 @@
                 "issues": "https://github.com/joomla-framework/string/issues",
                 "source": "https://github.com/joomla-framework/string/tree/4.0.0"
             },
-            "time": "2025-07-23T18:42:26+00:00",
-            "published-time": "2025-07-23T18:43:02+00:00"
+            "time": "2025-07-23T18:42:26+00:00"
         },
         {
             "name": "joshdaugherty/ipa-unicode-inventory",
@@ -3706,8 +3703,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-13T13:34:55+00:00",
-            "published-time": "2026-11-13T13:35:29+00:00"
+            "time": "2026-11-13T13:34:55+00:00"
         },
         {
             "name": "loupe/matcher",
@@ -3779,8 +3775,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-12T08:34:55+00:00",
-            "published-time": "2026-10-12T08:35:33+00:00"
+            "time": "2026-10-12T08:34:55+00:00"
         },
         {
             "name": "maatwebsite/excel",
@@ -4246,8 +4241,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-06T05:32:13+00:00",
-            "published-time": "2026-08-06T05:32:37+00:00"
+            "time": "2026-08-06T05:32:13+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -4743,8 +4737,7 @@
                     "type": "ko_fi"
                 }
             ],
-            "time": "2026-03-20T21:53:25+00:00",
-            "published-time": "2026-04-19T09:57:28+00:00"
+            "time": "2026-03-20T21:53:25+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -5810,8 +5803,7 @@
             "support": {
                 "source": "https://github.com/php-fig/cache/tree/3.0.0"
             },
-            "time": "2021-02-03T23:26:27+00:00",
-            "published-time": "2021-02-03T23:27:34+00:00"
+            "time": "2021-02-03T23:26:27+00:00"
         },
         {
             "name": "psr/clock",
@@ -12039,8 +12031,7 @@
                 "issues": "https://github.com/Toflar/FastSet/issues",
                 "source": "https://github.com/Toflar/FastSet/tree/1.0.1"
             },
-            "time": "2026-06-02T13:14:21+00:00",
-            "published-time": "2026-06-02T13:14:43+00:00"
+            "time": "2026-06-02T13:14:21+00:00"
         },
         {
             "name": "toflar/state-set-index",
@@ -12087,8 +12078,7 @@
                 "issues": "https://github.com/Toflar/state-set-index/issues",
                 "source": "https://github.com/Toflar/state-set-index/tree/3.3.0"
             },
-            "time": "2026-05-21T15:10:54+00:00",
-            "published-time": "2026-05-21T15:11:32+00:00"
+            "time": "2026-05-21T15:10:54+00:00"
         },
         {
             "name": "uams-web/aether-alpine-csp-forms",
@@ -12450,6 +12440,82 @@
                 "source": "https://github.com/UAMS-Web/aether-multisite-forms"
             },
             "time": "2026-11-10T22:52:40+00:00"
+        },
+        {
+            "name": "uams-web/aether-people",
+            "version": "v0.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-people.git",
+                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
+                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.1",
+                "uams-web/patches-pest-plugin-mutate": "^1.4",
+                "uams-web/patches-statamic-cms": "^1.1"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\People\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "People",
+                    "description": "The people collection, its lenses and the clinical provider layer."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\People\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "The people collection for Statamic, its lenses and the clinical provider layer.",
+            "homepage": "https://github.com/UAMS-Web/aether-people",
+            "keywords": [
+                "people",
+                "providers",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-people/issues",
+                "source": "https://github.com/UAMS-Web/aether-people"
+            },
+            "time": "2026-11-17T12:55:41+00:00"
         },
         {
             "name": "uams-web/aether-redirects",
@@ -12929,8 +12995,7 @@
                 "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
                 "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
             },
-            "time": "2026-11-15T14:53:23+00:00",
-            "published-time": "2026-11-15T14:54:03+00:00"
+            "time": "2026-11-15T14:53:23+00:00"
         },
         {
             "name": "uams-web/patches-statamic-cms",
@@ -13256,8 +13321,7 @@
                 "issues": "https://github.com/wamania/php-stemmer/issues",
                 "source": "https://github.com/wamania/php-stemmer/tree/v4.0.0"
             },
-            "time": "2024-12-22T08:54:03+00:00",
-            "published-time": "2024-12-22T08:55:42+00:00"
+            "time": "2024-12-22T08:54:03+00:00"
         },
         {
             "name": "web-auth/cose-lib",
@@ -17245,8 +17309,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-03T12:14:22+00:00",
-            "published-time": "2026-11-03T12:14:36+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "phpstan/phpstan-mockery",
@@ -19033,5 +19096,5 @@
     "platform-overrides": {
         "php": "8.4.27"
     },
-    "plugin-api-version": "2.11.0"
+    "plugin-api-version": "2.9.0"
 }

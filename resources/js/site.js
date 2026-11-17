@@ -111,10 +111,9 @@ import { registerLiteVideo } from './lite-video.js';
 // helpers as `CustomInput.vue` via `resources/js/lib/calculation.js`.
 import { registerCalculationEngine } from './calculation-engine.js';
 
-// Public-form PersonName engine. Mirrors the CP's reactive display_format
-// recomputation, importing the same `buildDisplayFormatOptions` JS module
-// as `PersonNameFieldtype.vue` via
-// `resources/js/components/fieldtypes/person-name/personNameDisplayFormats.js`.
+// Public-form PersonName engine. Registers `uams-web/aether-people`'s
+// display_format recomputation, which uses the same `buildDisplayFormatOptions`
+// module as the add-on's Control Panel fieldtype (#696).
 import { registerPersonNameEngine } from './person-name-engine.js';
 
 // Composite-variable split engine. Projects a single composite value (e.g.,

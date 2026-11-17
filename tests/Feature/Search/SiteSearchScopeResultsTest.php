@@ -117,6 +117,9 @@ beforeEach(function (): void {
     $collection->routes('/people/{slug}');
     $collection->sites(['default', 'second']);
     $collection->save();
+
+    // The person blueprint's portrait fields need their containers to render a hit (#696)
+    makePersonPortraitContainers();
 });
 
 it('searches only the current site at the narrow scope', function (): void {

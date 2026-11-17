@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Exceptions\PeopleMergeException;
-use App\Services\People\PeopleMergeService;
-use App\Support\References\EntryReferenceRepointer;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Assert;
 use Statamic\Facades\Blueprint;
@@ -14,6 +11,8 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Merge\PeopleMergeException;
+use UAMSWeb\Aether\People\Merge\PeopleMergeService;
 
 /**
  * Service coverage for {@see PeopleMergeService} (UAMS-Web/uams-statamic-archive#838): reconciliation,
@@ -178,7 +177,9 @@ beforeEach(function (): void {
 
 function pmService(): PeopleMergeService
 {
-    return new PeopleMergeService(new EntryReferenceRepointer);
+    // Resolve through the container, so the site's bindings of the add-on's contracts
+    // (the reference repointer and the redirects writer, #696) are what runs
+    return app(PeopleMergeService::class);
 }
 
 it('refuses to reconcile fewer than two people', function (): void {
