@@ -6,6 +6,7 @@ use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
 use Illuminate\Support\Facades\Facade;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Statamic\Contracts\Entries\EntryRepository;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Fields\Blueprint;
@@ -195,8 +196,12 @@ it('resolves each relationship section with its own label and override prefix', 
 ]);
 
 /**
- * Swap the Entry facade's query for a builder that expects exactly the published-children
+ * Swap the Entry facade's repository for one whose query expects exactly the published-children
  * filter on the given parent id, and answers with the given count.
+ *
+ * `swap()` rather than `shouldReceive()`: the latter resolves the facade's current root to pick
+ * the mock class, and in a worker an earlier booted test has left a container that can no
+ * longer build the repository, so it throws `BindingResolutionException` depending on test order.
  */
 function expectPublishedChildrenQuery(string $parentId, int $count): void
 {
@@ -207,7 +212,10 @@ function expectPublishedChildrenQuery(string $parentId, int $count): void
     $query->expects('whereStatus')->with('published')->andReturnSelf();
     $query->expects('count')->andReturn($count);
 
-    EntryFacade::shouldReceive('query')->once()->andReturn($query);
+    $repository = Mockery::mock(EntryRepository::class);
+    $repository->expects('query')->andReturn($query);
+
+    EntryFacade::swap($repository);
 }
 
 it('counts published clinical_expertise children of the entry for the specialties section', function (int $count, bool $populated) {
@@ -223,7 +231,9 @@ it('counts published clinical_expertise children of the entry for the specialtie
 ]);
 
 it('treats an entry with no string id as having no children, without querying', function () {
-    EntryFacade::shouldReceive('query')->never();
+    $repository = Mockery::mock(EntryRepository::class);
+    $repository->shouldNotReceive('query');
+    EntryFacade::swap($repository);
 
     expect((new ClinicalExpertiseSectionResolver)->resolve(fakeExpertiseEntry('clinical_expertise', [], id: null), 'specialties'))
         ->toBeNull();
