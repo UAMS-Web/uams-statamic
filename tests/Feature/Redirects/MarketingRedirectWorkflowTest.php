@@ -27,7 +27,9 @@ use function Pest\Laravel\withoutVite;
  * Panel create and review pages render, a request is saved as pending, a second
  * user approves it, the approved rule serves through the 404 template's tag,
  * and a colliding source is refused. The workflow's full suite lives in the
- * add-on; this file proves the host wires it up.
+ * add-on; this file proves the host wires it up. Each request answers that it does
+ * not involve Creative Services, which v0.4.0 requires of every request and which
+ * needs no job number (UAMS-Web/aether-redirects#100).
  *
  * @command  php artisan test --compact tests/Feature/Redirects/MarketingRedirectWorkflowTest.php
  */
@@ -127,6 +129,7 @@ it('saves a pending request that serves only after a second user approves it', f
         'source' => '/flu-shot',
         'destination' => '/clinics/flu',
         'response' => '301',
+        'creative_services' => 'no',
     ])
         ->assertStatus(201)
         ->assertJsonPath('redirect.status', 'pending');
@@ -154,12 +157,14 @@ it('refuses a source that collides with an existing request', function (): void 
         'source' => '/vip',
         'destination' => '/first',
         'response' => '301',
+        'creative_services' => 'no',
     ])->assertStatus(201);
 
     postJson(marketingWorkflowCpRoute('marketing-redirects.store'), [
         'source' => '/VIP/',
         'destination' => '/second',
         'response' => '301',
+        'creative_services' => 'no',
     ])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['source' => 'A redirect from /vip to /first']);
