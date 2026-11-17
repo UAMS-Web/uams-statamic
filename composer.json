@@ -12,6 +12,16 @@
     ],
     "repositories": [
         {
+            "name": "patches-statamic-cms",
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/patches-statamic-cms.git"
+        },
+        {
+            "name": "patches-pest-plugin-browser",
+            "type": "vcs",
+            "url": "https://github.com/UAMS-Web/patches-pest-plugin-browser.git"
+        },
+        {
             "type": "vcs",
             "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git"
         },
@@ -56,7 +66,8 @@
         "uams-web/aether-search": "^0.3",
         "uams-web/aether-tables": "^0.2",
         "uams-web/aether-wordpress-importer": "^0.34",
-        "uams-web/patches-pest-plugin-mutate": "^1.3"
+        "uams-web/patches-pest-plugin-mutate": "^1.4.1",
+        "uams-web/patches-statamic-cms": "^1.1"
     },
     "require-dev": {
         "brianium/paratest": "~7.27.5",
@@ -77,7 +88,8 @@
         "phpstan/phpstan-mockery": "^2.0",
         "phpunit/phpunit": "^13.0",
         "rector/rector": "^2.5",
-        "spatie/laravel-ignition": "^2.9.1"
+        "spatie/laravel-ignition": "^2.9.1",
+        "uams-web/patches-pest-plugin-browser": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -163,21 +175,9 @@
         },
         "patches": {
             "pestphp/pest-plugin-browser": {
-                "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "patches/pest-plugin-browser-server-no-shell.patch",
-                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
-            },
-            "statamic/cms": {
-                "Add blueprint-aware collection create labels": "patches/statamic-collection-create-label-blueprint.patch",
-                "Add blueprint-aware taxonomy create labels": "patches/statamic-taxonomy-create-label-blueprint.patch",
-                "Align CP updates badge with updater availableUpdatesCount": "patches/statamic-updates-overview-badge.patch",
-                "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see #2241)": "patches/statamic-stache-traverser-vanished-file.patch",
-                "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-paths.patch",
-                "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see #2643)": "patches/statamic-stache-store-vanished-file-modified.patch",
-                "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-modified.patch",
-                "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-paths.patch",
-                "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-terms-vanished-file-get-item.patch",
-                "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see #2643)": "patches/statamic-stache-basic-vanished-file-get-item.patch"
+                "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
+                "Start the Playwright server without a shell so Linux cannot orphan it (temporary; see #1818)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-server-no-shell.patch",
+                "Retry a navigation the Windows runner refuses with net::ERR_NO_BUFFER_SPACE (temporary; see #585)": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-navigation-no-buffer-space-retry.patch"
             }
         },
         "laravel": {

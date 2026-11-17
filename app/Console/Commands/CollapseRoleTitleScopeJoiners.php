@@ -41,6 +41,8 @@ class CollapseRoleTitleScopeJoiners extends Command
     public function handle(): int
     {
         $collection = (string) $this->option('collection');
+        // A VALUE_NONE option is already a bool, so dropping the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         $write = (bool) $this->option('write');
 
         $findings = $this->migrator->scan($collection, $write);
@@ -51,6 +53,9 @@ class CollapseRoleTitleScopeJoiners extends Command
             return self::SUCCESS;
         }
 
+        // A finding already holds exactly these six keys in this order, and the table renders a
+        // null article as an empty cell, so passing the findings through unmapped prints the same rows.
+        // @pest-mutate-ignore: UnwrapArrayMap
         $this->table(
             ['Entry', 'Path', 'Status', 'From', 'To', 'Article'],
             \array_map(
