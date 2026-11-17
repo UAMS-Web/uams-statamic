@@ -5,6 +5,8 @@
     "base": "main",
     "php": "8.4",
     "chain": true,
+    "_registeredPatches": "Interim opt-out (#752). The shared patches-registered job infers from require-dev placement that a uams-web/patches-* package's patches apply only through the root registration. Here uams-web/patches-pest-plugin-mutate is in require, so composer-patches applies its declared patches and patches.lock.json records them, yet the job reports all 13 as unregistered. Remove this key when the shared check, rewritten in UAMS-Web/uams-claude-skills to compare declared patches with patches.lock.json, reaches this repository through a sync.",
+    "registeredPatches": false,
     "prepare": {
         "residue": [".agents", ".ai", ".claude", ".cursor", ".githooks", ".github", "app", "bootstrap", "config", "database", "docs", "lang", "patches", "resources", "routes", "scripts", "tests"],
         "patches": false
