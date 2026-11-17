@@ -19,9 +19,8 @@ description: >-
   ticket chain for one, removing a retired patch, or editing `patches/`, `extra.patches`,
   `patches.json` or `patches.lock.json`. Writing and documenting a patch and the upstream-facing
   and package-side half (filing the bug and the pull request upstream, the shared package itself,
-  its versioning and retirement, the release check and the upstream watcher, and the
-  upstream-request variant) are the `patch-package` skill in the `uams-web/patches-*`
-  repositories.
+  its versioning and retirement, the release check, and the upstream-request
+  variant) are the `patch-package` skill in the `uams-web/patches-*` repositories.
 ---
 <!--
   Synced from UAMS-Web/uams-claude-skills: shared/.claude/skills/upstream-patch-lifecycle/SKILL.md
@@ -69,6 +68,26 @@ is needed to use it). Which one a repository uses is not a style choice:
 The two forms differ in one mechanic: how many lock files a change touches, which *The relock*
 below spells out. Everything else in this skill applies to both.
 
+**A locked `uams-web/patches-*` package's own `extra.patches` does not apply itself.** The plugin
+resolves a dependency's declared patches only from the lock's `packages`, never `packages-dev`, and
+a consumer requires the patches packages in `require-dev`, so the root registration is the only
+thing that applies them. When a release of the package declares a new patch and the consumer moves
+its pin, the new patch stays unapplied unless the same change adds it to the root list
+(UAMS-Web/aether-redirects#134 measured nine omitted patches that way). The check that catches it
+reads `composer.lock` and the root registration (`patches.json`, `extra.patches` and the file
+`extra.patches-file` names), matches patches by file path, and fails naming each omitted file;
+it passes when no patches package is locked:
+
+```bash
+node .claude/skills/upstream-patch-lifecycle/scripts/check-registered-patches.mjs
+```
+
+It exits 0 when every declared patch is registered, 1 when one is omitted, and 2 when it could not
+answer (a control failed, or a file is not JSON). The shared `local-ci` runner runs it on its own
+as the `patches-registered` job whenever `composer.lock` locks a `uams-web/patches-*` package, with
+no `local-ci.json` entry; `"registeredPatches": false` in `local-ci.json` turns that off
+(UAMS-Web/uams-claude-skills#768, UAMS-Web/uams-claude-skills#770).
+
 This repository is the application form: `extra.patches` and `extra.composer-exit-on-patch-failure`
 in [`composer.json`](../../../composer.json), with the per-patch narrative in
 [`patches/README.md`](../../../patches/README.md).
@@ -92,6 +111,9 @@ Tickets 2 and 3 are `afk`, each with a human approving the post, and how they ru
 verification and its timing, the two transitions, the cross-repo `blocked_by` recipe, and where to
 file) has moved to the `patch-package` skill, which the `uams-web/patches-*` repositories carry
 (UAMS-Web/uams-claude-skills#702).
+The upstream issue and pull request in tickets 2 and 3 follow the target repository's own issue and
+pull request templates, per the
+[`verify-claims-before-a-third-party-post`](../../rules/verify-claims-before-a-third-party-post.md) rule.
 Tickets 1 and 4 are ordinary in-repo builds. Ticket 4's package update often arrives as a
 Dependabot pull request: then the patch retires on that pull request's branch, per the
 [`update-dependencies-ticket`](../update-dependencies-ticket/SKILL.md) skill, and that pull
@@ -309,7 +331,7 @@ retires it.
 | Patch SHA-256s and the set `_hash` | `patches.lock.json` |
 | Composer's own manifest hash | `composer.lock` → `content-hash` |
 | The plugin itself | `cweagans/composer-patches ^2.0` in `require-dev` + `allow-plugins` |
-| Per-patch narrative + removal checklist | `patches/README.md` where the repository has one; otherwise the entry's description key and the decision log (annotated on retirement, never pruned; removal step 12 expects that hit) |
+| Per-patch narrative + removal checklist | `patches/README.md` where the repository has one; otherwise the entry's description key and the decision log (annotated on retirement, never pruned; removal step 11 expects that hit) |
 | PHPStan pins for vendor-guard tests | `internalClass` `ignoreErrors` in `phpstan.neon.dist` |
 
 | Thing (host app) | Path |
@@ -317,7 +339,6 @@ retires it.
 | Snippet pair (Statamic patches only) | `patches/src/<basename>.original.php` / `.patched.php` |
 | Generator command (Statamic patches only) | `app/Console/Commands/Generate*Patch.php` → `App\Services\GenerateStatamicPatch\StatamicPatchGenerator` |
 | The fail-loud switch | `extra.composer-exit-on-patch-failure` in [`composer.json`](../../../composer.json) |
-| Upstream signal watch | One file per row in [`.github/upstream-watches/`](../../../.github/upstream-watches/README.md), loaded by [`scripts/load-upstream-watches.mjs`](../../../scripts/load-upstream-watches.mjs) for [`.github/workflows/watch-upstream.yml`](../../../.github/workflows/watch-upstream.yml); the release check is [`scripts/check-upstream-release.mjs`](../../../scripts/check-upstream-release.mjs) |
 | Reused-worktree re-patch | [`scripts/local-ci.mjs`](../../../scripts/local-ci.mjs) (UAMS-Web/uams-statamic-archive#1743) |
 
 ### Adding a patch
@@ -378,19 +399,7 @@ UAMS-Web/uams-statamic-archive#1726 and UAMS-Web/uams-statamic-archive#1728 both
 
 ### Checking whether the fix shipped
 
-Moved to the `patch-package` skill, which the `uams-web/patches-*` repositories carry (UAMS-Web/uams-claude-skills#702): the release check, and the upstream watcher with its templates. A repository that adopted the watcher keeps its own copy, since the sync never writes a target's `.github/` or `scripts/`.
-
-`watch-upstream.yml` automates the release check the `patch-package` skill describes. Add a row file per upstream signal to
-[`.github/upstream-watches/`](../../../.github/upstream-watches/README.md) when the chain reaches
-ticket 2 or 3: the sentinel is **per-signal**, not per-tracker, so one tracker can carry both an
-issue row and a PR row and each notifies once. A row naming `composer` also polls Packagist for a
-release past the installed pin, which is the condition that retires the patch; a `pr` row with
-`released: true` also comments once when the newest stable tag on the pull request's base-branch
-line contains the merge commit (`scripts/check-upstream-release.mjs`, UAMS-Web/uams-statamic-archive#2727), so it reports the
-release that carries the fix rather than every release. Closing the tracking issue turns its
-watch off. Each row is its own file, so two pull requests that add rows never conflict (UAMS-Web/uams-statamic-archive#2673).
-`scripts/load-upstream-watches.mjs` fails a run with no row files rather than watching nothing, so
-when the last row retires, disable the workflow in the Actions tab.
+Moved to the `patch-package` skill, which the `uams-web/patches-*` repositories carry (UAMS-Web/uams-claude-skills#702): the release check.
 
 ### Removing a patch: the order is load-bearing
 
@@ -418,22 +427,21 @@ here.
    (`pest-plugin-mutate` is pulled in by `pestphp/pest`, not listed in `require-dev`) is still
    targeted by name. **When the update is a Dependabot pull request**, the package has already
    moved on its branch and that branch is unmerged, so nothing reaches `main` out of order: do
-   steps 1 to 4 and 6 to 12 on that branch, and this step is the bump it already carries (the
+   steps 1 to 4 and 6 to 11 on that branch, and this step is the bump it already carries (the
    [`update-dependencies-ticket`](../update-dependencies-ticket/SKILL.md) skill).
 6. Delete the patch's own **guard test**: the one asserting the patch is present in `vendor/`,
    along with the `internalClass` `ignoreErrors` entries in `phpstan.neon.dist` pinned to its
    path. **Do not leave it behind:** a guard goes red the moment the patch retires, which is the
    property that makes it useful and the reason it cannot outlive the patch. A shared
-   *regression* gate is a different thing and stays, that is what step 11 runs to prove the stock
+   *regression* gate is a different thing and stays, that is what step 10 runs to prove the stock
    package still works.
 7. Remove the patch's narrative: its `patches/README.md` section, or its `_comment` entry.
-8. Retire any upstream watch row and its note, where the repository has a watcher.
-9. `composer validate --no-check-publish` exits 0.
-10. Cold verify: `rm -rf vendor && composer install` exits 0 and every **remaining** patch still
+8. `composer validate --no-check-publish` exits 0.
+9. Cold verify: `rm -rf vendor && composer install` exits 0 and every **remaining** patch still
     applies.
-11. Run the gate that exercises the now-unpatched tool, and **see it green**: see *Proving it
+10. Run the gate that exercises the now-unpatched tool, and **see it green**: see *Proving it
     worked* below. Assuming it is fine is how a silent regression ships.
-12. Nothing outside the historical record still names the patch. A retirement annotates the
+11. Nothing outside the historical record still names the patch. A retirement annotates the
     repository's decision log (`docs/DECISIONS.md` where it has one) rather than deleting the
     entry, because a decision log records what was decided and deleting an entry falsifies it;
     that annotated entry is the one place the basename should survive, and step 7 has already
@@ -452,8 +460,7 @@ here.
 
 For a generated patch, step 1 also deletes the `patches/src/` snippet pair and its
 `app/Console/Commands/Generate*Patch.php` command; `pest-plugin-browser` carries three patches, so
-its package key stays until the last goes; step 8 deletes the row files from
-`.github/upstream-watches/`; and step 10 runs with `composer-exit-on-patch-failure: true` still
+its package key stays until the last goes; and step 9 runs with `composer-exit-on-patch-failure: true` still
 set.
 
 A patch can also retire without any of this, by silently ceasing to apply because upstream fixed
@@ -611,9 +618,7 @@ Moved to the `patch-package` skill, which the `uams-web/patches-*` repositories 
 `statamic/ideas`, `statamic/docs` and `statamic/cms` are the trackers this variant is filed
 against here. #2725 is blocked by `statamic/cms#15548`, the issue `statamic/cms#15549` fixes,
 because the pull request could not be the blocker. #7, #17 and #9 are the existing-follow-up
-case for `statamic/ideas#1490`, `#1491` and `#140`. The watch row for a follow-up is a file in
-[`.github/upstream-watches/`](../../../.github/upstream-watches) with its README note, `tracker`
-set to the follow-up.
+case for `statamic/ideas#1490`, `#1491` and `#140`.
 
 ---
 
@@ -622,7 +627,7 @@ set to the follow-up.
 This skill owns the **lifecycle** and the **ticket shape**, and nothing else.
 
 - **The upstream-facing and package-side work** (writing and documenting a patch, tickets 2 and 3,
-  the shared package, its versioning and retirement, the release check and the upstream watcher,
+  the shared package, its versioning and retirement, the release check,
   and the upstream-request variant) is the
   `patch-package` skill in the `uams-web/patches-*` repositories (UAMS-Web/uams-claude-skills#702).
 - **Per-patch detail**: what each patch does, why it exists, its retirement condition, and its

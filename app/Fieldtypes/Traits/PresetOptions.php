@@ -40,9 +40,11 @@ trait PresetOptions
     /**
      * Get all available presets with their complete configuration.
      *
-     * This method defines the available presets with their options and config
-     * settings. Override this method in your fieldtype to provide custom preset
-     * definitions.
+     * This method defines the available presets: each one's `display` label, its
+     * static `options` (or `has_config` when they are built from config), and in
+     * `config` the parent config fields the preset makes irrelevant, which
+     * getParentConfigWithConditionalVisibility() hides while it is selected.
+     * Override this method in your fieldtype to provide custom preset definitions.
      *
      * @todo  Add support for defining/hiding custom config fields like `randomize_order`.
      *
@@ -53,12 +55,8 @@ trait PresetOptions
         return [
             'us_states' => [
                 'display' => 'U.S. States, Territories and Districts',
-                'options' => [], // Will be populated dynamically
                 'has_config' => true,
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'canadian_provinces' => [
                 'display' => 'Canadian Provinces',
@@ -77,35 +75,22 @@ trait PresetOptions
                     'SK' => 'Saskatchewan',
                     'YT' => 'Yukon',
                 ],
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'countries' => [
                 'display' => 'Countries',
                 'options' => $this->getCountryOptions(),
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'languages' => [
                 'display' => 'Languages',
-                'options' => [], // Will be populated dynamically
                 'has_config' => true,
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'currencies' => [
                 'display' => 'Currencies',
                 'options' => $this->getCurrencyOptions(),
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'months' => [
                 'display' => 'Months',
@@ -123,10 +108,7 @@ trait PresetOptions
                     '11' => 'November',
                     '12' => 'December',
                 ],
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'days_of_week' => [
                 'display' => 'Days of Week',
@@ -139,10 +121,7 @@ trait PresetOptions
                     '6' => 'Saturday',
                     '7' => 'Sunday',
                 ],
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'yes_no' => [
                 'display' => 'Yes/No',
@@ -150,12 +129,7 @@ trait PresetOptions
                     'yes' => 'Yes',
                     'no' => 'No',
                 ],
-                'config' => [
-                    'cast_booleans' => false,
-                    'max_items' => null,
-                    'multiple' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'max_items', 'multiple', 'taggable'],
             ],
             'true_false' => [
                 'display' => 'True/False',
@@ -163,30 +137,17 @@ trait PresetOptions
                     'true' => 'True',
                     'false' => 'False',
                 ],
-                'config' => [
-                    'cast_booleans' => true,
-                    'max_items' => null,
-                    'multiple' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'max_items', 'multiple', 'taggable'],
             ],
             'mime_types' => [
                 'display' => 'MIME Types',
-                'options' => [], // Will be populated dynamically
                 'has_config' => true,
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
             'mime_categories' => [
                 'display' => 'MIME Type Categories',
-                'options' => [], // Will be populated dynamically
                 'has_config' => true,
-                'config' => [
-                    'cast_booleans' => false,
-                    'taggable' => false,
-                ],
+                'config' => ['cast_booleans', 'taggable'],
             ],
         ];
     }
@@ -318,14 +279,10 @@ trait PresetOptions
         ?string $scope,
         string $enumClass
     ): ?string {
-        // Check if scope is null or 'all'
-        if (
-            $scope === null
-            || $scope === 'all'
-        ) {
-            // Return null for all scopes
-            return null;
-        }
+        // ---
+        // A null scope, 'all' and any unknown scope fall to each match's default
+        // arm, which returns null.
+        // ---
 
         // ---
         // For Language enum (ISO 639)
@@ -399,37 +356,18 @@ trait PresetOptions
             // Get the language's scope value
             $languageScope = $language->scope();
 
-            // Initialize flag to track if language matches any selected scope
-            $matchesScope = false;
-
-            // Loop through each selected scope
-            foreach ($scopes as $scope) {
-                // Map the user-friendly scope to the appropriate enum scope value
-                $mappedScope = $this->mapLanguageScope(
+            // ---
+            // Map each user-friendly scope to the enum's scope value and compare. Neither
+            // enum's data carries an empty-string scope, and mapLanguageScope() returns
+            // only null or a non-empty string, so null and '' need no normalizing.
+            // ---
+            $matchesScope = array_any(
+                $scopes,
+                fn (string $scope): bool => $languageScope === $this->mapLanguageScope(
                     $scope,
                     $enumClass
-                );
-
-                // ---
-                // Normalize scope values for comparison (treat null and empty string as
-                // equivalent)
-                // ---
-
-                // Normalize language scope (treat empty string as null)
-                $normalizedLanguageScope = $languageScope === '' ? null : $languageScope;
-
-                // Normalize mapped scope (treat empty string as null)
-                $normalizedMappedScope = $mappedScope === '' ? null : $mappedScope;
-
-                // Check if this language matches the current scope
-                if ($normalizedLanguageScope === $normalizedMappedScope) {
-                    // Language matches this scope
-                    $matchesScope = true;
-
-                    // Exit loop early since we found a match
-                    break;
-                }
-            }
+                )
+            );
 
             // ---
             // Skip this language if it doesn't match any of the selected scopes
@@ -679,19 +617,14 @@ trait PresetOptions
         // Get the selected preset from config.
         $selectedPreset = $this->config('preset');
 
-        // Check if no preset is selected or preset is 'none'
-        if (
-            empty($selectedPreset)
-            || $selectedPreset === 'none'
-        ) {
-            // Return original options when no preset is selected
-            return $originalOptions;
-        }
-
-        // Get the preset options for the selected preset.
-        $presetOptions = $this->getPresetOptions(
-            is_scalar($selectedPreset) ? (string) $selectedPreset : ''
-        );
+        // ---
+        // Get the preset options for the selected preset. No preset, 'none' and any
+        // key without a definition all yield no options, so the original options
+        // stand.
+        // ---
+        $presetOptions = \is_string($selectedPreset)
+            ? $this->getPresetOptions($selectedPreset)
+            : [];
 
         // Check if preset options are found
         if (! empty($presetOptions)) {
@@ -718,14 +651,8 @@ trait PresetOptions
         // Get preset definitions and extract options.
         $definitions = $this->getPresetDefinitions();
 
-        // Get the preset definition
-        $presetDefinition = $definitions[$preset] ?? null;
-
-        // Check if preset definition was not found
-        if (! $presetDefinition) {
-            // Return empty array when preset not found
-            return [];
-        }
+        // Get the preset definition; an unknown preset has none, and so no options
+        $presetDefinition = $definitions[$preset] ?? [];
 
         // Check if this preset has dynamic options that need to be generated
         if (
@@ -980,7 +907,12 @@ trait PresetOptions
                 && \is_array($definition['config'])
             ) {
                 // Iterate through each config field used by this preset
-                foreach (array_keys($definition['config']) as $configKey) {
+                foreach ($definition['config'] as $configKey) {
+                    // Skip an entry that is not a config field name
+                    if (! \is_string($configKey)) {
+                        continue;
+                    }
+
                     // ---
                     // Initialize the array for this config key if it doesn't exist
                     // ---
