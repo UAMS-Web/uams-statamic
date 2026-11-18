@@ -2269,6 +2269,8 @@ That leaves the choice as a bet on a *future* failure, not a security decision. 
 
 **Companion.** UAMS-Web/uams-statamic-archive#2321 (the ticket; decided in its 2026-09-08 comment, recorded here 2026-09-28); UAMS-Web/uams-statamic-archive#2168 (where the collision was found at intake); UAMS-Web/uams-statamic-archive#2234 (the CI check, which needs no exception); UAMS-Web/uams-statamic-archive#2185 (the corpus sweep, out of scope).
 
+**Scope (2026-11-17, #628).** This entry covers pull-request and issue bodies only; commit messages were not in its scope. Whether a tool session link may appear in a commit message was decided separately, in the #628 entry below.
+
 ## 2026-09-09 — A deleted entry's redirect is captured automatically and disabled, for an editor to complete (UAMS-Web/uams-statamic-archive#301)
 
 **Decision.** Deleting an entry with a public URL writes a `redirect` row into the `redirects` global immediately, carrying the URI it occupied and **no destination**, with `enabled: false`. An editor supplies the target and turns the row on as one deliberate act. The row is written on `EntryDeleted`, so a cancelled delete records nothing.
@@ -4000,3 +4002,28 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *200*: within the gate at 163 to 168ms, but half the measured first pages change. *2000*: 3 of 32 first pages change, but p95 427ms misses the gate. *5000 or no cap*: p95 807ms and 1.2s. *Relaxing the 400ms gate, one index per site, or another driver*: not part of this decision.
 
 **Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
+
+## 2026-11-17: The custom fieldtypes move into one shared add-on, with the domain fieldtypes left in the site (#767)
+
+**Decision.** Four decisions by the project owner on 2026-11-17, from the measurement on #703.
+
+- **Package shape.** One shared add-on holds the fieldtype slices 1 to 4 that #703 measured. The domain slice (`OrphanBanner`, `PublishDependencyBanner`, `SchemaObject`, `SchemaType`, `CtdlClass`, `QuantitativeValue`, `ChildSites`) stays in the site, and each of those moves later with the services it wraps, into whichever add-on owns them.
+- **People boundary.** `TextPhoneticPair` and its three phonetic Vue partials, which `PersonName` uses, join `uams-web/aether-people` now. `RoleTitle` and `Isco_08` join `aether-people` in a later ticket, after their site support classes have a home, and stay in the site until then. This revises the 2026-11-17 `aether-people` entry (#696), which kept `TextPhoneticPair` in the site.
+- **Lang keys.** The add-on owns a lang namespace for its keys, and the site can still override them.
+- **Public Alpine engines.** The add-on ships the engines a fieldtype partial names: `calculation`, `option-pricing`, `product-pricing`, `total-pricing` and `lib/alpine-engine.js`. Engines no partial names stay in the site's `site.js`.
+
+**Why.** One add-on keeps together the traits and mixins the slices share, which several add-ons would split and duplicate. The domain fieldtypes wrap site services, so moving them now would move those services too. `TextPhoneticPair` and the phonetic partials `PersonName` uses can move now, while `RoleTitle` and `Isco_08` wait until their site support classes have a home, so `aether-people` never depends on site code. One owner for the lang keys and for the engines a partial names avoids two sources that drift, and an add-on whose partials need nothing a host app must register.
+
+**Rejected.** *Package shape*: one add-on for everything, which moves the site services too; several add-ons, for example form fieldtypes apart from Control Panel-only ones, which splits the shared traits and mixins and duplicates them. *People boundary*: all three into `aether-people` now, which would make it depend on site code; all three into the shared add-on; all three staying in the site for good. *Lang keys*: keeping them in the site with add-on fallbacks, which leaves two sources that drift. *Public Alpine engines*: keeping them all in `site.js`, which leaves the add-on's partials naming engines a host app must register.
+
+**Companion.** #767 (the decision, its `## Decision` section), #703 and its [measurement](https://github.com/UAMS-Web/uams-statamic/issues/703#issuecomment-6872091488) (the slices, the options and the counts behind them), #696 (the `aether-people` boundary this revises for `TextPhoneticPair`).
+
+## 2026-11-17: A commit message carries no tool session link, while a `Co-authored-by` trailer naming the tool stays allowed (#628)
+
+**Decision.** A commit message may not carry a trailer whose value is a tool session URL (for example `Amp-Thread-ID: https://ampcode.com/threads/...`), on any surface: branch commits, the pull request's commit list, and the composed squash message. A `Co-authored-by` trailer naming the tool stays permitted and remains the commit convention's attribution. A gate that finds a session link hands the pull request back to its author to reword the commit; the gate does not rewrite an author's commits. Already-merged commits, #606's included, are not rewritten. Decided 2026-11-17 (reading A, narrowed to links); the shared rule and a commit-message check are `UAMS-Web/uams-claude-skills#819`.
+
+**Why.** Both trailers are provenance, but only the session trailer is a link to an outside tool's conversation, readable by anyone holding the URL, and it stays readable on the branch indefinitely because this repository keeps merged branches (`delete_branch_on_merge` is false). The exposure is the URL, not the credit. Measured on #606's merge (`02a6df6`), a composed squash message carried `Co-authored-by` twice and `Amp-Thread-ID` not at all, against one `Amp-Thread-ID` in the branch commits, so the surface is the branch and its commit list rather than `main`.
+
+**Rejected.** *Reading B, the session trailer is provenance and allowed*: it keeps a durable external link that the body rule (UAMS-Web/uams-statamic-archive#2321) already bans on the neighboring surface. *Record only, since the squash already drops it from `main`*: branch commits and the commit list stay readable, so the link would still persist.
+
+**Companion.** #628 (decision); `UAMS-Web/uams-claude-skills#819` (the shared rule and the commit-message check); #606 (where the trailer was found); UAMS-Web/uams-statamic-archive#2321 (the body-scoped ban, whose entry above now states its scope).
