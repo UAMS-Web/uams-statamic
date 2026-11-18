@@ -96,6 +96,9 @@ final class ExternalProber
     /**
      * Guarded requests issued this run, across every URL and both verbs.
      */
+    // A property default is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, 1 and -1 each fail 4 tests in ExternalProberTest.
+    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private int $attempts = 0;
 
     /**

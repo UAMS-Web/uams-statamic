@@ -47,7 +47,9 @@ final class HostThrottle
 
         // A URL with no host cannot be attributed to one, so it gets its own bucket rather than
         // silently joining another host's. It will not be probed anyway — the guard refuses it.
-        return 'link_health:outbound:v1:'.(\is_string($host) && $host !== '' ? strtolower($host) : '(none)');
+        // `parse_url()` never returns an empty host: it rejects a URL whose host would be empty,
+        // so a string here is always a real host name.
+        return 'link_health:outbound:v1:'.(\is_string($host) ? strtolower($host) : '(none)');
     }
 
     /**

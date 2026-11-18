@@ -162,3 +162,50 @@ it('skips a set group that is not a list and a set config that is not a list', f
         ]],
     ]))->toBe(['callout' => ['text' => ['type' => 'text']]]);
 });
+
+/**
+ * Run a callback with every PHP warning and notice raised as an exception.
+ *
+ * The non-array guards in `normalize()` and `sets()` change no return value: without them
+ * `foreach` iterates zero times and the result is still empty. What they prevent is the
+ * warning `foreach` raises, so the assertion that kills their RemoveEarlyReturn mutants has
+ * to observe the warning rather than the result.
+ *
+ * @template TResult
+ *
+ * @param  Closure(): TResult  $callback  The call under test.
+ * @return TResult What the callback returned.
+ */
+function bfmWithoutWarnings(Closure $callback): mixed
+{
+    set_error_handler(static function (int $severity, string $message): never {
+        throw new ErrorException($message, 0, $severity);
+    });
+
+    try {
+        return $callback();
+    } finally {
+        restore_error_handler();
+    }
+}
+
+it('returns an empty map for a non-array config without raising a warning', function (mixed $config): void {
+    expect(bfmWithoutWarnings(static fn (): array => BlueprintFieldMap::normalize($config)))->toBe([]);
+})->with(['null' => [null], 'text' => ['not-an-array']]);
+
+it('returns no sets for a sets config that is not a list, without raising a warning', function (mixed $config): void {
+    expect(bfmWithoutWarnings(static fn (): array => BlueprintFieldMap::sets($config)))->toBe([]);
+})->with(['null' => [null], 'text' => ['sets']]);
+
+it('skips a field value that is not a Field and carries on to the next', function (): void {
+    // `Fields::all()` is a collection, and nothing in its type keeps a non-`Field` value out of
+    // it. Such a value is skipped rather than having `config()` called on it, and the walk goes
+    // on to the field after it rather than stopping.
+    $fields = Mockery::mock(Fields::class);
+    $fields->shouldReceive('all')->andReturn(collect([
+        'broken' => 'not a field',
+        'body' => new Field('body', ['type' => 'bard']),
+    ]));
+
+    expect(BlueprintFieldMap::fromFields($fields))->toBe(['body' => ['type' => 'bard']]);
+});
