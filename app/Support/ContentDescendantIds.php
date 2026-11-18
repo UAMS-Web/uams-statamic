@@ -34,16 +34,16 @@ final class ContentDescendantIds
     public static function forEntry(
         int|string $entryId
     ): array {
-        // Load the starting entry (a deleted id yields no descendants)
+        // Load the starting entry (a deleted id yields no descendants); the app
+        // repository's find() returns the concrete entry, which the facade's
+        // contract-typed docblock does not say
+        /** @var StatamicEntry|null $entry */
         $entry = EntryFacade::find($entryId);
 
         // Stop when the entry cannot be loaded
         if ($entry === null) {
             return [];
         }
-
-        // Narrow to the concrete entry type so structure page() is analyzable
-        \assert($entry instanceof StatamicEntry);
 
         // Resolve the entry's structure page (null when the collection has no tree)
         $page = $entry->page();
@@ -133,21 +133,14 @@ final class ContentDescendantIds
                 $taxonomyHandle
             );
 
-            // Skip terms with no resolvable parent (taxonomy roots)
-            if ($parentReference === '') {
-                continue;
-            }
-
             // Resolve the canonical child reference for the map value
             $childReference = self::objectTermId($term);
 
-            // Skip children whose reference cannot be resolved
-            if ($childReference === '') {
-                continue;
+            // Record the child under its parent, skipping taxonomy roots (no parent)
+            // and children whose own reference cannot be resolved
+            if ($parentReference !== null && $childReference !== '') {
+                $childrenByParent[$parentReference][] = $childReference;
             }
-
-            // Record the child under its parent reference
-            $childrenByParent[$parentReference][] = $childReference;
         }
 
         // Initialize the ordered list of descendant references
@@ -166,8 +159,9 @@ final class ContentDescendantIds
 
             // Visit each child recorded under the current reference
             foreach ($childrenByParent[$currentReference] ?? [] as $childReference) {
-                // Skip references already seen (dedupe and cycle guard)
-                if (isset($seenKeys[$childReference])) {
+                // Skip references already seen (dedupe and cycle guard); the stored
+                // flag is read rather than isset(), which is true for a stored false
+                if ($seenKeys[$childReference] ?? false) {
                     continue;
                 }
 
@@ -191,7 +185,7 @@ final class ContentDescendantIds
      *
      * A single-taxonomy `max_items: 1` parent field stores the bare slug (optionally
      * wrapped in a one-element array); an already-qualified `handle::slug` reference is
-     * left as-is. Returns '' when no usable parent slug is present (a taxonomy root).
+     * left as-is. Returns null when no usable parent slug is present (a taxonomy root).
      *
      * @param  mixed  $rawParent  The raw `get('parent')` value
      * @param  string  $taxonomyHandle  Taxonomy handle to qualify a bare slug
@@ -199,7 +193,7 @@ final class ContentDescendantIds
     private static function parentReferenceFromRaw(
         mixed $rawParent,
         string $taxonomyHandle
-    ): string {
+    ): ?string {
         // A max_items:1 terms field may persist a single-element array; unwrap it.
         if (is_array($rawParent)) {
             $rawParent = $rawParent[0] ?? null;
@@ -207,7 +201,7 @@ final class ContentDescendantIds
 
         // Only a non-empty string slug or reference is usable.
         if (! is_string($rawParent) || $rawParent === '') {
-            return '';
+            return null;
         }
 
         // Qualify a bare slug with the taxonomy handle; keep an existing reference.
