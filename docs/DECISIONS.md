@@ -4047,3 +4047,12 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *All support classes into `aether-people`, the enum included*: the site's other users of the enum would then depend on `aether-people` for it. *An interface for everything*: it adds a binding the site must supply for classes that have no site dependency.
 
 **Companion.** #1001 (the decision and the code reading behind the two confirmations), #767 (the people boundary), #994 (the shared enums add-on), `UAMS-Web/aether-people#124` (the move).
+## 2026-11-18: The five custom date rules are retired, not renamed (#1016)
+
+**Decision.** The five custom date rules (`after`, `after_or_equal`, `before`, `before_or_equal`, `date_equals`) are retired, decided on 2026-11-18. `After`, `AfterOrEqual`, `Before`, `BeforeOrEqual`, `DateEquals` and `BaseDateComparisonRule` are deleted, with their five registrations in `ValidationServiceProvider`, their tests, and the `statamic::validation` entries only they read.
+
+**Why.** Laravel already owns all five names, so `after:12:00,time` runs Laravel's validator and the custom class never executes; retiring them changes no validation result. The custom classes only damaged the failure message, through the replacer's positional placeholders. None of the five names is used in any blueprint, fieldset or app code, and they are the last users of the legacy `Rule` interface once #1002 lands.
+
+**Rejected.** *Renaming the rules so they run, ported to `ValidationRule` with typed messages through `$fail`*: it keeps machinery for date, time and datetime comparisons that no field uses, and adds a second spelling of comparisons Laravel already validates.
+
+**Companion.** #1016 (the decision, its `## Decision` section) and #1014's [measurement](https://github.com/UAMS-Web/uams-statamic/issues/1014#issuecomment-6966364477); #1047 (the build).
