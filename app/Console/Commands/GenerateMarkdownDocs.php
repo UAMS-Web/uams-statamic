@@ -285,9 +285,6 @@ class GenerateMarkdownDocs extends Command
         // Extract file/directory path from parsed URL
         $path = $parsed['path'];
 
-        // Initialize output string for markdown content
-        $output = '';
-
         // GitHub token from config (backed by GITHUB_TOKEN in .env at config build time)
         $token = config('services.github.token');
 
@@ -340,8 +337,8 @@ class GenerateMarkdownDocs extends Command
             // Construct the full GitHub URL for the file
             $fileUrl = sprintf('https://github.com/%s/%s/blob/%s/%s', $owner, $repo, $branch, $path);
 
-            // Format and append file content to output
-            $output .= $this->formatFileContent(
+            // Format and return the file content
+            return $this->formatFileContent(
                 $fileUrl,
                 $content,
                 pathinfo(
@@ -349,41 +346,41 @@ class GenerateMarkdownDocs extends Command
                     PATHINFO_EXTENSION
                 )
             );
-        } else { // Otherwise
-            // Handle directory (tree)
-            $files = $this->getGithubFiles(
-                $owner,
-                $repo,
-                $path,
-                $branch,
-                $excludeDirs,
-                $headers
+        }
+
+        // Otherwise the URL is a directory (tree)
+        $files = $this->getGithubFiles(
+            $owner,
+            $repo,
+            $path,
+            $branch,
+            $excludeDirs,
+            $headers
+        );
+
+        // Check if any files were found after exclusions
+        if ($files === []) {
+            // Display warning if no files found
+            $this->warn(sprintf("No files found in GitHub directory '%s' from %s/%s after exclusions. Skipping.", $path, $owner, $repo));
+        }
+
+        // Initialize output string for markdown content
+        $output = '';
+
+        // Loop through each file found
+        foreach ($files as $file) {
+            // Construct the full GitHub URL for the file
+            $fileUrl = sprintf('https://github.com/%s/%s/blob/%s/%s', $owner, $repo, $branch, $file['path']);
+
+            // Format and append file content to output
+            $output .= $this->formatFileContent(
+                $fileUrl,
+                $file['content'],
+                pathinfo(
+                    $file['path'],
+                    PATHINFO_EXTENSION
+                )
             );
-
-            // Check if any files were found after exclusions
-            if ($files === []) {
-                // Display warning if no files found
-                $this->warn(sprintf("No files found in GitHub directory '%s' from %s/%s after exclusions. Skipping.", $path, $owner, $repo));
-
-                // Return empty string if no files
-                return '';
-            }
-
-            // Loop through each file found
-            foreach ($files as $file) {
-                // Construct the full GitHub URL for the file
-                $fileUrl = sprintf('https://github.com/%s/%s/blob/%s/%s', $owner, $repo, $branch, $file['path']);
-
-                // Format and append file content to output
-                $output .= $this->formatFileContent(
-                    $fileUrl,
-                    $file['content'],
-                    pathinfo(
-                        $file['path'],
-                        PATHINFO_EXTENSION
-                    )
-                );
-            }
         }
 
         // Return the accumulated markdown output
@@ -580,7 +577,6 @@ class GenerateMarkdownDocs extends Command
             'yaml' => 'yaml',
             'yml' => 'yaml',
             'xml' => 'xml',
-            'antlers.html' => 'antlers',
             // Add more as needed
         ];
 
@@ -629,6 +625,11 @@ class GenerateMarkdownDocs extends Command
         foreach ($allFiles as $file) {
             // Get the absolute path of the file's directory
             $fileDir = realpath(dirname($file->getPathname()));
+
+            // Both paths are realpath() of a directory that exists (one was just listed,
+            // the other was filtered to directories above), so neither can be false and
+            // neither cast changes anything: removing either is an equivalent mutant.
+            // @pest-mutate-ignore: RemoveStringCast
             $isExcluded = array_any($excludeFullPaths, fn (string|false $excludePath): bool => \str_starts_with(
                 (string) $fileDir,
                 (string) $excludePath
