@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\People\PeopleLensController;
-use App\Support\People\ClinicalProviderProfileEligibility;
-use App\Support\People\ResearcherProfileEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Route;
@@ -15,6 +12,9 @@ use Statamic\Http\Controllers\FrontendController;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Http\Controllers\PeopleLensController;
+use UAMSWeb\Aether\People\Support\ClinicalProviderProfileEligibility;
+use UAMSWeb\Aether\People\Support\ResearcherProfileEligibility;
 
 use function Pest\Laravel\get;
 use function Pest\Laravel\withoutVite;

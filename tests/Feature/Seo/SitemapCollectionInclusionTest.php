@@ -59,7 +59,7 @@ it('lists every routable collection in the sitemap defaults with taxonomies off'
 it('imports the sitemap toggle fieldset into every sitemapped blueprint', function (string $blueprint): void {
     // Without the import, editors get no per-entry opt-out and deleting the wiring
     // would leave every behavioral test green — so assert the import explicitly.
-    $parsed = YAML::parse(File::get(resource_path("blueprints/collections/{$blueprint}.yaml")));
+    $parsed = YAML::parse(File::get(servedResourcePath("blueprints/collections/{$blueprint}.yaml")));
 
     /** @var array<array-key, array{sections?: array<array-key, array{fields?: array<array-key, array<string, mixed>>}>}> $tabs */
     $tabs = $parsed['tabs'] ?? [];

@@ -1,12 +1,12 @@
 {
-    "_hash": "d4ae601af814bb91298fdb106ca6519d76a389623cf7d2043b405165ea479830",
+    "_hash": "6e2ebe77eacdf13ddedc3a28db59edebe4c098d40f9c401d98b8139f6a5115bf",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
                 "package": "pestphp/pest-plugin-browser",
                 "description": "Give each retry attempt the configured Playwright timeout instead of a hardcoded 1000ms (temporary; see #1816)",
                 "url": "vendor/uams-web/patches-pest-plugin-browser/patches/pest-plugin-browser-per-attempt-timeout.patch",
-                "sha256": "e3e12e7fea395155120aab77be5ece38c9433689470e83950336f49d61d94191",
+                "sha256": "3e30fc33bb2d7dc7d679171ed08fba9075563c7161c5f4440dd7549a7e5bf224",
                 "depth": 1,
                 "extra": {
                     "provenance": "root"

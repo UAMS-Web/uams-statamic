@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Services\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
 use App\Services\Facilities\FacilityInheritedAddressService;
 use App\Services\Locations\LocationInheritedAddressService;
-use App\Support\People\ClinicalProviderProfileEligibility;
 use Illuminate\Support\Carbon;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
@@ -14,6 +12,8 @@ use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Fields\Blueprint;
 use Statamic\Stache\Repositories\EntryRepository as StacheEntryRepository;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
+use UAMSWeb\Aether\People\Support\ClinicalProviderProfileEligibility;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -25,7 +25,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * computed reads were initially missed) and the `searchable` dependency on
  * `hidden_from_provider_list_query`.
  *
- * Mutation: 100% on App\Services\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues (20 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues (20 mutants, --covered-only).
  */
 
 /**

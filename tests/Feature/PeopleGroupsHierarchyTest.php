@@ -244,7 +244,7 @@ it('wires each archive to its collection\'s structure children', function (strin
     // rendered, because the in-memory Stache does not resolve `:parent:is` — the
     // same split `PostCategoryArchiveTest` documents, which leaves the rendered
     // `:parent:is` path to a disk-loaded render test.
-    $source = (string) file_get_contents(resource_path("views/{$template}/show.antlers.html"));
+    $source = (string) file_get_contents(servedResourcePath("views/{$template}/show.antlers.html"));
 
     expect($source)->toContain(':parent:is="id"');
     expect($source)->toContain("collection:{$collection}");
@@ -257,7 +257,7 @@ it('renders the people filed under a group', function () {
     seedGroupHierarchy();
 
     $html = (string) Antlers::parse(
-        (string) file_get_contents(resource_path('views/people_groups/show.antlers.html')),
+        (string) file_get_contents(aetherPeopleResourcePath('views/people_groups/show.antlers.html')),
         mustBeArray(requireEntry('pg-deans')->toAugmentedArray(), 'the group entry'),
         true,
     );

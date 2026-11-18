@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Support\People\CanonicalPeopleResolver;
 use Statamic\Entries\Entry as EntryInstance;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Support\CanonicalPeopleResolver;
 
 /**
  * Behavioral coverage for {@see CanonicalPeopleResolver} — the cross-site substrate
@@ -19,7 +19,7 @@ use Tests\Support\StacheIsolatedTestCase;
  * supplies the full multi-site list, so `Site::hasMultiple()` is true — the condition
  * under which Statamic's site scoping bites.
  *
- * @covers \App\Support\People\CanonicalPeopleResolver
+ * @covers \UAMSWeb\Aether\People\Support\CanonicalPeopleResolver
  *
  * @command php artisan test --compact tests/Feature/Support/People/CanonicalPeopleResolverTest.php
  */

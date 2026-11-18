@@ -208,10 +208,14 @@ it('builds the copy from content/, so a file written into the mirror never reach
     $mirror = str_replace('\\', '/', ContentRoot::path(Config::string('app.env')));
     $directory = 'collections/'.ISOLATION_PROBE_COLLECTION;
 
-    // A file a sibling worker writes into the mirror. The extension is one the Stache
-    // never reads, so a sibling's warm cannot index it while it exists, and the copy
-    // step lists every file whatever its extension.
-    $stray = $directory.'/'.ISOLATION_PROBE_SLUG.'-'.ThrowawayRoot::segment().'.probe';
+    // A file a sibling worker writes into the mirror. It is a dot-file, which the
+    // Stache traverser's Finder skips (`ignoreDotFiles(true)`) before any store filter
+    // runs, so a sibling's warm never reads it while it exists. A plain name, at the
+    // collection's top level beside its site directories, is read first by the
+    // multisite entries filter, which splits the path on its site and fails on a file
+    // with none (#977's band). The copy step lists hidden files
+    // (`File::allFiles(..., true)`), so a copy taken from the mirror would hold it.
+    $stray = $directory.'/.'.ISOLATION_PROBE_SLUG.'-'.ThrowawayRoot::segment().'.probe';
 
     // Positive control: a committed file removed from the copy, which only a sync from
     // a source that holds it puts back

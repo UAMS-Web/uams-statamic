@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services\ComputedFields\Registration;
 
 use App\Services\IptcDigitalSourceValueResolver;
-use App\Support\Collections\PeopleCollection;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Registers IPTC digital source computed fields on supported collections: resolved

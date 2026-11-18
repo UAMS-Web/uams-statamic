@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Fieldtypes;
 
 use App\Fieldtypes\Traits\ConfigSectionWrapper;
-use App\Support\People\PeopleEditingScope;
 use Illuminate\Http\Request;
 use Statamic\Auth\User as UserAuth;
 use Statamic\Contracts\Entries\Entry as EntryContract;
@@ -20,6 +19,7 @@ use Statamic\Fieldtypes\Entries as BaseEntries;
 use Statamic\Query\Builder;
 use Statamic\Sites\Site;
 use Statamic\Support\Arr;
+use UAMSWeb\Aether\People\Support\PeopleEditingScope;
 
 /**
  * Extended Entries fieldtype that filters creatable blueprints based on

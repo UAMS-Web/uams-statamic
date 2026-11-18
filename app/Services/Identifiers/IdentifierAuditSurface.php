@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Identifiers;
 
-use App\Support\Collections\PeopleCollection;
 use Symfony\Component\Yaml\Yaml;
+use UAMSWeb\Aether\People\ServiceProvider as AetherPeopleServiceProvider;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Derives the set of identifier fields to audit from the blueprints themselves
@@ -33,7 +34,7 @@ use Symfony\Component\Yaml\Yaml;
 class IdentifierAuditSurface
 {
     /**
-     * Blueprints to read, as collection handle => path under `resources/`.
+     * Blueprints to read, as collection handle => absolute path.
      *
      * Only collections that wire a rule appear here; a collection with no
      * uniqueness rules contributes nothing and needs no entry.
@@ -43,9 +44,31 @@ class IdentifierAuditSurface
     private static function blueprints(): array
     {
         return [
-            PeopleCollection::handle() => 'resources/blueprints/collections/people/person.yaml',
-            'clinical_locations' => 'resources/blueprints/collections/clinical_locations/location.yaml',
+            PeopleCollection::handle() => self::personBlueprintPath(),
+            'clinical_locations' => resource_path('blueprints/collections/clinical_locations/location.yaml'),
         ];
+    }
+
+    /**
+     * The person blueprint the site serves.
+     *
+     * The blueprint ships in `uams-web/aether-people` (#696). A host override under
+     * `resources/blueprints/vendor/collections/people/` replaces it, as Statamic
+     * resolves a namespaced blueprint, so the override is read when it exists.
+     *
+     * @return string The absolute path of the override, or of the add-on's file.
+     */
+    private static function personBlueprintPath(): string
+    {
+        // Read the host's override when there is one
+        $override = resource_path('blueprints/vendor/collections/'.PeopleCollection::handle().'/person.yaml');
+
+        if (is_file($override)) {
+            return $override;
+        }
+
+        // Otherwise read the add-on's own blueprint
+        return AetherPeopleServiceProvider::collectionBlueprintPath(PeopleCollection::handle()).'/person.yaml';
     }
 
     /**
@@ -77,9 +100,9 @@ class IdentifierAuditSurface
         $groups = [];
 
         // Walk each blueprint that might wire a rule
-        foreach (self::blueprints() as $collection => $relative) {
+        foreach (self::blueprints() as $collection => $path) {
             // Read every validate rule in the document
-            foreach ($this->rulesIn($relative) as $rule) {
+            foreach ($this->rulesIn($path) as $rule) {
                 // Parse the rule into a group, or skip a rule of another kind
                 $group = $this->parse($collection, $rule);
 
@@ -162,13 +185,13 @@ class IdentifierAuditSurface
      * needed to know which field to read on an entry; a single rule names its
      * paths outright and the handle is redundant there.
      *
-     * @param  string  $relative  Path under the application root
+     * @param  string  $path  Absolute path of the blueprint
      * @return list<array{handle: string, rule: string}>
      */
-    public function rulesWithHandles(string $relative): array
+    public function rulesWithHandles(string $path): array
     {
         // Parse the blueprint document
-        $parsed = Yaml::parseFile(base_path($relative));
+        $parsed = Yaml::parseFile($path);
 
         // A document that is not a map contributes nothing
         if (! \is_array($parsed)) {
@@ -183,15 +206,15 @@ class IdentifierAuditSurface
     /**
      * Every `validate` rule string in a blueprint.
      *
-     * @param  string  $relative  Path under the application root
+     * @param  string  $path  Absolute path of the blueprint
      * @return list<string>
      */
-    private function rulesIn(string $relative): array
+    private function rulesIn(string $path): array
     {
         // Reduce the handle-carrying rows to their rule strings
         return array_map(
             static fn (array $row): string => $row['rule'],
-            $this->rulesWithHandles($relative)
+            $this->rulesWithHandles($path)
         );
     }
 

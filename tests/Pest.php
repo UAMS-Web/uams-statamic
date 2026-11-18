@@ -155,3 +155,6 @@ require_once __DIR__.'/Support/MutateRun.php';
 
 // Renders the add-on's search page for a query string, on the request it reads.
 require_once __DIR__.'/Support/AetherSearchPage.php';
+
+// Resolves a file that moved into `uams-web/aether-people` to the add-on's copy (#696).
+require_once __DIR__.'/Support/AetherPeoplePaths.php';
