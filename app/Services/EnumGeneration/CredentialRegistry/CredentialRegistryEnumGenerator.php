@@ -716,10 +716,10 @@ PHP;
                     continue;
                 }
 
-                $ancestorsOfQ = $ancestorsOf[$q] ?? [];
                 // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
                 // @pest-mutate-ignore: TrueToFalse
-                if (\in_array($p, $ancestorsOfQ, true)) {
+                $qIsNarrower = \in_array($p, $ancestorsOf[$q] ?? [], true);
+                if ($qIsNarrower) {
                     $redundant = true;
                     // The flag is set and nothing clears it, so continuing the scan cannot change the result (BreakToContinue)
                     // @pest-mutate-ignore: BreakToContinue
@@ -908,24 +908,31 @@ PHP;
     }
 
     /**
+     * The stream context options for a remote read: a two-minute timeout and redirects followed, for both schemes.
+     *
+     * @return array{http: array{timeout: int, follow_location: bool}, https: array{timeout: int, follow_location: bool}}
+     */
+    private static function httpContextOptions(): array
+    {
+        $options = [
+            'timeout' => 120,
+            'follow_location' => true,
+        ];
+
+        return [
+            'http' => $options,
+            'https' => $options,
+        ];
+    }
+
+    /**
      * Read a URL over HTTP(S) with a two-minute timeout, following redirects.
      *
      * @return ?string The body, or null when the read fails
      */
     private static function readUrlOverHttp(string $url): ?string
     {
-        // The options only affect a real network read, which the suite does not make (RemoveArrayItem, DecrementInteger, IncrementInteger, TrueToFalse)
-        // @pest-mutate-ignore: RemoveArrayItem, DecrementInteger, IncrementInteger, TrueToFalse
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-            'https' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-        ]);
+        $context = stream_context_create(self::httpContextOptions());
         // The include path is never searched for an absolute path or a URL (FalseToTrue)
         // @pest-mutate-ignore: FalseToTrue
         $raw = @file_get_contents($url, false, $context);

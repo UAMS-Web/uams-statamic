@@ -439,3 +439,12 @@ it('reads over HTTP(S) by default, returning the body or null when the read fail
         @unlink($path);
     }
 });
+
+it('reads with a two-minute timeout and follows redirects over both schemes', function (): void {
+    $options = (new ReflectionMethod(CredentialRegistryEnumGenerator::class, 'httpContextOptions'))->invoke(null);
+
+    expect($options)->toBe([
+        'http' => ['timeout' => 120, 'follow_location' => true],
+        'https' => ['timeout' => 120, 'follow_location' => true],
+    ]);
+});
