@@ -148,7 +148,10 @@ final class FacilityInheritedParkingService
             return null;
         }
 
-        // Record this entry as visited for the remainder of the walk
+        // Record this entry as visited for the remainder of the walk. TrueToFalse is
+        // equivalent: isset() above only asks whether the key exists, and a stored false
+        // is still set.
+        // @pest-mutate-ignore: TrueToFalse
         $seen[$key] = true;
 
         // Dispatch by blueprint: parking entities are their own facility, building
@@ -318,7 +321,10 @@ final class FacilityInheritedParkingService
         // Load the referenced entry, narrowing to the concrete entry type
         $found = EntryFacade::find($value);
 
-        // Return the referenced entry or null when it cannot be loaded
+        // Return the referenced entry or null when it cannot be loaded. InstanceOfToTrue is
+        // equivalent: the bound App\Entries\EntryRepository::find() is typed
+        // ?Statamic\Entries\Entry, so the check only narrows the facade's contract type.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $found instanceof Entry ? $found : null;
     }
 
@@ -351,7 +357,10 @@ final class FacilityInheritedParkingService
         // Load the parent entry, narrowing to the concrete entry type
         $parent = EntryFacade::find($parentId);
 
-        // Return the parent entry or null when it cannot be loaded
+        // Return the parent entry or null when it cannot be loaded. InstanceOfToTrue is
+        // equivalent for the same reason as in loadSingleEntry(): the bound repository
+        // returns a concrete entry or null.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $parent instanceof Entry ? $parent : null;
     }
 
@@ -370,20 +379,23 @@ final class FacilityInheritedParkingService
     }
 
     /**
-     * Resolve the entry's blueprint handle, or an empty string when unavailable.
+     * Resolve the entry's blueprint handle, or null when unavailable.
+     *
+     * A null matches no arm of the dispatch `match` and equals no handle it is compared
+     * with, so no empty-string stand-in is needed.
      */
     private function blueprintHandle(
         Entry $entry
-    ): string {
+    ): ?string {
         // Read the entry's blueprint (untyped on the entry contract)
         $blueprint = $entry->blueprint();
 
         // Treat a missing or unexpected blueprint as no handle
         if (! $blueprint instanceof Blueprint) {
-            return '';
+            return null;
         }
 
-        // Return the blueprint handle or an empty string when unavailable
-        return $blueprint->handle() ?? '';
+        // Return the blueprint handle, which may itself be null
+        return $blueprint->handle();
     }
 }

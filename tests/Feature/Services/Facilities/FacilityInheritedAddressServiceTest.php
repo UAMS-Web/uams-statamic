@@ -13,16 +13,15 @@ use Tests\TestCase;
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 /**
- * Unit tests for `FacilityInheritedAddressService::resolveStreetAddress`.
+ * Unit tests for `FacilityInheritedAddressService`: the street address, city, state and
+ * postal code resolvers.
  *
  * @covers \App\Services\Facilities\FacilityInheritedAddressService
  *
- * Mutation: 92.11% on App\Services\Facilities\FacilityInheritedAddressService (38
- * mutants, --covered-only). The 3 survivors are equivalent: the continue-vs-break
- * after a non-resolving ancestor (ContentAncestorIds only ever yields such an id
- * last, so nothing follows it to expose the difference), and the two empty-string
- * blueprint-handle fallbacks (a '' vs a non-empty handle both fail the
- * `=== 'parking_division'` toggle gate identically).
+ * Mutation-clean with no annotations (UAMS-Web/uams-statamic#898). The ancestor-skip
+ * `continue` is pinned by an ancestor that vanishes between the ancestor walk and its
+ * load, and the blueprint handle falls back to null rather than an empty string, so it
+ * leaves no equivalent mutant.
  *
  * @command  php artisan test --compact tests/Feature/Services/Facilities/FacilityInheritedAddressServiceTest.php
  */
@@ -152,6 +151,17 @@ it('treats a null blueprint as no handle and reads the own address', function ()
     expect((new FacilityInheritedAddressService)->resolveStreetAddress($entry))->toBe('5 Oak St.');
 });
 
+it('treats a blueprint with no handle as ungated and reads the own address', function () {
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('handle')->andReturnNull();
+
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('blueprint')->andReturn($blueprint);
+    $entry->shouldReceive('get')->with('streetaddress')->andReturn('6 Elm St.');
+
+    expect((new FacilityInheritedAddressService)->resolveStreetAddress($entry))->toBe('6 Elm St.');
+});
+
 it('returns a building_complex own address even when an ancestor has a different one', function () {
     // Own address must win — the walk must not even be consulted.
     $ancestor = makeFacilityEntry('anc', 'building', null, ['streetaddress' => '999 Ancestor Rd.']);
@@ -273,6 +283,74 @@ it('ignores a blank city rather than returning whitespace', function () {
     EntryFacade::shouldReceive('findOrFail')->with('b1')->andReturn($building);
 
     expect((new FacilityInheritedAddressService)->resolveCity($building))->toBeNull();
+});
+
+it('keeps walking past an ancestor that vanishes between the ancestor walk and its load', function () {
+    // ContentAncestorIds loads `mid` while building the id list, and the entry is gone by
+    // the time the resolver loads it. The resolver skips it and still reaches `top`, rather
+    // than ending the walk at the first ancestor it cannot load.
+    $top = makeFacilityEntry('top', 'building', null, ['streetaddress' => '700 Far Ancestor Rd.']);
+    $midPage = makePage('top');
+    $mid = makeFacilityEntry('mid', 'building_division', $midPage, ['streetaddress' => null]);
+    $wingPage = makePage('mid');
+    $wing = makeFacilityEntry('wing', 'building_division', $wingPage, ['streetaddress' => null]);
+
+    EntryFacade::shouldReceive('findOrFail')->with('wing')->andReturn($wing);
+    EntryFacade::shouldReceive('find')->with('mid')->andReturn($mid, null);
+    EntryFacade::shouldReceive('find')->with('top')->andReturn($top);
+
+    expect((new FacilityInheritedAddressService)->resolveStreetAddress($wing))
+        ->toBe('700 Far Ancestor Rd.');
+});
+
+/*
+ * resolveState and resolvePostalCode (UAMS-Web/uams-statamic-archive#2389). Both are ungated,
+ * like the city. The mocks answer only the handle each resolver should read, so a resolver
+ * reading the wrong handle fails on the unexpected `get()` call.
+ */
+
+it('returns an entry own state and inherits a wing state from its building', function () {
+    $building = makeFacilityEntry('bldg1', 'building', null, ['state' => 'AR']);
+    $wingPage = makePage('bldg1');
+    $wing = makeFacilityEntry('wing1', 'building_division', $wingPage, ['state' => null]);
+
+    EntryFacade::shouldReceive('findOrFail')->with('wing1')->andReturn($wing);
+    EntryFacade::shouldReceive('find')->with('bldg1')->andReturn($building);
+
+    $service = new FacilityInheritedAddressService;
+
+    expect($service->resolveState($building))->toBe('AR')
+        ->and($service->resolveState($wing))->toBe('AR');
+});
+
+it('returns null for a blank state with nothing to inherit', function () {
+    $building = makeFacilityEntry('b1', 'building', null, ['state' => '  ']);
+
+    EntryFacade::shouldReceive('findOrFail')->with('b1')->andReturn($building);
+
+    expect((new FacilityInheritedAddressService)->resolveState($building))->toBeNull();
+});
+
+it('returns an entry own postal code from `zip` and inherits a wing postal code from its building', function () {
+    $building = makeFacilityEntry('bldg1', 'building', null, ['zip' => '72205']);
+    $wingPage = makePage('bldg1');
+    $wing = makeFacilityEntry('wing1', 'building_division', $wingPage, ['zip' => null]);
+
+    EntryFacade::shouldReceive('findOrFail')->with('wing1')->andReturn($wing);
+    EntryFacade::shouldReceive('find')->with('bldg1')->andReturn($building);
+
+    $service = new FacilityInheritedAddressService;
+
+    expect($service->resolvePostalCode($building))->toBe('72205')
+        ->and($service->resolvePostalCode($wing))->toBe('72205');
+});
+
+it('returns null for a blank postal code with nothing to inherit', function () {
+    $building = makeFacilityEntry('b1', 'building', null, ['zip' => '']);
+
+    EntryFacade::shouldReceive('findOrFail')->with('b1')->andReturn($building);
+
+    expect((new FacilityInheritedAddressService)->resolvePostalCode($building))->toBeNull();
 });
 
 /**
