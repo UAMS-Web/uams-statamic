@@ -184,7 +184,7 @@ final class AreaOfExpertiseSectionProvider extends Provider
      */
     private function documentForKey(string $key): ?AreaOfExpertiseSectionDocument
     {
-        $parts = explode('::', $key, 2);
+        $parts = explode('::', $key);
         if (\count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
             return null;
         }

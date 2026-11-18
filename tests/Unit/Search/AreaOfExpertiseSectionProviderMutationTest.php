@@ -119,17 +119,14 @@ it('rebuilds nothing from a malformed key, without looking up an entry', functio
     'no separator' => ['aoe-1'],
     'an empty entry id' => ['::locations'],
     'an empty section' => ['aoe-1::'],
+    'a second separator' => ['aoe-1::locations::extra'],
 ]);
 
-it('keeps everything after the first separator as the section', function (): void {
+it('rebuilds the document for a well-formed key', function (): void {
     bindAoeSectionResolver();
-    $entry = mockAoeEntry();
-    EntryFacade::shouldReceive('find')->with('aoe-1')->andReturn($entry);
+    EntryFacade::shouldReceive('find')->once()->with('aoe-1')->andReturn(mockAoeEntry());
 
-    $provider = new AreaOfExpertiseSectionProvider;
-
-    expect($provider->find(['aoe-1::locations']))->toHaveCount(1)
-        ->and($provider->find(['aoe-1::locations::extra']))->toBeEmpty();
+    expect((new AreaOfExpertiseSectionProvider)->find(['aoe-1::locations']))->toHaveCount(1);
 });
 
 it('titles a section with its trimmed Area of Expertise title, or the label alone', function (mixed $title, string $expected): void {
