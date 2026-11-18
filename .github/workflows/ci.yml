@@ -353,6 +353,37 @@ jobs:
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
           # PARITY-END
 
+      # cspell:ignore typemap MAGICK fontconfig Freetype
+      # The ImageMagick that setup-php installs on macOS is built without fontconfig, so
+      # it finds a font only through a type.xml on MAGICK_CONFIGURE_PATH. Under 7.1.2-36
+      # none is configured, and SVG `<text>` then fails in RenderFreetype with "unable to
+      # read font ''", which SvgRasterizerTest surfaces as an ImageDecoderException (#1059).
+      # A type.xml naming a font the macOS runner ships gives it a default whichever
+      # ImageMagick build the job draws. The report before it records what that build had.
+      - name: Report the ImageMagick build (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          php -r 'echo "ImageMagick: ", Imagick::getVersion()["versionString"], PHP_EOL,
+          "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
+          "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
+
+      - name: Give ImageMagick a default font (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          font=/System/Library/Fonts/Supplemental/Arial.ttf
+          test -f "$font" || { echo "::error::$font is not on this runner"; exit 1; }
+          dir="$RUNNER_TEMP/imagemagick-default-font"
+          mkdir -p "$dir"
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<typemap>' \
+            "  <type name=\"Arial\" fullname=\"Arial\" family=\"Arial\" style=\"Normal\" stretch=\"Normal\" weight=\"400\" format=\"truetype\" glyphs=\"$font\"/>" \
+            '</typemap>' > "$dir/type.xml"
+          echo "MAGICK_CONFIGURE_PATH=$dir${MAGICK_CONFIGURE_PATH:+:$MAGICK_CONFIGURE_PATH}" >> "$GITHUB_ENV"
+
+      - name: Confirm ImageMagick has a font (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          php -r '$n = count(Imagick::queryFonts()); echo "Fonts after the default: ", $n, PHP_EOL; exit($n > 0 ? 0 : 1);'
+
       - name: Determine Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
@@ -741,6 +772,37 @@ jobs:
           # local counterpart, so a change to them alone also asks for a matching change.
           ini-values: opcache.enable_cli=${{ runner.os == 'Windows' && 'off' || 'on' }}, opcache.jit_buffer_size=64M, opcache.jit=tracing, zend.assertions=1, pcre.jit=0
           # PARITY-END
+
+      # cspell:ignore typemap MAGICK fontconfig Freetype
+      # The ImageMagick that setup-php installs on macOS is built without fontconfig, so
+      # it finds a font only through a type.xml on MAGICK_CONFIGURE_PATH. Under 7.1.2-36
+      # none is configured, and SVG `<text>` then fails in RenderFreetype with "unable to
+      # read font ''", which SvgRasterizerTest surfaces as an ImageDecoderException (#1059).
+      # A type.xml naming a font the macOS runner ships gives it a default whichever
+      # ImageMagick build the job draws. The report before it records what that build had.
+      - name: Report the ImageMagick build (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          php -r 'echo "ImageMagick: ", Imagick::getVersion()["versionString"], PHP_EOL,
+          "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
+          "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
+
+      - name: Give ImageMagick a default font (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          font=/System/Library/Fonts/Supplemental/Arial.ttf
+          test -f "$font" || { echo "::error::$font is not on this runner"; exit 1; }
+          dir="$RUNNER_TEMP/imagemagick-default-font"
+          mkdir -p "$dir"
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' '<typemap>' \
+            "  <type name=\"Arial\" fullname=\"Arial\" family=\"Arial\" style=\"Normal\" stretch=\"Normal\" weight=\"400\" format=\"truetype\" glyphs=\"$font\"/>" \
+            '</typemap>' > "$dir/type.xml"
+          echo "MAGICK_CONFIGURE_PATH=$dir${MAGICK_CONFIGURE_PATH:+:$MAGICK_CONFIGURE_PATH}" >> "$GITHUB_ENV"
+
+      - name: Confirm ImageMagick has a font (macOS)
+        if: runner.os == 'macOS'
+        run: >-
+          php -r '$n = count(Imagick::queryFonts()); echo "Fonts after the default: ", $n, PHP_EOL; exit($n > 0 ? 0 : 1);'
 
       - name: Determine Composer cache directory
         id: composer-cache
