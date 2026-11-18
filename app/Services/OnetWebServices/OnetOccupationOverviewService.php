@@ -44,11 +44,8 @@ class OnetOccupationOverviewService
         // Trim the SOC code to remove any leading or trailing whitespace
         $code = trim($socCode);
 
-        // Check if the SOC code is empty or invalid
-        if (
-            $code === ''
-            || ! $this->isValidSocCode($code)
-        ) {
+        // Check if the SOC code is invalid; the pattern rejects an empty code too
+        if (! $this->isValidSocCode($code)) {
             // Return null to signal that the SOC code is invalid
             return null;
         }
@@ -79,10 +76,8 @@ class OnetOccupationOverviewService
             'services.onet_web_services.cache_ttl',
             86400
         );
-        $ttl = max(
-            0,
-            (int) $ttlConfig
-        );
+        // A TTL of zero or below means no caching: the `$ttl > 0` check skips the store
+        $ttl = (int) $ttlConfig;
 
         // Create a cache key for the SOC code
         $cacheKey = self::CACHE_KEY_PREFIX.$code;
@@ -149,15 +144,12 @@ class OnetOccupationOverviewService
             'services.onet_web_services.delay_ms',
             0
         );
-        $delayMs = max(
-            0,
-            (int) $delayMsConfig
-        );
+        $delayMs = (int) $delayMsConfig;
 
         // Check if the delay is greater than 0
         if ($delayMs > 0) {
             // Sleep for the delay
-            usleep($delayMs * 1000);
+            $this->pause($delayMs * 1000);
         }
 
         // ---
@@ -284,10 +276,9 @@ class OnetOccupationOverviewService
             'services.onet_web_services.max_requests_per_second',
             5
         );
-        $maxAttempts = max(
-            1,
-            (int) $maxAttemptsConfig
-        );
+        // RateLimiter treats a budget of 0 or below as 1: the first call passes
+        // and the next waits for the window, so no lower bound is needed here.
+        $maxAttempts = (int) $maxAttemptsConfig;
 
         // ---
         // RateLimiter shares counters via the chosen cache driver (e.g. Redis).
@@ -323,10 +314,10 @@ class OnetOccupationOverviewService
             // Check if the wait seconds is greater than 0
             if ($waitSeconds > 0) {
                 // Sleep for the wait seconds
-                sleep($waitSeconds);
+                $this->pause($waitSeconds * 1_000_000);
             } else {
                 // Sleep for 50 milliseconds
-                usleep(50_000);
+                $this->pause(50_000);
             }
         }
 
@@ -335,6 +326,19 @@ class OnetOccupationOverviewService
             $key,
             $decaySeconds
         );
+    }
+
+    /**
+     * Block for the given number of microseconds. Every wait in this class goes
+     * through here, so a test can observe a wait without spending it.
+     *
+     * @param  int  $microseconds  How long to wait
+     */
+    protected function pause(
+        int $microseconds
+    ): void {
+        // Sleep for the given duration
+        usleep($microseconds);
     }
 
     /**
