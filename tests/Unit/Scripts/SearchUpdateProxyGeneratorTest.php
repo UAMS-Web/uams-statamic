@@ -255,7 +255,7 @@ it('copies the content tree without the generated collections entries, trees or 
 
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->directory.'/copy', FilesystemIterator::SKIP_DOTS)) as $file) {
         if ($file instanceof SplFileInfo) {
-            $files[] = substr($file->getPathname(), strlen($this->directory.'/copy/'));
+            $files[] = str_replace('\\', '/', substr($file->getPathname(), strlen($this->directory.'/copy/')));
         }
     }
 
@@ -270,3 +270,15 @@ it('copies the content tree without the generated collections entries, trees or 
             'trees/collections/default/facilities.yaml',
         ]);
 });
+
+it('leaves the same paths out whichever separator a platform returns', function (string $relative, bool $excluded): void {
+    expect(SearchUpdateProxyGenerator::excluded($relative, ['pages']))->toBe($excluded)
+        ->and(SearchUpdateProxyGenerator::excluded(str_replace('/', '\\', $relative), ['pages']))->toBe($excluded);
+})->with([
+    'git link' => ['.git', true],
+    'entry' => ['collections/pages/default/about.md', true],
+    'tree' => ['trees/collections/default/pages.yaml', true],
+    'collection config' => ['collections/pages.yaml', false],
+    'other entry' => ['collections/facilities/default/main.md', false],
+    'other tree' => ['trees/collections/default/facilities.yaml', false],
+]);

@@ -381,7 +381,7 @@ final class SearchUpdateProxyGenerator
      */
     public static function copyContent(string $source, string $target, array $collections): int
     {
-        $source = rtrim($source, '/');
+        $source = rtrim($source, '/\\');
         $copied = 0;
 
         $files = new RecursiveIteratorIterator(
@@ -391,7 +391,8 @@ final class SearchUpdateProxyGenerator
 
         /** @var SplFileInfo $file */
         foreach ($files as $file) {
-            $relative = substr($file->getPathname(), strlen($source) + 1);
+            // Relative, with forward slashes on every platform (Windows returns backslashes)
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($source) + 1));
 
             if (self::excluded($relative, $collections) || $file->isDir()) {
                 continue;
@@ -417,12 +418,12 @@ final class SearchUpdateProxyGenerator
     /**
      * Whether a path under the content root is left out of the copy.
      *
-     * @param  string  $relative  The path, relative to the content root
+     * @param  string  $relative  The path, relative to the content root, with either separator
      * @param  list<string>  $collections  The generated collections
      */
     public static function excluded(string $relative, array $collections): bool
     {
-        $segments = explode('/', $relative);
+        $segments = explode('/', str_replace('\\', '/', $relative));
 
         // The submodule's git link
         if ($segments[0] === '.git') {
