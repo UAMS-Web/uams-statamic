@@ -56,9 +56,9 @@ class ScopeAliasCache
      * directory absent and the loser takes a `mkdir(): File exists` warning —
      * promoted to an `ErrorException` by the test environment's error handler.
      *
-     * Suppressing the warning (`makeDirectory()`'s `$force` argument) and
-     * re-checking is the race-safe idiom, and the same one UAMS-Web/uams-statamic-archive#1853 settled on for
-     * `TableCellSanitizer` — the loser simply observes the directory the winner
+     * Suppressing the warning (`makeDirectory()`'s `$force` argument) is the
+     * race-safe idiom, and the same one UAMS-Web/uams-statamic-archive#1853 settled on for
+     * `TableCellSanitizer`: the loser simply finds the directory the winner
      * has just created.
      *
      * **Hardening by inspection, not a fix for an observed failure.** Written
@@ -76,37 +76,12 @@ class ScopeAliasCache
             return;
         }
 
-        // Nothing follows in this method but the stat-cache drop below, so returning early
-        // and falling through end the same way. Negating this condition is a surviving,
-        // equivalent mutant: a marker reaches a node's children, never the node itself.
-        if (File::makeDirectory(
-            $dir,
-            0755,
-            // The parent, storage/framework/cache/data, is Laravel's own file cache and
-            // always exists, so creating parents changes nothing.
-            // @pest-mutate-ignore: TrueToFalse
-            true,
-            true
-        )) {
-            return;
-        }
-
-        // A suppressed failure means either "a sibling already made it" or "it
-        // genuinely cannot be made". Only the filesystem can tell those apart,
-        // and PHP's stat cache still holds the "absent" answer from the check
-        // above, so drop it before re-reading. Nothing in this method reads the
-        // filesystem after it, so the call cannot change what the method does: its flag
-        // is marked, and removing the call is a surviving, equivalent mutant no marker
-        // can reach.
-        // @pest-mutate-ignore: TrueToFalse
-        clearstatcache(true, $dir);
-
-        // Still absent means a real failure — a read-only or full disk. This is
-        // a cache on the boot path, so it does not throw: `put()` will fail to
-        // write, `rememberForever()` will recompute from the callback every
-        // time, and the application still works. Throwing here would take the
-        // whole boot down for a cache directory.
-        unset($dir);
+        // A suppressed failure means either "a sibling already made it" or "it genuinely
+        // cannot be made", a read-only or full disk. Neither throws here: this is a cache on
+        // the boot path, and the write that follows meets a real failure itself. Missing
+        // parents are created, so the directory can be made under a storage path that has
+        // no file cache yet.
+        File::makeDirectory($dir, 0755, true, true);
     }
 
     /**
