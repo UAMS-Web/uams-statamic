@@ -4027,3 +4027,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Reading B, the session trailer is provenance and allowed*: it keeps a durable external link that the body rule (UAMS-Web/uams-statamic-archive#2321) already bans on the neighboring surface. *Record only, since the squash already drops it from `main`*: branch commits and the commit list stay readable, so the link would still persist.
 
 **Companion.** #628 (decision); `UAMS-Web/uams-claude-skills#819` (the shared rule and the commit-message check); #606 (where the trailer was found); UAMS-Web/uams-statamic-archive#2321 (the body-scoped ban, whose entry above now states its scope).
+
+## 2026-11-17: The legacy `Rule` message path in `ValidationServiceProvider` is retired (#1014)
+
+**Decision.** Option B, decided by the project owner on 2026-11-17. The two phone rules (`InternationalPhone`, `NationalPhone`) move to the `ValidationRule` interface, so their failure messages come from `$fail` like the other rules and no longer read as raw keys. The replacer's legacy branch in `registerCustomRule()`, including its handling of a translation group of typed messages, is deleted. What happens to the five date rules (`after`, `after_or_equal`, `before`, `before_or_equal`, `date_equals`) is a separate decision, #1016: Laravel's own validators already run in their place, so the custom classes never execute.
+
+**Why.** No rule `boot()` registers reaches the group branch: the date rules' `validation.<rule>` keys resolve to Laravel's own strings and the phone rules have no translation. Where `validation.<rule>` does resolve to a group, Laravel formats the message before the replacer runs and throws a `TypeError` from `str_contains()`, so the branch cannot work as written. 18 of the registered rules already report through `$fail`.
+
+**Rejected.** *Removing only the group branch*: it leaves the raw phone keys and the damaged date messages. *Supporting groups end to end* (a fallback key that resolves, and a way past Laravel's formatting of the group): it builds machinery for a path with no users and fixes neither defect.
+
+**Companion.** #1014 (the decision, its `## Decision` section) and its [measurement](https://github.com/UAMS-Web/uams-statamic/issues/1014#issuecomment-6966364477); #1002 (the build); #1016 (the date rules).
