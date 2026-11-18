@@ -80,8 +80,8 @@ class CensusCountyGeocoder
      *
      * @param  float  $latitude  The coordinate latitude
      * @param  float  $longitude  The coordinate longitude
-     * @return array{ok: bool, county: array{geoId: string, name: string}|null} Whether the
-     *                                                                          lookup completed, and the county it found (if any)
+     * @return array{ok: false}|array{ok: true, county: array{geoId: string, name: string}|null} Whether
+     *                                                                                           the lookup completed, and the county it found (if any)
      */
     private function fetchCounty(float $latitude, float $longitude): array
     {
@@ -90,7 +90,7 @@ class CensusCountyGeocoder
         // Refuse before connecting if the configured endpoint resolves to an
         // internal/loopback/private target (SSRF defense).
         if (! OutboundUrlGuard::isAllowedUrl($url)) {
-            return ['ok' => false, 'county' => null];
+            return ['ok' => false];
         }
 
         try {
@@ -108,12 +108,12 @@ class CensusCountyGeocoder
         } catch (\Throwable $throwable) {
             unset($throwable);
 
-            return ['ok' => false, 'county' => null];
+            return ['ok' => false];
         }
 
         // A non-2xx is treated as transient (not cached) so a later save retries.
         if (! $response->successful()) {
-            return ['ok' => false, 'county' => null];
+            return ['ok' => false];
         }
 
         return ['ok' => true, 'county' => $this->parseCounty($response->json())];
@@ -136,6 +136,8 @@ class CensusCountyGeocoder
         $county = $counties[0];
 
         if (! \is_array($county)) {
+            // Without it, `?? null` reads both keys of a scalar as null and the check below returns null.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
@@ -159,8 +161,8 @@ class CensusCountyGeocoder
     private function buildUrl(float $latitude, float $longitude): string
     {
         $params = [
-            'x' => (string) $longitude,
-            'y' => (string) $latitude,
+            'x' => $longitude,
+            'y' => $latitude,
             'benchmark' => $this->stringConfig('maps.census.benchmark', 'Public_AR_Current'),
             'vintage' => $this->stringConfig('maps.census.vintage', 'Current_Current'),
             'layers' => 'Counties',
