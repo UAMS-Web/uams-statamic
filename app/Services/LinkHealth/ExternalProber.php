@@ -44,32 +44,19 @@ final class ExternalProber
      */
     private const array RETRY_WITH_GET = [400, 403, 405, 406, 501];
 
-    /*
-     * The timeouts and the redirect cap below are bounds on a real transport. Every test
-     * fakes the transport, so a 10s timeout is indistinguishable from 11s and a 5-hop cap
-     * from a 4-hop one. Killing these needs a live slow server and a real redirect chain,
-     * which is an integration concern rather than a gap in this suite.
-     */
-
     /**
      * Seconds a request may take in total before it is abandoned.
      */
-    // A transport bound no faked request can observe; see the note above.
-    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int TIMEOUT_SECONDS = 10;
 
     /**
      * Seconds a connection may take to open before it is abandoned.
      */
-    // A transport bound no faked request can observe; see the note above.
-    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int CONNECT_TIMEOUT_SECONDS = 5;
 
     /**
      * Redirect hops followed before a request is abandoned.
      */
-    // A transport bound no faked request can observe; see the note above.
-    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private const int MAX_REDIRECTS = 5;
 
     /**
@@ -96,6 +83,9 @@ final class ExternalProber
     /**
      * Guarded requests issued this run, across every URL and both verbs.
      */
+    // A property default is never a covered line, so the mutation runner skips it as
+    // uncovered. Applied by hand, 1 and -1 each fail 4 tests in ExternalProberTest.
+    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
     private int $attempts = 0;
 
     /**

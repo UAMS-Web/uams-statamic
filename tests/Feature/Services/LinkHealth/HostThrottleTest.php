@@ -84,3 +84,48 @@ it('does not let one host consume another host allowance', function (): void {
 
     expect($slept)->toBe([]);
 });
+
+it('allows four requests a second per host when no bound is given', function (): void {
+    $key = HostThrottle::keyFor('https://example.com/a');
+    $limiter = Mockery::mock(RateLimiter::class);
+    $limiter->shouldReceive('tooManyAttempts')->once()->with($key, 4)->andReturnFalse();
+    $limiter->shouldReceive('hit')->once()->with($key, 1);
+
+    (new HostThrottle($limiter, sleeper: static function (int $micro): void {}))->reserve('https://example.com/a');
+});
+
+it('sleeps for the seconds the limiter reports, and a short fixed interval when it reports none', function (): void {
+    // `availableIn()` reporting 0 while the window is still closing is what the 50ms floor is
+    // for; a real limiter cannot be held in that state, so the limiter is a mock.
+    $key = HostThrottle::keyFor('https://example.com/a');
+    $limiter = Mockery::mock(RateLimiter::class);
+    $limiter->shouldReceive('tooManyAttempts')->with($key, 2)->andReturn(true, true, true, false);
+    $limiter->shouldReceive('availableIn')->with($key)->andReturn(2, 1, 0);
+    // Reserves one slot that expires after a second.
+    $limiter->shouldReceive('hit')->once()->with($key, 1);
+
+    $slept = [];
+    $throttle = new HostThrottle($limiter, 2, static function (int $micro) use (&$slept): void {
+        $slept[] = $micro;
+    });
+
+    $throttle->reserve('https://example.com/a');
+
+    expect($slept)->toBe([2_000_000, 1_000_000, 50_000]);
+});
+
+it('sleeps for real when no sleeper is injected', function (): void {
+    // The one test that spends the wait, and only the 50ms floor of it: it is what shows the
+    // default sleeper sleeps at all.
+    $key = HostThrottle::keyFor('https://example.com/a');
+    $limiter = Mockery::mock(RateLimiter::class);
+    $limiter->shouldReceive('tooManyAttempts')->with($key, 1)->andReturn(true, false);
+    $limiter->shouldReceive('availableIn')->with($key)->andReturn(0);
+    $limiter->shouldReceive('hit')->once()->with($key, 1);
+
+    $started = hrtime(true);
+    (new HostThrottle($limiter, 1))->reserve('https://example.com/a');
+    $elapsedMicro = intdiv(hrtime(true) - $started, 1_000);
+
+    expect($elapsedMicro)->toBeGreaterThanOrEqual(50_000);
+});
