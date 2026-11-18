@@ -128,7 +128,8 @@ class CustomFieldComposer
                         ->all(),
                 ];
 
-                return [$fieldset->handle() => $payload];
+                // PHP keys a null handle as '', so the cast changes no key
+                return [(string) $fieldset->handle() => $payload];
             }
         )->sortBy('title');
     }
