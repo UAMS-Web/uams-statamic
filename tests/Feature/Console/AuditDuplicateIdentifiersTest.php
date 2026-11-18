@@ -216,3 +216,188 @@ it('reports zero entries as zero rather than as a clean scan', function (): void
     expect($output)
         ->toContain('over 0 entries');
 });
+
+/**
+ * Bind an audit surface that reports exactly the given groups.
+ *
+ * @param  list<array{collection: string, paths: list<string>, rowKey: string|null, label: string}>  $groups
+ */
+function auditSurfaceOf(array $groups): void
+{
+    $surface = Mockery::mock(IdentifierAuditSurface::class);
+    $surface->shouldReceive('all')->andReturn($groups);
+
+    app()->instance(IdentifierAuditSurface::class, $surface);
+}
+
+/**
+ * Run the audit and return its exit code and what it rendered.
+ *
+ * @return array{0: int, 1: string}
+ */
+function runIdentifierAuditWithStatus(): array
+{
+    $status = Artisan::call('identifiers:audit-duplicates');
+
+    return [$status, Artisan::output()];
+}
+
+it('fails, and audits nothing, when no uniqueness rule is wired', function (): void {
+    auditSurfaceOf([]);
+
+    [$status, $output] = runIdentifierAuditWithStatus();
+
+    expect($status)->toBe(1)
+        ->and($output)->toContain('No uniqueness rules are wired in the blueprints, so nothing was audited.')
+        ->and($output)->not->toContain('Audited');
+});
+
+it('prints the exact denominator and names each group, with SUCCESS on a clean run', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['npi'], 'rowKey' => null, 'label' => 'people npi'],
+        ['collection' => 'people', 'paths' => ['epic_ser_id'], 'rowKey' => null, 'label' => 'people epic_ser_id'],
+        ['collection' => 'clinical_locations', 'paths' => [], 'rowKey' => 'dep', 'label' => 'clinical_locations list:dep'],
+    ]);
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'npi' => '1234567893', 'epic_ser_id' => 'S-1']);
+    auditEntry('people', 'second', ['title' => 'Alex Stone', 'npi' => '1987654321']);
+    auditEntry('clinical_locations', 'clinic', ['title' => 'Clinic', 'epic_dep_ids' => auditRows(['10502', '10503'], 'dep')]);
+
+    [$status, $output] = runIdentifierAuditWithStatus();
+
+    // 3 groups; people (2) and clinical_locations (1) are 3 distinct entries in 2
+    // collections; people is read twice, so 5 reads; 2 + 1 + 2 values
+    expect($status)->toBe(0)
+        ->and($output)->toContain('Audited 3 identifier group(s) over 3 entries in 2 collection(s): 5 entry read(s), 5 identifier value(s).')
+        ->and($output)->toContain("  - people npi\n  - people epic_ser_id\n  - clinical_locations list:dep\n")
+        ->and($output)->toContain('No duplicate identifiers found.')
+        // A clean run stops at the clean line: no table and no finding count
+        ->and($output)->not->toContain('Kind')
+        ->and($output)->not->toContain('duplicate identifier finding(s)');
+});
+
+it('reports each finding as a table row and counts them, still with SUCCESS', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['npi'], 'rowKey' => null, 'label' => 'people npi'],
+    ]);
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'npi' => '1234567893']);
+    auditEntry('people', 'second', ['title' => 'Alex Stone', 'npi' => '1234567893']);
+    auditEntry('people', 'third', ['title' => 'Sam Lee', 'npi' => '1111111111']);
+
+    [$status, $output] = runIdentifierAuditWithStatus();
+
+    expect($status)->toBe(0)
+        ->and($output)->toMatch('/\|\s*Kind\s*\|\s*Group\s*\|\s*Value\s*\|\s*Where\s*\|/')
+        ->and($output)->toMatch('/\|\s*across entries\s*\|\s*people npi\s*\|\s*1234567893\s*\|\s*(Dana Reed \(npi\); Alex Stone \(npi\)|Alex Stone \(npi\); Dana Reed \(npi\))\s*\|/')
+        ->and($output)->not->toContain('1111111111 ')
+        ->and($output)->toContain('1 duplicate identifier finding(s).')
+        ->and($output)->not->toContain('No duplicate identifiers found.')
+        // The table is set off from the group list by one blank line
+        ->and($output)->toContain("  - people npi\n\n+");
+});
+
+it('calls a value one entry holds in two pooled fields a within-entry duplicate', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['workday.a', 'workday.b'], 'rowKey' => null, 'label' => 'people workday'],
+    ]);
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'workday' => ['a' => 'W-1', 'b' => 'w-1']]);
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect($output)->toMatch('/\|\s*within entry\s*\|\s*people workday\s*\|\s*W-1\s*\|\s*Dana Reed \(workday\.a\); Dana Reed \(workday\.b\)\s*\|/')
+        ->and($output)->toContain('1 duplicate identifier finding(s).');
+});
+
+it('labels an entry with no usable title by its id', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['npi'], 'rowKey' => null, 'label' => 'people npi'],
+    ]);
+    $first = auditEntry('people', 'first', ['title' => '   ', 'npi' => '1234567893']);
+    auditEntry('people', 'second', ['title' => 'Alex Stone', 'npi' => '1234567893']);
+
+    $id = $first->id();
+    expect($id)->toBeString();
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect($output)->toContain((is_string($id) ? $id : '').' (npi)');
+});
+
+it('reads a list group from the field its row key names', function (string $rowKey, string $handle): void {
+    auditSurfaceOf([
+        ['collection' => 'clinical_locations', 'paths' => [], 'rowKey' => $rowKey, 'label' => "clinical_locations list:{$rowKey}"],
+    ]);
+    auditEntry('clinical_locations', 'clinic', ['title' => 'Clinic', $handle => auditRows(['10502', '10502'], $rowKey)]);
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect($output)->toContain('1 identifier value(s).')
+        ->and($output)->toMatch("/\\|\\s*within entry\\s*\\|\\s*clinical_locations list:{$rowKey}\\s*\\|\\s*10502\\s*\\|\\s*Clinic\\s*\\|/")
+        ->and($output)->toContain('1 duplicate identifier finding(s).');
+})->with([
+    'epic_dep_ids rows' => ['dep', 'epic_dep_ids'],
+    'npi rows' => ['item', 'npi'],
+    'any other row key, by its own name' => ['code', 'code'],
+]);
+
+it('reports a value repeated on several rows of one entry once, and skips blank and non-row values', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'clinical_locations', 'paths' => [], 'rowKey' => 'dep', 'label' => 'clinical_locations list:dep'],
+    ]);
+    auditEntry('clinical_locations', 'clinic', ['title' => 'Clinic', 'epic_dep_ids' => [
+        ['dep' => '10502'],
+        ['dep' => ' 10502 '],
+        ['dep' => '10502'],
+        ['dep' => ''],
+        ['dep' => '   '],
+        ['other' => '7'],
+        '20001',
+        '20001',
+    ]]);
+    auditEntry('clinical_locations', 'empty', ['title' => 'Empty', 'epic_dep_ids' => 'not rows']);
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect(substr_count($output, 'within entry'))->toBe(2)
+        ->and($output)->toMatch('/\|\s*within entry\s*\|\s*clinical_locations list:dep\s*\|\s*10502\s*\|\s*Clinic\s*\|/')
+        ->and($output)->toMatch('/\|\s*within entry\s*\|\s*clinical_locations list:dep\s*\|\s*20001\s*\|\s*Clinic\s*\|/')
+        ->and($output)->toContain('2 duplicate identifier finding(s).');
+});
+
+it('keeps looking past a value seen once for a later duplicate', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['ids.a', 'ids.b', 'ids.c'], 'rowKey' => null, 'label' => 'people ids'],
+    ]);
+    // One entry, so the order values are seen in is the path order: the unique
+    // value comes first, then the repeated one
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'ids' => ['a' => 'UNIQUE-1', 'b' => 'D-2', 'c' => 'd-2']]);
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect($output)->toMatch('/\|\s*within entry\s*\|\s*people ids\s*\|\s*D-2\s*\|/')
+        ->and($output)->toContain('1 duplicate identifier finding(s).');
+});
+
+it('reads nothing, without failing, for a list group with no row key', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => [], 'rowKey' => null, 'label' => 'people list'],
+    ]);
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'npi' => '1234567893']);
+
+    [$status, $output] = runIdentifierAuditWithStatus();
+
+    expect($status)->toBe(0)
+        ->and($output)->toContain('1 entry read(s), 0 identifier value(s).')
+        ->and($output)->toContain('No duplicate identifiers found.');
+});
+
+it('does not treat a single-value field holding a list as repeating within itself', function (): void {
+    auditSurfaceOf([
+        ['collection' => 'people', 'paths' => ['tags'], 'rowKey' => null, 'label' => 'people tags'],
+    ]);
+    auditEntry('people', 'first', ['title' => 'Dana Reed', 'tags' => ['x', 'x']]);
+
+    [, $output] = runIdentifierAuditWithStatus();
+
+    expect($output)->toContain('0 identifier value(s).')
+        ->and($output)->toContain('No duplicate identifiers found.');
+});
