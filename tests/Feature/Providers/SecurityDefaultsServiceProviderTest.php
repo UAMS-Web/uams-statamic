@@ -27,6 +27,10 @@ uses(TestCase::class);
  * under `php artisan route:cache` (the route group is baked from build time), so
  * asserting only the flag would be a false green; the request-time gate proves
  * the clamp denies even when the route is served from the cache.
+ *
+ * Mutation on App\Providers\SecurityDefaultsServiceProvider (36 mutants; Windows, #873): a
+ * full run tested 34; the other 2, on the non-array resources guard, are killed by the
+ * missing-or-not-a-list case, checked by applying each mutation by hand.
  */
 
 /**
@@ -224,6 +228,29 @@ it('leaves the content api alone in production when no resource is enabled', fun
         'taxonomies' => false,
     ]);
 });
+
+it('leaves the content api alone in production when the resources config is missing or not a list', function (mixed $resources): void {
+    // API enabled, no token, but no resources block Statamic could read
+    config()->set('statamic.api.enabled', true);
+    config()->set('statamic.api.auth_token', null);
+    config()->set('statamic.api.resources', $resources);
+
+    // Nothing is exposed, so no critical log should fire
+    Log::shouldReceive('critical')->never();
+
+    // Simulate production
+    setSecurityDefaultsEnvironment('production');
+
+    // Run the provider's guards
+    bootSecurityDefaultsProvider();
+
+    // The guard does not fire: the master switch and the resources value stay as set.
+    expect(config('statamic.api.enabled'))->toBeTrue();
+    expect(config('statamic.api.resources'))->toBe($resources);
+})->with([
+    'missing' => [null],
+    'a string' => ['collections'],
+]);
 
 it('counts a non-empty per-resource allow-list as an enabled resource', function (): void {
     // Statamic also accepts an array of allowed handles per resource
