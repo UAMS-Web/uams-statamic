@@ -272,7 +272,8 @@ it('registers every rule with its class, parameter map and baked constructor arg
 
     expect(validationProviderRegistrations())->toHaveCount(78)
         ->and($registered)->toBe($expected)
-        ->and(array_unique($replacers))->toBe([array_key_first($replacers) => true]);
+        ->and($replacers)->toHaveCount(78)
+        ->and(array_keys($replacers, false, true))->toBe([]);
 });
 
 it('stores the display names boot() gives, on the provider and statically', function (): void {
