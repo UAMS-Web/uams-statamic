@@ -671,10 +671,7 @@ class SchemaThingFromRelationshipResolver
             'caller_property_key' => \is_string($propKeyRaw) ? $propKeyRaw : null,
         ];
 
-        $bag = request()->attributes->get(self::PROFILE_BAG);
-        if (! \is_array($bag)) {
-            $bag = [];
-        }
+        $bag = $this->profileBag();
 
         $top = $bag['relationship_full_build_top'] ?? [];
         if (! \is_array($top)) {
@@ -706,12 +703,21 @@ class SchemaThingFromRelationshipResolver
         request()->attributes->set(self::PROFILE_BAG, $bag);
     }
 
-    private function recordProfileIncrement(string $key, int $delta): void
+    /**
+     * The request's composition profile bag, or an empty bag before the first write.
+     *
+     * @return array<mixed>
+     */
+    private function profileBag(): array
     {
         $bag = request()->attributes->get(self::PROFILE_BAG);
-        if (! \is_array($bag)) {
-            $bag = [];
-        }
+
+        return \is_array($bag) ? $bag : [];
+    }
+
+    private function recordProfileIncrement(string $key, int $delta): void
+    {
+        $bag = $this->profileBag();
 
         $currentCount = $bag[$key] ?? 0;
         $bag[$key] = (int) (\is_scalar($currentCount) ? $currentCount : 0) + $delta;
@@ -721,10 +727,7 @@ class SchemaThingFromRelationshipResolver
 
     private function recordProfileAddMs(string $key, float $elapsedMs): void
     {
-        $bag = request()->attributes->get(self::PROFILE_BAG);
-        if (! \is_array($bag)) {
-            $bag = [];
-        }
+        $bag = $this->profileBag();
 
         $currentMs = $bag[$key] ?? 0.0;
         $bag[$key] = (float) (\is_scalar($currentMs) ? $currentMs : 0.0) + $elapsedMs;

@@ -3034,17 +3034,10 @@ class SchemaOutputService
         mixed $a,
         mixed $b
     ): string|int|float|bool|array|null {
-        // Check if both values are null or empty
-        if (
-            (
-                $a === null
-                || $a === ''
-            )
-            && (
-                $b === null
-                || $b === ''
-            )
-        ) {
+        // Check if both values are null or empty. The condition is on one line so
+        // that a line-coverage report attributes it (spread over nine lines, PCOV
+        // reported its opening line as never executed under every operand pair).
+        if (($a === null || $a === '') && ($b === null || $b === '')) {
             // Return null to signal no values are set and non-empty
             return null;
         }
@@ -5005,15 +4998,18 @@ class SchemaOutputService
         );
         $workingField->setValue($rawForField);
 
-        /** @var Field $augmentedField */
-        $augmentedField = $workingField->augment();
-        $wrappedAugmentValue = $augmentedField->value();
+        // `Field::augment()` returns a copy of the field whose value is exactly this
+        // Value: the field's raw value, handle, fieldtype and parent. Building it here
+        // reads the augmented result directly, where `Field::value()` is untyped and
+        // needed a check that could never fail.
+        $augmented = new Value(
+            $rawForField,
+            $workingField->handle(),
+            $workingField->fieldtype(),
+            $parentAugmentable
+        );
 
-        if (! $wrappedAugmentValue instanceof Value) {
-            return $wrappedAugmentValue;
-        }
-
-        return $wrappedAugmentValue->value();
+        return $augmented->value();
     }
 
     /**
