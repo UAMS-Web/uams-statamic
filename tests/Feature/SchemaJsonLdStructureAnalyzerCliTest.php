@@ -145,6 +145,6 @@ it('writes the report as JSON when ANALYZE_OUTPUT is json', function () use ($an
 
     expect($result['exit'])->toBe(0)
         ->and(array_keys($result['files']))->toBe(['schema-jsonld-all-ids.txt', 'schema-jsonld-structure-report.json'])
-        ->and(json_decode($result['files']['schema-jsonld-structure-report.json'], true)['_meta']['id_prefix_distribution'])->toBe(['x:' => 1])
+        ->and($result['files']['schema-jsonld-structure-report.json'])->toContain('"id_prefix_distribution": {'."\n".'            "x:": 1'."\n")
         ->and($result['files']['schema-jsonld-structure-report.json'])->toEndWith("}\n");
 });
