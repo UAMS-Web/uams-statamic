@@ -131,11 +131,14 @@ class GenerateMarkdownDocs extends Command
 
         // Loop through each path to process
         foreach ($includePaths as $path) {
+            // Parse the path as a GitHub tree or blob URL; anything else is a local path
+            $parsed = $this->parseGithubUrl($path);
+
             // Check if the path is a GitHub URL
-            if ($this->isGithubUrl($path)) {
+            if ($parsed !== null) {
                 // Handle GitHub URL
                 $output .= $this->processGithubUrl(
-                    $path,
+                    $parsed,
                     $excludeDirs
                 );
             } else { // Otherwise
@@ -210,21 +213,6 @@ class GenerateMarkdownDocs extends Command
     }
 
     /**
-     * Check if a path is a GitHub repository URL.
-     *
-     * @param  string  $path  The path or URL to check
-     * @return bool True if the path is a valid GitHub URL, false otherwise
-     */
-    private function isGithubUrl(
-        string $path
-    ): bool {
-        return \preg_match(
-            '/^https:\/\/github\.com\/[^\/]+\/[^\/]+\/(tree|blob)\/[^\/]+(\/.*)?$/',
-            $path
-        ) === 1;
-    }
-
-    /**
      * Parse a GitHub URL into its components.
      *
      * Extracts owner, repository, branch, path, and type (tree or blob) from a GitHub
@@ -274,26 +262,14 @@ class GenerateMarkdownDocs extends Command
      * (e.g., https://github.com/owner/repo/blob/branch/path/to/file.php) and file
      * contents in code blocks.
      *
-     * @param  string  $url  The GitHub URL (tree or blob)
+     * @param  array{owner: string, repo: string, type: string, branch: string, path: string}  $parsed  The parsed GitHub URL (tree or blob), from parseGithubUrl()
      * @param  list<string>  $excludeDirs  Array of directory paths to exclude (relative to repository root)
      * @return string Markdown formatted output for all included files
      */
     private function processGithubUrl(
-        string $url,
+        array $parsed,
         array $excludeDirs
     ): string {
-        // Parse the GitHub URL into its components
-        $parsed = $this->parseGithubUrl($url);
-
-        // Check if URL parsing was successful
-        if (! $parsed) {
-            // Display warning if URL is invalid
-            $this->warn(sprintf("Invalid GitHub URL '%s'. Skipping.", $url));
-
-            // Return empty string if URL is invalid
-            return '';
-        }
-
         // Extract repository owner from parsed URL
         $owner = $parsed['owner'];
 
