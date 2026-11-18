@@ -90,8 +90,11 @@ function runCopiedAnalyzer(string $analyzerPath, ?string $input, array $env = []
 
         return [
             'exit' => $process->getExitCode(),
+            // The script names its own directory by its resolved path (`__DIR__`),
+            // which can differ from the temp path as given (a Windows short name),
+            // while the input path is echoed as given; mask both forms.
             'stderr' => str_replace(
-                str_replace('\\', '/', $dir),
+                array_unique([str_replace('\\', '/', (string) realpath($dir)), str_replace('\\', '/', $dir)]),
                 '<dir>',
                 str_replace('\\', '/', $process->getErrorOutput()),
             ),
