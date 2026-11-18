@@ -662,3 +662,20 @@ it('removes the PDFs tagged with the entry id as text, empty when the entry has 
     'a numeric id' => [42, '42'],
     'no id' => [null, ''],
 ]);
+
+it('logs and stops when no temporary file can be allocated for the PDF', function (): void {
+    // tempnam() falls back to the system temporary directory, so the failure is stood in for
+    // through the method that allocates the file. Nothing is rendered to a file, uploaded or
+    // saved after it.
+    $generator = Mockery::mock(NewsReleasePdfGenerator::class)->makePartial()->shouldAllowMockingProtectedMethods();
+    $generator->shouldReceive('renderPressReleaseHtml')->andReturn('<p>Release</p>');
+    $generator->shouldReceive('allocateTempPath')->once()->andReturnFalse();
+    Pdf::shouldReceive('html')->never();
+    AssetContainerFacade::shouldReceive('find')->never();
+
+    $warnings = newsReleaseWarnings(fn () => $generator->syncPdfForEntry(newsReleaseSyncEntry()));
+
+    expect($warnings)->toBe([
+        ['NewsReleasePdfGenerator: could not allocate temp file for PDF', ['entry_id' => 'release-1']],
+    ]);
+});
