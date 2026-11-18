@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Entries\KnowledgeBaseEntry;
 use App\Stache\CollectionEntriesStore;
+use App\Stache\EntriesStore;
 use Carbon\CarbonInterface;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Blink;
@@ -24,6 +25,9 @@ uses(StacheIsolatedTestCase::class);
  *
  * Each test builds an entry straight from YAML through the store, as the Stache does when it
  * indexes a file, on a throwaway Stache so the collections can be dated or not.
+ *
+ * `App\Stache\EntriesStore` has no code a mutation can change: it only names this class as
+ * its child store (#877). The last case pins that wiring, and the config that selects it.
  *
  * @command  php artisan test --compact tests/Feature/Stache/CollectionEntriesStoreTest.php
  */
@@ -164,3 +168,18 @@ it('keeps a localization\'s own blueprint rather than its origin\'s', function (
     // Without its own blueprint copied across, the localization would take its origin's
     expect(mustBe(Blueprint::class, $entry->blueprint(), 'the blueprint')->handle())->toBe('own_blueprint');
 })->with(['knowledge_bases', 'people']);
+
+it('builds every collection\'s entries through this store, by way of the app\'s entries store', function (): void {
+    collectionEntriesStoreCollection('knowledge_bases');
+    collectionEntriesStoreCollection('pages');
+
+    $entries = Stache::store('entries');
+
+    expect($entries)->toBeInstanceOf(EntriesStore::class);
+
+    // The child store class is the app's, for a collection it re-wraps and for one it does not
+    $aggregate = mustBe(AggregateStore::class, $entries, 'the entries store');
+
+    expect($aggregate->store('knowledge_bases'))->toBeInstanceOf(CollectionEntriesStore::class)
+        ->and($aggregate->store('pages'))->toBeInstanceOf(CollectionEntriesStore::class);
+});

@@ -46,14 +46,13 @@ class TermsToTitleTransformer
 
         // ---
         // Ensure $searchable is a taxonomy Term and has a blueprint (the
-        // contract interface is empty; the concrete class carries blueprint())
+        // contract interface is empty; the concrete class carries blueprint()).
+        // A searchable that is not a Term leaves the blueprint null, so the one
+        // null check covers both cases.
         // ---
         /** @var Blueprint|null $blueprint */
         $blueprint = $searchable instanceof Term ? $searchable->blueprint() : null;
-        if (
-            ! $searchable instanceof Term
-            || ! $blueprint
-        ) {
+        if (! $blueprint) {
             return $value; // Fallback if not a term or no blueprint
         }
 

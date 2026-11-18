@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Services\EnumGeneration\County\CountyEnumGenerator;
 use Symfony\Component\Process\Process;
 
+covers(CountyEnumGenerator::class);
+
 /**
  * Unit tests for the extracted {@see CountyEnumGenerator} (UAMS-Web/uams-statamic-archive#876).
  *
@@ -202,3 +204,193 @@ it('writes a fullName literal that evaluates back to the value (#716)', function
     'backslash before apostrophe' => ['x\\\'y'],
     'lone backslash' => ['\\'],
 ]);
+
+it('keeps appending layer 55 counties after one without a geoId (#887)', function () {
+    $merged = (new CountyEnumGenerator)->mergeSupplementalRecords(
+        [['GEOID' => '05119', 'NAME' => 'Pulaski County'], ['NAME' => 'No GeoId in layer 1']],
+        [['NAME' => 'No GeoId County'], ['GEOID' => '05125', 'NAME' => 'Saline County']]
+    );
+
+    expect(array_column($merged, 'NAME'))->toBe(['Pulaski County', 'No GeoId in layer 1', 'Saline County']);
+});
+
+it('trims the underscores punctuation leaves at either end of a case id (#887)', function () {
+    expect((new CountyEnumGenerator)->generateCaseId('AR', '(Pulaski County)'))->toBe('AR_PULASKI_COUNTY');
+});
+
+it('maps every TIGERweb field onto its row, casting numbers to strings (#887)', function () {
+    // TIGERweb's JSON carries the codes as strings and the measures as numbers
+    /** @var array<int, array<string, string>> $records */
+    $records = json_decode(<<<'JSON'
+        [{
+            "STATE": "05", "COUNTY": "119", "COUNTYNS": "00069902", "NAME": "Pulaski County",
+            "COUNTYCC": "H1", "FUNCSTAT": "A", "GEOID": "05119", "MTFCC": "G4020",
+            "OID": 27590204313040, "BASENAME": "Pulaski", "LSADC": "06",
+            "AREALAND": 1959383218, "AREAWATER": 71263449, "OBJECTID": 512,
+            "CENTLAT": "+34.7699806", "CENTLON": "-092.3106429",
+            "INTPTLAT": "+34.7709447", "INTPTLON": "-092.3112768"
+        }]
+        JSON, true, flags: JSON_THROW_ON_ERROR);
+
+    expect((new CountyEnumGenerator)->buildCountiesFromRecords($records))->toBe([[
+        'fullName' => 'Pulaski County',
+        'baseName' => 'Pulaski',
+        'fipsCode' => '119',
+        'parentUspsCode' => 'AR',
+        'parentFipsCode' => '05',
+        'geoId' => '05119',
+        'nationalStandardCode' => '00069902',
+        'fipsClassCode' => 'H1',
+        'functionalStatusCode' => 'A',
+        'mafTigerFeatureClassCode' => 'G4020',
+        'mafTigerObjectIdentifier' => '27590204313040',
+        'legalStatisticalAreaDescriptionCode' => '06',
+        'areaLand' => '1959383218',
+        'areaWater' => '71263449',
+        'arcGisObjectIdentifier' => '512',
+        'centroidGeo' => ['+34.7699806', '-092.3106429'],
+        'internalPointGeo' => ['+34.7709447', '-092.3112768'],
+        'caseId' => 'AR_PULASKI_COUNTY',
+    ]]);
+});
+
+it('casts every numeric field to a string, before building the case id (#887)', function () {
+    /** @var array<int, array<string, string>> $records */
+    $records = json_decode(<<<'JSON'
+        [{
+            "STATE": 99, "COUNTY": 119, "COUNTYNS": 69902, "NAME": 1234, "COUNTYCC": 11,
+            "FUNCSTAT": 1, "GEOID": 5119, "MTFCC": 4020, "OID": 27, "BASENAME": 56,
+            "LSADC": 6, "AREALAND": 7, "AREAWATER": 8, "OBJECTID": 9,
+            "CENTLAT": 34.5, "CENTLON": -92.25, "INTPTLAT": 35.5, "INTPTLON": -93.25
+        }]
+        JSON, true, flags: JSON_THROW_ON_ERROR);
+
+    expect((new CountyEnumGenerator)->buildCountiesFromRecords($records))->toBe([[
+        'fullName' => '1234',
+        'baseName' => '56',
+        'fipsCode' => '119',
+        'parentUspsCode' => '',
+        'parentFipsCode' => '99',
+        'geoId' => '5119',
+        'nationalStandardCode' => '69902',
+        'fipsClassCode' => '11',
+        'functionalStatusCode' => '1',
+        'mafTigerFeatureClassCode' => '4020',
+        'mafTigerObjectIdentifier' => '27',
+        'legalStatisticalAreaDescriptionCode' => '6',
+        'areaLand' => '7',
+        'areaWater' => '8',
+        'arcGisObjectIdentifier' => '9',
+        'centroidGeo' => ['34.5', '-92.25'],
+        'internalPointGeo' => ['35.5', '-93.25'],
+        'caseId' => '99_1234',
+    ]]);
+});
+
+it('fills every missing field with an empty string (#887)', function () {
+    expect((new CountyEnumGenerator)->buildCountiesFromRecords([[]]))->toBe([[
+        'fullName' => '',
+        'baseName' => '',
+        'fipsCode' => '',
+        'parentUspsCode' => '',
+        'parentFipsCode' => '',
+        'geoId' => '',
+        'nationalStandardCode' => '',
+        'fipsClassCode' => '',
+        'functionalStatusCode' => '',
+        'mafTigerFeatureClassCode' => '',
+        'mafTigerObjectIdentifier' => '',
+        'legalStatisticalAreaDescriptionCode' => '',
+        'areaLand' => '',
+        'areaWater' => '',
+        'arcGisObjectIdentifier' => '',
+        'centroidGeo' => ['', ''],
+        'internalPointGeo' => ['', ''],
+        'caseId' => '_',
+    ]]);
+});
+
+it('keeps the first record when two produce the same case id (#887)', function () {
+    $counties = (new CountyEnumGenerator)->buildCountiesFromRecords([
+        ['STATE' => '05', 'NAME' => 'Pulaski County', 'GEOID' => 'first'],
+        ['STATE' => '05', 'NAME' => 'Pulaski County', 'GEOID' => 'second'],
+    ]);
+
+    expect(array_column($counties, 'geoId'))->toBe(['first']);
+});
+
+it('renders the docblock header line for line, with each source line right-trimmed (#887)', function () {
+    $php = (new CountyEnumGenerator)->generatePhpContent(
+        [countyRenderRow('Pulaski County', 'AR_PULASKI'), countyRenderRow('Saline County', 'AR_SALINE')],
+        ['First source line   ', '  Indented second line']
+    );
+
+    $lines = explode("\n", $php);
+
+    expect(array_slice($lines, 0, 26))->toBe([
+        '<?php',
+        '',
+        'declare(strict_types=1);',
+        '',
+        '/**',
+        ' * Generated County and County Equivalent Entities enum cases',
+        ' *',
+        ' * INSTRUCTIONS:',
+        ' * 1. Copy all the case statements below (from the first case to the',
+        ' *    closing brace)',
+        ' * 2. Open app/Enums/County.php',
+        ' * 3. Replace the existing case list in the County enum with the',
+        ' *    copied cases',
+        ' * 4. Keep any other methods in County.php; the CountyInfo attribute',
+        ' *    class is in CountyInfo.php',
+        ' * 5. Save the file',
+        ' *',
+        ' * Data Source:',
+        ' * - First source line',
+        ' * -   Indented second line',
+        ' *',
+        $lines[21],
+        ' * Total counties: 2',
+        ' */',
+        'enum County: string',
+        '{',
+    ])
+        ->and($lines[21])->toMatch('/^ \* This list of cases was generated on \d{4}-\d{2}-\d{2} at \d{2}:\d{2}:\d{2} \S+$/');
+});
+
+it('renders each attribute in order on one line, then its case (#887)', function () {
+    $php = (new CountyEnumGenerator)->generatePhpContent([[
+        'fullName' => 'Full',
+        'baseName' => 'Base',
+        'fipsCode' => 'Fips',
+        'parentUspsCode' => 'Usps',
+        'parentFipsCode' => 'ParentFips',
+        'geoId' => 'Geo',
+        'nationalStandardCode' => 'Ns',
+        'fipsClassCode' => 'Cc',
+        'functionalStatusCode' => 'Fs',
+        'mafTigerFeatureClassCode' => 'Mtfcc',
+        'mafTigerObjectIdentifier' => 'Oid',
+        'legalStatisticalAreaDescriptionCode' => 'Lsad',
+        'areaLand' => 'Land',
+        'areaWater' => 'Water',
+        'arcGisObjectIdentifier' => 'ObjectId',
+        'centroidGeo' => ['CentLat', 'CentLon'],
+        'internalPointGeo' => ['PointLat', 'PointLon'],
+        'caseId' => 'XX_FULL',
+    ]]);
+
+    $lines = explode("\n", $php);
+    $brace = array_search('{', $lines, true);
+    $body = array_slice($lines, (int) $brace + 1);
+
+    expect($brace)->toBeInt()
+        ->and($lines)->toContain(' * - TIGERweb Counties API')
+        ->and($body)->toBe([
+            "    #[CountyInfo(fullName: 'Full', baseName: 'Base', fipsCode: 'Fips', parentUspsCode: 'Usps', parentFipsCode: 'ParentFips', geoId: 'Geo', nationalStandardCode: 'Ns', fipsClassCode: 'Cc', functionalStatusCode: 'Fs', mafTigerFeatureClassCode: 'Mtfcc', mafTigerObjectIdentifier: 'Oid', legalStatisticalAreaDescriptionCode: 'Lsad', areaLand: 'Land', areaWater: 'Water', arcGisObjectIdentifier: 'ObjectId', centroidGeo: ['CentLat', 'CentLon'], internalPointGeo: ['PointLat', 'PointLon'])]",
+            "    case XX_FULL = 'XX_FULL';",
+            '',
+            '}',
+            '',
+        ]);
+});
