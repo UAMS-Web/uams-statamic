@@ -97,9 +97,8 @@ uses(TestCase::class);
  * closure captures, because the closure is the only place they are kept.
  *
  * The engine is exercised through two probe rules, {@see LegacyRuleProbe} for the
- * legacy `Rule` path and the message replacer, and {@see ValidatorAwareRuleProbe}
- * for the `ValidationRule` path. No rule `boot()` registers carries a replacer
- * message, so the replacer is reachable only through a probe.
+ * legacy `Rule` path and {@see ValidatorAwareRuleProbe} for the `ValidationRule`
+ * path. The provider registers no message replacer (#1002).
  *
  * Mutation: see the closing record on #874.
  *
@@ -252,7 +251,6 @@ it('registers every rule with its class, parameter map and baked constructor arg
     $validator = Validator::make([], []);
 
     $registered = [];
-    $replacers = [];
 
     foreach (array_keys(validationProviderRegistrations()) as $name) {
         expect($validator->extensions)->toHaveKey($name);
@@ -262,7 +260,6 @@ it('registers every rule with its class, parameter map and baked constructor arg
         $captured = (new ReflectionFunction($extension))->getClosureUsedVariables();
 
         $registered[$name] = [$captured['ruleClass'], $captured['parameterMap'], $captured['constructorArguments']];
-        $replacers[$name] = array_key_exists($name, $validator->replacers);
     }
 
     $expected = array_map(
@@ -271,9 +268,7 @@ it('registers every rule with its class, parameter map and baked constructor arg
     );
 
     expect(validationProviderRegistrations())->toHaveCount(78)
-        ->and($registered)->toBe($expected)
-        ->and($replacers)->toHaveCount(78)
-        ->and(array_keys($replacers, false, true))->toBe([]);
+        ->and($registered)->toBe($expected);
 });
 
 it('stores the display names boot() gives, on the provider and statically', function (): void {
@@ -343,91 +338,41 @@ it('hands a validator-aware rule the validator running it, and passes', function
         ->and(ValidatorAwareRuleProbe::$constructedWith)->toBe(['baked', 'given']);
 });
 
-it('leaves a ValidationRule message as it is', function (): void {
-    $validator = Validator::make([], []);
-
-    /** @var Closure $replacer */
-    $replacer = $validator->replacers['zip_code'];
-
-    expect($replacer('Kept as given.', 'field', 'zip_code', ['ignored']))->toBe('Kept as given.');
+it('reports a ValidationRule failure with the message the rule passes to $fail', function (): void {
+    expect(Validator::make(['field' => '1234'], ['field' => 'zip_code'])->errors()->first('field'))
+        ->toBe(trans('statamic::validation.zip_code'));
 });
 
-it('builds a legacy Rule message from its generic translation', function (): void {
-    registerValidationProbe('legacy_probe', LegacyRuleProbe::class);
-    LegacyRuleProbe::$passes = false;
-    app('translator')->addLines(['validation.legacy_probe' => 'The :attribute is not a probe.'], 'en');
-
-    expect(validationProbeError('legacy_probe'))->toBe('The field is not a probe.');
-});
-
-// A rule whose translation is a group of typed messages is called through the
-// replacer directly. Through a real validation Laravel formats the group itself
-// before the replacer runs, and fails on the array, unless the field carries a
-// custom message.
-it('picks a legacy Rule message from a translation group by its type', function (array $lines, array $parameters, string $expected): void {
-    registerValidationProbe('legacy_probe', LegacyRuleProbe::class);
-    app('translator')->addLines($lines, 'en');
-
-    /** @var Closure $replacer */
-    $replacer = Validator::make([], [])->replacers['legacy_probe'];
-
-    expect($replacer('Incoming message.', 'field', 'legacy_probe', $parameters))->toBe($expected);
-})->with([
-    'the message for the type in the second parameter' => [
-        ['validation.legacy_probe.typed' => 'Typed :attribute.', 'validation.legacy_probe.default' => 'Default :attribute.'],
-        ['x', 'typed'],
-        'Typed field.',
-    ],
-    'the default message for a type with none' => [
-        ['validation.legacy_probe.typed' => 'Typed :attribute.', 'validation.legacy_probe.default' => 'Default :attribute.'],
-        ['x', 'other'],
-        'Default field.',
-    ],
-    'the default message with no type' => [
-        ['validation.legacy_probe.typed' => 'Typed :attribute.', 'validation.legacy_probe.default' => 'Default :attribute.'],
-        [],
-        'Default field.',
-    ],
-    // The fallback names `validation.required`. Here the key itself comes back,
-    // because `addLines()` above marks the `en` `validation` group as loaded, so
-    // Laravel's own lines are never read; in the app the key resolves to Laravel's
-    // required message. No rule `boot()` registers reaches this branch (#1014).
-    'the required key for a group with no default' => [
-        ['validation.legacy_probe.typed' => 'Typed :attribute.'],
-        ['x', 'other'],
-        'validation.required',
-    ],
-]);
-
-it('builds a legacy Rule message from a translation group when the field carries a custom message', function (): void {
-    registerValidationProbe('legacy_probe', LegacyRuleProbe::class);
-    LegacyRuleProbe::$passes = false;
-    app('translator')->addLines(['validation.legacy_probe.typed' => 'Typed :attribute.'], 'en');
-
-    $errors = Validator::make(['field' => 'value'], ['field' => 'legacy_probe:x,typed'], ['legacy_probe' => 'Custom message.'])->errors();
-
-    expect($errors->first('field'))->toBe('Typed field.');
-});
-
-// Without a map, each placeholder takes the parameter at its own position in the
-// template, counting :attribute, so a template that opens with :attribute skips
-// the first parameter. This pins that behavior; it does not endorse it.
-it('fills placeholders by their position in the template when there is no map', function (string $template, string $rule, string $expected): void {
+// UAMS-Web/uams-statamic#1002 retired the provider's message replacer (#1014,
+// option B). A legacy `Rule` that fails by name now reads Laravel's own
+// `validation.<name>` line, with Laravel's own placeholder replacement: the
+// rule's `message()` is not read, and no parameter is placed by position.
+it('reports a legacy Rule failure with its translation line, filling only what Laravel fills', function (string $template, string $rule, string $expected): void {
     registerValidationProbe('legacy_probe', LegacyRuleProbe::class);
     LegacyRuleProbe::$passes = false;
     app('translator')->addLines(['validation.legacy_probe' => $template], 'en');
 
     expect(validationProbeError($rule))->toBe($expected);
 })->with([
-    'no :attribute' => ['Between :min and :max.', 'legacy_probe:1,5', 'Between 1 and 5.'],
-    'an :attribute first' => [':attribute between :min and :max.', 'legacy_probe:1,5,9', 'field between 5 and 9.'],
-    'a missing parameter stays a placeholder' => [':attribute up to :max.', 'legacy_probe', 'field up to :max.'],
+    'the attribute' => ['The :attribute is not a probe.', 'legacy_probe', 'The field is not a probe.'],
+    'parameters are not placed' => [':attribute between :min and :max.', 'legacy_probe:1,5', 'field between :min and :max.'],
 ]);
 
-it('fills placeholders by the parameter map when there is one', function (): void {
-    registerValidationProbe('mapped_probe', LegacyRuleProbe::class, [0 => 'low', 2 => 'high']);
-    LegacyRuleProbe::$passes = false;
-    app('translator')->addLines(['validation.mapped_probe' => ':attribute from :low to :high.'], 'en');
+it('registers no message replacer for any rule', function (): void {
+    registerValidationProbe('legacy_probe', LegacyRuleProbe::class);
 
-    expect(validationProbeError('mapped_probe:3,x,8'))->toBe('field from 3 to 8.');
+    expect(Validator::make([], [])->replacers)->toBe([]);
 });
+
+// The five date names are Laravel's own rules, so Laravel's validator runs and,
+// with no provider replacer in the way, its own replacer fills the date. Their
+// fate is UAMS-Web/uams-statamic#1016.
+it('lets Laravel fill the date in a date rule failure', function (string $rule, string $value, string $expected): void {
+    expect(Validator::make(['field' => $value], ['field' => $rule])->errors()->first('field'))->toBe($expected);
+})->with([
+    'after' => ['after:2020-01-01', '2019-01-01', 'The field field must be a date after 2020-01-01.'],
+    'after_or_equal' => ['after_or_equal:2020-01-01', '2019-01-01', 'The field field must be a date after or equal to 2020-01-01.'],
+    'before' => ['before:2020-01-01', '2021-01-01', 'The field field must be a date before 2020-01-01.'],
+    'before_or_equal' => ['before_or_equal:2020-01-01', '2021-01-01', 'The field field must be a date before or equal to 2020-01-01.'],
+    'date_equals' => ['date_equals:2020-01-01', '2021-01-01', 'The field field must be a date equal to 2020-01-01.'],
+]);

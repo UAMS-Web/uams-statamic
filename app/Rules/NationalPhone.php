@@ -6,8 +6,9 @@ namespace App\Rules;
 
 use App\Enums\Country;
 use App\Services\PhoneUtil;
+use Closure;
 use Exception;
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Propaganistas\LaravelPhone\PhoneNumber;
 
 /**
@@ -17,7 +18,7 @@ use Propaganistas\LaravelPhone\PhoneNumber;
  * for a specified country using the PhoneNumber class from the Laravel Phone
  * package.
  */
-class NationalPhone implements Rule
+class NationalPhone implements ValidationRule
 {
     /**
      * Create a new rule instance.
@@ -25,6 +26,24 @@ class NationalPhone implements Rule
      * @param  string  $country  The country code for validation
      */
     public function __construct(protected string $country = 'US') {}
+
+    /**
+     * Validate the value, reporting the rule's own message on failure.
+     *
+     * @param  string  $attribute  The name of the attribute being validated
+     * @param  mixed  $value  The value to validate as a phone number
+     * @param  Closure  $fail  Closure to call with the error message on failure
+     */
+    public function validate(
+        string $attribute,
+        mixed $value,
+        Closure $fail
+    ): void {
+        // Report the rule's own message when the value is not a valid number
+        if (! $this->passes($attribute, $value)) {
+            $fail($this->message());
+        }
+    }
 
     /**
      * Determine if the validation rule passes.

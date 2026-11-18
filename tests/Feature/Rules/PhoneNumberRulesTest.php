@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Rules\InternationalPhone;
 use App\Rules\NationalPhone;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -95,4 +96,45 @@ it('names the country and an example in the national failure message', function 
 
 it('falls back to the bare code when the country is unknown', function (): void {
     expect((new NationalPhone('ZZ'))->message())->toBe('Enter a valid national phone number for ZZ.');
+});
+
+// UAMS-Web/uams-statamic#1002: both rules report through `$fail`, so a failure
+// reads as the rule's own message whether the rule is given as an object or by
+// the name `ValidationServiceProvider` registers, never as `validation.<name>`.
+it('fails a phone rule with its own message, given as an object or by name', function (mixed $rule, string $expected): void {
+    $errors = Validator::make(['phone' => 'not a phone'], ['phone' => [$rule]])->errors()->get('phone');
+
+    expect($errors)->toBe([$expected]);
+})->with([
+    'international object' => [new InternationalPhone, 'Enter a valid international phone number (e.g., `+1-555-555-5555`).'],
+    'international by name' => ['international_phone', 'Enter a valid international phone number (e.g., `+1-555-555-5555`).'],
+    'national object' => [new NationalPhone('GB'), 'Enter a valid national phone number for the United Kingdom (e.g., 0121 234 5678).'],
+    'national by name, with its country' => ['national_phone:GB', 'Enter a valid national phone number for the United Kingdom (e.g., 0121 234 5678).'],
+    'national by name, default country' => ['national_phone', 'Enter a valid national phone number for the United States of America (e.g., (201) 555-0123).'],
+]);
+
+it('reports nothing for a valid number, given as an object or by name', function (mixed $rule, string $value): void {
+    expect(Validator::make(['phone' => $value], ['phone' => [$rule]])->errors()->all())->toBe([]);
+})->with([
+    'international object' => [new InternationalPhone, '+1 501 686 7000'],
+    'international by name' => ['international_phone', '+1 501 686 7000'],
+    'national object' => [new NationalPhone, '501-686-7000'],
+    'national by name' => ['national_phone', '501-686-7000'],
+]);
+
+it('calls the fail closure once with the message, and not at all on a pass', function (): void {
+    $messages = [];
+    $fail = function (string $message) use (&$messages): void {
+        $messages[] = $message;
+    };
+
+    (new InternationalPhone)->validate('phone', '+1 501 686 7000', $fail);
+    (new NationalPhone('GB'))->validate('phone', '020 7946 0958', $fail);
+    (new InternationalPhone)->validate('phone', 'nope', $fail);
+    (new NationalPhone('ZZ'))->validate('phone', 'nope', $fail);
+
+    expect($messages)->toBe([
+        'Enter a valid international phone number (e.g., `+1-555-555-5555`).',
+        'Enter a valid national phone number for ZZ.',
+    ]);
 });
