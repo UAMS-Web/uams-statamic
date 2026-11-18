@@ -120,7 +120,7 @@ function kbLogSpy(): LegacyMockInterface
 /**
  * A collection the test has saved.
  */
-function kbCollection(string $handle = 'knowledge_bases'): Collection
+function kbSaveCollection(string $handle = 'knowledge_bases'): Collection
 {
     return mustBe(Collection::class, CollectionFacade::findByHandle($handle), "the {$handle} collection");
 }
@@ -219,7 +219,7 @@ function kbOriginId(StatamicEntry $entry): mixed
  */
 function kbTree(string $site = 'default'): Tree
 {
-    $structure = mustBe(CollectionStructure::class, kbCollection()->structure(), 'the knowledge_bases structure');
+    $structure = mustBe(CollectionStructure::class, kbSaveCollection()->structure(), 'the knowledge_bases structure');
 
     return mustBe(Tree::class, $structure->in($site), "the {$site} tree");
 }
@@ -926,7 +926,7 @@ describe('the mount prefix in route data', function (): void {
         kbPlainEntry('page-host', 'kb_pages', 'host')->saveQuietly();
         kbNewRequest();
 
-        $structure = mustBe(CollectionStructure::class, kbCollection('kb_pages')->structure(), 'the kb_pages structure');
+        $structure = mustBe(CollectionStructure::class, kbSaveCollection('kb_pages')->structure(), 'the kb_pages structure');
         $tree = mustBe(Tree::class, $structure->in('default'), 'the kb_pages tree');
         $tree->tree([['entry' => 'page-home'], ['entry' => 'page-host']]);
         $tree->save();
