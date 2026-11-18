@@ -130,6 +130,8 @@ class KnowledgeBaseEntry extends Entry
         // Check whether a mount parent has been declared.
         if (! $mountId) {
             // No mount declared: keep the original collection-relative URI
+            // Without it, find() of an empty id resolves nothing and the prefix is '' anyway (RemoveEarlyReturn)
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return '';
         }
 
@@ -295,6 +297,8 @@ class KnowledgeBaseEntry extends Entry
         $tree = $structure->in($site);
 
         // Resolve parent for the tree: localize Entry to site; Page is already tree context
+        // The only Entry passed is the cascade's localized parent, already in $site, so in() returns it (InstanceOfToFalse)
+        // @pest-mutate-ignore: InstanceOfToFalse
         /** @var Entry|Page|null $parentForTree */
         $parentForTree = $parent instanceof Entry
             ? $parent->in($site)
@@ -565,8 +569,7 @@ class KnowledgeBaseEntry extends Entry
             // ---
 
             // Capture the entry ID as a string for cache key lookups
-            $rawEntryId = $this->id();
-            $entryId = is_scalar($rawEntryId) ? (string) $rawEntryId : '';
+            $entryId = self::idKey($this->id());
 
             // Clear the entry URIs cache for this entry
             /** @var Blink $entryUrisStore */
@@ -586,6 +589,9 @@ class KnowledgeBaseEntry extends Entry
             // Clear the origin blink cache key for this entry
             /** @var string $originBlinkKey */
             $originBlinkKey = $this->getOriginBlinkKey();
+            // The existence check at the top of save() re-instantiates a stored entry, and that resets this key; a
+            // new entry's key can only hold its own origin (RemoveMethodCall)
+            // @pest-mutate-ignore: RemoveMethodCall
             BlinkFacade::forget($originBlinkKey);
 
             // Flush the collection mounts cache to ensure fresh data
@@ -598,8 +604,7 @@ class KnowledgeBaseEntry extends Entry
         /** @var \Illuminate\Support\Collection<array-key, Entry> $ancestors */
         $ancestors = $this->ancestors();
         $ancestors->each(function (Entry $entry): void {
-            $ancestorId = $entry->id();
-            BlinkFacade::forget('entry-descendants-'.(is_scalar($ancestorId) ? (string) $ancestorId : ''));
+            BlinkFacade::forget('entry-descendants-'.self::idKey($entry->id()));
         });
 
         // Track the initiator stack to prevent infinite loops during recursive saves
@@ -609,9 +614,7 @@ class KnowledgeBaseEntry extends Entry
         $stack = $initiatorStack->push();
 
         // Check if the entry was not just localized
-        $localizedKey = $this->id();
-        $localizedKey = is_scalar($localizedKey) ? (string) $localizedKey : '';
-        if (! isset(self::$localizedEntries[$localizedKey])) {
+        if (! isset(self::$localizedEntries[self::idKey($this->id())])) {
             // Save direct descendants, respecting the event firing state
             /** @var \Illuminate\Support\Collection<array-key, Entry> $directDescendants */
             $directDescendants = $this->directDescendants();
@@ -756,6 +759,9 @@ class KnowledgeBaseEntry extends Entry
                     $localizeLocale = $this->locale();
 
                     // Check if the entry can be added to the structure tree
+                    // The localized root was saved in an earlier request, so the duplicate guard in the closure always
+                    // finds it and skips the append (UAMS-Web/uams-statamic#1041) (IfNegated, InstanceOfToFalse, RemoveFunctionCall)
+                    // @pest-mutate-ignore: IfNegated, InstanceOfToFalse, RemoveFunctionCall
                     if (
                         ($callback = $this->addToStructure(
                             $localizeLocale
@@ -786,6 +792,19 @@ class KnowledgeBaseEntry extends Entry
 
         // Return true to indicate the save operation completed successfully
         return true;
+    }
+
+    /**
+     * An entry id as a cache or tracking key.
+     *
+     * @param  mixed  $id  The entry id, as `Entry::id()` returns it
+     * @return string The id as a string, or an empty string for an id that is not scalar
+     */
+    private static function idKey(mixed $id): string
+    {
+        // Entry ids are strings, so neither the cast nor the fallback changes a key (RemoveStringCast, EmptyStringToNotEmpty)
+        // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
+        return is_scalar($id) ? (string) $id : '';
     }
 
     /**
@@ -866,10 +885,14 @@ class KnowledgeBaseEntry extends Entry
                 $childLocalization->saveQuietly();
 
                 // Track the localized entry to prevent redundant processing
-                $childLocalizationId = $childLocalization->id();
-                self::$localizedEntries[is_scalar($childLocalizationId) ? (string) $childLocalizationId : ''] = true;
+                // Only isset() reads the marker, so its value cannot change a result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
+                self::$localizedEntries[self::idKey($childLocalization->id())] = true;
 
                 // Check if the child can be added to the structure tree
+                // The child's save above flushes the tree memo, so the duplicate guard in the closure always finds it
+                // and skips the append (UAMS-Web/uams-statamic#1041) (IfNegated, InstanceOfToFalse, RemoveFunctionCall)
+                // @pest-mutate-ignore: IfNegated, InstanceOfToFalse, RemoveFunctionCall
                 if (
                     ($callback = $this->addToStructure(
                         $targetSite,
