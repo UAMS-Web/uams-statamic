@@ -12,21 +12,6 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-/**
- * Runs {@see Isco08EnumGenerator::generate()} against the ILO workbooks committed
- * beside it, the inputs `php artisan generate:isco-08-enum --local` reads.
- *
- * The generator keys its records by ISCO code, and PHP stores a decimal-integer
- * string key such as `'1111'` as the int `1111`, so every code read back through
- * `array_keys()` used to reach the strictly typed string helpers as an int and
- * throw a `TypeError` before anything was written (#713). Its output also needed a
- * separate Pint pass before it matched the committed enum (#715).
- *
- * The application path is pointed at a scratch directory for the run, so the
- * generator writes its enum there and never over the committed `app/Enums/Isco08.php`.
- *
- * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Isco08EnumGeneratorTest.php
- */
 it('writes a PHP string literal that evaluates to the value it was given', function (string $value): void {
     $literal = mustBeString((new ReflectionMethod(Isco08EnumGenerator::class, 'phpString'))->invoke(new Isco08EnumGenerator, $value), 'phpString literal');
 
@@ -148,7 +133,7 @@ function isco08WithScratchAppPath(Closure $callback): mixed
 
 it('names the two workbooks it ships beside itself', function (): void {
     isco08WithScratchAppPath(function (string $scratch): void {
-        $dir = $scratch.'/Services/EnumGeneration/Isco08';
+        $dir = $scratch.DIRECTORY_SEPARATOR.'Services/EnumGeneration/Isco08';
 
         expect(Isco08EnumGenerator::defaultLocalFixturePaths())->toBe([
             'definitions' => $dir.DIRECTORY_SEPARATOR.'ISCO-08 EN Structure and definitions.xlsx',
@@ -196,7 +181,7 @@ it('generates every structure level from small workbooks, filling titles from th
 
         $path = (new Isco08EnumGenerator)->generate('defs.xlsx', 'index.xlsx');
 
-        expect($path)->toBe($scratch.'/Enums/Isco08.php');
+        expect($path)->toBe($scratch.DIRECTORY_SEPARATOR.'Enums/Isco08.php');
 
         return (string) file_get_contents($path);
     }), 'generated enum');
@@ -283,7 +268,7 @@ it('fails by path when the enum file cannot be written', function (): void {
 
         try {
             expect(fn (): string => (new Isco08EnumGenerator)->generate('defs.xlsx', 'index.xlsx'))
-                ->toThrow(ValueError::class, 'Failed to write enum file: '.$scratch.'/Enums/Isco08.php');
+                ->toThrow(ValueError::class, 'Failed to write enum file: '.$scratch.DIRECTORY_SEPARATOR.'Enums/Isco08.php');
         } finally {
             restore_error_handler();
         }
@@ -325,6 +310,7 @@ it('reads the definitions code from whichever code column the sheet names', func
     'ISCO 08 Code' => [['ISCO 08 Code', 'Title EN'], ['1', 'T'], '1'],
     'ISCO-08 Code' => [['ISCO-08 Code', 'Title EN'], ['2', 'T'], '2'],
     'ISCO08 Code' => [['ISCO08 Code', 'Title EN'], ['3', 'T'], '3'],
+    'ISCO code, found beside a heading that ends in ISCO-08 code' => [['Unit ISCO-08 code', 'ISCO code', 'Title EN'], ['x', '6', 'T'], '6'],
     'ISCO code, found beside another ISCO-08 heading' => [['ISCO-08 label', 'ISCO code', 'Title EN'], ['x', '4', 'T'], '4'],
     'the first of two code columns in the order it looks for them' => [['ISCO code', 'ISCO 08 Code', 'Title EN'], ['9', '5', 'T'], '5'],
 ]);
@@ -458,6 +444,7 @@ it('rejects workbooks that produce no numeric code', function (array $definition
 it('adds an untitled row for each missing level above a listed code', function (): void {
     $rows = isco08CallInPlace('ensureHierarchyUnitsFromPrefixes', [
         'x9' => ['code' => 'x9', 'title' => 'Not numeric'],
+        '3x' => ['code' => '3x', 'title' => 'Numeric prefix'],
         '1234' => ['code' => '1234', 'title' => 'Leaf'],
         '12' => ['code' => '12', 'title' => 'Kept'],
         '21' => ['code' => '21', 'title' => 'Two one'],
@@ -471,6 +458,8 @@ it('adds an untitled row for each missing level above a listed code', function (
         '1234' => ['code' => '1234', 'title' => 'Leaf'],
         '2' => ['code' => '2', 'title' => ''],
         '21' => ['code' => '21', 'title' => 'Two one'],
+        '3' => ['code' => '3', 'title' => ''],
+        '3x' => ['code' => '3x', 'title' => 'Numeric prefix'],
         'x9' => ['code' => 'x9', 'title' => 'Not numeric'],
     ]);
 });
@@ -743,6 +732,21 @@ it('fails by URL when a workbook does not download', function (string $failing):
     'index' => [Isco08EnumGenerator::URL_INDEX_XLSX],
 ]);
 
+/**
+ * Runs {@see Isco08EnumGenerator::generate()} against the ILO workbooks committed
+ * beside it, the inputs `php artisan generate:isco-08-enum --local` reads.
+ *
+ * The generator keys its records by ISCO code, and PHP stores a decimal-integer
+ * string key such as `'1111'` as the int `1111`, so every code read back through
+ * `array_keys()` used to reach the strictly typed string helpers as an int and
+ * throw a `TypeError` before anything was written (#713). Its output also needed a
+ * separate Pint pass before it matched the committed enum (#715).
+ *
+ * The application path is pointed at a scratch directory for the run, so the
+ * generator writes its enum there and never over the committed `app/Enums/Isco08.php`.
+ *
+ * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Isco08EnumGeneratorTest.php
+ */
 it('regenerates the committed ISCO-08 enum from the committed workbooks, Pint-clean', function (): void {
     $fixtures = Isco08EnumGenerator::defaultLocalFixturePaths();
     expect(Isco08EnumGenerator::localFixturesAreReadable())->toBeTrue();

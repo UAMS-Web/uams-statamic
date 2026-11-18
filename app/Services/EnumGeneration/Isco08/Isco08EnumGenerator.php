@@ -179,13 +179,15 @@ final class Isco08EnumGenerator
     private function ensureHierarchyUnitsFromPrefixes(array &$byCode): void
     {
         foreach ($this->codeKeys($byCode) as $unit) {
-            // Every prefix of a numeric code is numeric, and none of any other code is.
-            if (! $this->isNumericIscoCode($unit)) {
-                continue;
-            }
-
             foreach ($this->ancestorsForUnit($unit) as $code) {
                 if (isset($byCode[$code])) {
+                    continue;
+                }
+
+                // Prefixes come shortest first, and once one is not numeric no longer one
+                // is either, so stopping here skips nothing the loop would have added.
+                // @pest-mutate-ignore: ContinueToBreak
+                if (! $this->isNumericIscoCode($code)) {
                     continue;
                 }
 
@@ -214,8 +216,8 @@ final class Isco08EnumGenerator
         $sheets = Excel::toArray(new SpreadsheetImport, $path);
         $parsed = $this->parseSheetWithHeader(
             $sheets,
-            // `isco-08` also finds an `ISCO-08 Code` heading, and `title` a `Title EN` one.
-            ['isco 08 code', 'isco-08', 'isco08 code'],
+            // `title` also finds a `Title EN` heading, since a needle may sit anywhere in the row.
+            ['isco 08 code', 'isco-08 code', 'isco-08', 'isco08 code'],
             ['title', 'definition'],
         );
         if ($parsed === null) {
