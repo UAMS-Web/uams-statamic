@@ -387,9 +387,10 @@ it('picks a legacy Rule message from a translation group by its type', function 
         [],
         'Default field.',
     ],
-    // The fallback names `validation.required`, which resolves in no group this
-    // site loads, so the key itself comes back. Pinned as found; no rule `boot()`
-    // registers reaches this branch.
+    // The fallback names `validation.required`. Here the key itself comes back,
+    // because `addLines()` above marks the `en` `validation` group as loaded, so
+    // Laravel's own lines are never read; in the app the key resolves to Laravel's
+    // required message. No rule `boot()` registers reaches this branch (#1014).
     'the required key for a group with no default' => [
         ['validation.legacy_probe.typed' => 'Typed :attribute.'],
         ['x', 'other'],
