@@ -1140,8 +1140,7 @@ jobs:
 
           vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php \
             --mutate --path=app/Support/UamsAlert \
-            --class="App\Support\UamsAlert\AlertSiteKeyResolver" \
-            --covered-only 2>&1 | tee mutate.log
+            --class="App\Support\UamsAlert\AlertSiteKeyResolver" 2>&1 | tee mutate.log
           PLAIN="$(sed -r 's/\x1b\[[0-9;]*m//g' mutate.log)"
 
           if ! grep -qiE '[1-9][0-9]* Mutations? for [1-9][0-9]* Files? created' <<<"$PLAIN"; then

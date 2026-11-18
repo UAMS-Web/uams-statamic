@@ -327,7 +327,10 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         expect(mutate.run).toContain('vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert')
         // The gate scripts' memory limit (#3212); the runner adds none of its own
         expect(mutate.run).toMatch(/^php -d memory_limit=4G vendor\/bin\/pest /)
-        expect(mutate.run).toContain('--class="App\\Support\\UamsAlert\\AlertSiteKeyResolver" --covered-only')
+        // Without --covered-only, so every line of the class is mutated (#1033)
+        expect(mutate.run).toMatch(/--class="App\\Support\\UamsAlert\\AlertSiteKeyResolver"$/)
+        expect(mutate.run).not.toContain('--covered-only')
+        expect(jobText(workflow, 'mutate')).not.toContain('--covered-only')
     })
 
     it('sees a file the validated commit deleted still sitting in the worktree', () => {
