@@ -18,13 +18,11 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *
  * @covers \App\Services\Facilities\FacilityInheritedParkingService
  *
- * Mutation: 93.26% on App\Services\Facilities\FacilityInheritedParkingService (89
- * mutants, --covered-only). The 6 survivors are equivalent: the `isset`-keyed
- * seen-set whose `=> true` value is never read, the two `find()`-result instanceof
- * guards (EntryFacade::find only ever returns an Entry or null, both handled
- * identically), the `(string)` cast on already-string entry ids, and the two
- * blueprint-handle empty-string fallbacks (a '' vs a non-empty handle both fall to
- * the `match` default).
+ * Mutation-clean (UAMS-Web/uams-statamic#898). Three annotations in the service mark
+ * the equivalent mutants: the `=> true` value of the `isset`-keyed seen-set, and the two
+ * `find()`-result instanceof guards, since the bound repository returns only a concrete
+ * entry or null. The cycle test throws on a second load of either entry, so a walk
+ * without its cycle guard fails at once instead of timing out.
  *
  * @command  php artisan test --compact tests/Feature/Services/Facilities/FacilityInheritedParkingServiceTest.php
  */
@@ -150,8 +148,26 @@ it('terminates on a reference cycle in the parking chain', function () {
         'facility' => 'a',
     ]);
 
-    EntryFacade::shouldReceive('find')->with('a')->andReturn($a);
-    EntryFacade::shouldReceive('find')->with('b')->andReturn($b);
+    // Each entry is loaded once: the walk from a loads b, then a, and stops at its second
+    // visit to a. A second load throws, so a walk without its cycle guard fails on its
+    // third load instead of recursing until the call stack runs out. A `once()` count
+    // does not: measured, Mockery kept answering the extra loads and the walk overflowed.
+    $loadOnce = static function (Entry $entry): Closure {
+        $loads = 0;
+
+        return static function () use ($entry, &$loads): Entry {
+            $loads++;
+
+            if ($loads > 1) {
+                throw new RuntimeException('Loaded an entry twice: the cycle guard did not stop the walk');
+            }
+
+            return $entry;
+        };
+    };
+
+    EntryFacade::shouldReceive('find')->with('a')->andReturnUsing($loadOnce($a));
+    EntryFacade::shouldReceive('find')->with('b')->andReturnUsing($loadOnce($b));
 
     expect((new FacilityInheritedParkingService)->resolveParkingFacility($a))->toBeNull();
 });
@@ -405,6 +421,50 @@ it('returns a null parking facility name when no parking facility resolves (#317
     ]);
 
     expect((new FacilityInheritedParkingService)->resolveParkingFacilityName($location))->toBeNull();
+});
+
+it('reads the first id of an array-shaped parking facility reference', function () {
+    $entity = makeParkingEntry('pe', 'parking_facility', []);
+    $building = makeParkingEntry('b', 'building', [
+        'parking_query' => true,
+        'parking_facility' => ['pe'],
+    ]);
+
+    EntryFacade::shouldReceive('find')->with('pe')->andReturn($entity);
+
+    expect((new FacilityInheritedParkingService)->resolveParkingFacility($building)?->id())->toBe('pe');
+});
+
+it('returns null for an empty array-shaped parking facility reference', function () {
+    $building = makeParkingEntry('b', 'building', [
+        'parking_query' => true,
+        'parking_facility' => [],
+    ]);
+
+    // An empty list has no first id, so nothing is looked up.
+    EntryFacade::shouldReceive('find')->never();
+
+    expect((new FacilityInheritedParkingService)->resolveParkingFacility($building))->toBeNull();
+});
+
+it('resolves a parking entity whose id is an integer', function () {
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('handle')->andReturn('parking_facility');
+    $entity = Mockery::mock(Entry::class);
+    $entity->shouldReceive('id')->andReturn(7);
+    $entity->shouldReceive('blueprint')->andReturn($blueprint);
+
+    expect((new FacilityInheritedParkingService)->resolveParkingFacility($entity))->toBe($entity);
+});
+
+it('returns null parking facility for an entry whose blueprint has no handle', function () {
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('handle')->andReturnNull();
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('id')->andReturn('x');
+    $entry->shouldReceive('blueprint')->andReturn($blueprint);
+
+    expect((new FacilityInheritedParkingService)->resolveParkingFacility($entry))->toBeNull();
 });
 
 /**
