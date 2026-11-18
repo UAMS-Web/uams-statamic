@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Rules;
 
 use App\Services\PhoneUtil;
+use Closure;
 use Exception;
-use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Propaganistas\LaravelPhone\PhoneNumber;
 
 /**
@@ -15,8 +16,26 @@ use Propaganistas\LaravelPhone\PhoneNumber;
  * This rule validates that a given value is a valid international phone number
  * using the PhoneNumber class from the Laravel Phone package.
  */
-class InternationalPhone implements Rule
+class InternationalPhone implements ValidationRule
 {
+    /**
+     * Validate the value, reporting the rule's own message on failure.
+     *
+     * @param  string  $attribute  The name of the attribute being validated
+     * @param  mixed  $value  The value to validate as a phone number
+     * @param  Closure  $fail  Closure to call with the error message on failure
+     */
+    public function validate(
+        string $attribute,
+        mixed $value,
+        Closure $fail
+    ): void {
+        // Report the rule's own message when the value is not a valid number
+        if (! $this->passes($attribute, $value)) {
+            $fail($this->message());
+        }
+    }
+
     /**
      * Validates if the given value is a valid phone number.
      *
