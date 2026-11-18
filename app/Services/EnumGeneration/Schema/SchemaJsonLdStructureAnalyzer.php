@@ -33,73 +33,17 @@ namespace App\Services\EnumGeneration\Schema;
  * Writes schema-jsonld-structure-report.txt (or .json if ANALYZE_OUTPUT=json)
  * and schema-jsonld-all-ids.txt in the script directory.
  */
-(function (): void {
+(static function (): void {
     // Only run the CLI bootstrap when this file is executed directly (e.g.
     // `php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php`).
-    // When the file is autoloaded or `include`d by another tool — Rector,
-    // PHPStan, the test suite — the entry script differs from this file, so the
+    // When the file is autoloaded or `include`d by another tool (Rector,
+    // PHPStan, the test suite) the entry script differs from this file, so the
     // bootstrap is skipped and only the class below is defined. Without this
     // guard the closure ran on every include and `exit()`ed in the host process.
-    //
-    // $argv is not in scope inside this closure; read it from $_SERVER, for both
-    // the entry-script check here and the optional [path-to.jsonld] argument.
-    $argv = $_SERVER['argv'] ?? [];
-    $entryScript = is_array($argv) && isset($argv[0]) && is_string($argv[0]) ? $argv[0] : '';
-    if (realpath($entryScript) !== __FILE__) {
-        return;
-    }
-
-    $scriptDir = __DIR__;
-    $defaultPath = $scriptDir.'/schemaorg-current-https.jsonld';
-    $argPath = is_array($argv) && isset($argv[1]) && is_string($argv[1]) ? $argv[1] : null;
-    $path = $argPath ?? $defaultPath;
-
-    if (! is_file($path) || ! is_readable($path)) {
-        fwrite(STDERR, sprintf('Error: File not found or not readable: %s%s', $path, PHP_EOL));
-        exit(1);
-    }
-
-    $json = file_get_contents($path);
-    if ($json === false) {
-        fwrite(STDERR, "Error: Failed to read file.\n");
-        exit(1);
-    }
-
-    $data = json_decode($json, true);
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        fwrite(STDERR, 'Error: Invalid JSON: '.json_last_error_msg()."\n");
-        exit(1);
-    }
-
-    if (is_array($data) && array_key_exists('@graph', $data)) {
-        $data = $data['@graph'];
-    }
-
-    $analyzer = new SchemaJsonLdStructureAnalyzer;
-    $analyzer->analyze($data);
-
-    $outputJson = (getenv('ANALYZE_OUTPUT') ?: '') === 'json';
-    $reportFile = $scriptDir.'/schema-jsonld-structure-report.'.($outputJson ? 'json' : 'txt');
-    $content = $outputJson
-        ? json_encode($analyzer->getReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-        : $analyzer->formatReport();
-
-    if (file_put_contents($reportFile, $content) === false) {
-        fwrite(STDERR, sprintf('Error: Failed to write report to %s%s', $reportFile, PHP_EOL));
-        exit(1);
-    }
-
-    fwrite(STDERR, sprintf('Wrote %s%s', $reportFile, PHP_EOL));
-
-    $allIds = $analyzer->getAllIds();
-    if ($allIds !== []) {
-        sort($allIds);
-        $allIdsFile = $scriptDir.'/schema-jsonld-all-ids.txt';
-        if (file_put_contents($allIdsFile, implode("\n", $allIds)."\n") === false) {
-            fwrite(STDERR, sprintf('Error: Failed to write all IDs to %s%s', $allIdsFile, PHP_EOL));
-        } else {
-            fwrite(STDERR, sprintf('Wrote %s (', $allIdsFile).count($allIds)." ids)\n");
-        }
+    // The guard and the bootstrap are methods on the class so a test can run them
+    // in-process; this closure only connects them to the real process.
+    if (SchemaJsonLdStructureAnalyzer::isEntryScript($_SERVER, __FILE__)) {
+        exit(SchemaJsonLdStructureAnalyzer::runCli($_SERVER, __DIR__, STDERR));
     }
 })();
 
@@ -162,6 +106,101 @@ final class SchemaJsonLdStructureAnalyzer
     private const int EXAMPLE_MAX_LENGTH = 120;
 
     private const int EXAMPLE_MAX_ITEMS = 3;
+
+    /**
+     * Whether the process's entry script is the given file, so the CLI bootstrap
+     * runs only when that file is executed directly.
+     *
+     * $argv is not in scope inside the file-level closure, so it is read from
+     * the server array the closure passes in.
+     *
+     * @param  array<array-key, mixed>  $server  the process's `$_SERVER`
+     * @param  string  $file  absolute path of the script file
+     */
+    public static function isEntryScript(array $server, string $file): bool
+    {
+        // Read the entry script from argv; anything but a string path is not this file.
+        $argv = $server['argv'] ?? [];
+        $entryScript = is_array($argv) && isset($argv[0]) && is_string($argv[0]) ? $argv[0] : '';
+
+        return realpath($entryScript) === $file;
+    }
+
+    /**
+     * Run the analysis as the CLI does: read the `.jsonld` file named by the
+     * first argument (or the default beside the script), analyze its `@graph`,
+     * and write the report and the sorted `@id` list into the script directory.
+     *
+     * @param  array<array-key, mixed>  $server  the process's `$_SERVER`, for argv
+     * @param  string  $scriptDir  directory holding the default input and receiving the reports
+     * @param  resource  $stderr  stream the progress and error lines are written to
+     * @return int the process exit code: 0 on success, 1 on an error that stops the run
+     */
+    public static function runCli(array $server, string $scriptDir, $stderr): int
+    {
+        // Resolve the input path from the optional first argument.
+        $argv = $server['argv'] ?? [];
+        $defaultPath = $scriptDir.'/schemaorg-current-https.jsonld';
+        $argPath = is_array($argv) && isset($argv[1]) && is_string($argv[1]) ? $argv[1] : null;
+        $path = $argPath ?? $defaultPath;
+
+        if (! is_file($path) || ! is_readable($path)) {
+            fwrite($stderr, sprintf('Error: File not found or not readable: %s%s', $path, PHP_EOL));
+
+            return 1;
+        }
+
+        $json = file_get_contents($path);
+        if ($json === false) {
+            fwrite($stderr, "Error: Failed to read file.\n");
+
+            return 1;
+        }
+
+        // Decode, then unwrap the document root to its @graph.
+        $data = json_decode($json, true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            fwrite($stderr, 'Error: Invalid JSON: '.json_last_error_msg()."\n");
+
+            return 1;
+        }
+
+        if (is_array($data) && array_key_exists('@graph', $data)) {
+            $data = $data['@graph'];
+        }
+
+        $analyzer = new self;
+        $analyzer->analyze($data);
+
+        // Write the report, as JSON when ANALYZE_OUTPUT asks for it.
+        $outputJson = (getenv('ANALYZE_OUTPUT') ?: '') === 'json';
+        $reportFile = $scriptDir.'/schema-jsonld-structure-report.'.($outputJson ? 'json' : 'txt');
+        $content = $outputJson
+            ? json_encode($analyzer->getReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
+            : $analyzer->formatReport();
+
+        if (file_put_contents($reportFile, $content) === false) {
+            fwrite($stderr, sprintf('Error: Failed to write report to %s%s', $reportFile, PHP_EOL));
+
+            return 1;
+        }
+
+        fwrite($stderr, sprintf('Wrote %s%s', $reportFile, PHP_EOL));
+
+        // Write the sorted @id list; a failure here is reported but does not fail the run.
+        $allIds = $analyzer->getAllIds();
+        if ($allIds !== []) {
+            sort($allIds);
+            $allIdsFile = $scriptDir.'/schema-jsonld-all-ids.txt';
+            if (file_put_contents($allIdsFile, implode("\n", $allIds)."\n") === false) {
+                fwrite($stderr, sprintf('Error: Failed to write all IDs to %s%s', $allIdsFile, PHP_EOL));
+            } else {
+                fwrite($stderr, sprintf('Wrote %s (', $allIdsFile).count($allIds)." ids)\n");
+            }
+        }
+
+        return 0;
+    }
 
     public function analyze(mixed $data): void
     {

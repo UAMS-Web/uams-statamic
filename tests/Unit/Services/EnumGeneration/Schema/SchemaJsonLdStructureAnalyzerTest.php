@@ -496,3 +496,215 @@ it('formats every section, optional line and example rendering of a full analysi
         '',
     ]));
 });
+
+/**
+ * Run `runCli()` in-process with the given argv, writing into `$dir`, and hand
+ * back its exit code and everything it wrote to STDERR.
+ *
+ * @param  array<array-key, mixed>  $server  the `$_SERVER` the CLI reads argv from
+ * @return array{exit: int, stderr: string}
+ */
+function runStructureCli(array $server, string $dir): array
+{
+    $stderr = fopen('php://memory', 'w+');
+    expect($stderr)->not->toBeFalse();
+    if ($stderr === false) {
+        return ['exit' => -1, 'stderr' => ''];
+    }
+
+    $exit = SchemaJsonLdStructureAnalyzer::runCli($server, $dir, $stderr);
+    rewind($stderr);
+    $written = (string) stream_get_contents($stderr);
+    fclose($stderr);
+
+    return ['exit' => $exit, 'stderr' => $written];
+}
+
+/**
+ * Run `runCli()` as `runStructureCli()` does, swallowing the PHP warning a
+ * failed `file_put_contents()` raises, so a test can assert what the CLI
+ * reports for that failure instead of the warning.
+ *
+ * @param  array<array-key, mixed>  $server  the `$_SERVER` the CLI reads argv from
+ * @return array{exit: int, stderr: string}
+ */
+function runStructureCliQuietly(array $server, string $dir): array
+{
+    set_error_handler(static fn (): bool => true, E_WARNING);
+    try {
+        return runStructureCli($server, $dir);
+    } finally {
+        restore_error_handler();
+    }
+}
+
+/**
+ * A fresh, empty temp directory for one CLI run, removed after the test.
+ */
+function structureCliDir(): string
+{
+    $dir = sys_get_temp_dir().'/jsonld-analyzer-unit-'.bin2hex(random_bytes(6));
+    mkdir($dir);
+
+    return $dir;
+}
+
+/**
+ * Remove a directory a CLI run wrote into, one level deep.
+ */
+function removeStructureCliDir(string $dir): void
+{
+    foreach (glob($dir.'/*') ?: [] as $path) {
+        is_dir($path) ? rmdir($path) : unlink($path);
+    }
+    rmdir($dir);
+}
+
+it('treats only the given file as the entry script', function (array $server, bool $expected): void {
+    expect(SchemaJsonLdStructureAnalyzer::isEntryScript($server, __FILE__))->toBe($expected);
+})->with([
+    'argv[0] is the file' => [['argv' => [__FILE__]], true],
+    'argv[0] reaches the file through a relative segment' => [['argv' => [__DIR__.'/../Schema/'.basename(__FILE__)]], true],
+    'argv[0] is another file' => [['argv' => [__DIR__.'/../../../../Pest.php']], false],
+    'argv[0] is not a string' => [['argv' => [5]], false],
+    'argv is empty' => [['argv' => []], false],
+    'argv is not an array' => [['argv' => __FILE__], false],
+    'no argv' => [[], false],
+]);
+
+it('reads the default input beside the script when no path is given', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/schemaorg-current-https.jsonld', '{"@graph":[{"@id":"schema:B"},{"@id":"schema:A"}]}');
+
+        $result = runStructureCli(['argv' => ['script.php', 7]], $dir);
+
+        expect($result)->toBe([
+            'exit' => 0,
+            'stderr' => 'Wrote '.$dir.'/schema-jsonld-structure-report.txt'.PHP_EOL
+                .'Wrote '.$dir."/schema-jsonld-all-ids.txt (2 ids)\n",
+        ])->and(file_get_contents($dir.'/schema-jsonld-all-ids.txt'))->toBe("schema:A\nschema:B\n")
+            ->and(file_get_contents($dir.'/schema-jsonld-structure-report.txt'))->toStartWith('# Schema.org JSON-LD structure analysis');
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('returns 1 naming the default path when it is missing', function (): void {
+    $dir = structureCliDir();
+    try {
+        expect(runStructureCli([], $dir))->toBe([
+            'exit' => 1,
+            'stderr' => 'Error: File not found or not readable: '.$dir.'/schemaorg-current-https.jsonld'.PHP_EOL,
+        ])->and(glob($dir.'/*'))->toBe([]);
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('returns 1 when the given path is a directory', function (): void {
+    $dir = structureCliDir();
+    try {
+        expect(runStructureCli(['argv' => ['script.php', $dir]], $dir))->toBe([
+            'exit' => 1,
+            'stderr' => 'Error: File not found or not readable: '.$dir.PHP_EOL,
+        ]);
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('returns 1 with the parser message when the input is not JSON', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', '{');
+
+        expect(runStructureCli(['argv' => ['script.php', $dir.'/in.jsonld']], $dir))->toBe([
+            'exit' => 1,
+            'stderr' => "Error: Invalid JSON: Syntax error\n",
+        ]);
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('analyzes a JSON null document and writes no all-ids file', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', 'null');
+
+        expect(runStructureCli(['argv' => ['script.php', $dir.'/in.jsonld']], $dir))->toBe([
+            'exit' => 0,
+            'stderr' => 'Wrote '.$dir.'/schema-jsonld-structure-report.txt'.PHP_EOL,
+        ])->and(array_map('basename', glob($dir.'/schema-jsonld-*') ?: []))->toBe(['schema-jsonld-structure-report.txt']);
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('analyzes a document without @graph as it stands', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', '[{"@id":"x:1"}]');
+
+        expect(runStructureCli(['argv' => ['script.php', $dir.'/in.jsonld']], $dir)['exit'])->toBe(0)
+            ->and(file_get_contents($dir.'/schema-jsonld-all-ids.txt'))->toBe("x:1\n");
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('writes the report as pretty JSON when ANALYZE_OUTPUT is json', function (): void {
+    $dir = structureCliDir();
+    putenv('ANALYZE_OUTPUT=json');
+    try {
+        file_put_contents($dir.'/in.jsonld', '{"@graph":[{"@id":"https://schema.org/x"}]}');
+
+        $result = runStructureCli(['argv' => ['script.php', $dir.'/in.jsonld']], $dir);
+        $report = (string) file_get_contents($dir.'/schema-jsonld-structure-report.json');
+
+        expect($result['stderr'])->toStartWith('Wrote '.$dir.'/schema-jsonld-structure-report.json'.PHP_EOL)
+            ->and($report)->toStartWith("{\n    \"_meta\": {\n")
+            ->and($report)->toContain('"https://schema.org/": 1')
+            ->and($report)->toEndWith("}\n")
+            ->and(file_exists($dir.'/schema-jsonld-structure-report.txt'))->toBeFalse();
+    } finally {
+        putenv('ANALYZE_OUTPUT');
+        removeStructureCliDir($dir);
+    }
+});
+
+it('returns 1 when the report cannot be written', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', '[{"@id":"x:1"}]');
+        mkdir($dir.'/schema-jsonld-structure-report.txt');
+
+        $result = runStructureCliQuietly(['argv' => ['script.php', $dir.'/in.jsonld']], $dir);
+
+        expect($result)->toBe([
+            'exit' => 1,
+            'stderr' => 'Error: Failed to write report to '.$dir.'/schema-jsonld-structure-report.txt'.PHP_EOL,
+        ])->and(file_exists($dir.'/schema-jsonld-all-ids.txt'))->toBeFalse();
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('still returns 0 when only the all-ids file cannot be written', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', '[{"@id":"x:1"}]');
+        mkdir($dir.'/schema-jsonld-all-ids.txt');
+
+        $result = runStructureCliQuietly(['argv' => ['script.php', $dir.'/in.jsonld']], $dir);
+
+        expect($result)->toBe([
+            'exit' => 0,
+            'stderr' => 'Wrote '.$dir.'/schema-jsonld-structure-report.txt'.PHP_EOL
+                .'Error: Failed to write all IDs to '.$dir.'/schema-jsonld-all-ids.txt'.PHP_EOL,
+        ]);
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
