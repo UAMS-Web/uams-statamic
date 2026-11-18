@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Cache;
 
 use ErrorException;
+use Illuminate\Support\Sleep;
 use Statamic\Extensions\FileStore;
 
 /**
@@ -64,11 +65,9 @@ final class RetryingFileStore extends FileStore
                     throw $e;
                 }
 
-                // Timing-only backoff. RemoveFunctionCall on usleep() is equivalent
-                // and cannot be annotated: that mutator removes the call node, and the
-                // ignore marker reaches the node's children rather than the call
-                // itself (same trap as RedirectRuleMatcher::ini_set).
-                usleep(self::BACKOFF_MICROSECONDS * $attempt);
+                // Back off through the Sleep facade, so a test can fake it and assert
+                // the exact waits instead of measuring wall time.
+                Sleep::usleep(self::BACKOFF_MICROSECONDS * $attempt);
             }
         }
     }
