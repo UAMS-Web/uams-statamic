@@ -471,6 +471,15 @@ describe('localization on save', function (): void {
             ->and(kbOriginId($article))->toBe('kb-article');
     });
 
+    it('saves the localized root of an orderable collection, which has no tree to add it to', function (): void {
+        kbSaveFixture(['structureContents' => ['root' => false, 'max_depth' => 1]]);
+        kbNewRequest();
+        kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb')], [['entry' => 'kb-root']]);
+        $id = kbLocalizeRootLikeTheControlPanel(kbFind('kb-root'));
+
+        expect(kbFind($id)->save())->toBeTrue();
+    });
+
     it('does not localize the subtree twice', function (): void {
         $id = kbLocalizeRootLikeTheControlPanel(kbSeedHierarchy());
         kbFind($id)->save();
