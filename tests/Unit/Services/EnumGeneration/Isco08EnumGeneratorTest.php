@@ -275,11 +275,12 @@ it('fails by path when the enum file cannot be written', function (): void {
     });
 });
 
-it('reads each definitions row under its header, skipping rows with no usable code', function (): void {
+it('reads each definitions row below its header, skipping rows with no usable code', function (): void {
     isco08FakeWorkbooks(['defs.xlsx' => [
         [['Cover sheet'], ['Nothing to read here']],
         [
             ['International Standard Classification of Occupations'],
+            ['9', 'A numbered note above the header', 'x', 'x', 'x', 'x'],
             isco08DefinitionsHeader(),
             ['1', ' Managers ', " Plan.\r\nDirect.\rReview. ", " (a) one\r\n(b) two ", ' Excl ', ' Note '],
             [11.0, 'Chief executives', 'D11', '', '', ''],
@@ -334,9 +335,10 @@ it('rejects a definitions workbook it cannot read', function (array $sheet, stri
     'a header with no code column it knows' => [[['ISCO-08', 'Title EN'], ['1', 'Managers']], 'Definitions workbook missing ISCO code column: defs.xlsx'],
 ]);
 
-it('reads each index title once per code, sorted naturally, skipping unusable rows', function (): void {
+it('reads each index title below the header once per code, sorted naturally, skipping unusable rows', function (): void {
     isco08FakeWorkbooks(['index.xlsx' => [[
         ['ISCO-08 index'],
+        ['9', 'A numbered note above the header'],
         ['ISCO-08', 'English title', 'ISCO-88'],
         ['1111', 'senator'],
         ['1111', ' Member of parliament '],
