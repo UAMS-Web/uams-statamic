@@ -14,7 +14,9 @@ use Statamic\Entries\Entry as StatamicEntry;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Fields\Blueprint;
+use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stache;
+use Tests\Support\ContentSubmodule;
 use Tests\Support\Doubles\EntryRepoPreserveDatedTimeHarness;
 use Tests\TestCase;
 
@@ -28,7 +30,8 @@ covers(EntryRepository::class);
  * the class (Statamic 6.x; upstream dated-path fixes in statamic/cms #14322 do
  * not replace this copy step).
  *
- * Mutation: 100% on App\Entries\EntryRepository (24 mutants, --covered-only).
+ * Mutation: 100% on App\Entries\EntryRepository (27 mutants, measured without
+ * `--covered-only`; #857).
  *
  * @see EntryRepository
  *
@@ -161,6 +164,22 @@ it('preserves the publish datetime from the entry file path', function (): void 
     $reloadedDate = $reloaded->date();
     Assert::assertInstanceOf(CarbonInterface::class, $reloadedDate);
     expect($reloadedDate->format('Y-m-d-Hi'))->toBe($expectedPrefixFromPath);
+});
+
+it('finds a stored entry by id re-wrapped, and nothing for an unknown id', function (): void {
+    /** @var EntryQueryBuilder $query */
+    $query = Entry::query();
+    $query->where('collection', 'pages');
+    $first = $query->first();
+    $stored = mustBe(StatamicEntry::class, ContentSubmodule::requireEntry($first instanceof EntryContract ? $first : null, 'a committed page entry'), 'the stored page');
+    $repository = new EntryRepository(app(Stache::class));
+
+    $found = $repository->find($stored->id());
+
+    Assert::assertInstanceOf(StatamicEntry::class, $found);
+    expect($found->id())->toBe($stored->id())
+        ->and($found->collectionHandle())->toBe('pages')
+        ->and($repository->find('no-such-entry-'.bin2hex(random_bytes(4))))->toBeNull();
 });
 
 it('make resolves the Entry contract with the collection handle', function (): void {
