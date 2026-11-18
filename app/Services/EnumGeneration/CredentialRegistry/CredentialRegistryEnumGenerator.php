@@ -140,7 +140,7 @@ final class CredentialRegistryEnumGenerator
         // Fetch subclass tree JSON from Credential Registry fixtures
         $treeJson = $this->fetchRemote(self::SUBCLASSES_MAP_URL);
         // Decode tree into associative array
-        $tree = json_decode($treeJson, true, 512, JSON_THROW_ON_ERROR);
+        $tree = json_decode($treeJson, true, flags: JSON_THROW_ON_ERROR);
         if (! \is_array($tree)) {
             throw new \RuntimeException('Invalid subclasses_map.json: expected object');
         }
@@ -157,26 +157,23 @@ final class CredentialRegistryEnumGenerator
         foreach ($edges as [$parent, $child]) {
             // Record immediate parent for child
             $parentsOf[$child] ??= [];
+            // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+            // @pest-mutate-ignore: TrueToFalse
             if (! \in_array($parent, $parentsOf[$child], true)) {
                 $parentsOf[$child][] = $parent;
             }
 
             // Record immediate child for parent
             $childrenOf[$parent] ??= [];
+            // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+            // @pest-mutate-ignore: TrueToFalse
             if (! \in_array($child, $childrenOf[$parent], true)) {
                 $childrenOf[$parent][] = $child;
             }
         }
 
-        // Collect every term that appears anywhere in the tree
+        // Collect every term that appears anywhere in the tree (every edge endpoint is one of them)
         $allTerms = $this->collectAllTermsFromTree($tree);
-        foreach (array_keys($parentsOf) as $c) {
-            $allTerms[$c] = true;
-        }
-
-        foreach (array_keys($childrenOf) as $p) {
-            $allTerms[$p] = true;
-        }
 
         // Normalize to sorted list of shorthand strings
         $termList = array_keys($allTerms);
@@ -189,8 +186,8 @@ final class CredentialRegistryEnumGenerator
         }
 
         // Compute transitive ancestors and descendants
-        $ancestorsOf = $this->buildTransitiveClosure($termList, $parentsOf, false);
-        $descendantsOf = $this->buildTransitiveClosure($termList, $childrenOf, false);
+        $ancestorsOf = $this->buildTransitiveClosure($termList, $parentsOf);
+        $descendantsOf = $this->buildTransitiveClosure($termList, $childrenOf);
         // Build direct-subclass lists using minimal parents from CTDL JSON when present
         $canonicalChildrenByParent = $this->buildCanonicalChildrenByParent(
             $parentsOf,
@@ -210,6 +207,8 @@ final class CredentialRegistryEnumGenerator
             $propertyShorthand = $row['property'];
             foreach ($row['subject_types'] as $subject) {
                 $propertyNamesByTerm[$subject] ??= [];
+                // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
                 if (! \in_array($propertyShorthand, $propertyNamesByTerm[$subject], true)) {
                     $propertyNamesByTerm[$subject][] = $propertyShorthand;
                 }
@@ -217,6 +216,8 @@ final class CredentialRegistryEnumGenerator
 
             foreach ($row['target_types'] as $target) {
                 $inRangeByTerm[$target] ??= [];
+                // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
                 if (! \in_array($propertyShorthand, $inRangeByTerm[$target], true)) {
                     $inRangeByTerm[$target][] = $propertyShorthand;
                 }
@@ -263,16 +264,13 @@ final class CredentialRegistryEnumGenerator
     private function collectEdgesFromTree(?string $parent, array $node, array &$edges): void
     {
         foreach ($node as $term => $subtree) {
-            // Normalize the array key to a string term name (PHP coerces numeric keys to int)
-            $term = (string) $term;
-
             // Link nested term to its parent when present
             if ($parent !== null) {
                 $edges[] = [$parent, $term];
             }
 
-            // Recurse into non-empty nested objects
-            if (\is_array($subtree) && $subtree !== []) {
+            // Recurse into nested objects (an empty one adds nothing)
+            if (\is_array($subtree)) {
                 /** @var array<string, mixed> $subtree */
                 $this->collectEdgesFromTree($term, $subtree, $edges);
             }
@@ -289,11 +287,16 @@ final class CredentialRegistryEnumGenerator
     {
         $out = [];
         foreach ($node as $term => $subtree) {
+            // Only the key is read, so the stored value cannot change the result (TrueToFalse)
+            // @pest-mutate-ignore: TrueToFalse
             $out[$term] = true;
-            if (\is_array($subtree) && $subtree !== []) {
+            // Recurse into nested objects (an empty one adds nothing)
+            if (\is_array($subtree)) {
                 /** @var array<string, mixed> $childTree */
                 $childTree = $subtree;
                 foreach (array_keys($this->collectAllTermsFromTree($childTree)) as $k) {
+                    // Only the key is read, so the stored value cannot change the result (TrueToFalse)
+                    // @pest-mutate-ignore: TrueToFalse
                     $out[$k] = true;
                 }
             }
@@ -307,9 +310,9 @@ final class CredentialRegistryEnumGenerator
      *
      * @param  list<string>  $names
      * @param  array<string, list<string>>  $forward
-     * @return array<string, list<string>>
+     * @return array<string, list<string>> Sorted reachable terms per start term, excluding the term itself
      */
-    private function buildTransitiveClosure(array $names, array $forward, bool $includeSelf): array
+    private function buildTransitiveClosure(array $names, array $forward): array
     {
         $result = [];
         foreach ($names as $name) {
@@ -317,12 +320,13 @@ final class CredentialRegistryEnumGenerator
             $seen = [];
             $stack = [$name];
             while ($stack !== []) {
-                // Pop next node to expand
+                // Pop next node to expand; the reachable set is sorted afterward, so the visiting order cannot change the result (ArrayPopToArrayShift)
+                // @pest-mutate-ignore: ArrayPopToArrayShift
                 $current = array_pop($stack);
-                if (isset($seen[$current])) {
-                    continue;
-                }
 
+                // A node popped a second time is marked again and pushes nothing, since its neighbors are already seen
+                // Only the key is read, so the stored value cannot change the result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
                 $seen[$current] = true;
                 foreach ($forward[$current] ?? [] as $next) {
                     if (! isset($seen[$next])) {
@@ -332,12 +336,9 @@ final class CredentialRegistryEnumGenerator
             }
 
             unset($seen[$name]);
-            // Build sorted list of reachable nodes (excluding self unless requested)
+            // Build sorted list of reachable nodes, excluding the start node
             $reachable = array_keys($seen);
             sort($reachable);
-            if ($includeSelf) {
-                array_unshift($reachable, $name);
-            }
 
             $result[$name] = $reachable;
         }
@@ -395,12 +396,13 @@ final class CredentialRegistryEnumGenerator
     private function extractYamlTypeList(string $block, string $listName): array
     {
         // Allow lists whose last line has no trailing newline (fixtures / heredocs)
-        $pattern = '/:'.preg_quote($listName, '/').':\s*\n((?:  - [^\n]+(?:\n|$))+)/';
+        $pattern = '/:'.preg_quote($listName, '/').':\s*\n(?:  - [^\n]+(?:\n|$))+/';
         if (preg_match($pattern, $block, $m) !== 1) {
             return [];
         }
 
-        $body = $m[1];
+        // The key line matches no list item below, so the whole match can be scanned
+        $body = $m[0];
         $out = [];
         if (preg_match_all('/^\s+-\s+([a-zA-Z0-9_]+:[a-zA-Z0-9_]+)\s*$/m', $body, $matches)) {
             foreach ($matches[1] as $term) {
@@ -441,6 +443,8 @@ final class CredentialRegistryEnumGenerator
             $caseName = $this->shorthandToCaseName($shorthand);
             // Avoid reserved words and collisions
             $caseName = $this->ensureUniqueCaseName($caseName, $usedCaseNames);
+            // Only the key is read, so the stored value cannot change the result (TrueToFalse)
+            // @pest-mutate-ignore: TrueToFalse
             $usedCaseNames[$caseName] = true;
 
             // Reuse prefetched credreg.net JSON-LD term document when available
@@ -465,15 +469,13 @@ final class CredentialRegistryEnumGenerator
                 $usageNote = $this->extractLangString($graphNode['vann:usageNote'] ?? null);
                 $status = $this->normalizeStatusShorthand($graphNode['vs:term_status'] ?? '');
                 $sameAs = $this->extractEquivalentClassShorthand($graphNode['owl:equivalentClass'] ?? null);
-                $jsonSubclass = $this->normalizeSubclassOfShorthand($graphNode['rdfs:subClassOf'] ?? null);
-                if ($jsonSubclass !== '') {
-                    $subclassOf = $jsonSubclass;
-                }
+                // An empty value leaves subclass_of to the fixture parents below
+                $subclassOf = $this->normalizeSubclassOfShorthand($graphNode['rdfs:subClassOf'] ?? null);
 
                 $tt = $graphNode['@type'] ?? null;
                 if (\is_string($tt) && $tt !== '') {
                     $termType = $tt;
-                } elseif (\is_array($tt) && isset($tt[0]) && \is_string($tt[0])) {
+                } elseif (\is_array($tt) && \is_string($tt[0] ?? null)) {
                     $termType = $tt[0];
                 }
             }
@@ -590,21 +592,15 @@ PHP;
             return null;
         }
 
-        try {
-            $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
+        // Invalid JSON decodes to null, and it or any other non-object has no graph to read
+        $data = json_decode($raw, true);
+        $graph = \is_array($data) ? ($data['@graph'] ?? null) : null;
+
+        if (! \is_array($graph) || $graph === []) {
             return null;
         }
 
-        if (! \is_array($data)) {
-            return null;
-        }
-
-        if (! isset($data['@graph']) || ! \is_array($data['@graph']) || $data['@graph'] === []) {
-            return null;
-        }
-
-        $first = $data['@graph'][0];
+        $first = $graph[0];
 
         if (! \is_array($first)) {
             return null;
@@ -660,7 +656,7 @@ PHP;
      */
     private function normalizeSubclassOfShorthand(mixed $raw): string
     {
-        if (\is_string($raw) && $raw !== '') {
+        if (\is_string($raw)) {
             return $raw;
         }
 
@@ -678,7 +674,7 @@ PHP;
      */
     private function extractEquivalentClassShorthand(mixed $raw): string
     {
-        if (\is_string($raw) && $raw !== '') {
+        if (\is_string($raw)) {
             return $raw;
         }
 
@@ -711,10 +707,6 @@ PHP;
         array $directParents,
         array $ancestorsOf
     ): array {
-        if ($directParents === []) {
-            return [];
-        }
-
         // Remove redundant broader parents when a narrower parent is also listed
         $minimal = [];
         foreach ($directParents as $p) {
@@ -724,9 +716,13 @@ PHP;
                     continue;
                 }
 
-                $ancestorsOfQ = $ancestorsOf[$q] ?? [];
-                if (\in_array($p, $ancestorsOfQ, true)) {
+                // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
+                $qIsNarrower = \in_array($p, $ancestorsOf[$q] ?? [], true);
+                if ($qIsNarrower) {
                     $redundant = true;
+                    // The flag is set and nothing clears it, so continuing the scan cannot change the result (BreakToContinue)
+                    // @pest-mutate-ignore: BreakToContinue
                     break;
                 }
             }
@@ -768,6 +764,8 @@ PHP;
             );
             foreach ($minimal as $parent) {
                 $byParent[$parent] ??= [];
+                // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+                // @pest-mutate-ignore: TrueToFalse
                 if (! \in_array($child, $byParent[$parent], true)) {
                     $byParent[$parent][] = $child;
                 }
@@ -810,11 +808,8 @@ PHP;
      */
     private function parseRdfsSubclassOfListFromGraphNode(?array $graphNode): ?array
     {
-        if ($graphNode === null || ! isset($graphNode['rdfs:subClassOf'])) {
-            return null;
-        }
-
-        $raw = $graphNode['rdfs:subClassOf'];
+        // A missing node or key reads as null, which is rejected with any other non-list below
+        $raw = $graphNode['rdfs:subClassOf'] ?? null;
         if (\is_string($raw) && $raw !== '') {
             return [$raw];
         }
@@ -843,16 +838,8 @@ PHP;
         array $directParents,
         array $ancestorsOf
     ): string {
-        $minimal = $this->minimalDirectParents($directParents, $ancestorsOf);
-        if ($minimal === []) {
-            return '';
-        }
-
-        if (\count($minimal) === 1) {
-            return $minimal[0];
-        }
-
-        return implode(',', $minimal);
+        // Comma-join the minimal parents ('' for none, the term itself for one)
+        return implode(',', $this->minimalDirectParents($directParents, $ancestorsOf));
     }
 
     /**
@@ -880,10 +867,7 @@ PHP;
      */
     private function exportPhpShortStringArray(array $strings): string
     {
-        if ($strings === []) {
-            return '[]';
-        }
-
+        // An empty list renders as [] through the same join
         $parts = [];
         foreach ($strings as $s) {
             $parts[] = $this->exportPhpStringLiteral($s);
@@ -924,22 +908,33 @@ PHP;
     }
 
     /**
+     * The stream context options for a remote read: a two-minute timeout and redirects followed, for both schemes.
+     *
+     * @return array{http: array{timeout: int, follow_location: bool}, https: array{timeout: int, follow_location: bool}}
+     */
+    private static function httpContextOptions(): array
+    {
+        $options = [
+            'timeout' => 120,
+            'follow_location' => true,
+        ];
+
+        return [
+            'http' => $options,
+            'https' => $options,
+        ];
+    }
+
+    /**
      * Read a URL over HTTP(S) with a two-minute timeout, following redirects.
      *
      * @return ?string The body, or null when the read fails
      */
     private static function readUrlOverHttp(string $url): ?string
     {
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-            'https' => [
-                'timeout' => 120,
-                'follow_location' => true,
-            ],
-        ]);
+        $context = stream_context_create(self::httpContextOptions());
+        // The include path is never searched for an absolute path or a URL (FalseToTrue)
+        // @pest-mutate-ignore: FalseToTrue
         $raw = @file_get_contents($url, false, $context);
 
         return $raw === false ? null : $raw;
@@ -953,6 +948,8 @@ PHP;
         $parts = explode(':', $shorthand, 2);
         $local = $parts[1] ?? $shorthand;
         // Insert spaces before capitals for readability
+        // The cast narrows preg_replace()'s nullable return for static analysis; this pattern never fails on a string (RemoveStringCast)
+        // @pest-mutate-ignore: RemoveStringCast
         $spaced = (string) preg_replace('/(?<!^)(?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z])/', ' ', $local);
 
         return Str::title(trim($spaced));
@@ -963,7 +960,8 @@ PHP;
      */
     private function shorthandToCaseName(string $shorthand): string
     {
-        $normalized = str_replace([':', '-'], '_', $shorthand);
+        // Str::studly() splits on hyphens itself, so only the prefix colon needs replacing
+        $normalized = str_replace(':', '_', $shorthand);
 
         return Str::studly($normalized);
     }
@@ -977,6 +975,8 @@ PHP;
     {
         // Check if the case name is reserved
         $candidate = $caseName;
+        // Every value compared here is a string, so the strict flag cannot change the result (TrueToFalse)
+        // @pest-mutate-ignore: TrueToFalse
         if (\in_array($candidate, self::RESERVED_CASE_NAMES, true)) {
             $candidate .= 'Term';
         }
