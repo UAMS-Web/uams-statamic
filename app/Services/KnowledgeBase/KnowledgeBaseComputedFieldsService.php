@@ -439,10 +439,9 @@ class KnowledgeBaseComputedFieldsService
             fn (): int => $this->computePublishedDirectChildCount($entry, $blueprint)
         );
 
-        // Blink erases the closure's int return to mixed; narrow it back. The `: 0`
-        // fallback is unreachable at runtime (the closure is typed int) but required
-        // for PHPStan, which rejects both the (int) cast and intval(mixed) — so its
-        // integer-literal mutants are equivalent (no test can reach the branch).
+        // Blink erases the closure's int return to mixed; narrow it back. The closure is
+        // typed int, so the `: 0` fallback answers only when something else has stored
+        // a non-int under this key. PHPStan rejects both the (int) cast and intval(mixed).
         return is_int($count) ? $count : 0;
     }
 
