@@ -20,7 +20,8 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *
  * @covers \App\Support\ContentAncestorIds
  *
- * Mutation: 100% on App\Support\ContentAncestorIds (110 mutants, --covered-only).
+ * Mutation: 116 of 116 killed on App\Support\ContentAncestorIds without
+ * --covered-only (Windows 11, #1071).
  *
  * @command  php artisan test --compact tests/Feature/Support/ContentAncestorIdsTest.php
  */
