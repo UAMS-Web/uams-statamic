@@ -75,6 +75,7 @@ use App\Rules\VimeoUrl;
 use App\Rules\XpathSyntax;
 use App\Rules\YouTubeUrl;
 use App\Rules\ZipCode;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tests\Support\LegacyRuleProbe;
 use Tests\Support\ValidatorAwareRuleProbe;
@@ -260,6 +261,28 @@ it('registers every rule with its class, parameter map and baked constructor arg
     expect(validationProviderRegistrations())->toHaveCount(73)
         ->and($registered)->toBe($expected);
 });
+
+// On a Control Panel route, Statamic's translator reads every `validation.*` key
+// from `statamic::validation`. The app's override there used to replace these five
+// lines with arrays, which made Laravel's message formatting throw a TypeError
+// (#1047); with the override gone, Statamic's own line is used.
+it('renders Statamic\'s own date rule message on a Control Panel route', function (string $rule, string $value, string $expected): void {
+    $cp = config('statamic.cp.route');
+    app()->instance('request', Request::create('/'.(is_string($cp) ? $cp : 'cp').'/collections'));
+
+    expect(Statamic\Statamic::isCpRoute())->toBeTrue()
+        ->and(Validator::make(['field' => $value], ['field' => $rule])->errors()->first('field'))->toBe($expected);
+})->with([
+    'after' => ['after:2020-01-01', '2019-01-01', 'Must be a date after 2020-01-01.'],
+    'after_or_equal' => ['after_or_equal:2020-01-01', '2019-01-01', 'Must be a date after or equal to 2020-01-01.'],
+    'before' => ['before:2020-01-01', '2021-01-01', 'Must be a date before 2020-01-01.'],
+    'before_or_equal' => ['before_or_equal:2020-01-01', '2021-01-01', 'Must be a date before or equal to 2020-01-01.'],
+    'date_equals' => ['date_equals:2020-01-01', '2021-01-01', 'Must be a date equal to 2020-01-01.'],
+]);
+
+it('keeps each date rule\'s statamic::validation line a string', function (string $rule): void {
+    expect(trans('statamic::validation.'.$rule))->toBeString();
+})->with(['after', 'after_or_equal', 'before', 'before_or_equal', 'date_equals']);
 
 it('registers no extension under a Laravel date rule name', function (): void {
     expect(array_keys(Validator::make([], [])->extensions))
