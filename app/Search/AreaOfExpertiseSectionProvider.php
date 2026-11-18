@@ -184,10 +184,12 @@ final class AreaOfExpertiseSectionProvider extends Provider
      */
     private function documentForKey(string $key): ?AreaOfExpertiseSectionDocument
     {
-        [$aoeId, $section] = array_pad(explode('::', $key, 2), 2, null);
-        if (! \is_string($aoeId) || ! \is_string($section) || $aoeId === '' || $section === '') {
+        $parts = explode('::', $key);
+        if (\count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
             return null;
         }
+
+        [$aoeId, $section] = $parts;
 
         $aoe = EntryFacade::find($aoeId);
         if (! $aoe instanceof Entry) {

@@ -39,9 +39,8 @@ final class AreaOfExpertiseSuggestionPresenter implements SuggestionPresenter
             return $this->entries->present($result);
         }
 
-        // A section subpage is as private as its Area of Expertise; the reference is
-        // `clinical_expertise_section::<aoe id>::<section>`.
-        $areaOfExpertise = EntryFacade::find(explode('::', $searchable->getSearchReference())[1] ?? '');
+        // A section subpage is as private as its Area of Expertise
+        $areaOfExpertise = EntryFacade::find($searchable->areaOfExpertiseId());
 
         if (! $areaOfExpertise instanceof Entry || ! $this->visibility->canView($areaOfExpertise)) {
             return null;

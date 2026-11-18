@@ -58,6 +58,10 @@ it('builds a stable reference from the prefix, aoe id, and section', function ()
         ->toBe('clinical_expertise_section::aoe-1::locations');
 });
 
+it('exposes the parent Area of Expertise id', function (): void {
+    expect(aoeSectionDocument(aoeId: 'aoe-42')->areaOfExpertiseId())->toBe('aoe-42');
+});
+
 it('exposes title and url via augmentedArrayData', function (): void {
     expect(aoeSectionDocument()->augmentedArrayData())->toBe([
         'title' => 'Cancer Care: Locations',
