@@ -4003,6 +4003,21 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 
 **Companion.** #511 (cap measurement), #646 (build and decision), #967 (site-scoped measurement).
 
+## 2026-11-17: The custom fieldtypes move into one shared add-on, with the domain fieldtypes left in the site (#767)
+
+**Decision.** Four decisions by the project owner on 2026-11-17, from the measurement on #703.
+
+- **Package shape.** One shared add-on holds the fieldtype slices 1 to 4 that #703 measured. The domain slice (`OrphanBanner`, `PublishDependencyBanner`, `SchemaObject`, `SchemaType`, `CtdlClass`, `QuantitativeValue`, `ChildSites`) stays in the site, and each of those moves later with the services it wraps, into whichever add-on owns them.
+- **People boundary.** `TextPhoneticPair` and its three phonetic Vue partials, which `PersonName` uses, join `uams-web/aether-people` now. `RoleTitle` and `Isco_08` join `aether-people` in a later ticket, after their site support classes have a home, and stay in the site until then. This revises the 2026-11-17 `aether-people` entry (#696), which kept `TextPhoneticPair` in the site.
+- **Lang keys.** The add-on owns a lang namespace for its keys, and the site can still override them.
+- **Public Alpine engines.** The add-on ships the engines a fieldtype partial names: `calculation`, `option-pricing`, `product-pricing`, `total-pricing` and `lib/alpine-engine.js`. Engines no partial names stay in the site's `site.js`.
+
+**Why.** One add-on keeps together the traits and mixins the slices share, which several add-ons would split and duplicate. The domain fieldtypes wrap site services, so moving them now would move those services too. `TextPhoneticPair` and the phonetic partials `PersonName` uses can move now, while `RoleTitle` and `Isco_08` wait until their site support classes have a home, so `aether-people` never depends on site code. One owner for the lang keys and for the engines a partial names avoids two sources that drift, and an add-on whose partials need nothing a host app must register.
+
+**Rejected.** *Package shape*: one add-on for everything, which moves the site services too; several add-ons, for example form fieldtypes apart from Control Panel-only ones, which splits the shared traits and mixins and duplicates them. *People boundary*: all three into `aether-people` now, which would make it depend on site code; all three into the shared add-on; all three staying in the site for good. *Lang keys*: keeping them in the site with add-on fallbacks, which leaves two sources that drift. *Public Alpine engines*: keeping them all in `site.js`, which leaves the add-on's partials naming engines a host app must register.
+
+**Companion.** #767 (the decision, its `## Decision` section), #703 and its [measurement](https://github.com/UAMS-Web/uams-statamic/issues/703#issuecomment-6872091488) (the slices, the options and the counts behind them), #696 (the `aether-people` boundary this revises for `TextPhoneticPair`).
+
 ## 2026-11-17: A commit message carries no tool session link, while a `Co-authored-by` trailer naming the tool stays allowed (#628)
 
 **Decision.** A commit message may not carry a trailer whose value is a tool session URL (for example `Amp-Thread-ID: https://ampcode.com/threads/...`), on any surface: branch commits, the pull request's commit list, and the composed squash message. A `Co-authored-by` trailer naming the tool stays permitted and remains the commit convention's attribution. A gate that finds a session link hands the pull request back to its author to reword the commit; the gate does not rewrite an author's commits. Already-merged commits, #606's included, are not rewritten. Decided 2026-11-17 (reading A, narrowed to links); the shared rule and a commit-message check are `UAMS-Web/uams-claude-skills#819`.
