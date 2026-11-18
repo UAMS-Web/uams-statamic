@@ -8,6 +8,10 @@ use Illuminate\Filesystem\Filesystem;
 /**
  * What the content mirror band lock does when its file cannot be opened (UAMS-Web/uams-statamic-archive#2773).
  *
+ * The rest covers the lock's ordinary life (UAMS-Web/uams-statamic#1073): where the
+ * file sits, the directories it creates, and that releasing a lock closes its
+ * handle and puts the caller's error handler back.
+ *
  * `hold()` used to return with no lock held when `fopen()` failed, so a band
  * that could not protect itself ran unprotected and a concurrent seed rewrote
  * the mirror beneath it — the UAMS-Web/uams-statamic-archive#2762 tear, restored silently. Both paths now
@@ -173,4 +177,93 @@ it('lets a seed take the exclusive lock once no band holds the shared one', func
 
     /** @var resource $handle */
     ContentMirrorBandLock::releaseExclusive($handle);
+});
+
+it('places the band lock file beside the mirror it guards', function (): void {
+    expect(ContentMirrorBandLock::path('/srv/checkout/content-mirror'))->toBe('/srv/checkout/content-mirror.band.lock');
+});
+
+it('creates missing parent directories for the lock file with the default mode', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $parent = $mirrorRoot.DIRECTORY_SEPARATOR.'nested'.DIRECTORY_SEPARATOR.'deeper';
+    $mirror = $parent.DIRECTORY_SEPARATOR.'content-mirror';
+
+    expect(is_dir($parent))->toBeFalse();
+
+    // A zero umask lets every bit of the requested mode show in the result
+    $umask = umask(0);
+
+    try {
+        ContentMirrorBandLock::hold($mirror);
+    } finally {
+        umask($umask);
+    }
+
+    // Two missing levels need the recursive create, and the mode is the full 0777
+    expect(is_dir($parent))->toBeTrue()
+        ->and(fileperms($parent) & 0777)->toBe(0777)
+        ->and(ContentMirrorBandLock::path($mirror))->toBeFile();
+});
+
+it('closes the shared lock handle on release, so a seed can then take the exclusive lock', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $mirror = bandLockMirror($mirrorRoot);
+
+    ContentMirrorBandLock::hold($mirror);
+    $handle = bandLockHeldHandle();
+
+    expect($handle)->toBeResource();
+
+    /** @var resource $handle */
+    ContentMirrorBandLock::release();
+
+    // A closed stream reports its type as Unknown; an open one still reads as a stream
+    expect(get_resource_type($handle))->toBe('Unknown')
+        ->and(bandLockHeldHandle())->toBeNull();
+
+    $exclusive = ContentMirrorBandLock::tryExclusive($mirror);
+
+    expect($exclusive)->toBeResource();
+
+    /** @var resource $exclusive */
+    ContentMirrorBandLock::releaseExclusive($exclusive);
+});
+
+it('closes the exclusive lock handle on release', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $handle = ContentMirrorBandLock::tryExclusive(bandLockMirror($mirrorRoot));
+
+    expect($handle)->toBeResource();
+
+    /** @var resource $handle */
+    ContentMirrorBandLock::releaseExclusive($handle);
+
+    expect(get_resource_type($handle))->toBe('Unknown');
+});
+
+it('keeps the open warning to itself and puts the caller error handler back', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $mirror = bandLockMirror($mirrorRoot);
+
+    if (! bandLockPlantReadOnly($mirror)) {
+        $this->markTestSkipped('The lock file stays writable for this user, so an open cannot be made to fail.');
+    }
+
+    $sentinel = static fn (): bool => false;
+    set_error_handler($sentinel);
+    error_clear_last();
+
+    try {
+        expect(fn () => ContentMirrorBandLock::tryExclusive($mirror))->toThrow(RuntimeException::class);
+
+        // The captured warning is consumed, not passed on to PHP's own handler
+        expect(error_get_last())->toBeNull();
+    } finally {
+        // The handler installed before the open is the one in force again
+        $current = set_error_handler(null);
+        restore_error_handler();
+        restore_error_handler();
+    }
+
+    expect($current)->toBe($sentinel);
 });
