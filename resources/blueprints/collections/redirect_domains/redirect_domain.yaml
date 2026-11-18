@@ -10,13 +10,15 @@ tabs:
           -
             handle: host
             field:
-              type: text
+              type: entries
               display: Domain
-              instructions: 'The domain this rule answers on, without `https://` or a path. For example: `agec.org`.'
-              placeholder: example.org
+              instructions: 'The domain this rule answers on, chosen from the domain list.'
+              collections:
+                - redirect_hosts
+              max_items: 1
+              create: false
               validate:
                 - required
-                - 'regex:/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/i'
               listable: true
               filterable: true
               width: 66
@@ -167,3 +169,89 @@ tabs:
               display: Notes
               instructions: 'Optional. Why this redirect exists, or who asked for it.'
               listable: false
+      -
+        display: Approval
+        instructions: 'Fields the marketing redirect utility writes to a redirect domain entry. The utility stores and reads them whether or not the blueprint has them, and an entry with no status serves as approved.'
+        fields:
+          -
+            handle: status
+            field:
+              type: select
+              display: Status
+              instructions: 'Only an approved rule serves. The utility sets pending, approved and rejected.'
+              options:
+                pending: Pending
+                approved: Approved
+                rejected: Rejected
+              clearable: true
+              listable: true
+              filterable: true
+              width: 33
+          -
+            handle: valid_from
+            field:
+              type: date
+              display: 'Valid from'
+              instructions: 'Optional. Leave blank to serve immediately once approved.'
+              time_enabled: false
+              width: 33
+          -
+            handle: valid_until
+            field:
+              type: date
+              display: 'Valid until'
+              instructions: 'Optional and inclusive. On uams.info, uams.health and uamsbaptist.health the path stays reserved for 12 weeks after this date.'
+              time_enabled: false
+              width: 33
+          -
+            handle: requester
+            field:
+              type: text
+              display: Requester
+              width: 33
+          -
+            handle: creative_services
+            field:
+              type: toggle
+              display: 'Involves Creative Services'
+              visibility: read_only
+              width: 33
+          -
+            handle: job_number
+            field:
+              type: text
+              display: 'Creative Services job number'
+              instructions: 'Set when the request involves Creative Services. The approver confirms it before approving.'
+              visibility: read_only
+              width: 33
+          -
+            handle: submitted_by
+            field:
+              type: text
+              display: 'Submitted by'
+              instructions: 'The Control Panel user id that created the request.'
+              visibility: read_only
+              width: 33
+          -
+            handle: reviewed_by
+            field:
+              type: text
+              display: 'Reviewed by'
+              instructions: 'The Control Panel user id that approved or rejected the request.'
+              visibility: read_only
+              width: 33
+          -
+            handle: rejection_reason
+            field:
+              type: textarea
+              display: 'Rejection reason'
+              if:
+                status: 'equals rejected'
+          -
+            handle: generated_back_half
+            field:
+              type: toggle
+              display: 'Generated back-half'
+              instructions: 'On when the utility generated this source on a vanity domain. Approval refuses a generated back-half that an approved rule on the domain has issued in any case, including one whose window has ended.'
+              visibility: read_only
+              width: 33

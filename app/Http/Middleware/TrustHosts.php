@@ -24,12 +24,13 @@ use UAMSWeb\Aether\Redirects\Services\RedirectDomainRules;
  *   - the application URL's host and all of its subdomains;
  *   - the site's other domains, listed by hand until #259 records them where this
  *     class can read them;
- *   - every published entry in the `redirect_domains` collection, read on each
- *     request, so a domain published after boot is allowed with no deploy.
+ *   - every published record in the `redirect_hosts` domain list, which the
+ *     `redirect_domains` rules name (#668), read on each request, so a domain
+ *     added after boot is allowed with no deploy.
  *
  * A redirect domain is matched exactly. Its `www.` form is not allowed unless the
- * collection names that form too: `ServeRedirectDomainRequests` answers only the
- * hosts the collection names, so an allowed `www.` form it does not name would
+ * list names that form too: `ServeRedirectDomainRequests` answers only the hosts
+ * the list names, so an allowed `www.` form it does not name would
  * pass through to the main site and render site content under that address.
  *
  * A request for any other host is refused with a 400, here, before any later
