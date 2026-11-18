@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Services\LinkHealth\ExternalProber;
 use App\Services\LinkHealth\ProbeOutcome;
 use App\Support\Http\OutboundUrlGuard;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -329,3 +330,45 @@ it('explains every outcome to an editor, and says an unverifiable link is not br
     expect(ProbeOutcome::Unverifiable->explanation())->toContain('not reported as broken')
         ->and(ProbeOutcome::Refused->explanation())->toContain('not permitted');
 });
+
+// --- transport bounds -------------------------------------------------------
+//
+// The guard follows redirects itself, one faked request per hop, and a fake callback receives
+// the request's transport options, so the redirect cap and both timeouts are observable
+// without a live server.
+
+it('sends each request with a 10s total timeout and a 5s connect timeout', function (): void {
+    $seen = [];
+    Http::fake(function (Request $request, array $options) use (&$seen) {
+        $seen[] = [$options['timeout'] ?? null, $options['connect_timeout'] ?? null];
+
+        return Http::response('', 200);
+    });
+
+    (new ExternalProber)->probe('https://example.com/ok');
+
+    expect($seen)->toBe([[10, 5]]);
+});
+
+it('follows up to five redirects, and treats a sixth as unreachable', function (int $redirects, ProbeOutcome $expected): void {
+    // `/hop/N` redirects to `/hop/N+1` until N reaches the chain length, then answers 200.
+    Http::fake(function (Request $request) use ($redirects) {
+        $hop = (int) basename((string) parse_url($request->url(), PHP_URL_PATH));
+
+        return $hop < $redirects
+            ? Http::response('', 302, ['Location' => 'https://example.com/hop/'.($hop + 1)])
+            : Http::response('', 200);
+    });
+
+    $prober = new ExternalProber;
+    $outcome = $prober->probe('https://example.com/hop/0');
+
+    expect($outcome)->toBe($expected);
+
+    if ($expected === ProbeOutcome::Unreachable) {
+        expect($prober->reasonFor('https://example.com/hop/0'))->toStartWith('Too many redirects');
+    }
+})->with([
+    'five redirects' => [5, ProbeOutcome::Healthy],
+    'six redirects' => [6, ProbeOutcome::Unreachable],
+]);
