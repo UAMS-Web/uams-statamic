@@ -719,11 +719,8 @@ class ValidationServiceProvider extends ServiceProvider
                         $rule->setValidator($validator);
                     }
 
-                    // Initialize error flag
-                    $hasErrors = false;
-
                     // Create fail callback closure for ValidationRule interface
-                    $fail = function ($message) use ($attribute, $validator, &$hasErrors): void {
+                    $fail = function ($message) use ($attribute, $validator): void {
                         /** @var \Illuminate\Validation\Validator $validator */
 
                         // Add validation error to validator
@@ -731,13 +728,10 @@ class ValidationServiceProvider extends ServiceProvider
                             $attribute,
                             self::failMessageString($message)
                         );
-
-                        // Set error flag to true
-                        $hasErrors = true;
                     };
 
                     // Call validate method on rule with fail callback. The closure
-                    // intentionally records the message and flips $hasErrors rather
+                    // intentionally records the message rather
                     // than returning the chainable PotentiallyTranslatedString that
                     // Laravel's interface declares; the ValidationRule implementations
                     // invoked here call $fail($message) without chaining.
@@ -912,10 +906,7 @@ class ValidationServiceProvider extends ServiceProvider
      */
     private static function failMessageString(mixed $message): string
     {
-        if (is_string($message)) {
-            return $message;
-        }
-
+        // A string is a scalar, so it is returned unchanged here
         if (is_scalar($message) || $message instanceof \Stringable) {
             return (string) $message;
         }
