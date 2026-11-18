@@ -83,7 +83,7 @@ function geographicLocationPickers(): array
     // The two creative-work fields, the person's work location, and the audience's area
     $fieldsets = [
         'uamsweb_creativework_location' => ['geographic_location', 'geographic_location_content'],
-        'uamsweb_common_people' => ['work_location'],
+        'aether-people::uamsweb_common_people' => ['work_location'],
     ];
 
     foreach ($fieldsets as $fieldsetHandle => $handles) {
@@ -210,7 +210,7 @@ it('gives every picker the collection, reachable from every site, searched by it
             $walk($child);
         }
     };
-    $walk(Yaml::parseFile(resource_path('fieldsets/uamsweb_common_people.yaml')));
+    $walk(Yaml::parseFile(aetherPeopleResourcePath('fieldsets/uamsweb_common_people.yaml')));
 
     expect($pickers)->toHaveCount(6);
 

@@ -47,7 +47,7 @@ const SPECIAL_INTEREST_FILTER_REFS = [
 function fadFilterFieldset(string $fieldset): array
 {
     /** @var array{fields: list<array{handle: string, field?: mixed, config?: array<string, mixed>}>} $parsed */
-    $parsed = Yaml::parseFile(base_path("resources/fieldsets/{$fieldset}.yaml"));
+    $parsed = Yaml::parseFile(servedResourcePath("fieldsets/{$fieldset}.yaml"));
     $fields = $parsed['fields'];
 
     $handles = array_column($fields, 'handle');

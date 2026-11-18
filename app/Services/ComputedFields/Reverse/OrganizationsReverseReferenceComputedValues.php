@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\Reverse;
 
-use App\Support\Collections\PeopleCollection;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * The reverse-reference computeds for the `organizations` collection (UAMS-Web/uams-statamic-archive#1373).

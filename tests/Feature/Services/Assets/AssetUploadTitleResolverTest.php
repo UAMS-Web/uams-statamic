@@ -13,7 +13,11 @@ uses(TestCase::class);
 /**
  * Unit tests for upload title resolution (deslugify + getID3 title paths).
  *
- * Mutation: 100% on App\Services\Assets\AssetUploadTitleResolver (22 mutants, --covered-only).
+ * Mutation: every mutant of App\Services\Assets\AssetUploadTitleResolver is killed
+ * by this file (37 mutants, `--covered-only`, Windows 11, #883). One mutant is
+ * equivalent and carries `@pest-mutate-ignore` in the class: `EmptyStringToNotEmpty`
+ * on the `?? ''` after `preg_replace()`, which returns null only when its pattern
+ * fails, and the fixed `~[-_]~` pattern over a string cannot.
  *
  * @command  php artisan test --compact tests/Feature/Services/Assets/AssetUploadTitleResolverTest.php
  */

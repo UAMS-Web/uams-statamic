@@ -431,9 +431,6 @@ return [
         'wrong_taxonomy' => 'The selected term (:id) must belong to the professional and leadership development activities taxonomy (found: :taxonomy).',
         'wrong_type' => 'The selected term (:id) has type ":type" but must have type ":expected" for this rule.',
     ],
-    'not_top_level_organization' => [
-        'top_level' => ':title is at the top of the organizations tree, so it would cover nearly everyone. Choose the college, institute, service line or department instead.',
-    ],
     'credential_type_certification' => [
         'not_found' => 'The selected credential term (:id) could not be found.',
         'wrong_taxonomy' => 'The selected term (:id) must belong to the credentials taxonomy (found: :taxonomy).',

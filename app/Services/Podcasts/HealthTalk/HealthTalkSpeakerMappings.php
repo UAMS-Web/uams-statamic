@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Podcasts\HealthTalk;
 
-use App\Support\Collections\PeopleCollection;
 use Illuminate\Support\Str;
 use Statamic\Contracts\Globals\GlobalSet as GlobalSetContract;
 use Statamic\Entries\Entry;
@@ -12,6 +11,7 @@ use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Facades\GlobalSet;
 use Statamic\Globals\Variables;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Resolves UAMS Health Talk speakers to `people` entries (UAMS-Web/uams-statamic-archive#1803).

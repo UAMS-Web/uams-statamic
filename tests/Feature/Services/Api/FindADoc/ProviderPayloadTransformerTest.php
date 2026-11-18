@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Services\Api\FindADoc\ProviderPayloadTransformer;
-use App\Services\ComputedFields\ProviderPeople\ClinicalTitleResolver;
-use App\Services\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 use Statamic\Entries\Entry as EntryInstance;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Api\FindADoc\ProviderPayloadTransformer;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ClinicalTitleResolver;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 
 /**
  * Pins the provider payload `ProviderPayloadTransformer` builds for the Find-a-Doc read
@@ -109,7 +109,7 @@ it('builds the full allow-listed payload from a filled-in person', function (): 
         'pronouns' => 'he-him',
         'accepting_patients_query' => true,
         'referral_required' => true,
-        'resident_query' => true,
+        'trainee_type' => 'resident',
         'portrait' => 'portraits/mccoy-3x4.jpg',
         'portrait_wide' => 'portraits/mccoy-16x9.jpg',
         'npi' => '1234567890',
@@ -273,11 +273,9 @@ it('reads the stored true_false forms as strict booleans', function (mixed $stor
     $payload = payloadTransformerTransformer()->toArray(payloadTransformerPerson('flags', [
         'accepting_patients_query' => $stored,
         'referral_required' => $stored,
-        'resident_query' => $stored,
     ]));
 
-    expect($payload['appointments'])->toBe(['accepting_new_patients' => $expected, 'referral_required' => $expected])
-        ->and($payload['is_resident'])->toBe($expected);
+    expect($payload['appointments'])->toBe(['accepting_new_patients' => $expected, 'referral_required' => $expected]);
 })->with([
     'true' => [true, true],
     'the string "1"' => ['1', true],
@@ -286,4 +284,19 @@ it('reads the stored true_false forms as strict booleans', function (mixed $stor
     'the string "0"' => ['0', false],
     'the string "false"' => ['false', false],
     'null' => [null, false],
+]);
+
+it('reports a resident from the trainee type, and nobody else', function (mixed $traineeType, bool $expected): void {
+    // `is_resident` reads `trainee_type`, which replaced the yes/no `resident_query` (#696)
+    $payload = payloadTransformerTransformer()->toArray(payloadTransformerPerson('trainee', array_filter(
+        ['trainee_type' => $traineeType],
+        static fn (mixed $value): bool => $value !== null,
+    )));
+
+    expect($payload['is_resident'])->toBe($expected);
+})->with([
+    'a resident' => ['resident', true],
+    'a fellow' => ['fellow', false],
+    'not a trainee' => ['none', false],
+    'never asked' => [null, false],
 ]);

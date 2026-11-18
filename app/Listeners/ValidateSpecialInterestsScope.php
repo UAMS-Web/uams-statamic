@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Listeners;
 
 use App\Services\ComputedFields\Ontology\ImpliedOntologyComputedValues;
-use App\Support\Collections\PeopleCollection;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Statamic\Entries\Entry;
 use Statamic\Events\EntrySaving;
 use Statamic\Facades\Entry as EntryFacade;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Enforces the specialty scope of the special-interest override on Provider

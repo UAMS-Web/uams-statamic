@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Support\People\Lenses\Gates\ResearcherLensGate;
-use App\Support\People\ResearcherProfileEligibility;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
 use Statamic\Sites\Site;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Lenses\Gates\ResearcherLensGate;
+use UAMSWeb\Aether\People\Support\ResearcherProfileEligibility;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -18,7 +18,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * regardless of the requesting site: the signal is person-level because researchers
  * are scattered across sites and the org-to-people bridge has no research role.
  *
- * @covers \App\Support\People\Lenses\Gates\ResearcherLensGate
+ * @covers \UAMSWeb\Aether\People\Lenses\Gates\ResearcherLensGate
  *
  * @command php artisan test --compact tests/Feature/Support/People/Lenses/ResearcherLensGateTest.php
  */

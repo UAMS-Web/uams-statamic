@@ -57,12 +57,7 @@ final class UrlSafeBase64StringCodec
     public static function decode(
         string $encoded
     ): string {
-        // Treat empty token as empty plain text
-        if ($encoded === '') {
-            return '';
-        }
-
-        // Restore standard Base64 alphabet
+        // Restore standard Base64 alphabet (an empty token decodes to an empty string)
         $normalized = strtr(
             $encoded,
             '-_',
@@ -150,17 +145,6 @@ final class UrlSafeBase64StringCodec
             );
         }
 
-        // Check for null after unwrap
-        if ($candidate === null) {
-            // Unset local variables to free memory
-            unset(
-                $candidate
-            );
-
-            // Return empty string for null
-            return '';
-        }
-
         // Check if the candidate is already a string
         if (\is_string($candidate)) {
             // Copy for return
@@ -194,7 +178,7 @@ final class UrlSafeBase64StringCodec
             $candidate
         );
 
-        // Return empty string for unsupported types (e.g. arrays)
+        // Return empty string for null and unsupported types (e.g. arrays)
         return '';
     }
 }

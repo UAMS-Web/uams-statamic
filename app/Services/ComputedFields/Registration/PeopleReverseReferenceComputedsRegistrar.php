@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\ComputedFields\Registration;
 
 use App\Services\ComputedFields\Reverse\PeopleReverseReferenceComputedValues;
-use App\Support\Collections\PeopleCollection;
 use Statamic\Facades\Collection;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * Registers the `people` reverse-reference computeds (UAMS-Web/uams-statamic-archive#1374): `credited_content`

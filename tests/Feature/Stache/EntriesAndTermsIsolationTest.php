@@ -201,3 +201,38 @@ it('roots the copy per process, outside the shared mirror', function (): void {
         ->and(isolationStoreDirectory('entries'))->toStartWith($copy.'/collections')
         ->and(isolationStoreDirectory('terms'))->toStartWith($copy.'/taxonomies');
 });
+
+it('builds the copy from content/, so a file written into the mirror never reaches it', function (): void {
+    /** @var EntriesAndTermsIsolatedTestCase $this */
+    $copy = str_replace('\\', '/', $this->isolatedContentRoot);
+    $mirror = str_replace('\\', '/', ContentRoot::path(Config::string('app.env')));
+    $directory = 'collections/'.ISOLATION_PROBE_COLLECTION;
+
+    // A file a sibling worker writes into the mirror. It is a dot-file, which the
+    // Stache traverser's Finder skips (`ignoreDotFiles(true)`) before any store filter
+    // runs, so a sibling's warm never reads it while it exists. A plain name, at the
+    // collection's top level beside its site directories, is read first by the
+    // multisite entries filter, which splits the path on its site and fails on a file
+    // with none (#977's band). The copy step lists hidden files
+    // (`File::allFiles(..., true)`), so a copy taken from the mirror would hold it.
+    $stray = $directory.'/.'.ISOLATION_PROBE_SLUG.'-'.ThrowawayRoot::segment().'.probe';
+
+    // Positive control: a committed file removed from the copy, which only a sync from
+    // a source that holds it puts back
+    $committed = isolationProbePath(isolationProbeEntry());
+    $committedRelative = substr($committed, \strlen($copy) + 1);
+    $sync = new ReflectionMethod(EntriesAndTermsIsolatedTestCase::class, 'syncCopy');
+
+    File::put($mirror.'/'.$stray, 'written by a sibling worker');
+
+    try {
+        File::delete($copy.'/'.$committedRelative);
+        $sync->invoke($this);
+
+        expect($copy.'/'.$stray)->not->toBeFile()
+            ->and($copy.'/'.$committedRelative)->toBeFile()
+            ->and(sha1_file($copy.'/'.$committedRelative))->toBe(sha1_file(base_path('content/'.$committedRelative)));
+    } finally {
+        File::delete($mirror.'/'.$stray);
+    }
+});

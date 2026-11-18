@@ -37,7 +37,7 @@ class MigratePagesFeaturedImage extends Command
      */
     public function handle(): int
     {
-        $dryRun = (bool) $this->option('dry-run');
+        $dryRun = $this->option('dry-run') === true;
         $moved = 0;
         $dropped = 0;
         $needsReview = 0;
@@ -55,11 +55,8 @@ class MigratePagesFeaturedImage extends Command
                 continue;
             }
 
-            if (! is_file($path)) {
-                continue;
-            }
-
-            $contents = file_get_contents($path);
+            // A missing file reads as no contents, so it takes the same skip as an unreadable one
+            $contents = is_file($path) ? file_get_contents($path) : false;
 
             if ($contents === false) {
                 continue;

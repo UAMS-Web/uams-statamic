@@ -20,6 +20,8 @@ use Tests\TestCase;
  */
 uses(TestCase::class);
 
+covers(App\Providers\EventServiceProvider::class);
+
 /**
  * The (event, listener method) pairs each listener's `handle*()` methods take.
  *

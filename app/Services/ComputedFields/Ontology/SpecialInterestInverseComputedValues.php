@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\Ontology;
 
-use App\Support\Collections\PeopleCollection;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Stache\Query\EntryQueryBuilder;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**
  * The special-interest inverse computeds for `clinical_conditions` and

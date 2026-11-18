@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Support\People\Lenses\Gates\AcademicLensGate;
-use App\Support\People\Lenses\Gates\InstitutionalLensGate;
-use App\Support\People\Lenses\Gates\OrgRoleLensGate;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Contracts\Globals\GlobalSet as GlobalSetContract;
 use Statamic\Entries\Entry as EntryInstance;
@@ -15,6 +12,9 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Globals\Variables;
 use Statamic\Sites\Site as SiteObject;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\People\Lenses\Gates\AcademicLensGate;
+use UAMSWeb\Aether\People\Lenses\Gates\InstitutionalLensGate;
+use UAMSWeb\Aether\People\Lenses\Gates\OrgRoleLensGate;
 
 /**
  * Coverage for the org-derived people lens gates (UAMS-Web/uams-statamic-archive#1636): {@see AcademicLensGate}
@@ -26,9 +26,9 @@ use Tests\Support\StacheIsolatedTestCase;
  * person only on a hub site whose organization has the lens's role AND only when
  * the person is in that org's derived roster.
  *
- * @covers \App\Support\People\Lenses\Gates\OrgRoleLensGate
- * @covers \App\Support\People\Lenses\Gates\AcademicLensGate
- * @covers \App\Support\People\Lenses\Gates\InstitutionalLensGate
+ * @covers \UAMSWeb\Aether\People\Lenses\Gates\OrgRoleLensGate
+ * @covers \UAMSWeb\Aether\People\Lenses\Gates\AcademicLensGate
+ * @covers \UAMSWeb\Aether\People\Lenses\Gates\InstitutionalLensGate
  *
  * @command php artisan test --compact tests/Feature/Support/People/Lenses/OrgRoleLensGateTest.php
  */

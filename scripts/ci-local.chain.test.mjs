@@ -22,7 +22,7 @@ import { driftLabel, worktreeDriftEntries } from './gate-pest.mjs'
 // (`pest-report` reads the `pest` shards' output) and the aggregate `ci` job, which
 // orders nothing (#337). The `checks` call's internal ordering is outside this
 // scanner: its callee runs pint after composer-validate and synced-files, then
-// rector, phpstan and mutate-ignore after pint (#580, #594). A pass here says
+// rector and phpstan after pint (#580, #594). A pass here says
 // nothing about independence inside that call.
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -81,7 +81,7 @@ const LINUX_ONLY = ['browser', 'browser-report']
 // the same `--jobs` key. The rest are why `checks` is in REMOTE_ONLY: synced-files,
 // no-emoji and aggregate-needs have no local job (the comparison aggregate-needs
 // makes runs in this file), composer-validate repeats a command the local `validate`
-// job runs, and mutate-ignore overlaps the local `encoding` job's auditor. A key dropped from the local chain while the call still runs its job
+// job runs. Its mutate-ignore job is off for this caller (#749). A key dropped from the local chain while the call still runs its job
 // fails the case that reads this list.
 const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan']
 
@@ -176,6 +176,35 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         for (const key of CALLED_CHAIN_KEYS) {
             expect(allJobs.has(key), key).toBe(false)
         }
+    })
+
+    it('lists in the `checks` comment the chain jobs that run for the inputs this caller passes (#749)', () => {
+        // The chain runs mutate-ignore only when `mutate` or `mutate-ignore` is true, so a
+        // comment naming it among the jobs that run describes a check nobody gets.
+        const listed = (yaml) => {
+            const comment = checksComment(yaml)
+            const sentence = comment.match(/For this caller it runs (.+?), and reports/)
+            expect(sentence, 'the `checks` comment names the jobs it runs').not.toBeNull()
+
+            return sentence[1].split(/,\s*|\s+and\s+/).map((job) => job.trim()).filter(Boolean)
+        }
+        const runsMutateIgnore = (yaml) => {
+            const checks = jobText(yaml, 'checks')
+
+            return /^ {6}mutate: true$/m.test(checks) || /^ {6}mutate-ignore: true$/m.test(checks)
+        }
+
+        expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan'])
+        expect(listed(workflow).includes('mutate-ignore')).toBe(runsMutateIgnore(workflow))
+        // And it names the job that carries the annotation audit instead.
+        expect(checksComment(workflow)).toContain('the `encoding-guard` job above runs `scripts/check-mutate-ignore.php`')
+        expect(jobText(workflow, 'encoding-guard')).toContain('php scripts/check-mutate-ignore.php app tests')
+        expect(JOBS.encoding.map(([label]) => label)).toContain('mutate-ignore auditor')
+
+        // Control: switching the input on makes the same comparison disagree.
+        const planted = workflow.replace(/^( {6}mutate: )false$/m, '$1true')
+        expect(planted).not.toBe(workflow)
+        expect(listed(planted).includes('mutate-ignore')).not.toBe(runsMutateIgnore(planted))
     })
 
     it('keeps caller jobs independent except for reporting dependencies (#373, #387)', () => {
@@ -480,6 +509,26 @@ function jobText(yaml, id) {
     const end = rest.findIndex((line) => /^ {2}[A-Za-z0-9_-]+:\s*$/.test(line) || (/^\S/.test(line) && !line.startsWith('#')))
 
     return [lines[start], ...(end === -1 ? rest : rest.slice(0, end))].join('\n')
+}
+
+/**
+ * The comment block directly above the `checks` job in ci.yml, with the `#` markers removed.
+ *
+ * @param  {string}  yaml
+ * @return {string}
+ */
+function checksComment(yaml) {
+    const lines = yaml.split(/\r?\n/)
+    const start = lines.indexOf('  checks:')
+    if (start === -1) {
+        throw new Error('ci.yml has no job checks.')
+    }
+    let first = start
+    while (first > 0 && /^ {2}#/.test(lines[first - 1])) {
+        first--
+    }
+
+    return lines.slice(first, start).map((line) => line.replace(/^ {2}# ?/, '')).join(' ')
 }
 
 describe('the aggregate `CI` job in ci.yml (#337)', () => {

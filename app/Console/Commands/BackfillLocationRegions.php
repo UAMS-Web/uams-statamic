@@ -36,7 +36,7 @@ class BackfillLocationRegions extends Command
      */
     public function handle(LocationRegionBackfiller $backfiller): int
     {
-        $dryRun = (bool) $this->option('dry-run');
+        $dryRun = $this->option('dry-run') === true;
         $queued = 0;
 
         /** @var EntryQueryBuilder $query */
