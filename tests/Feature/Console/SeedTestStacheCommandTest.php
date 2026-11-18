@@ -393,9 +393,16 @@ it('names why it refuses outside the testing environment, and leaves the cache u
         seedStachePreservingSnapshot(function () use ($cacheDir): void {
             $exitCode = Artisan::call('test:seed-stache');
 
+            // Artisan::output() drains its buffer, so it is read once
+            $output = (string) preg_replace('/\s+/', ' ', Artisan::output());
+
+            // Nothing after the guard may run. A run that went on would reach the band-lock check
+            // and refuse there whenever another test process holds the band lock (a mutation
+            // run's parent always does), so its refusal must be absent too, not only the wipe.
             expect($exitCode)->toBe(Command::FAILURE)
-                ->and((string) preg_replace('/\s+/', ' ', Artisan::output()))
-                ->toContain('test:seed-stache is a test-harness command; run it with APP_ENV=testing.')
+                ->and($output)->toContain('test:seed-stache is a test-harness command; run it with APP_ENV=testing.')
+                ->and($output)->not->toContain('Another test:seed-stache is already building')
+                ->and($output)->not->toContain('A test process is reading the content mirror')
                 ->and(File::exists($cacheDir.'/guard-marker.txt'))->toBeTrue()
                 ->and(File::exists($cacheDir.'/stache/items/should-never-be-written'))->toBeFalse();
         });
