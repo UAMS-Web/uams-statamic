@@ -26,31 +26,14 @@ namespace App\Services\EnumGeneration\Schema;
  * The root of analysis is @graph (the document root is unwrapped). @context is
  * not recursed into (its namespace map is ignored).
  *
- * Usage (from project root):
- *   php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php
- *   php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php [path-to.jsonld]
+ * Run it from the project root through its entry script:
+ *   php scripts/analyze-schema-jsonld.php
+ *   php scripts/analyze-schema-jsonld.php [path-to.jsonld]
  *
  * Writes schema-jsonld-structure-report.txt (or .json if ANALYZE_OUTPUT=json)
- * and schema-jsonld-all-ids.txt in the script directory.
- */
-(static function (): void {
-    // Only run the CLI bootstrap when this file is executed directly (e.g.
-    // `php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php`).
-    // When the file is autoloaded or `include`d by another tool (Rector,
-    // PHPStan, the test suite) the entry script differs from this file, so the
-    // bootstrap is skipped and only the class below is defined. Without this
-    // guard the closure ran on every include and `exit()`ed in the host process.
-    // The guard and the bootstrap are methods on the class so a test can run them
-    // in-process; this closure only connects them to the real process.
-    if (SchemaJsonLdStructureAnalyzer::isEntryScript($_SERVER, __FILE__)) {
-        exit(SchemaJsonLdStructureAnalyzer::runCli($_SERVER, __DIR__, STDERR));
-    }
-})();
-
-/**
- * Analyzes the structure of schema.org JSON-LD vocabulary (types, properties, hierarchy)
- * to support schema enum generation; runnable as a standalone CLI script or autoloaded as
- * a service.
+ * and schema-jsonld-all-ids.txt into this class's directory, which also holds
+ * the default input. The class has no load-time code, so autoloading or
+ * including this file only defines the class (UAMS-Web/uams-statamic-archive#1008).
  */
 final class SchemaJsonLdStructureAnalyzer
 {
@@ -108,28 +91,18 @@ final class SchemaJsonLdStructureAnalyzer
     private const int EXAMPLE_MAX_ITEMS = 3;
 
     /**
-     * Whether the process's entry script is the given file, so the CLI bootstrap
-     * runs only when that file is executed directly.
-     *
-     * $argv is not in scope inside the file-level closure, so it is read from
-     * the server array the closure passes in.
-     *
-     * @param  array<array-key, mixed>  $server  the process's `$_SERVER`
-     * @param  string  $file  absolute path of the script file
+     * The directory holding the default input and receiving the reports: this
+     * class's own directory, where the entry script points `runCli()`.
      */
-    public static function isEntryScript(array $server, string $file): bool
+    public static function directory(): string
     {
-        // Read the entry script from argv; anything but a string path is not this file.
-        $argv = $server['argv'] ?? [];
-        $entryScript = is_array($argv) && isset($argv[0]) && is_string($argv[0]) ? $argv[0] : '';
-
-        return realpath($entryScript) === $file;
+        return __DIR__;
     }
 
     /**
      * Run the analysis as the CLI does: read the `.jsonld` file named by the
-     * first argument (or the default beside the script), analyze its `@graph`,
-     * and write the report and the sorted `@id` list into the script directory.
+     * first argument (or the default in `$scriptDir`), analyze its `@graph`,
+     * and write the report and the sorted `@id` list into `$scriptDir`.
      *
      * @param  array<array-key, mixed>  $server  the process's `$_SERVER`, for argv
      * @param  string  $scriptDir  directory holding the default input and receiving the reports

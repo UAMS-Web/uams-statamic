@@ -196,7 +196,7 @@ Do this in one place so the rest of the generator consistently sees either full 
 
 - **Single reference vs list:** In the report, “array (associative)” with “reference(@id only)” means one object `{"@id": "…"}`. “array (indexed)” with “array_element_types: array (associative)” means a list of such objects. A single reference can be treated as a list of one for uniformity, then the consumer takes `[0]` when only one is needed.
 - **Missing keys:** Omitted keys can be represented as `null`, empty string, or empty list depending on the normalized type; document the choice in the generator.
-- **Source of truth:** Re-run `app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php` on the latest `schemaorg-current-https.jsonld` in that directory and update this document if new keys or value shapes appear.
+- **Source of truth:** Re-run `php scripts/analyze-schema-jsonld.php` (the entry script for `SchemaJsonLdStructureAnalyzer`) on the latest `schemaorg-current-https.jsonld` in that directory and update this document if new keys or value shapes appear.
 
 ---
 

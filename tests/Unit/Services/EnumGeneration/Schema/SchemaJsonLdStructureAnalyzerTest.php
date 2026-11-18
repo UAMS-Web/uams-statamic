@@ -9,11 +9,12 @@ covers(SchemaJsonLdStructureAnalyzer::class);
 /**
  * In-process tests for `SchemaJsonLdStructureAnalyzer`: the first pass over a
  * `@graph` list (ids, prefixes, `@type` values, keys per type), the recursive
- * walk's per-key statistics, and both report renderings. The CLI bootstrap is
- * covered by `SchemaJsonLdStructureAnalyzerCliTest`.
+ * walk's per-key statistics, both report renderings, and `runCli()`, which the
+ * entry script `scripts/analyze-schema-jsonld.php` calls. That script's own
+ * error paths are covered by `SchemaJsonLdStructureAnalyzerCliTest`.
  *
- * Every expectation here was read from the analyzer before any change to it, so
- * these pin its behavior rather than restate a specification.
+ * The report expectations were read from the analyzer before any change to it,
+ * so they pin its behavior rather than restate a specification.
  *
  * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzerTest.php
  */
@@ -560,19 +561,14 @@ function removeStructureCliDir(string $dir): void
     rmdir($dir);
 }
 
-it('treats only the given file as the entry script', function (array $server, bool $expected): void {
-    expect(SchemaJsonLdStructureAnalyzer::isEntryScript($server, __FILE__))->toBe($expected);
-})->with([
-    'argv[0] is the file' => [['argv' => [__FILE__]], true],
-    'argv[0] reaches the file through a relative segment' => [['argv' => [__DIR__.'/../Schema/'.basename(__FILE__)]], true],
-    'argv[0] is another file' => [['argv' => [__DIR__.'/../../../../Pest.php']], false],
-    'argv[0] is not a string' => [['argv' => [5]], false],
-    'argv is empty' => [['argv' => []], false],
-    'argv is not an array' => [['argv' => __FILE__], false],
-    'no argv' => [[], false],
-]);
+it('names its own directory as the place for the default input and the reports', function (): void {
+    $directory = SchemaJsonLdStructureAnalyzer::directory();
 
-it('reads the default input beside the script when no path is given', function (): void {
+    expect(realpath($directory))->toBe(realpath(dirname(__DIR__, 5).'/app/Services/EnumGeneration/Schema'))
+        ->and(is_file($directory.'/schemaorg-current-https.jsonld'))->toBeTrue();
+});
+
+it('reads the default input in the script directory when no path is given', function (): void {
     $dir = structureCliDir();
     try {
         file_put_contents($dir.'/schemaorg-current-https.jsonld', '{"@graph":[{"@id":"schema:B"},{"@id":"schema:A"}]}');
