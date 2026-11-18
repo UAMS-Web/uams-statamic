@@ -13,6 +13,7 @@ use Statamic\Fields\LabeledValue;
 use Statamic\Fields\Value;
 use Statamic\Structures\Page;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Contracts\LocationRegions;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
@@ -33,7 +34,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * @param  array<string, mixed>  $gets  Handle-to-value overrides on top of the defaults
  */
 function makeLocationEntry(
-    string $id,
+    ?string $id,
     ?object $parentPage = null,
     array $gets = [],
     string $blueprintHandle = 'location'
@@ -703,4 +704,175 @@ it('lets a page on another blueprint under a location inherit nothing', function
 
     expect($resolver->resolveCity($page))->toBeNull()
         ->and($resolver->resolveCity(makeLocationEntry('child1', makeLocationParentPage('parent1'))))->toBe('Little Rock');
+});
+
+/*
+ * Mutation coverage (#910): the guards and fallbacks the cases above never reach.
+ */
+
+it('answers the location regions contract the people package resolves', function () {
+    // The people package resolves the contract from the container; the binding only works while the class implements it.
+    $regions = app()->call(fn (LocationRegions $contract): mixed => $contract->resolveRegions(
+        makeLocationEntry('loc1', null, ['regions' => 'delta'])
+    ));
+
+    expect($regions)->toBe('delta');
+});
+
+it('resolves no facility and no unit for a location in a structural cycle', function () {
+    // Neither location owns a group, so finding the owner walks the cycle and gives up.
+    $a = makeLocationEntry('a', makeLocationParentPage('b'), ['facility_level' => '1', 'suite' => 'Suite 1']);
+    $b = makeLocationEntry('b', makeLocationParentPage('a'));
+
+    EntryFacade::shouldReceive('find')->with('a')->andReturn($a);
+    EntryFacade::shouldReceive('find')->with('b')->andReturn($b);
+
+    $resolver = locationAddressResolver();
+
+    expect($resolver->resolveFacility($a))->toBeNull()
+        ->and($resolver->resolveUnitLocation($a))->toBeNull()
+        ->and($resolver->resolveFacilityLevel($a))->toBeNull()
+        ->and($resolver->resolveSuite($a))->toBeNull();
+});
+
+it('does not load the named facility when the location is not contained within it', function () {
+    EntryFacade::shouldReceive('find')->never();
+
+    $location = makeLocationEntry('loc1', null, ['facility_query' => false, 'facility' => ['fac1']]);
+
+    expect(locationAddressResolver()->resolveFacility($location))->toBeNull();
+});
+
+it('names no facility when the facility title is blank', function () {
+    locationGroupsFacility('fac1', '1 Main St.')->shouldReceive('get')->with('title')->andReturn('   ');
+
+    $location = makeLocationEntry('loc1', null, ['facility_query' => true, 'facility' => ['fac1']]);
+
+    expect(locationAddressResolver()->resolveFacilityName($location))->toBeNull();
+});
+
+it('gives a contained location with no level and no suite no unit location', function () {
+    locationGroupsFacility('fac1', '1 Main St.');
+
+    $location = makeLocationEntry('loc1', null, ['facility_query' => true, 'facility' => ['fac1']]);
+
+    expect(locationAddressResolver()->resolveUnitLocation($location))->toBeNull();
+});
+
+it('gives a top-level standalone location no facility level, whatever is stored', function () {
+    // Owns its facility group and is not contained, so no unit applies; the stored level is never read through augmentation.
+    $location = makeLocationEntry('loc1', null, ['facility_level' => '2', 'suite' => 'Suite 2']);
+
+    expect(locationAddressResolver()->resolveFacilityLevel($location))->toBeNull();
+});
+
+it('resolves no level, without reading the augmented value, when no level is stored', function (mixed $stored) {
+    // The mock stubs no augmentedValue(), so reaching the label lookup fails the test.
+    $location = makeLocationEntry('loc1', null, [
+        'facility_query' => true,
+        'facility_level' => $stored,
+        'suite' => 'Suite 4',
+    ]);
+
+    expect(locationAddressResolver()->resolveFacilityLevel($location))->toBeNull();
+})->with([
+    'no level stored' => [null],
+    'the single-story option stored as a boolean' => [false],
+]);
+
+it('reads the facility level label from each augmented shape', function (mixed $augmented, ?string $expected) {
+    $location = makeLocationEntry('loc1', null, ['facility_query' => true, 'facility_level' => '2']);
+    $location->shouldReceive('augmentedValue')->with('facility_level')->andReturn($augmented);
+
+    expect(locationAddressResolver()->resolveFacilityLevel($location))->toBe($expected);
+})->with([
+    'a bare labeled value' => [new LabeledValue('2', 'Second Floor'), 'Second Floor'],
+    'a value wrapping a plain string' => [new Value('Mezzanine'), 'Mezzanine'],
+    'a blank label' => [new Value(new LabeledValue('2', '   ')), null],
+    'no label at all' => [new Value(new LabeledValue('2', null)), null],
+]);
+
+it('resolves no suite when the stored suite is blank', function () {
+    $location = makeLocationEntry('loc1', null, ['facility_query' => true, 'facility_level' => '1', 'suite' => '   ']);
+
+    expect(locationAddressResolver()->resolveSuite($location))->toBeNull();
+});
+
+it('drops blank region slugs and lists each slug once, as a list', function () {
+    $location = makeLocationEntry('loc1', null, ['regions' => ['   ', 'central-arkansas', 'delta', 'central-arkansas', 'ozarks']]);
+
+    expect(locationAddressResolver()->resolveRegionSlugs($location))->toBe(['central-arkansas', 'delta', 'ozarks']);
+});
+
+it('falls back to the American state variant for a preset it does not know', function () {
+    $location = makeLocationEntry('loc1', null, [
+        'address' => ['preset' => 'lunar', 'state_province_region_american' => 'AR'],
+    ]);
+
+    expect(locationAddressResolver()->resolveState($location))->toBe('AR');
+});
+
+it('walks a chain of locations that carry no id', function () {
+    // An id-less location cannot close a cycle by id, so each one is visited and the child inherits.
+    $parent = makeLocationEntry(null, null, ['address' => ['street_address' => '1 Parent St.']]);
+    EntryFacade::shouldReceive('find')->with('p1')->andReturn($parent);
+
+    $child = makeLocationEntry(null, makeLocationParentPage('p1'));
+
+    expect(locationAddressResolver()->resolveStreetAddress($child))->toBe('1 Parent St.');
+});
+
+it('treats an empty or blank map pin as none', function (mixed $map) {
+    expect(locationAddressResolver()->resolveMap(makeLocationEntry('loc1', null, ['map' => $map])))->toBeNull();
+})->with([
+    'an empty list' => [[]],
+    'a blank string' => ['   '],
+]);
+
+it('does not read an address value that is an object rather than a subfield map', function () {
+    $location = makeLocationEntry('loc1', null, ['address' => collect(['street_address' => '1 Object St.'])]);
+
+    expect(locationAddressResolver()->resolveStreetAddress($location))->toBeNull();
+});
+
+it('does not look up a facility reference that is missing or blank', function (mixed $reference) {
+    EntryFacade::shouldReceive('find')->never();
+
+    $location = makeLocationEntry('loc1', null, ['facility_query' => true, 'facility' => $reference]);
+
+    expect(locationAddressResolver()->resolveStreetAddress($location))->toBeNull();
+})->with([
+    'no reference' => [null],
+    'a blank id' => [''],
+    'an empty list' => [[]],
+]);
+
+it('treats a parent page with a blank id as no parent, without a lookup', function () {
+    EntryFacade::shouldReceive('find')->never();
+
+    $child = makeLocationEntry('c1', makeLocationParentPage(''), ['address' => ['street_address' => '5 Own St.']]);
+
+    expect(locationAddressResolver()->resolveStreetAddress($child))->toBe('5 Own St.');
+});
+
+it('treats an entry with no blueprint as not a location, so it inherits nothing', function () {
+    $parent = makeLocationEntry('parent1', null, ['address' => ['street_address' => '1 Parent St.']]);
+    EntryFacade::shouldReceive('find')->with('parent1')->andReturn($parent);
+
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('id')->andReturn('e1');
+    $entry->shouldReceive('blueprint')->andReturn(null);
+    $entry->shouldReceive('parent')->andReturn(makeLocationParentPage('parent1'));
+    $entry->shouldReceive('get')->with('facility_query')->andReturn(null);
+    $entry->shouldReceive('get')->with('address')->andReturn(['street_address' => '2 Own St.']);
+
+    expect(locationAddressResolver()->resolveStreetAddress($entry))->toBe('2 Own St.');
+});
+
+it('reads the international state variant for an address entered under that preset', function () {
+    $location = makeLocationEntry('loc1', null, [
+        'address' => ['preset' => 'international', 'state_province_region_international' => 'Bavaria'],
+    ]);
+
+    expect(locationAddressResolver()->resolveState($location))->toBe('Bavaria');
 });

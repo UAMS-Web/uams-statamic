@@ -76,6 +76,9 @@ class ClinicalExpertiseComputedFieldsService
         }
 
         $entryId = $entry->id();
+        // Without this return, an entry with no string id goes through the memo below, whose
+        // closure computes the same null for it; only the memo key differs, and nothing reads it.
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if (! is_string($entryId)) {
             return $this->computeNearestExpertiseAncestor($entry);
         }

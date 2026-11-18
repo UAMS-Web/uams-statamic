@@ -206,16 +206,4 @@ class EventServiceProvider extends BaseServiceProvider
             PreserveGoogleBusinessProfileCategoryGcid::class,
         ],
     ];
-
-    /**
-     * Boot the provider and register event listeners.
-     *
-     * Delegates to the parent to apply the `$listen` mappings.
-     */
-    #[\Override]
-    public function boot(): void
-    {
-        // Register event listeners
-        parent::boot();
-    }
 }

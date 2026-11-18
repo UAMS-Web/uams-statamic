@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Services\ClinicalExpertise\ClinicalExpertiseComputedFieldsService;
 use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
 use Statamic\Entries\Entry;
+use Statamic\Facades\Blink;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Fields\Blueprint;
 use Tests\TestCase;
@@ -19,6 +21,8 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * through the protected `ancestorIds` seam so no structure tree is required.
  *
  * @covers \App\Services\ClinicalExpertise\ClinicalExpertiseComputedFieldsService
+ *
+ * Mutation: 100% on App\Services\ClinicalExpertise\ClinicalExpertiseComputedFieldsService (74 mutants: 68 tested, 6 timed out; Windows, #885).
  *
  * @command  php artisan test --compact tests/Feature/Services/ClinicalExpertise/ClinicalExpertiseComputedFieldsServiceTest.php
  */
@@ -264,4 +268,76 @@ it('does not double the slash when the ancestor URL ends in a slash', function (
         ['label' => 'Overview', 'url' => 'https://uams.test/aoe/cardiology/'],
         ['label' => 'Providers', 'url' => 'https://uams.test/aoe/cardiology/providers'],
     ]);
+});
+
+it('labels every section nav link with its own name', function () {
+    $sections = Mockery::mock(ClinicalExpertiseSectionResolver::class);
+    $root = computedEntry('clinical_expertise', 'cardiology', 'https://uams.test/aoe/cardiology');
+    $sections->shouldReceive('populatedSections')->with($root)
+        ->andReturn(['providers', 'locations', 'specialties', 'related', 'resources']);
+
+    $labels = array_column((new ClinicalExpertiseComputedFieldsService($sections))->resolveSectionNav($root), 'label');
+
+    expect($labels)->toBe(['Overview', 'Providers', 'Locations', 'Sub-specialties', 'Related Areas of Expertise', 'Clinical Resources']);
+});
+
+it('reads the nearest expertise ancestor from the request memo for an entry with an id', function () {
+    $memoized = computedEntry('clinical_expertise', 'remembered-aoe');
+    Blink::put('computed_aoe_ancestor_page-1', $memoized);
+
+    // The walk itself would find no ancestor, so only the memo can supply one.
+    $service = new class(Mockery::mock(ClinicalExpertiseSectionResolver::class)) extends ClinicalExpertiseComputedFieldsService
+    {
+        protected function ancestorIds(int|string $entryId): array
+        {
+            return [];
+        }
+    };
+
+    expect($service->findNearestExpertiseAncestor(computedEntry('basic_page', 'page-1')))->toBe($memoized);
+});
+
+/**
+ * A mocked non-AoE entry with no string id and no CTA of its own.
+ */
+function entryWithoutStringId(): Entry
+{
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('handle')->andReturn('basic_page');
+
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('blueprint')->andReturn($blueprint);
+    $entry->shouldReceive('id')->andReturn(null);
+    $entry->shouldReceive('value')->andReturn(null);
+
+    return $entry;
+}
+
+it('finds no expertise ancestor, and inherits no CTA, for an entry with no string id', function () {
+    $service = new ClinicalExpertiseComputedFieldsService(Mockery::mock(ClinicalExpertiseSectionResolver::class));
+    $entry = entryWithoutStringId();
+
+    expect($service->findNearestExpertiseAncestor($entry))->toBeNull()
+        ->and($service->resolveEffectiveCta($entry))->toBeNull();
+});
+
+it('walks the real structure ancestors of a persisted entry to its AoE', function () {
+    $aoePage = Mockery::mock();
+    $aoePage->shouldReceive('id')->andReturn('aoe-1');
+
+    /** @var Entry&MockInterface $child */
+    $child = computedEntry('basic_page', 'page-1');
+    $child->shouldReceive('parent')->andReturn($aoePage);
+
+    /** @var Entry&MockInterface $aoe */
+    $aoe = computedEntry('clinical_expertise', 'aoe-1');
+    $aoe->shouldReceive('parent')->andReturn(null);
+
+    EntryFacade::shouldReceive('find')->with('page-1')->andReturn($child);
+    EntryFacade::shouldReceive('findOrFail')->with('page-1')->andReturn($child);
+    EntryFacade::shouldReceive('find')->with('aoe-1')->andReturn($aoe);
+
+    $service = new ClinicalExpertiseComputedFieldsService(Mockery::mock(ClinicalExpertiseSectionResolver::class));
+
+    expect($service->findNearestExpertiseAncestor($child))->toBe($aoe);
 });

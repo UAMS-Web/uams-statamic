@@ -27,11 +27,9 @@ final class BlueprintFieldMap
      */
     public static function normalize(mixed $fieldsConfig): array
     {
-        // Removing this early return cannot change the RESULT: `foreach` over a non-array
-        // iterates zero times, so the method still returns an empty map for every non-array
-        // input. What the guard prevents is the PHP warning, which no return value can show —
-        // so no assertion can kill the mutant, and the guard is not dead code.
-        // @pest-mutate-ignore: RemoveEarlyReturn
+        // Without this return the result is the same empty map, since `foreach` over a
+        // non-array iterates zero times; what it prevents is the PHP warning that `foreach`
+        // raises, and a test that turns warnings into errors observes that.
         if (! \is_array($fieldsConfig)) {
             return [];
         }
@@ -89,11 +87,9 @@ final class BlueprintFieldMap
                 continue;
             }
 
-            // larastan requires this narrowing at level 10: `$fields->all()` is typed loosely
-            // enough that the `Field` methods below are unresolvable without it. The mutant
-            // survives because the guard exists to satisfy the analyser rather than to reject a
-            // value this code path can produce — a tension between two gates, not a test gap.
-            // @pest-mutate-ignore: InstanceOfToTrue
+            // `$fields->all()` is a collection typed loosely enough that larastan cannot resolve
+            // the `Field` methods below without this narrowing, and nothing stops a value in it
+            // being something other than a `Field`, so such a value is skipped.
             if (! $field instanceof Field) {
                 continue;
             }
@@ -119,9 +115,8 @@ final class BlueprintFieldMap
      */
     public static function sets(mixed $setsConfig): array
     {
-        // As in normalize(): foreach over a non-array iterates zero times, so the result is
-        // the same empty list; the guard prevents only the PHP warning, which no return value shows.
-        // @pest-mutate-ignore: RemoveEarlyReturn
+        // As in normalize(): the result would be the same empty list, and the guard prevents
+        // the PHP warning `foreach` raises over a non-array.
         if (! \is_array($setsConfig)) {
             return [];
         }

@@ -268,7 +268,7 @@ final class RoleTitleSchemaMatrix
                 }
 
                 // Read the first row, which carries the selector
-                $condition = $rows[\array_key_first($rows)] ?? null;
+                $condition = reset($rows);
 
                 if (! \is_array($condition)) {
                     continue;

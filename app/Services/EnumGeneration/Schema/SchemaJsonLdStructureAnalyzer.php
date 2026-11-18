@@ -26,105 +26,17 @@ namespace App\Services\EnumGeneration\Schema;
  * The root of analysis is @graph (the document root is unwrapped). @context is
  * not recursed into (its namespace map is ignored).
  *
- * Usage (from project root):
- *   php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php
- *   php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php [path-to.jsonld]
+ * Run it from the project root through its entry script:
+ *   php scripts/analyze-schema-jsonld.php
+ *   php scripts/analyze-schema-jsonld.php [path-to.jsonld]
  *
  * Writes schema-jsonld-structure-report.txt (or .json if ANALYZE_OUTPUT=json)
- * and schema-jsonld-all-ids.txt in the script directory.
- */
-(function (): void {
-    // Only run the CLI bootstrap when this file is executed directly (e.g.
-    // `php app/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzer.php`).
-    // When the file is autoloaded or `include`d by another tool — Rector,
-    // PHPStan, the test suite — the entry script differs from this file, so the
-    // bootstrap is skipped and only the class below is defined. Without this
-    // guard the closure ran on every include and `exit()`ed in the host process.
-    //
-    // $argv is not in scope inside this closure; read it from $_SERVER, for both
-    // the entry-script check here and the optional [path-to.jsonld] argument.
-    $argv = $_SERVER['argv'] ?? [];
-    $entryScript = is_array($argv) && isset($argv[0]) && is_string($argv[0]) ? $argv[0] : '';
-    if (realpath($entryScript) !== __FILE__) {
-        return;
-    }
-
-    $scriptDir = __DIR__;
-    $defaultPath = $scriptDir.'/schemaorg-current-https.jsonld';
-    $argPath = is_array($argv) && isset($argv[1]) && is_string($argv[1]) ? $argv[1] : null;
-    $path = $argPath ?? $defaultPath;
-
-    if (! is_file($path) || ! is_readable($path)) {
-        fwrite(STDERR, sprintf('Error: File not found or not readable: %s%s', $path, PHP_EOL));
-        exit(1);
-    }
-
-    $json = file_get_contents($path);
-    if ($json === false) {
-        fwrite(STDERR, "Error: Failed to read file.\n");
-        exit(1);
-    }
-
-    $data = json_decode($json, true);
-    if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-        fwrite(STDERR, 'Error: Invalid JSON: '.json_last_error_msg()."\n");
-        exit(1);
-    }
-
-    if (is_array($data) && array_key_exists('@graph', $data)) {
-        $data = $data['@graph'];
-    }
-
-    $analyzer = new SchemaJsonLdStructureAnalyzer;
-    $analyzer->analyze($data);
-
-    $outputJson = (getenv('ANALYZE_OUTPUT') ?: '') === 'json';
-    $reportFile = $scriptDir.'/schema-jsonld-structure-report.'.($outputJson ? 'json' : 'txt');
-    $content = $outputJson
-        ? json_encode($analyzer->getReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-        : $analyzer->formatReport();
-
-    if (file_put_contents($reportFile, $content) === false) {
-        fwrite(STDERR, sprintf('Error: Failed to write report to %s%s', $reportFile, PHP_EOL));
-        exit(1);
-    }
-
-    fwrite(STDERR, sprintf('Wrote %s%s', $reportFile, PHP_EOL));
-
-    $allIds = $analyzer->getAllIds();
-    if ($allIds !== []) {
-        sort($allIds);
-        $allIdsFile = $scriptDir.'/schema-jsonld-all-ids.txt';
-        if (file_put_contents($allIdsFile, implode("\n", $allIds)."\n") === false) {
-            fwrite(STDERR, sprintf('Error: Failed to write all IDs to %s%s', $allIdsFile, PHP_EOL));
-        } else {
-            fwrite(STDERR, sprintf('Wrote %s (', $allIdsFile).count($allIds)." ids)\n");
-        }
-    }
-})();
-
-/**
- * Analyzes the structure of schema.org JSON-LD vocabulary (types, properties, hierarchy)
- * to support schema enum generation; runnable as a standalone CLI script or autoloaded as
- * a service.
+ * and schema-jsonld-all-ids.txt into this class's directory, which also holds
+ * the default input. The class has no load-time code, so autoloading or
+ * including this file only defines the class (UAMS-Web/uams-statamic-archive#1008).
  */
 final class SchemaJsonLdStructureAnalyzer
 {
-    /**
-     * @var array<string, array{
-     *     value_types: array<string, int>,
-     *     array_element_types: array<string, int>,
-     *     object_shapes: array<string, int>,
-     *     count: int,
-     *     examples: list<mixed>,
-     *     nested_keys: array<string, true>,
-     *     array_length_min?: int,
-     *     array_length_max?: int,
-     *     max_string_length?: int,
-     *     string_contains_double_quote?: true,
-     *     string_contains_newline?: true,
-     * }>
-     */
     /**
      * Per-key value statistics accumulated while walking the JSON-LD samples.
      *
@@ -134,7 +46,7 @@ final class SchemaJsonLdStructureAnalyzer
      *     object_shapes: array<string, int>,
      *     count: int,
      *     examples: list<mixed>,
-     *     nested_keys: array<string, true>,
+     *     nested_keys: array<string, string>,
      *     array_length_min?: int,
      *     array_length_max?: int,
      *     max_string_length?: int,
@@ -150,18 +62,103 @@ final class SchemaJsonLdStructureAnalyzer
     /** @var array<string, int> Prefix (e.g., schema:, bibo:) => count */
     private array $idPrefixCounts = [];
 
-    /** @var array<string, true> Distinct @type values seen across nodes */
+    /** @var array<string, string> Distinct @type values seen across nodes, each keyed by itself */
     private array $distinctTypes = [];
 
     /** @var array<string, array<string, int>> Node type (e.g., rdfs:Class) => (key => occurrence count) */
     private array $keysPerNodeType = [];
 
-    /** @var array<string, true> Distinct @language values (e.g., en) from value objects */
+    /** @var array<string, string> Distinct @language values (e.g., en) from value objects, each keyed by itself */
     private array $languageTagsSeen = [];
 
     private const int EXAMPLE_MAX_LENGTH = 120;
 
     private const int EXAMPLE_MAX_ITEMS = 3;
+
+    /**
+     * The directory holding the default input and receiving the reports: this
+     * class's own directory, where the entry script points `runCli()`.
+     */
+    public static function directory(): string
+    {
+        return __DIR__;
+    }
+
+    /**
+     * Run the analysis as the CLI does: read the `.jsonld` file named by the
+     * first argument (or the default in `$scriptDir`), analyze its `@graph`,
+     * and write the report and the sorted `@id` list into `$scriptDir`.
+     *
+     * @param  array<array-key, mixed>  $server  the process's `$_SERVER`, for argv
+     * @param  string  $scriptDir  directory holding the default input and receiving the reports
+     * @param  resource  $stderr  stream the progress and error lines are written to
+     * @return int the process exit code: 0 on success, 1 on an error that stops the run
+     */
+    public static function runCli(array $server, string $scriptDir, $stderr): int
+    {
+        // Resolve the input path from the optional first argument.
+        $argv = $server['argv'] ?? [];
+        $defaultPath = $scriptDir.'/schemaorg-current-https.jsonld';
+        $argPath = is_array($argv) && isset($argv[1]) && is_string($argv[1]) ? $argv[1] : null;
+        $path = $argPath ?? $defaultPath;
+
+        if (! is_file($path) || ! is_readable($path)) {
+            fwrite($stderr, sprintf('Error: File not found or not readable: %s%s', $path, PHP_EOL));
+
+            return 1;
+        }
+
+        $json = file_get_contents($path);
+        if ($json === false) {
+            fwrite($stderr, "Error: Failed to read file.\n");
+
+            return 1;
+        }
+
+        // Decode, then unwrap the document root to its @graph.
+        $data = json_decode($json, true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            fwrite($stderr, 'Error: Invalid JSON: '.json_last_error_msg()."\n");
+
+            return 1;
+        }
+
+        if (is_array($data) && array_key_exists('@graph', $data)) {
+            $data = $data['@graph'];
+        }
+
+        $analyzer = new self;
+        $analyzer->analyze($data);
+
+        // Write the report, as JSON when ANALYZE_OUTPUT asks for it.
+        $outputJson = getenv('ANALYZE_OUTPUT') === 'json';
+        $reportFile = $scriptDir.'/schema-jsonld-structure-report.'.($outputJson ? 'json' : 'txt');
+        $content = $outputJson
+            ? json_encode($analyzer->getReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
+            : $analyzer->formatReport();
+
+        if (file_put_contents($reportFile, $content) === false) {
+            fwrite($stderr, sprintf('Error: Failed to write report to %s%s', $reportFile, PHP_EOL));
+
+            return 1;
+        }
+
+        fwrite($stderr, sprintf('Wrote %s%s', $reportFile, PHP_EOL));
+
+        // Write the sorted @id list; a failure here is reported but does not fail the run.
+        $allIds = $analyzer->getAllIds();
+        if ($allIds !== []) {
+            sort($allIds);
+            $allIdsFile = $scriptDir.'/schema-jsonld-all-ids.txt';
+            if (file_put_contents($allIdsFile, implode("\n", $allIds)."\n") === false) {
+                fwrite($stderr, sprintf('Error: Failed to write all IDs to %s%s', $allIdsFile, PHP_EOL));
+            } else {
+                fwrite($stderr, sprintf('Wrote %s (', $allIdsFile).count($allIds)." ids)\n");
+            }
+        }
+
+        return 0;
+    }
 
     public function analyze(mixed $data): void
     {
@@ -199,7 +196,7 @@ final class SchemaJsonLdStructureAnalyzer
 
             $types = $this->normalizeTypeList($node['@type'] ?? null);
             foreach ($types as $t) {
-                $this->distinctTypes[$t] = true;
+                $this->distinctTypes[$t] = $t;
             }
 
             foreach ($node as $key => $unused) {
@@ -251,15 +248,15 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function normalizeTypeList(mixed $v): array
     {
-        if ($v === null) {
-            return [];
-        }
-
         if (is_string($v)) {
             return [$v];
         }
 
-        if (is_array($v) && array_is_list($v)) {
+        if (! is_array($v)) {
+            return [];
+        }
+
+        if (array_is_list($v)) {
             $out = [];
             foreach ($v as $item) {
                 if (is_string($item)) {
@@ -270,14 +267,9 @@ final class SchemaJsonLdStructureAnalyzer
             return $out;
         }
 
-        if (is_array($v) && isset($v['@id'])) {
-            $id = $v['@id'];
-            if (is_string($id)) {
-                return [$id];
-            }
-        }
+        $id = $v['@id'] ?? null;
 
-        return [];
+        return is_string($id) ? [$id] : [];
     }
 
     /**
@@ -302,7 +294,7 @@ final class SchemaJsonLdStructureAnalyzer
                 'object_shapes' => $stats['object_shapes'],
                 'count' => $stats['count'],
                 'examples' => $this->truncateExamples($stats['examples']),
-                'nested_keys' => empty($stats['nested_keys']) ? null : $this->summarizeNested($stats['nested_keys']),
+                'nested_keys' => $stats['nested_keys'] === [] ? null : $this->summarizeNested($stats['nested_keys']),
             ];
             if (isset($stats['array_length_min'], $stats['array_length_max'])) {
                 $entry['array_length_min'] = $stats['array_length_min'];
@@ -350,7 +342,7 @@ final class SchemaJsonLdStructureAnalyzer
 
         $lines[] = '';
         $lines[] = '## Distinct @type values';
-        $lines[] = '  '.implode(', ', array_keys($this->distinctTypes));
+        $lines[] = '  '.implode(', ', $this->distinctTypes);
         $lines[] = '';
         $lines[] = '## Keys per node type (key => occurrence count on that type)';
         foreach ($this->keysPerNodeType as $nodeType => $keyCounts) {
@@ -363,7 +355,7 @@ final class SchemaJsonLdStructureAnalyzer
         }
 
         $lines[] = '## Language tags seen (in value objects)';
-        $lines[] = '  '.($this->languageTagsSeen === [] ? '(none)' : implode(', ', array_keys($this->languageTagsSeen)));
+        $lines[] = '  '.($this->languageTagsSeen === [] ? '(none)' : implode(', ', $this->languageTagsSeen));
         $lines[] = '';
         $lines[] = '## Ordering';
         $lines[] = '  Array order is preserved as in source; schema.org does not define ordering for these predicates.';
@@ -407,8 +399,8 @@ final class SchemaJsonLdStructureAnalyzer
                 $lines[] = '  examples: '.$this->formatExampleForLine($ex);
             }
 
-            if (! empty($stats['nested_keys'])) {
-                $lines[] = '  nested_keys: '.implode(', ', array_keys($stats['nested_keys']));
+            if ($stats['nested_keys'] !== []) {
+                $lines[] = '  nested_keys: '.implode(', ', $stats['nested_keys']);
             }
 
             $lines[] = '';
@@ -437,15 +429,11 @@ final class SchemaJsonLdStructureAnalyzer
 
         $this->addExample($key, $value);
 
-        $this->recordArrayLength($key, $value, $phpType);
-        $this->recordStringStats($key, $value, $phpType);
+        $this->recordArrayLength($key, $value);
+        $this->recordStringStats($key, $value);
         $this->recordLanguageTag($key, $value);
 
-        if ($value === null || $value === []) {
-            return;
-        }
-
-        if ($phpType === 'array' && is_array($value)) {
+        if (is_array($value)) {
             if (array_is_list($value)) {
                 $this->describeArrayElements($key, $value);
                 foreach ($value as $item) {
@@ -460,8 +448,7 @@ final class SchemaJsonLdStructureAnalyzer
                     }
 
                     $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
-                    $this->ensureKey($key);
-                    $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
+                    $this->keyStats[$key]['nested_keys'][$childKey] = $childKey;
 
                     $this->walk($childPath, $childValue);
                 }
@@ -470,7 +457,7 @@ final class SchemaJsonLdStructureAnalyzer
             return;
         }
 
-        if ($phpType === 'object' && is_object($value)) {
+        if (is_object($value)) {
             /** @var array<string, mixed> $objectVars */
             $objectVars = get_object_vars($value);
             $this->describeObjectShape($key, $objectVars);
@@ -480,8 +467,7 @@ final class SchemaJsonLdStructureAnalyzer
                 }
 
                 $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
-                $this->ensureKey($key);
-                $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
+                $this->keyStats[$key]['nested_keys'][$childKey] = $childKey;
 
                 $this->walk($childPath, $childValue);
             }
@@ -500,66 +486,32 @@ final class SchemaJsonLdStructureAnalyzer
         ];
     }
 
-    private function recordArrayLength(string $key, mixed $value, string $phpType): void
+    /**
+     * Track the shortest and longest array seen for a key. An object with an
+     * `@id` counts as one (a reference), any other array by its element count.
+     */
+    private function recordArrayLength(string $key, mixed $value): void
     {
-        if ($phpType !== 'array') {
+        if (! is_array($value)) {
             return;
         }
 
-        $len = $this->effectiveArrayLength($value);
-        if ($len === null) {
-            return;
-        }
-
-        $this->ensureKey($key);
+        $len = isset($value['@id']) ? 1 : count($value);
         $stats = $this->keyStats[$key];
-        if (! isset($stats['array_length_min']) || $len < $stats['array_length_min']) {
-            $stats['array_length_min'] = $len;
-        }
-
-        if (! isset($stats['array_length_max']) || $len > $stats['array_length_max']) {
-            $stats['array_length_max'] = $len;
-        }
-
+        $stats['array_length_min'] = min($stats['array_length_min'] ?? $len, $len);
+        $stats['array_length_max'] = max($stats['array_length_max'] ?? $len, $len);
         $this->keyStats[$key] = $stats;
     }
 
-    /**
-     * Length for list-valued or single-reference keys (for min/max stats).
-     */
-    private function effectiveArrayLength(mixed $value): ?int
+    private function recordStringStats(string $key, mixed $value): void
     {
-        if (! is_array($value)) {
-            return null;
-        }
-
-        if (array_is_list($value)) {
-            return count($value);
-        }
-
-        if (isset($value['@id']) && count($value) === 1) {
-            return 1;
-        }
-
-        if (isset($value['@id'])) {
-            return 1;
-        }
-
-        return count($value);
-    }
-
-    private function recordStringStats(string $key, mixed $value, string $phpType): void
-    {
-        if ($phpType !== 'string' || ! is_string($value)) {
+        if (! is_string($value)) {
             return;
         }
 
-        $this->ensureKey($key);
         $stats = $this->keyStats[$key];
         $len = strlen($value);
-        if (! isset($stats['max_string_length']) || $len > $stats['max_string_length']) {
-            $stats['max_string_length'] = $len;
-        }
+        $stats['max_string_length'] = max($stats['max_string_length'] ?? $len, $len);
 
         if (str_contains($value, '"')) {
             $stats['string_contains_double_quote'] = true;
@@ -579,13 +531,12 @@ final class SchemaJsonLdStructureAnalyzer
         }
 
         if (str_ends_with($key, '.@language')) {
-            $this->languageTagsSeen[$value] = true;
+            $this->languageTagsSeen[$value] = $value;
         }
     }
 
     private function addExample(string $key, mixed $value): void
     {
-        $this->ensureKey($key);
         // Read the full stats entry into a local so the shape is preserved across updates
         $stats = $this->keyStats[$key];
         $ex = $stats['examples'];
@@ -603,25 +554,16 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function describeArrayElements(string $key, array $arr): void
     {
-        $this->ensureKey($key);
         $stats = $this->keyStats[$key];
         $elementTypes = $stats['array_element_types'];
-        $objectShapes = $stats['object_shapes'];
         foreach ($arr as $item) {
-            $t = gettype($item);
             $elementTypeLabel = is_array($item)
                 ? ('array ('.(array_is_list($item) ? 'indexed' : 'associative').')')
-                : $t;
+                : gettype($item);
             $elementTypes[$elementTypeLabel] = ($elementTypes[$elementTypeLabel] ?? 0) + 1;
-            if ($t === 'object' && is_array($item)) {
-                /** @var array<string, mixed> $item */
-                $shape = $this->objectShape($item);
-                $objectShapes[$shape] = ($objectShapes[$shape] ?? 0) + 1;
-            }
         }
 
         $stats['array_element_types'] = $elementTypes;
-        $stats['object_shapes'] = $objectShapes;
         $this->keyStats[$key] = $stats;
     }
 
@@ -630,7 +572,6 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function describeObjectShape(string $key, array $obj): void
     {
-        $this->ensureKey($key);
         $shape = $this->objectShape($obj);
         $this->keyStats[$key]['object_shapes'][$shape] = ($this->keyStats[$key]['object_shapes'][$shape] ?? 0) + 1;
     }
@@ -691,16 +632,12 @@ final class SchemaJsonLdStructureAnalyzer
 
         if (is_array($v)) {
             $trimmed = [];
-            $i = 0;
-            foreach ($v as $k => $item) {
-                if ($i >= self::EXAMPLE_MAX_ITEMS) {
-                    $trimmed['...'] = '(truncated)';
-
-                    break;
-                }
-
+            foreach (array_slice($v, 0, self::EXAMPLE_MAX_ITEMS, true) as $k => $item) {
                 $trimmed[$k] = $this->truncateExample($item);
-                $i++;
+            }
+
+            if (count($v) > self::EXAMPLE_MAX_ITEMS) {
+                $trimmed['...'] = '(truncated)';
             }
 
             return $trimmed;
@@ -736,7 +673,7 @@ final class SchemaJsonLdStructureAnalyzer
     }
 
     /**
-     * @param  array<string, true>  $nestedKeys
+     * @param  array<string, string>  $nestedKeys
      * @return array<string>
      */
     private function summarizeNested(array $nestedKeys): array

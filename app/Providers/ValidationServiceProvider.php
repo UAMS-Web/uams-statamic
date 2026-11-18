@@ -86,13 +86,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\ValidatorAwareRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
-use ReflectionClass;
 
 /**
  * Service provider for custom validation rules with enhanced display name support.
  *
  * This provider extends Laravel's validation system with custom rules that
- * provide enhanced functionality, type-specific messages, and custom display
+ * provide enhanced functionality and custom display
  * names for the Statamic Control Panel interface.
  *
  * ## Custom Display Names Feature
@@ -121,11 +120,12 @@ use ReflectionClass;
  * ## Adding New Rules
  *
  * To add a new rule for simple string syntax:
- *   1. Ensure it implements either `Rule` or `ValidationRule` interface
+ *   1. Implement the `ValidationRule` interface. A legacy `Rule` still registers,
+ *      but its failure message is Laravel's own `validation.{rule_name}` line,
+ *      filled by Laravel's own placeholder replacement; its `message()` is
+ *      never read (#1014)
  *   2. Add it to the `boot()` method using `registerCustomRule()`
- *   3. Add appropriate validation messages to the language file (for Rule
- *      interface)
- *   4. For ValidationRule interface, messages are provided via the `$fail`
+ *   3. For the ValidationRule interface, messages are provided via the `$fail`
  *      callback in the `validate()` method. Messages can be either inline
  *      strings or retrieved from translation files using `trans()`
  *      (recommended for maintainability).
@@ -624,8 +624,7 @@ class ValidationServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register a custom validation rule with type-specific message support and
-     * optional custom display names for the Statamic Control Panel.
+     * Register a custom validation rule with optional custom display names for the Statamic Control Panel.
      *
      * This method supports both Rule and ValidationRule interfaces:
      *   - Rule interface: Direct registration with passes()/message() methods
@@ -642,8 +641,8 @@ class ValidationServiceProvider extends ServiceProvider
      *
      * ## Parameter Mapping
      *
-     * When an array is provided as the third parameter, it will be used to map
-     * parameter positions to named values for validation messages.
+     * When an array is provided as the third parameter, only the parameters at the
+     * positions it names are passed to the rule class constructor.
      *
      * ## Baked Constructor Arguments
      *
@@ -719,11 +718,8 @@ class ValidationServiceProvider extends ServiceProvider
                         $rule->setValidator($validator);
                     }
 
-                    // Initialize error flag
-                    $hasErrors = false;
-
                     // Create fail callback closure for ValidationRule interface
-                    $fail = function ($message) use ($attribute, $validator, &$hasErrors): void {
+                    $fail = function ($message) use ($attribute, $validator): void {
                         /** @var \Illuminate\Validation\Validator $validator */
 
                         // Add validation error to validator
@@ -731,13 +727,10 @@ class ValidationServiceProvider extends ServiceProvider
                             $attribute,
                             self::failMessageString($message)
                         );
-
-                        // Set error flag to true
-                        $hasErrors = true;
                     };
 
                     // Call validate method on rule with fail callback. The closure
-                    // intentionally records the message and flips $hasErrors rather
+                    // intentionally records the message rather
                     // than returning the chainable PotentiallyTranslatedString that
                     // Laravel's interface declares; the ValidationRule implementations
                     // invoked here call $fail($message) without chaining.
@@ -771,134 +764,6 @@ class ValidationServiceProvider extends ServiceProvider
             }
         );
 
-        // Register the message replacer (only for Rule interface, not ValidationRule)
-        Validator::replacer(
-            $ruleName,
-            function ($message, $attribute, $rule, array $parameters) use ($ruleName, $parameterMap, $ruleClass) {
-                /** @var string $attribute */
-                /** @var list<string> $parameters */
-
-                // ---
-                // Check if this is a ValidationRule interface using reflection. If so, skip
-                // message replacement. ValidationRule provides messages via the $fail callback in
-                // validate(), which may use inline strings or translation files.
-                // ---
-
-                // Create reflection class instance to inspect rule class
-                $reflection = new ReflectionClass($ruleClass);
-
-                // Check if rule implements ValidationRule interface
-                if ($reflection->implementsInterface(ValidationRule::class)) {
-                    // Return original message as-is
-                    return $message;
-                }
-
-                // Map parameters if mapping is provided
-                $mappedParameters = $this->mapParameters(
-                    $parameters,
-                    $parameterMap
-                );
-
-                // Get the type parameter (usually the second parameter)
-                $type = $mappedParameters[1] ?? 'default';
-
-                // Use the language file message based on type, with fallback to generic message
-                $messageKey = sprintf('validation.%s.%s', $ruleName, $type);
-
-                // ---
-                // Check if the specific type message exists, otherwise use the generic fallback
-                // ---
-
-                // Check if translation key doesn't exist (translation equals key)
-                if (trans($messageKey) === $messageKey) {
-                    // Use generic message key without type suffix
-                    $messageKey = 'validation.'.$ruleName;
-                }
-
-                // ---
-                // Ensure the final message key resolves to a string. Some rules define a
-                // nested array (e.g. ['default' => ..., 'invalid' => ...]); in that case use
-                // the `default` message to prevent array values from reaching formatter logic.
-                // ---
-
-                // Resolve translated message value for the current key
-                $resolvedMessage = trans($messageKey);
-
-                // Check if translation resolved to an array value
-                if (\is_array($resolvedMessage)) {
-                    // Resolve the default message key for nested translation arrays
-                    $defaultMessageKey = $messageKey.'.default';
-
-                    // Check if nested default key exists
-                    if (trans($defaultMessageKey) !== $defaultMessageKey) {
-                        // Update message key to nested default when available
-                        $messageKey = $defaultMessageKey;
-                    } else {
-                        // Fall back to generic required-string message key
-                        $messageKey = 'validation.required';
-                    }
-                }
-
-                // Build replacement array dynamically based on message content
-                $replacements = ['attribute' => $attribute];
-
-                // Get the message template to detect what parameters it needs
-                $messageTemplate = trans(
-                    $messageKey,
-                    [],
-                    'en'
-                );
-
-                // ---
-                // Extract parameter names from the message template (e.g., :date, :value, etc.)
-                // ---
-
-                // Extract parameter placeholders from message template using regex
-                preg_match_all(
-                    '/:(\w+)/',
-                    $messageTemplate,
-                    $matches
-                );
-
-                // Get matched parameter names from regex results
-                $neededParams = $matches[1];
-
-                // ---
-                // Use mapped parameters if provided
-                // ---
-
-                // Check if parameter map is provided
-                if ($parameterMap !== []) {
-                    // Loop through mapped parameters
-                    foreach ($mappedParameters as $index => $value) {
-                        // Get parameter name from map
-                        $paramName = $parameterMap[$index];
-
-                        // Add parameter to replacements array
-                        $replacements[$paramName] = $value;
-                    }
-                } else { // Otherwise
-                    // ---
-                    // Provide parameters based on what the message actually needs
-                    // ---
-
-                    // Loop through needed parameters from message template
-                    foreach ($neededParams as $paramIndex => $paramName) {
-                        // Check if parameter is not 'attribute' and exists in mapped parameters
-                        if ($paramName !== 'attribute' && isset($mappedParameters[$paramIndex])) {
-                            // Add parameter to replacements array
-                            $replacements[$paramName] = $mappedParameters[$paramIndex];
-                        }
-                    }
-                }
-
-                // Return translated message with replacements
-                return trans(
-                    $messageKey,
-                    $replacements
-                );
-            }
-        );
     }
 
     /**
@@ -912,10 +777,7 @@ class ValidationServiceProvider extends ServiceProvider
      */
     private static function failMessageString(mixed $message): string
     {
-        if (is_string($message)) {
-            return $message;
-        }
-
+        // A string is a scalar, so it is returned unchanged here
         if (is_scalar($message) || $message instanceof \Stringable) {
             return (string) $message;
         }
@@ -924,16 +786,15 @@ class ValidationServiceProvider extends ServiceProvider
     }
 
     /**
-     * Map validation rule parameters to named values for use in validation messages.
+     * Keep the validation rule parameters at the positions a parameter map names.
      *
      * This method takes the raw parameters array from Laravel's validation system
-     * and maps them to named values based on the provided parameter map. This allows
-     * for more descriptive validation messages that use meaningful parameter names
-     * instead of positional indices.
+     * and keeps the parameters at the positions the map names, null where one is
+     * missing. With no map, the parameters are returned as they are.
      *
      * @param  list<string>  $parameters  The original parameters array from Laravel's validator
      * @param  array<int, string>  $parameterMap  Mapping of parameter positions to descriptive names
-     * @return array<int, string|null> The mapped parameters array with named keys
+     * @return array<int, string|null> The parameters at the mapped positions, keyed by position
      */
     protected function mapParameters(
         array $parameters,

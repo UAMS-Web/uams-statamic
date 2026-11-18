@@ -157,7 +157,10 @@ final class EnumDataUtils
             // Only backed enum cases carry a backing value to key the map by;
             // skip pure (non-backed) cases rather than fataling on getBackingValue().
             if (! $case instanceof \ReflectionEnumBackedCase) {
-                // Skip non-backed case
+                // Skip non-backed case. An enum is pure or backed as a whole, so
+                // either every case is skipped here or none is, and breaking out
+                // instead of continuing leaves the same map.
+                // @pest-mutate-ignore: ContinueToBreak
                 continue;
             }
 
