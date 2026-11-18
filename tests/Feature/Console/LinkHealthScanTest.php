@@ -237,7 +237,8 @@ function lhsScanOutput(array $options = []): string
 {
     Artisan::call('link-health:scan', $options);
 
-    return Artisan::output();
+    // The console writes PHP_EOL, which is "\r\n" on Windows; the assertions use "\n"
+    return str_replace("\r\n", "\n", Artisan::output());
 }
 
 /**
