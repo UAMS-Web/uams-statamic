@@ -128,7 +128,9 @@ class CustomFieldComposer
                         ->all(),
                 ];
 
-                // PHP keys a null handle as '', so the cast changes no key
+                // PHP keys a null handle as '', so the cast changes no key:
+                // removing it is an equivalent mutant (handle() is ?string).
+                // @pest-mutate-ignore: RemoveStringCast
                 return [(string) $fieldset->handle() => $payload];
             }
         )->sortBy('title');
