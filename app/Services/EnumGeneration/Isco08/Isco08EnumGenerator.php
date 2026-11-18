@@ -21,6 +21,21 @@ final class Isco08EnumGenerator
     public const string URL_INDEX_XLSX = 'https://www.ilo.org/ilostat-files/ISCO/newdocs-08-2021/ISCO-08/ISCO-08%20-88%20EN%20Index.xlsx';
 
     /**
+     * Downloads one ILO workbook to a file; GeneratorUtils::downloadToFile() unless a test passes another.
+     *
+     * @var \Closure(string, string, array<string, string>, int): bool
+     */
+    private readonly \Closure $downloadToFile;
+
+    /**
+     * @param  ?\Closure(string, string, array<string, string>, int): bool  $downloadToFile  Replaces GeneratorUtils::downloadToFile() (tests only)
+     */
+    public function __construct(?\Closure $downloadToFile = null)
+    {
+        $this->downloadToFile = $downloadToFile ?? GeneratorUtils::downloadToFile(...);
+    }
+
+    /**
      * Default paths for repo-shipped fixtures under `app/Services/EnumGeneration/Isco08/`
      * (used by `php artisan generate:isco-08-enum --local`).
      *
@@ -86,7 +101,7 @@ final class Isco08EnumGenerator
     private function downloadToTemp(string $url, string $prefix, string $suffix): string
     {
         $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.$prefix.uniqid('', true).$suffix;
-        $ok = GeneratorUtils::downloadToFile(
+        $ok = ($this->downloadToFile)(
             $url,
             $path,
             ['Accept' => '*/*'],
@@ -110,12 +125,7 @@ final class Isco08EnumGenerator
         array $definitionsByCode,
         array $titlesByCode,
     ): array {
-        $union = array_unique(
-            array_merge(
-                $this->codeKeys($definitionsByCode),
-                $this->codeKeys($titlesByCode),
-            )
-        );
+        $union = $this->codeKeys($definitionsByCode + $titlesByCode);
         if ($union === []) {
             throw new ValueError(
                 'No ISCO-08 codes found: the definitions and index workbooks produced no valid code rows.',
@@ -128,13 +138,9 @@ final class Isco08EnumGenerator
                 continue;
             }
 
-            $def = $definitionsByCode[$code] ?? null;
-            $title = $def !== null && $def['title_en'] !== ''
-                ? $def['title_en']
-                : '';
             $byCode[$code] = [
                 'code' => $code,
-                'title' => $title,
+                'title' => $definitionsByCode[$code]['title_en'] ?? '',
             ];
         }
 
@@ -158,10 +164,10 @@ final class Isco08EnumGenerator
 
         return [
             'level' => $n,
-            'major_group' => $n >= 1 ? substr($code, 0, 1) : '',
+            'major_group' => substr($code, 0, 1),
             'sub_major_group' => $n >= 2 ? substr($code, 0, 2) : null,
             'minor_group' => $n >= 3 ? substr($code, 0, 3) : null,
-            'unit_group' => $n >= 4 ? substr($code, 0, 4) : null,
+            'unit_group' => $n >= 4 ? $code : null,
         ];
     }
 
@@ -172,26 +178,19 @@ final class Isco08EnumGenerator
      */
     private function ensureHierarchyUnitsFromPrefixes(array &$byCode): void
     {
-        $needed = [];
-        foreach ($this->codeKeys($byCode) as $u) {
-            $needed[$u] = true;
-            $walk = $u;
-            while (strlen($walk) > 1) {
-                $walk = substr($walk, 0, -1);
-                $needed[$walk] = true;
-            }
-        }
-
-        foreach ($this->codeKeys($needed) as $code) {
-            if (isset($byCode[$code])) {
+        foreach ($this->codeKeys($byCode) as $unit) {
+            // Every prefix of a numeric code is numeric, and none of any other code is.
+            if (! $this->isNumericIscoCode($unit)) {
                 continue;
             }
 
-            if (! $this->isNumericIscoCode($code)) {
-                continue;
-            }
+            foreach ($this->ancestorsForUnit($unit) as $code) {
+                if (isset($byCode[$code])) {
+                    continue;
+                }
 
-            $byCode[$code] = $this->syntheticStructureRow($code);
+                $byCode[$code] = $this->syntheticStructureRow($code);
+            }
         }
     }
 
@@ -215,13 +214,9 @@ final class Isco08EnumGenerator
         $sheets = Excel::toArray(new SpreadsheetImport, $path);
         $parsed = $this->parseSheetWithHeader(
             $sheets,
-            [
-                'isco 08 code',
-                'isco-08 code',
-                'isco-08',
-                'isco08 code',
-            ],
-            ['title en', 'title', 'definition'],
+            // `isco-08` also finds an `ISCO-08 Code` heading, and `title` a `Title EN` one.
+            ['isco 08 code', 'isco-08', 'isco08 code'],
+            ['title', 'definition'],
         );
         if ($parsed === null) {
             throw new ValueError('Could not locate definitions sheet in '.$path);
@@ -250,13 +245,12 @@ final class Isco08EnumGenerator
         $notesCol = $col['notes'] ?? null;
 
         $out = [];
-        for ($r = $headerIndex + 1, $max = count($rows); $r < $max; $r++) {
-            $line = $rows[$r];
-            $code = $this->normalizeIscoCode($line[$codeCol] ?? '');
-            if ($code === '') {
-                continue;
-            }
-
+        // Reading from the header row itself changes nothing: its code cell holds the
+        // column's name, which is never a numeric code, so that row is skipped.
+        // @pest-mutate-ignore: DecrementInteger
+        $dataRows = array_slice($rows, $headerIndex + 1);
+        foreach ($dataRows as $line) {
+            $code = $this->normalizeIscoCode($line[$codeCol] ?? null);
             if (! $this->isNumericIscoCode($code)) {
                 continue;
             }
@@ -308,33 +302,26 @@ final class Isco08EnumGenerator
         }
 
         $byCode = [];
-        for ($r = $headerIndex + 1, $max = count($rows); $r < $max; $r++) {
-            $line = $rows[$r];
-            $code = $this->normalizeIscoCode($line[$codeCol] ?? '');
-            if ($code === '') {
-                continue;
-            }
-
+        // Reading from the header row itself changes nothing: its code cell holds the
+        // column's name, which is never a numeric code, so that row is skipped.
+        // @pest-mutate-ignore: DecrementInteger
+        $dataRows = array_slice($rows, $headerIndex + 1);
+        foreach ($dataRows as $line) {
+            $code = $this->normalizeIscoCode($line[$codeCol] ?? null);
             if (! $this->isNumericIscoCode($code)) {
                 continue;
             }
 
             $title = trim($this->toStringValue($line[$titleCol] ?? ''));
-            if ($title === '') {
-                continue;
-            }
-
             if (mb_strlen($title) < 2) {
                 continue;
             }
 
-            $byCode[$code] ??= [];
-
-            $byCode[$code][$title] = true;
+            $byCode[$code][] = $title;
         }
 
-        foreach ($byCode as $c => $set) {
-            $list = array_keys($set);
+        foreach ($byCode as $c => $titles) {
+            $list = array_unique($titles);
             natcasesort($list);
             $byCode[$c] = array_values($list);
         }
@@ -363,7 +350,7 @@ final class Isco08EnumGenerator
             if ($def !== null && $def['title_en'] !== '') {
                 $title = $def['title_en'];
             } elseif ($title === '' && $titles !== []) {
-                $title = (string) $titles[0];
+                $title = $titles[0];
             }
 
             $definition = $def['definition'] ?? '';
@@ -402,19 +389,29 @@ final class Isco08EnumGenerator
     {
         $units = $this->codeKeys($merged);
         usort($units, $this->compareIscoCodes(...));
-        $unitSet = array_fill_keys($units, true);
+        $unitSet = array_flip($units);
+        // Units are sorted, so each parent's children are listed in order as they are added.
         $childrenByParent = [];
         foreach ($units as $u) {
             $p = $this->parentCode($u);
+            // A list kept under a parent that is not itself a unit is never read: only
+            // units' own codes are looked up below.
+            // @pest-mutate-ignore: BooleanAndToBooleanOr
             if ($p !== null && isset($unitSet[$p])) {
-                $childrenByParent[$p] ??= [];
-
                 $childrenByParent[$p][] = $u;
             }
         }
 
-        foreach (array_keys($childrenByParent) as $p) {
-            usort($childrenByParent[$p], $this->compareIscoCodes(...));
+        // Longest codes first, so each child's descendants are known before its parent's.
+        $descendantsByUnit = [];
+        foreach (array_reverse($units) as $u) {
+            $descendants = [];
+            foreach ($childrenByParent[$u] ?? [] as $child) {
+                $descendants = [...$descendants, $child, ...($descendantsByUnit[$child] ?? [])];
+            }
+
+            usort($descendants, $this->compareIscoCodes(...));
+            $descendantsByUnit[$u] = $descendants;
         }
 
         foreach ($units as $u) {
@@ -429,55 +426,29 @@ final class Isco08EnumGenerator
                 static fn (string $a): bool => isset($unitSet[$a])
             ));
             $children = $childrenByParent[$u] ?? [];
-            $descendants = $this->collectDescendants($u, $childrenByParent);
-            usort($descendants, $this->compareIscoCodes(...));
             $merged[$u]['parent'] = $parent;
             $merged[$u]['ancestors'] = $ancestors;
             $merged[$u]['children'] = $children;
-            $merged[$u]['descendants'] = $descendants;
+            $merged[$u]['descendants'] = $descendantsByUnit[$u];
         }
     }
 
     /**
-     * @param  array<string, list<string>>  $childrenByParent
-     * @return array<int, string>
-     */
-    private function collectDescendants(string $unit, array $childrenByParent): array
-    {
-        $out = [];
-        $stack = $childrenByParent[$unit] ?? [];
-        $seen = [];
-        while ($stack !== []) {
-            $c = array_pop($stack);
-            if (isset($seen[$c])) {
-                continue;
-            }
-
-            $seen[$c] = true;
-            $out[] = $c;
-            foreach ($childrenByParent[$c] ?? [] as $next) {
-                $stack[] = $next;
-            }
-        }
-
-        usort($out, $this->compareIscoCodes(...));
-
-        return $out;
-    }
-
-    /**
-     * @return array<int, string>
+     * The codes above a unit, top first: each shorter prefix of its code.
+     *
+     * @return list<string>
      */
     private function ancestorsForUnit(string $unit): array
     {
-        $chain = [];
-        $u = $unit;
-        while (strlen($u) > 1) {
-            $u = substr($u, 0, -1);
-            $chain[] = $u;
+        $length = strlen($unit);
+        if ($length < 2) {
+            return [];
         }
 
-        return array_reverse($chain);
+        return array_map(
+            static fn (int $prefixLength): string => substr($unit, 0, $prefixLength),
+            range(1, $length - 1),
+        );
     }
 
     private function parentCode(string $code): ?string
@@ -516,14 +487,6 @@ final class Isco08EnumGenerator
 
     private function normalizeIscoCode(mixed $value): string
     {
-        if ($value === null) {
-            return '';
-        }
-
-        if (is_float($value) || is_int($value)) {
-            return (string) $value;
-        }
-
         $s = trim($this->toStringValue($value));
         if (preg_match('/^(\d+)\.0+$/', $s, $m)) {
             return $m[1];
@@ -546,19 +509,25 @@ final class Isco08EnumGenerator
      */
     private function findColumnIndexExact(array $headerRow, array $normalizedNames): ?int
     {
-        $want = [];
-        foreach ($normalizedNames as $n) {
-            $want[$n] = true;
-        }
-
+        $want = array_flip($normalizedNames);
         foreach ($headerRow as $idx => $name) {
-            $key = strtolower(trim(preg_replace('/\s+/', ' ', $this->toStringValue($name)) ?? ''));
-            if ($key !== '' && isset($want[$key])) {
-                return (int) $idx;
+            if (isset($want[$this->normalizeHeaderName($name)])) {
+                return $idx;
             }
         }
 
         return null;
+    }
+
+    /**
+     * A header cell lowercased and trimmed, with each run of whitespace made one space.
+     */
+    private function normalizeHeaderName(mixed $name): string
+    {
+        // preg_replace() returns null only when matching fails, which this fixed pattern
+        // over a byte string (no `u` flag) never does.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
+        return strtolower(trim(preg_replace('/\s+/', ' ', $this->toStringValue($name)) ?? ''));
     }
 
     private function normalizeMultiline(string $s): string
@@ -616,14 +585,10 @@ final class Isco08EnumGenerator
     {
         $limit = min(60, count($rows));
         for ($i = 0; $i < $limit; $i++) {
-            $joined = '';
-            foreach ($rows[$i] as $cell) {
-                $joined .= '|'.strtolower(trim($this->toStringValue($cell)));
-            }
-
-            $joined .= '|';
-            $hasCode = array_any($codeHeaderCandidates, fn (string $cand): bool => str_contains($joined, '|'.$cand.'|')
-                || str_contains($joined, '|'.$cand)
+            $cells = array_map(fn (mixed $cell): string => strtolower(trim($this->toStringValue($cell))), $rows[$i]);
+            $joined = '|'.implode('|', $cells).'|';
+            // A cell that starts or ends with a candidate holds it; one equal to it does both.
+            $hasCode = array_any($codeHeaderCandidates, fn (string $cand): bool => str_contains($joined, '|'.$cand)
                 || str_contains($joined, $cand.'|'));
 
             if (! $hasCode) {
@@ -648,9 +613,9 @@ final class Isco08EnumGenerator
     {
         $col = [];
         foreach ($headerRow as $idx => $name) {
-            $key = strtolower(trim(preg_replace('/\s+/', ' ', $this->toStringValue($name)) ?? ''));
+            $key = $this->normalizeHeaderName($name);
             if ($key !== '' && ! isset($col[$key])) {
-                $col[$key] = (int) $idx;
+                $col[$key] = $idx;
             }
         }
 
@@ -767,6 +732,9 @@ DOC."\n";
             "\t" => '\\t',
         ]);
 
+        // preg_replace_callback() returns null only when matching fails, which this
+        // fixed byte class (no `u` flag) never does.
+        // @pest-mutate-ignore: RemoveStringCast
         $escaped = (string) preg_replace_callback(
             '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/',
             static fn (array $m): string => sprintf('\\x%02X', ord($m[0])),
