@@ -226,6 +226,7 @@ function credentialRegistryFixtureReader(array &$requested): Closure
         'ceterms:Sub:Term' => [],
         'ceterms:Spaced ' => [],
         'asn:Statement' => [],
+        'skos:Concept' => [],
         'qdata:DataSet' => [],
         'ceasn:Competency' => [],
         'ceterms:FooBar' => [],
@@ -352,6 +353,8 @@ enum CredentialRegistry: string
     case QdataDataSet = 'qdata:DataSet';
     #[CredentialRegistryTypeInfo(slug: 'Thing', uri: 'https://schema.org/Thing', shorthand_uri: 'schema:Thing', label: 'Thing', definition: '', comment: '', usage_note: '', term_type: 'rdfs:Class', status: '', same_as: '', subclass_of: '', children: ['ceterms:Badge'], ancestors: [], descendants: ['ceterms:Badge', 'ceterms:Leaf'], property_names: [], in_range_of: ['ceterms:name', 'ceterms:ownedBy'])]
     case SchemaThing = 'schema:Thing';
+    #[CredentialRegistryTypeInfo(slug: 'Concept', uri: 'http://www.w3.org/2004/02/skos/core#Concept', shorthand_uri: 'skos:Concept', label: 'Concept', definition: '', comment: '', usage_note: '', term_type: 'rdfs:Class', status: '', same_as: '', subclass_of: '', children: [], ancestors: [], descendants: [], property_names: [], in_range_of: [])]
+    case SkosConcept = 'skos:Concept';
 
     /**
      * CredentialRegistryTypeInfo attribute for this case (via reflection).

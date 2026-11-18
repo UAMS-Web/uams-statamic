@@ -323,10 +323,8 @@ final class CredentialRegistryEnumGenerator
                 // Pop next node to expand; the reachable set is sorted afterward, so the visiting order cannot change the result (ArrayPopToArrayShift)
                 // @pest-mutate-ignore: ArrayPopToArrayShift
                 $current = array_pop($stack);
-                if (isset($seen[$current])) {
-                    continue;
-                }
 
+                // A node popped a second time is marked again and pushes nothing, since its neighbors are already seen
                 // Only the key is read, so the stored value cannot change the result (TrueToFalse)
                 // @pest-mutate-ignore: TrueToFalse
                 $seen[$current] = true;
