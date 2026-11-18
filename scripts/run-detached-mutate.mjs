@@ -27,6 +27,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { mutatePestArgs } from './run-detached-mutate-args.mjs';
 import { needsShell, which, winQuote } from './spawn-helpers.mjs';
 
 const HEARTBEAT_MS = 30_000;
@@ -149,26 +150,7 @@ if (!php) {
     process.exit(1);
 }
 
-const pestArgs = [
-    path.join(
-        'vendor',
-        'bin',
-        'pest',
-    ),
-    testFile,
-    '--mutate',
-    `--path=${pathArg}`,
-    `--class=${className}`,
-    '--covered-only',
-    '--no-cache',
-    '--compact',
-];
-if (parallel !== undefined) {
-    pestArgs.push('--parallel');
-    if (parallel !== 'true' && parallel !== '') {
-        pestArgs.push(`--processes=${parallel}`);
-    }
-}
+const pestArgs = mutatePestArgs({ testFile, pathArg, className, parallel });
 const shell = needsShell(php);
 const child = spawn(
     shell ? winQuote(php) : php,
