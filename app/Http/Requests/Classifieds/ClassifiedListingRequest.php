@@ -92,9 +92,10 @@ class ClassifiedListingRequest extends FormRequest
 
     /**
      * The image container's own upload rules, so a front-end upload meets exactly what a
-     * Control Panel upload does.
+     * Control Panel upload does. The keys are left as the container stored them: `rules()`
+     * merges them after a list, and `array_merge` renumbers integer keys.
      *
-     * @return list<string>
+     * @return array<int, string>
      */
     private function imageRules(): array
     {
@@ -110,9 +111,6 @@ class ClassifiedListingRequest extends FormRequest
         /** @var array<int, mixed> $rules */
         $rules = $container->validationRules();
 
-        /** @var list<string> $strings */
-        $strings = array_values(array_filter($rules, is_string(...)));
-
-        return $strings;
+        return array_filter($rules, is_string(...));
     }
 }
