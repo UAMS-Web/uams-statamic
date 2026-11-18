@@ -73,6 +73,14 @@ final class AreaOfExpertiseSectionDocument implements Augmentable, ContainsQuery
     }
 
     /**
+     * The parent Area of Expertise's entry id.
+     */
+    public function areaOfExpertiseId(): string
+    {
+        return $this->aoeId;
+    }
+
+    /**
      * The augmented data the results template reads (`{{ url }}`, `{{ title }}`) and the
      * index extracts searchable field values from. Only the fields a consumer actually reads
      * are exposed — the entry id and section token live in the reference, not here.
