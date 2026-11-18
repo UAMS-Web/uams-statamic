@@ -138,11 +138,10 @@ class OnetOccupationOverviewService
         // Optional spacing between requests (single-process throttle).
         // ---
 
-        // Get the delay from the configuration
-        /** @var scalar $delayMsConfig */
+        // Get the delay from the configuration; an unset delay reads as 0
+        /** @var scalar|null $delayMsConfig */
         $delayMsConfig = config(
-            'services.onet_web_services.delay_ms',
-            0
+            'services.onet_web_services.delay_ms'
         );
         $delayMs = (int) $delayMsConfig;
 
@@ -198,10 +197,9 @@ class OnetOccupationOverviewService
         // Get the data from the API response
         $data = $response->json();
 
-        // Check if the data is an array
+        // A body that is not a JSON object reads as one with no fields
         if (! \is_array($data)) {
-            // Return null to signal that the data is not an array
-            return null;
+            $data = [];
         }
 
         // Get the title from the data

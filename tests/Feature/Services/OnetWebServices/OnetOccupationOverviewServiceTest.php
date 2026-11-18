@@ -322,6 +322,7 @@ it('builds the request URL from the base URL, without a doubled slash', function
 })->with([
     'a trailing slash' => ['https://onet.example.test/v2//', 'https://onet.example.test/v2/online/occupations/17-2051.00/'],
     'the default when unset' => [null, 'https://api-v2.onetcenter.org/online/occupations/17-2051.00/'],
+    'a base URL that is not a string' => [8080, '8080/online/occupations/17-2051.00/'],
 ]);
 
 it('returns null for a response it cannot use', function (int $status, array|string $body) {
@@ -357,6 +358,7 @@ it('pauses for the configured delay, in microseconds', function (mixed $configur
     expect($pauses)->toBe($expected);
 })->with([
     'a delay' => [200, [200_000]],
+    'a one-millisecond delay' => [1, [1_000]],
     'a fractional numeric string' => ['200.5', [200_000]],
     'no delay' => [0, []],
     'a negative delay' => [-5, []],
