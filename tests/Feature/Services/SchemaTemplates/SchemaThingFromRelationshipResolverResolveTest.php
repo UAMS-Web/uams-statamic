@@ -20,6 +20,8 @@ use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Data;
 use Statamic\Facades\GlobalSet;
 use Statamic\Globals\Variables;
+use Statamic\Taxonomies\LocalizedTerm;
+use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
@@ -618,6 +620,24 @@ it('skips a keyword target that is neither a term nor an entry, and reads the ne
     );
 
     expect($json)->toBe('["Heart","Cardiac"]');
+});
+
+it('reads keywords from a taxonomy term target in its default locale', function (): void {
+    /** @var LocalizedTerm&MockInterface $localized */
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('data')->andReturn(collect(['title' => 'Cardiology', 'same_as' => [['url' => 'https://www.wikidata.org/wiki/Q10379']]]));
+    /** @var TaxonomyTerm&MockInterface $term */
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('inDefaultLocale')->andReturn($localized);
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart']));
+
+    $json = thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(
+        ['about' => [$term, $subject]],
+        ['current_field' => 'about']
+    );
+
+    expect($json)->toBe('["Cardiology","https://www.wikidata.org/wiki/Q10379","Heart"]');
 });
 
 it('lazily resolves the fragment cache from the container when none is injected', function (): void {

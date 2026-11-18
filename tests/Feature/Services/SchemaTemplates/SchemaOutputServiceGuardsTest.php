@@ -1,0 +1,434 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Services\SchemaTemplates\JsonLdCompositionProfiler;
+use App\Services\SchemaTemplates\MedicalOrganizationSubtypeAtTypeResolver;
+use App\Services\SchemaTemplates\PodcastEpisodeAtTypeResolver;
+use App\Services\SchemaTemplates\SchemaClassificationsIdentifiersMerger;
+use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
+use App\Services\SchemaTemplates\SchemaJsonLdSchemaObjectEmissionCoordinator;
+use App\Services\SchemaTemplates\SchemaOutputService;
+use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
+use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
+use App\Support\RequestAttributeMemo;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
+use Mockery\MockInterface;
+use Statamic\Contracts\Data\Augmentable;
+use Statamic\Contracts\Taxonomies\Term;
+use Statamic\Entries\Entry as EntryModel;
+use Statamic\Facades\Entry as EntryFacade;
+use Statamic\Fields\Field;
+use Statamic\Fields\Value;
+use Statamic\Taxonomies\LocalizedTerm;
+use Tests\TestCase;
+
+uses(TestCase::class, MockeryPHPUnitIntegration::class);
+
+covers(SchemaOutputService::class);
+
+/**
+ * Pins the guard branches of {@see SchemaOutputService} that the rendering suites
+ * do not reach: early returns for empty, missing, skipped or unparseable input in
+ * the type override, property value, `@id` suffix, template instance index,
+ * terms-like field, overlay slug and memo helpers, and in
+ * `schemaObjectEntryToNode()` and `buildStandaloneSchemaObjectNodeSharingEmittedNodeIds()`.
+ * Collaborators are stubbed on a partial mock and `Entry::find()` by a partial
+ * facade mock, so each guard is asserted on its own.
+ *
+ * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaOutputServiceGuardsTest.php
+ */
+
+/**
+ * The service as a partial mock.
+ */
+function sosGuardService(): SchemaOutputService&MockInterface
+{
+    /** @var SchemaOutputService&MockInterface $service */
+    $service = Mockery::mock(SchemaOutputService::class, [
+        app(SchemaTemplatesCascadeService::class),
+        app(SchemaClassificationsIdentifiersMerger::class),
+        app(SchemaJsonLdAtIdDeduplication::class),
+        app(SchemaJsonLdSchemaObjectEmissionCoordinator::class),
+        app(JsonLdCompositionProfiler::class),
+        app(MedicalOrganizationSubtypeAtTypeResolver::class),
+        app(PodcastEpisodeAtTypeResolver::class),
+    ])
+        ->makePartial()
+        ->shouldAllowMockingProtectedMethods();
+
+    return $service;
+}
+
+/**
+ * Call a non-public method of the service.
+ */
+function sosGuardCall(SchemaOutputService $service, string $method, mixed ...$args): mixed
+{
+    return (new ReflectionMethod(SchemaOutputService::class, $method))->invoke($service, ...$args);
+}
+
+/**
+ * Call `resolvePropertyValue()` with no context entity.
+ */
+function sosGuardResolveProperty(SchemaOutputService $service, mixed $value): mixed
+{
+    $emittedEntryIds = [];
+    $emittedNodeIds = [];
+    $materialized = [];
+
+    return (new ReflectionMethod(SchemaOutputService::class, 'resolvePropertyValue'))->invokeArgs($service, [
+        $value,
+        null,
+        [],
+        [],
+        &$emittedEntryIds,
+        &$emittedNodeIds,
+        &$materialized,
+        [],
+        null,
+    ]);
+}
+
+/**
+ * Call `schemaObjectEntryToNode()` with no context entity.
+ *
+ * @param  array<int, string>  $visitedIds  Entry ids being built.
+ */
+function sosGuardEntryToNode(SchemaOutputService $service, string $entryId, array $visitedIds = []): mixed
+{
+    $emittedEntryIds = [];
+    $emittedNodeIds = [];
+    $materialized = [];
+
+    return (new ReflectionMethod(SchemaOutputService::class, 'schemaObjectEntryToNode'))->invokeArgs($service, [
+        $entryId,
+        null,
+        [],
+        $visitedIds,
+        &$emittedEntryIds,
+        &$emittedNodeIds,
+        &$materialized,
+        [],
+        null,
+        null,
+    ]);
+}
+
+/**
+ * A blueprint field mock with a handle and a `max_items` setting.
+ */
+function sosGuardField(string $handle, mixed $maxItems): Field&MockInterface
+{
+    /** @var Field&MockInterface $field */
+    $field = Mockery::mock(Field::class);
+    $field->shouldReceive('handle')->andReturn($handle);
+    $field->shouldReceive('get')->with('max_items')->andReturn($maxItems);
+
+    return $field;
+}
+
+it('normalizes a type override list to unique trimmed names, unwrapping values', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'normalizeTypeOverrideContextList', [new Value(' Person '), 'Person', 7, 1.5, '', '  ', true, null, ['Thing']]))
+        ->toBe(['Person', '7', '1.5']);
+});
+
+it('finds a type override compatible only through a known type\'s ancestors', function (array $override, array $entry, bool $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'typeOverrideListIsCompatibleWithEntryTypes', $override, $entry))->toBe($expected);
+})->with([
+    'the same name' => [['Thing'], ['Thing'], true],
+    'an unknown override' => [['NotARealSchemaOrgType'], ['Thing'], false],
+    'a subtype of the entry type' => [['Person'], ['Thing'], true],
+    'an unrelated known type' => [['Person'], ['Place'], false],
+]);
+
+it('reads no structure parent for an entry whose page is missing', function (): void {
+    /** @var EntryModel&MockInterface $entry */
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('hasStructure')->andReturnTrue();
+    $entry->shouldReceive('page')->andReturnNull();
+
+    expect(sosGuardCall(sosGuardService(), 'getStructureParentId', $entry))->toBeNull();
+});
+
+it('decides whether a property value is set', function (mixed $value, bool $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'isValueSetAndNonEmpty', $value))->toBe($expected);
+})->with([
+    'an inherit_custom group' => [['mode' => 'inherit_custom', 'value' => []], true],
+    'a disabled group' => [['mode' => 'disable'], true],
+    'a custom group with rows' => [['mode' => 'custom', 'value' => [['type' => 'text']]], true],
+    'a custom group with no rows' => [['mode' => 'custom', 'value' => []], false],
+    'an inherit group' => [['mode' => 'inherit'], false],
+    'a non-group list' => [['alpha'], true],
+    'an empty array' => [[], false],
+    'a scalar' => [0, true],
+]);
+
+it('decides whether a group\'s custom rows are set', function (mixed $value, bool $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'propertyValueRowsNonEmpty', $value))->toBe($expected);
+})->with([
+    'null' => [null, false],
+    'an empty string' => ['', false],
+    'an empty list' => [[], false],
+    'rows' => [[['type' => 'text']], true],
+    'a legacy string' => ['legacy', true],
+]);
+
+it('replays nothing from a scalar cached fragment', function (): void {
+    $emittedEntryIds = ['a'];
+    $emittedNodeIds = ['#a' => true];
+    $materialized = ['#a' => true];
+
+    sosGuardService()->replayEmitSideEffectsFromCachedNodeFragment('not a node', $emittedEntryIds, $emittedNodeIds, $materialized);
+
+    expect($emittedEntryIds)->toBe(['a']);
+    expect($emittedNodeIds)->toBe(['#a' => true]);
+    expect($materialized)->toBe(['#a' => true]);
+});
+
+it('builds no node for an entry already being built, missing, or without a schema or type', function (): void {
+    $lookups = [];
+    $untyped = Mockery::mock(EntryModel::class);
+    $blankTyped = Mockery::mock(EntryModel::class);
+    EntryFacade::partialMock()->shouldReceive('find')->andReturnUsing(function (string $id) use (&$lookups, $untyped, $blankTyped): ?EntryModel {
+        $lookups[] = $id;
+
+        return ['untyped' => $untyped, 'blank-typed' => $blankTyped][$id] ?? null;
+    });
+    $service = sosGuardService();
+    $service->shouldReceive('getEffectiveSchema')->andReturnUsing(
+        fn (EntryModel $entry): ?array => $entry === $blankTyped ? ['type' => ['', null], 'properties' => []] : null
+    );
+
+    expect(sosGuardEntryToNode($service, 'visiting', ['visiting']))->toBeNull();
+    expect(sosGuardEntryToNode($service, 'missing'))->toBeNull();
+    expect(sosGuardEntryToNode($service, 'untyped'))->toBeNull();
+    expect(sosGuardEntryToNode($service, 'blank-typed'))->toBeNull();
+    expect($lookups)->toBe(['missing', 'untyped', 'blank-typed']);
+});
+
+it('builds a standalone node with no graph ids when there is no context entity', function (): void {
+    $service = sosGuardService();
+    $seen = [];
+    $service->shouldReceive('schemaObjectEntryToNode')->andReturnUsing(function (string $id, mixed $entity, array $graphEntryIds) use (&$seen): array {
+        $seen = ['id' => $id, 'entity' => $entity, 'graph' => $graphEntryIds];
+
+        return ['@type' => 'Thing', '@id' => '#'.$id];
+    });
+    $emittedNodeIds = [];
+    $materialized = [];
+
+    $node = $service->buildStandaloneSchemaObjectNodeSharingEmittedNodeIds('tpl-1', null, [], $emittedNodeIds, $materialized);
+
+    expect($node)->toBe(['@type' => 'Thing', '@id' => '#tpl-1']);
+    expect($seen)->toBe(['id' => 'tpl-1', 'entity' => null, 'graph' => []]);
+});
+
+it('suffixes a canonical @id with a template instance index', function (string $atId, string $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'appendTemplateInstanceIndexToCanonicalAtId', $atId, 2))->toBe($expected);
+})->with([
+    'no fragment' => ['https://example.test/org', 'https://example.test/org-2'],
+    'an empty fragment' => ['https://example.test/#', 'https://example.test/#2'],
+    'a fragment' => ['https://example.test/#org', 'https://example.test/#org-2'],
+    'the last fragment of several' => ['https://example.test/#a#org', 'https://example.test/#a#org-2'],
+]);
+
+it('scopes the instance watermark by the entity id', function (mixed $entity, string $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'scopeEntityIdForTemplateInstanceWatermark', $entity))->toBe($expected);
+})->with([
+    'no entity' => [null, ''],
+    'an entity with no id accessor' => fn (): array => [new class implements Term {}, ''],
+    'an integer id' => fn (): array => [new class implements Term
+    {
+        public function id(): int
+        {
+            return 5;
+        }
+    }, '5'],
+    'a non-scalar id' => fn (): array => [new class implements Term
+    {
+        /** @return list<string> */
+        public function id(): array
+        {
+            return ['5'];
+        }
+    }, ''],
+]);
+
+it('reads the effective template instance index without a watermark', function (array $context, ?int $expected): void {
+    $method = new ReflectionMethod(SchemaOutputService::class, 'resolveEffectiveTemplateInstanceIndexForWatermark');
+
+    expect($method->invoke(sosGuardService(), 'tpl-1', null, [], $context, null, false))->toBe($expected);
+})->with([
+    'no index' => [[], null],
+    'an unparseable index' => [[SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 'two'], null],
+    'a negative index' => [[SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => -1], null],
+    'a numeric string' => [[SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => '3'], 3],
+    'an integer' => [[SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 0], 0],
+]);
+
+it('allocates through the watermark bag when one is given', function (): void {
+    $method = new ReflectionMethod(SchemaOutputService::class, 'resolveEffectiveTemplateInstanceIndexForWatermark');
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+
+    expect($method->invoke(sosGuardService(), 'tpl-1', null, [], [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 3], $bag, false))
+        ->toBeInt();
+});
+
+it('resolves an empty property value to nothing', function (mixed $value): void {
+    expect(sosGuardResolveProperty(sosGuardService(), $value))->toBeNull();
+})->with([
+    'null' => [null],
+    'an empty string' => [''],
+    'an empty row list' => [[]],
+    'a disabled group' => [['mode' => 'disable', 'value' => [['type' => 'text', 'value' => 'X']]]],
+    'an object' => [new stdClass],
+]);
+
+it('keeps the inherited base of an inherit_custom group with no rows of its own', function (): void {
+    $value = ['mode' => 'inherit_custom', 'value' => 'not rows', '_inherit_base' => 'Inherited'];
+
+    expect(sosGuardResolveProperty(sosGuardService(), $value))->toBe('Inherited');
+});
+
+it('skips disabled rows and rows that resolve to an empty string', function (): void {
+    $service = sosGuardService();
+    $service->shouldReceive('resolveSingleReplicatorRowToValue')->andReturnUsing(
+        fn (array $row): mixed => $row['value'] ?? null
+    );
+
+    $out = sosGuardResolveProperty($service, [
+        ['type' => 'text', 'value' => 'Hidden', 'enabled' => false],
+        ['type' => 'text', 'value' => ''],
+        ['type' => 'text', 'value' => 'Shown'],
+    ]);
+
+    expect($out)->toBe('Shown');
+});
+
+it('merges two resolved property values', function (mixed $a, mixed $b, mixed $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'mergeAdditiveResolvedPropertyValues', $a, $b))->toBe($expected);
+})->with([
+    'both null' => [null, null, null],
+    'both empty strings' => ['', '', null],
+    'null and an empty string' => [null, '', null],
+    'only the second' => ['', 'B', 'B'],
+    'only the first' => ['A', null, 'A'],
+    'two empty lists' => [[], [], null],
+]);
+
+it('has no pair-strip pattern for a handle that is not an identifier', function (string $handle): void {
+    expect(sosGuardCall(sosGuardService(), 'pairStripRegexPatternForTermsLikeHandle', $handle))->toBe('');
+})->with([
+    'a dash' => ['bad-handle'],
+    'a leading digit' => ['9tags'],
+    'a space' => ['tag s'],
+]);
+
+it('strips only pair bodies for usable terms handles', function (): void {
+    $template = '{{ tags }}{{ schema_object }}{{ /tags }}{{ bad-handle }}x{{ /bad-handle }}{{ title }}';
+
+    expect(sosGuardCall(sosGuardService(), 'stripTermsLikeFieldPairBodiesForFillMissingAnalysis', $template, ['', 'bad-handle', 'tags']))
+        ->toBe('{{ bad-handle }}x{{ /bad-handle }}{{ title }}');
+});
+
+it('skips an empty handle when hydrating grouped terms fields', function (): void {
+    $context = ['' => ['alpha'], 'title' => 'Post'];
+
+    expect(sosGuardCall(sosGuardService(), 'hydrateMergedContextTermsLikeFieldsIfRawSlugs', null, $context, ['' => [sosGuardField('', null)]]))
+        ->toBe($context);
+});
+
+it('skips empty, reserved and absent overlay keys when hydrating overlay slugs', function (): void {
+    $context = [
+        '' => 'alpha',
+        SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 'alpha',
+        SchemaOutputService::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM => 'alpha',
+    ];
+    $overlay = $context + ['absent' => 'alpha'];
+    $template = '{{ schema_primary_related_taxonomy_term }}';
+
+    expect(sosGuardCall(sosGuardService(), 'hydrateAntlersOverlayTermSlugValuesIfRaw', $context, $overlay, $template))->toBe($context);
+});
+
+it('selects no terms field from no candidates', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'selectTermsLikeBlueprintFieldForMergedValue', [], ['alpha']))->toBeNull();
+});
+
+it('selects the multi-select field for a stored slug list', function (): void {
+    $single = sosGuardField('tags', 1);
+    $multi = sosGuardField('tags', null);
+
+    expect(sosGuardCall(sosGuardService(), 'selectTermsLikeBlueprintFieldForMergedValue', [$single, $multi], ['alpha', 'beta']))->toBe($multi);
+});
+
+it('keys a terms augment parent with no readable id by its pinned identity', function (mixed $id): void {
+    /** @var LocalizedTerm&MockInterface $parent */
+    $parent = Mockery::mock(LocalizedTerm::class);
+    $parent->shouldReceive('id')->andReturn($id);
+    $service = sosGuardService();
+
+    $key = sosGuardCall($service, 'memoKeyForTermsAugmentParent', $parent);
+
+    expect($key)->toBeString()->toStartWith($parent::class.'::');
+    expect($key)->not->toBe($parent::class.'::');
+    expect(sosGuardCall($service, 'memoKeyForTermsAugmentParent', $parent))->toBe($key);
+})->with([
+    'null' => [null],
+    'an empty string' => [''],
+]);
+
+it('keys a terms augment parent whose id accessor throws by its pinned identity', function (): void {
+    /** @var LocalizedTerm&MockInterface $parent */
+    $parent = Mockery::mock(LocalizedTerm::class);
+    $parent->shouldReceive('id')->andThrow(new RuntimeException('No id on this double.'));
+
+    $key = sosGuardCall(sosGuardService(), 'memoKeyForTermsAugmentParent', $parent);
+
+    expect($key)->toBeString()->toStartWith($parent::class.'::');
+    expect($key)->not->toBe($parent::class.'::');
+});
+
+it('omits a property that resolves to an empty string from the built node', function (): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('get')->andReturnNull();
+    $entry->shouldReceive('id')->andReturn('tpl-1');
+    EntryFacade::partialMock()->shouldReceive('find')->with('tpl-1')->andReturn($entry);
+    $service = sosGuardService();
+    $service->shouldReceive('getEffectiveSchema')->andReturn(['type' => 'Thing', 'properties' => ['name' => 'raw', 'description' => 'raw']]);
+    $service->shouldReceive('entryIdToNodeId')->andReturn('https://example.test/#tpl-1');
+    $service->shouldReceive('resolvePropertyValue')->andReturnUsing(
+        fn (mixed $value, mixed $entity, array $graph, array $visited, array &$a, array &$b, array &$c, array $context): string => $context[SchemaOutputService::ANTLERS_SCHEMA_PROPERTY_KEY] === 'name' ? '' : 'Kept'
+    );
+
+    $node = mustBeArray(sosGuardEntryToNode($service, 'tpl-1'), 'the built node');
+
+    expect($node)->not->toHaveKey('name');
+    expect($node['description'] ?? null)->toBe('Kept');
+});
+
+it('collects no terms-like fields from an augmentable with no blueprint', function (): void {
+    /** @var Augmentable&MockInterface $entity */
+    $entity = Mockery::mock(Augmentable::class);
+
+    expect(sosGuardCall(sosGuardService(), 'collectTermsLikeBlueprintFieldsGroupedByHandleUncached', $entity))->toBe([]);
+});
+
+it('hydrates a slug list holding a non-slug item without the memo', function (): void {
+    $present = ['alpha', 7];
+    RequestAttributeMemo::remember('_app_schema_output_raw_term_slug_hydration_memo', 'l'.hash('xxh128', 'alpha'), static fn (): array => ['in' => ['alpha'], 'out' => 'memoized']);
+
+    expect(sosGuardCall(sosGuardService(), 'memoizedHydrateRawTermSlugValueToAugmentedValue', $present))->not->toBe('memoized');
+});
+
+it('hydrates directly when the memo row was stored for a different input', function (): void {
+    RequestAttributeMemo::remember('_app_schema_output_raw_term_slug_hydration_memo', 's'.'alpha', static fn (): array => ['in' => 'beta', 'out' => 'memoized']);
+
+    expect(sosGuardCall(sosGuardService(), 'memoizedHydrateRawTermSlugValueToAugmentedValue', 'alpha'))->not->toBe('memoized');
+});
+
+it('reuses the memo row stored for the same input', function (): void {
+    RequestAttributeMemo::remember('_app_schema_output_raw_term_slug_hydration_memo', 's'.'alpha', static fn (): array => ['in' => 'alpha', 'out' => 'memoized']);
+
+    expect(sosGuardCall(sosGuardService(), 'memoizedHydrateRawTermSlugValueToAugmentedValue', 'alpha'))->toBe('memoized');
+});
