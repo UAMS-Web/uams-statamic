@@ -19,7 +19,8 @@ covers(AreaOfExpertiseSectionProvider::class);
 /**
  * The branches of {@see AreaOfExpertiseSectionProvider} that the content-backed
  * `AreaOfExpertiseSectionSearchTest` cannot reach: a malformed index key, an Area of
- * Expertise with no usable title, URL or locale, and the collection filter on `provide()`.
+ * Expertise with no usable title, URL or locale, the collection filter on `provide()`, and
+ * the guards that turn away an entry that is not searchable or has no string id (#875).
  *
  * Each Area of Expertise here is a Mockery `Entry`, and the section resolver is a mock bound
  * in the container, so a case can hand the provider exactly the shape it needs.
@@ -187,4 +188,54 @@ it('resolves its section resolver once and reuses it', function (): void {
     $provider->documentFor($entry, 'locations');
 
     expect($builds)->toBe(1);
+});
+
+/**
+ * An Area of Expertise entry with the given status, `searchable` toggle and id, and no
+ * other stubs, so any read past the guards under test fails the case.
+ */
+function mockAoeGuardEntry(string $status, mixed $searchable, mixed $id): Entry
+{
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('status')->andReturn($status);
+    $entry->shouldReceive('get')->with('searchable')->andReturn($searchable);
+    $entry->shouldReceive('id')->andReturn($id);
+
+    return $entry;
+}
+
+/**
+ * Bind a section resolver that must not be asked for anything.
+ */
+function bindUnusedAoeSectionResolver(): void
+{
+    $resolver = Mockery::mock(ClinicalExpertiseSectionResolver::class);
+    $resolver->shouldReceive('populatedSections')->never();
+    $resolver->shouldReceive('resolve')->never();
+
+    app()->instance(ClinicalExpertiseSectionResolver::class, $resolver);
+}
+
+it('lists no section references for an entry without a string id, without asking the resolver', function (): void {
+    bindUnusedAoeSectionResolver();
+
+    expect((new AreaOfExpertiseSectionProvider)->sectionReferencesFor(mockAoeGuardEntry('published', null, null)))
+        ->toBe([]);
+});
+
+it('builds no document for an entry that is not searchable, without asking the resolver', function (string $status, mixed $searchable): void {
+    bindUnusedAoeSectionResolver();
+
+    expect((new AreaOfExpertiseSectionProvider)->documentFor(mockAoeGuardEntry($status, $searchable, 'aoe-1'), 'locations'))
+        ->toBeNull();
+})->with([
+    'a draft' => ['draft', null],
+    'flagged out of search' => ['published', false],
+]);
+
+it('builds no document for a populated section of an entry without a string id', function (): void {
+    bindAoeSectionResolver();
+
+    expect((new AreaOfExpertiseSectionProvider)->documentFor(mockAoeGuardEntry('published', null, null), 'locations'))
+        ->toBeNull();
 });
