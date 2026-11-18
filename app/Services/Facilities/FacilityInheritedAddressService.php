@@ -229,20 +229,23 @@ final class FacilityInheritedAddressService
     }
 
     /**
-     * Resolve the entry's blueprint handle, or an empty string when unavailable.
+     * Resolve the entry's blueprint handle, or null when unavailable.
+     *
+     * Its one caller compares the result with a blueprint handle, which a null never
+     * matches, so no empty-string stand-in is needed.
      */
     private function blueprintHandle(
         Entry $entry
-    ): string {
+    ): ?string {
         // Read the entry's blueprint (untyped on the entry contract)
         $blueprint = $entry->blueprint();
 
         // Treat a missing or unexpected blueprint as no handle
         if (! $blueprint instanceof Blueprint) {
-            return '';
+            return null;
         }
 
-        // Return the blueprint handle or an empty string when unavailable
-        return $blueprint->handle() ?? '';
+        // Return the blueprint handle, which may itself be null
+        return $blueprint->handle();
     }
 }
