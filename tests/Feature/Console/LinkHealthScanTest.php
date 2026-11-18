@@ -252,14 +252,18 @@ function lhsListedKeys(string $output): array
     return $matches[1];
 }
 
-it('announces the collection step and leaves one blank line between the progress bar and the summary', function (): void {
+it('announces the collection step, advances once per occurrence, and leaves a blank line before the summary', function (): void {
     lhsMakeEntry('lhs-a', ['cta_url' => '/lhs/nowhere']);
+    lhsMakeEntry('lhs-b', ['cta_url' => '/lhs/elsewhere']);
 
     $output = lhsScanOutput(['--skip-external' => true]);
 
+    // The first advance always draws: the bar has never written, so its redraw interval is
+    // already past. The step it draws is the evidence each occurrence advanced the bar.
     expect($output)->toStartWith("Collecting link occurrences...\n")
-        ->and($output)->toContain(' 1/1 [')
-        ->and($output)->toContain("] 100%\n\nOccurrences:   1\n");
+        ->and($output)->toContain(' 1/2 [')
+        ->and($output)->toContain(' 2/2 [')
+        ->and($output)->toContain("] 100%\n\nOccurrences:   2\n");
 });
 
 it('lists a newly broken link by its full occurrence key', function (): void {
