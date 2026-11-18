@@ -63,6 +63,7 @@ final class ExcludeNonSearchableCollections extends Scope
         'post_categories',
         'post_tags',
         'redirect_domains',
+        'redirect_hosts',
         'reusable_content',
         'schema_objects',
         'subject_matter',
