@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Policies\CustomUserPolicy;
-use App\Policies\ScopedEntryPolicy;
 use App\Services\LinkHealth\LinkClassifier;
 use App\Support\Forms\MultisiteSubmissionSite;
 use App\Support\Imaging\BrandLogoRasterizer;
 use App\Support\Imaging\SvgRasterizer;
-use App\Support\People\PeopleEditingScope;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Auth\Authenticatable; // Added by studio1902/statamic-peak
 use Illuminate\Contracts\View\Factory; // Added by studio1902/statamic-peak
@@ -21,16 +19,11 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route; // Added by studio1902/statamic-peak
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
-use Statamic\Entries\Collection as EntryCollection;
 use Statamic\Entries\Entry as EntryItem;
 use Statamic\Facades\Entry as EntryFacade;
 use Statamic\Facades\Permission;
 use Statamic\Facades\Site as SiteFacade;
-use Statamic\Facades\User as UserFacade;
-use Statamic\Hooks\CP\EntriesIndexQuery;
-use Statamic\Policies\EntryPolicy;
 use Statamic\Policies\UserPolicy;
-use Statamic\Query\Builder as QueryBuilder;
 use Statamic\Sites\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Statamic;
@@ -69,12 +62,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             UserPolicy::class,
             CustomUserPolicy::class
-        );
-
-        // Scope `people` editing to the organizations of the editor's user groups (UAMS-Web/uams-statamic-archive#3182)
-        $this->app->bind(
-            EntryPolicy::class,
-            ScopedEntryPolicy::class
         );
 
         // Name a submission's site as the multisite forms add-on records it, for the
@@ -190,41 +177,6 @@ class AppServiceProvider extends ServiceProvider
         // Register the resource permission gating the field-trigger activate
         // endpoint (UAMS-Web/uams-statamic-archive#863)
         $this->bootPermissions();
-
-        // Show a scoped editor only the `people` entries in their scope (UAMS-Web/uams-statamic-archive#3182)
-        $this->bootPeopleEditingScope();
-    }
-
-    /**
-     * Limit the Control Panel `people` listing and search to a scoped editor's entries.
-     *
-     * The entry policy stops a scoped editor opening an entry outside their
-     * organizations; this keeps those entries out of the listing and its search
-     * results too, so the editor is never offered a row they cannot open. The
-     * listing query and the search query both reach this hook, and both accept
-     * `whereIn('id', ...)`.
-     */
-    public function bootPeopleEditingScope(): void
-    {
-        EntriesIndexQuery::hook('query', function (mixed $payload, \Closure $next): mixed {
-            /** @var object{query: mixed, collection: mixed} $payload */
-            $collection = $payload->collection;
-            $query = $payload->query;
-            $user = UserFacade::current();
-            $scope = app(PeopleEditingScope::class);
-
-            if (
-                $collection instanceof EntryCollection
-                && $collection->handle() === PeopleEditingScope::COLLECTION
-                && $query instanceof QueryBuilder
-                && $user !== null
-                && $scope->appliesTo($user)
-            ) {
-                $query->whereIn('id', $scope->editableEntryIds($user));
-            }
-
-            return $next($payload);
-        });
     }
 
     /**

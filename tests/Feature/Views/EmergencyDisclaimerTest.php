@@ -24,7 +24,7 @@ it('renders the shared 911 emergency disclaimer with the call-911 guidance', fun
 });
 
 it('includes the 911 disclaimer above the listing on each Find-a-Doc directory index', function (string $index, string $listing): void {
-    $src = File::get(resource_path("views/{$index}"));
+    $src = File::get(servedResourcePath("views/{$index}"));
 
     // The disclaimer is included via the single shared partial (not duplicated copy)...
     expect($src)->toContain('partial:components/emergency_disclaimer_911');

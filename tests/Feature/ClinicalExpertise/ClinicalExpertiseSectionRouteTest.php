@@ -45,5 +45,15 @@ it('constrains {section} to exactly the resolver tokens', function () {
 
     expect($route)->not->toBeNull();
     expect($route->wheres['section'] ?? null)->toBe(ClinicalExpertiseSectionResolver::routeConstraint());
-    expect($route->wheres['entry'] ?? null)->toBe('.*');
+    expect($route->wheres['entry'] ?? null)->toBe('(?!api/).*');
+});
+
+it('leaves the Find-a-Doc read API to its own routes', function () {
+    // `providers` is a section token, so this URL would otherwise reach the section route (#696)
+    expect(matchedRouteUri('/api/v1/find-a-doc/providers'))->toBe('api/v1/find-a-doc/providers')
+        ->and(matchedRouteUri('/api/v1/find-a-doc/providers/some-id'))->toBe('api/v1/find-a-doc/providers/{provider}');
+
+    // A page whose path only contains `api` is still a section URL
+    expect(matchedRouteUri('/rapid-care/providers'))->toBe('{entry}/{section}')
+        ->and(matchedRouteUri('/clinics/api-lab/providers'))->toBe('{entry}/{section}');
 });

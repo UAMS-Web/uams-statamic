@@ -494,6 +494,161 @@ it('refuses an ALLOWLIST row that names no parallelism rule', function (string $
     'no rule' => ['[]'],
 ]);
 
+// --- Rule F: a band test that writes an entry or term to the shared mirror --------
+
+/**
+ * A Rule F fixture: a file on `$base` whose one test runs `$body`, with the entry,
+ * term and other Statamic facades imported as a real test imports them.
+ */
+$mirrorFixture = function (string $base, string $body, string $chain = ''): string {
+    $short = substr((string) strrchr('\\'.$base, '\\'), 1);
+
+    return "use {$base};\n"
+        ."use Statamic\\Facades\\Entry;\n"
+        ."use Statamic\\Facades\\Entry as EntryFacade;\n"
+        ."use Statamic\\Facades\\Term;\n"
+        ."use Statamic\\Facades\\Collection;\n"
+        ."use Statamic\\Facades\\Blueprint;\n"
+        ."use Statamic\\Facades\\User;\n\n"
+        ."uses({$short}::class);\n\n"
+        ."it('writes', function () {\n{$body}\n}){$chain};\n";
+};
+
+$entrySave = "    \$entry = Entry::make();\n    \$entry->collection('pages');\n    \$entry->save();";
+$termSave = "    \$term = Term::make('probe');\n    \$term->taxonomy('tags');\n    \$term->save();";
+
+it('flags a band test on a shared-mirror base that makes and saves an entry or a term, naming file and line', function (string $base, string $kind) use ($mirrorFixture, $entrySave, $termSave, $writeFixture, $runGuard, $cleanup) {
+    [$dir, $file] = $writeFixture($mirrorFixture($base, $kind === 'entry' ? $entrySave : $termSave));
+
+    try {
+        $process = $runGuard($dir);
+
+        // The save is the fixture's 16th line, after the opening tag, the imports and the it( line
+        expect($process->getExitCode())->toBe(1)
+            ->and($process->getErrorOutput())->toContain(str_replace('\\', '/', $file).':16', 'Rule F');
+    } finally {
+        $cleanup($dir);
+    }
+})->with([
+    'TestCase' => ['Tests\\TestCase'],
+    'CollectionTreeIsolatedTestCase' => ['Tests\\Support\\CollectionTreeIsolatedTestCase'],
+    'StacheCacheOnlyIsolatedTestCase' => ['Tests\\Support\\StacheCacheOnlyIsolatedTestCase'],
+])->with(['entry', 'term']);
+
+it('passes the same writes on a base that isolates entries and terms', function (string $base, string $kind) use ($mirrorFixture, $entrySave, $termSave, $writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture($mirrorFixture($base, $kind === 'entry' ? $entrySave : $termSave));
+
+    try {
+        expect($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+})->with([
+    'EntriesAndTermsIsolatedTestCase' => ['Tests\\Support\\EntriesAndTermsIsolatedTestCase'],
+    'EntriesTermsAndTreesIsolatedTestCase' => ['Tests\\Support\\EntriesTermsAndTreesIsolatedTestCase'],
+    'StacheIsolatedTestCase' => ['Tests\\Support\\StacheIsolatedTestCase'],
+])->with(['entry', 'term']);
+
+it('passes the same writes in the serial group', function (string $kind, string $where) use ($mirrorFixture, $entrySave, $termSave, $writeFixture, $runGuard, $cleanup) {
+    $fixture = $mirrorFixture('Tests\\TestCase', $kind === 'entry' ? $entrySave : $termSave, $where === 'per test' ? "->group('serial')" : '');
+
+    if ($where === 'whole file') {
+        $fixture = str_replace('uses(TestCase::class);', "uses(TestCase::class)->group('serial');", $fixture);
+    }
+
+    [$dir] = $writeFixture($fixture);
+
+    try {
+        expect($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+})->with(['entry', 'term'])->with(['per test', 'whole file']);
+
+it('does not flag a tree, collection, blueprint or user save', function (string $body) use ($mirrorFixture, $writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture($mirrorFixture('Tests\\TestCase', $body));
+
+    try {
+        expect($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+})->with([
+    // The shape BrowserWriteIsolationTest saves its collection in
+    'a collection' => ["    \$collection = Collection::make('probe');\n    \$collection->save();"],
+    'a tree' => ["    \$tree = Collection::find('pages')->structure()->in('default');\n    \$tree->save();"],
+    'a blueprint' => ["    \$blueprint = Blueprint::make('probe');\n    \$blueprint->save();"],
+    'a user' => ["    \$user = User::make();\n    \$user->save();"],
+    'a class reference to the entry facade' => ["    \$class = Entry::class;\n    \$other = new stdClass;\n    \$other->save();"],
+]);
+
+it('does not flag BrowserWriteIsolationTest, whose collection, blueprint and user saves are real', function () use ($root, $runGuard, $cleanup) {
+    $dir = sys_get_temp_dir().'/pguard-real-'.bin2hex(random_bytes(6));
+    mkdir($dir);
+    copy($root.'/tests/Feature/BrowserWriteIsolationTest.php', $dir.'/BrowserWriteIsolationTest.php');
+
+    try {
+        expect((string) file_get_contents($dir.'/BrowserWriteIsolationTest.php'))->toContain('$collection->save();')
+            ->and($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+});
+
+it('flags an entry write in each form a test writes one', function (string $body) use ($mirrorFixture, $writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture($mirrorFixture('Tests\\TestCase', $body));
+
+    try {
+        $process = $runGuard($dir);
+
+        expect($process->getExitCode())->toBe(1)
+            ->and($process->getErrorOutput())->toContain('Rule F');
+    } finally {
+        $cleanup($dir);
+    }
+})->with([
+    'an aliased facade, reassigned through its setters' => ["    \$entry = EntryFacade::make();\n    \$entry = \$entry->slug('probe');\n    \$entry->saveQuietly();"],
+    'a fetched entry, wrapped in a narrowing helper' => ["    \$entry = mustBe(Statamic\\Entries\\Entry::class, Entry::find('id'), 'the entry');\n    expect(\$entry->save())->toBeTrue();"],
+    'one chain from the facade to the save' => ["    Entry::make()->collection('pages')->slug('probe')->save();"],
+    'a fully qualified facade' => ["    \$entry = \\Statamic\\Facades\\Entry::make();\n    \$entry->save();"],
+    'a new entry' => ["    \$entry = new \\Statamic\\Entries\\Entry;\n    \$entry->save();"],
+    'a delete in a finally block' => ["    \$entry = Entry::find('id');\n    try {\n        expect(true)->toBeTrue();\n    } finally {\n        \$entry->delete();\n    }"],
+    'a quiet delete' => ["    \$term = Term::find('tags::probe');\n    \$term->deleteQuietly();"],
+]);
+
+it('flags an entry write in a beforeEach on a shared-mirror base', function () use ($writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture("use Statamic\\Facades\\Entry;\nuse Tests\\TestCase;\n\nuses(TestCase::class);\n\nbeforeEach(function () {\n    \$entry = Entry::make();\n    \$entry->save();\n});\n\nit('reads', fn () => expect(true)->toBeTrue());\n");
+
+    try {
+        $process = $runGuard($dir);
+
+        expect($process->getExitCode())->toBe(1)
+            ->and($process->getErrorOutput())->toContain('Rule F');
+    } finally {
+        $cleanup($dir);
+    }
+});
+
+it('ignores an entry write that appears only in a comment or a string', function () use ($mirrorFixture, $writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture($mirrorFixture('Tests\\TestCase', "    // \$entry = Entry::make(); \$entry->save();\n    \$text = 'Entry::make()->save()';\n    expect(\$text)->toBeString();"));
+
+    try {
+        expect($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+});
+
+it('does not check a file with no uses() base', function () use ($writeFixture, $runGuard, $cleanup) {
+    [$dir] = $writeFixture("use Statamic\\Facades\\Entry;\n\nit('writes', function () {\n    \$entry = Entry::make();\n    \$entry->save();\n});\n");
+
+    try {
+        expect($runGuard($dir)->getExitCode())->toBe(0);
+    } finally {
+        $cleanup($dir);
+    }
+});
+
 it('passes clean when no fragile pattern is present', function () use ($writeFixture, $runGuard, $cleanup) {
     [$dir] = $writeFixture("it('fine', function () {\n    expect(true)->toBeTrue();\n});\n");
 

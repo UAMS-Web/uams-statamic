@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modifiers;
 
-use App\Support\People\ProviderNarrativeLanguage;
 use Statamic\Modifiers\Modifier;
+use UAMSWeb\Aether\People\Support\ProviderNarrativeLanguage;
 
 /**
  * Antlers modifier `{{ value | indefinite_article }}`: the indefinite article

@@ -18,7 +18,7 @@ uses(TestCase::class);
  * a person flagged "no profile page" (`profile_page_query === false`) renders
  * an UNLINKED heading even when a `url` is present, while a person with a
  * profile page is linked. The strict `!== false` guard in the partial mirrors
- * `App\Entries\PersonEntry::route()`, so suppression is consistent end to end.
+ * `UAMSWeb\Aether\People\Entries\PersonEntry::route()`, so suppression is consistent end to end.
  *
  * Template-only (Antlers partial); content-gated like the sibling
  * `PeopleShowcaseJobTitlePartialTest` — the partial and the `people` collection

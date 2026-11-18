@@ -21,7 +21,7 @@ uses(TestCase::class);
  * @command php artisan test --compact tests/Feature/Views/ProviderEligibilityFilterWiringTest.php
  */
 it('wires the eligibility filter at every provider-relationship render site', function (string $template, string $needle): void {
-    $src = File::get(resource_path($template));
+    $src = File::get(servedResourcePath($template));
 
     expect($src)->toContain($needle);
 })->with([

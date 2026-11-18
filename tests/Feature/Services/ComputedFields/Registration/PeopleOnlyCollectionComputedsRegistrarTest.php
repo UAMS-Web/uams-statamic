@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Services\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
 use App\Services\ComputedFields\Registration\PeopleOnlyCollectionComputedsRegistrar;
-use App\Support\Collections\PeopleCollection;
 use App\Support\People\CertificationActivityValidity;
 use App\Support\People\PersonKnowsAboutComputer;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeopleListingComputedValues;
+use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 

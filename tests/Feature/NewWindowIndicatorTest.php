@@ -55,7 +55,7 @@ it('applies the indicator across the target=_blank template set', function (): v
     ];
 
     foreach ($sites as $site) {
-        expect(File::get(resource_path("views/{$site}")))
+        expect(File::get(servedResourcePath("views/{$site}")))
             ->toContain('partial:components/new_window_indicator');
     }
 });
