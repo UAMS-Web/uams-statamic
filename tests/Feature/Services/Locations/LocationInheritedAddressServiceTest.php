@@ -868,3 +868,11 @@ it('treats an entry with no blueprint as not a location, so it inherits nothing'
 
     expect(locationAddressResolver()->resolveStreetAddress($entry))->toBe('2 Own St.');
 });
+
+it('reads the international state variant for an address entered under that preset', function () {
+    $location = makeLocationEntry('loc1', null, [
+        'address' => ['preset' => 'international', 'state_province_region_international' => 'Bavaria'],
+    ]);
+
+    expect(locationAddressResolver()->resolveState($location))->toBe('Bavaria');
+});
