@@ -331,12 +331,9 @@ class KnowledgeBaseEntry extends Entry
             }
 
             // Read the tree as stored, without validateTree()'s top-level additions
+            /** @var array{tree: array<mixed>} $fileData */
             $fileData = $tree->fileData();
-            // Tree::fileData() always returns an array whose `tree` is a list (BooleanAndToBooleanOr)
-            // @pest-mutate-ignore: BooleanAndToBooleanOr
-            $stored = \is_array($fileData) && \is_array($fileData['tree'] ?? null)
-                ? $fileData['tree']
-                : [];
+            $stored = $fileData['tree'];
 
             // If the entry is already placed, skip adding it to prevent duplicates
             if (self::storedTreeContains($stored, $entry->id())) {
