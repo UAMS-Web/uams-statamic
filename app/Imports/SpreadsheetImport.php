@@ -11,8 +11,8 @@ use Maatwebsite\Excel\Concerns\ToArray;
  *
  * Callers pass it to `Excel::toArray()`, which returns each sheet's rows
  * itself; the class only tells `maatwebsite/excel` to read the file as plain
- * arrays. It is used by the `TableDataImporter` fieldtype and the ISCO-08
- * enum generator.
+ * arrays. It is used by the ISCO-08 enum generator; the `aether-tables`
+ * add-on's table data importer carries its own copy.
  */
 class SpreadsheetImport implements ToArray
 {
