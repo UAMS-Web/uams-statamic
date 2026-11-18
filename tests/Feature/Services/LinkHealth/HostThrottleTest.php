@@ -127,5 +127,9 @@ it('sleeps for real when no sleeper is injected', function (): void {
     (new HostThrottle($limiter, 1))->reserve('https://example.com/a');
     $elapsedMicro = intdiv(hrtime(true) - $started, 1_000);
 
-    expect($elapsedMicro)->toBeGreaterThanOrEqual(50_000);
+    // The floor is half the 50ms requested, not all of it. A Windows `usleep()` can return
+    // slightly early (49,095us was measured on a `windows-latest` runner, UAMS-Web/uams-statamic#1040),
+    // and the test only has to tell a real sleep from none: without `usleep()` the call
+    // takes well under a millisecond.
+    expect($elapsedMicro)->toBeGreaterThanOrEqual(25_000);
 });
