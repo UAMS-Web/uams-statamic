@@ -14,7 +14,8 @@ uses(TestCase::class);
  * Unit tests for upload title resolution (deslugify + getID3 title paths).
  *
  * Mutation: every mutant of App\Services\Assets\AssetUploadTitleResolver is killed
- * by this file (37 mutants, `--covered-only`, Windows 11, #883). One mutant is
+ * by this file, measured without `--covered-only` so the `TITLE_PATHS` items are in
+ * the population (#883). One mutant is
  * equivalent and carries `@pest-mutate-ignore` in the class: `EmptyStringToNotEmpty`
  * on the `?? ''` after `preg_replace()`, which returns null only when its pattern
  * fails, and the fixed `~[-_]~` pattern over a string cannot.
@@ -113,6 +114,38 @@ it('gives no title when the getID3 analysis fails', function () {
 
     expect((new AssetUploadTitleResolver)->resolveEmbeddedTitle($asset))->toBeNull();
 });
+
+/**
+ * A getID3 analysis payload carrying a title at one dot path and nowhere else.
+ *
+ * @param  string  $path  Dot path such as `id3v2.comments.title`.
+ * @return array<string, mixed> Nested payload with `['Only Here']` at `$path`.
+ */
+function titleOnlyAt(string $path): array
+{
+    // Wrap the title in one array level per path segment, innermost first
+    $analysis = ['Only Here'];
+    foreach (array_reverse(explode('.', $path)) as $segment) {
+        $analysis = [$segment => $analysis];
+    }
+
+    return $analysis;
+}
+
+it('reads a title found only at one known getID3 path', function (string $path) {
+    // Dropping this path from the lookup leaves the payload with no title it can find
+    expect((new AssetUploadTitleResolver)->firstTitleFromAnalysis(titleOnlyAt($path)))->toBe('Only Here');
+})->with([
+    'comments.title',
+    'id3v2.comments.title',
+    'id3v1.comments.title',
+    'quicktime.comments.title',
+    'matroska.comments.title',
+    'vorbiscomment.comments.title',
+    'riff.comments.title',
+    'asf.comments.title',
+    'mpeg.comments.title',
+]);
 
 it('passes over blank and non-text title candidates to the next usable one', function () {
     $resolver = new AssetUploadTitleResolver;
