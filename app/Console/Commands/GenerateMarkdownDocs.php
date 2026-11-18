@@ -624,14 +624,17 @@ class GenerateMarkdownDocs extends Command
         // Loop through each file found
         foreach ($allFiles as $file) {
             // Get the absolute path of the file's directory
-            $fileDir = realpath(dirname($file->getPathname()));
+            // The directory was just listed, so realpath() cannot return false and the
+            // cast changes nothing: removing it is an equivalent mutant.
+            // @pest-mutate-ignore: RemoveStringCast
+            $fileDir = (string) realpath(dirname($file->getPathname()));
 
-            // Both paths are realpath() of a directory that exists (one was just listed,
-            // the other was filtered to directories above), so neither can be false and
-            // neither cast changes anything: removing either is an equivalent mutant.
+            // Each exclusion was filtered to an existing directory above, so realpath()
+            // cannot have returned false and the cast changes nothing: removing it is an
+            // equivalent mutant.
             // @pest-mutate-ignore: RemoveStringCast
             $isExcluded = array_any($excludeFullPaths, fn (string|false $excludePath): bool => \str_starts_with(
-                (string) $fileDir,
+                $fileDir,
                 (string) $excludePath
             ));
 
