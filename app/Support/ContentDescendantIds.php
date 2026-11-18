@@ -146,8 +146,9 @@ final class ContentDescendantIds
         // Initialize the ordered list of descendant references
         $descendantRefs = [];
 
-        // Seed the seen set with the starting term so it is never re-emitted
-        $seenKeys = [$termReference => true];
+        // Seed the seen set with the starting term so it is never re-emitted; each
+        // reference is stored as its own value, so isset() reads a set membership
+        $seenKeys = [$termReference => $termReference];
 
         // Initialize the breadth-first queue with the starting term
         $queue = [$termReference];
@@ -159,14 +160,13 @@ final class ContentDescendantIds
 
             // Visit each child recorded under the current reference
             foreach ($childrenByParent[$currentReference] ?? [] as $childReference) {
-                // Skip references already seen (dedupe and cycle guard); the stored
-                // flag is read rather than isset(), which is true for a stored false
-                if ($seenKeys[$childReference] ?? false) {
+                // Skip references already seen (dedupe and cycle guard)
+                if (isset($seenKeys[$childReference])) {
                     continue;
                 }
 
                 // Record the child reference as seen
-                $seenKeys[$childReference] = true;
+                $seenKeys[$childReference] = $childReference;
 
                 // Append the child reference to the ordered list of descendants
                 $descendantRefs[] = $childReference;
