@@ -130,3 +130,30 @@ it('skips the shared rate limit when the store is not configured', function () {
     expect(data_get($result, 'title'))->toBe('Civil Engineers');
     Http::assertSentCount(1);
 });
+
+it('waits at least the configured delay before each request', function () {
+    Config::set('services.onet_web_services.delay_ms', 50);
+    Http::fake(['*' => Http::response(['title' => 'Civil Engineers'], 200)]);
+
+    $started = microtime(true);
+    app(OnetOccupationOverviewService::class)->overview('17-2051.00');
+
+    expect(microtime(true) - $started)->toBeGreaterThanOrEqual(0.04);
+});
+
+it('holds a request back until the shared per-second budget frees a slot', function () {
+    Config::set('services.onet_web_services.max_requests_per_second', 1);
+    $sentAt = [];
+    Http::fake(function () use (&$sentAt) {
+        $sentAt[] = time();
+
+        return Http::response(['title' => 'Civil Engineers'], 200);
+    });
+
+    $service = app(OnetOccupationOverviewService::class);
+    $service->overview('17-2051.00');
+    $service->overview('17-2051.01');
+
+    expect($sentAt)->toHaveCount(2)
+        ->and($sentAt[1])->toBeGreaterThan($sentAt[0]);
+});
