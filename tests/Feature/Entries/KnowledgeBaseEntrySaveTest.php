@@ -479,9 +479,14 @@ describe('localization on save', function (): void {
             ->and(kbLocalizationsOf('kb-glossary-child'))->toBe([]);
     });
 
-    it('logs and skips a child page whose entry cannot be found', function (): void {
+    it('logs and skips a child page whose entry cannot be found, and goes on to its siblings', function (): void {
         kbSeedWithGlossary();
-        $ghost = kbFind('kb-glossary-child');
+        $ghost = kbSaveEntry('kb-ghost', 'glossary', 'ghost');
+        kbSeed([$ghost], [['entry' => 'kb-root', 'children' => [
+            ['entry' => 'kb-ghost'],
+            ['entry' => 'kb-topic'],
+            ['entry' => 'kb-glossary', 'children' => [['entry' => 'kb-glossary-child']]],
+        ]]]);
         $root = kbFind('kb-root');
 
         // Memoize the tree with the child in it, then remove the entry behind it
@@ -493,9 +498,10 @@ describe('localization on save', function (): void {
 
         $log->shouldHaveReceived('warning')->with(
             'KnowledgeBaseEntry::localizeDescendantsFromStructure: Child entry not found in structure',
-            ['child_id' => 'kb-glossary-child', 'parent_id' => kbLocalizationsOf('kb-glossary')[0]],
+            ['child_id' => 'kb-ghost', 'parent_id' => 'kb-root-health'],
         )->once();
-        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1);
+        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
+            ->and(kbLocalizationsOf('kb-glossary-child'))->toHaveCount(1);
     });
 
     it('saves the localized root of an orderable collection, which has no tree to add it to', function (): void {
@@ -580,6 +586,26 @@ describe('makeLocalization', function (): void {
         kbLocalize(kbFind('kb-glossary'), 'kb-glossary-health')->save();
 
         expect(kbRawTree('health'))->toBe([['entry' => 'kb-glossary-health']]);
+    });
+
+    it('places a glossary localization at the top when its parent localization is not in the stored target tree', function (): void {
+        kbSeed([kbSaveEntry('kb-parent', 'glossary', 'parent'), kbSaveEntry('kb-child', 'glossary', 'child')], [
+            ['entry' => 'kb-parent', 'children' => [['entry' => 'kb-child']]],
+        ]);
+        kbLocalize(kbFind('kb-parent'), 'kb-parent-health')->save();
+        kbNewRequest();
+        kbStoreTree([], 'health');
+
+        kbLocalize(kbFind('kb-child'), 'kb-child-health')->save();
+
+        expect(kbRawTree('health'))->toBe([['entry' => 'kb-child-health']]);
+    });
+
+    it('finds an entry in a stored tree past a branch that is not an array', function (): void {
+        $contains = new ReflectionMethod(KnowledgeBaseEntry::class, 'storedTreeContains');
+
+        expect($contains->invoke(null, ['not a branch', ['entry' => 'a', 'children' => [['entry' => 'b']]]], 'b'))->toBeTrue()
+            ->and($contains->invoke(null, ['not a branch', ['entry' => 'a']], 'b'))->toBeFalse();
     });
 
     it('places nothing in a site the collection has no tree in', function (): void {
