@@ -67,6 +67,7 @@ parameters:
         - scripts/tia-blindness.php
         # The proxy generator its test requires (#971): symbol discovery only, like the line above.
         - scripts/search-update-proxy/SearchUpdateProxyGenerator.php
+        - scripts/search-update-proxy/XmlControlCharacterFilter.php
     excludePaths:
         # Large machine-generated reference-data enums (ISO 639 languages, ISO
         # 3166 countries, US ZIP codes/counties, ISCO/ISCED classifications,
