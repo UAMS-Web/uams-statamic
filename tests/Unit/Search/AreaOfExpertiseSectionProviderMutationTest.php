@@ -8,6 +8,7 @@ use App\Services\ClinicalExpertise\ClinicalExpertiseSectionResolver;
 use Statamic\Entries\Entry;
 use Statamic\Entries\EntryCollection;
 use Statamic\Facades\Entry as EntryFacade;
+use Statamic\Facades\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Tests\TestCase;
 
@@ -161,6 +162,15 @@ it('takes the site from the entry locale, or the default site without one', func
     'an empty locale' => ['', 'default'],
     'no locale' => [null, 'default'],
 ]);
+
+it('falls back to the handle of the default site, whatever it is named', function (): void {
+    Site::setSites([
+        'main' => ['name' => 'Main', 'url' => '/', 'locale' => 'en_US'],
+    ]);
+    bindAoeSectionResolver();
+
+    expect(aoeLocationsDocument(mockAoeEntry(locale: ''))->getQueryableValue('site'))->toBe('main');
+});
 
 it('resolves its section resolver once and reuses it', function (): void {
     $builds = 0;
