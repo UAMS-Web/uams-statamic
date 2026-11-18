@@ -38,21 +38,6 @@ namespace App\Services\EnumGeneration\Schema;
 final class SchemaJsonLdStructureAnalyzer
 {
     /**
-     * @var array<string, array{
-     *     value_types: array<string, int>,
-     *     array_element_types: array<string, int>,
-     *     object_shapes: array<string, int>,
-     *     count: int,
-     *     examples: list<mixed>,
-     *     nested_keys: array<string, true>,
-     *     array_length_min?: int,
-     *     array_length_max?: int,
-     *     max_string_length?: int,
-     *     string_contains_double_quote?: true,
-     *     string_contains_newline?: true,
-     * }>
-     */
-    /**
      * Per-key value statistics accumulated while walking the JSON-LD samples.
      *
      * @var array<string, array{
@@ -61,7 +46,7 @@ final class SchemaJsonLdStructureAnalyzer
      *     object_shapes: array<string, int>,
      *     count: int,
      *     examples: list<mixed>,
-     *     nested_keys: array<string, true>,
+     *     nested_keys: array<string, string>,
      *     array_length_min?: int,
      *     array_length_max?: int,
      *     max_string_length?: int,
@@ -77,13 +62,13 @@ final class SchemaJsonLdStructureAnalyzer
     /** @var array<string, int> Prefix (e.g., schema:, bibo:) => count */
     private array $idPrefixCounts = [];
 
-    /** @var array<string, true> Distinct @type values seen across nodes */
+    /** @var array<string, string> Distinct @type values seen across nodes, each keyed by itself */
     private array $distinctTypes = [];
 
     /** @var array<string, array<string, int>> Node type (e.g., rdfs:Class) => (key => occurrence count) */
     private array $keysPerNodeType = [];
 
-    /** @var array<string, true> Distinct @language values (e.g., en) from value objects */
+    /** @var array<string, string> Distinct @language values (e.g., en) from value objects, each keyed by itself */
     private array $languageTagsSeen = [];
 
     private const int EXAMPLE_MAX_LENGTH = 120;
@@ -146,7 +131,7 @@ final class SchemaJsonLdStructureAnalyzer
         $analyzer->analyze($data);
 
         // Write the report, as JSON when ANALYZE_OUTPUT asks for it.
-        $outputJson = (getenv('ANALYZE_OUTPUT') ?: '') === 'json';
+        $outputJson = getenv('ANALYZE_OUTPUT') === 'json';
         $reportFile = $scriptDir.'/schema-jsonld-structure-report.'.($outputJson ? 'json' : 'txt');
         $content = $outputJson
             ? json_encode($analyzer->getReport(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
@@ -211,7 +196,7 @@ final class SchemaJsonLdStructureAnalyzer
 
             $types = $this->normalizeTypeList($node['@type'] ?? null);
             foreach ($types as $t) {
-                $this->distinctTypes[$t] = true;
+                $this->distinctTypes[$t] = $t;
             }
 
             foreach ($node as $key => $unused) {
@@ -263,15 +248,15 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function normalizeTypeList(mixed $v): array
     {
-        if ($v === null) {
-            return [];
-        }
-
         if (is_string($v)) {
             return [$v];
         }
 
-        if (is_array($v) && array_is_list($v)) {
+        if (! is_array($v)) {
+            return [];
+        }
+
+        if (array_is_list($v)) {
             $out = [];
             foreach ($v as $item) {
                 if (is_string($item)) {
@@ -282,14 +267,9 @@ final class SchemaJsonLdStructureAnalyzer
             return $out;
         }
 
-        if (is_array($v) && isset($v['@id'])) {
-            $id = $v['@id'];
-            if (is_string($id)) {
-                return [$id];
-            }
-        }
+        $id = $v['@id'] ?? null;
 
-        return [];
+        return is_string($id) ? [$id] : [];
     }
 
     /**
@@ -314,7 +294,7 @@ final class SchemaJsonLdStructureAnalyzer
                 'object_shapes' => $stats['object_shapes'],
                 'count' => $stats['count'],
                 'examples' => $this->truncateExamples($stats['examples']),
-                'nested_keys' => empty($stats['nested_keys']) ? null : $this->summarizeNested($stats['nested_keys']),
+                'nested_keys' => $stats['nested_keys'] === [] ? null : $this->summarizeNested($stats['nested_keys']),
             ];
             if (isset($stats['array_length_min'], $stats['array_length_max'])) {
                 $entry['array_length_min'] = $stats['array_length_min'];
@@ -419,7 +399,7 @@ final class SchemaJsonLdStructureAnalyzer
                 $lines[] = '  examples: '.$this->formatExampleForLine($ex);
             }
 
-            if (! empty($stats['nested_keys'])) {
+            if ($stats['nested_keys'] !== []) {
                 $lines[] = '  nested_keys: '.implode(', ', array_keys($stats['nested_keys']));
             }
 
@@ -449,15 +429,11 @@ final class SchemaJsonLdStructureAnalyzer
 
         $this->addExample($key, $value);
 
-        $this->recordArrayLength($key, $value, $phpType);
-        $this->recordStringStats($key, $value, $phpType);
+        $this->recordArrayLength($key, $value);
+        $this->recordStringStats($key, $value);
         $this->recordLanguageTag($key, $value);
 
-        if ($value === null || $value === []) {
-            return;
-        }
-
-        if ($phpType === 'array' && is_array($value)) {
+        if (is_array($value)) {
             if (array_is_list($value)) {
                 $this->describeArrayElements($key, $value);
                 foreach ($value as $item) {
@@ -472,8 +448,7 @@ final class SchemaJsonLdStructureAnalyzer
                     }
 
                     $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
-                    $this->ensureKey($key);
-                    $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
+                    $this->keyStats[$key]['nested_keys'][$childKey] = $childKey;
 
                     $this->walk($childPath, $childValue);
                 }
@@ -482,7 +457,7 @@ final class SchemaJsonLdStructureAnalyzer
             return;
         }
 
-        if ($phpType === 'object' && is_object($value)) {
+        if (is_object($value)) {
             /** @var array<string, mixed> $objectVars */
             $objectVars = get_object_vars($value);
             $this->describeObjectShape($key, $objectVars);
@@ -492,8 +467,7 @@ final class SchemaJsonLdStructureAnalyzer
                 }
 
                 $childPath = $path === '' ? $childKey : $path.'.'.$childKey;
-                $this->ensureKey($key);
-                $this->keyStats[$key]['nested_keys'][$childKey] ??= true;
+                $this->keyStats[$key]['nested_keys'][$childKey] = $childKey;
 
                 $this->walk($childPath, $childValue);
             }
@@ -512,66 +486,32 @@ final class SchemaJsonLdStructureAnalyzer
         ];
     }
 
-    private function recordArrayLength(string $key, mixed $value, string $phpType): void
+    /**
+     * Track the shortest and longest array seen for a key. An object with an
+     * `@id` counts as one (a reference), any other array by its element count.
+     */
+    private function recordArrayLength(string $key, mixed $value): void
     {
-        if ($phpType !== 'array') {
+        if (! is_array($value)) {
             return;
         }
 
-        $len = $this->effectiveArrayLength($value);
-        if ($len === null) {
-            return;
-        }
-
-        $this->ensureKey($key);
+        $len = isset($value['@id']) ? 1 : count($value);
         $stats = $this->keyStats[$key];
-        if (! isset($stats['array_length_min']) || $len < $stats['array_length_min']) {
-            $stats['array_length_min'] = $len;
-        }
-
-        if (! isset($stats['array_length_max']) || $len > $stats['array_length_max']) {
-            $stats['array_length_max'] = $len;
-        }
-
+        $stats['array_length_min'] = min($stats['array_length_min'] ?? $len, $len);
+        $stats['array_length_max'] = max($stats['array_length_max'] ?? $len, $len);
         $this->keyStats[$key] = $stats;
     }
 
-    /**
-     * Length for list-valued or single-reference keys (for min/max stats).
-     */
-    private function effectiveArrayLength(mixed $value): ?int
+    private function recordStringStats(string $key, mixed $value): void
     {
-        if (! is_array($value)) {
-            return null;
-        }
-
-        if (array_is_list($value)) {
-            return count($value);
-        }
-
-        if (isset($value['@id']) && count($value) === 1) {
-            return 1;
-        }
-
-        if (isset($value['@id'])) {
-            return 1;
-        }
-
-        return count($value);
-    }
-
-    private function recordStringStats(string $key, mixed $value, string $phpType): void
-    {
-        if ($phpType !== 'string' || ! is_string($value)) {
+        if (! is_string($value)) {
             return;
         }
 
-        $this->ensureKey($key);
         $stats = $this->keyStats[$key];
         $len = strlen($value);
-        if (! isset($stats['max_string_length']) || $len > $stats['max_string_length']) {
-            $stats['max_string_length'] = $len;
-        }
+        $stats['max_string_length'] = max($stats['max_string_length'] ?? $len, $len);
 
         if (str_contains($value, '"')) {
             $stats['string_contains_double_quote'] = true;
@@ -591,13 +531,12 @@ final class SchemaJsonLdStructureAnalyzer
         }
 
         if (str_ends_with($key, '.@language')) {
-            $this->languageTagsSeen[$value] = true;
+            $this->languageTagsSeen[$value] = $value;
         }
     }
 
     private function addExample(string $key, mixed $value): void
     {
-        $this->ensureKey($key);
         // Read the full stats entry into a local so the shape is preserved across updates
         $stats = $this->keyStats[$key];
         $ex = $stats['examples'];
@@ -615,25 +554,16 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function describeArrayElements(string $key, array $arr): void
     {
-        $this->ensureKey($key);
         $stats = $this->keyStats[$key];
         $elementTypes = $stats['array_element_types'];
-        $objectShapes = $stats['object_shapes'];
         foreach ($arr as $item) {
-            $t = gettype($item);
             $elementTypeLabel = is_array($item)
                 ? ('array ('.(array_is_list($item) ? 'indexed' : 'associative').')')
-                : $t;
+                : gettype($item);
             $elementTypes[$elementTypeLabel] = ($elementTypes[$elementTypeLabel] ?? 0) + 1;
-            if ($t === 'object' && is_array($item)) {
-                /** @var array<string, mixed> $item */
-                $shape = $this->objectShape($item);
-                $objectShapes[$shape] = ($objectShapes[$shape] ?? 0) + 1;
-            }
         }
 
         $stats['array_element_types'] = $elementTypes;
-        $stats['object_shapes'] = $objectShapes;
         $this->keyStats[$key] = $stats;
     }
 
@@ -642,7 +572,6 @@ final class SchemaJsonLdStructureAnalyzer
      */
     private function describeObjectShape(string $key, array $obj): void
     {
-        $this->ensureKey($key);
         $shape = $this->objectShape($obj);
         $this->keyStats[$key]['object_shapes'][$shape] = ($this->keyStats[$key]['object_shapes'][$shape] ?? 0) + 1;
     }
@@ -703,16 +632,12 @@ final class SchemaJsonLdStructureAnalyzer
 
         if (is_array($v)) {
             $trimmed = [];
-            $i = 0;
-            foreach ($v as $k => $item) {
-                if ($i >= self::EXAMPLE_MAX_ITEMS) {
-                    $trimmed['...'] = '(truncated)';
-
-                    break;
-                }
-
+            foreach (array_slice($v, 0, self::EXAMPLE_MAX_ITEMS, true) as $k => $item) {
                 $trimmed[$k] = $this->truncateExample($item);
-                $i++;
+            }
+
+            if (count($v) > self::EXAMPLE_MAX_ITEMS) {
+                $trimmed['...'] = '(truncated)';
             }
 
             return $trimmed;
@@ -748,7 +673,7 @@ final class SchemaJsonLdStructureAnalyzer
     }
 
     /**
-     * @param  array<string, true>  $nestedKeys
+     * @param  array<string, string>  $nestedKeys
      * @return array<string>
      */
     private function summarizeNested(array $nestedKeys): array

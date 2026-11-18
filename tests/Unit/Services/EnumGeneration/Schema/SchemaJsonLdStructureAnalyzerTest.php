@@ -14,10 +14,49 @@ covers(SchemaJsonLdStructureAnalyzer::class);
  * error paths are covered by `SchemaJsonLdStructureAnalyzerCliTest`.
  *
  * The report expectations were read from the analyzer before any change to it,
- * so they pin its behavior rather than restate a specification.
+ * so they pin its behavior rather than restate a specification. Every test
+ * fails on a PHP warning, so a read of a missing stats key cannot pass as a
+ * default.
  *
  * @command  php artisan test --compact tests/Unit/Services/EnumGeneration/Schema/SchemaJsonLdStructureAnalyzerTest.php
  */
+beforeEach(function (): void {
+    set_error_handler(static function (int $level, string $message, string $file, int $line): never {
+        throw new ErrorException($message, 0, $level, $file, $line);
+    });
+});
+
+afterEach(function (): void {
+    restore_error_handler();
+});
+
+/**
+ * A stream wrapper whose paths stat as readable files but never open, so a
+ * read of one fails after the existence check has passed.
+ */
+final class SchemaJsonLdClosedStream
+{
+    /** @var resource|null set by PHP on each instance */
+    public $context;
+
+    /**
+     * Report every path as a regular file anyone may read.
+     *
+     * @return array{mode: int, size: int}
+     */
+    public function url_stat(string $path, int $flags): array
+    {
+        return ['mode' => 0100444, 'size' => 1];
+    }
+
+    /**
+     * Refuse every open.
+     */
+    public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
+    {
+        return false;
+    }
+}
 
 /**
  * Analyze the given data with a fresh analyzer and return it.
@@ -291,7 +330,7 @@ it('collects each non-empty @language string from value objects', function (): v
 
 it('keeps three examples per key and truncates long strings, long lists and unprintable values', function (): void {
     $report = analyzedStructure([
-        ['e' => str_repeat('a', 121)],
+        ['e' => str_repeat('a', 120).'z'],
         ['e' => str_repeat('b', 120)],
         ['e' => [1, [2, 3, 4, 5], 3, 4]],
         ['e' => 'fourth'],
@@ -336,6 +375,34 @@ it('names an object by its shape: reference, value, typed reference, type only, 
         'object(a,b)' => 1,
         'object(@id,a)' => 1,
     ]);
+});
+
+it('takes the schema: prefix before the schema.org host when an id holds both', function (): void {
+    expect(structureMeta(analyzedStructure([['@id' => 'schema:a/schema.org/b']]))['id_prefix_distribution'])->toBe(['schema:' => 1]);
+});
+
+it('closes the meta block with the ordering note', function (): void {
+    expect(structureEntry(analyzedStructure([])->getReport(), '_meta')['ordering_note'])
+        ->toBe('Array order is preserved as in source; schema.org does not define ordering for these predicates.');
+});
+
+it('keeps a list of exactly three example items whole, and the keys of a numbered object', function (): void {
+    $report = analyzedStructure([
+        ['e' => [1, 2, 3]],
+        ['e' => [5 => 'a', 7 => 'b']],
+    ])->getReport();
+
+    expect(structureEntry($report, '(root)[].e')['examples'])->toBe([[1, 2, 3], [5 => 'a', 7 => 'b']]);
+});
+
+it('shortens a report example line only past 80 characters', function (): void {
+    $report = analyzedStructure([
+        ['s' => str_repeat('c', 80)],
+        ['t' => str_repeat('d', 81)],
+    ])->formatReport();
+
+    expect($report)->toContain('  examples: '.str_repeat('c', 80)."\n")
+        ->and($report)->toContain('  examples: '.str_repeat('d', 77)."...\n");
 });
 
 it('formats an empty analysis with no optional lines', function (): void {
@@ -701,6 +768,44 @@ it('still returns 0 when only the all-ids file cannot be written', function (): 
                 .'Error: Failed to write all IDs to '.$dir.'/schema-jsonld-all-ids.txt'.PHP_EOL,
         ]);
     } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('reads the default input when argv is not an array', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/schemaorg-current-https.jsonld', '[{"@id":"x:1"}]');
+
+        expect(runStructureCli(['argv' => 'ab'], $dir)['exit'])->toBe(0)
+            ->and(file_get_contents($dir.'/schema-jsonld-all-ids.txt'))->toBe("x:1\n");
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('reads the path at argv index 1 even when argv has no index 0', function (): void {
+    $dir = structureCliDir();
+    try {
+        file_put_contents($dir.'/in.jsonld', '[{"@id":"x:2"}]');
+
+        expect(runStructureCli(['argv' => [1 => $dir.'/in.jsonld']], $dir)['exit'])->toBe(0)
+            ->and(file_get_contents($dir.'/schema-jsonld-all-ids.txt'))->toBe("x:2\n");
+    } finally {
+        removeStructureCliDir($dir);
+    }
+});
+
+it('returns 1 and writes nothing when a readable file cannot be opened', function (): void {
+    $dir = structureCliDir();
+    stream_wrapper_register('jsonld-closed', SchemaJsonLdClosedStream::class);
+    try {
+        expect(runStructureCliQuietly(['argv' => ['script.php', 'jsonld-closed://in.jsonld']], $dir))->toBe([
+            'exit' => 1,
+            'stderr' => "Error: Failed to read file.\n",
+        ])->and(glob($dir.'/*'))->toBe([]);
+    } finally {
+        stream_wrapper_unregister('jsonld-closed');
         removeStructureCliDir($dir);
     }
 });
