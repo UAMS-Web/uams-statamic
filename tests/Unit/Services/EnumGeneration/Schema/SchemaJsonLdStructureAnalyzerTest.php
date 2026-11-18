@@ -31,34 +31,6 @@ afterEach(function (): void {
 });
 
 /**
- * A stream wrapper whose paths stat as readable files but never open, so a
- * read of one fails after the existence check has passed.
- */
-final class SchemaJsonLdClosedStream
-{
-    /** @var resource|null set by PHP on each instance */
-    public $context;
-
-    /**
-     * Report every path as a regular file anyone may read.
-     *
-     * @return array{mode: int, size: int}
-     */
-    public function url_stat(string $path, int $flags): array
-    {
-        return ['mode' => 0100444, 'size' => 1];
-    }
-
-    /**
-     * Refuse every open.
-     */
-    public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
-    {
-        return false;
-    }
-}
-
-/**
  * Analyze the given data with a fresh analyzer and return it.
  */
 function analyzedStructure(mixed $data): SchemaJsonLdStructureAnalyzer
@@ -798,7 +770,28 @@ it('reads the path at argv index 1 even when argv has no index 0', function (): 
 
 it('returns 1 and writes nothing when a readable file cannot be opened', function (): void {
     $dir = structureCliDir();
-    stream_wrapper_register('jsonld-closed', SchemaJsonLdClosedStream::class);
+    // A wrapper whose paths stat as files anyone may read, but never open, so the
+    // read fails after the existence check has passed. Anonymous, because a named
+    // class in a test file breaks the PSR-4 autoload check.
+    $closedStream = new class
+    {
+        /** @var resource|null set by PHP on each instance */
+        public $context;
+
+        /**
+         * @return array{mode: int, size: int}
+         */
+        public function url_stat(string $path, int $flags): array
+        {
+            return ['mode' => 0100444, 'size' => 1];
+        }
+
+        public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool
+        {
+            return false;
+        }
+    };
+    stream_wrapper_register('jsonld-closed', $closedStream::class);
     try {
         expect(runStructureCliQuietly(['argv' => ['script.php', 'jsonld-closed://in.jsonld']], $dir))->toBe([
             'exit' => 1,
