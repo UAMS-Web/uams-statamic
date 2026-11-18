@@ -10,6 +10,7 @@ use Exception;
 use Facades\Statamic\Entries\InitiatorStack;
 use Illuminate\Support\Facades\Log;
 use Spatie\Blink\Blink;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Entries\Collection;
 use Statamic\Entries\Entry;
 use Statamic\Events\EntryCreated;
@@ -54,6 +55,12 @@ class KnowledgeBaseEntry extends Entry
      * @var array<string, bool>
      */
     protected static $localizedEntries = [];
+
+    /**
+     * Whether this entry is a localization created by a root's descendant cascade,
+     * which places it in the tree itself.
+     */
+    protected bool $isDescendantLocalization = false;
 
     /**
      * Blueprint handle of the knowledge base root entry that owns the mount point.
@@ -208,11 +215,18 @@ class KnowledgeBaseEntry extends Entry
         }
 
         // ---
-        // Create a new entry instance for the specified site, preserving the collection
-        // type
+        // Create a new entry instance for the specified site through the container with
+        // the collection handle, so the copy is this collection's entry class and its
+        // first save runs this class's save() (#1041)
         // ---
         /** @var Entry $newEntry */
-        $newEntry = EntryFacade::make();
+        $newEntry = app(EntryContract::class, ['collectionHandle' => $this->collectionHandle()]);
+
+        // Mark a localization made by the descendant cascade, so its save is not
+        // rejected as a direct localization and leaves its placement to the cascade
+        if ($isDescendantLocalization && $newEntry instanceof self) {
+            $newEntry->isDescendantLocalization = true;
+        }
 
         // Set the collection, origin, locale, published, and slug on the new entry
         /** @var Entry $localization */
@@ -263,11 +277,19 @@ class KnowledgeBaseEntry extends Entry
      * parent entry. Returns a closure that performs the structure modification when
      * executed.
      *
+     * Unlike core, the closure reads the site's tree when it runs, translates a
+     * parent `Page` to the target site as well as a parent `Entry`, and decides both
+     * the duplicate guard and the parent's presence from the STORED tree
+     * (`Tree::fileData()`). A read through `Tree::find()` or `Tree::tree()` goes
+     * through `CollectionStructure::validateTree()`, which adds every entry the
+     * stored tree is missing at the top level from a per-request memo, so it can
+     * report an unplaced entry as placed (#1041).
+     *
      * Note: Monitor `Statamic\Entries\Entry::addToStructure()` during Statamic
      * upgrades to ensure this logic remains aligned.
      *
      * @param  string  $site  The handle of the site to add the entry to
-     * @param  Entry|Page|null  $parent  The parent entry or structure page, or null for top-level
+     * @param  Entry|Page|null  $parent  The parent entry or structure page, in any site, or null for top-level
      * @return ?Closure A closure to append the entry to the structure tree, or null if not applicable
      */
     private function addToStructure(
@@ -290,46 +312,97 @@ class KnowledgeBaseEntry extends Entry
             return null;
         }
 
-        // Get the structure tree for the specified site
-        /** @var Tree $tree */
-        $tree = $structure->in($site);
-
-        // Resolve parent for the tree: localize Entry to site; Page is already tree context
-        /** @var Entry|Page|null $parentForTree */
-        $parentForTree = $parent instanceof Entry
-            ? $parent->in($site)
-            : $parent;
-
         // ---
         // Return a closure that appends the entry to the tree, either as a top-level
-        // entry or under the parent
+        // entry or under the parent's entry in the target site
         // ---
-        return function (Entry $entry) use ($parentForTree, $tree): void {
-            // Check if the entry already exists in the tree
-            $existingPage = $tree->find($entry->id());
+        return function (Entry $entry) use ($parent, $site, $structure): void {
+            // Read the site's tree now, so the append starts from its latest save
+            $tree = $structure->in($site);
 
-            // If the entry already exists in the tree, skip adding it to prevent duplicates
-            if ($existingPage) {
-                // Return early without modifying the tree
+            // Skip a site the collection has no tree in
+            if (! $tree instanceof Tree) {
                 return;
-
             }
 
-            // Check if there is no parent, meaning this should be a top-level entry
-            if (! $parentForTree) {
-                // Append the entry as a top-level entry in the structure tree
-                $tree->append($entry);
-            } else { // Otherwise
-                // Append the entry under the specified parent in the structure tree
+            // Read the tree as stored, without validateTree()'s top-level additions
+            $fileData = $tree->fileData();
+            $stored = \is_array($fileData) && \is_array($fileData['tree'] ?? null)
+                ? $fileData['tree']
+                : [];
+
+            // If the entry is already placed, skip adding it to prevent duplicates
+            if (self::storedTreeContains($stored, $entry->id())) {
+                // Return early without modifying the tree
+                return;
+            }
+
+            // Resolve the parent's entry in the target site, from an Entry or a Page
+            $parentEntry = $parent instanceof Page
+                ? $parent->entry()
+                : $parent;
+            $parentInSite = $parentEntry instanceof Entry
+                ? $parentEntry->in($site)
+                : null;
+            $parentId = $parentInSite instanceof Entry
+                ? $parentInSite->id()
+                : null;
+
+            // Check whether the parent is placed in the stored tree
+            if (
+                \is_string($parentId)
+                && self::storedTreeContains($stored, $parentId)
+            ) {
+                // Append the entry under the parent in the structure tree
                 $tree->appendTo(
-                    $parentForTree->id(),
+                    $parentId,
                     $entry
                 );
+            } else { // Otherwise
+                // Append the entry as a top-level entry in the structure tree
+                $tree->append($entry);
             }
 
             // Save the modified structure tree to persist the changes
             $tree->save();
         };
+    }
+
+    /**
+     * Whether a stored structure tree references the given entry id at any depth.
+     *
+     * @param  array<mixed>  $branches  Stored tree branches (`entry`, `children`)
+     * @param  mixed  $id  The entry id to look for
+     * @return bool True when a branch at any depth references the id
+     */
+    private static function storedTreeContains(
+        array $branches,
+        mixed $id
+    ): bool {
+        // Search each branch and its children for the entry id
+        foreach ($branches as $branch) {
+            // Skip anything that is not a branch
+            if (! \is_array($branch)) {
+                continue;
+            }
+
+            // Check this branch's entry reference
+            if (($branch['entry'] ?? null) === $id) {
+                return true;
+            }
+
+            // Search this branch's children
+            $children = $branch['children'] ?? [];
+            if (
+                \is_array($children)
+                && self::storedTreeContains($children, $id)
+            ) {
+                return true;
+            }
+        }
+
+        // No branch references the entry id
+        return false;
     }
 
     /**
@@ -394,8 +467,19 @@ class KnowledgeBaseEntry extends Entry
     #[\Override]
     public function save(): bool
     {
-        // Check if the entry has an origin, indicating it is a localization
-        if ($this->hasOrigin()) {
+        // Determine if the entry is new (not yet saved in the repository)
+        $isNew = EntryFacade::find($this->id()) === null;
+
+        // ---
+        // Check if the entry is a new localization made directly rather than by a
+        // root's descendant cascade. An existing localized topic or article saves
+        // normally, which a re-save of its localized root does to its children.
+        // ---
+        if (
+            $this->hasOrigin()
+            && $isNew
+            && ! $this->isDescendantLocalization
+        ) {
             /** @var Blueprint $saveBlueprint */
             $saveBlueprint = $this->blueprint();
             $blueprint = $saveBlueprint->handle();
@@ -426,9 +510,6 @@ class KnowledgeBaseEntry extends Entry
                 throw new Exception(sprintf("Only Knowledge Base entries can be localized. '%s' entries are not allowed to be localized directly.", $blueprint));
             }
         }
-
-        // Determine if the entry is new (not yet saved in the repository)
-        $isNew = EntryFacade::find($this->id()) === null;
 
         // Store the event firing state
         $withEvents = $this->withEvents;
@@ -544,11 +625,17 @@ class KnowledgeBaseEntry extends Entry
         // Add entry to structure tree under the resolved parent
         // ---
 
-        // Check if the parent can be added to the structure tree
+        // ---
+        // Check if the parent can be added to the structure tree. A new localization
+        // is skipped: it is not in its site's tree yet, so it has no parent here, and
+        // it is placed under its localized parent by the after-save callback
+        // makeLocalization() registered or by the root's descendant cascade.
+        // ---
         /** @var string $entryLocale */
         $entryLocale = $this->locale();
         if (
-            ($callback = $this->addToStructure(
+            (! $isNew || ! $this->hasOrigin())
+            && ($callback = $this->addToStructure(
                 $entryLocale,
                 $parent
             )) instanceof Closure
