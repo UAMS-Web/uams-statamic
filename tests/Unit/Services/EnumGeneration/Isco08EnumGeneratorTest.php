@@ -400,7 +400,7 @@ it('finds the header row by its code heading and one more expected heading', fun
     'expected heading inside a longer one' => [[['ISCO-08', 'English title en text']], 0],
     'a code row without the other heading is passed over' => [[['ISCO-08', 'Name'], ['ISCO-08', 'Title EN']], 1],
     'the other heading without the code' => [[['Code', 'Title EN']], null],
-    'the code only inside a longer word' => [[['XISCO-08X', 'Title EN']], null],
+    'the code only inside a longer word' => [[['preISCO-08post', 'Title EN']], null],
     'fewer rows than it would search, none a header' => [[['a'], ['b']], null],
     'header on the last row it searches' => [[...array_fill(0, 59, ['filler']), ['ISCO-08', 'Title EN']], 59],
     'header past the rows it searches' => [[...array_fill(0, 60, ['filler']), ['ISCO-08', 'Title EN']], null],
