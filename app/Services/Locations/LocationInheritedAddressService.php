@@ -362,9 +362,14 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         // Find the location the unit group comes from
         $owner = $this->resolveUnitLocation($location);
 
-        // Stop when no unit applies or the owner stores no level
-        $stored = $owner?->get(self::FACILITY_LEVEL);
-        if (! $owner instanceof Entry || ! $this->hasValue($stored)) {
+        // Stop when no unit applies
+        if (! $owner instanceof Entry) {
+            return null;
+        }
+
+        // Stop when the owner stores no level
+        $stored = $owner->get(self::FACILITY_LEVEL);
+        if (! $this->hasValue($stored)) {
             return null;
         }
 
@@ -545,6 +550,9 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         // Otherwise the value comes from the parent location, which ownsGroup() found
         $parent = $this->parentLocation($location);
 
+        // ownsGroup() returned false only because this same lookup found a parent location,
+        // so the null branch below is unreachable.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $parent instanceof Entry
             ? $this->walkGroup($parent, $seen, $group, $fromFacility, $fromOwner)
             : null;
@@ -573,6 +581,9 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         // Otherwise ask the parent location
         $parent = $this->parentLocation($location);
 
+        // ownsGroup() returned false only because this same lookup found a parent location,
+        // so the null branch below is unreachable.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $parent instanceof Entry
             ? $this->groupOwner($parent, $group, $seen)
             : null;
@@ -594,8 +605,8 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         }
 
         // A child owns the group only with the master and the group toggle both on
-        return (bool) $location->get(self::ADDRESS_OVERRIDE)
-            && (bool) $location->get(self::GROUP_OVERRIDE[$group]);
+        return $location->get(self::ADDRESS_OVERRIDE)
+            && $location->get(self::GROUP_OVERRIDE[$group]);
     }
 
     /**
@@ -621,6 +632,8 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         }
 
         // Record the visit before descending
+        // Only isset() reads the set, and it is true for false as well as true.
+        // @pest-mutate-ignore: TrueToFalse
         $seen[$id] = true;
 
         return true;
@@ -720,6 +733,9 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         $found = EntryFacade::find($value);
 
         // Return the referenced entry or null when it cannot be loaded
+        // The bound App\Entries\EntryRepository::find() is declared ?Statamic\Entries\Entry, so
+        // this only narrows the facade type for static analysis.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $found instanceof Entry ? $found : null;
     }
 
@@ -752,24 +768,22 @@ final readonly class LocationInheritedAddressService implements LocationRegions
         $parent = EntryFacade::find($parentId);
 
         // Return the parent entry or null when it cannot be loaded
+        // The bound App\Entries\EntryRepository::find() is declared ?Statamic\Entries\Entry, so
+        // this only narrows the facade type for static analysis.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $parent instanceof Entry ? $parent : null;
     }
 
     /**
-     * Resolve the entry's blueprint handle, or an empty string when unavailable.
+     * Resolve the entry's blueprint handle, or null when unavailable.
      */
     private function blueprintHandle(
         Entry $entry
-    ): string {
+    ): ?string {
         // Read the entry's blueprint (untyped on the entry contract)
         $blueprint = $entry->blueprint();
 
-        // Treat a missing or unexpected blueprint as no handle
-        if (! $blueprint instanceof Blueprint) {
-            return '';
-        }
-
-        // Return the blueprint handle or an empty string when unavailable
-        return $blueprint->handle() ?? '';
+        // Return the blueprint handle, or null for a missing or unexpected blueprint
+        return $blueprint instanceof Blueprint ? $blueprint->handle() : null;
     }
 }

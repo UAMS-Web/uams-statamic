@@ -710,8 +710,13 @@ it('lets a page on another blueprint under a location inherit nothing', function
  * Mutation coverage (#910): the guards and fallbacks the cases above never reach.
  */
 
-it('answers the location regions contract the people package reads', function () {
-    expect(locationAddressResolver())->toBeInstanceOf(LocationRegions::class);
+it('answers the location regions contract the people package resolves', function () {
+    // The people package resolves the contract from the container; the binding only works while the class implements it.
+    $regions = app()->call(fn (LocationRegions $contract): mixed => $contract->resolveRegions(
+        makeLocationEntry('loc1', null, ['regions' => 'delta'])
+    ));
+
+    expect($regions)->toBe('delta');
 });
 
 it('resolves no facility and no unit for a location in a structural cycle', function () {
