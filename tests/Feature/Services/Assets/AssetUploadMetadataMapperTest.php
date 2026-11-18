@@ -15,10 +15,15 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Unit tests for container-specific upload metadata mapping.
  *
- * Mutation: the image-style container routing — including the UAMS-Web/uams-statamic-archive#831 exclusion of
- * the logo containers — and the alt/caption/exemption mapping are fully covered.
- * Pre-existing survivors remain in the PDF/audio excerpt paths and the metadata
- * stringify helper (unchanged by UAMS-Web/uams-statamic-archive#831, exercised by the full suite).
+ * Mutation: every mutant of App\Services\Assets\AssetUploadMetadataMapper is killed
+ * by this file (65 mutants, `--covered-only`, Windows 11, #883). Three mutants are
+ * equivalent and carry `@pest-mutate-ignore` in the class:
+ *
+ * - `TrueToFalse` on the strict `in_array()` of the audio/files and image-style
+ *   container routing: the haystacks hold only non-numeric strings, which loose and
+ *   strict comparison treat alike.
+ * - `UnwrapTrim` on the number branch of the stringify helper: a number cast to a
+ *   string has no surrounding whitespace, so `trim()` cannot change it.
  *
  * @command  php artisan test --compact tests/Feature/Services/Assets/AssetUploadMetadataMapperTest.php
  */
