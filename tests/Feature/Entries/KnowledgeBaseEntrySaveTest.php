@@ -39,11 +39,12 @@ use Tests\Support\StacheIsolatedTestCase;
  * with the `knowledge_base`, `topic` and `article` blueprints, plus a `glossary`
  * blueprint that none of the localization rules name.
  *
- * Each Control Panel save is its own request, and `save()` depends on that: its structure
- * append guards on `Tree::find()`, which answers from a per-request memo of the
- * collection's entry ids. {@see kbNewRequest()} marks the boundary between saves, and the
+ * Each Control Panel save is its own request, and Statamic memoizes per request what a
+ * tree read returns, so {@see kbNewRequest()} marks the boundary between saves. The
  * placement tests read the tree as stored ({@see kbRawTree()}), because a validated read
- * adds every entry the tree is missing at the top level and so cannot show where one was put.
+ * adds every entry the tree is missing at the top level and so cannot show where one was
+ * put. The localization cascade's own placement is covered by
+ * `KnowledgeBaseEntryLocalizationTest.php`; this file covers the rest of the class.
  *
  * @command  php artisan test --compact tests/Feature/Entries/KnowledgeBaseEntrySaveTest.php
  */
@@ -236,19 +237,20 @@ function kbRawTree(string $site = 'default'): array
 }
 
 /**
- * Save the given entries quietly and store the default tree, each a separate request.
+ * Store the default tree, then save the given entries quietly, each a separate request.
  *
  * @param  list<KnowledgeBaseEntry>  $entries
  * @param  array<int, array<string, mixed>>  $tree
  */
 function kbSeed(array $entries, array $tree): void
 {
+    // The tree goes first, so each save finds its entry already placed and leaves it there
+    kbStoreTree($tree);
+
     foreach ($entries as $entry) {
         $entry->saveQuietly();
         kbNewRequest();
     }
-
-    kbStoreTree($tree);
 }
 
 /**
@@ -369,27 +371,11 @@ describe('structure placement on save', function (): void {
             ->and(kbRawTree())->toBe([['entry' => 'kb-root', 'children' => [['entry' => 'kb-topic']]]]);
     });
 
-    it('leaves the stored tree alone when the request first reads it after the save', function (): void {
+    it('appends a new entry under its parent whatever the request read first', function (): void {
         kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb')], [['entry' => 'kb-root']]);
 
         $topic = kbSaveEntry('kb-topic', 'topic', 'topic');
         $topic->set('parent', 'kb-root');
-        $topic->save();
-
-        // The read after the save memoizes the topic, so the append is skipped as a duplicate
-        expect(kbRawTree())->toBe([['entry' => 'kb-root']]);
-    });
-
-    it('runs an after-save callback, as the Control Panel registers one to place a new entry', function (): void {
-        kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb')], [['entry' => 'kb-root']]);
-
-        $tree = kbTree();
-        $topic = kbSaveEntry('kb-topic', 'topic', 'topic');
-        $topic->set('parent', 'kb-root');
-        $topic->afterSave(function ($entry) use ($tree): void {
-            $tree->appendTo('kb-root', $entry);
-            $tree->save();
-        });
         $topic->save();
 
         expect(kbRawTree())->toBe([['entry' => 'kb-root', 'children' => [['entry' => 'kb-topic']]]]);
@@ -430,130 +416,98 @@ describe('structure placement on save', function (): void {
 
 describe('localization on save', function (): void {
     /**
-     * Localize the seeded root as the Control Panel does, place the localization in the
-     * `health` tree, and return its id for the save that runs the cascade.
+     * Seed a root with a topic and a glossary child, the glossary with a child of its own.
+     * The tree validator names no rule for `glossary`, so a localization of one may stay
+     * unplaced in the target tree without the validator rejecting the next tree save.
      */
-    function kbLocalizeRootLikeTheControlPanel(KnowledgeBaseEntry $root): string
+    function kbSeedWithGlossary(): KnowledgeBaseEntry
     {
-        $localized = $root->makeLocalization('health');
-        $localized->save();
-        $id = mustBeString($localized->id(), 'the localization id');
-        kbNewRequest();
-        kbStoreTree([['entry' => $id]], 'health');
-        kbNewRequest();
+        kbSeed(
+            [
+                kbSaveEntry('kb-root', 'knowledge_base', 'kb'),
+                kbSaveEntry('kb-topic', 'topic', 'topic'),
+                kbSaveEntry('kb-glossary', 'glossary', 'glossary'),
+                kbSaveEntry('kb-glossary-child', 'glossary', 'glossary-child'),
+            ],
+            [['entry' => 'kb-root', 'children' => [
+                ['entry' => 'kb-topic'],
+                ['entry' => 'kb-glossary', 'children' => [['entry' => 'kb-glossary-child']]],
+            ]]],
+        );
 
-        return $id;
+        return kbFind('kb-root');
     }
 
-    it('does not cascade on the first save of a new localization (UAMS-Web/uams-statamic#1041)', function (): void {
-        $root = kbSeedHierarchy();
+    it('does not localize the subtree twice when the localized root is saved again', function (): void {
+        kbLocalize(kbSeedHierarchy(), 'kb-root-health')->save();
+        kbNewRequest();
 
-        $localized = $root->makeLocalization('health');
-        $localized->save();
+        kbFind('kb-root-health')->save();
 
-        // The copy is the base entry class, so its first save is core `Entry::save()`
-        expect($localized)->not->toBeInstanceOf(KnowledgeBaseEntry::class)
-            ->and(kbLocalizationsOf('kb-root'))->toHaveCount(1)
-            ->and(kbLocalizationsOf('kb-topic'))->toBe([]);
+        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
+            ->and(kbLocalizationsOf('kb-article'))->toHaveCount(1);
     });
 
-    it('localizes the subtree when the localized root is saved again, leaving it out of the tree (UAMS-Web/uams-statamic#1041)', function (): void {
-        $id = kbLocalizeRootLikeTheControlPanel(kbSeedHierarchy());
+    it('saves a localized topic again, which only a new direct localization is refused', function (): void {
+        kbLocalize(kbSeedHierarchy(), 'kb-root-health')->save();
+        kbNewRequest();
 
-        expect(kbFind($id)->save())->toBeTrue()
+        expect(kbFind(kbLocalizationsOf('kb-topic')[0])->save())->toBeTrue();
+    });
+
+    it('does not cascade from a second localization of a root already localized in the target site', function (): void {
+        kbLocalize(kbSeedHierarchy(), 'kb-root-health')->save();
+        kbNewRequest();
+
+        kbLocalize(kbFind('kb-root'), 'kb-root-health-2')->save();
+
+        $placed = json_encode(kbRawTree('health'));
+        expect(kbLocalizationsOf('kb-root'))->toHaveCount(2)
             ->and(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
-            ->and(kbLocalizationsOf('kb-article'))->toHaveCount(1)
-            ->and(kbTreeByOrigin(kbRawTree('health')))->toBe([['origin' => 'kb-root']]);
+            ->and($placed)->not->toContain('kb-root-health-2');
+    });
 
-        $topic = kbFind(kbLocalizationsOf('kb-topic')[0]);
-        $article = kbFind(kbLocalizationsOf('kb-article')[0]);
-        expect($topic->locale())->toBe('health')
-            ->and(kbOriginId($article))->toBe('kb-article');
+    it('skips a child already localized in the target site, with its subtree', function (): void {
+        kbSeedWithGlossary();
+        kbLocalize(kbFind('kb-glossary'), 'kb-glossary-health', true)->saveQuietly();
+        kbNewRequest();
+
+        kbLocalize(kbFind('kb-root'), 'kb-root-health')->save();
+
+        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
+            ->and(kbLocalizationsOf('kb-glossary'))->toBe(['kb-glossary-health'])
+            ->and(kbLocalizationsOf('kb-glossary-child'))->toBe([]);
+    });
+
+    it('logs and skips a child page whose entry cannot be found', function (): void {
+        kbSeedWithGlossary();
+        $ghost = kbFind('kb-glossary-child');
+        $root = kbFind('kb-root');
+
+        // Memoize the tree with the child in it, then remove the entry behind it
+        kbTree()->tree();
+        kbEntriesStore('knowledge_bases')->delete($ghost);
+        $log = kbLogSpy();
+
+        kbLocalize($root, 'kb-root-health')->save();
+
+        $log->shouldHaveReceived('warning')->with(
+            'KnowledgeBaseEntry::localizeDescendantsFromStructure: Child entry not found in structure',
+            ['child_id' => 'kb-glossary-child', 'parent_id' => kbLocalizationsOf('kb-glossary')[0]],
+        )->once();
+        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1);
     });
 
     it('saves the localized root of an orderable collection, which has no tree to add it to', function (): void {
         kbSaveFixture(['structureContents' => ['root' => false, 'max_depth' => 1]]);
         kbNewRequest();
         kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb')], [['entry' => 'kb-root']]);
-        $id = kbLocalizeRootLikeTheControlPanel(kbFind('kb-root'));
 
-        expect(kbFind($id)->save())->toBeTrue();
+        expect(kbLocalize(kbFind('kb-root'), 'kb-root-health')->save())->toBeTrue()
+            ->and(kbLocalizationsOf('kb-root'))->toBe(['kb-root-health']);
     });
 
-    it('does not localize the subtree twice', function (): void {
-        $id = kbLocalizeRootLikeTheControlPanel(kbSeedHierarchy());
-        kbFind($id)->save();
-        kbNewRequest();
-
-        kbFind($id)->save();
-
-        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
-            ->and(kbLocalizationsOf('kb-article'))->toHaveCount(1);
-    });
-
-    it('does not cascade when another localization of the root is already in the target site', function (): void {
-        $root = kbSeedHierarchy();
-        $root->makeLocalization('health')->saveQuietly();
-        kbNewRequest();
-        $id = kbLocalizeRootLikeTheControlPanel(kbFind('kb-root'));
-
-        kbFind($id)->save();
-
-        expect(kbLocalizationsOf('kb-root'))->toHaveCount(2)
-            ->and(kbLocalizationsOf('kb-topic'))->toBe([]);
-    });
-
-    it('skips a child already localized in the target site, with its subtree', function (): void {
-        $root = kbSeedHierarchy();
-        kbLocalize($root, 'kb-root-health')->saveQuietly();
-        kbNewRequest();
-        kbLocalize(kbFind('kb-topic'), 'kb-topic-health', true)->saveQuietly();
-        kbNewRequest();
-        kbStoreTree([['entry' => 'kb-root-health', 'children' => [['entry' => 'kb-topic-health']]]], 'health');
-        kbNewRequest();
-
-        kbFind('kb-root-health')->save();
-
-        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1)
-            ->and(kbLocalizationsOf('kb-article'))->toBe([]);
-    });
-
-    it('does not cascade from a localized root whose origin is not in its tree', function (): void {
-        kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb'), kbSaveEntry('kb-other', 'knowledge_base', 'other')], [['entry' => 'kb-other']]);
-        $id = kbLocalizeRootLikeTheControlPanel(kbFind('kb-root'));
-
-        // Memoize a `default` tree that omits the origin, so the origin has no page there
-        Blink::put('collection-structure-tree-entries::knowledge_bases::default', collect(['kb-other']));
-
-        expect(kbFind($id)->save())->toBeTrue()
-            ->and(Blink::has('collection-structure-tree-entries::knowledge_bases::default'))->toBeTrue();
-    });
-
-    it('logs and skips a child page whose entry cannot be found', function (): void {
-        kbSeedHierarchy();
-        $ghost = kbSaveEntry('kb-ghost', 'topic', 'ghost');
-        kbSeed([$ghost], [['entry' => 'kb-root', 'children' => [
-            ['entry' => 'kb-ghost'],
-            ['entry' => 'kb-topic', 'children' => [['entry' => 'kb-article']]],
-        ]]]);
-        $id = kbLocalizeRootLikeTheControlPanel(kbFind('kb-root'));
-        $localizedRoot = kbFind($id);
-
-        // Memoize the tree with the ghost in it, then remove the entry behind it
-        kbTree()->tree();
-        kbEntriesStore('knowledge_bases')->delete($ghost);
-        $log = kbLogSpy();
-
-        $localizedRoot->save();
-
-        $log->shouldHaveReceived('warning')->with(
-            'KnowledgeBaseEntry::localizeDescendantsFromStructure: Child entry not found in structure',
-            ['child_id' => 'kb-ghost', 'parent_id' => $id],
-        )->once();
-        expect(kbLocalizationsOf('kb-topic'))->toHaveCount(1);
-    });
-
-    it('rejects saving a topic or article localization and logs it', function (string $origin, string $blueprint): void {
+    it('rejects saving a new topic or article localization made directly, and logs it', function (string $origin, string $blueprint): void {
         kbSeedHierarchy();
         $log = kbLogSpy();
 
@@ -618,41 +572,33 @@ describe('makeLocalization', function (): void {
             ->and(kbOriginId($localization))->toBe('kb-topic');
     });
 
-    it('fails to place a glossary localization that has a parent, naming the origin page (UAMS-Web/uams-statamic#1041)', function (): void {
+    it('places a glossary localization at the top when its parent has no localization in the target tree', function (): void {
         kbSeed([kbSaveEntry('kb-root', 'knowledge_base', 'kb'), kbSaveEntry('kb-glossary', 'glossary', 'glossary')], [
             ['entry' => 'kb-root', 'children' => [['entry' => 'kb-glossary']]],
         ]);
-        kbLocalize(kbFind('kb-root'), 'kb-root-health')->saveQuietly();
-        kbNewRequest();
-        kbStoreTree([['entry' => 'kb-root-health']], 'health');
-        kbNewRequest();
 
-        kbTree('health')->tree();
-        $localization = kbFind('kb-glossary')->makeLocalization('health');
-
-        // The structure parent is a `Page` of the origin tree, passed through untranslated
-        $localization->id('kb-glossary-health');
-
-        expect(fn () => $localization->save())
-            ->toThrow(Exception::class, 'Page [kb-root] does not exist in this structure');
-    });
-
-    it('places a top-level glossary localization at the top of a target tree read before the save', function (): void {
-        kbSeed([kbSaveEntry('kb-glossary', 'glossary', 'glossary')], [['entry' => 'kb-glossary']]);
-
-        kbTree('health')->tree();
         kbLocalize(kbFind('kb-glossary'), 'kb-glossary-health')->save();
 
         expect(kbRawTree('health'))->toBe([['entry' => 'kb-glossary-health']]);
     });
 
-    it('leaves a glossary localization out of a target tree first read after the save', function (): void {
+    it('places nothing in a site the collection has no tree in', function (): void {
+        kbSeed([kbSaveEntry('kb-glossary', 'glossary', 'glossary')], [['entry' => 'kb-glossary']]);
+        $glossary = kbFind('kb-glossary');
+
+        $append = (new ReflectionMethod(KnowledgeBaseEntry::class, 'addToStructure'))->invoke($glossary, 'health_ar_impact');
+        expect($append)->toBeInstanceOf(Closure::class);
+        mustBe(Closure::class, $append, 'the structure append')($glossary);
+
+        expect(kbRawTree())->toBe([['entry' => 'kb-glossary']]);
+    });
+
+    it('places a top-level glossary localization at the top of the target tree', function (): void {
         kbSeed([kbSaveEntry('kb-glossary', 'glossary', 'glossary')], [['entry' => 'kb-glossary']]);
 
-        // The same duplicate guard as the cascade's (UAMS-Web/uams-statamic#1041)
         kbLocalize(kbFind('kb-glossary'), 'kb-glossary-health')->save();
 
-        expect(kbRawTree('health'))->toBe([]);
+        expect(kbRawTree('health'))->toBe([['entry' => 'kb-glossary-health']]);
     });
 
     it('registers no callback for a knowledge base root or a cascade localization', function (): void {
