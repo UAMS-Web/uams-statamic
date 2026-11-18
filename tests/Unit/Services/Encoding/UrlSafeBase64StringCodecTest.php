@@ -11,12 +11,12 @@ use Statamic\Fields\Value;
  * invalid input, and plainStringFromAntlersValue (unwrap a Value, stringify scalars,
  * empty for unsupported types). Used by the base64_encode / base64_decode modifiers.
  *
- * Mutation: every killable mutant is dead (score ~91%). The residual survivors are
- * equivalents — the decode empty-token guard (an empty string decodes to '' via the
- * normal path too), the null guard in plainStringFromAntlersValue (null falls to the
- * final '' return regardless), and the `(string)` cast on the already-scalar value
- * (redundant with the string return type). Left clean rather than annotated with
- * `@pest-mutate-ignore`.
+ * Mutation: no survivors and no `@pest-mutate-ignore` (#886). The decode empty-token
+ * guard and the null guard in plainStringFromAntlersValue were removed as dead code: an
+ * empty token decodes to '' through the strict `base64_decode`, and null falls through to
+ * the final '' return. Both outcomes are pinned below. The every-length dataset kills the
+ * padding mutants: a token whose length is a multiple of four needs no padding, and
+ * over-padding it makes the strict decode fail (measured on PHP 8.4.27).
  *
  * @command  php artisan test --compact tests/Unit/Services/Encoding/UrlSafeBase64StringCodecTest.php
  */
@@ -42,6 +42,20 @@ it('decodes a known token back to the original', function () {
         ->toBe('subject-matter/cellulitis');
 });
 
+it('decodes a token of every length without padding', function (string $token, string $expected) {
+    expect(UrlSafeBase64StringCodec::decode($token))->toBe($expected);
+})->with([
+    'length a multiple of four, needing no padding' => ['YWJj', 'abc'],
+    'two characters short of a multiple of four' => ['YWJjZA', 'abcd'],
+    'one character short of a multiple of four' => ['YWJjZGU', 'abcde'],
+    'empty token' => ['', ''],
+]);
+
+it('throws on a token one character past a multiple of four', function () {
+    expect(fn () => UrlSafeBase64StringCodec::decode('YWJjZ'))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 it('throws on a payload that is not valid Base64', function () {
     expect(fn () => UrlSafeBase64StringCodec::decode('@@@'))
         ->toThrow(InvalidArgumentException::class);
@@ -55,6 +69,7 @@ it('coerces an Antlers value to a plain string', function (mixed $value, string 
     'a bool true stringifies to "1"' => [true, '1'],
     'a plain string passes through' => ['hello', 'hello'],
     'null becomes empty' => [null, ''],
+    'a wrapped Value holding null becomes empty' => [new Value(null), ''],
     'false becomes empty' => [false, ''],
     'an array becomes empty' => [['x'], ''],
     'a non-stringable object becomes empty' => [new stdClass, ''],
