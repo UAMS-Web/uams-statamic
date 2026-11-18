@@ -342,7 +342,7 @@ final class SchemaJsonLdStructureAnalyzer
 
         $lines[] = '';
         $lines[] = '## Distinct @type values';
-        $lines[] = '  '.implode(', ', array_keys($this->distinctTypes));
+        $lines[] = '  '.implode(', ', $this->distinctTypes);
         $lines[] = '';
         $lines[] = '## Keys per node type (key => occurrence count on that type)';
         foreach ($this->keysPerNodeType as $nodeType => $keyCounts) {
@@ -355,7 +355,7 @@ final class SchemaJsonLdStructureAnalyzer
         }
 
         $lines[] = '## Language tags seen (in value objects)';
-        $lines[] = '  '.($this->languageTagsSeen === [] ? '(none)' : implode(', ', array_keys($this->languageTagsSeen)));
+        $lines[] = '  '.($this->languageTagsSeen === [] ? '(none)' : implode(', ', $this->languageTagsSeen));
         $lines[] = '';
         $lines[] = '## Ordering';
         $lines[] = '  Array order is preserved as in source; schema.org does not define ordering for these predicates.';
@@ -400,7 +400,7 @@ final class SchemaJsonLdStructureAnalyzer
             }
 
             if ($stats['nested_keys'] !== []) {
-                $lines[] = '  nested_keys: '.implode(', ', array_keys($stats['nested_keys']));
+                $lines[] = '  nested_keys: '.implode(', ', $stats['nested_keys']);
             }
 
             $lines[] = '';

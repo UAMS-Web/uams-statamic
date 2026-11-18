@@ -228,18 +228,18 @@ it('walks object values like associative arrays, without @context', function ():
 });
 
 it('types each list element, and gives objects in a list their shape on the element key', function (): void {
-    $report = analyzedStructure([['k' => [(object) ['p' => 1], ['q' => 2]]]])->getReport();
+    $report = analyzedStructure([['k' => [(object) ['p' => 1], ['q' => 2], ['r' => 3]]]])->getReport();
 
     expect($report['(root)[].k'])->toBe([
         'value_types' => ['array (indexed)' => 1],
-        'array_element_types' => ['object' => 1, 'array (associative)' => 1],
+        'array_element_types' => ['object' => 1, 'array (associative)' => 2],
         'object_shapes' => [],
         'count' => 1,
-        'examples' => [['object', ['q' => 2]]],
+        'examples' => [['object', ['q' => 2], ['r' => 3]]],
         'nested_keys' => null,
-        'array_length_min' => 2,
-        'array_length_max' => 2,
-    ])->and(structureEntry($report, '(root)[].k[]')['object_shapes'])->toBe(['object(p)' => 1, 'object(q)' => 1]);
+        'array_length_min' => 3,
+        'array_length_max' => 3,
+    ])->and(structureEntry($report, '(root)[].k[]')['object_shapes'])->toBe(['object(p)' => 1, 'object(q)' => 1, 'object(r)' => 1]);
 });
 
 it('tracks the shortest and longest array, counting an @id object as one', function (array $values, int $min, int $max): void {
