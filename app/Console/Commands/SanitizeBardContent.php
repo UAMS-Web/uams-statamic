@@ -120,7 +120,8 @@ class SanitizeBardContent extends Command
 
             // Display current collection being processed
             $collectionTitleValue = $collectionItem->title();
-            $collectionTitle = is_scalar($collectionTitleValue) ? (string) $collectionTitleValue : '';
+            // Printed only inside text, which converts a scalar exactly as a (string) cast would
+            $collectionTitle = is_scalar($collectionTitleValue) ? $collectionTitleValue : '';
             $this->line('Processing collection: '.$collectionTitle);
 
             // ---
@@ -150,7 +151,8 @@ class SanitizeBardContent extends Command
 
                 // Get a display name for the entry (title or slug)
                 $entryTitleValue = $entry->value('title') ?: $entry->slug();
-                $entryTitle = is_scalar($entryTitleValue) ? (string) $entryTitleValue : '';
+                // Printed only inside text, as the collection title is
+                $entryTitle = is_scalar($entryTitleValue) ? $entryTitleValue : '';
 
                 // Get the raw file path where the entry is stored
                 $rawFilePath = $entry->path();
