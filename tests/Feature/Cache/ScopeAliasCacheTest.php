@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Cache\ScopeAliasCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Tests\Support\ThrowawayRoot;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -233,6 +234,33 @@ describe('without Laravel\'s cache bound', function (): void {
             expect($cache->rememberForever($key, fn (): array => ['recomputed']))->toBe(['Thing', 'Event']);
         } finally {
             File::delete($path);
+        }
+    });
+
+    it('creates the cache directory and its missing parents before the first write', function (): void {
+        // A storage root of this process's own with no file cache in it yet, so the write
+        // needs `ensureDirectory()` to run and to create `framework/cache/data` as well as
+        // the scope directory under it. The shared directory every process uses is left alone.
+        $originalStorage = app()->storagePath();
+        $root = storage_path('framework/testing/scope-alias-cache-'.ThrowawayRoot::segment());
+        File::deleteDirectory($root);
+        File::ensureDirectoryExists($root);
+
+        $key = scopeAliasCacheKey();
+        $cache = new ScopeAliasCache;
+        app()->useStoragePath($root);
+        unbindLaravelCache();
+
+        try {
+            expect(File::isDirectory($root.'/framework'))->toBeFalse();
+
+            $cache->put($key, ['Thing']);
+
+            expect(File::isDirectory($root.'/'.SCOPE_ALIAS_CACHE_DIR))->toBeTrue()
+                ->and(File::get(scopeAliasCachePath($key)))->toBe('["Thing"]');
+        } finally {
+            app()->useStoragePath($originalStorage);
+            File::deleteDirectory($root);
         }
     });
 
