@@ -95,7 +95,7 @@
         {
             "name": "mutate",
             "_note": "ci.yml mutate: the mutation-tooling smoke, at the 4G memory limit the gate scripts give PHP (#3212). mutation fails a run that mutated nothing or scored below 100, which is the false green Pest's exit status alone allows.",
-            "run": "php -d memory_limit=4G vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert --class=\"App\\Support\\UamsAlert\\AlertSiteKeyResolver\" --covered-only",
+            "run": "php -d memory_limit=4G vendor/bin/pest tests/Unit/Support/UamsAlert/AlertSiteKeyResolverTest.php --mutate --path=app/Support/UamsAlert --class=\"App\\Support\\UamsAlert\\AlertSiteKeyResolver\"",
             "always": true,
             "mutation": { "minScore": 100 }
         },

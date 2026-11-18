@@ -15,7 +15,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 covers(CustomFieldComposer::class);
 
 /**
- * Mutation: tracked under App\Http\View\Composers\CustomFieldComposer (--covered-only).
+ * Mutation: measured on App\Http\View\Composers\CustomFieldComposer without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Http/View/Composers/CustomFieldComposerTest.php
  */
