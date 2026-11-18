@@ -65,6 +65,8 @@ parameters:
         # file, so PHPStan needs the symbols to avoid reporting the function and constant
         # as undefined. Symbol discovery only — the file itself is not analyzed.
         - scripts/tia-blindness.php
+        # The proxy generator its test requires (#971): symbol discovery only, like the line above.
+        - scripts/search-update-proxy/SearchUpdateProxyGenerator.php
     excludePaths:
         # Large machine-generated reference-data enums (ISO 639 languages, ISO
         # 3166 countries, US ZIP codes/counties, ISCO/ISCED classifications,
