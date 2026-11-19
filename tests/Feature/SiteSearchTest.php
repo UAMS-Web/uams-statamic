@@ -136,6 +136,8 @@ it('lists exactly the non-reader-facing collections it excludes from the default
         // `redirect_domains` holds redirect rules for domains that are not Statamic
         // sites (UAMS-Web/uams-statamic-archive#2678), which are infrastructure, not reader-facing search hits.
         'redirect_domains',
+        // `redirect_hosts` is the domain list those rules name (#668), infrastructure too.
+        'redirect_hosts',
         'reusable_content',
         'schema_objects',
         // `subject_matter` became a structured collection in UAMS-Web/uams-statamic-archive#2822: subjects are a

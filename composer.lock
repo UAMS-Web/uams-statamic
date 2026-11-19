@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5281ba541cbf36a14c20e03710331285",
+    "content-hash": "19f31b305168c5b90e1bf2e7a0491397",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12524,16 +12524,16 @@
         },
         {
             "name": "uams-web/aether-redirects",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-redirects.git",
-                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1"
+                "reference": "e0d1d95a3bc7a805fc1d8835e476473470a9a3fa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
-                "reference": "f3dd0b96ec2fe0861764523f47aa850e8031e3a1",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-redirects/zipball/e0d1d95a3bc7a805fc1d8835e476473470a9a3fa",
+                "reference": "e0d1d95a3bc7a805fc1d8835e476473470a9a3fa",
                 "shasum": ""
             },
             "require": {
@@ -12594,7 +12594,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-redirects/issues",
                 "source": "https://github.com/UAMS-Web/aether-redirects"
             },
-            "time": "2026-11-12T16:50:44+00:00"
+            "time": "2026-11-14T02:03:55+00:00"
         },
         {
             "name": "uams-web/aether-search",
@@ -12950,16 +12950,16 @@
         },
         {
             "name": "uams-web/patches-pest-plugin-mutate",
-            "version": "v1.4.1",
+            "version": "v1.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/patches-pest-plugin-mutate.git",
-                "reference": "0ae879fcdb12a8a02a70c00372e3193b04fde8b8"
+                "reference": "70035e5157fb5509cf9791dadb763641978baf1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/patches-pest-plugin-mutate/zipball/0ae879fcdb12a8a02a70c00372e3193b04fde8b8",
-                "reference": "0ae879fcdb12a8a02a70c00372e3193b04fde8b8",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-pest-plugin-mutate/zipball/70035e5157fb5509cf9791dadb763641978baf1f",
+                "reference": "70035e5157fb5509cf9791dadb763641978baf1f",
                 "shasum": ""
             },
             "require": {
@@ -13001,7 +13001,8 @@
                 "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
                 "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
             },
-            "time": "2026-11-15T14:53:23+00:00"
+            "time": "2026-11-18T06:33:44+00:00",
+            "published-time": "2026-11-18T12:02:28+00:00"
         },
         {
             "name": "uams-web/patches-statamic-cms",

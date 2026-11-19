@@ -42,6 +42,13 @@
             "filename": ["tests/Browser/**"],
             "words": ["Dont"]
         },
+        // `uamsbaptist.health` is one of the vanity domains the redirect add-on's
+        // approval fields name, copied from its reference blueprint (#668). A
+        // domain name cannot be reworded, so it is allowed in that file only.
+        {
+            "filename": ["resources/blueprints/collections/redirect_domains/redirect_domain.yaml"],
+            "words": ["uamsbaptist"]
+        },
         // The ipv6-address test feeds cspell deliberate misspellings and
         // letter-only hex groups to prove which ones the pattern above hides, so
         // they are fixtures rather than prose. Scoped to that one file; the

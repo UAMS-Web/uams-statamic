@@ -4037,3 +4037,23 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Removing only the group branch*: it leaves the raw phone keys and the damaged date messages. *Supporting groups end to end* (a fallback key that resolves, and a way past Laravel's formatting of the group): it builds machinery for a path with no users and fixes neither defect.
 
 **Companion.** #1014 (the decision, its `## Decision` section) and its [measurement](https://github.com/UAMS-Web/uams-statamic/issues/1014#issuecomment-6966364477); #1002 (the build); #1016 (the date rules).
+
+## 2026-11-18: The five custom date rules are retired, not renamed (#1016)
+
+**Decision.** The five custom date rules (`after`, `after_or_equal`, `before`, `before_or_equal`, `date_equals`) are retired, decided on 2026-11-18. `After`, `AfterOrEqual`, `Before`, `BeforeOrEqual`, `DateEquals` and `BaseDateComparisonRule` are deleted, with their five registrations in `ValidationServiceProvider`, their tests, and the `statamic::validation` entries only they read.
+
+**Why.** Laravel already owns all five names, so `after:12:00,time` runs Laravel's validator and the custom class never executes; retiring them changes no validation result. The custom classes only damaged the failure message, through the replacer's positional placeholders. None of the five names is used in any blueprint, fieldset or app code, and they are the last users of the legacy `Rule` interface once #1002 lands.
+
+**Rejected.** *Renaming the rules so they run, ported to `ValidationRule` with typed messages through `$fail`*: it keeps machinery for date, time and datetime comparisons that no field uses, and adds a second spelling of comparisons Laravel already validates.
+
+**Companion.** #1016 (the decision, its `## Decision` section) and #1014's [measurement](https://github.com/UAMS-Web/uams-statamic/issues/1014#issuecomment-6966364477); #1047 (the build).
+
+## 2026-11-18: `RoleTitle`'s support classes move to `aether-people`, and the `Isco08` enum to the shared enums add-on (#1001)
+
+**Decision.** Decided by the project owner on 2026-11-18. `App\Enums\Isco08` moves to the shared enums add-on (#994). The `RoleTitle` rules, `RoleTitleDefinition`, `RoleTitleScopeUnit`, `RoleTitleValue`, `RoleTitleSchemaOutputComputer` and the remaining `RoleTitle` and `Isco_08` support classes move to `aether-people` with the two fieldtypes. `config/role_title.php` travels with them as `aether-people`'s config, merged under the `role_title` key and publishable so the site can override it. No interface for the site to bind is added.
+
+**Why.** `aether-people` must not depend on site code (#767), so the support classes go where the fieldtypes go. The enum is also used outside the two fieldtypes (the `EnumCase` tag, and the `Isco08EnumGenerator` that writes it), so it goes to the shared enums add-on rather than into `aether-people`. An interface was to be added only if `RoleTitleSchemaOutputComputer` served site-only schema output, and it does not: it maps the config's `schema` scenarios to stored `role_title` subfields, depends only on `RoleTitleDefinition`, and is called only by the `RoleTitle` fieldtype and `RoleTitleValue`. The config is plain data read only through `RoleTitleDefinition`, so leaving it in the site would make the add-on read a file only the site provides.
+
+**Rejected.** *All support classes into `aether-people`, the enum included*: the site's other users of the enum would then depend on `aether-people` for it. *An interface for everything*: it adds a binding the site must supply for classes that have no site dependency.
+
+**Companion.** #1001 (the decision and the code reading behind the two confirmations), #767 (the people boundary), #994 (the shared enums add-on), `UAMS-Web/aether-people#124` (the move).
