@@ -40,6 +40,9 @@ class LegacyVideoSetConverter
      */
     public static function platformFor(string $url): ?string
     {
+        // A URL with no host matches no domain below, whatever stands in for it, and the
+        // fallback already makes the value a string.
+        // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
 
         // Exact host or subdomain match — a substring test would mis-route
@@ -72,12 +75,16 @@ class LegacyVideoSetConverter
             $values = $value['attrs']['values'] ?? null;
 
             if (\is_array($values) && ($values['type'] ?? null) === 'video') {
+                // A missing url is skipped whatever stands in for it, since no default has a host.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
                 $url = $values['video_url'] ?? '';
                 $platform = \is_string($url) ? self::platformFor($url) : null;
 
                 if ($platform !== null) {
                     // Route to the platform set, rename the url key, and preserve the rest.
                     $values['type'] = $platform;
+                    // A platform was found, so `video_url` is present and the default is never used.
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
                     $values['url'] = $values['video_url'] ?? '';
                     unset($values['video_url']);
 

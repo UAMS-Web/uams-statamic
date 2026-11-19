@@ -68,6 +68,9 @@ final class DateBoundaryEngine
             return null;
         }
 
+        // The whole match starts with the four year digits and a hyphen, so the
+        // integer cast reads the same year from $match[0] as from $match[1].
+        // @pest-mutate-ignore: DecrementInteger
         $year = (int) $match[1];
         $month = (int) $match[2];
         $day = (int) $match[3];
@@ -130,6 +133,9 @@ final class DateBoundaryEngine
         $unit = $offset['unit'] ?? null;
         $durationKey = \is_string($unit) ? (self::OFFSET_UNIT_TO_DURATION_KEY[$unit] ?? null) : null;
         $amountRaw = $offset['number'] ?? null;
+        // A non-numeric amount is only compared against `<= 0` below, so a -1
+        // fallback is the same no-op as 0.
+        // @pest-mutate-ignore: DecrementInteger
         $amount = is_numeric($amountRaw) ? (int) $amountRaw : 0;
 
         if ($durationKey === null || $amount <= 0) {
@@ -159,10 +165,6 @@ final class DateBoundaryEngine
         CarbonImmutable $today,
         ?array $offset
     ): ?CarbonImmutable {
-        if ($type === null || $type === 'none') {
-            return null;
-        }
-
         if ($type === 'custom') {
             return self::parseDay($customValue);
         }
@@ -171,12 +173,13 @@ final class DateBoundaryEngine
             return self::applyOffset($today, $offset);
         }
 
+        // An unparseable field value stays null, since applyOffset() returns a
+        // null date unchanged.
         if ($type === 'field') {
-            $referenced = self::parseDay($fieldValue);
-
-            return $referenced instanceof CarbonImmutable ? self::applyOffset($referenced, $offset) : null;
+            return self::applyOffset(self::parseDay($fieldValue), $offset);
         }
 
+        // `none`, null, and any unknown type disable the boundary.
         return null;
     }
 

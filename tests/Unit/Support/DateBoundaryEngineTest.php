@@ -10,6 +10,11 @@ use Carbon\CarbonImmutable;
  * `resources/js/date-boundary-engine.test.js`. Every case here has a counterpart
  * there so the two engines stay in lockstep (UAMS-Web/uams-statamic-archive#1394).
  *
+ * @covers \App\Support\DateBoundaryEngine
+ *
+ * Mutation: no survivors on App\Support\DateBoundaryEngine, measured on macOS without
+ * --covered-only, against this file and DateBoundaryValidationTest (#1076).
+ *
  * @command  php artisan test --compact tests/Unit/Support/DateBoundaryEngineTest.php
  */
 
@@ -105,6 +110,17 @@ describe('applyOffset', function (): void {
         expect(boundaryIso(DateBoundaryEngine::applyOffset($base, null)))->toBe('2026-01-15');
         expect(DateBoundaryEngine::applyOffset(null, ['operator' => 'add', 'number' => 1, 'unit' => 'day']))->toBeNull();
     });
+
+    it('returns the very same instance for a zero or missing amount', function () use ($base): void {
+        // A no-op hands back the input date itself, not an equal copy from add(0)
+        expect(DateBoundaryEngine::applyOffset($base, ['operator' => 'add', 'number' => 0, 'unit' => 'day']))->toBe($base);
+        expect(DateBoundaryEngine::applyOffset($base, ['operator' => 'add', 'unit' => 'day']))->toBe($base);
+        expect(DateBoundaryEngine::applyOffset($base, ['operator' => 'add', 'number' => 'soon', 'unit' => 'day']))->toBe($base);
+    });
+
+    it('casts a numeric-string amount, as stored config carries it', function () use ($base): void {
+        expect(boundaryIso(DateBoundaryEngine::applyOffset($base, ['operator' => 'add', 'number' => '3', 'unit' => 'day'])))->toBe('2026-01-18');
+    });
 });
 
 describe('resolveBoundary', function (): void {
@@ -171,6 +187,26 @@ describe('resolveEarliest / resolveLatest (config-shaped, mirrors the Vue)', fun
         expect(boundaryIso(DateBoundaryEngine::resolveEarliest($config, boundaryToday(), null)))->toBe('2026-06-03');
     });
 
+    it('resolves a today earliest with its today offset', function (): void {
+        $config = [
+            'earliest_date_type' => 'today',
+            'earliest_date_today_offset' => [['operator' => 'add', 'number' => 2, 'unit' => 'day']],
+            'earliest_date_field_offset' => [['operator' => 'add', 'number' => 9, 'unit' => 'day']],
+        ];
+
+        expect(boundaryIso(DateBoundaryEngine::resolveEarliest($config, boundaryToday(), null)))->toBe('2026-06-03');
+    });
+
+    it('resolves a field latest against the referenced value with its field offset', function (): void {
+        $config = [
+            'latest_date_type' => 'field',
+            'latest_date_field_offset' => [['operator' => 'subtract', 'number' => 1, 'unit' => 'week']],
+            'latest_date_today_offset' => [['operator' => 'add', 'number' => 9, 'unit' => 'day']],
+        ];
+
+        expect(boundaryIso(DateBoundaryEngine::resolveLatest($config, boundaryToday(), '2026-06-20')))->toBe('2026-06-13');
+    });
+
     it('is null when no earliest/latest boundary is configured', function (): void {
         expect(DateBoundaryEngine::resolveEarliest([], boundaryToday(), null))->toBeNull();
         expect(DateBoundaryEngine::resolveLatest([], boundaryToday(), null))->toBeNull();
@@ -186,6 +222,14 @@ describe('normalizeAllowedDays', function (): void {
 
     it('returns the restricted set as strings', function (): void {
         expect(DateBoundaryEngine::normalizeAllowedDays([1, 2, 3, 4, 5]))->toBe(['1', '2', '3', '4', '5']);
+    });
+
+    it('keeps a six-day set as a restriction', function (): void {
+        expect(DateBoundaryEngine::normalizeAllowedDays(['1', '2', '3', '4', '5', '6']))->toBe(['1', '2', '3', '4', '5', '6']);
+    });
+
+    it('reindexes the set and maps a non-scalar entry to an empty key', function (): void {
+        expect(DateBoundaryEngine::normalizeAllowedDays([2 => '2', 4 => ['x'], 5 => 5]))->toBe(['2', '', '5']);
     });
 });
 
@@ -219,6 +263,25 @@ describe('normalizeExceptions', function (): void {
 
     it('returns [] for non-arrays', function (): void {
         expect(DateBoundaryEngine::normalizeExceptions(null))->toBe([]);
+    });
+
+    it('keeps reading rows after a dropped one', function (): void {
+        $ranges = DateBoundaryEngine::normalizeExceptions([
+            'not-a-row',
+            ['type' => 'single_date', 'item' => 'nope'],
+            ['type' => 'single_date', 'item' => '2026-07-04'],
+            ['type' => 'date_range', 'item' => ['start' => '2026-08-01', 'end' => '2026-08-03']],
+        ]);
+
+        expect(array_map(fn (array $range): array => [boundaryIso($range['start']), boundaryIso($range['end'])], $ranges))
+            ->toBe([['2026-07-04', '2026-07-04'], ['2026-08-01', '2026-08-03']]);
+    });
+
+    it('drops a range-shaped item under another type, and a range missing its start', function (): void {
+        expect(DateBoundaryEngine::normalizeExceptions([
+            ['type' => 'mystery', 'item' => ['start' => '2026-07-01', 'end' => '2026-07-07']],
+            ['type' => 'date_range', 'item' => ['end' => '2026-07-07']],
+        ]))->toBe([]);
     });
 });
 
@@ -257,6 +320,11 @@ describe('isDateUnavailable', function (): void {
 
     it('is available with no constraints', function () use ($monday): void {
         expect(DateBoundaryEngine::isDateUnavailable($monday, null, []))->toBeFalse();
+    });
+
+    it('matches weekday keys exactly, not numerically', function () use ($monday): void {
+        // Monday's key is '1'; a loose comparison would accept '01'
+        expect(DateBoundaryEngine::isDateUnavailable($monday, ['01'], []))->toBeTrue();
     });
 });
 
