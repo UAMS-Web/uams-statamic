@@ -4256,8 +4256,8 @@ class SchemaThingFromRelationshipResolver
                     continue;
                 }
 
-                // Recursively resolve using a single taxonomy handle
-                $resolvedPiece = $this->normalizeToTerm(
+                // Resolve using this single taxonomy handle
+                $resolvedPiece = $this->normalizeToTermForTaxonomy(
                     $item,
                     $taxonomyTrimmed
                 );
@@ -4286,6 +4286,27 @@ class SchemaThingFromRelationshipResolver
             return null;
         }
 
+        return $this->normalizeToTermForTaxonomy(
+            $item,
+            $taxonomy
+        );
+    }
+
+    /**
+     * Normalize one relation item to a taxonomy term within one taxonomy scope.
+     *
+     * Holds the single-scope half of {@see self::normalizeToTerm()}, which calls it
+     * once per handle of a pipe-separated scope. It does not call back into
+     * `normalizeToTerm()`, so a scope can never be split again.
+     *
+     * @param  mixed  $item  Raw relation item.
+     * @param  string|null  $taxonomy  One taxonomy handle, or null for any taxonomy.
+     * @return TaxonomyTerm|null Normalized term.
+     */
+    private function normalizeToTermForTaxonomy(
+        mixed $item,
+        ?string $taxonomy
+    ): ?TaxonomyTerm {
         // Check if the item is an instance of Value
         if ($item instanceof Value) {
             // Unwrap the Value instance to the underlying stored value
