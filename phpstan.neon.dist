@@ -65,6 +65,15 @@ parameters:
         # file, so PHPStan needs the symbols to avoid reporting the function and constant
         # as undefined. Symbol discovery only — the file itself is not analyzed.
         - scripts/tia-blindness.php
+    excludePaths:
+        # `App\Support\MovedClassAliases` names all 85 classes that moved into the enums and
+        # fieldtype add-ons (UAMS-Web/uams-statamic#995), the large generated enums among them
+        # (`ZipCode` alone is about 6 MB of source). Analyzing it makes one worker load every
+        # one of them, which crossed the 2G memory limit on a 4-worker runner. The file is
+        # a map and a four-line lookup, and `MovedClassAliasesTest` resolves every entry.
+        # Listed under `analyse` so its symbols stay known to the rest of the tree.
+        analyse:
+            - app/Support/MovedClassAliases.php
     # Both of UAMS-Web/uams-statamic-archive#1344's message-scoped ignoreErrors entries are retired by
     # pest-plugin-phpstan (included above) — see UAMS-Web/uams-statamic-archive#1719. Neither is replaced in
     # kind: the plugin resolves the underlying mis-inferences rather than hiding
