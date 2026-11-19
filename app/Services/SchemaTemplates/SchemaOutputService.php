@@ -4771,6 +4771,10 @@ class SchemaOutputService
      * Resolve duplicate blueprint term fields (same handle, different replicator
      * sets) using {@see Field::get('max_items')} plus the merged storage shape.
      *
+     * A single candidate is returned by every branch. Where a list or collection
+     * finds no multi-select candidate, every candidate caps at one item, so the
+     * first candidate is also the first single-item one.
+     *
      * @param  list<Field>  $candidates
      */
     private function selectTermsLikeBlueprintFieldForMergedValue(
@@ -4789,10 +4793,6 @@ class SchemaOutputService
 
         if ($normalizedCandidates === []) {
             return null;
-        }
-
-        if (\count($normalizedCandidates) === 1) {
-            return $normalizedCandidates[0];
         }
 
         $inspected = $present instanceof Value
@@ -4828,7 +4828,7 @@ class SchemaOutputService
             && $inspected !== []
             && array_is_list($inspected)
         ) {
-            return $multiSelectFields[0] ?? $maxItemsOneFields[0] ?? $normalizedCandidates[0];
+            return $multiSelectFields[0] ?? $normalizedCandidates[0];
         }
 
         if ($inspected instanceof Term) {
@@ -4839,7 +4839,7 @@ class SchemaOutputService
             $inspected instanceof Collection
             && $inspected->isNotEmpty()
         ) {
-            return $multiSelectFields[0] ?? $maxItemsOneFields[0] ?? $normalizedCandidates[0];
+            return $multiSelectFields[0] ?? $normalizedCandidates[0];
         }
 
         return $normalizedCandidates[0];
