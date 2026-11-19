@@ -23,6 +23,8 @@ uses(TestCase::class);
  * tests/Feature/CertificationCertificateSchemaDatesTest.php, `CertificationRowKind` 98 of 98 killed with
  * two annotated equivalents, `CertificationKind` 3 of 3, `CertificationHeading` 21 of 21 and
  * `CertificationsByKind` 1 of 1 (UAMS-Web/uams-statamic-archive#2973), run serial, `--covered-only`, and scoped with `--path` and `--class`.
+ * Without `--covered-only` (#1090), `CertificationRowKind` is 108 of 108 killed, with the rank of the first and
+ * last kind in `ORDER` annotated as equivalent.
  *
  * @covers \App\Support\People\CertificationRowKind
  * @covers \App\Modifiers\CertificationHeading
