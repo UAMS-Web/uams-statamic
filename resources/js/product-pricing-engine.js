@@ -25,11 +25,11 @@
  * Unlike the calculation / person-name engines, this one needs no Alpine
  * scope — composite subfields drop `x-model` (see the forms `fields.antlers`
  * header note), so it binds plain DOM listeners instead. It still registers
- * through `lib/alpine-engine.js` purely for the shared lifecycle and
+ * through the fieldtype add-on's `alpine.js` purely for the shared lifecycle and
  * idempotency guard.
  */
 
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for product-field wrappers emitted by `product.antlers.html`. */
 const PRODUCT_FIELD_SELECTOR = '[data-product-field]';
@@ -118,7 +118,7 @@ function initProductField(field) {
 
 /**
  * Public entry. Lifecycle (wait for Alpine, scan, idempotent flag, per-element
- * init) lives in `lib/alpine-engine.js` and is shared with sibling engines.
+ * init) lives in the fieldtype add-on's `alpine.js` and is shared with sibling engines.
  */
 export function registerProductPricingEngine() {
 	registerAlpineEngine({

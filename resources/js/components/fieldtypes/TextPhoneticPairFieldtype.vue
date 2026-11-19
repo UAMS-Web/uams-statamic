@@ -35,8 +35,8 @@ import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
 import { publishContextKey } from '@statamic/cms/ui';
 import PhoneticTextInstructions from './partials/PhoneticTextInstructions.vue';
 import TextPhoneticPairInput from './partials/TextPhoneticPair.vue';
-import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
-import { subfieldId } from './partials/subfieldId.js';
+import GroupFieldtypeShell from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
+import { subfieldId } from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/subfieldId.js';
 
 function emptyPair() {
 	return { text: '', phonetic_text: '' };

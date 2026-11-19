@@ -114,7 +114,6 @@
         "composer.lock",
         "*.min.js",
         "*.min.css",
-        "app/Enums/**",
         "lang/vendor/**",
         "CHANGELOG.md"
     ]

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Enums\MimeType;
+use UAMSWeb\Aether\Enums\MimeType;
 
 /**
  * Parses Box.com "direct link" URLs used with shared static file paths.
@@ -54,12 +54,7 @@ final class BoxSharedStaticDirectUrl
         // Normalize leading and trailing whitespace on the candidate URL
         $trimmed = \trim($url);
 
-        // Reject empty strings so callers treat them as non-Box URLs
-        if ($trimmed === '') {
-            return null;
-        }
-
-        // Reject values that are not syntactically valid URLs
+        // Reject values that are not syntactically valid URLs, the empty string included
         if (
             ! \filter_var(
                 $trimmed,
@@ -77,8 +72,7 @@ final class BoxSharedStaticDirectUrl
 
         // Check if the scheme is missing or not HTTPS
         if (
-            $scheme === null
-            || $scheme === false
+            ! \is_string($scheme)
             || \strtolower($scheme) !== 'https'
         ) {
             return null;
@@ -92,8 +86,7 @@ final class BoxSharedStaticDirectUrl
 
         // Check if the host is missing or not the expected Box host
         if (
-            $host === null
-            || $host === false
+            ! \is_string($host)
             || \strtolower($host) !== self::HOST
         ) {
             return null;
@@ -105,39 +98,26 @@ final class BoxSharedStaticDirectUrl
             \PHP_URL_PATH
         );
 
-        // Check if the path is missing or too short to contain a file name
-        if (
-            in_array($path, [null, false, '', '/'], true)
-        ) {
+        // Check if the path is missing; a path with no file name fails the
+        // extension or directory check below
+        if (! \is_string($path)) {
             return null;
         }
 
-        // Split the path into directory, basename, and extension segments
+        // Split the path into its segments to read the extension
         $pathInfo = \pathinfo($path);
 
-        // Read the directory name for comparison to the required static prefix
-        // (pathinfo() always returns a 'dirname' entry)
-        $dirname = $pathInfo['dirname'];
-
-        // Read the file extension in lowercase for MIME lookup consistency
-        $extension = isset($pathInfo['extension'])
-            ? \strtolower($pathInfo['extension'])
-            : '';
-
-        // Read the basename to ensure a concrete file segment exists
-        $basename = $pathInfo['basename'];
-
-        // Reject paths without a usable basename or extension
-        if (
-            $basename === ''
-            || $basename === '.'
-            || $extension === ''
-        ) {
+        // Reject a path whose last segment has no extension
+        if (! isset($pathInfo['extension'])) {
             return null;
         }
 
+        // Read the file extension in lowercase for MIME lookup consistency. An
+        // empty one (a trailing dot) maps to no MIME type and is rejected below.
+        $extension = \strtolower($pathInfo['extension']);
+
         // Check if the directory matches the required Box shared static prefix
-        if ($dirname !== self::PATH_DIR) {
+        if (\dirname($path) !== self::PATH_DIR) {
             return null;
         }
 
@@ -157,6 +137,8 @@ final class BoxSharedStaticDirectUrl
             \in_array(
                 $extension,
                 self::VIDEO_EXTENSIONS_FORCE_CATEGORY,
+                // The needle and every element are strings, so a loose match is the same.
+                // @pest-mutate-ignore: TrueToFalse
                 true
             )
         ) {

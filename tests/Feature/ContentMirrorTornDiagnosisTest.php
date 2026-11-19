@@ -181,3 +181,66 @@ it('maps a request failure on a torn mirror file to the diagnosis', function ():
         (new Filesystem)->deleteDirectory($probe['directory']);
     }
 });
+
+// --- #1072: the full messages, and the guards the cases above do not reach -----------------------
+
+it('words the torn diagnosis in full', function () use (&$root): void {
+    file_put_contents($root.'/source/globals/redirects.yaml', TORN_DIAGNOSIS_WHOLE);
+    file_put_contents($root.'/mirror/globals/redirects.yaml', TORN_DIAGNOSIS_TORN);
+
+    $diagnosis = ContentMirror::parseFailureDiagnosis(
+        tornDiagnosisParseFailure($root.'/mirror/globals/redirects.yaml'),
+        $root.'/source',
+        $root.'/mirror',
+    );
+
+    expect($diagnosis)->toBe(sprintf(
+        'The test content mirror at %s is torn: %s does not parse, while the same file in %s does. '
+        .'The mirror was most likely rewritten while this process was reading it '
+        .'(test:seed-stache run alongside running tests, or a test run killed mid-write). '
+        .'Rebuild it with no tests running: php artisan test:seed-stache',
+        realpath($root.'/mirror'),
+        'globals'.DIRECTORY_SEPARATOR.'redirects.yaml',
+        realpath($root.'/source'),
+    ));
+});
+
+it('words the content defect diagnosis in full', function () use (&$root): void {
+    file_put_contents($root.'/source/globals/redirects.yaml', TORN_DIAGNOSIS_TORN);
+    file_put_contents($root.'/mirror/globals/redirects.yaml', TORN_DIAGNOSIS_TORN);
+
+    $failure = tornDiagnosisParseFailure($root.'/mirror/globals/redirects.yaml');
+
+    expect(ContentMirror::parseFailureDiagnosis($failure, $root.'/source', $root.'/mirror'))->toBe(sprintf(
+        '%s is invalid YAML in content/ itself, not only in the test mirror (%s). '
+        .'This is a content defect: fix the file in the content submodule.',
+        realpath($root.'/source').DIRECTORY_SEPARATOR.'globals'.DIRECTORY_SEPARATOR.'redirects.yaml',
+        $failure->getMessage(),
+    ));
+});
+
+it('stays silent when the mirror or the source does not exist', function (string $missing) use (&$root): void {
+    file_put_contents($root.'/mirror/globals/redirects.yaml', TORN_DIAGNOSIS_TORN);
+    $failure = tornDiagnosisParseFailure($root.'/mirror/globals/redirects.yaml');
+
+    $mirror = $missing === 'mirror' ? $root.'/no-such-mirror' : $root.'/mirror';
+    $source = $missing === 'source' ? $root.'/no-such-source' : $root.'/source';
+
+    expect(ContentMirror::parseFailureDiagnosis($failure, $source, $mirror))->toBeNull();
+})->with(['mirror', 'source']);
+
+it('stays silent when the failing file no longer exists', function () use (&$root): void {
+    file_put_contents($root.'/mirror/globals/redirects.yaml', TORN_DIAGNOSIS_TORN);
+    $failure = tornDiagnosisParseFailure($root.'/mirror/globals/redirects.yaml');
+    unlink($root.'/mirror/globals/redirects.yaml');
+
+    expect(ContentMirror::parseFailureDiagnosis($failure, $root.'/source', $root.'/mirror'))->toBeNull();
+});
+
+it('does not take a sibling directory sharing the mirror name as the mirror', function () use (&$root): void {
+    (new Filesystem)->ensureDirectoryExists($root.'/mirror-other');
+    file_put_contents($root.'/mirror-other/redirects.yaml', TORN_DIAGNOSIS_TORN);
+
+    expect(ContentMirror::parseFailureDiagnosis(tornDiagnosisParseFailure($root.'/mirror-other/redirects.yaml'), $root.'/source', $root.'/mirror'))
+        ->toBeNull();
+});

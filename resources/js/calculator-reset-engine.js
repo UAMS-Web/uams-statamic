@@ -33,7 +33,7 @@
 // rather than compiled through `new Function()`, so `script-src` needs no
 // `unsafe-eval` (UAMS-Web/uams-statamic-archive#1859). The constraint is on `x-*` attributes, not on modules.
 import Alpine from '@alpinejs/csp';
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 const RESET_BUTTON_SELECTOR = '[data-calculator-reset]';
 const SCOPE_CONTAINER_SELECTOR = '[data-calculator-context], form';

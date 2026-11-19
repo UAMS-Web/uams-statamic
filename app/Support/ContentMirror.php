@@ -294,7 +294,12 @@ final class ContentMirror
 
             return $build($source, $mirror);
         } finally {
+            // Either call alone releases the lock (closing a handle unlocks it), and the
+            // handle is freed when this method returns, so dropping one changes nothing.
+            // @pest-mutate-ignore: RemoveFunctionCall
             flock($lock, LOCK_UN);
+            // The same holds for the close: the unlock above, or the return, releases it.
+            // @pest-mutate-ignore: RemoveFunctionCall
             fclose($lock);
         }
     }
@@ -378,6 +383,8 @@ final class ContentMirror
         }
 
         $files->deleteDirectory($mirror);
+        // copyDirectory() creates a missing destination itself, so the copy is the same without it.
+        // @pest-mutate-ignore: RemoveMethodCall
         $files->ensureDirectoryExists($mirror);
 
         // `copyDirectory()` walks the tree itself, so the submodule's own `.git`
@@ -402,6 +409,8 @@ final class ContentMirror
             );
         }
 
+        // json_encode() fails only on input it cannot encode, and these are two sha1 strings.
+        // @pest-mutate-ignore: RemoveStringCast
         $files->put($stampFile, (string) json_encode([
             'source' => self::digest($expected),
             'mirror' => self::digest($actual),

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes\Traits;
 
-use App\Enums\Country;
-use App\Enums\Currency;
-use App\Enums\Language;
-use App\Enums\LanguageBCP47;
-use App\Enums\MimeType;
-use App\Enums\State;
+use UAMSWeb\Aether\Enums\Country;
+use UAMSWeb\Aether\Enums\Currency;
+use UAMSWeb\Aether\Enums\Language;
+use UAMSWeb\Aether\Enums\LanguageBCP47;
+use UAMSWeb\Aether\Enums\MimeType;
+use UAMSWeb\Aether\Enums\State;
 
 /**
  * Trait to provide preset options functionality for select-like fieldtypes.
@@ -337,7 +337,7 @@ trait PresetOptions
         $options = [];
 
         // Build the full enum class name with namespace
-        $fullEnumClass = '\App\Enums\\'.$enumClass;
+        $fullEnumClass = '\UAMSWeb\Aether\Enums\\'.$enumClass;
 
         // ---
         // Build the options array

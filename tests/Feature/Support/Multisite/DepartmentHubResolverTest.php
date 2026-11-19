@@ -216,3 +216,97 @@ it('audit command fails and lists hub sites missing a schema_subject', function 
         ->expectsOutputToContain('  - broken_hub')
         ->assertExitCode(1);
 });
+
+// -----------------------------------------------------------------------------
+// Resolver: stored-value unwrapping and defensive paths (#1087)
+// -----------------------------------------------------------------------------
+
+it('unwraps a stored department_organization value to its single id', function (mixed $stored, ?string $expected) {
+    mockMultisiteGlobal(['the_site' => ['department_organization' => $stored]]);
+
+    $resolver = new DepartmentHubResolver;
+
+    expect($resolver->organizationId('the_site'))->toBe($expected)
+        ->and($resolver->isHubSite('the_site'))->toBe($expected !== null);
+})->with([
+    'one-element array' => [['org-a'], 'org-a'],
+    'first of several' => [['org-a', 'org-b'], 'org-a'],
+    'integer in an array' => [[42], '42'],
+    'bare string' => ['org-a', 'org-a'],
+    'bare integer' => [7, '7'],
+    'null' => [null, null],
+    'empty string' => ['', null],
+    'false' => [false, null],
+    'empty array' => [[], null],
+    'empty string in an array' => [[''], null],
+    'false in an array' => [[false], null],
+    'null in an array' => [[null], null],
+    'nested array' => [[['org-a']], null],
+]);
+
+it('returns null when the site has no multisite-settings localization', function () {
+    $set = Mockery::mock(GlobalSetContract::class);
+    $set->shouldReceive('in')->with('orphan_site')->andReturnNull();
+    GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturn($set);
+
+    expect((new DepartmentHubResolver)->organizationId('orphan_site'))->toBeNull();
+});
+
+it('looks no entry up for a site that is not a hub', function () {
+    mockMultisiteGlobal(['plain_site' => ['department_organization' => []]]);
+    EntryFacade::shouldReceive('find')->never();
+
+    expect((new DepartmentHubResolver)->organization('plain_site'))->toBeNull();
+});
+
+it('flags every broken hub in site order, past sites the audit skips', function () {
+    // Each skipped shape comes before a flagged hub, so none may end the walk.
+    $set = Mockery::mock(GlobalSetContract::class);
+    $set->shouldReceive('in')->with('no_localization')->andReturnNull();
+
+    foreach ([
+        'first_broken' => ['org-a', []],
+        'plain_site' => [[], []],
+        'complete_hub' => [['org-c'], ['schema-c']],
+        'second_broken' => [['org-b'], ['']],
+    ] as $handle => [$organization, $subject]) {
+        $variables = Mockery::mock(Variables::class);
+        $variables->shouldReceive('get')->with('department_organization')->andReturn($organization);
+        $variables->shouldReceive('get')->with('schema_subject')->andReturn($subject);
+        $set->shouldReceive('in')->with($handle)->andReturn($variables);
+    }
+
+    GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturn($set);
+
+    $nullHandle = Mockery::mock(SiteObject::class);
+    $nullHandle->shouldReceive('handle')->andReturnNull();
+
+    Site::shouldReceive('all')->andReturn(collect([
+        new stdClass,
+        mockSite(''),
+        $nullHandle,
+        mockSite('no_localization'),
+        mockSite('first_broken'),
+        mockSite('plain_site'),
+        mockSite('complete_hub'),
+        mockSite('second_broken'),
+    ]));
+
+    expect((new DepartmentHubResolver)->hubSitesMissingSchemaSubject())->toBe(['first_broken', 'second_broken']);
+});
+
+it('audits nothing when the multisite global set is missing', function () {
+    GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturnNull();
+    Site::shouldReceive('all')->never();
+
+    expect((new DepartmentHubResolver)->hubSitesMissingSchemaSubject())->toBe([]);
+});
+
+it('audits nothing, without a warning, when the site list is not iterable', function () {
+    $set = Mockery::mock(GlobalSetContract::class);
+    $set->shouldNotReceive('in');
+    GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturn($set);
+    Site::shouldReceive('all')->andReturnNull();
+
+    expect((new DepartmentHubResolver)->hubSitesMissingSchemaSubject())->toBe([]);
+});

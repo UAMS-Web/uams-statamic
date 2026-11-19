@@ -209,7 +209,7 @@ The fieldtype uses the `FormBlueprintContext` trait to detect whether it's being
 
 ### MIME Type Integration
 
-The fieldtype integrates with the `App\Enums\MimeType` enum to:
+The fieldtype integrates with the `UAMSWeb\Aether\Enums\MimeType` enum to:
 - Find MIME types by categories using `MimeType::findByCategories()`
 - Generate validation rules and accept attributes based on selected MIME types and categories
 
@@ -230,9 +230,9 @@ The fieldtype includes comprehensive unit tests that verify:
 
 - Statamic CMS
 - Laravel Framework
-- `App\Fieldtypes\Traits\ConfigSectionWrapper` trait
+- `UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper` trait
 - `UAMSWeb\Aether\Forms\Settings\Fieldtypes\Traits\FormBlueprintContext` trait (from `uams-web/aether-form-settings`)
-- `App\Enums\MimeType` enum
+- `UAMSWeb\Aether\Enums\MimeType` enum
 
 ## Notes
 
