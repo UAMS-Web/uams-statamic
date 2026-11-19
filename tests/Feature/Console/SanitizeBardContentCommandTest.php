@@ -37,7 +37,7 @@ afterEach(function (): void {
 /**
  * A mock collection with the given handle and title.
  */
-function sanitizeBardCollection(string $handle, ?string $title): Collection&MockInterface
+function sanitizeBardCollection(string $handle, string|int|float|bool|null $title): Collection&MockInterface
 {
     $collection = Mockery::mock(Collection::class);
     $collection->shouldReceive('handle')->andReturn($handle);
@@ -49,7 +49,7 @@ function sanitizeBardCollection(string $handle, ?string $title): Collection&Mock
 /**
  * A mock entry whose title, slug and file path are as given.
  */
-function sanitizeBardEntry(?string $title, ?string $slug, ?string $path): Entry&MockInterface
+function sanitizeBardEntry(string|int|float|bool|null $title, ?string $slug, ?string $path): Entry&MockInterface
 {
     $entry = Mockery::mock(Entry::class);
     $entry->shouldReceive('value')->with('title')->andReturn($title);
@@ -187,4 +187,24 @@ it('lists the flagged files of one collection on a dry run and changes none of t
         '- Run without --dry-run to apply changes.',
     ])
         ->and(File::get($kirkPath))->toBe($original);
+});
+
+it('prints a title that is a number or true the way PHP writes it as text', function (): void {
+    // A title read from YAML can be a scalar that is not a string. The command prints it inside
+    // text, where 1701 reads `1701`, 2.5 reads `2.5` and true reads `1`.
+    CollectionFacade::shouldReceive('all')->once()->andReturn(collect([sanitizeBardCollection('ncc', 1701)]));
+    fakeSanitizeBardQuery(['ncc' => [
+        sanitizeBardEntry(74656, 'voyager', null),
+        sanitizeBardEntry(2.5, 'half', null),
+        sanitizeBardEntry(true, 'flag', null),
+    ]]);
+
+    expect(Artisan::call('bard:sanitize'))->toBe(0);
+
+    expect(array_slice(sanitizeBardOutputLines(), 1, 4))->toBe([
+        'Processing collection: 1701',
+        "- Entry '74656' file not found:",
+        "- Entry '2.5' file not found:",
+        "- Entry '1' file not found:",
+    ]);
 });

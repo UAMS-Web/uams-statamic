@@ -224,8 +224,14 @@ class GenerateMigrationRedirects extends Command
             return $value > 0 ? $value : false;
         }
 
-        if (\is_string($value) && ctype_digit(trim($value)) && (int) trim($value) > 0) {
-            return (int) trim($value);
+        if (\is_string($value)) {
+            // Trimmed and cast once, and the cast value is the one compared and returned
+            $digits = trim($value);
+            $id = (int) $digits;
+
+            if (ctype_digit($digits) && $id > 0) {
+                return $id;
+            }
         }
 
         return false;
@@ -246,7 +252,11 @@ class GenerateMigrationRedirects extends Command
             return [];
         }
 
-        // A supplied-but-unreadable path is an operator error, not an empty list.
+        // A supplied-but-unreadable path is an operator error, not an empty list. As in
+        // dedupPairs(): is_file() is checked first, and an existing file that cannot be read
+        // raises a warning before this comparison is reached, so `=== false` and `=== true`
+        // decide the same cases.
+        // @pest-mutate-ignore: FalseToTrue
         if (! is_file($path) || ($contents = file_get_contents($path)) === false) {
             $this->error(sprintf('Could not read retired-permalink list: %s', $path));
 
