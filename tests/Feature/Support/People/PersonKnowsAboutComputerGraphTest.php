@@ -36,7 +36,7 @@ beforeEach(function (): void {
         $collection->save();
     }
 
-    foreach (['credentials', 'certifications', 'fields_of_study', 'specialties_acgme', 'research_specialties_acgme', 'other_specialties', 'professional_and_leadership_development_activities', 'audiences'] as $handle) {
+    foreach (['credentials', 'certifications', 'fields_of_study', 'specialties_aoa', 'specialties_acgme', 'specialties_non_accredited', 'research_specialties_acgme', 'research_specialties_non_accredited', 'other_specialties', 'professional_and_leadership_development_activities', 'audiences'] as $handle) {
         /** @var Statamic\Taxonomies\Taxonomy $taxonomy */
         $taxonomy = Taxonomy::make($handle);
         $taxonomy->title($handle);
@@ -305,4 +305,36 @@ it('computes for a person that has no id yet', function (): void {
     $person->id(null);
 
     expect(app(PersonKnowsAboutComputer::class)->computeStrings($person))->toBe(['Draft']);
+});
+
+it('follows every specialty field a certification can carry, into every specialty taxonomy', function (): void {
+    knowsAboutGraphTerm('certifications', 'every-field', [
+        'medical_specialty' => ['specialties_aoa::manipulation'],
+        'medical_subspecialty' => ['specialties_non_accredited::sleep'],
+        'non_medical_research_specialty' => ['research_specialties_acgme::genomics'],
+        'non_medical_research_subspecialty' => ['research_specialties_non_accredited::chemistry'],
+        'medical_research_specialty' => ['research_specialties_acgme::trials'],
+        'medical_research_subspecialty' => ['research_specialties_acgme::imaging'],
+        'other_specialty' => ['other_specialties::wellness'],
+        'other_subspecialty' => ['other_specialties::nutrition'],
+    ]);
+    knowsAboutGraphTerm('specialties_aoa', 'manipulation', []);
+    knowsAboutGraphTerm('specialties_non_accredited', 'sleep', []);
+    knowsAboutGraphTerm('research_specialties_non_accredited', 'chemistry', []);
+    knowsAboutGraphTerm('research_specialties_acgme', 'trials', []);
+    knowsAboutGraphTerm('research_specialties_acgme', 'imaging', []);
+    knowsAboutGraphTerm('other_specialties', 'nutrition', []);
+
+    $person = knowsAboutGraphPerson('zz-graph-every-field', ['certifications' => [['activity' => 'every-field']]]);
+
+    expect(app(PersonKnowsAboutComputer::class)->computeTerms($person))->toBe([
+        'specialties_aoa::manipulation',
+        'specialties_non_accredited::sleep',
+        'research_specialties_acgme::genomics',
+        'research_specialties_non_accredited::chemistry',
+        'research_specialties_acgme::trials',
+        'research_specialties_acgme::imaging',
+        'other_specialties::wellness',
+        'other_specialties::nutrition',
+    ]);
 });
