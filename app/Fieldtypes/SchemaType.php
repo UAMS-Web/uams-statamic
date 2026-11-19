@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\SchemaEnumerationMember;
-use App\Enums\SchemaType as SchemaTypeEnum;
-use App\Fieldtypes\Traits\FieldtypeValidationHelpers;
 use App\Rules\ChainedSchemaTypeComplete;
 use App\Services\SchemaTemplates\SchemaTypeOptions;
 use Illuminate\Validation\Rule;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\SchemaEnumerationMember;
+use UAMSWeb\Aether\Enums\SchemaType as SchemaTypeEnum;
+use UAMSWeb\Aether\Fieldtypes\Traits\FieldtypeValidationHelpers;
 
 /**
  * Schema.org type selector: chained immediate-subtype drilldown from configured

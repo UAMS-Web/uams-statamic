@@ -36,7 +36,7 @@
 // rather than compiled through `new Function()`, so `script-src` needs no
 // `unsafe-eval` (UAMS-Web/uams-statamic-archive#1859). The constraint is on `x-*` attributes, not on modules.
 import Alpine from '@alpinejs/csp';
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 import * as Calc from './lib/calculation.js';
 
 /** Selector for inputs that opted into calculation via the Antlers template. */
@@ -330,7 +330,7 @@ function initCalculation(input) {
 
 /**
  * Public entry. Lifecycle (wait for Alpine, scan, idempotent flag, per-element
- * init) lives in `lib/alpine-engine.js` and is shared with sibling engines
+ * init) lives in the fieldtype add-on's `alpine.js` and is shared with sibling engines
  * like `person-name-engine.js`. Safe to call from the site bundle's top level.
  */
 export function registerCalculationEngine() {

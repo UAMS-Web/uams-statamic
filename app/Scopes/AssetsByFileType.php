@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Scopes;
 
-use App\Enums\MimeType;
 use Illuminate\Support\Arr;
 use Statamic\Assets\QueryBuilder;
 use Statamic\Query\Scopes\Scope;
+use UAMSWeb\Aether\Enums\MimeType;
 
 /**
  * Asset query scope that filters assets by file type.

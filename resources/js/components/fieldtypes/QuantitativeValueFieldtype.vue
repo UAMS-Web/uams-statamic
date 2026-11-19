@@ -155,7 +155,7 @@
 <script>
 import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
 import { Field, Input, Label, ErrorMessage, publishContextKey } from '@statamic/cms/ui';
-import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import GroupFieldtypeShell from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
 
 export default {
 	mixins: [Fieldtype],

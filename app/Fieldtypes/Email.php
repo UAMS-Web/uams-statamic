@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\Input;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Statamic fieldtype for entering and validating an email address.

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
 use App\Rules\FieldRequiredHelper;
 use App\Rules\ReplicatorMinSets;
 use App\Rules\ReplicatorRequireAtLeastOneEnabledSet;
@@ -17,6 +16,7 @@ use Statamic\Fieldtypes\Group;
 use Statamic\Fieldtypes\Replicator as BaseReplicator;
 use Statamic\Support\Str;
 use Statamic\Tags\Concerns\RendersForms;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 
 /**
  * Replicator fieldtype that requires at least one enabled set when the field is

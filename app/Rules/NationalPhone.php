@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
-use App\Enums\Country;
 use App\Services\PhoneUtil;
 use Closure;
 use Exception;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Propaganistas\LaravelPhone\PhoneNumber;
+use UAMSWeb\Aether\Enums\Country;
 
 /**
  * Custom validation rule for national phone numbers.
@@ -114,7 +114,7 @@ class NationalPhone implements ValidationRule
      * Get the validation error message for a national phone number.
      *
      * Attempts to translate the country code to a full country name using the
-     * App\Enums\Country enum. If the code is not found, falls back to the code
+     * UAMSWeb\Aether\Enums\Country enum. If the code is not found, falls back to the code
      * itself. Also provides a country-specific example number if available.
      *
      * @return string The validation error message

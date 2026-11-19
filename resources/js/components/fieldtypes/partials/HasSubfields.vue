@@ -60,7 +60,7 @@ import { computed, getCurrentInstance } from 'vue';
 import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
 import { Combobox } from '@statamic/cms/ui';
 import SubfieldContainer from './SubfieldContainer.vue';
-import { subfieldId as buildSubfieldId } from './subfieldId.js';
+import { subfieldId as buildSubfieldId } from '../../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/subfieldId.js';
 
 export default {
 	name: 'HasSubfields',
