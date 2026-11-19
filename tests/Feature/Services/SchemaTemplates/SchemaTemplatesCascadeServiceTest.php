@@ -12,6 +12,7 @@ use Statamic\Entries\Collection;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\GlobalSet;
 use Statamic\Fields\Blueprint;
+use Statamic\Fields\Value;
 use Statamic\Globals\GlobalSet as GlobalSetModel;
 use Statamic\Globals\Variables;
 use Statamic\Taxonomies\LocalizedTerm;
@@ -321,4 +322,70 @@ it('treats a site enabled value as truthy without needing a bool', function (mix
     'one' => [1, true],
     'zero' => [0, false],
     'an empty string' => ['', false],
+]);
+
+/**
+ * Call a non-public method of a cascade service that reads no defaults.
+ */
+function cascadeServiceCall(string $method, mixed ...$args): mixed
+{
+    return (new ReflectionMethod(SchemaTemplatesCascadeService::class, $method))->invoke(cascadeServiceUnread(), ...$args);
+}
+
+it('takes the webpage node from the nearest level that sets its own', function (array $blueprint, array $section, ?string $expected): void {
+    $site = ['webpage_entry' => 'site-page'];
+    $entryData = ['inherit_webpage_entry' => true, 'webpage_entry' => 'entry-page'];
+
+    expect(cascadeServiceCall('resolveWebpageEntry', $site, $section, $blueprint, $entryData))->toBe($expected);
+})->with([
+    'the blueprint' => [['inherit_webpage_entry' => false, 'webpage_entry' => 'blueprint-page'], ['inherit_webpage_entry' => false, 'webpage_entry' => 'section-page'], 'blueprint-page'],
+    'the blueprint, set with the string false' => [['inherit_webpage_entry' => 'false', 'webpage_entry' => 'blueprint-page'], [], 'blueprint-page'],
+    'the section' => [['inherit_webpage_entry' => true, 'webpage_entry' => 'blueprint-page'], ['inherit_webpage_entry' => false, 'webpage_entry' => 'section-page'], 'section-page'],
+    'the site' => [['webpage_entry' => 'blueprint-page'], ['webpage_entry' => 'section-page'], 'site-page'],
+    'a blueprint that sets its own but names none' => [['inherit_webpage_entry' => false], ['inherit_webpage_entry' => false, 'webpage_entry' => 'section-page'], null],
+    'a section that sets its own but names none' => [[], ['inherit_webpage_entry' => false], null],
+]);
+
+it('takes the main content node from the nearest level that sets its own', function (array $blueprint, array $section, ?string $expected): void {
+    $site = ['main_content_entry' => 'site-main'];
+    $entryData = ['main_content_entry' => 'entry-main'];
+
+    expect(cascadeServiceCall('resolveMainContentEntry', $site, $section, $blueprint, $entryData, null))->toBe($expected);
+})->with([
+    'the blueprint' => [['inherit_main_content_entry' => false, 'main_content_entry' => 'blueprint-main'], ['inherit_main_content_entry' => false, 'main_content_entry' => 'section-main'], 'blueprint-main'],
+    'the section' => [['main_content_entry' => 'blueprint-main'], ['inherit_main_content_entry' => false, 'main_content_entry' => 'section-main'], 'section-main'],
+    'the site' => [['main_content_entry' => 'blueprint-main'], ['main_content_entry' => 'section-main'], 'site-main'],
+    'a blueprint that sets its own but names none' => [['inherit_main_content_entry' => false], ['inherit_main_content_entry' => false, 'main_content_entry' => 'section-main'], null],
+    'a section that sets its own but names none' => [[], ['inherit_main_content_entry' => false], null],
+]);
+
+it('takes the entry\'s own main content node when it sets one', function (): void {
+    $entryData = ['inherit_main_content_entry' => false, 'main_content_entry' => 'entry-main'];
+
+    expect(cascadeServiceCall('resolveMainContentEntry', ['main_content_entry' => 'site-main'], [], [], $entryData, null))->toBe('entry-main');
+});
+
+it('reads a level\'s main content node without a subtype', function (): void {
+    expect(cascadeServiceCall('mainContentEntryForLevel', ['main_content_entry' => 'level-main'], null))->toBe('level-main');
+    expect(cascadeServiceCall('mainContentEntryForLevel', [], null))->toBeNull();
+});
+
+it('falls back to the node mapped for the nearest ancestor of a subtype', function (): void {
+    expect(cascadeServiceCall('subtypeNodeId', ['MedicalOrganization' => 'org-node', 'Thing' => 'thing-node'], 'MedicalClinic'))->toBe('org-node');
+});
+
+it('maps a subtype whose own and ancestor entries are unusable to nothing', function (): void {
+    expect(cascadeServiceCall('subtypeNodeId', ['MedicalClinic' => '', 'Dentist' => 'dentist-node'], 'MedicalClinic'))->toBeNull();
+});
+
+it('reads the entry subtype through a value wrapper, trimmed', function (mixed $stored, ?string $expected): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('get')->with('schema_medicalorganization_subtype')->andReturn($stored);
+
+    expect(cascadeServiceCall('resolveSubtype', $entry))->toBe($expected);
+})->with([
+    'a value' => [new Value('MedicalClinic'), 'MedicalClinic'],
+    'padded' => ['  MedicalClinic  ', 'MedicalClinic'],
+    'only whitespace' => ['   ', null],
+    'a value holding nothing' => [new Value(null), null],
 ]);
