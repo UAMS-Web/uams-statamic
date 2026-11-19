@@ -145,8 +145,9 @@ final class ContentAncestorIds
             // Stop when the parent was already collected (cycle)
             // ---
 
-            // Check if the parent was already collected (cycle)
-            if (isset($seenAncestorKeys[$parentKey])) {
+            // Check if the parent was already collected (cycle); the stored flag is
+            // read rather than isset(), which is true for a stored false as well
+            if ($seenAncestorKeys[$parentKey] ?? false) {
                 // Log a warning when the parent was already collected (cycle)
                 Log::warning(
                     'Ancestor walk stopped: cycle in entry parent chain.',
@@ -167,7 +168,10 @@ final class ContentAncestorIds
             // Append the parent id to the ordered list of ancestor ids
             $ancestorIds[] = $parentId;
 
-            // Load the parent entry for the next hop (missing entry ends walk)
+            // Load the parent entry for the next hop (missing entry ends walk); the
+            // app repository's find() returns the concrete entry, which the facade's
+            // contract-typed docblock does not say
+            /** @var StatamicEntry|null $nextEntry */
             $nextEntry = EntryFacade::find($parentId);
 
             // ---
@@ -179,9 +183,6 @@ final class ContentAncestorIds
                 // Return the ordered list of ancestor ids
                 return $ancestorIds;
             }
-
-            // Narrow the parent to the concrete entry type for the next iteration
-            \assert($nextEntry instanceof StatamicEntry);
 
             // Advance the cursor to the parent entry
             $entry = $nextEntry;
@@ -313,8 +314,9 @@ final class ContentAncestorIds
             // Stop when the parent was already collected (cycle)
             // ---
 
-            // Check if the parent was already collected (cycle)
-            if (isset($seenAncestorKeys[$parentId])) {
+            // Check if the parent was already collected (cycle); the stored flag is
+            // read rather than isset(), which is true for a stored false as well
+            if ($seenAncestorKeys[$parentId] ?? false) {
                 // Log a warning when the parent was already collected (cycle)
                 Log::warning(
                     'Ancestor walk stopped: cycle in term parent chain.',

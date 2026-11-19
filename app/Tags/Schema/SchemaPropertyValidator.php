@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tags\Schema;
 
-use App\Enums\SchemaProperty;
-use App\Enums\SchemaType;
 use ReflectionClass;
 use ReflectionMethod;
 use Spatie\SchemaOrg\BaseType;
+use UAMSWeb\Aether\Enums\SchemaProperty;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Validates schema node property names against valid Schema.org properties for

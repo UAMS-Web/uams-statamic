@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Enums\Country;
-use App\Enums\Currency;
-use App\Enums\Language;
-use App\Enums\LanguageBCP47;
-use App\Enums\MimeType;
-use App\Enums\State;
 use App\Fieldtypes\Traits\PresetOptions;
 use Statamic\Fields\Field;
 use Tests\Support\Doubles\PresetOptionsHarness;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\Country;
+use UAMSWeb\Aether\Enums\Currency;
+use UAMSWeb\Aether\Enums\Language;
+use UAMSWeb\Aether\Enums\LanguageBCP47;
+use UAMSWeb\Aether\Enums\MimeType;
+use UAMSWeb\Aether\Enums\State;
 
 covers(PresetOptions::class);
 

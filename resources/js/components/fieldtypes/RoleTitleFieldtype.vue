@@ -405,7 +405,7 @@ import {
 	PRELOAD_KEY_OPTIONAL_RADIO_NONE
 } from './role-title/roleTitlePreloadKeys.js';
 import RoleTitleOptionalRadioGroup from './role-title/RoleTitleOptionalRadioGroup.vue';
-import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import GroupFieldtypeShell from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
 
 /** Meta key the picker's live meta is stored under, beside the preloaded `scope_unit_meta`. */
 const SCOPE_UNIT_LIVE_META_KEY = 'scope_unit_meta_live';

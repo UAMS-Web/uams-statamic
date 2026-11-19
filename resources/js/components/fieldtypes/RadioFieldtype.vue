@@ -56,9 +56,9 @@
 // Kept in Options API: depends on FieldtypeMixin (this.update(), value/config/meta).
 import { FieldtypeMixin as Fieldtype, HasInputOptionsMixin as HasInputOptions } from '@statamic/cms'; // Fork: resolve from app bundle; source uses ./Fieldtype.vue and ./HasInputOptions.js.
 import { RadioGroup, Radio } from '@statamic/cms/ui'; // Fork: resolve from app bundle; source uses @/components/ui.
-import OtherOptionMixin from './mixins/OtherOptionMixin'; // Fork: adds "Other" option logic and modifiedMeta; not in source.
-import { getOptionValues, isOtherCustomValue } from './utilities/OtherOptionUtilities'; // Fork: used for isOtherSelected; not in source.
-import OtherOptionInput from './partials/OtherOptionInput.vue'; // Fork: renders "Other" text input; not in source.
+import OtherOptionMixin from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/mixins/OtherOptionMixin'; // Fork: adds "Other" option logic and modifiedMeta; not in source.
+import { getOptionValues, isOtherCustomValue } from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/utilities/OtherOptionUtilities'; // Fork: used for isOtherSelected; not in source.
+import OtherOptionInput from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/OtherOptionInput.vue'; // Fork: renders "Other" text input; not in source.
 
 export default {
 	// Fork: explicit component name; source has no name.

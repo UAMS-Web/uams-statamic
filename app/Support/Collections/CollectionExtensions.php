@@ -116,6 +116,8 @@ final class CollectionExtensions
      */
     public function scheduledPublishing(string $collection): void
     {
+        // Every element and the needle are strings, so a loose match is the same.
+        // @pest-mutate-ignore: TrueToFalse
         if (! \in_array($collection, $this->scheduledPublishingCollections, true)) {
             $this->scheduledPublishingCollections[] = $collection;
         }
