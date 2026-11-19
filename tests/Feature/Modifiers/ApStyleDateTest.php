@@ -95,3 +95,72 @@ it('uses three-letter months for tabular material', function () {
 it('uses three-letter months for tabular month-year', function () {
     expect((new ApStyleDate)->index('1986-01', [false, true], []))->toBe('Jan 1986');
 });
+
+it('returns an empty string for null and false', function (mixed $input) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe('');
+})->with([
+    'null' => [null],
+    'false' => [false],
+    'Value wrapping an empty string' => [new Value('')],
+]);
+
+it('returns an empty string for a value Carbon cannot parse', function (mixed $input) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe('');
+})->with([
+    'prose that is not a date' => ['not a date'],
+    'boolean true' => [true],
+    'array' => [[1]],
+]);
+
+it('casts numeric scalars to strings before routing them', function (int|float $input, string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'integer year' => [1986, '1986'],
+    'float year-month' => [198605.0, 'May 1986'],
+]);
+
+it('treats a padded ISO datetime as an instant', function () {
+    expect((new ApStyleDate)->index(' 1986-05-14T12:30:00Z ', [], []))->toBe('May 14, 1986');
+});
+
+it('enables time only for the accepted truthy first parameters', function (mixed $flag, string $expected) {
+    expect((new ApStyleDate)->index('1986-05-14T12:30:00Z', [$flag], []))->toBe($expected);
+})->with([
+    'true' => [true, "May 14, 1986, at 12:30\u{00A0}p.m."],
+    'string true' => ['true', "May 14, 1986, at 12:30\u{00A0}p.m."],
+    'integer one' => [1, "May 14, 1986, at 12:30\u{00A0}p.m."],
+    'string one' => ['1', "May 14, 1986, at 12:30\u{00A0}p.m."],
+    'false' => [false, 'May 14, 1986'],
+    'string false' => ['false', 'May 14, 1986'],
+    'integer zero' => [0, 'May 14, 1986'],
+    'string yes' => ['yes', 'May 14, 1986'],
+    'integer two' => [2, 'May 14, 1986'],
+]);
+
+it('enables tabular months only for the accepted truthy second parameters', function (mixed $flag, string $expected) {
+    expect((new ApStyleDate)->index('1986-01', [false, $flag], []))->toBe($expected);
+})->with([
+    'true' => [true, 'Jan 1986'],
+    'string true' => ['true', 'Jan 1986'],
+    'integer one' => [1, 'Jan 1986'],
+    'string one' => ['1', 'Jan 1986'],
+    'false' => [false, 'January 1986'],
+    'string false' => ['false', 'January 1986'],
+    'integer zero' => [0, 'January 1986'],
+    'integer two' => [2, 'January 1986'],
+]);
+
+it('uses three-letter months for tabular material on the Carbon path', function () {
+    expect((new ApStyleDate)->index('1986-03-14T12:00:00Z', [false, true], []))->toBe('Mar 14, 1986');
+});
+
+it('drops or rejects impossible month and day slots', function (string $input, ?string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'leading-dash month 13' => ['-----13', null],
+    'leading-dash month 13 with day' => ['-----13-01', null],
+    'leading-dash impossible day' => ['-----02-30', null],
+    'unknown year impossible month' => ['198X-13-01', null],
+    'unknown year impossible day keeps the month' => ['198X-02-30', 'February'],
+    'empty year double hyphen month' => ['--05', 'May'],
+]);
