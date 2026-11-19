@@ -50,18 +50,32 @@ final class SubmittedFieldDisplay
         $fieldtype = $field['fieldtype'] ?? $field['type'] ?? null;
         $config = is_array($field['config'] ?? null) ? $field['config'] : [];
 
-        return match (true) {
-            $fieldtype === 'assets' => self::assets($value),
-            $fieldtype === 'replicator' => self::replicator($field),
-            // A single select augments to one labelled value, which the labels branch below renders
-            // identically, so the default for a missing `multiple` cannot change the output
-            // @pest-mutate-ignore: FalseToTrue
-            $fieldtype === 'radio',
-            $fieldtype === 'select' && ! ($config['multiple'] ?? false) => self::escape(self::label($value)),
-            in_array($fieldtype, ['select', 'checkboxes', 'dictionary'], true) => self::labels($value),
-            is_iterable($value) => self::escape(json_encode(self::plain($value), JSON_THROW_ON_ERROR)),
-            default => nl2br(self::escape(self::label($value)), false),
-        };
+        // Branch on the fieldtype in the template's order; a `match (true)` here left its subject
+        // on a line no test is credited with, so its mutant read as uncovered (#1080)
+        if ($fieldtype === 'assets') {
+            return self::assets($value);
+        }
+
+        if ($fieldtype === 'replicator') {
+            return self::replicator($field);
+        }
+
+        // A single select augments to one labelled value, which the labels branch below renders
+        // identically, so the default for a missing `multiple` cannot change the output
+        // @pest-mutate-ignore: FalseToTrue
+        if ($fieldtype === 'radio' || ($fieldtype === 'select' && ! ($config['multiple'] ?? false))) {
+            return self::escape(self::label($value));
+        }
+
+        if (in_array($fieldtype, ['select', 'checkboxes', 'dictionary'], true)) {
+            return self::labels($value);
+        }
+
+        if (is_iterable($value)) {
+            return self::escape(json_encode(self::plain($value), JSON_THROW_ON_ERROR));
+        }
+
+        return nl2br(self::escape(self::label($value)), false);
     }
 
     /**
