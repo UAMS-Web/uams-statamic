@@ -9,12 +9,14 @@ use App\Search\AreaOfExpertiseSuggestionPresenter;
 use App\Search\Loupe\SiteFilteredLoupeIndex;
 use App\Search\PrivateEntryVisibility;
 use App\Search\SecurityHeadersResponseAllowance;
+use App\Search\SubjectSiteTree;
 use App\Support\Multisite\SiteTreeCache;
 use Daun\StatamicLoupe\Loupe\Index as LoupeIndex;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Facades\Search;
 use UAMSWeb\Aether\Search\Contracts\EntryVisibility;
 use UAMSWeb\Aether\Search\Contracts\ResponseAllowance;
+use UAMSWeb\Aether\Search\Contracts\SiteTree;
 use UAMSWeb\Aether\Search\Contracts\SuggestionPresenter;
 
 /**
@@ -39,6 +41,8 @@ final class SearchServiceProvider extends ServiceProvider
         $this->app->bind(EntryVisibility::class, PrivateEntryVisibility::class);
         $this->app->bind(SuggestionPresenter::class, AreaOfExpertiseSuggestionPresenter::class);
         $this->app->bind(ResponseAllowance::class, SecurityHeadersResponseAllowance::class);
+        // A parent site searches its subtree and its descendants are offered "All of <tier>" (#480)
+        $this->app->bind(SiteTree::class, SubjectSiteTree::class);
 
         // The `loupe` driver makes its index through the container, so every `loupe` index
         // stores each document's site and hands Loupe the site filter (#646)
