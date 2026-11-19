@@ -36,5 +36,3 @@ apply to them; each remains under the terms its owner publishes it under.
 - resources/js/uams_2020/source/genesis/: a script from the Genesis framework
   by StudioPress.
 - lang/vendor/statamic/: translations published from Statamic.
-- app/Services/EnumGeneration/Schema/schemaorg-current-https.jsonld: the
-  Schema.org vocabulary, under the terms Schema.org publishes it under.

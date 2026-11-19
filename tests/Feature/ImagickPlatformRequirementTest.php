@@ -54,8 +54,8 @@ it('gives imagick to every CI job that runs composer install', function () use (
 
     expect($jobs)->not->toBeEmpty();
 
-    // Only the jobs that install are constrained — `js` and `spell` never touch
-    // Composer, so requiring the extension of them would be noise.
+    // Only the jobs that install are constrained: `spell` never touches
+    // Composer, so requiring the extension of it would be noise.
     /** @var array<string, string> $installing */
     $installing = [];
 

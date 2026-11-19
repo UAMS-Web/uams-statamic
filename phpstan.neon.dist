@@ -66,42 +66,14 @@ parameters:
         # as undefined. Symbol discovery only — the file itself is not analyzed.
         - scripts/tia-blindness.php
     excludePaths:
-        # Large machine-generated reference-data enums (ISO 639 languages, ISO
-        # 3166 countries, US ZIP codes/counties, ISCO/ISCED classifications,
-        # currencies, MIME types, schema.org + CTDL vocabularies). Each case
-        # carries a big constant data attribute; ZipCode.php alone is 6 MB /
-        # ~40k cases. PHPStan's scope analyzer exhausts >6 GB on a single file
-        # this size, and there is no hand-written control flow in the case lists
-        # to check — so the cost buys no bug-catching value. Listed under
-        # `analyse` (not `analyseAndScan`) so they stay in the symbol table and
-        # call sites elsewhere in app/ remain fully type-checked. The
-        # hand-written attribute classes (Enums/Attributes/*) and the small
-        # logic enum (ApStyleGregorianMonth) are analyzed normally.
-        #
-        # This same list is mirrored in phpunit.xml's coverage <source><exclude>
-        # block — php-code-coverage's static analyser hits the identical
-        # memory blowup on these files for the same non-reason. Keep the two
-        # lists in sync when adding or removing a generated enum.
+        # `App\Support\MovedClassAliases` names all 85 classes that moved into the enums and
+        # fieldtype add-ons (UAMS-Web/uams-statamic#995), the large generated enums among them
+        # (`ZipCode` alone is about 6 MB of source). Analyzing it makes one worker load every
+        # one of them, which crossed the 2G memory limit on a 4-worker runner. The file is
+        # a map and a four-line lookup, and `MovedClassAliasesTest` resolves every entry.
+        # Listed under `analyse` so its symbols stay known to the rest of the tree.
         analyse:
-            - app/Enums/CanadianProvince.php
-            - app/Enums/Country.php
-            - app/Enums/County.php
-            - app/Enums/CredentialRegistry.php
-            - app/Enums/Currency.php
-            - app/Enums/InternationalCodeDesignator.php
-            - app/Enums/IscedA2011.php
-            - app/Enums/IscedF2013.php
-            - app/Enums/IscedP2011.php
-            - app/Enums/Isco08.php
-            - app/Enums/Language.php
-            - app/Enums/LanguageBCP47.php
-            - app/Enums/MimeType.php
-            - app/Enums/SchemaDataType.php
-            - app/Enums/SchemaEnumerationMember.php
-            - app/Enums/SchemaProperty.php
-            - app/Enums/SchemaType.php
-            - app/Enums/State.php
-            - app/Enums/ZipCode.php
+            - app/Support/MovedClassAliases.php
     # Both of UAMS-Web/uams-statamic-archive#1344's message-scoped ignoreErrors entries are retired by
     # pest-plugin-phpstan (included above) — see UAMS-Web/uams-statamic-archive#1719. Neither is replaced in
     # kind: the plugin resolves the underlying mis-inferences rather than hiding

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaObject;
 
-use App\Enums\SchemaDataType;
-use App\Enums\SchemaType;
 use App\Support\ReplicatorSetMeta;
 use App\Support\ReplicatorVueSet;
 use App\Support\RequestAttributeMemo;
@@ -13,6 +11,8 @@ use Illuminate\Support\Collection;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\SchemaDataType;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Builds Statamic replicator set configs from Schema.org property range types

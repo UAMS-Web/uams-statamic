@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modifiers;
 
-use App\Enums\ApStyleGregorianMonth;
 use App\Support\PartialDateStorageSlots;
 use Carbon\Carbon;
 use Carbon\Month;
@@ -13,6 +12,7 @@ use DateTimeInterface;
 use Statamic\Fields\Value;
 use Statamic\Modifiers\Modifier;
 use Throwable;
+use UAMSWeb\Aether\Enums\ApStyleGregorianMonth;
 
 /**
  * Formats a date value as AP Style.

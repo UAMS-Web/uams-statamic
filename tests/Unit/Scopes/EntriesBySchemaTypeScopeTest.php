@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaType;
 use App\Scopes\EntriesBySchemaType;
 use Illuminate\Support\Str;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Query\Builder;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 uses(MockeryPHPUnitIntegration::class);
 
