@@ -12950,16 +12950,16 @@
         },
         {
             "name": "uams-web/patches-pest-plugin-mutate",
-            "version": "v1.4.1",
+            "version": "v1.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/patches-pest-plugin-mutate.git",
-                "reference": "0ae879fcdb12a8a02a70c00372e3193b04fde8b8"
+                "reference": "70035e5157fb5509cf9791dadb763641978baf1f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/patches-pest-plugin-mutate/zipball/0ae879fcdb12a8a02a70c00372e3193b04fde8b8",
-                "reference": "0ae879fcdb12a8a02a70c00372e3193b04fde8b8",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-pest-plugin-mutate/zipball/70035e5157fb5509cf9791dadb763641978baf1f",
+                "reference": "70035e5157fb5509cf9791dadb763641978baf1f",
                 "shasum": ""
             },
             "require": {
@@ -13001,7 +13001,8 @@
                 "issues": "https://github.com/UAMS-Web/patches-pest-plugin-mutate/issues",
                 "source": "https://github.com/UAMS-Web/patches-pest-plugin-mutate"
             },
-            "time": "2026-11-15T14:53:23+00:00"
+            "time": "2026-11-18T06:33:44+00:00",
+            "published-time": "2026-11-18T12:02:28+00:00"
         },
         {
             "name": "uams-web/patches-statamic-cms",
@@ -19103,5 +19104,5 @@
     "platform-overrides": {
         "php": "8.4.27"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }
