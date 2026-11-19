@@ -3,14 +3,10 @@
 declare(strict_types=1);
 
 use App\Providers\ValidationServiceProvider;
-use App\Rules\After;
-use App\Rules\AfterOrEqual;
 use App\Rules\Ahaid;
 use App\Rules\AsciiIdentifier;
 use App\Rules\AssetValidationSatisfied;
 use App\Rules\AtomFeedUrl;
-use App\Rules\Before;
-use App\Rules\BeforeOrEqual;
 use App\Rules\BoardCertificationTerm;
 use App\Rules\BoxSharedStaticAudioUrl;
 use App\Rules\BoxSharedStaticUrl;
@@ -19,7 +15,6 @@ use App\Rules\CageCode;
 use App\Rules\CmsSpecialtyCode;
 use App\Rules\CredentialTypeCertification;
 use App\Rules\CssSelectorSyntax;
-use App\Rules\DateEquals;
 use App\Rules\DepInDeclaredList;
 use App\Rules\DunsNumber;
 use App\Rules\EntrySchemaTypeIn;
@@ -80,6 +75,7 @@ use App\Rules\VimeoUrl;
 use App\Rules\XpathSyntax;
 use App\Rules\YouTubeUrl;
 use App\Rules\ZipCode;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Tests\Support\LegacyRuleProbe;
 use Tests\Support\ValidatorAwareRuleProbe;
@@ -113,11 +109,6 @@ uses(TestCase::class);
 function validationProviderRegistrations(): array
 {
     return [
-        'after' => [After::class, null, [], []],
-        'after_or_equal' => [AfterOrEqual::class, null, [], []],
-        'before' => [Before::class, null, [], []],
-        'before_or_equal' => [BeforeOrEqual::class, null, [], []],
-        'date_equals' => [DateEquals::class, null, [], []],
         'international_phone' => [InternationalPhone::class, null, [], []],
         'national_phone' => [NationalPhone::class, null, [], []],
         'ahaid' => [Ahaid::class, 'American Hospital Association (AHA) ID', [], []],
@@ -267,8 +258,35 @@ it('registers every rule with its class, parameter map and baked constructor arg
         validationProviderRegistrations()
     );
 
-    expect(validationProviderRegistrations())->toHaveCount(78)
+    expect(validationProviderRegistrations())->toHaveCount(73)
         ->and($registered)->toBe($expected);
+});
+
+// On a Control Panel route, Statamic's translator reads every `validation.*` key
+// from `statamic::validation`. The app's override there used to replace these five
+// lines with arrays, which made Laravel's message formatting throw a TypeError
+// (#1047); with the override gone, Statamic's own line is used.
+it('renders Statamic\'s own date rule message on a Control Panel route', function (string $rule, string $value, string $expected): void {
+    $cp = config('statamic.cp.route');
+    app()->instance('request', Request::create('/'.(is_string($cp) ? $cp : 'cp').'/collections'));
+
+    expect(Statamic\Statamic::isCpRoute())->toBeTrue()
+        ->and(Validator::make(['field' => $value], ['field' => $rule])->errors()->first('field'))->toBe($expected);
+})->with([
+    'after' => ['after:2020-01-01', '2019-01-01', 'Must be a date after 2020-01-01.'],
+    'after_or_equal' => ['after_or_equal:2020-01-01', '2019-01-01', 'Must be a date after or equal to 2020-01-01.'],
+    'before' => ['before:2020-01-01', '2021-01-01', 'Must be a date before 2020-01-01.'],
+    'before_or_equal' => ['before_or_equal:2020-01-01', '2021-01-01', 'Must be a date before or equal to 2020-01-01.'],
+    'date_equals' => ['date_equals:2020-01-01', '2021-01-01', 'Must be a date equal to 2020-01-01.'],
+]);
+
+it('keeps each date rule\'s statamic::validation line a string', function (string $rule): void {
+    expect(trans('statamic::validation.'.$rule))->toBeString();
+})->with(['after', 'after_or_equal', 'before', 'before_or_equal', 'date_equals']);
+
+it('registers no extension under a Laravel date rule name', function (): void {
+    expect(array_keys(Validator::make([], [])->extensions))
+        ->not->toContain('after', 'after_or_equal', 'before', 'before_or_equal', 'date_equals');
 });
 
 it('stores the display names boot() gives, on the provider and statically', function (): void {
@@ -364,9 +382,8 @@ it('registers no message replacer for any rule', function (): void {
     expect(Validator::make([], [])->replacers)->toBe([]);
 });
 
-// The five date names are Laravel's own rules, so Laravel's validator runs and,
-// with no provider replacer in the way, its own replacer fills the date. Their
-// fate is UAMS-Web/uams-statamic#1016.
+// The five date names are Laravel's own rules and the provider registers none of
+// them (#1016, #1047), so Laravel's validator and its own replacer handle them.
 it('lets Laravel fill the date in a date rule failure', function (string $rule, string $value, string $expected): void {
     expect(Validator::make(['field' => $value], ['field' => $rule])->errors()->first('field'))->toBe($expected);
 })->with([

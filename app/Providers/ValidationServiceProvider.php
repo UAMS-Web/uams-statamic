@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Rules\After;
-use App\Rules\AfterOrEqual;
 use App\Rules\Ahaid;
 use App\Rules\AsciiIdentifier;
 use App\Rules\AssetValidationSatisfied;
 use App\Rules\AtomFeedUrl;
-use App\Rules\Before;
-use App\Rules\BeforeOrEqual;
 use App\Rules\BoardCertificationTerm;
 use App\Rules\BoxSharedStaticAudioUrl;
 use App\Rules\BoxSharedStaticUrl;
@@ -20,7 +16,6 @@ use App\Rules\CageCode;
 use App\Rules\CmsSpecialtyCode;
 use App\Rules\CredentialTypeCertification;
 use App\Rules\CssSelectorSyntax;
-use App\Rules\DateEquals;
 use App\Rules\DepInDeclaredList;
 use App\Rules\DunsNumber;
 use App\Rules\EntrySchemaTypeIn;
@@ -195,31 +190,6 @@ class ValidationServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // ---
-        // Date/time validation rules
-        // ---
-
-        $this->registerCustomRule(
-            'after',
-            After::class
-        );
-        $this->registerCustomRule(
-            'after_or_equal',
-            AfterOrEqual::class
-        );
-        $this->registerCustomRule(
-            'before',
-            Before::class
-        );
-        $this->registerCustomRule(
-            'before_or_equal',
-            BeforeOrEqual::class
-        );
-        $this->registerCustomRule(
-            'date_equals',
-            DateEquals::class
-        );
-
         // ---
         // Phone validation rules
         // ---
