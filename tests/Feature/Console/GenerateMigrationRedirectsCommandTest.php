@@ -255,3 +255,32 @@ it('reads a blank --dedup-site as none given', function (): void {
 
     expect(Artisan::call('content:generate-migration-redirects', ['--dedup-site' => '   ']))->toBe(0);
 });
+
+it('reads a --dry-run passed a truthy value as a dry run', function (): void {
+    // `--dry-run` takes no value on the command line, but `Artisan::call()` hands the command
+    // whatever value it is given, so the option is read as a bool rather than passed through.
+    fakeMigrationRedirectGenerator(true, [], [], null, migrationRedirectReport(0, false));
+
+    expect(Artisan::call('content:generate-migration-redirects', ['--dry-run' => 1]))->toBe(0)
+        ->and(migrationRedirectOutputLines())->toContain('Would write 0 migration redirects.');
+});
+
+it('reads 1 as a post id, written as an integer or as digits', function (): void {
+    $path = $this->redirectsDir.'/pairs.json';
+    file_put_contents($path, (string) json_encode([
+        ['source' => 'https://news.uams.test/kirk/', 'target' => 'https://news.uams.test/enterprise/', 'source_wordpress_post_id' => 1, 'target_wordpress_post_id' => '1'],
+    ]));
+
+    $pair = [
+        'source' => 'https://news.uams.test/kirk/',
+        'target' => 'https://news.uams.test/enterprise/',
+        'notes' => null,
+        'source_wordpress_post_id' => 1,
+        'target_wordpress_post_id' => 1,
+    ];
+
+    fakeMigrationRedirectGenerator(false, [], [$pair], 'default', migrationRedirectReport(0, true));
+
+    expect(Artisan::call('content:generate-migration-redirects', ['--dedup-redirects' => $path, '--dedup-site' => 'default']))->toBe(0)
+        ->and(array_filter(migrationRedirectOutputLines(), static fn (string $line): bool => str_starts_with($line, 'Duplicate pair')))->toBe([]);
+});

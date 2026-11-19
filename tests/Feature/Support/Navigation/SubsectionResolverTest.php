@@ -36,6 +36,7 @@ function mockBlueprintHandle(string $handle): Blueprint
  * needs no content.
  *
  * @command  php artisan test --compact tests/Feature/Support/Navigation/SubsectionResolverTest.php
+ * @command  vendor/bin/pest tests/Feature/Support/Navigation/SubsectionResolverTest.php --mutate --path=app/Support/Navigation --class="App\Support\Navigation\SubsectionResolver"
  */
 
 /**
@@ -162,3 +163,98 @@ it('leaves an ordinary page without the marker outside any subsection (site-wide
 
     expect($resolver->resolveRoot('a-plain-page'))->toBeNull();
 });
+
+/**
+ * A page entry mock with the given blueprint handle and marker value.
+ */
+function subsectionPageMock(string $blueprint, mixed $marker): Entry
+{
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('blueprint')->andReturn(mockBlueprintHandle($blueprint));
+    $entry->shouldReceive('value')->with('subsection')->andReturn($marker);
+
+    return $entry;
+}
+
+/**
+ * A resolver whose ancestor walk returns the given ids, immediate parent first.
+ *
+ * @param  list<int|string>  $ids
+ */
+function subsectionResolverWithAncestors(array $ids): SubsectionResolver
+{
+    return new class($ids) extends SubsectionResolver
+    {
+        /**
+         * @param  list<int|string>  $ids
+         */
+        public function __construct(private readonly array $ids) {}
+
+        protected function ancestorIds(int|string $entryId): array
+        {
+            return $this->ids;
+        }
+    };
+}
+
+it('prefers the page itself over a subsection-root ancestor', function (): void {
+    $self = subsectionPageMock('page', true);
+    $parent = subsectionPageMock('page', true);
+
+    EntryFacade::shouldReceive('find')->with('self')->andReturn($self);
+    EntryFacade::shouldReceive('find')->with('parent')->andReturn($parent);
+
+    expect(subsectionResolverWithAncestors(['parent'])->resolveRoot('self'))->toBe($self);
+});
+
+it('returns the nearest subsection-root ancestor when several ancestors start one', function (): void {
+    $self = subsectionPageMock('page', false);
+    $parent = subsectionPageMock('page', false);
+    $nearRoot = subsectionPageMock('page', true);
+    $farRoot = subsectionPageMock('page', true);
+
+    EntryFacade::shouldReceive('find')->with('self')->andReturn($self);
+    EntryFacade::shouldReceive('find')->with('parent')->andReturn($parent);
+    EntryFacade::shouldReceive('find')->with('near')->andReturn($nearRoot);
+    EntryFacade::shouldReceive('find')->with('far')->andReturn($farRoot);
+
+    expect(subsectionResolverWithAncestors(['parent', 'near', 'far'])->resolveRoot('self'))->toBe($nearRoot);
+});
+
+it('returns null when no ancestor starts a subsection', function (): void {
+    EntryFacade::shouldReceive('find')->with('self')->andReturn(subsectionPageMock('page', false));
+    EntryFacade::shouldReceive('find')->with('parent')->andReturn(subsectionPageMock('page', null));
+    EntryFacade::shouldReceive('find')->with('stale')->andReturnNull();
+
+    expect(subsectionResolverWithAncestors(['parent', 'stale'])->resolveRoot('self'))->toBeNull();
+});
+
+it('starts a subsection only for a marker that is exactly true', function (mixed $marker): void {
+    EntryFacade::shouldReceive('find')->with('self')->andReturn(subsectionPageMock('page', $marker));
+
+    expect(subsectionResolverWithAncestors([])->resolveRoot('self'))->toBeNull();
+})->with([
+    'string true' => ['true'],
+    'integer one' => [1],
+    'string one' => ['1'],
+    'non-empty array' => [[true]],
+]);
+
+it('treats an Area-of-Expertise ancestor as the subsection root of its descendants', function (): void {
+    $aoe = subsectionPageMock('clinical_expertise', null);
+
+    EntryFacade::shouldReceive('find')->with('child')->andReturn(subsectionPageMock('page', false));
+    EntryFacade::shouldReceive('find')->with('aoe')->andReturn($aoe);
+
+    expect(subsectionResolverWithAncestors(['aoe'])->resolveRoot('child'))->toBe($aoe);
+});
+
+it('does not auto-start a subsection for a blueprint handle that only resembles the Area-of-Expertise one', function (string $handle): void {
+    EntryFacade::shouldReceive('find')->with('self')->andReturn(subsectionPageMock($handle, false));
+
+    expect(subsectionResolverWithAncestors([])->resolveRoot('self'))->toBeNull();
+})->with([
+    'prefix' => ['clinical'],
+    'upper case' => ['Clinical_Expertise'],
+    'suffixed' => ['clinical_expertise_page'],
+]);

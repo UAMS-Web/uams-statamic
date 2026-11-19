@@ -312,3 +312,230 @@ it('reports no source drift while a rebuild is in flight and the stamp is gone',
     expect(ContentMirror::sourceDrift($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot)))
         ->toBeNull();
 });
+
+// --- #1072: the full messages, and the branches the cases above do not reach ---------------------
+
+it('names the mirror, the source and the rebuild command in a source drift report', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+
+    ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+    $files->delete(contentMirrorSource($mirrorRoot).'/collections/pages/kirk.md');
+
+    expect(ContentMirror::sourceDrift($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot)))
+        ->toBe(sprintf(
+            "The content mirror at %s was built from a different %s than the one on disk now, so every test reading content is reading a tree that no longer exists.\nRebuild it with: php artisan test:seed-stache",
+            contentMirrorTarget($mirrorRoot),
+            contentMirrorSource($mirrorRoot),
+        ));
+});
+
+it('reports no source drift when the stamp records no source fingerprint', function (string $stamp) use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+
+    ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+    // The source moved, so a stamp that did record a fingerprint would report drift here
+    $files->delete(contentMirrorSource($mirrorRoot).'/collections/pages/kirk.md');
+    $files->put(contentMirrorTarget($mirrorRoot).'.stamp', $stamp);
+
+    expect(ContentMirror::sourceDrift($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot)))
+        ->toBeNull();
+})->with([
+    'a source that is not a string' => ['{"source":123,"mirror":"x"}'],
+    'no source key' => ['{"mirror":"x"}'],
+    'not a JSON object' => ['"just a string"'],
+]);
+
+it('names the source and the fix when there is nothing to mirror', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $missing = contentMirrorSource($mirrorRoot).'-does-not-exist';
+
+    expect(ContentMirror::rebuildIfStale(new Filesystem, $missing, contentMirrorTarget($mirrorRoot)))
+        ->toBe(sprintf('There is no content to mirror at %s. If that is the content/ submodule, run: git submodule update --init content', $missing));
+});
+
+it('names the directory when the mirror and the source are the same', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $source = contentMirrorSource($mirrorRoot);
+
+    expect(ContentMirror::rebuildIfStale(new Filesystem, $source, $source))
+        ->toBe(sprintf('The content mirror and its source are the same directory (%s), so a rebuild would wipe the source. Run with APP_ENV=testing.', $source));
+});
+
+it('names the source and the fix when the source is empty', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $empty = $mirrorRoot.DIRECTORY_SEPARATOR.'empty-source';
+    (new Filesystem)->ensureDirectoryExists($empty);
+
+    $failure = ContentMirror::rebuildIfStale(new Filesystem, $empty, contentMirrorTarget($mirrorRoot));
+
+    // Matched as two ends because the message's middle carries punctuation this file does not use
+    expect($failure)->toBeString()
+        ->toStartWith('There is nothing to mirror at '.$empty.' ')
+        ->toEndWith('the directory is empty. If that is the content/ submodule, run: git submodule update --init content');
+});
+
+it('creates the parent of a mirror that does not exist yet, and its lock beside it', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+    $mirror = $mirrorRoot.DIRECTORY_SEPARATOR.'deeper'.DIRECTORY_SEPARATOR.'mirror';
+
+    expect(ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), $mirror))->toBeNull()
+        ->and($files->exists($mirror.'/collections/pages/kirk.md'))->toBeTrue()
+        ->and($files->exists($mirror.'.lock'))->toBeTrue();
+});
+
+it('reports a lock it cannot open', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+    $mirror = contentMirrorTarget($mirrorRoot);
+
+    // A directory where the lock file goes makes `fopen()` fail
+    $files->ensureDirectoryExists($mirror.'.lock');
+
+    set_error_handler(static fn (): bool => true);
+
+    try {
+        $failure = ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), $mirror);
+    } finally {
+        restore_error_handler();
+    }
+
+    expect($failure)->toBe(sprintf('Could not open the content mirror lock at %s.lock.', $mirror))
+        ->and($files->isDirectory($mirror))->toBeFalse();
+});
+
+it('holds the lock exclusively while it decides', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $mirror = contentMirrorTarget($mirrorRoot);
+
+    // `ensureExists()` asks whether the mirror is a directory inside the lock, so that
+    // call is where a second opener is shown to be shut out
+    $files = new class($mirror) extends Filesystem
+    {
+        public ?bool $secondOpenerLocked = null;
+
+        public function __construct(private readonly string $mirror) {}
+
+        public function isDirectory($directory): bool
+        {
+            if ($directory === $this->mirror && $this->secondOpenerLocked === null) {
+                $handle = fopen($this->mirror.'.lock', 'c');
+                $this->secondOpenerLocked = $handle !== false && flock($handle, LOCK_EX | LOCK_NB);
+
+                if ($handle !== false) {
+                    fclose($handle);
+                }
+            }
+
+            return parent::isDirectory($directory);
+        }
+    };
+
+    expect(ContentMirror::ensureExists($files, contentMirrorSource($mirrorRoot), $mirror))->toBeNull()
+        ->and($files->secondOpenerLocked)->toBeFalse();
+});
+
+it('rebuilds a stamped mirror whose directory is gone', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+
+    ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+    $files->deleteDirectory(contentMirrorTarget($mirrorRoot));
+
+    expect(ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot)))->toBeNull()
+        ->and($files->exists(contentMirrorTarget($mirrorRoot).'/collections/pages/kirk.md'))->toBeTrue();
+});
+
+it('rebuilds a current mirror whose stamp is gone', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $files = new Filesystem;
+
+    ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+    $files->delete(contentMirrorTarget($mirrorRoot).'.stamp');
+    contentMirrorPlantRebuildProbe($mirrorRoot);
+
+    expect(ContentMirror::rebuildIfStale($files, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot)))->toBeNull()
+        ->and(contentMirrorWasReused($mirrorRoot))->toBeFalse()
+        ->and($files->exists(contentMirrorTarget($mirrorRoot).'.stamp'))->toBeTrue();
+});
+
+/**
+ * A filesystem whose `copy()` reports success for the named files and writes nothing.
+ *
+ * @param  list<string>  $dropped  Basenames to drop
+ */
+function contentMirrorDroppingFilesystem(array $dropped): Filesystem
+{
+    return new class($dropped) extends Filesystem
+    {
+        /** @param  list<string>  $dropped */
+        public function __construct(private readonly array $dropped) {}
+
+        public function copy($path, $target): bool
+        {
+            return \in_array(basename((string) $path), $this->dropped, true) ? true : parent::copy($path, $target);
+        }
+    };
+}
+
+it('removes the old stamp before a rebuild that then fails', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    ContentMirror::rebuildIfStale(new Filesystem, contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+    (new Filesystem)->put(contentMirrorSource($mirrorRoot).'/collections/pages/uhura.md', "---\ntitle: Uhura\n---\n");
+
+    $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['uhura.md']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+    // A stamp left behind would vouch for a mirror that no longer exists
+    expect($failure)->toContain('files missing')
+        ->and((new Filesystem)->exists(contentMirrorTarget($mirrorRoot).'.stamp'))->toBeFalse();
+});
+
+it('names the first missing file in path order, with the counts, when a copy drops files', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    $failure = ContentMirror::rebuildIfStale(
+        contentMirrorDroppingFilesystem(['pages.yaml', 'kirk.md']),
+        contentMirrorSource($mirrorRoot),
+        contentMirrorTarget($mirrorRoot),
+    );
+
+    expect($failure)->toBe(sprintf(
+        'Copying %s into the mirror at %s was incomplete (2 of 3 files missing, e.g. collections/pages.yaml), so the stores would read a partial tree. The partial copy has been removed; re-run test:seed-stache.',
+        contentMirrorSource($mirrorRoot),
+        contentMirrorTarget($mirrorRoot),
+    ));
+});
+
+it('sorts the file list by key rather than keeping the finder order', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    // The finder sorts by name as strings, so `10` comes before `9`. PHP turns both keys into
+    // integers and the key sort puts `9` first, which the missing-file example then names.
+    (new Filesystem)->put(contentMirrorSource($mirrorRoot).'/9', "nine\n");
+    (new Filesystem)->put(contentMirrorSource($mirrorRoot).'/10', "ten\n");
+
+    $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['9', '10']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+    expect($failure)->toContain('(2 of 5 files missing, e.g. 9)');
+});
+
+it('keys the file list by forward-slashed path', function () use (&$mirrorRoot): void {
+    /** @var string $mirrorRoot */
+    if (PHP_OS_FAMILY === 'Windows') {
+        // The finder names a nested file with the native separator here
+        $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['kirk.md']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+        expect($failure)->toContain('(1 of 3 files missing, e.g. collections/pages/kirk.md)');
+
+        return;
+    }
+
+    // Elsewhere a backslash is an ordinary file-name character, so it stands in for the
+    // Windows separator the replacement exists for
+    (new Filesystem)->put(contentMirrorSource($mirrorRoot).'/a\\b.md', "slash\n");
+
+    $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['a\\b.md']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+    expect($failure)->toContain('(1 of 4 files missing, e.g. a/b.md)');
+});

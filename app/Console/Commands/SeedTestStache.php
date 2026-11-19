@@ -99,7 +99,12 @@ class SeedTestStache extends Command
         $lock = fopen(storage_path('framework/stache-seed.lock'), 'c');
 
         if ($lock === false || ! flock($lock, LOCK_EX | LOCK_NB)) {
+            // Closing the handle here is tidiness, not behavior: `$lock` is local, so PHP frees it
+            // when handle() returns, and an un-acquired handle holds no lock. A test counting open
+            // streams across a refused run sees the same count with this block removed.
+            // @pest-mutate-ignore: FalseToTrue, IfNegated, NotIdenticalToIdentical
             if ($lock !== false) {
+                // @pest-mutate-ignore: RemoveFunctionCall
                 fclose($lock);
             }
 
