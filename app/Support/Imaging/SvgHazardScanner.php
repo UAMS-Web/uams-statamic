@@ -104,7 +104,9 @@ class SvgHazardScanner
         $xpath = new DOMXPath($document);
 
         foreach ($xpath->query('//*') ?: [] as $element) {
-            // Skip non-element nodes the query cannot produce but the type allows
+            // Skip non-element nodes the query cannot produce but the type allows.
+            // `//*` selects elements only, so this guard never fires.
+            // @pest-mutate-ignore: InstanceOfToTrue, ContinueToBreak
             if (! $element instanceof DOMElement) {
                 continue;
             }
@@ -196,7 +198,9 @@ class SvgHazardScanner
     private function scanElement(
         DOMElement $element
     ): array {
-        // Compare on the local name so a namespace prefix cannot hide the tag
+        // Compare on the local name so a namespace prefix cannot hide the tag.
+        // A parsed element always has a local name, so the cast never changes it.
+        // @pest-mutate-ignore: RemoveStringCast
         $localName = strtolower((string) $element->localName);
 
         // Pass elements that are not on the hazardous list
@@ -223,7 +227,9 @@ class SvgHazardScanner
         $findings = [];
 
         foreach ($element->attributes as $attribute) {
-            // Compare on the local name so `xlink:href` and `href` both match
+            // Compare on the local name so `xlink:href` and `href` both match.
+            // A parsed attribute always has a local name, so the cast never changes it.
+            // @pest-mutate-ignore: RemoveStringCast
             $name = strtolower((string) $attribute->localName);
 
             // ---
@@ -237,6 +243,8 @@ class SvgHazardScanner
                     'detail' => sprintf(
                         '%s="..." on <%s>.',
                         $attribute->localName,
+                        // A parsed element always has a local name, so the cast never changes it.
+                        // @pest-mutate-ignore: RemoveStringCast
                         strtolower((string) $element->localName)
                     ),
                 ];
@@ -251,6 +259,8 @@ class SvgHazardScanner
                     'detail' => sprintf(
                         '%s="javascript:..." on <%s>.',
                         $attribute->localName,
+                        // A parsed element always has a local name, so the cast never changes it.
+                        // @pest-mutate-ignore: RemoveStringCast
                         strtolower((string) $element->localName)
                     ),
                 ];
@@ -275,9 +285,13 @@ class SvgHazardScanner
         string $value
     ): bool {
         // Strip every whitespace and C0/C1 control character from the value
-        $collapsed = preg_replace('/[\s\x00-\x1F\x7F-\xA0]+/u', '', $value)
-            ?? preg_replace('/[\s\x00-\x1F\x7F]+/', '', $value)
-            ?? $value;
+        $collapsed = preg_replace('/[\s\x00-\x1F\x7F-\xA0]+/u', '', $value);
+
+        // Fall back to a byte pattern, then the raw value, only when the UTF-8 pattern
+        // fails on invalid UTF-8. libxml hands back attribute values as valid UTF-8, so
+        // neither fallback is reached.
+        // @pest-mutate-ignore: CoalesceRemoveLeft, EmptyStringToNotEmpty
+        $collapsed ??= preg_replace('/[\s\x00-\x1F\x7F]+/', '', $value) ?? $value;
 
         return preg_match(self::SCRIPT_URL_PATTERN, $collapsed) === 1;
     }

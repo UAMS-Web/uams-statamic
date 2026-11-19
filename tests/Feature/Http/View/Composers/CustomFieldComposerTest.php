@@ -193,8 +193,8 @@ it('labels extension rules with custom names and title fallbacks', function (): 
     ]);
 
     // UnwrapStrReplace leaves underscores; RemoveArrayItem drops label/value.
-    expect($byValue->get('after_or_equal'))->toMatchArray([
-        'label' => 'After Or Equal',
-        'value' => 'after_or_equal',
+    expect($byValue->get('international_phone'))->toMatchArray([
+        'label' => 'International Phone',
+        'value' => 'international_phone',
     ]);
 });
