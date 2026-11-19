@@ -19,6 +19,11 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * stubbed rasterizer, so these run without the Imagick extension and stay
  * deterministic. The rasterization itself is covered in SvgRasterizerTest.
  *
+ * @covers \App\Support\Imaging\BrandLogoRasterizer
+ *
+ * Mutation: no survivors on App\Support\Imaging\BrandLogoRasterizer, measured on macOS
+ * without --covered-only, against this file and LogoRasterFallbackTest (#1083).
+ *
  * @command  php artisan test --compact tests/Feature/Support/Imaging/BrandLogoRasterizerTest.php
  */
 
@@ -106,4 +111,19 @@ it('treats the extension case-insensitively', function (): void {
     $asset = rasterizerFakeAsset('SVG', '/assets/logos/logo.SVG', '<svg/>');
 
     expect($service->fallbackUrl($asset, 50))->toContain('img/brand-raster/');
+});
+
+it('names the cached png by the markup and the default height, under a web-root path', function (): void {
+    $disk = Storage::fake('public');
+    $rasterizer = Mockery::mock(SvgRasterizer::class);
+    $rasterizer->shouldReceive('toPng')->once()->with('<svg/>', 50)->andReturn('PNG-BYTES');
+
+    $service = new BrandLogoRasterizer($rasterizer, $disk);
+    $asset = rasterizerFakeAsset('svg', '/assets/logos/logo.svg', '<svg/>');
+
+    // The cache key is the markup and the height joined by a pipe, and 50 is the default height
+    $relative = 'img/brand-raster/'.md5('<svg/>|50').'.png';
+
+    expect($service->fallbackUrl($asset))->toBe('/'.$relative);
+    $disk->assertExists($relative);
 });

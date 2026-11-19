@@ -110,6 +110,7 @@ it('writes each local file, every file of a directory but the excluded ones, and
     markdownDocsFile($this->docsDir, 'bridge/c-log.txt', 'captains log');
     markdownDocsFile($this->docsDir, 'bridge/d-view.antlers.html', '{{ uhura }}');
     markdownDocsFile($this->docsDir, 'bridge/brig/e-prisoner.php', 'a prisoner');
+    markdownDocsFile($this->docsDir, 'bridge/brig/cell/e-guard.php', 'a guard');
     markdownDocsFile($this->docsDir, 'bridge/sickbay/f-chart.md', 'mccoy');
     markdownDocsFile($this->docsDir, 'shuttle/galileo.php', 'excluded');
 
@@ -196,6 +197,7 @@ it('sends no token when none is configured, or when it is "0"', function (mixed 
     'none' => [null],
     'empty' => [''],
     'zero' => ['0'],
+    'zero as a number' => [0],
     'not a scalar' => [['ncc-1701']],
 ]);
 
@@ -318,4 +320,90 @@ it('reads a tree URL with no path as the repository root', function (): void {
         ->and(file_get_contents($this->docsInput))->toBe(
             "`https://github.com/starfleet/enterprise/blob/main/LICENSE`:\n```\nMIT\n```\n\n"
         );
+});
+
+it('appends the files of every path in list order, GitHub and local alike', function (): void {
+    $api = 'https://api.github.com/repos/starfleet/enterprise/contents/';
+    markdownDocsFile($this->docsDir, 'spock.php', 'logic');
+    markdownDocsFile($this->docsDir, 'scotty.php', 'engines');
+
+    Http::fake([
+        $api.'kirk.php?ref=main' => Http::response(githubContentsFile('captain')),
+        $api.'sulu.php?ref=main' => Http::response(githubContentsFile('helm')),
+    ]);
+
+    File::put($this->docsInput, implode("\n", [
+        'https://github.com/starfleet/enterprise/blob/main/kirk.php',
+        "{$this->docsRelative}/spock.php",
+        "{$this->docsRelative}/scotty.php",
+        'https://github.com/starfleet/enterprise/blob/main/sulu.php',
+    ]));
+
+    expect(Artisan::call('docs:generate', ['markdown' => $this->docsInput]))->toBe(0)
+        ->and(markdownDocsResult($this->docsInput))->toBe(
+            "`https://github.com/starfleet/enterprise/blob/main/kirk.php`:\n```php\ncaptain\n```\n\n"
+            ."`{$this->docsRelative}/spock.php`:\n```php\nlogic\n```\n\n"
+            ."`{$this->docsRelative}/scotty.php`:\n```php\nengines\n```\n\n"
+            ."`https://github.com/starfleet/enterprise/blob/main/sulu.php`:\n```php\nhelm\n```\n\n"
+        );
+});
+
+it('lists nothing from a GitHub directory whose request failed, whatever the body holds', function (): void {
+    $api = 'https://api.github.com/repos/starfleet/enterprise/contents/';
+
+    Http::fake([
+        $api.'src?ref=main' => Http::response([
+            ['path' => 'src/Leak.php', 'type' => 'file', 'url' => $api.'src/Leak.php?ref=main'],
+        ], 500),
+        $api.'kept.php?ref=main' => Http::response(githubContentsFile('kept')),
+    ]);
+
+    File::put($this->docsInput, implode("\n", [
+        'https://github.com/starfleet/enterprise/tree/main/src',
+        'https://github.com/starfleet/enterprise/blob/main/kept.php',
+    ]));
+
+    expect(Artisan::call('docs:generate', ['markdown' => $this->docsInput]))->toBe(0)
+        ->and(markdownDocsOutputLines())->toBe([
+            "Failed to fetch GitHub directory 'src' from starfleet/enterprise. Status: 500. Skipping.",
+            "No files found in GitHub directory 'src' from starfleet/enterprise after exclusions. Skipping.",
+            "Markdown file updated successfully at '{$this->docsInput}'.",
+        ]);
+
+    Http::assertNotSent(static fn (Request $request): bool => str_contains($request->url(), 'Leak.php'));
+});
+
+it('reads a non-string content, path or URL from GitHub as empty', function (): void {
+    $api = 'https://api.github.com/repos/starfleet/enterprise/contents/';
+
+    Http::fake([
+        $api.'blank.php?ref=main' => Http::response(['type' => 'file', 'content' => null]),
+        $api.'src?ref=main' => Http::response([
+            ['path' => 'src/Blank.php', 'type' => 'file', 'url' => $api.'src/Blank.php?ref=main'],
+            ['path' => null, 'type' => 'file', 'url' => $api.'nameless?ref=main'],
+            ['path' => 'src/Lost.php', 'type' => 'file', 'url' => null],
+        ]),
+        $api.'src/Blank.php?ref=main' => Http::response(['type' => 'file', 'content' => null]),
+        $api.'nameless?ref=main' => Http::response(githubContentsFile('no name')),
+        '*' => Http::response([], 404),
+    ]);
+
+    File::put($this->docsInput, implode("\n", [
+        'https://github.com/starfleet/enterprise/blob/main/blank.php',
+        'https://github.com/starfleet/enterprise/tree/main/src',
+    ]));
+
+    expect(Artisan::call('docs:generate', ['markdown' => $this->docsInput]))->toBe(0)
+        ->and(markdownDocsOutputLines())->toBe([
+            "Failed to fetch GitHub file 'src/Lost.php' from starfleet/enterprise. Status: 404. Skipping.",
+            "Markdown file updated successfully at '{$this->docsInput}'.",
+        ])
+        ->and(file_get_contents($this->docsInput))->toBe(
+            "`https://github.com/starfleet/enterprise/blob/main/blank.php`:\n```php\n\n```\n\n"
+            ."`https://github.com/starfleet/enterprise/blob/main/src/Blank.php`:\n```php\n\n```\n\n"
+            ."`https://github.com/starfleet/enterprise/blob/main/`:\n```\nno name\n```\n\n"
+        );
+
+    // The item with no URL is requested at an empty URL, not at a made-up one
+    Http::assertSent(static fn (Request $request): bool => $request->url() === '');
 });

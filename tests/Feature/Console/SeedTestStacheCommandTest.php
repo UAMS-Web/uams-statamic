@@ -378,3 +378,115 @@ it('refuses to run outside the testing environment and writes nothing', function
         expect(File::isDirectory($seedDir))->toBeFalse();
     });
 });
+
+it('names why it refuses outside the testing environment, and leaves the cache untouched', function (): void {
+    // The guard must stop before the build: a run that went on would wipe the cache dir and warm
+    // against a real environment's cache. A marker in the cache dir is what tells the two apart.
+    App::detectEnvironment(fn () => 'production');
+    $cacheDir = Config::string('cache.stores.file.path');
+    File::ensureDirectoryExists($cacheDir);
+    File::put($cacheDir.'/guard-marker.txt', 'untouched');
+
+    seedStacheStubWarmWriting(['stache/items/should-never-be-written']);
+
+    try {
+        seedStachePreservingSnapshot(function () use ($cacheDir): void {
+            $exitCode = Artisan::call('test:seed-stache');
+
+            // Artisan::output() drains its buffer, so it is read once
+            $output = (string) preg_replace('/\s+/', ' ', Artisan::output());
+
+            // Nothing after the guard may run. A run that went on would reach the band-lock check
+            // and refuse there whenever another test process holds the band lock (a mutation
+            // run's parent always does), so its refusal must be absent too, not only the wipe.
+            expect($exitCode)->toBe(Command::FAILURE)
+                ->and($output)->toContain('test:seed-stache is a test-harness command; run it with APP_ENV=testing.')
+                ->and($output)->not->toContain('Another test:seed-stache is already building')
+                ->and($output)->not->toContain('A test process is reading the content mirror')
+                ->and(File::exists($cacheDir.'/guard-marker.txt'))->toBeTrue()
+                ->and(File::exists($cacheDir.'/stache/items/should-never-be-written'))->toBeFalse();
+        });
+    } finally {
+        File::delete($cacheDir.'/guard-marker.txt');
+    }
+});
+
+it('gives the whole reason when another seed build holds the lock', function (): void {
+    $held = fopen(storage_path('framework/stache-seed.lock'), 'c');
+
+    if ($held === false) {
+        throw new RuntimeException('Could not open the seed lock file to stand in for a concurrent build.');
+    }
+
+    expect(flock($held, LOCK_EX | LOCK_NB))->toBeTrue();
+
+    try {
+        $exitCode = Artisan::call('test:seed-stache');
+
+        expect($exitCode)->toBe(Command::FAILURE)
+            ->and((string) preg_replace('/\s+/', ' ', Artisan::output()))->toContain(
+                'Another test:seed-stache is already building the snapshot in this checkout. '
+                .'The Stache seed is shared, so a second build would corrupt the first; '
+                .'wait for it to finish, then re-run.'
+            );
+    } finally {
+        flock($held, LOCK_UN);
+        fclose($held);
+    }
+});
+
+it('gives the whole reason when a test process is reading the content mirror', function (): void {
+    $band = fopen(ContentMirrorBandLock::path(), 'c');
+
+    if ($band === false) {
+        throw new RuntimeException('Could not open the band lock file to stand in for a running band.');
+    }
+
+    expect(flock($band, LOCK_SH | LOCK_NB))->toBeTrue();
+
+    try {
+        $exitCode = Artisan::call('test:seed-stache');
+
+        expect($exitCode)->toBe(Command::FAILURE)
+            ->and((string) preg_replace('/\s+/', ' ', Artisan::output()))->toContain(
+                ' in this checkout. Rebuilding it now would delete files that process is reading, which surfaces as '
+                .'YAML parse errors in unrelated suites. Wait for the running tests to finish, then re-run test:seed-stache.'
+            );
+    } finally {
+        flock($band, LOCK_UN);
+        fclose($band);
+    }
+});
+
+it('stops before the warm and reports why when the content mirror cannot be built', function (): void {
+    // ContentMirror::rebuildIfStale() refuses when there is no content to mirror. Stand that in
+    // with a Filesystem that reports the content/ submodule as absent: the command must print the
+    // mirror's reason and fail without warming, since a warm against no mirror indexes nothing.
+    $seedDir = storage_path('framework/stache-seed');
+    $content = base_path('content');
+
+    seedStacheStubWarmWriting(['stache/items/warmed-without-a-mirror']);
+
+    App::instance('files', new class($content) extends Filesystem
+    {
+        public function __construct(private readonly string $content) {}
+
+        public function isDirectory($directory): bool
+        {
+            return $directory === $this->content ? false : parent::isDirectory($directory);
+        }
+    });
+
+    seedStachePreservingSnapshot(function () use ($seedDir): void {
+        $exitCode = Artisan::call('test:seed-stache');
+
+        // Artisan::output() drains its buffer, so it is read once
+        $output = (string) preg_replace('/\s+/', ' ', Artisan::output());
+
+        expect($exitCode)->toBe(Command::FAILURE)
+            ->and($output)->toContain('There is no content to mirror at')
+            ->and($output)->toContain('run: git submodule update --init content')
+            ->and(File::exists(Config::string('cache.stores.file.path').'/stache/items/warmed-without-a-mirror'))->toBeFalse()
+            ->and(File::isDirectory($seedDir))->toBeFalse();
+    });
+});

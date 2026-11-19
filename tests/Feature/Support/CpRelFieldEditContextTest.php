@@ -16,7 +16,8 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *
  * @covers \App\Support\CpRelFieldEditContext
  *
- * Mutation: 100% on App\Support\CpRelFieldEditContext (58 mutants, --covered-only).
+ * Mutation: 100% on App\Support\CpRelFieldEditContext (60 mutants), measured on macOS without
+ * --covered-only, against this file, ExcludeDescendantsScopeTest and ExcludeSelfScopeTest (#1075).
  *
  * @command  php artisan test --compact tests/Feature/Support/CpRelFieldEditContextTest.php
  */
@@ -142,4 +143,33 @@ it('resolves a term slug even when the referrer carries a query string', functio
 
     expect(CpRelFieldEditContext::fromAbsoluteUrl('https://example.test/cp/taxonomies/tags/terms/my-term?foo=bar'))
         ->toBe(['type' => 'Term', 'id' => 'tags::my-term']);
+});
+
+it('returns empty when the url exposes no parseable path', function (string $absoluteUrl) {
+    // parse_url() answers null for a URL with no path and false for a malformed one
+    EntryFacade::shouldReceive('find')->never();
+
+    expect(CpRelFieldEditContext::fromAbsoluteUrl($absoluteUrl))
+        ->toBe(['type' => null, 'id' => null]);
+})->with([
+    'no path' => ['https://example.test'],
+    'malformed' => ['http:///cp/collections/pages/entries/abc'],
+]);
+
+it('resolves the entry named by the previous url', function () {
+    $entryId = '00000000-1111-2222-3333-444444444444';
+
+    EntryFacade::shouldReceive('find')->once()->with($entryId)->andReturn(Mockery::mock(Entry::class));
+
+    request()->headers->set('referer', 'https://example.test/cp/collections/pages/entries/'.$entryId);
+
+    expect(CpRelFieldEditContext::resolve())
+        ->toBe(['type' => 'Entry', 'id' => $entryId]);
+});
+
+it('returns an empty type and id when the previous url is not a cp edit screen', function () {
+    request()->headers->set('referer', 'https://example.test/dashboard');
+
+    expect(CpRelFieldEditContext::resolve())
+        ->toBe(['type' => null, 'id' => null]);
 });

@@ -123,6 +123,13 @@ it('renders a single select as its label', function (): void {
     expect(SubmittedFieldDisplay::html($field))->toBe('Deep Red');
 });
 
+it('renders a single option label without converting its line breaks', function (string $fieldtype): void {
+    // The text branch would turn the newline into a `<br>`; an option label is shown as stored
+    $field = ['fieldtype' => $fieldtype, 'config' => [], 'value' => new LabeledValue('red', "Deep\nRed")];
+
+    expect(SubmittedFieldDisplay::html($field))->toBe("Deep\nRed");
+})->with(['radio', 'select']);
+
 it('renders a single option with no label as its key', function (): void {
     $field = ['fieldtype' => 'radio', 'value' => new LabeledValue('red', null)];
 
