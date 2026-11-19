@@ -16,33 +16,6 @@
         <include>
             <directory suffix=".php">./app</directory>
         </include>
-        <exclude>
-            <!-- Large machine-generated reference-data enums (kept in sync with the
-                 excludePaths list in phpstan.neon.dist, for the same reason). Each case
-                 carries a big constant data attribute; ZipCode.php alone is ~6 MB / ~40k
-                 cases. php-code-coverage's static analyser exhausts memory parsing files
-                 this size, and the generated case lists have no hand-written control flow
-                 worth covering or mutating — so coverage/mutation buys no value here. -->
-            <file>app/Enums/CanadianProvince.php</file>
-            <file>app/Enums/Country.php</file>
-            <file>app/Enums/County.php</file>
-            <file>app/Enums/CredentialRegistry.php</file>
-            <file>app/Enums/Currency.php</file>
-            <file>app/Enums/InternationalCodeDesignator.php</file>
-            <file>app/Enums/IscedA2011.php</file>
-            <file>app/Enums/IscedF2013.php</file>
-            <file>app/Enums/IscedP2011.php</file>
-            <file>app/Enums/Isco08.php</file>
-            <file>app/Enums/Language.php</file>
-            <file>app/Enums/LanguageBCP47.php</file>
-            <file>app/Enums/MimeType.php</file>
-            <file>app/Enums/SchemaDataType.php</file>
-            <file>app/Enums/SchemaEnumerationMember.php</file>
-            <file>app/Enums/SchemaProperty.php</file>
-            <file>app/Enums/SchemaType.php</file>
-            <file>app/Enums/State.php</file>
-            <file>app/Enums/ZipCode.php</file>
-        </exclude>
     </source>
     <php>
         <!-- Every pin below is bound twice, so a variable the shell already

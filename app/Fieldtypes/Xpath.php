@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\Input;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Fieldtype for XPath expressions. Uses the Input trait and validates with

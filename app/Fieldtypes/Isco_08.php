@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\Isco08;
 use App\Rules\Isco08FieldtypeStoredRule;
 use App\Support\Isco08FieldtypeStorage;
 use Illuminate\Validation\Rule;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\Isco08;
 
 /**
  * Chained ISCO-08 occupation structure selector: major, sub-major, minor, and unit

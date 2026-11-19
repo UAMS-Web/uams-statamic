@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\Currency as CurrencyEnum;
-use App\Fieldtypes\Traits\Input;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\Currency as CurrencyEnum;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Statamic fieldtype for entering a monetary amount in a configured currency.

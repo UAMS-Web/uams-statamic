@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\SchemaEnumerationMember;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Fields\Value;
+use UAMSWeb\Aether\Enums\SchemaEnumerationMember;
 
 /**
  * Resolves the IPTC Digital Source Type string from a group field's stored
