@@ -522,11 +522,20 @@ it('sorts the file list by key rather than keeping the finder order', function (
 
 it('keys the file list by forward-slashed path', function () use (&$mirrorRoot): void {
     /** @var string $mirrorRoot */
-    // A backslash is an ordinary file-name character here, so it stands in for the
+    if (PHP_OS_FAMILY === 'Windows') {
+        // The finder names a nested file with the native separator here
+        $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['kirk.md']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
+
+        expect($failure)->toContain('(1 of 3 files missing, e.g. collections/pages/kirk.md)');
+
+        return;
+    }
+
+    // Elsewhere a backslash is an ordinary file-name character, so it stands in for the
     // Windows separator the replacement exists for
     (new Filesystem)->put(contentMirrorSource($mirrorRoot).'/a\\b.md', "slash\n");
 
     $failure = ContentMirror::rebuildIfStale(contentMirrorDroppingFilesystem(['a\\b.md']), contentMirrorSource($mirrorRoot), contentMirrorTarget($mirrorRoot));
 
     expect($failure)->toContain('(1 of 4 files missing, e.g. a/b.md)');
-})->skipOnWindows();
+});
