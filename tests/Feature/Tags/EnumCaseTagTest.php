@@ -177,7 +177,7 @@ function enumCaseTag_discoverAppEnumClasses(): array
 {
     $classes = [];
 
-    foreach (array_keys(MovedClassAliases::MAP) as $fqcn) {
+    foreach (array_keys(MovedClassAliases::map()) as $fqcn) {
         if (str_starts_with($fqcn, 'App\\Enums\\') && substr_count($fqcn, '\\') === 2 && enum_exists($fqcn)) {
             $classes[] = $fqcn;
         }

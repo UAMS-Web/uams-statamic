@@ -1309,7 +1309,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so the
+          # `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830).
+          # The list matches the build job's.
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
+          tools: composer:v2
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -1345,11 +1350,8 @@ jobs:
         run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
 
       # The engines under test import the fieldtype add-on's Alpine helper from vendor/ (#995).
-      # Only the files are needed: no PHP from vendor/ runs in this job, so the PHP
-      # extensions the packages require (imagick and others) are not installed and
-      # their platform checks are skipped.
       - name: Install Composer dependencies
-        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist --ignore-platform-reqs
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
 
       # PARITY: mirrored by the js job in local-ci.json
       - name: Run JS unit tests

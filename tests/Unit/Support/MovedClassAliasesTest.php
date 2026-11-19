@@ -24,7 +24,7 @@ it('resolves every old name to the add-on class that replaced it', function (str
 
     expect($declaredName)->toBe($new);
 })->with(function (): Generator {
-    foreach (MovedClassAliases::MAP as $old => $new) {
+    foreach (MovedClassAliases::map() as $old => $new) {
         yield $old => [$old, $new];
     }
 });
@@ -37,11 +37,11 @@ it('keeps a moved enum case identical under its old and new names', function ():
 });
 
 it('lists 85 moved classes, none of them still declared in the site', function (): void {
-    expect(MovedClassAliases::MAP)->toHaveCount(85);
+    expect(MovedClassAliases::map())->toHaveCount(85);
 
     $leftovers = [];
 
-    foreach (array_keys(MovedClassAliases::MAP) as $old) {
+    foreach (array_keys(MovedClassAliases::map()) as $old) {
         $path = dirname(__DIR__, 3).'/app/'.str_replace('\\', '/', substr($old, 4)).'.php';
 
         if (is_file($path)) {
