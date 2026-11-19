@@ -510,7 +510,7 @@ final class PersonKnowsAboutComputer
 
             // Skip missing entries
             // Every subject id here was resolved by the graph walk earlier in this request
-            // @pest-mutate-ignore: InstanceOfToTrue
+            // @pest-mutate-ignore: InstanceOfToTrue, ContinueToBreak
             if (! $subject instanceof Entry) {
                 continue;
             }
@@ -522,13 +522,6 @@ final class PersonKnowsAboutComputer
             foreach (
                 self::flattenKeywordsListRaw($rawKeywords) as $keyword
             ) {
-                // Skip empty keywords after trimming
-                // flattenKeywordsListRaw() never returns an empty keyword
-                // @pest-mutate-ignore: EmptyStringToNotEmpty
-                if ($keyword === '') {
-                    continue;
-                }
-
                 // Skip duplicate keywords across terms and free-text strings
                 if (isset($seen[$keyword])) {
                     continue;
@@ -657,13 +650,6 @@ final class PersonKnowsAboutComputer
 
         // Normalize each token to a canonical id
         foreach ($tokens as $token) {
-            // Skip empty tokens after trimming
-            // flattenTermishScalars() never returns an empty token
-            // @pest-mutate-ignore: EmptyStringToNotEmpty
-            if ($token === '') {
-                continue;
-            }
-
             // Build canonical id from token and default taxonomy
             $id = self::canonicalizeTermId(
                 $token,
@@ -1337,7 +1323,7 @@ final class PersonKnowsAboutComputer
     ): void {
         // Skip empty ids
         // Ids here come from a loaded term's id(), which is always taxonomy::slug
-        // @pest-mutate-ignore: EmptyStringToNotEmpty
+        // @pest-mutate-ignore: EmptyStringToNotEmpty, RemoveEarlyReturn
         if ($canonicalId === '') {
             return;
         }
