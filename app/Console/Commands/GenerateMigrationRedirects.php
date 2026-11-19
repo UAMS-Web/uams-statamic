@@ -112,10 +112,11 @@ class GenerateMigrationRedirects extends Command
             return ['pairs' => [], 'malformed' => []];
         }
 
-        // A missing path or a directory fails is_file(). An existing file that cannot be read
-        // makes file_get_contents() warn, which Laravel turns into an exception, so the read is
-        // silenced and its false return reports it here instead (#1053).
-        if (! is_file($path) || ($contents = @file_get_contents($path)) === false) {
+        // A directory can read as an empty string (measured on macOS), so it is refused first.
+        // A missing file, or one that cannot be read, makes file_get_contents() warn, which
+        // Laravel turns into an exception, so the read is silenced and its false return
+        // reports it here (#1053).
+        if (is_dir($path) || ($contents = @file_get_contents($path)) === false) {
             $this->error(sprintf('Could not read duplicate redirect pairs: %s', $path));
 
             return null;
@@ -253,9 +254,9 @@ class GenerateMigrationRedirects extends Command
         }
 
         // A supplied-but-unreadable path is an operator error, not an empty list. As in
-        // dedupPairs(), the read is silenced so that an existing file that cannot be read
-        // reaches this message rather than an exception (#1053).
-        if (! is_file($path) || ($contents = @file_get_contents($path)) === false) {
+        // dedupPairs(), a directory is refused first and the read is silenced, so a missing or
+        // unreadable file reaches this message rather than an exception (#1053).
+        if (is_dir($path) || ($contents = @file_get_contents($path)) === false) {
             $this->error(sprintf('Could not read retired-permalink list: %s', $path));
 
             return null;
