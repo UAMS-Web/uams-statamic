@@ -161,8 +161,6 @@ class SchemaThingFromRelationshipResolver
         // Resolve entities from the selected traversal mode
         if ($mode === 'tertiary') {
             // Collect targets via asset (or other secondary) then term hop then field
-            // The 0.0 is read only when profiling is off, and then never used.
-            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             // The 0.0 is never read: a start time is used only when profiling is on.
             // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
@@ -175,8 +173,6 @@ class SchemaThingFromRelationshipResolver
             }
         } elseif ($mode === 'secondary') {
             // Collect targets via one relationship hop from secondary entities
-            // The 0.0 is read only when profiling is off, and then never used.
-            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             // The 0.0 is never read: a start time is used only when profiling is on.
             // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
@@ -897,10 +893,12 @@ class SchemaThingFromRelationshipResolver
             // handles.
             // @pest-mutate-ignore: BreakToContinue
             if (
-                // A source_entry. handle read off the context entity finds nothing, and the source-entry fallback below reads the same field.
-                // @pest-mutate-ignore: StrStartsWithToStrEndsWith
-                \str_starts_with($directHandleCandidate, 'source_entry.')
-                || \str_starts_with($directHandleCandidate, 'replicator_row.')
+                \str_starts_with($directHandleCandidate, 'replicator_row.')
+                || (
+                    // A source_entry. handle read off the context entity finds nothing, and the source-entry fallback below reads the same field.
+                    // @pest-mutate-ignore: StrStartsWithToStrEndsWith
+                    \str_starts_with($directHandleCandidate, 'source_entry.')
+                )
             ) {
                 $directHandlesUseAntlersContextFieldForms = true;
                 break;
