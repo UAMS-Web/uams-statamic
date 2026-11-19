@@ -10,6 +10,10 @@ namespace App\Support;
  * Segments come from `explode('-', $trimmed, 3)` so trailing placeholder runs
  * stay in the day slot. Used by `FormatSchemaDate` and `ApStyleDate` so slot
  * rules stay aligned.
+ *
+ * Each slot is valid only when it is a string of exactly the slot's width in
+ * ASCII digits. That one pattern also rejects an empty slot, an `X`
+ * placeholder and a stray hyphen, so no separate check is needed for them.
  */
 final class PartialDateStorageSlots
 {
@@ -22,24 +26,7 @@ final class PartialDateStorageSlots
     public static function isValidYearPart(
         mixed $part
     ): bool {
-        // Treat absent or non-string year slots as invalid
-        if (
-            ! \is_string($part)
-            || $part === ''
-        ) {
-            return false;
-        }
-
-        // Reject placeholders and non-digits before the fixed-width year check
-        if (strpbrk($part, 'X-') !== false) {
-            return false;
-        }
-
-        // Require exactly four ASCII digits for the year field
-        return preg_match(
-            '/^\d{4}$/',
-            $part
-        ) === 1;
+        return self::isDigits($part, 4);
     }
 
     /**
@@ -51,24 +38,7 @@ final class PartialDateStorageSlots
     public static function isValidMonthPart(
         mixed $part
     ): bool {
-        // Treat absent or non-string month slots as invalid
-        if (
-            ! \is_string($part)
-            || $part === ''
-        ) {
-            return false;
-        }
-
-        // Reject placeholders and stray hyphens inside the month slot
-        if (strpbrk($part, 'X-') !== false) {
-            return false;
-        }
-
-        // Require exactly two ASCII digits for the month field
-        return preg_match(
-            '/^\d{2}$/',
-            $part
-        ) === 1;
+        return self::isDigits($part, 2);
     }
 
     /**
@@ -80,23 +50,19 @@ final class PartialDateStorageSlots
     public static function isValidDayPart(
         mixed $part
     ): bool {
-        // Treat absent or non-string day slots as invalid
-        if (
-            ! \is_string($part)
-            || $part === ''
-        ) {
-            return false;
-        }
+        return self::isDigits($part, 2);
+    }
 
-        // Reject placeholders and hyphen padding inside the day slot
-        if (strpbrk($part, 'X-') !== false) {
-            return false;
-        }
-
-        // Require exactly two ASCII digits for the day field
-        return preg_match(
-            '/^\d{2}$/',
-            $part
-        ) === 1;
+    /**
+     * Whether a slot is a string of exactly the given number of ASCII digits.
+     *
+     * @param  mixed  $part  The `explode` segment, or null when absent
+     * @param  int  $width  The number of digits the slot holds
+     */
+    private static function isDigits(mixed $part, int $width): bool
+    {
+        // Only a string can hold a date token; anything else is an absent slot
+        return \is_string($part)
+            && preg_match('/^\d{'.$width.'}$/', $part) === 1;
     }
 }
