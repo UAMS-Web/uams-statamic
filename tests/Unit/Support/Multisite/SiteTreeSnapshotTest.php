@@ -145,7 +145,10 @@ it('tells apart handles that only compare equal as numbers', function (): void {
         ['root' => 'root', '10.0' => 'major_entity', '1e1' => 'major_entity', 'x' => 'sub_entity'],
     );
 
-    expect($tree->descendants('10.0'))->toBe(['1e1', 'x'])
+    $siblings = new SiteTreeSnapshot(['root' => null, '10.0' => 'root', '1e1' => 'root'], []);
+
+    expect($siblings->descendants('root'))->toBe(['10.0', '1e1'])
+        ->and($tree->descendants('10.0'))->toBe(['1e1', 'x'])
         ->and($tree->nearestTier('x'))->toBe('1e1')
         ->and($tree->nearestTier('1e1'))->toBe('10.0');
 });
