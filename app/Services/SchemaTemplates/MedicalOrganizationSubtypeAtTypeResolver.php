@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaTemplates;
 
-use App\Enums\SchemaType;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Resolves the JSON-LD `@type` list for a clinical location from its editor-

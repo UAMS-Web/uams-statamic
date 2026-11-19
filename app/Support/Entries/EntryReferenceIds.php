@@ -47,10 +47,7 @@ final class EntryReferenceIds
      */
     public static function from(mixed $value): array
     {
-        if ($value === null) {
-            return [];
-        }
-
+        // A null selection takes the default arm and is skipped as denoting no id
         $items = match (true) {
             is_array($value) => $value,
             $value instanceof SupportCollection => $value->all(),

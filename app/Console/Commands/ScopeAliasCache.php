@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\SchemaType;
 use App\Scopes\EntriesBySchemaType;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Manage the EntriesBySchemaType scope alias cache (clear, warm, refresh).

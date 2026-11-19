@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Scopes;
 
 use App\Cache\ScopeAliasCache;
-use App\Enums\SchemaType;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Statamic\Query\Builder;
 use Statamic\Query\Scopes\Scope;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Entry query scope that filters entries by Schema.org type — one alias-driven

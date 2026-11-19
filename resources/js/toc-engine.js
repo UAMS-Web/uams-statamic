@@ -35,11 +35,11 @@
  * the block fieldset calls it "necessary for page hierarchy", which is exactly what a table of
  * contents reports.
  *
- * Registered through `lib/alpine-engine.js` for the shared, idempotent Alpine-lifecycle binding,
+ * Registered through the fieldtype add-on's `alpine.js` for the shared, idempotent Alpine-lifecycle binding,
  * exactly like the sibling engines.
  */
 
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for table-of-contents navs the render partial emitted. */
 export const TOC_SELECTOR = '[data-toc]';

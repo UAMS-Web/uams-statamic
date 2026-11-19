@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\MimeType;
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
-use App\Fieldtypes\Traits\FieldtypeValidationRules;
 use App\Rules\AssetMinimumDimensions;
 use App\Scopes\AssetsByFileSize;
 use Statamic\Fields\Field;
 use Statamic\Fieldtypes\Assets\Assets as BaseAssets;
+use UAMSWeb\Aether\Enums\MimeType;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
+use UAMSWeb\Aether\Fieldtypes\Traits\FieldtypeValidationRules;
 use UAMSWeb\Aether\Forms\Settings\Fieldtypes\Traits\FormBlueprintContext;
 
 /**
