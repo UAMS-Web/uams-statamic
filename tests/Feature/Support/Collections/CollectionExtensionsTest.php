@@ -23,6 +23,10 @@ uses(TestCase::class);
  * scheduled publishing through it, and each consumer reads whatever is registered rather than a
  * named collection. A collection registered here as `widgets` stands in for one a package adds.
  *
+ * Mutation-clean without `--covered-only` (#1070): 12 mutants, all killed. One equivalent is
+ * annotated in the class and left out of that count: `TrueToFalse` on the `in_array()` strict
+ * flag in `scheduledPublishing()`, since the needle and every element are strings.
+ *
  * @covers \App\Support\Collections\CollectionExtensions
  * @covers \UAMSWeb\Aether\People\Support\PeopleCollection
  * @covers \App\Providers\PeopleCollectionServiceProvider
@@ -101,4 +105,12 @@ it('schedules the registered collections ahead of the site\'s own, once each', f
     $extensions->scheduledPublishing('pages');
 
     expect(ApplyScheduledPublishing::collections())->toBe(['people', 'widgets', 'pages']);
+});
+
+it('lists an entry class once when several collections register it', function (): void {
+    $extensions = app(CollectionExtensions::class);
+    $extensions->entryClass('widgets', PersonEntry::class);
+    $extensions->entryClass('gadgets', KnowledgeBaseEntry::class);
+
+    expect($extensions->entryClasses())->toBe([PersonEntry::class, KnowledgeBaseEntry::class]);
 });
