@@ -329,9 +329,11 @@ class SchemaThingFromRelationshipResolver
                 $compactRef = null;
                 if (
                     \is_string($preMergeCanonicalId)
-                    // An empty id compacts to nothing, and the built map below never holds an empty id (see the guard where it is filled).
-                    // @pest-mutate-ignore: EmptyStringToNotEmpty
-                    && $preMergeCanonicalId !== ''
+                    && (
+                        // An empty id compacts to nothing, and the built map below never holds an empty id (see the guard where it is filled).
+                        // @pest-mutate-ignore: EmptyStringToNotEmpty
+                        $preMergeCanonicalId !== ''
+                    )
                 ) {
                     // Check the graph pass map for a prior full emission
                     $compactRef = $this->jsonLdAtIdDeduplication
@@ -560,9 +562,11 @@ class SchemaThingFromRelationshipResolver
             if (
                 isset($node['@type'])
                 && \is_string($node['@id'] ?? null)
-                // Only non-empty ids are ever looked up in this map (see the pre-merge check), so an empty key is never read.
-                // @pest-mutate-ignore: EmptyStringToNotEmpty
-                && $node['@id'] !== ''
+                && (
+                    // Only non-empty ids are ever looked up in this map (see the pre-merge check), so an empty key is never read.
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
+                    $node['@id'] !== ''
+                )
             ) {
                 // Track full nodes built in this tag invocation only (shared map
                 // is not updated here so nested fragments do not pre-mark @id as
@@ -930,9 +934,11 @@ class SchemaThingFromRelationshipResolver
                 'Mockery_'
             )
             && \is_string($contextIdForAuthoritativeEntryRead)
-            // Statamic gives every entry a non-empty id, so an empty context id never matches one.
-            // @pest-mutate-ignore: EmptyStringToNotEmpty
-            && $contextIdForAuthoritativeEntryRead !== ''
+            && (
+                // Statamic gives every entry a non-empty id, so an empty context id never matches one.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $contextIdForAuthoritativeEntryRead !== ''
+            )
         ) {
             $contextAnchorsAuthoritativeStatamicEntryFieldRead = $contextEntity->id() === $contextIdForAuthoritativeEntryRead;
         }
@@ -3350,9 +3356,11 @@ class SchemaThingFromRelationshipResolver
         // Check if the canonical id is a string and not empty
         if (
             \is_string($canonicalId)
-            // resolveCanonicalIdForEntity() returns a non-empty string or null, never an empty string.
-            // @pest-mutate-ignore: EmptyStringToNotEmpty
-            && $canonicalId !== ''
+            && (
+                // resolveCanonicalIdForEntity() returns a non-empty string or null, never an empty string.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $canonicalId !== ''
+            )
         ) {
             // Override the node @id with the canonical id
             $node['@id'] = $canonicalId;
