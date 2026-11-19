@@ -5,9 +5,12 @@ declare(strict_types=1);
 use App\Services\LinkHealth\HostThrottle;
 use App\Services\LinkHealth\ProbeOutcome;
 use App\Support\Http\OutboundUrlGuard;
+use DateInterval;
+use DateTimeInterface;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -345,14 +348,27 @@ it('reserves a throttle slot for each external link it probes', function (): voi
 
     lhsMakeEntry('lhs-a', ['cta_url' => 'https://example.com/reserved']);
 
-    /** @var RateLimiter $limiter */
-    $limiter = app(RateLimiter::class);
+    // The reservation is a hit with a one-second decay, so reading attempts() after the scan
+    // races that window on a slow runner; the limiter records each hit() call instead
+    $limiter = new class(Cache::store()) extends RateLimiter
+    {
+        /** @var list<array{0: string, 1: DateInterval|DateTimeInterface|int}> */
+        public array $hits = [];
+
+        public function hit($key, $decaySeconds = 60)
+        {
+            $this->hits[] = [$key, $decaySeconds];
+
+            return parent::hit($key, $decaySeconds);
+        }
+    };
+    app()->instance(RateLimiter::class, $limiter);
     $key = HostThrottle::keyFor('https://example.com/reserved');
 
     try {
         $output = lhsScanOutput();
 
-        expect($limiter->attempts($key))->toBe(1)
+        expect($limiter->hits)->toBe([[$key, 1]])
             ->and($output)->toContain('Probed:        1 unique external URL(s)');
     } finally {
         $limiter->clear($key);
