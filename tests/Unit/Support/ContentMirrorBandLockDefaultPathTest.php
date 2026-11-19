@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\ContentMirrorBandLock;
+use App\Support\ContentRoot;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -17,5 +18,6 @@ uses(TestCase::class);
  * @command  php artisan test --compact tests/Unit/Support/ContentMirrorBandLockDefaultPathTest.php
  */
 it('defaults to the lock file beside the test content mirror', function (): void {
-    expect(ContentMirrorBandLock::path())->toBe(storage_path('framework/testing/content-mirror').'.band.lock');
+    // ContentRootTest pins the testing mirror path itself; this pins the suffix and the app.env lookup
+    expect(ContentMirrorBandLock::path())->toBe(ContentRoot::path('testing').'.band.lock');
 });
