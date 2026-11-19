@@ -263,14 +263,10 @@ class NewsReleasePdfGenerator
         $html = $this->renderPressReleaseHtml($entry);
 
         // Initialize a temporary file path for the PDF bytes
-        $tempPath = tempnam(sys_get_temp_dir(), 'nrpdf');
+        $tempPath = $this->allocateTempPath();
 
-        // Check whether the temporary path was allocated. tempnam() falls back to the
-        // system temporary directory, so a test cannot make it fail.
-        if (
-            // @pest-mutate-ignore: FalseToTrue
-            $tempPath === false
-        ) {
+        // Check whether the temporary path was allocated
+        if ($tempPath === false) {
             // Log failure when no temp file is available
             Log::warning('NewsReleasePdfGenerator: could not allocate temp file for PDF', [
                 'entry_id' => $entry->id(),
@@ -444,6 +440,19 @@ class NewsReleasePdfGenerator
                 $persisted
             );
         }
+    }
+
+    /**
+     * Allocate the temporary file a PDF is written to, or false when none can be made.
+     *
+     * A method of its own so a test can stand in for the failure: tempnam() falls back to
+     * the system temporary directory, so a real call cannot be made to fail.
+     *
+     * @return string|false The temporary file's path, or false
+     */
+    protected function allocateTempPath(): string|false
+    {
+        return tempnam(sys_get_temp_dir(), 'nrpdf');
     }
 
     /**
