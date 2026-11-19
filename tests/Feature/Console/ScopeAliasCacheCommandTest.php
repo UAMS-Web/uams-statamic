@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Cache\ScopeAliasCache as ScopeAliasCacheStore;
-use App\Enums\SchemaType;
 use App\Scopes\EntriesBySchemaType;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 uses(TestCase::class);
 

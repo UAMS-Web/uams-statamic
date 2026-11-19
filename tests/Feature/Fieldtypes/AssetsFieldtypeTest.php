@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\MimeType;
 use App\Fieldtypes\Assets;
 use App\Rules\AssetMinimumDimensions;
 use Illuminate\Http\Request;
@@ -11,6 +10,7 @@ use Statamic\Facades\User;
 use Statamic\Fields\Field;
 use Statamic\Fieldtypes\Assets\Assets as BaseAssets;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\MimeType;
 
 use function Pest\Laravel\actingAs;
 

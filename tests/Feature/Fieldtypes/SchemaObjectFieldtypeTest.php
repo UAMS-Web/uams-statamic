@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaType;
 use App\Fieldtypes\SchemaObject;
 use App\Services\SchemaTemplates\SchemaTypeOptions;
 use App\Tags\Schema\SchemaPropertyValidator;
@@ -11,6 +10,7 @@ use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 uses(TestCase::class);
 

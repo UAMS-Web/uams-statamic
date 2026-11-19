@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\CP;
 
-use App\Enums\SchemaProperty;
 use App\Services\SchemaObject\SchemaPropertyReplicatorSets;
 use App\Tags\Schema\SchemaPropertyValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Statamic\Http\Controllers\CP\CpController;
+use UAMSWeb\Aether\Enums\SchemaProperty;
 
 /**
  * Returns replicator config and meta for one or more schema types' properties

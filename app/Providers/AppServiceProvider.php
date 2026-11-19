@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Cache\SchemaTypeAliasCacheWarmer;
 use App\Policies\CustomUserPolicy;
 use App\Services\LinkHealth\LinkClassifier;
 use App\Support\Forms\MultisiteSubmissionSite;
@@ -27,6 +28,7 @@ use Statamic\Policies\UserPolicy;
 use Statamic\Sites\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Statamic;
+use UAMSWeb\Aether\Enums\Generation\Schema\AliasCacheWarmer;
 use UAMSWeb\Aether\Forms\Settings\Contracts\SubmissionSite;
 
 // Added by studio1902/statamic-peak
@@ -69,6 +71,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             SubmissionSite::class,
             MultisiteSubmissionSite::class
+        );
+
+        // The schema type enum generator in the enums add-on warms the site's
+        // entries-by-schema-type alias cache through this binding (#995)
+        $this->app->bind(
+            AliasCacheWarmer::class,
+            SchemaTypeAliasCacheWarmer::class
         );
 
         // Link-health classification needs two facts the container cannot infer: which hosts

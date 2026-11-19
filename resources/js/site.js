@@ -189,7 +189,7 @@ registerSiteSearchTypeahead(Alpine);
 
 // Queue calculation-engine binding for after Alpine initializes. Both
 // engines reach into each form's reactive scope via `Alpine.$data`, so
-// the scope must exist first — the shared `lib/alpine-engine.js` helper
+// the scope must exist first. The fieldtype add-on's shared `alpine.js` helper
 // each engine wraps defers binding until `alpine:initialized`.
 registerCalculationEngine();
 registerPersonNameEngine();

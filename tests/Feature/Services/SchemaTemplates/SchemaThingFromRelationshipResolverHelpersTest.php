@@ -1773,3 +1773,88 @@ it('collects the global field targets that resolve, capped at the current limit'
     'first item only' => [1, 1],
     'first two items' => ['2', 1],
 ]);
+
+it('normalizes nothing for a pipe scope whose handles are all empty', function (string $scope): void {
+    // The id would resolve on its own, so only the empty scope stops it.
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('term')->andReturn(thingHelpersTaxonomyTerm('tags', 'x'));
+    Term::partialMock()->shouldReceive('find')->with('tags::x')->andReturn($localized);
+
+    expect(thingHelpersCall('normalizeToTerm', 'tags::x', $scope))->toBeNull();
+})->with([
+    'a lone pipe' => ['|'],
+    'padded pipes' => [' | | '],
+]);
+
+it('normalizes an id against the first non-empty handle of a pipe scope', function (): void {
+    $term = thingHelpersTaxonomyTerm('tags', 'x');
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('term')->andReturn($term);
+    Term::partialMock()->shouldReceive('find')->with('tags::x')->andReturn($localized);
+
+    expect(thingHelpersCall('normalizeToTerm', 'tags::x', ' | tags'))->toBe($term);
+});
+
+it('reads the current field when the context entry is not an entry', function (): void {
+    // Only an entry object may name the context id: a string there is ignored, not read for its class.
+    $target = thingHelpersEntryIn('people', 'p1');
+
+    $targets = thingHelpersCall('collectTargetsForDirectMode', ['entry' => 'not an entry', 'about' => [$target]], ['current_field' => 'about'], null);
+
+    expect($targets)->toHaveCount(1);
+});
+
+it('reads no source-entry fallback from a term in the source entry slot', function (): void {
+    $target = thingHelpersEntryIn('people', 'p1');
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('value')->andReturn([$target]);
+
+    expect(thingHelpersCall('collectTargetsForDirectMode', ['source_entry' => $localized], ['current_field' => 'source_entry.about'], null))->toBe([]);
+});
+
+it('reads a replicator row field only from an array row', function (): void {
+    expect(thingHelpersCall('readFirstNonEmptyFieldValueFromContext', ['replicator_row' => ['about' => ['x']]], ['replicator_row.about']))->toBe(['x']);
+    expect(thingHelpersCall('readFirstNonEmptyFieldValueFromContext', ['replicator_row' => collect(['about' => ['x']])], ['replicator_row.about']))->toBeNull();
+});
+
+it('reads a term source site from its default locale', function (): void {
+    $defaultSite = Mockery::mock(Site::class);
+    $defaultSite->shouldReceive('handle')->andReturn('default');
+    $ownSite = Mockery::mock(Site::class);
+    $ownSite->shouldReceive('handle')->andReturn('health');
+    $default = Mockery::mock(LocalizedTerm::class);
+    $default->shouldReceive('site')->andReturn($defaultSite);
+    $term = Mockery::mock(LocalizedTerm::class);
+    $term->shouldReceive('site')->andReturn($ownSite);
+    $term->shouldReceive('inDefaultLocale')->andReturn($default);
+
+    expect(thingHelpersCall('resolveSourceSiteHandle', $term))->toBe('default');
+});
+
+it('reads the entry of a page found at the request url by its id as a string', function (mixed $pageId, string $lookup): void {
+    $entry = thingHelpersEntryIn('pages', 'pg');
+    $page = Mockery::mock(Page::class);
+    $page->shouldReceive('id')->andReturn($pageId);
+    Data::shouldReceive('findByRequestUrl')->andReturn($page);
+    Data::shouldReceive('find')->withArgs(fn (mixed $reference): bool => $reference === $lookup)->once()->andReturn($entry);
+
+    expect(thingHelpersCall('resolveContextEntityFromCurrentRequest'))->toBe($entry);
+})->with([
+    'an integer id' => [7, '7'],
+    'no usable id' => [null, ''],
+]);
+
+it('reads nothing for a page whose id finds something other than an entry', function (): void {
+    $page = Mockery::mock(Page::class);
+    $page->shouldReceive('id')->andReturn('pg');
+    Data::shouldReceive('findByRequestUrl')->andReturn($page);
+    Data::shouldReceive('find')->with('pg')->andReturn(Mockery::mock(LocalizedTerm::class));
+
+    expect(thingHelpersCall('resolveContextEntityFromCurrentRequest'))->toBeNull();
+});
+
+it('looks up no asset for an empty asset id', function (): void {
+    Statamic\Facades\Asset::shouldReceive('find')->never();
+
+    expect(thingHelpersCall('normalizeToAsset', '', null))->toBeNull();
+});

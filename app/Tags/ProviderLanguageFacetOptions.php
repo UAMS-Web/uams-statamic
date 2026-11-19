@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Enums\LanguageBCP47;
 use Illuminate\Support\Collection;
 use Statamic\Entries\Entry as EntryModel;
 use Statamic\Facades\Entry;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Enums\LanguageBCP47;
 use UAMSWeb\Aether\People\Support\PeopleCollection;
 
 /**

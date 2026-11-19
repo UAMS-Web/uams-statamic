@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaType;
 use App\Services\SchemaTemplates\SchemaTypeOptions;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Unit tests for SchemaTypeOptions (Schema.org type discovery from spatie/schema-org).
