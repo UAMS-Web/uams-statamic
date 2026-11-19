@@ -9,6 +9,7 @@ use App\Search\AreaOfExpertiseSuggestionPresenter;
 use App\Search\Loupe\SiteFilteredLoupeIndex;
 use App\Search\PrivateEntryVisibility;
 use App\Search\SecurityHeadersResponseAllowance;
+use App\Support\Multisite\SiteTreeCache;
 use Daun\StatamicLoupe\Loupe\Index as LoupeIndex;
 use Illuminate\Support\ServiceProvider;
 use Statamic\Facades\Search;
@@ -42,6 +43,9 @@ final class SearchServiceProvider extends ServiceProvider
         // The `loupe` driver makes its index through the container, so every `loupe` index
         // stores each document's site and hands Loupe the site filter (#646)
         $this->app->bind(LoupeIndex::class, SiteFilteredLoupeIndex::class);
+
+        // One multisite tree per request, so search reads its cache at most once (#480)
+        $this->app->scoped(SiteTreeCache::class);
     }
 
     /**

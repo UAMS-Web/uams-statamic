@@ -13,6 +13,7 @@ use App\Listeners\DisambiguateEntryTitle;
 use App\Listeners\DispatchLocationRegionBackfill;
 use App\Listeners\EnforceChoiceSubmissionLimits;
 use App\Listeners\FlattenLogoOrderValues;
+use App\Listeners\ForgetSiteTree;
 use App\Listeners\GenerateNewsReleasePdf;
 use App\Listeners\HashVisibilityPassword;
 use App\Listeners\InvalidateSchemaJsonLdCache;
@@ -50,8 +51,13 @@ use Statamic\Events\EntryDeleting;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
 use Statamic\Events\FormSubmitted;
+use Statamic\Events\GlobalSetDeleted;
 use Statamic\Events\GlobalSetSaved;
+use Statamic\Events\GlobalVariablesDeleted;
+use Statamic\Events\GlobalVariablesSaved;
 use Statamic\Events\ResponseCreated;
+use Statamic\Events\StacheCleared;
+use Statamic\Events\StacheWarmed;
 use Statamic\Events\TermSaved;
 use Statamic\Events\TermSaving;
 
@@ -191,9 +197,26 @@ class EventServiceProvider extends BaseServiceProvider
             RefreshKnowledgeBaseMountUris::class,
         ],
 
-        // Invalidate schema JSON-LD cache when global set is saved
+        // Invalidate schema JSON-LD cache when global set is saved, and forget the multisite tree
+        // search reads (#480) whenever the global sets, their variables or the Stache change
         GlobalSetSaved::class => [
             InvalidateSchemaJsonLdCache::class,
+            ForgetSiteTree::class,
+        ],
+        GlobalSetDeleted::class => [
+            ForgetSiteTree::class,
+        ],
+        GlobalVariablesSaved::class => [
+            ForgetSiteTree::class,
+        ],
+        GlobalVariablesDeleted::class => [
+            ForgetSiteTree::class,
+        ],
+        StacheCleared::class => [
+            ForgetSiteTree::class,
+        ],
+        StacheWarmed::class => [
+            ForgetSiteTree::class,
         ],
 
         // Invalidate schema JSON-LD cache when term is saved
