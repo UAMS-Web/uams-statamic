@@ -337,7 +337,7 @@ trait PresetOptions
         $options = [];
 
         // Build the full enum class name with namespace
-        $fullEnumClass = '\App\Enums\\'.$enumClass;
+        $fullEnumClass = '\UAMSWeb\Aether\Enums\\'.$enumClass;
 
         // ---
         // Build the options array
