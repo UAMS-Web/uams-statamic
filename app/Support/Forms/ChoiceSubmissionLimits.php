@@ -70,10 +70,11 @@ final class ChoiceSubmissionLimits
 
         $counts = $this->counts($form, $handle, array_keys($limits));
 
-        // A choice is full once its selection count meets or exceeds its cap.
+        // A choice is full once its selection count meets or exceeds its cap. counts()
+        // seeds every limit's choice, so each one has a count.
         $full = [];
         foreach ($limits as $choice => $limit) {
-            if (($counts[$choice] ?? 0) >= $limit) {
+            if ($counts[$choice] >= $limit) {
                 $full[] = $choice;
             }
         }
@@ -91,10 +92,6 @@ final class ChoiceSubmissionLimits
     public function selectionHitsFullChoice(Form $form, Field $field, mixed $submitted): bool
     {
         $full = $this->fullChoices($form, $field);
-
-        if ($full === []) {
-            return false;
-        }
 
         // Normalize scalar and array selections to a list of chosen option values.
         $selected = collect(Arr::wrap($submitted))
@@ -188,10 +185,6 @@ final class ChoiceSubmissionLimits
      */
     private function enabled(mixed $value): bool
     {
-        if (\is_bool($value)) {
-            return $value;
-        }
-
         if (\is_string($value)) {
             return \in_array(strtolower(trim($value)), ['true', '1', 'yes', 'on'], true);
         }

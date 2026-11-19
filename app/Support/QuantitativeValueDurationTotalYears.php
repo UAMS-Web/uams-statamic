@@ -33,15 +33,9 @@ final class QuantitativeValueDurationTotalYears
                 continue;
             }
 
+            // A null or non-scalar unit counts as zero, and so does a blank one,
+            // since `(float) ''` is 0.0
             $raw = $majorData[$unit];
-            if ($raw === null) {
-                continue;
-            }
-
-            if ($raw === '') {
-                continue;
-            }
-
             $n = \is_scalar($raw) ? (float) $raw : 0.0;
 
             match ($unit) {
@@ -53,18 +47,6 @@ final class QuantitativeValueDurationTotalYears
                 'minutes' => $minutes += $n,
                 default => $seconds += $n,
             };
-        }
-
-        if (
-            $years === 0.0
-            && $months === 0.0
-            && $weeks === 0.0
-            && $days === 0.0
-            && $hours === 0.0
-            && $minutes === 0.0
-            && $seconds === 0.0
-        ) {
-            return 0.0;
         }
 
         $dayFraction = $weeks * 7
