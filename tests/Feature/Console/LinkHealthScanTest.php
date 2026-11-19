@@ -5,8 +5,6 @@ declare(strict_types=1);
 use App\Services\LinkHealth\HostThrottle;
 use App\Services\LinkHealth\ProbeOutcome;
 use App\Support\Http\OutboundUrlGuard;
-use DateInterval;
-use DateTimeInterface;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
