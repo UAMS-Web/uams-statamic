@@ -520,6 +520,7 @@ Amorita
 Amory
 Ampanang
 Ampari
+ampcode
 amphp
 ampm
 Amri
@@ -3250,6 +3251,7 @@ Clyo
 cmdf
 cmdline
 CMR
+cntrl
 CNY
 Coachella
 Coahoma
@@ -15366,6 +15368,7 @@ Springvale
 Springview
 Springville
 Springwater
+sprintf
 Sproul
 Spurgeon
 Spurger
