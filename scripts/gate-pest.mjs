@@ -347,6 +347,11 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // would be incomplete.
     // Mirrors the "Check skip baseline" steps in ci.yml.
     //
+    // No `--platform` here, deliberately. The guard picks a platform's own count by
+    // PHP_OS_FAMILY, and this runner runs the band on the host it reports on, so the
+    // default is already right. ci.yml's band report passes `--platform` because it
+    // reads every operating system's shards on Linux (#1148).
+    //
     // The guard lives in the *worktree*, i.e. in the branch under test, so a
     // branch predating UAMS-Web/uams-statamic-archive#1744 does not carry it. The runner validates arbitrary
     // branches (including older ones), so a missing guard is skipped with a
