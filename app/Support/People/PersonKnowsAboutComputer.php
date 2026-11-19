@@ -1353,7 +1353,7 @@ final class PersonKnowsAboutComputer
         string $termId
     ): void {
         // Skip empty ids
-        // Queued ids are never empty, because normalizeTermFieldRaw() skips empty tokens
+        // Queued ids are never empty, because every id canonicalizeTermId() returns contains ::
         // @pest-mutate-ignore: EmptyStringToNotEmpty
         if ($termId === '') {
             return;
@@ -1489,7 +1489,7 @@ final class PersonKnowsAboutComputer
             $trimmed = \trim($raw);
 
             // Return empty list for whitespace-only strings
-            // An empty token is skipped by normalizeTermFieldRaw() anyway
+            // An empty token would canonicalize to a slug-less taxonomy:: id, which no term carries
             // @pest-mutate-ignore: EmptyStringToNotEmpty, RemoveEarlyReturn
             if ($trimmed === '') {
                 return [];
