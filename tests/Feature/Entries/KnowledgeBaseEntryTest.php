@@ -25,7 +25,9 @@ use Tests\TestCase;
  *   php artisan cache:clear && > storage/logs/laravel.log && php artisan test tests/Feature/Entries/KnowledgeBaseEntryTest.php
  *   php artisan cache:clear && > storage/logs/laravel.log && php artisan test tests/Feature/Entries/KnowledgeBaseEntryTest.php --stop-on-failure
  *
- * Mutation: 100% on App\Entries\KnowledgeBaseEntry (12 mutants, --covered-only).
+ * Mutation: measured over this file, KnowledgeBaseEntrySaveTest.php and
+ * KnowledgeBaseMountResolutionTest.php together, without --covered-only; the counts are in
+ * the closing record on UAMS-Web/uams-statamic#858.
  */
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
