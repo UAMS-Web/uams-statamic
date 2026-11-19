@@ -233,13 +233,16 @@ function auditSurfaceOf(array $groups): void
 /**
  * Run the audit and return its exit code and what it rendered.
  *
+ * The console ends each line with PHP_EOL, which is "\r\n" on Windows, so the
+ * output is normalized to "\n" for the assertions whose needle spans a line.
+ *
  * @return array{0: int, 1: string}
  */
 function runIdentifierAuditWithStatus(): array
 {
     $status = Artisan::call('identifiers:audit-duplicates');
 
-    return [$status, Artisan::output()];
+    return [$status, str_replace("\r\n", "\n", Artisan::output())];
 }
 
 it('fails, and audits nothing, when no uniqueness rule is wired', function (): void {
