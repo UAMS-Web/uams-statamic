@@ -72,6 +72,9 @@ final class LinkHealthScan extends Command
             $bar->advance();
         }
 
+        // The last advance has already drawn the bar at its maximum, and with no occurrences
+        // there is nothing to draw, so finish() changes no output.
+        // @pest-mutate-ignore: RemoveMethodCall
         $bar->finish();
         $this->newLine(2);
 
@@ -162,6 +165,9 @@ final class LinkHealthScan extends Command
      */
     private function report(array $outcomes, array $values, array $newly, ExternalProber $prober): int
     {
+        // Every operand is a ResolutionState case, and an enum case is only loosely equal to the
+        // same case, so a loose in_array() decides exactly as the strict one does.
+        // @pest-mutate-ignore: TrueToFalse
         $broken = array_filter($outcomes, static fn (ProbeOutcome|ResolutionState $o): bool => $o instanceof ProbeOutcome
             ? $o->isBroken()
             : \in_array($o, [ResolutionState::Missing, ResolutionState::Unpublished, ResolutionState::MissingFile], true));
@@ -232,6 +238,10 @@ final class LinkHealthScan extends Command
         $this->newLine();
         $this->line(ProbeOutcome::Unverifiable->explanation());
 
+        // array_slice() below renumbers integer keys, so dropping array_values() lists the same
+        // URLs in the same order. Every unverifiable key was written to $values in the same loop
+        // that recorded its outcome, so the '' fallback is never read.
+        // @pest-mutate-ignore: UnwrapArrayValues, EmptyStringToNotEmpty
         $urls = array_values(array_unique(array_map(
             static fn (string $key): string => $values[$key] ?? '',
             array_keys($unverifiable),

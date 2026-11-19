@@ -305,36 +305,6 @@ return [
     'url' => 'Must be a valid URL.',
     'uuid' => 'Must be a valid UUID.',
 
-    // ---
-    // UAMS Web Overrides to Laravel Core Validation Language Lines
-    // ---
-
-    'after' => [
-        'date' => 'Must be a date after :date.',
-        'time' => 'Must be a time after :date.',
-        'datetime' => 'Must be a date and time after :date.',
-    ],
-    'after_or_equal' => [
-        'date' => 'Must be a date after or equal to :date.',
-        'time' => 'Must be a time after or equal to :date.',
-        'datetime' => 'Must be a date and time after or equal to :date.',
-    ],
-    'before' => [
-        'date' => 'Must be a date before :date.',
-        'time' => 'Must be a time before :date.',
-        'datetime' => 'Must be a date and time before :date.',
-    ],
-    'before_or_equal' => [
-        'date' => 'Must be a date before or equal to :date.',
-        'time' => 'Must be a time before or equal to :date.',
-        'datetime' => 'Must be a date and time before or equal to :date.',
-    ],
-    'date_equals' => [
-        'date' => 'Must be a date equal to :date.',
-        'time' => 'Must be a time equal to :date.',
-        'datetime' => 'Must be a date and time equal to :date.',
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Custom Statamic Validation Language Lines
