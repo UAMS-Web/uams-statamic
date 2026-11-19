@@ -21,7 +21,7 @@ use Statamic\Stache\Stores\Store;
  * reaches a request stale, by whatever route it arrives:
  *
  * - **The fingerprint** hashes the content of the global set's own file (the origins) and of each
- *   site's variables file (the `subject`s). A save from the Control Panel, a deploy and a hand
+ *   site's variables file (the `subject`s), keyed by path. A save from the Control Panel, a deploy and a hand
  *   edit all change a file, so the next request's fingerprint differs and the tree is rebuilt.
  * - **The events** forget the cache on a global set or variables save or delete, and on a Stache
  *   clear or warm ({@see ForgetSiteTree}). A deploy that changes the files before
@@ -125,31 +125,34 @@ final class SiteTreeCache
     private function fingerprint(): string
     {
         $files = [
-            $this->directory('globals').'/'.self::GLOBAL_HANDLE.'.yaml',
-            ...(glob($this->directory('global-variables').'/*/'.self::GLOBAL_HANDLE.'.yaml') ?: []),
+            $this->directory('globals').self::GLOBAL_HANDLE.'.yaml',
+            ...(glob($this->directory('global-variables').'*/'.self::GLOBAL_HANDLE.'.yaml') ?: []),
         ];
 
-        $hash = hash_init('xxh128');
+        // Each file by its path, so contents moved between files change the hash too, and an absent
+        // file as null rather than as empty
+        $contents = [];
 
         foreach ($files as $file) {
-            // A file that is absent hashes as empty, which still differs from the file it was
-            $contents = is_file($file) ? file_get_contents($file) : '';
-            hash_update($hash, $file."\0".(\is_string($contents) ? $contents : '')."\0");
+            $contents[$file] = is_file($file) ? file_get_contents($file) : null;
         }
 
-        return hash_final($hash);
+        return hash('xxh128', serialize($contents));
     }
 
     /**
-     * The directory a Stache store reads its files from, without a trailing slash.
+     * The directory a Stache store reads its files from, which Statamic keeps with a trailing slash.
      *
      * @param  string  $store  The store's key.
      */
     private function directory(string $store): string
     {
+        // The `globals` and `global-variables` stores are Statamic's own, so each is a file store
+        /** @var Store $stache */
         $stache = Stache::store($store);
-        $directory = $stache instanceof Store ? $stache->directory() : null;
+        /** @var string $directory */
+        $directory = $stache->directory();
 
-        return \is_string($directory) ? rtrim($directory, '/') : '';
+        return $directory;
     }
 }

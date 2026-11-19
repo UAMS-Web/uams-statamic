@@ -17,11 +17,6 @@ namespace App\Support\Multisite;
 final readonly class SiteTreeSnapshot
 {
     /**
-     * The `subject` values that make a site with descendants a tier.
-     */
-    private const array TIER_SUBJECTS = ['root', 'major_entity'];
-
-    /**
      * Each site's child sites, in site order.
      *
      * @var array<string, list<string>>
@@ -80,8 +75,9 @@ final readonly class SiteTreeSnapshot
      */
     public function isTier(string $handle): bool
     {
-        return \in_array($this->subjects[$handle] ?? null, self::TIER_SUBJECTS, true)
-            && ($this->children[$handle] ?? []) !== [];
+        $subject = $this->subjects[$handle] ?? null;
+
+        return ($subject === 'root' || $subject === 'major_entity') && ($this->children[$handle] ?? []) !== [];
     }
 
     /**

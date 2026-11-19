@@ -71,7 +71,9 @@ afterEach(function () use (&$stores): void {
 function siteTreeMockGlobals(array $sites, ?int $finds = null): void
 {
     $set = Mockery::mock(Statamic\Contracts\Globals\GlobalSet::class);
-    $siteObjects = [];
+
+    // A stray site the contract allows but no handle can come from, ahead of the real ones
+    $siteObjects = [new stdClass];
 
     foreach ($sites as $handle => [$originLocale, $subject]) {
         $site = Mockery::mock(SiteObject::class);
@@ -98,9 +100,6 @@ function siteTreeMockGlobals(array $sites, ?int $finds = null): void
             : $variables->shouldReceive('value')->with('subject')->andReturn($subject);
         $set->shouldReceive('in')->with($handle)->andReturn($variables);
     }
-
-    // A stray site the contract allows but no handle can come from
-    $siteObjects[] = new stdClass;
 
     Site::shouldReceive('all')->andReturn(collect($siteObjects));
     $find = GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturn($set);
@@ -139,18 +138,18 @@ function nextRequestTree(): SiteTreeSnapshot
 it('reads each site\'s origin and subject through value(), and a missing localization as a root with none', function (): void {
     siteTreeThrowawayStores();
     siteTreeMockGlobals([
+        'detached' => [false, null],
         'default' => [null, 'root'],
         'inside' => ['default', 'root'],
         'inside_blog' => ['inside', 'root'],
         'medicine' => ['default', 'major_entity'],
         'odd' => ['default', ['not', 'a', 'string']],
-        'detached' => [false, null],
     ]);
 
     $tree = nextRequestTree();
 
-    expect($tree->parents)->toBe(['default' => null, 'inside' => 'default', 'inside_blog' => 'inside', 'medicine' => 'default', 'odd' => 'default', 'detached' => null])
-        ->and($tree->subjects)->toBe(['default' => 'root', 'inside' => 'root', 'inside_blog' => 'root', 'medicine' => 'major_entity', 'odd' => null, 'detached' => null])
+    expect($tree->parents)->toBe(['detached' => null, 'default' => null, 'inside' => 'default', 'inside_blog' => 'inside', 'medicine' => 'default', 'odd' => 'default'])
+        ->and($tree->subjects)->toBe(['detached' => null, 'default' => 'root', 'inside' => 'root', 'inside_blog' => 'root', 'medicine' => 'major_entity', 'odd' => null])
         ->and($tree->nearestTier('inside_blog'))->toBe('inside');
 });
 
@@ -176,12 +175,12 @@ it('reads the global set once while the files are unchanged, and once per reques
         ->and(Cache::get(SiteTreeCache::KEY))->toHaveKeys(['fingerprint', 'parents', 'subjects']);
 });
 
-it('rebuilds when a file the global set is stored in changes, with no event and no manual clear', function (string $file, string $contents): void {
+it('rebuilds when a file the global set is stored in changes, with no event and no manual clear', function (string $file, ?string $contents): void {
     $root = siteTreeThrowawayStores();
     siteTreeMockGlobals(['default' => [null, 'root'], 'medicine' => ['default', 'major_entity']], finds: 2);
 
     nextRequestTree();
-    file_put_contents($root.'/'.$file, $contents);
+    $contents === null ? unlink($root.'/'.$file) : file_put_contents($root.'/'.$file, $contents);
     nextRequestTree();
     nextRequestTree();
 
@@ -189,7 +188,9 @@ it('rebuilds when a file the global set is stored in changes, with no event and 
 })->with([
     'an origin in the set file' => ['uams_multisite_settings.yaml', "sites:\n  default: null\n  medicine: health\n"],
     'a subject in a variables file' => ['medicine/uams_multisite_settings.yaml', "subject: sub_entity\n"],
-    'a variables file removed' => ['medicine/uams_multisite_settings.yaml', ''],
+    'a variables file emptied' => ['medicine/uams_multisite_settings.yaml', ''],
+    'a variables file removed' => ['medicine/uams_multisite_settings.yaml', null],
+    'a variables file given the set file\'s contents' => ['medicine/uams_multisite_settings.yaml', "sites:\n  default: null\n  medicine: default\n"],
 ]);
 
 it('rebuilds over a stored entry that is malformed or from other files', function (mixed $stored): void {
