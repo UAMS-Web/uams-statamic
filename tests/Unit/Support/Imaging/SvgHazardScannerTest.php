@@ -241,3 +241,99 @@ it('reports every hazard in a file, not just the first', function (): void {
         ->and(array_column($findings, 'kind'))
         ->toBe(['element', 'event-handler', 'script-url']);
 });
+
+// --- #1084: the full finding details, case folding, and the libxml state a scan leaves -------------
+
+it('words each finding in full', function (string $markup, array $expected): void {
+    expect((new SvgHazardScanner)->scan($markup))->toBe($expected);
+})->with([
+    'one entity' => [
+        '<!DOCTYPE svg [<!ENTITY a "x">]><svg xmlns="http://www.w3.org/2000/svg">&a;</svg>',
+        [['kind' => 'entity-declaration', 'detail' => 'DOCTYPE declares 1 internal entity, which can hide markup from this scan.']],
+    ],
+    'two entities' => [
+        '<!DOCTYPE svg [<!ENTITY a "x"><!ENTITY b "y">]><svg xmlns="http://www.w3.org/2000/svg">&a;&b;</svg>',
+        [['kind' => 'entity-declaration', 'detail' => 'DOCTYPE declares 2 internal entities, which can hide markup from this scan.']],
+    ],
+    'three entities' => [
+        '<!DOCTYPE svg [<!ENTITY a "x"><!ENTITY b "y"><!ENTITY c "z">]><svg xmlns="http://www.w3.org/2000/svg">&a;</svg>',
+        [['kind' => 'entity-declaration', 'detail' => 'DOCTYPE declares 3 internal entities, which can hide markup from this scan.']],
+    ],
+    'processing instruction' => [
+        '<?xml-stylesheet type="text/xsl" href="evil.xsl"?><svg xmlns="http://www.w3.org/2000/svg"/>',
+        [['kind' => 'processing-instruction', 'detail' => '<?xml-stylesheet ...?> processing instruction.']],
+    ],
+    'element' => [
+        svgHazardScannerTestDocument('<script>alert(1)</script>'),
+        [['kind' => 'element', 'detail' => '<script> element.']],
+    ],
+    'script url' => [
+        svgHazardScannerTestDocument('<a href="javascript:alert(1)"/>'),
+        [['kind' => 'script-url', 'detail' => 'href="javascript:..." on <a>.']],
+    ],
+]);
+
+it('folds the case of attribute and element names', function (): void {
+    // The attribute keeps its own spelling in the detail; the element is lowercased
+    $findings = (new SvgHazardScanner)->scan(svgHazardScannerTestDocument(
+        '<RECT ONCLICK="alert(1)"/><A HREF="javascript:alert(2)"/>'
+    ));
+
+    expect($findings)->toBe([
+        ['kind' => 'event-handler', 'detail' => 'ONCLICK="..." on <rect>.'],
+        ['kind' => 'script-url', 'detail' => 'HREF="javascript:..." on <a>.'],
+    ]);
+});
+
+it('keeps checking the attributes after a handler on the same element', function (): void {
+    $findings = (new SvgHazardScanner)->scan(svgHazardScannerTestDocument(
+        '<a onclick="alert(1)" href="javascript:alert(2)"/>'
+    ));
+
+    expect(array_column($findings, 'kind'))->toBe(['event-handler', 'script-url']);
+});
+
+it('strips a no-break space inside the scheme before testing it', function (): void {
+    $findings = (new SvgHazardScanner)->scan(svgHazardScannerTestDocument(
+        "<a href=\"java\u{A0}script:alert(1)\"/>"
+    ));
+
+    expect(array_column($findings, 'kind'))->toBe(['script-url']);
+});
+
+it('raises no warning for markup it cannot parse', function (): void {
+    $warnings = [];
+    set_error_handler(static function (int $level, string $message) use (&$warnings): bool {
+        $warnings[] = $message;
+
+        return true;
+    });
+
+    try {
+        $findings = (new SvgHazardScanner)->scan('<svg><rect></svg>');
+    } finally {
+        restore_error_handler();
+    }
+
+    expect(array_column($findings, 'kind'))->toBe(['unparseable'])
+        ->and($warnings)->toBe([]);
+});
+
+it('leaves libxml as it found it', function (bool $internalErrors): void {
+    $previous = libxml_use_internal_errors($internalErrors);
+    libxml_clear_errors();
+
+    try {
+        (new SvgHazardScanner)->scan('<svg><rect></svg>');
+
+        // The parse errors are cleared, and the caller's error mode is restored
+        expect(libxml_get_errors())->toBe([])
+            ->and(libxml_use_internal_errors())->toBe($internalErrors);
+    } finally {
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+    }
+})->with([
+    'internal errors on' => [true],
+    'internal errors off' => [false],
+]);
