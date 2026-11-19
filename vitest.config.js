@@ -1,9 +1,12 @@
 import { configDefaults, defineConfig } from 'vitest/config';
 
 // Standalone Vitest config for the plain-JS unit suite (e.g. the coordinate
-// parser). It deliberately does NOT extend vite.config.js / vite-cp.config.js —
-// those import `@statamic/cms/vite-plugin`, which needs the Composer vendor
-// tree, whereas the unit tests are framework-free and run on `npm ci` alone.
+// parser). It deliberately does NOT extend vite.config.js / vite-cp.config.js:
+// those import `@statamic/cms/vite-plugin`, which the unit tests do not need.
+// The suite is framework-free, but it does read one file from Composer's vendor
+// tree: the public-form engines import `registerAlpineEngine` from
+// `vendor/uams-web/aether-fieldtypes` (#995), so it runs after `npm ci` and
+// `composer install`.
 export default defineConfig({
     test: {
         // `.claude/**` needs naming because a dot-directory is invisible to a bare `**` glob —

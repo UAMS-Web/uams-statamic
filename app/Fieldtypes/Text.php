@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\Input;
 use Statamic\Fieldtypes\Text as BaseText;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Extended Text fieldtype that leverages the Input trait for enhanced

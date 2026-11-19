@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\CredentialRegistry;
 
-use App\Enums\Attributes\CredentialRegistryTypeInfo;
-use App\Enums\CredentialRegistry;
+use UAMSWeb\Aether\Enums\Attributes\CredentialRegistryTypeInfo;
+use UAMSWeb\Aether\Enums\CredentialRegistry;
 
 /**
  * Builds CTDL class hierarchy data for the CtdlClass fieldtype from

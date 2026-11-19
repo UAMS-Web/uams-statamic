@@ -51,7 +51,7 @@
 import { inject } from 'vue';
 import { publishContextKey } from '@statamic/cms/ui';
 import SubfieldLabel from './SubfieldLabel.vue';
-import { subfieldId } from './subfieldId.js';
+import { subfieldId } from '../../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/subfieldId.js';
 
 defineOptions({ name: 'SubfieldContainer' });
 

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Enums\CanadianProvince;
-use App\Enums\State;
 use App\Services\SchemaTemplates\SchemaObjectFragmentBuilder;
 use Statamic\Tags\Parameters;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Enums\CanadianProvince;
+use UAMSWeb\Aether\Enums\State;
 
 /**
  * Antlers tag: emit a JSON-LD `Place` fragment with a nested `PostalAddress`.

@@ -6,6 +6,7 @@ namespace App\Tags;
 
 use BackedEnum;
 use ReflectionAttribute;
+use ReflectionClass;
 use ReflectionEnum;
 use Statamic\Fields\Value;
 use Statamic\Tags\Parameters;
@@ -44,19 +45,19 @@ use UnitEnum;
  *   1. **`attribute` omitted**
  *
  *      - `property="name"` — PHP case name (`ICD_0090`), not `IcdInfo::$name`.
- *        `{{ enum_case enum="App\Enums\InternationalCodeDesignator" case="0090" property="name" }}` → `ICD_0090`
+ *        `{{ enum_case enum="UAMSWeb\Aether\Enums\InternationalCodeDesignator" case="0090" property="name" }}` → `ICD_0090`
  *        (same with `case="ICD_0090"`.)
  *
  *      - `property="value"` — backing value.
- *        `{{ enum_case enum="App\Enums\InternationalCodeDesignator" case="0090" property="value" }}` → `0090`
+ *        `{{ enum_case enum="UAMSWeb\Aether\Enums\InternationalCodeDesignator" case="0090" property="value" }}` → `0090`
  *
  *      - any other `property` — first attribute on the case with that public field.
- *        `{{ enum_case enum="App\Enums\InternationalCodeDesignator" case="0090" property="id" }}` → `0090`
- *        `{{ enum_case enum="App\Enums\InternationalCodeDesignator" case="0090" property="description" }}` → `Issuing agency: Internet Assigned Numbers Authority, USA.`
+ *        `{{ enum_case enum="UAMSWeb\Aether\Enums\InternationalCodeDesignator" case="0090" property="id" }}` → `0090`
+ *        `{{ enum_case enum="UAMSWeb\Aether\Enums\InternationalCodeDesignator" case="0090" property="description" }}` → `Issuing agency: Internet Assigned Numbers Authority, USA.`
  *
  *   2. **`attribute` set** — every `property` is read from that attribute only
  *      (so `property="name"` is `IcdInfo::$name`, not the PHP case name).
- *      `{{ enum_case enum="App\Enums\InternationalCodeDesignator" case="0090" attribute="App\Enums\IcdInfo" property="name" }}` → `Internet IP addressing - ISO 6523 ICD encoding`
+ *      `{{ enum_case enum="UAMSWeb\Aether\Enums\InternationalCodeDesignator" case="0090" attribute="UAMSWeb\Aether\Enums\IcdInfo" property="name" }}` → `Internet IP addressing - ISO 6523 ICD encoding`
  *
  *   3. **`method` set** — invoke a public, non-static, non-magic instance
  *      method on the resolved case. Method arguments are bound via an
@@ -68,11 +69,11 @@ use UnitEnum;
  *      reserved tag params (`enum`, `case`, `property`, `attribute`,
  *      `method`) from colliding with method arg names. Variadic and
  *      by-reference parameters are not supported (the tag returns null).
- *      `{{ enum_case enum="App\Enums\IscedA2011" case="85" method="labelsWithAncestors" arg_separator=", " }}` → `Doctoral or equivalent level, Professional`
+ *      `{{ enum_case enum="UAMSWeb\Aether\Enums\IscedA2011" case="85" method="labelsWithAncestors" arg_separator=", " }}` → `Doctoral or equivalent level, Professional`
  *
  * Further usage:
- *   `{{ enum_case enum="App\Enums\Isco08" case="2512" property="title" }}` → `Software Developers`
- *   `{{ enum_case enum="App\Enums\Isco08" case="ISCO08_2512" property="name" }}` → `ISCO08_2512`
+ *   `{{ enum_case enum="UAMSWeb\Aether\Enums\Isco08" case="2512" property="title" }}` → `Software Developers`
+ *   `{{ enum_case enum="UAMSWeb\Aether\Enums\Isco08" case="ISCO08_2512" property="name" }}` → `ISCO08_2512`
  */
 class EnumCase extends Tags
 {
@@ -401,16 +402,16 @@ class EnumCase extends Tags
 
         // Check if the attribute class is not null
         if ($attributeClass !== null) {
-            // Check if the attribute class exists. Equivalent without the return:
-            // getAttributes() with an unknown class returns [], handled just below.
-            // @pest-mutate-ignore: RemoveEarlyReturn
+            // Check if the attribute class exists
             if (! class_exists($attributeClass)) {
                 // Return null to signal that the attribute class does not exist
                 return null;
             }
 
-            // Get the attributes from the case
-            $attributes = $refCase->getAttributes($attributeClass);
+            // Get the attributes from the case, by the class's declared name. getAttributes()
+            // matches the name as written on the case, so an old `App\Enums\*` name a template
+            // still uses, which resolves through a class_alias shim (#995), would match nothing.
+            $attributes = $refCase->getAttributes(new ReflectionClass($attributeClass)->getName());
 
             // Check if the attributes are empty
             if ($attributes === []) {

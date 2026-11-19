@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaType;
 use App\Services\SchemaTemplates\SchemaTypeOptions;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 uses(TestCase::class);
 

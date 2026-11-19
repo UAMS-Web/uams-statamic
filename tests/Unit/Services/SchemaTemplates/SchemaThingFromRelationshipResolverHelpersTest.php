@@ -66,6 +66,8 @@ it('parses an optional positive integer', function (mixed $value, ?int $expected
     'empty string' => ['', null],
     'null' => [null, null],
     'float' => [2.0, null],
+    // Only an all-digit string parses: a leading number is not enough.
+    'digits then letters' => ['12abc', null],
 ]);
 
 it('parses a boolean parameter', function (mixed $value, bool $expected): void {
@@ -82,6 +84,9 @@ it('parses a boolean parameter', function (mixed $value, bool $expected): void {
     'one string' => ['1', true],
     'false string' => ['false', false],
     'other string' => ['maybe', false],
+    // Matched as a string, not as a number: a numeric string equal to 1 is not a flag word.
+    'zero-padded one' => ['01', false],
+    'decimal one' => ['1.0', false],
     'null' => [null, false],
     'float' => [1.0, false],
 ]);

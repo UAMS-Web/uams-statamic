@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\Input;
 use Statamic\Fieldtypes\Time as BaseTime;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Extended Time fieldtype that leverages the Input trait for enhanced

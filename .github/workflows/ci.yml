@@ -1321,9 +1321,11 @@ jobs:
     # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
-    # standalone vitest.config.js, so it needs Node + `npm ci` but no PHP,
-    # Composer, or content submodule.
+    # The unit suite (e.g. the coordinate parser) runs on a standalone
+    # vitest.config.js and needs no content submodule. It does need Composer's
+    # vendor tree: the public-form engines import `registerAlpineEngine` from
+    # `vendor/uams-web/aether-fieldtypes` (#995), so the job installs the locked
+    # packages without running their scripts.
     steps:
       - uses: actions/checkout@v7
 
@@ -1332,7 +1334,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so the
+          # `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830).
+          # The list matches the build job's.
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
+          tools: composer:v2
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -1351,6 +1358,25 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      # The engines under test import the fieldtype add-on's Alpine helper from vendor/ (#995).
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
 
       # PARITY: mirrored by the js job in local-ci.json
       - name: Run JS unit tests

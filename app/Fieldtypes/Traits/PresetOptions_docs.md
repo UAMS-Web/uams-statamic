@@ -13,7 +13,7 @@ The `PresetOptions` trait provides functionality to add a `preset` config field 
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 use App\Fieldtypes\Traits\PresetOptions;
 use Statamic\Fieldtypes\Select as BaseSelect;
 
@@ -44,9 +44,9 @@ The `PresetOptions` trait works seamlessly with the `RandomizesOptions` trait. W
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 use App\Fieldtypes\Traits\PresetOptions;
-use App\Fieldtypes\Traits\RandomizesOptions;
+use UAMSWeb\Aether\Fieldtypes\Traits\RandomizesOptions;
 use Statamic\Fieldtypes\Select as BaseSelect;
 
 class Select extends BaseSelect
