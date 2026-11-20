@@ -6,8 +6,9 @@ use App\Support\MovedClassAliases;
 use UAMSWeb\Aether\Enums\Country;
 
 /**
- * Pins the `class_alias` shims for the classes that moved into `uams-web/aether-enums`
- * and `uams-web/aether-fieldtypes` (UAMS-Web/uams-statamic#995).
+ * Pins the `class_alias` shims for the classes that moved into `uams-web/aether-enums`,
+ * `uams-web/aether-fieldtypes` (UAMS-Web/uams-statamic#995) and `uams-web/aether-people`
+ * (UAMS-Web/uams-statamic#1000).
  *
  * A unit test on purpose: the shims are registered through `autoload.files`, so an old
  * name must resolve without the application booting.
@@ -36,8 +37,8 @@ it('keeps a moved enum case identical under its old and new names', function ():
     expect($old::cases()[0])->toBe(Country::cases()[0]);
 });
 
-it('lists 85 moved classes, none of them still declared in the site', function (): void {
-    expect(MovedClassAliases::map())->toHaveCount(85);
+it('lists 86 moved classes, none of them still declared in the site', function (): void {
+    expect(MovedClassAliases::map())->toHaveCount(86);
 
     $leftovers = [];
 
