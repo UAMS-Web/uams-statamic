@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f1650af4b5c924d31fbda2a3e82798b3",
+    "content-hash": "2a7c3fd9850011f72b9794ac42909a52",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12748,16 +12748,16 @@
         },
         {
             "name": "uams-web/aether-search",
-            "version": "v0.3.4",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-search.git",
-                "reference": "30aa4d96b518bf8cae70dc42a094fd3dd4af9dfb"
+                "reference": "db0db019d7c517636983d5f0700937247b0e8ad7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/30aa4d96b518bf8cae70dc42a094fd3dd4af9dfb",
-                "reference": "30aa4d96b518bf8cae70dc42a094fd3dd4af9dfb",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-search/zipball/db0db019d7c517636983d5f0700937247b0e8ad7",
+                "reference": "db0db019d7c517636983d5f0700937247b0e8ad7",
                 "shasum": ""
             },
             "require": {
@@ -12773,8 +12773,8 @@
                 "pestphp/pest": "^5.3",
                 "pestphp/pest-plugin-phpstan": "^5.2",
                 "rector/rector": "^2.7",
-                "uams-web/patches-orchestra-testbench-core": "^1.0",
-                "uams-web/patches-pest-plugin-mutate": "^1.0"
+                "uams-web/patches-orchestra-testbench-core": "^1.1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.4.1"
             },
             "type": "statamic-addon",
             "extra": {
@@ -12795,6 +12795,9 @@
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
             "authors": [
                 {
                     "name": "UAMS Web Services"
@@ -12815,7 +12818,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-search/issues",
                 "source": "https://github.com/UAMS-Web/aether-search"
             },
-            "time": "2026-11-12T04:25:04+00:00"
+            "time": "2026-11-19T17:22:59+00:00",
+            "published-time": "2026-11-19T17:31:52+00:00"
         },
         {
             "name": "uams-web/aether-tables",
