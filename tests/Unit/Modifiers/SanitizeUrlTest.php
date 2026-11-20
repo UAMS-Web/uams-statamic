@@ -22,13 +22,13 @@ use Statamic\Fields\Value;
  * suite is not false-green on the character-reference class (the UAMS-Web/uams-statamic-archive#1500 adversarial
  * review caught exactly that gap in the first cut).
  *
- * Mutation: every security-relevant mutant is dead — the exact `#` assertions on
- * the entity-obfuscated cases pin the `html_entity_decode` step and its
- * `ENT_QUOTES | ENT_HTML5` flags as load-bearing. The residual survivors are
- * equivalents — the `instanceof Value` unwrap (Statamic's `Value` is `Stringable`),
- * the `(string)` cast on `preg_replace`'s `string|null` return, and the strict
- * `in_array(…, true)` flag (both operands are always strings). Left clean rather
- * than `@pest-mutate-ignore`.
+ * Mutation: clean on Linux without `--covered-only` (#830). The exact `#` assertions
+ * on the entity-obfuscated cases pin the `html_entity_decode` step and its
+ * `ENT_QUOTES | ENT_HTML5` flags as load-bearing. The `instanceof Value` unwrap is
+ * not equivalent: a `Value` is `Stringable`, so without it a non-scalar payload is
+ * cast to a string, which the Value case pins. The `(string)` cast on
+ * `preg_replace()` and the strict `in_array()` flag carry `@pest-mutate-ignore` in
+ * the class with their reasons.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/SanitizeUrlTest.php
  */
@@ -130,3 +130,9 @@ it('single-encodes a legitimate URL so a browser resolves it back byte-for-byte'
     'absolute ancestor-site URL' => 'https://childrens.uams.edu/',
     'query with ampersand' => '/search?a=1&b=2',
 ]);
+
+it('unwraps a Statamic Value before coercing it', function (): void {
+    // A Value is Stringable, so without the unwrap a non-scalar payload would be cast to a string.
+    expect((new SanitizeUrl)->index(new Value(['javascript:alert(1)']), [], []))->toBe('');
+    expect((new SanitizeUrl)->index(new Value('https://uams.edu/?a=1&b=2'), [], []))->toBe('https://uams.edu/?a=1&amp;b=2');
+});

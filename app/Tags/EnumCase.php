@@ -112,14 +112,9 @@ class EnumCase extends Tags
             return null;
         }
 
-        // Create a reflection of the enum class
+        // Create a reflection of the enum class. Every enum implements UnitEnum, so no
+        // further check on the class is needed.
         $reflectionEnum = new ReflectionEnum($enumClass);
-
-        // Check if the enum class implements the UnitEnum interface
-        if (! $reflectionEnum->implementsInterface(UnitEnum::class)) {
-            // Return null to signal that the enum class does not implement the UnitEnum interface
-            return null;
-        }
 
         // Unwrap the case identifier
         $caseIdentifier = $this->unwrapParam('case');

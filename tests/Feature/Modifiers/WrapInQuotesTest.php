@@ -63,4 +63,6 @@ it('returns an empty string when nothing but marks and whitespace remains', func
     'augmented null' => [new Value(null)],
     'an array' => [['Great results.']],
     'stdClass' => [new stdClass],
+    // The `u` pattern refuses invalid UTF-8, so preg_replace() returns null
+    'invalid UTF-8' => ["Great \xFF results."],
 ]);

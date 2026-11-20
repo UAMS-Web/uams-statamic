@@ -20,6 +20,7 @@ use Tests\Support\CachedSites;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\ParallelParent;
 use Tests\Support\StatamicStaticRegistries;
+use Tests\Support\TestingWriteRoots;
 use Tests\Support\ThrowawayRoot;
 use Tests\Support\WorkerCacheDirectory;
 use Throwable;
@@ -166,6 +167,12 @@ trait CreatesApplication
         });
 
         $app->make(Kernel::class)->bootstrap();
+
+        // Refuse live write roots before the first write below (#1160)
+        TestingWriteRoots::assertInside($app->storagePath('framework/testing'), [
+            'file cache' => Config::string('cache.stores.file.path'),
+            'content root' => ContentRoot::path(Config::string('app.env')),
+        ]);
 
         $this->isolateSearchIndexes($app);
 

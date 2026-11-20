@@ -13,23 +13,20 @@ use Illuminate\Support\Str;
  * in names), with glue/oxford/semicolon flags, tag-stripped comma detection,
  * Collection normalization, and scalar/empty input guards.
  *
- * Mutation: every killable mutant is dead (score ~92%). The residual survivors leave
- * the modifier's returned string unchanged for every reachable input — `(string)` casts
- * the non-strict concat / return-type / param coercion already performs (lines 62, 189,
- * 193), the strict-comparison flag of an all-boolean `in_array` (line 74; the needle
- * `true` IS tested), the empty-list guard (`makeSentenceList([])` already returns `''`,
- * lines 80-81), the unreachable `?? false` default (`$commaFlags[0]` always exists after
- * `array_values`, line 119), and the redundant null/false guard in `scalarToString`
- * (null falls to the final `''`, false to `is_scalar`→`""`, lines 184-185). One survivor
- * is output-equivalent but not silent: removing the absent-key early return in `boolParam`
- * (line 158) returns the same boolean (both call sites pass default `true`) yet emits an
- * "undefined array key" warning — a defensive guard the suite's warning config does not
- * escalate to a failure, not a missing assertion. All are left clean rather than annotated
- * with `@pest-mutate-ignore`.
+ * Equivalent mutants from the #816 baseline:
+ * - Disabling strict `in_array` comparison still compares only booleans.
+ * - Changing the empty-list count to -1 or removing the empty-list return
+ *   sends the empty list to `makeSentenceList`, which also returns `''`.
+ * - Changing the two-item comma fallback cannot matter: each of the two
+ *   reindexed items produces a flag, so flag zero always exists.
+ * - Requiring both null and false, or removing their early return, sends
+ *   null to the final `''` and false to a scalar cast that also yields `''`.
+ * The two behavior-changing mutations are covered below; the closing
+ * mutation pass is separate.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/AdaptiveSentenceListTest.php
  */
-it('joins a list per the comma-aware rules', function (mixed $value, array $params, string $expected) {
+it('joins a list per the comma-aware rules', function (mixed $value, array $params, string $expected): void {
     expect((new AdaptiveSentenceList)->index($value, $params, []))->toBe($expected);
 })->with([
     // ── Original cases (behavior-preserving port of the PHPUnit class) ──
@@ -46,6 +43,7 @@ it('joins a list per the comma-aware rules', function (mixed $value, array $para
     'comma inside stripped text triggers semicolon mode' => [['<span>John Doe, M.D.</span>', '<span>Jane Doe</span>', '<span>John Smith</span>'], [], '<span>John Doe, M.D.</span>; <span>Jane Doe</span>; and <span>John Smith</span>'],
     'semicolon mode off falls back to the sentence list' => [['John Doe, M.D.', 'Jane Doe', 'John Smith'], ['and', 1, 0], 'John Doe, M.D., Jane Doe, and John Smith'],
     'custom glue parameter' => [['a', 'b'], ['&'], 'a & b'],
+    'numeric glue is rendered as text' => [['a', 'b'], [0], 'a 0 b'],
     'collection input is normalized' => [Collection::make(['x', 'y']), [], 'x and y'],
     'empty array returns an empty string' => [[], [], ''],
     'single item is returned unchanged' => [['Only'], [], 'Only'],
@@ -82,3 +80,17 @@ it('joins a list per the comma-aware rules', function (mixed $value, array $para
     // strip_tags before comma check: a comma only inside markup must not trigger semicolons.
     'comma only inside markup is ignored' => [['<a href="/a,b">John</a>', 'Jane', 'Joe'], [], '<a href="/a,b">John</a>, Jane, and Joe'],
 ]);
+
+it('uses the default flags without warning when omitted', function (): void {
+    // Fail if a missing flag is read instead of defaulted.
+    set_error_handler(static function (int $severity, string $message): never {
+        throw new ErrorException($message, 0, $severity);
+    }, E_WARNING);
+
+    try {
+        expect((new AdaptiveSentenceList)->index(['a, x', 'b', 'c'], [], []))
+            ->toBe('a, x; b; and c');
+    } finally {
+        restore_error_handler();
+    }
+});

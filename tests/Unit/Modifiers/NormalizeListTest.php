@@ -17,11 +17,9 @@ use Statamic\Contracts\Query\Builder as StatamicQueryBuilder;
  * one-element array. Builder results carry deliberately non-sequential/string keys
  * so the reindexing is observable.
  *
- * Mutation: every killable mutant is dead (score ~94%). The two residual survivors
- * are equivalent UnwrapArrayValues on the Collection/array paths (lines 78, 88):
- * the array_values() there is redundant because flattenListItems() already reindexes
- * via `$out[]`, so removing it cannot change the output — left clean rather than
- * annotated with `@pest-mutate-ignore`.
+ * Mutation: clean without `--covered-only` (#827). The array_values() calls on the
+ * Collection and array paths were removed as dead code: flattenListItems() already
+ * reindexes via `$out[]`, and the string-keyed cases pin that.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/NormalizeListTest.php
  */
@@ -81,6 +79,8 @@ it('normalizes a list-like value into a flat indexed array', function (mixed $va
     'empty string is an empty list' => ['', []],
     'a Collection unwraps to a list' => [collect(['a', 'b']), ['a', 'b']],
     'an array is reindexed' => [[1 => 'x', 3 => 'y'], ['x', 'y']],
+    'a string-keyed Collection is reindexed' => [collect(['b' => 'x', 'a' => 'y']), ['x', 'y']],
+    'a string-keyed array is reindexed' => [['b' => 'x', 'a' => 'y'], ['x', 'y']],
     'a scalar wraps in a single-element array' => ['only', ['only']],
     'a Statamic query builder resolves via get(), stripping keys' => [$statamicBuilder, ['resolved-a', 'resolved-b']],
     'a Laravel database query builder resolves via get()' => [$databaseBuilder, [$databaseRow]],
