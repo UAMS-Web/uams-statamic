@@ -1371,7 +1371,9 @@ class SchemaOutputService
 
                 // Type names are never numeric, so a loose match equals a strict one
                 // @pest-mutate-ignore: TrueToFalse
-                if (\in_array($e, SchemaType::ancestorsOf($o), true)) {
+                $isAncestor = \in_array($e, SchemaType::ancestorsOf($o), true);
+
+                if ($isAncestor) {
                     return true;
                 }
             }
