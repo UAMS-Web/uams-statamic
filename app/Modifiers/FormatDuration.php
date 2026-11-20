@@ -136,16 +136,13 @@ class FormatDuration extends Modifier
             str_replace(
                 '-',
                 '_',
-                trim(is_scalar($rawDisplay) ? (string) $rawDisplay : '')
+                trim(is_scalar($rawDisplay) ? (string) $rawDisplay : 'iso_8601')
             )
         );
 
         // Build aliases for supported display modes
         $aliases = [
-            'iso' => 'iso_8601',
-            'iso8601' => 'iso_8601',
-            'iso_8601' => 'iso_8601',
-            'duration' => 'iso_8601',
+            // `iso`, `iso8601`, `iso_8601` and `duration` are the ISO 8601 fallback below
             'hms' => 'hms',
             'clock' => 'hms',
             'hh_mm_ss' => 'hms',
@@ -181,17 +178,11 @@ class FormatDuration extends Modifier
         // Cast raw precision to integer
         $precision = is_numeric($rawPrecision) ? (int) $rawPrecision : 0;
 
-        // Check if precision is below minimum supported value
-        if ($precision < -1) {
-            // Clamp precision to no-rounding sentinel value
-            $precision = -1;
-        }
-
         // Free temporary parameter value
         unset($rawPrecision);
 
-        // Return normalized precision
-        return $precision;
+        // Clamp precision to the -1 minimum, which means no rounding
+        return max(-1, $precision);
     }
 
     /**
@@ -199,7 +190,7 @@ class FormatDuration extends Modifier
      *
      * @param  float  $seconds  Duration in seconds
      * @param  int  $precision  Decimal precision or -1 for no rounding
-     * @return array<string, int|string> Component map
+     * @return array{hours: int, minutes: int, padded_hours: string, padded_minutes: string, padded_total_minutes: string, padded_seconds: string, seconds: string, sign: string} Component map
      */
     private function buildNormalizedComponents(
         float $seconds,
@@ -217,7 +208,9 @@ class FormatDuration extends Modifier
         // Resolve remaining seconds after extracting hours
         $remainingAfterHours = $absoluteSeconds - ($hours * 3600);
 
-        // Resolve whole-minute component from remaining seconds
+        // Resolve whole-minute component from remaining seconds. Under an hour, a divisor one
+        // larger undercounts by a minute at most, which the seconds carry below restores.
+        // @pest-mutate-ignore: IncrementInteger
         $minutes = (int) floor($remainingAfterHours / 60);
 
         // Resolve seconds remainder after extracting minutes
@@ -240,10 +233,11 @@ class FormatDuration extends Modifier
         }
 
         // Check if minutes overflowed into the next hour
-        if ($minutes >= 60) {
+        // Minutes come from a remainder under an hour, so the seconds carry can raise them to 60 at most
+        if ($minutes === 60) {
             // Carry one hour from minutes overflow
-            $hours += (int) floor($minutes / 60);
-            $minutes %= 60;
+            $hours++;
+            $minutes = 0;
         }
 
         // Resolve total minutes component for minutes:seconds display
@@ -299,7 +293,7 @@ class FormatDuration extends Modifier
      * Format output string for the selected display mode.
      *
      * @param  string  $display  Canonical display mode
-     * @param  array<string, int|string>  $components  Normalized components
+     * @param  array{hours: int, minutes: int, padded_hours: string, padded_minutes: string, padded_total_minutes: string, padded_seconds: string, seconds: string, sign: string}  $components  Normalized components
      * @return string Formatted duration output
      */
     private function formatDisplayValue(
@@ -307,7 +301,7 @@ class FormatDuration extends Modifier
         array $components
     ): string {
         // Resolve sign prefix for output
-        $sign = (string) $components['sign'];
+        $sign = $components['sign'];
 
         // Check if hms clock display was requested
         if ($display === 'hms') {
@@ -343,18 +337,18 @@ class FormatDuration extends Modifier
             // Build short human-readable duration
             return $this->formatHumanShort(
                 $sign,
-                (int) $components['hours'],
-                (int) $components['minutes'],
-                (string) $components['seconds']
+                $components['hours'],
+                $components['minutes'],
+                $components['seconds']
             );
         }
 
         // Build long human-readable duration as fallback
         return $this->formatHumanLong(
             $sign,
-            (int) $components['hours'],
-            (int) $components['minutes'],
-            (string) $components['seconds']
+            $components['hours'],
+            $components['minutes'],
+            $components['seconds']
         );
     }
 
@@ -376,16 +370,16 @@ class FormatDuration extends Modifier
         );
 
         // Resolve sign prefix from normalized components
-        $sign = (string) $components['sign'];
+        $sign = $components['sign'];
 
         // Resolve hour component from normalized components
-        $hours = (int) $components['hours'];
+        $hours = $components['hours'];
 
         // Resolve minute component from normalized components
-        $minutes = (int) $components['minutes'];
+        $minutes = $components['minutes'];
 
         // Resolve seconds text from normalized components
-        $secondsText = (string) $components['seconds'];
+        $secondsText = $components['seconds'];
 
         // Initialize ISO 8601 time parts collection
         $parts = [];
@@ -509,8 +503,7 @@ class FormatDuration extends Modifier
             // Split seconds into whole and fractional parts
             $parts = explode(
                 '.',
-                $secondsText,
-                2
+                $secondsText
             );
 
             // Pad the whole seconds part to two digits
@@ -545,7 +538,9 @@ class FormatDuration extends Modifier
         float $value,
         int $precision
     ): string {
-        // Render numeric text with or without rounding
+        // Render numeric text with or without rounding. The value is a seconds remainder under
+        // 60, so number_format() never inserts a thousands separator, whichever one is passed.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $renderedNumber = $precision === -1
             ? \sprintf(
                 '%.14F',
@@ -576,16 +571,8 @@ class FormatDuration extends Modifier
             );
         }
 
-        // Check if trimming produced empty or negative-zero output
-        if (
-            $trimmedNumber === ''
-            || $trimmedNumber === '-0'
-        ) {
-            // Return normalized zero output
-            return '0';
-        }
-
-        // Return normalized numeric text
+        // Return the normalized text. It is never empty, since both renderings keep a digit
+        // before the point, and never `-0`, since the seconds remainder is never negative.
         return $trimmedNumber;
     }
 
