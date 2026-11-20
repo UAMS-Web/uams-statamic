@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\CanadianProvince;
-use App\Enums\Country;
-use App\Enums\State;
-use App\Fieldtypes\Traits\HasSubfields;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\CanadianProvince;
+use UAMSWeb\Aether\Enums\Country;
+use UAMSWeb\Aether\Enums\State;
+use UAMSWeb\Aether\Fieldtypes\Traits\HasSubfields;
 
 /**
  * Address Fieldtype
@@ -344,7 +344,7 @@ class Address extends Fieldtype
      * Get Canadian provinces and territories.
      *
      * Mirrors `getUsStatesAndTerritories()`: postal code → official English name,
-     * sourced from `App\Enums\CanadianProvince` so additions or label changes
+     * sourced from `UAMSWeb\Aether\Enums\CanadianProvince` so additions or label changes
      * land in one place. The CP State enum and CanadianProvince enum share the
      * same `postal()` / `fullName()` shape.
      *

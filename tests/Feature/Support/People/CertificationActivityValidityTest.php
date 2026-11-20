@@ -252,6 +252,31 @@ it('gives no duration when the issue time falls after an expiry earlier the same
     ))->toBeNull();
 });
 
+/**
+ * An issue time on or before the expiry time always falls before the start of the day after the expiry,
+ * so a duration is returned. A time of day cuts the counted days short, because only whole days count.
+ * These rows pin that output as it stands; they do not endorse it.
+ */
+it('gives a duration whenever the issue time is not after the expiry time', function (CarbonImmutable $issued, CarbonImmutable $expires, string $duration): void {
+    expect((new CertificationActivityValidity)->activityValidForIso($issued, $expires))->toBe($duration);
+})->with([
+    'same instant' => [
+        CarbonImmutable::parse('2020-01-01 10:00', 'America/Chicago'),
+        CarbonImmutable::parse('2020-01-01 10:00', 'America/Chicago'),
+        'P0Y0M0D',
+    ],
+    'earlier time the same day' => [
+        CarbonImmutable::parse('2020-01-01 09:00', 'America/Chicago'),
+        CarbonImmutable::parse('2020-01-01 17:00', 'America/Chicago'),
+        'P0Y0M0D',
+    ],
+    'expiry in another time zone' => [
+        CarbonImmutable::parse('2020-01-01 23:30', 'America/Chicago'),
+        CarbonImmutable::parse('2020-01-02 05:30', 'UTC'),
+        'P0Y0M0D',
+    ],
+]);
+
 it('counts the days back as negative when the end comes before the start', function (): void {
     expect((new CertificationActivityValidity)->calendarPnYnMnD(
         CarbonImmutable::parse('2020-01-05', 'America/Chicago'),

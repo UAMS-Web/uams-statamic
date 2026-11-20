@@ -64,10 +64,16 @@ class SanitizeUrl extends Modifier
         // then strip the C0 control + space characters it ignores when reading a scheme.
         // This catches entity/whitespace obfuscation (`javascript&#58;`, `java<TAB>script:`).
         $canonical = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // preg_replace() returns null only on a PCRE error, which this single
+        // character-class pattern on a byte string cannot raise.
+        // @pest-mutate-ignore: RemoveStringCast
         $probe = (string) preg_replace('/[\x00-\x20]+/', '', $canonical);
 
         // A leading "letter [letter|digit|+|-|.]* :" run is a URL scheme.
         if (preg_match('/^([a-zA-Z][a-zA-Z0-9+.\-]*):/', $probe, $matches) === 1) {
+            // A scheme starts with a letter, so it is never a numeric string, and loose
+            // and strict comparison agree.
+            // @pest-mutate-ignore: TrueToFalse
             if (! \in_array(strtolower($matches[1]), self::SAFE_SCHEMES, true)) {
                 $canonical = $fallback;
             }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
 use Illuminate\Http\Request;
 use Statamic\Auth\User as UserAuth;
 use Statamic\Contracts\Entries\Entry as EntryContract;
@@ -19,6 +18,7 @@ use Statamic\Fieldtypes\Entries as BaseEntries;
 use Statamic\Query\Builder;
 use Statamic\Sites\Site;
 use Statamic\Support\Arr;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 use UAMSWeb\Aether\People\Support\PeopleEditingScope;
 
 /**

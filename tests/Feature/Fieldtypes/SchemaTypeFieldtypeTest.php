@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaEnumerationMember;
 use App\Fieldtypes\SchemaType;
 use App\Rules\ChainedSchemaTypeComplete;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\SchemaEnumerationMember;
 
 uses(TestCase::class);
 

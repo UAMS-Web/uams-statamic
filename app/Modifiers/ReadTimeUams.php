@@ -51,7 +51,7 @@ use Statamic\Modifiers\Modifier;
  * same text and WPM. Sources, in order:
  * named `unit`, else second positional `$params[1]`, else first positional
  * when it is non-numeric (e.g. `read_time_uams:seconds` uses default WPM).
- * Labels are case-insensitive; hyphens become underscores before matching.
+ * Labels are case-insensitive and trimmed.
  * Accepted aliases: minutes - `m`, `min`, `minute`, `minutes`; seconds -
  * `s`, `sec`, `second`, `seconds`. Any other `unit` string falls back to
  * `minutes`.
@@ -119,9 +119,6 @@ class ReadTimeUams extends Modifier
         // Words per minute
         $wordsPerMinute = WhitespaceDelimitedWordMetrics::DEFAULT_WORDS_PER_MINUTE;
 
-        // Return unit
-        $returnUnit = 'minutes';
-
         // First positional argument
         $pos0 = $params[0] ?? null;
 
@@ -133,6 +130,10 @@ class ReadTimeUams extends Modifier
             // Named `wpm` value
             $namedWpm = $params['wpm'];
 
+            // A non-scalar rate falls back to 0, which the metrics clamp to one word
+            // per minute, as they clamp -1 and 1, so the fallback's exact value is
+            // unobservable.
+            // @pest-mutate-ignore: DecrementInteger, IncrementInteger
             $wordsPerMinute = is_scalar($namedWpm) ? (int) $namedWpm : 0;
         } elseif (is_numeric($pos0)) {
             // First positional numeric argument is WPM (core `read_time` behavior)
@@ -145,22 +146,16 @@ class ReadTimeUams extends Modifier
 
         // Check if the named `unit` parameter is present
         if (\array_key_exists('unit', $params)) {
-            // Named `unit` value
-            $namedUnit = $params['unit'];
-
-            // Normalize the return unit
+            // Normalize the named return unit
             $returnUnit = $this->normalizeReturnUnit(
-                is_scalar($namedUnit) ? (string) $namedUnit : ''
+                $params['unit']
             );
-        } elseif ($pos1 !== null) {
-            // Normalize the return unit
+        } else {
+            // Normalize the second positional, else the first (e.g.
+            // `read_time_uams:seconds`); a numeric first positional is the WPM and
+            // matches no alias, so it leaves the minutes default
             $returnUnit = $this->normalizeReturnUnit(
-                is_scalar($pos1) ? (string) $pos1 : ''
-            );
-        } elseif ($pos0 !== null && ! is_numeric($pos0)) {
-            // Single non-numeric positional (e.g. `read_time_uams:seconds`)
-            $returnUnit = $this->normalizeReturnUnit(
-                is_scalar($pos0) ? (string) $pos0 : ''
+                $pos1 ?? $pos0
             );
         }
 
@@ -181,23 +176,19 @@ class ReadTimeUams extends Modifier
      * Normalize a return-unit string to `minutes` or `seconds`.
      *
      * Accepts case-insensitive aliases: `m`, `min`, `minute`, `minutes`, `s`,
-     * `sec`, `second`, `seconds`. Hyphens are converted to underscores before
-     * matching. Any other label is treated as minutes.
+     * `sec`, `second`, `seconds`. Any other label, and any non-scalar value, is
+     * treated as minutes.
      *
-     * @param  string  $raw  User-supplied unit label
+     * @param  mixed  $raw  User-supplied unit label
      * @return string `minutes` or `seconds`
      */
     private function normalizeReturnUnit(
-        string $raw
+        mixed $raw
     ): string {
-        // Normalize the return unit
-        $normalized = strtolower(
-            str_replace(
-                '-',
-                '_',
-                trim($raw)
-            )
-        );
+        // Trim and lowercase a scalar label; a non-scalar one matches no alias
+        $normalized = is_scalar($raw)
+            ? strtolower(trim((string) $raw))
+            : null;
 
         // Unset local variable to free memory
         unset(

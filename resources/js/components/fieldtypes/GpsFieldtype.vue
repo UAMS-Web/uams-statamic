@@ -113,8 +113,8 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { parseCoordinates } from '../../lib/parse-coordinates';
 import { resultToStoredCoordinate } from '../../lib/nominatim';
-import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
-import { subfieldId } from './partials/subfieldId.js';
+import GroupFieldtypeShell from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
+import { subfieldId } from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/subfieldId.js';
 
 // Leaflet's default marker resolves its image URLs relative to the CSS, which
 // breaks under a bundler. Point the default icon at the bundled asset URLs.

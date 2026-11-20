@@ -41,19 +41,19 @@ return [
     'mappings' => [
         /**
          * Credential Registry types; array keys match enum cases in
-         * app\Enums\CredentialRegistry.php (\App\Enums\CredentialRegistry).
+         * `uams-web/aether-enums` (\UAMSWeb\Aether\Enums\CredentialRegistry).
          */
         'CredentialRegistry' => [
             'ApprenticeshipCertificate' => [],
             'AssociateDegree' => [
                 /**
                  * ISCED-A 2011; mapped values are enum cases in
-                 * app\Enums\IscedA2011.php (\App\Enums\IscedA2011).
+                 * `uams-web/aether-enums` (\UAMSWeb\Aether\Enums\IscedA2011).
                  */
                 'IscedA2011' => '5',
                 /**
                  * ISCED-P 2011; mapped values are enum cases in
-                 * app\Enums\IscedP2011.php (\App\Enums\IscedP2011).
+                 * `uams-web/aether-enums` (\UAMSWeb\Aether\Enums\IscedP2011).
                  */
                 'IscedP2011' => '5',
             ],

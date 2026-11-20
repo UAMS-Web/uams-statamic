@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\SchemaType;
 use App\Services\SchemaTemplates\SchemaTypeOptions;
 use App\Tags\Schema\SchemaPropertyValidator;
 use Illuminate\Support\Str;
 use Statamic\Facades\Parse;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Fieldtype for editing a Schema.org object: one or more types (Multi Typed

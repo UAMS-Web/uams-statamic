@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaTemplates;
 
-use App\Enums\SchemaType;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Schema.org type options for CP fields and validation. Type list and hierarchy

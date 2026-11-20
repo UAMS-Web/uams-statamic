@@ -73,8 +73,13 @@ const JOB_KEYS = {
 const REMOTE_ONLY = new Set(['ci', 'submodule-access', 'checks'])
 
 // ci.yml jobs that run on ubuntu-latest alone rather than on the three legs (#348):
-// the browser suite and its report, Linux only since #521.
-const LINUX_ONLY = ['browser', 'browser-report']
+// the browser suite and its report, Linux only since #521, and the guards that read
+// only JSON, tracked bytes and git objects, Linux only since #1171.
+const LINUX_ONLY = ['browser', 'browser-report', 'composer-validate', 'no-emoji-guard', 'content-pointer-guard']
+
+// ci.yml jobs that run on Linux and Windows but not macOS (#1171): each has a
+// Windows-only path (CRLF, `\` paths, `.cmd` spawns) and macOS takes the Linux one.
+const LINUX_AND_WINDOWS = ['spell', 'encoding-guard', 'test-isolation-guard', 'build', 'js']
 
 // The `checks` job calls the shared chain in UAMS-Web/uams-ci-workflows (#580), whose
 // jobs this file cannot see. Of them, these are the ones the local runner mirrors, by
@@ -554,16 +559,19 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         expect(compare(replaced, allow)).toEqual(['.github/workflows/ci.yml: job `browser` is not in the `needs:` list of the `CI` job, so nothing requires it'])
     })
 
-    it('reads every job on all three operating systems (#348)', () => {
+    it('reads every other job on all three operating systems (#348)', () => {
         const legs = ['ubuntu-latest', 'windows-latest', 'macos-latest']
         // `checks` runs no job of its own here: its legs are the called chain's (#580).
-        const onOneRunner = new Set(['ci', 'submodule-access', 'checks', ...LINUX_ONLY])
+        const onOneRunner = new Set(['ci', 'submodule-access', 'checks', ...LINUX_ONLY, ...LINUX_AND_WINDOWS])
         const ids = [...parseWorkflowJobs(workflow).keys()].filter((id) => !onOneRunner.has(id))
         expect(ids.length).toBeGreaterThan(0)
 
+        // A job that only reads the legs' output keeps one leg per operating system
+        // and runs each on Linux (#1148); the case for pest-report is pinned below.
+        const readsLegsOnLinux = new Set(['pest-report'])
         for (const id of ids) {
             const job = jobText(workflow, id)
-            expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
+            expect(job, id).toContain(readsLegsOnLinux.has(id) ? '    runs-on: ubuntu-latest\n' : '    runs-on: ${{ matrix.os }}\n')
             expect(job, id).toContain(`        os: [${legs.join(', ')}]\n`)
             expect(job, id).toContain('      fail-fast: false\n')
             // No leg leaves the matrix: Windows shards the band too (#504).
@@ -572,14 +580,25 @@ describe('the aggregate `CI` job in ci.yml (#337)', () => {
         }
     })
 
-    it('runs the browser suite and its report on Linux only (#521)', () => {
+    it('runs the browser suite, its report and the byte-reading guards on Linux only (#521, #1171)', () => {
         // Decided 2026-11-02: tests/Browser checks the same assets in Chromium on
-        // every platform, so the Windows and macOS legs were dropped. Each job in
-        // LINUX_ONLY must still exist and must name no matrix leg.
+        // every platform, so the Windows and macOS legs were dropped; #1171 dropped
+        // them for the guards that read nothing an operating system changes. Each job
+        // in LINUX_ONLY must still exist and must name no matrix leg.
         for (const id of LINUX_ONLY) {
             const job = jobText(workflow, id)
             expect(job, id).toContain('    runs-on: ubuntu-latest\n')
             expect(job, id).not.toContain('matrix.os')
+        }
+    })
+
+    it('runs the jobs with a Windows-only path on Linux and Windows, without macOS (#1171)', () => {
+        for (const id of LINUX_AND_WINDOWS) {
+            const job = jobText(workflow, id)
+            expect(job, id).toContain('    runs-on: ${{ matrix.os }}\n')
+            expect(job, id).toContain('        os: [ubuntu-latest, windows-latest]\n')
+            expect(job, id).toContain('      fail-fast: false\n')
+            expect(job, id).not.toContain('macos-latest')
         }
     })
 
@@ -752,6 +771,53 @@ describe('the sharded pest job in ci.yml (#387)', () => {
         const fallback = JSON.parse(readFileSync(join(repoRoot, '.github', 'pest-shards.windows-latest.json'), 'utf8'))
         expect(Object.keys(fallback.timings).length).toBeGreaterThan(1000)
         expect(pest).toContain('            committed=".github/pest-shards.$MATRIX_OS.json"\n')
+    })
+
+    // What #1148 changed about pest-report, as a list of what is missing, so the
+    // old shape can be fed through the same check and shown to fail.
+    const linuxReportFailures = (pestJob, reportJob) => {
+        const failures = []
+        if (!reportJob.includes('\n    runs-on: ubuntu-latest\n')) {
+            failures.push('pest-report does not run every leg on Linux')
+        }
+        if (!reportJob.includes('        os: [ubuntu-latest, windows-latest, macos-latest]\n')) {
+            failures.push('pest-report does not keep one leg per shard operating system')
+        }
+        if (!reportJob.includes("      SHARD_PLATFORM: ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'Darwin' || 'Linux') }}\n")
+            || !reportJob.includes('--band=parallel --platform="$SHARD_PLATFORM"')) {
+            failures.push('the skip baseline is not read for the shards\' platform')
+        }
+        if (!/key: pest-shard-timings-\$\{\{ matrix\.os \}\}-[^\n]+\n {10}enableCrossOsArchive: true\n/.test(reportJob)) {
+            failures.push('pest-report saves timings a Windows runner cannot restore')
+        }
+        if (!/key: \$\{\{ steps\.choose-timings\.outputs\.key \}\}\n {10}enableCrossOsArchive: true\n/.test(pestJob)) {
+            failures.push('the shards cannot restore timings saved on another operating system')
+        }
+        return failures
+    }
+
+    it('runs every band report leg on Linux, reading each leg as its shards\' platform (#1148)', () => {
+        expect(linuxReportFailures(pest, report)).toEqual([])
+        expect(report).toContain('    name: Pest (parallel band report)\n')
+    })
+
+    it('reports pest-report going back to a runner per operating system', () => {
+        // The shape before #1148, rebuilt from this file, so the check above can fail.
+        const oldReport = report
+            .replace('\n    runs-on: ubuntu-latest\n', '\n    runs-on: ${{ matrix.os }}\n')
+            .replace(/\n {6}SHARD_PLATFORM: .+/, '')
+            .replace(' --platform="$SHARD_PLATFORM"', '')
+            .replace('\n          enableCrossOsArchive: true\n', '\n')
+        const oldPest = pest.replace('\n          enableCrossOsArchive: true\n', '\n')
+        expect(oldReport).not.toBe(report)
+        expect(oldPest).not.toBe(pest)
+
+        expect(linuxReportFailures(oldPest, oldReport)).toEqual([
+            'pest-report does not run every leg on Linux',
+            'the skip baseline is not read for the shards\' platform',
+            'pest-report saves timings a Windows runner cannot restore',
+            'the shards cannot restore timings saved on another operating system',
+        ])
     })
 
     it('reports the Windows leg going back to the old four-way split on Ubuntu timings', () => {

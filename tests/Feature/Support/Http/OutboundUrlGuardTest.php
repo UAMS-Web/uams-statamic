@@ -790,6 +790,15 @@ it('fetch() follows at most the given number of redirects', function (int $maxRe
     'two' => [2, 3],
 ]);
 
+it('fetch() follows five redirects when no limit is given', function () {
+    OutboundUrlGuard::setResolver(fn (string $host): array => ['93.184.216.34']);
+    Http::fake(fn (Request $request) => Http::response('', 302, ['Location' => $request->url().'/more']));
+
+    expect(fn () => OutboundUrlGuard::fetch('GET', 'http://loop.example/a'))
+        ->toThrow(RuntimeException::class, 'Too many redirects following: http://loop.example/a'.str_repeat('/more', 6));
+    Http::assertSentCount(6);
+});
+
 it('hands the pin to the HTTP client it sends with', function () {
     OutboundUrlGuard::setResolver(fn (string $host): array => ['93.184.216.34']);
     Http::fake(['*' => Http::response('ok', 200)]);

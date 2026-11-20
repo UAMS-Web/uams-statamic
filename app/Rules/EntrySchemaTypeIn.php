@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
-use App\Enums\SchemaType;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Statamic\Facades\Entry;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Validates that selected entry/entries have a schema.type in the allowed list.

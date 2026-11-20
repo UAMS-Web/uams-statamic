@@ -168,7 +168,6 @@ The license does not cover the following paths, which hold third-party material 
 - `resources/raster_images/`: photography and other raster images.
 - `resources/js/uams_2020/source/genesis/`: a script from the Genesis framework by StudioPress.
 - `lang/vendor/statamic/`: translations published from Statamic.
-- `app/Services/EnumGeneration/Schema/schemaorg-current-https.jsonld`: the Schema.org vocabulary, under the terms Schema.org publishes it under.
 
 # General Statamic Information
 

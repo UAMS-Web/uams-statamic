@@ -13,16 +13,12 @@ use App\Modifiers\ReadTimeUams;
  * param resolution + unit normalization. Default WPM is 200; "one two three four" is
  * four words -> ceil(4/200*60) = 2 true seconds -> ceil(2/60) = 1 minute.
  *
- * Mutation: every killable mutant is dead (score ~68%); the modifier is mostly
- * is_scalar-guarded coercion over delegated metrics, so the residual survivors are
- * all equivalents — the `(int)`/`(string)` casts are redundant (the metrics wpm
- * param is `int`-typed and normalizeReturnUnit takes `string`, so PHP coerces
- * identically), the `: 0` / `: ''` fallbacks for non-scalar params resolve to the
- * same output (wpm < 1 is clamped to 1; a non-alias unit defaults to minutes), the
- * `&&`->`||` on the single-positional-unit branch only fires for numeric/null pos0
- * (which normalizes to the minutes default anyway), and the `str_replace('-','_')`
- * is inert (no unit alias contains a hyphen or underscore). Left clean rather than
- * annotated with `@pest-mutate-ignore`.
+ * Mutation: clean on Linux without `--covered-only` (#828). The `(int)` and
+ * `(string)` casts are not redundant: the modifier declares `strict_types`, so the
+ * string params Antlers passes would raise a `TypeError` at the `int`-typed metrics
+ * call and at `trim()` without them, which the string and integer cases pin. The one
+ * annotation covers the non-scalar `wpm` fallback of `0`, which the metrics clamp to
+ * one word per minute exactly as they clamp `-1` and `1`.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/ReadTimeUamsTest.php
  */
@@ -64,4 +60,22 @@ it('estimates read time for the given configuration', function (mixed $value, ar
     'alias minute' => ['one two three four', ['unit' => 'minute'], 1],
     'alias Minute' => ['one two three four', ['unit' => 'Minute'], 1],
     'alias minutes' => ['one two three four', ['unit' => 'minutes'], 1],
+
+    // ── Scalar params as Antlers passes them (strings), and other scalars ──
+    'string named wpm' => ['one two three four', ['wpm' => '2'], 2],
+    'string first positional wpm' => ['one two three four', ['2'], 2],
+    'string first positional wpm + seconds' => ['one two three four', ['2', 'seconds'], 120],
+    'integer named unit falls back to minutes' => ['one two three four', ['unit' => 1], 1],
+    'integer second positional unit falls back to minutes' => ['one two three four', [2, 5], 2],
+    'boolean single positional falls back to minutes' => ['one two three four', [true], 1],
+    'non-scalar second positional falls back to minutes' => ['one two three four', [2, ['x']], 2],
+
+    // ── Positional unit precedence ──
+    'second positional unit wins over a non-numeric first' => ['one two three four', ['minutes', 'seconds'], 2],
+    'second positional minutes wins over a first seconds' => ['one two three four', ['seconds', 'minutes'], 1],
+    'null first positional with second positional seconds' => ['one two three four', [null, 'seconds'], 2],
+
+    // ── Labels outside the alias list ──
+    'hyphenated label falls back to minutes' => ['one two three four', ['unit' => 'per-second'], 1],
+    'underscored label falls back to minutes' => ['one two three four', ['unit' => 'per_second'], 1],
 ]);

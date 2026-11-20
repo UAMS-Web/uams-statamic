@@ -9,16 +9,23 @@ on:
   workflow_dispatch:
 
 # A new push to a pull request cancels that pull request's stale run, so a pull request keeps
-# one group. Every other run (a push to `main`, a manual run) gets a group of its own, keyed on
-# the commit, so a later push never cancels it. A shared push group would: GitHub keeps one
-# running and one pending run per group and cancels the pending one when another is queued,
-# whatever `cancel-in-progress` says, so a merge landing during a long run cancelled the
-# previous merge's run before it started a job. Its commit then showed only CodeQL's three
-# settled green runs, and the chain never ran on it (#530). Pinned by
+# one group, keyed on its ref. A push to `main` does the same to `main`'s stale run (#1153):
+# every push to `main` shares one group with `cancel-in-progress`, so a newer merge cancels the
+# older run, running or pending, and only the newest `main` commit's run goes on. Each merge used
+# to queue a full run of its own, 14 macOS jobs each, and on 2026-11-19 21 `main` runs were
+# queued at once ahead of the pull requests waiting to merge.
+#
+# Every other run (a manual `workflow_dispatch` run) keeps a group of its own, keyed on the
+# commit, so nothing cancels it. A shared group WITHOUT `cancel-in-progress` is the shape to
+# avoid: GitHub keeps one running and one pending run per group and cancels the pending one when
+# another is queued, so a merge landing during a long run cancelled the previous merge's run
+# before it started a job, and that commit showed only CodeQL's three settled green runs (#530).
+# The three groups never meet: a pull request's ref is `refs/pull/<n>/merge`, `main`'s is
+# `refs/heads/main`, and a manual run's key is a commit hash. Pinned by
 # `tests/Feature/Config/CiConcurrencyGroupTest.php`.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 # Every job reads the repository and nothing more (#391), except where a job-level
 # block says otherwise. `GITHUB_TOKEN` is used by `actions/checkout`, and by `gh api`
@@ -111,11 +118,25 @@ defaults:
 #                     jobs mirror. The local pint job checks the changed files only,
 #                     where the called one checks every tracked file: `test:pint`
 #                     names the dot-directories Pint's own finder skips (#580).
-# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call, the
-# Linux-only `browser` and `browser-report` jobs (#521) and the aggregate `ci` runs on
-# ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
-# failure does not cancel the others, and `ci` needs them all. The `checks` call's
-# legs are the chain's own classification; see its comment. Windows differs in
+# THREE LEGS (#348): the Pest jobs (`pest`, `pest-serial`, the `pest-report` matrix)
+# and `mutate` run on ubuntu-latest, windows-latest and macos-latest, with
+# `fail-fast: false` so one leg's failure does not cancel the others, and `ci` needs
+# every job below whatever its legs. The other jobs run on fewer platforms (#1171),
+# because macOS runners queue longest and these jobs read nothing macOS can change:
+# - Linux only: `composer-validate`, `no-emoji-guard` and `content-pointer-guard`
+#   read JSON, tracked bytes and git objects, and `browser` and `browser-report`
+#   check the same assets in Chromium everywhere (#521).
+# - Linux and Windows: `spell` (the `.cmd` spawn arm of `spawn-helpers.mjs`),
+#   `encoding-guard` (`PHP_EOL` and CRLF), `test-isolation-guard` (drive letters and
+#   backslashes), `build` and `js` (Vite and Vitest resolve `\` paths and spawn
+#   through `.cmd` shims there). Each has a Windows-only path, and macOS takes the
+#   Linux one: LF line endings, `/` paths, a direct spawn. What CI no longer runs is
+#   the darwin build of the native packages `npm ci` picks per platform (Rolldown,
+#   lightningcss, Tailwind's oxide and others): a lock missing them now fails on a
+#   Mac rather than here, and the Windows leg still proves the lock carries a
+#   non-Linux platform's optional binaries.
+# `submodule-access` runs on Linux only, and the `checks` call's legs are the
+# chain's own classification; see its comment. Windows differs in
 # two places, each marked where it stands: each `pest` shard runs from a list of
 # its test files instead of `--shard` (#504), and CLI OPcache stays off.
 # JOB FAN-OUT: every job below runs in parallel. Three jobs declare `needs:`, each
@@ -478,10 +499,11 @@ jobs:
       # shard and merges it with the reports the others left in attempt 1.
       #
       # Each operating system chooses among its own timings, saved under
-      # pest-shard-timings-<os>- (#516). A Windows runner cannot restore an entry a
-      # Linux runner saved (`enableCrossOsArchive` is off), so while only the Ubuntu
-      # leg saved, every Windows shard fell back to the committed file ("Cache not
-      # found" on #514's run 41440485266).
+      # pest-shard-timings-<os>- (#516). Every leg of `pest-report` saves on Linux
+      # (#1148), so the restore below sets `enableCrossOsArchive`: without it a
+      # Windows runner cannot restore an entry a Linux runner saved, and every
+      # Windows shard fell back to the committed file ("Cache not found" on #514's
+      # run 41440485266).
       #
       # With no entry from before that start (a new repository, or an evicted cache)
       # a committed copy is used instead: .github/pest-shards.<os>.json where one
@@ -510,6 +532,7 @@ jobs:
         with:
           path: tests/.pest/shards.json
           key: ${{ steps.choose-timings.outputs.key }}
+          enableCrossOsArchive: true
 
       # Logs which timings this shard read, and records their source and hash for
       # `pest-report`. Every shard partitions the band from its own copy, so
@@ -1004,7 +1027,14 @@ jobs:
 
   pest-report:
     name: Pest (parallel band report)
-    runs-on: ${{ matrix.os }}
+    # Every leg runs on Linux (#1148). The job only merges XML and runs PHP over it,
+    # so it needs nothing from the shards' platform, and a macOS or Windows runner
+    # here made every merge wait for the scarcest runner after the tests had passed.
+    # `matrix.os` still names the SHARDS' operating system: each leg downloads only
+    # those shards' reports, keeps their SHARD_TOTAL, writes the same per-OS
+    # artifact and cache key, and keeps the check name `... (<os>)` the required
+    # aggregate reads.
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -1026,6 +1056,11 @@ jobs:
     if: vars.RUN_REMOTE_CI != 'false'
     env:
       SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 6 || 4 }}
+      # The shards' PHP_OS_FAMILY. check-skip-baseline.php picks a platform's own
+      # count by PHP_OS_FAMILY unless told otherwise, and this leg runs on Linux
+      # whatever the shards ran on: the Windows band's 13 skipOnWindows cases would
+      # read against the shared count (#1148).
+      SHARD_PLATFORM: ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'Darwin' || 'Linux') }}
     steps:
       - uses: actions/checkout@v7
 
@@ -1064,7 +1099,7 @@ jobs:
       # only ever runs a branch's own workflow, so no counterpart is needed here.)
       # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check skip baseline (parallel band)
-        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel --platform="$SHARD_PLATFORM"
 
       # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
       # passed in silence — the gate reports PASS on any duration. It has happened
@@ -1098,12 +1133,16 @@ jobs:
       # .github/pest-shards.windows-latest.json, are refreshed by hand from this
       # artifact when the cache is empty for long enough to matter.
       # REMOTE-ONLY: the local runner does not shard.
+      # Saved on Linux for every leg, so `enableCrossOsArchive` is set here and on
+      # the shards' restore: without it a Windows runner computes a different cache
+      # version and cannot restore an entry a Linux runner saved (#516, #1148).
       - name: Save shard timings for later runs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v6
         with:
           path: tests/.pest/shards.json
           key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          enableCrossOsArchive: true
 
       - name: Upload the band report and timings
         uses: actions/upload-artifact@v7
@@ -1223,7 +1262,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): see THREE LEGS in the header.
     # Local-chain cost rank: after the JS unit tests.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1292,13 +1332,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): see THREE LEGS in the header.
     # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
-    # standalone vitest.config.js, so it needs Node + `npm ci` but no PHP,
-    # Composer, or content submodule.
+    # The unit suite (e.g. the coordinate parser) runs on a standalone
+    # vitest.config.js and needs no content submodule. It does need Composer's
+    # vendor tree: the public-form engines import `registerAlpineEngine` from
+    # `vendor/uams-web/aether-fieldtypes` (#995), so the job installs the locked
+    # packages without running their scripts.
     steps:
       - uses: actions/checkout@v7
 
@@ -1307,7 +1350,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so the
+          # `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830).
+          # The list matches the build job's.
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
+          tools: composer:v2
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -1327,6 +1375,25 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Determine Composer cache directory
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      # The engines under test import the fieldtype add-on's Alpine helper from vendor/ (#995).
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
+
       # PARITY: mirrored by the js job in local-ci.json
       - name: Run JS unit tests
         run: npm run test:js
@@ -1337,7 +1404,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): cspell reads the same files everywhere, but
+    # `scripts/spell.mjs` spawns it through `spawn-helpers.mjs`, whose Windows arm runs a
+    # `.cmd` shim through `cmd.exe` with its own quoting. Linux and macOS take the same
+    # direct spawn, so Linux covers macOS.
     # Local-chain cost rank: after the encoding guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1608,11 +1679,10 @@ jobs:
 
   composer-validate:
     name: Composer validate (composer.lock freshness)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): `composer validate` and the PSR-4 check read composer.json,
+    # composer.lock and class names against path strings, and the one-class scan reads
+    # the PHP tokens of the files git lists, none of which an operating system changes.
     # Local-chain position: second. `composer validate` measured ~1.5s against the
     # isolation guard's ~0.8s. The PSR-4 class check added in #322 scans `vendor/`
     # on a local run and took 23s on a loaded Windows machine, so the job is no
@@ -1685,11 +1755,9 @@ jobs:
 
   no-emoji-guard:
     name: No-emoji guard (durable records)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): it decodes the UTF-8 of tracked files with Node, and the
+    # bytes and code points are the same on every operating system.
     # Local-chain cost rank: after the composer.lock validation and BEFORE the
     # encoding guard, which is the first job that costs real time (it runs
     # `composer install`). This one is a pure file scan needing only Node, so
@@ -1721,11 +1789,9 @@ jobs:
 
   content-pointer-guard:
     name: Submodule pointer guard (each on its main)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): it compares gitlinks with git and asks `gh` about commits,
+    # so it reads the repository's object graph, which no operating system changes.
     # Local-chain cost rank: after the no-emoji guard and BEFORE the encoding
     # guard, the first job that runs `composer install`. It needs only git and Node.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1786,7 +1852,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): the mutate-ignore auditor's reason 2 and the
+    # breadth check depend on `PHP_EOL`, which is CRLF on Windows and LF on Linux and
+    # macOS alike, and the lone-CR guard exists for the line endings Windows produces.
+    # The other steps read tracked bytes, which no operating system changes.
     # Local-chain cost rank: after the content pointer guard, though the shared breadth
     # check below makes it slower than that place implies (UAMS-Web/uams-statamic#403).
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1910,7 +1980,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): the guard scans PHP tokens under tests/ and
+    # normalizes Windows drive letters and backslashes, the one platform difference it
+    # handles; macOS paths read exactly as Linux paths do.
     # An early link in local-ci.json's cost-ordered chain, where a failure here
     # skips the entire rest of the pipeline. Here
     # it runs in parallel with every other job; see the fan-out note in the header.
@@ -1954,8 +2027,8 @@ jobs:
   # (#749). This caller passes `mutate: false` and leaves `mutate-ignore` at its
   # default, false, so `checks / Mutation annotations (none inert)` reports skipped.
   # The annotation audit is not missing: the `encoding-guard` job above runs
-  # `scripts/check-mutate-ignore.php` and the breadth check on all three
-  # platforms, so setting `mutate-ignore: true` would only run it twice.
+  # `scripts/check-mutate-ignore.php` and the breadth check on Linux and
+  # Windows (#1171), so setting `mutate-ignore: true` would only run it twice.
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only

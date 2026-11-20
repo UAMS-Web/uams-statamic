@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\Input;
 use App\Rules\IdentifierRegex;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Identifier Fieldtype
