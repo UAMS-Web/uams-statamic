@@ -79,27 +79,23 @@ class UniqueTerms extends Modifier
             return (string) $id;
         }
 
-        // Fall back to serialized scalars. The `scalar:` prefix is cosmetic once
-        // serialize() already makes the rest of the key unique, so concat order and
-        // left-prefix removal are equivalent.
+        // Fall back to serialized scalars. An id() key carries no prefix, so the
+        // `scalar:` prefix, like each prefix below, is what keeps this key from
+        // equaling a term's id
         if (\is_scalar($item) || $item === null) {
-            // @pest-mutate-ignore: ConcatRemoveLeft, ConcatSwitchSides
             return 'scalar:'.\serialize($item);
         }
 
         // An array has no identity of its own, so compare it by value, the way a
-        // scalar is compared (UAMS-Web/uams-statamic-archive#2916). The `array:` prefix is cosmetic for the same
-        // reason as `scalar:`.
+        // scalar is compared (UAMS-Web/uams-statamic-archive#2916)
         if (\is_array($item)) {
-            // @pest-mutate-ignore: ConcatRemoveLeft, ConcatSwitchSides
             return 'array:'.\serialize($item);
         }
 
         // An object without an id() method compares by instance. Its number and a
         // resource's can coincide, so the `obj:` and `resource:` prefixes keep them
-        // apart; either one alone is enough, so each is cosmetic on its own.
+        // apart, as they keep each from a term's id
         if (\is_object($item)) {
-            // @pest-mutate-ignore: ConcatRemoveLeft, ConcatSwitchSides
             return 'obj:'.\spl_object_id($item);
         }
 
@@ -107,7 +103,6 @@ class UniqueTerms extends Modifier
         // closed one, so it cannot narrow this); PHP numbers both kinds the way it
         // numbers objects
         /** @var resource $item */
-        // @pest-mutate-ignore: ConcatRemoveLeft, ConcatSwitchSides
         return 'resource:'.\get_resource_id($item);
     }
 }
