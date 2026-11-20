@@ -1737,11 +1737,8 @@ class SchemaOutputService
         $typeForAtType = $typeArray;
         $subtypeAtType = null;
         $podcastAtType = null;
-        if (
-            $typeOverrideList !== []
-            && $entryTypeNames !== []
-            && $this->typeOverrideListIsCompatibleWithEntryTypes($typeOverrideList, $entryTypeNames)
-        ) {
+        // The compatibility check is false when either list is empty
+        if ($this->typeOverrideListIsCompatibleWithEntryTypes($typeOverrideList, $entryTypeNames)) {
             $typeForAtType = $typeOverrideList;
         } elseif (
             $contextOwnBusinessNodeEntryId !== null
