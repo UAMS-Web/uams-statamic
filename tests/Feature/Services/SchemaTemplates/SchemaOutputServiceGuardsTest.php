@@ -237,6 +237,7 @@ it('suffixes a canonical @id with a template instance index', function (string $
     'an empty fragment' => ['https://example.test/#', 'https://example.test/#2'],
     'a fragment' => ['https://example.test/#org', 'https://example.test/#org-2'],
     'the last fragment of several' => ['https://example.test/#a#org', 'https://example.test/#a#org-2'],
+    'a one-character id' => ['x', 'x-2'],
 ]);
 
 it('scopes the instance watermark by the entity id', function (mixed $entity, string $expected): void {
@@ -618,3 +619,118 @@ it('exposes an entry context entity as the property source entry, unless one is 
     'a term' => [fn (): Term => Mockery::mock(Term::class), [], null],
     'no context entity' => [fn (): null => null, [], null],
 ]);
+
+/**
+ * The service as a partial mock over the given cascade, recording each node build.
+ *
+ * @param  list<array<string, mixed>>  $builds  Each node build's arguments, by reference.
+ */
+function sosGuardStandaloneService(SchemaTemplatesCascadeService $cascade, array &$builds): SchemaOutputService&MockInterface
+{
+    /** @var SchemaOutputService&MockInterface $service */
+    $service = Mockery::mock(SchemaOutputService::class, [
+        $cascade,
+        app(SchemaClassificationsIdentifiersMerger::class),
+        app(SchemaJsonLdAtIdDeduplication::class),
+        app(SchemaJsonLdSchemaObjectEmissionCoordinator::class),
+        app(JsonLdCompositionProfiler::class),
+        app(MedicalOrganizationSubtypeAtTypeResolver::class),
+        app(PodcastEpisodeAtTypeResolver::class),
+    ])
+        ->makePartial()
+        ->shouldAllowMockingProtectedMethods();
+    $service->shouldReceive('schemaObjectEntryToNode')->andReturnUsing(
+        function (string $id, mixed $entity, array $graph, array $visited, array &$a, array &$b, array &$c, array $antlers, mixed $bag, ?string $own) use (&$builds): array {
+            $builds[] = ['graph' => $graph, 'bag' => $bag, 'own' => $own];
+
+            return ['@id' => '#'.$id, '@type' => 'Thing'];
+        }
+    );
+
+    return $service;
+}
+
+it('builds a standalone node without resolving a cascade for no context entity', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+
+    expect(sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNode('tpl-1'))->toBe(['@id' => '#tpl-1', '@type' => 'Thing'])
+        ->and($builds[0]['graph'])->toBe([])
+        ->and($builds[0]['own'])->toBeNull();
+});
+
+it('builds a standalone node against the context entity\'s cascade slots and own business node', function (): void {
+    $entity = Mockery::mock(EntryModel::class);
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldReceive('resolve')->once()->with($entity)->andReturn(['subject_entry' => 's1', 'main_content_entry' => 'm1']);
+    $builds = [];
+
+    sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNode('tpl-1', $entity);
+
+    expect($builds[0]['graph'])->toBe(['s1', 'm1'])
+        ->and($builds[0]['own'])->toBe('m1');
+});
+
+it('shares the given watermark bag and graph ids with a standalone node build', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+    $emitted = [];
+    $materialized = [];
+
+    sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNodeSharingEmittedNodeIds('tpl-1', Mockery::mock(EntryModel::class), [], $emitted, $materialized, ['g1'], $bag);
+
+    expect($builds[0]['bag'])->toBe($bag)
+        ->and($builds[0]['graph'])->toBe(['g1'])
+        ->and($builds[0]['own'])->toBeNull();
+});
+
+it('reads no graph ids, and resolves no cascade, for a missing entity', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+
+    expect(sosGuardCall(sosGuardStandaloneService($cascade, $builds), 'resolveGraphEntryIdsForEntity', null))->toBe([]);
+});
+
+it('anchors template instance allocation on the first non-empty graph slot, else the context entity', function (array $graph, string $expected): void {
+    $entity = Mockery::mock(EntryModel::class);
+    $entity->shouldReceive('id')->andReturn('ctx-1');
+
+    expect(sosGuardCall(sosGuardService(), 'templateInstanceWatermarkAllocationAnchor', $graph, $entity))->toBe($expected);
+})->with([
+    'a blank first slot' => [['', 's1'], 's1'],
+    'only blank slots' => [[''], 'ctx-1'],
+]);
+
+it('merges two empty additive property values to nothing', function (mixed $a, mixed $b): void {
+    expect(sosGuardCall(sosGuardService(), 'mergeAdditiveResolvedPropertyValues', $a, $b))->toBeNull();
+})->with([
+    'null and empty' => [null, ''],
+    'empty and null' => ['', null],
+]);
+
+it('parses the template instance index from the Antlers context', function (mixed $raw, ?int $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'parseTemplateInstanceIndexFromAntlersContext', [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => $raw]))->toBe($expected);
+})->with([
+    'an integer' => [3, 3],
+    'a numeric string' => ['3', 3],
+    'an empty string' => ['', null],
+    'text' => ['three', null],
+    'a negative integer' => [-1, null],
+    'true' => [true, null],
+    'a float' => [1.5, null],
+]);
+
+it('reads the site root as the root path for an entry with no site', function (): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('site')->andReturnNull();
+
+    expect(sosGuardCall(sosGuardService(), 'siteRootForEntry', $entry))->toBe('/');
+});

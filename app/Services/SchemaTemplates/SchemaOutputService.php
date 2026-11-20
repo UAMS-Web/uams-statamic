@@ -2376,14 +2376,9 @@ class SchemaOutputService
     protected function siteRootForEntry(
         EntryModel $entry
     ): string {
-        // Get the entry's site
+        // Get the entry's site; a missing one is not an object, and falls through to
+        // the root path below
         $site = $entry->site();
-
-        // Check if the site is not found
-        if ($site === null) {
-            // Return '/' to signal no site root is available
-            return '/';
-        }
 
         // Initialize the site URL value as null
         $url = null;
@@ -2652,22 +2647,13 @@ class SchemaOutputService
         // Normalize numeric strings from Antlers to integers
         // ---
 
-        // Check if the raw value is a string and is not empty
-        if (
-            \is_string($raw)
-            && $raw !== ''
-        ) {
-            // Filter the string as an integer when possible
-            $filtered = filter_var(
+        // Filter a string as an integer; an empty or non-numeric one filters to false,
+        // which the check below rejects like the string itself
+        if (\is_string($raw)) {
+            $raw = filter_var(
                 $raw,
                 FILTER_VALIDATE_INT
             );
-
-            // Check if filtering produced a usable integer
-            if ($filtered !== false) {
-                // Replace raw with the filtered integer
-                $raw = $filtered;
-            }
         }
 
         // Check if the value is not a non-negative integer
