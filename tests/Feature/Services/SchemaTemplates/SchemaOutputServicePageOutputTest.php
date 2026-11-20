@@ -525,3 +525,69 @@ it('records a node build sample in milliseconds', function (): void {
     expect($samples)->toHaveCount(1)
         ->and($samples[0][2])->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0);
 });
+
+// ---
+// getSlotEntryForCurrentContext()
+// ---
+
+it('finds the schema entry of each slot for the current context', function (string $slot, string $id): void {
+    $found = sosPageEntry($id);
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject', 'website_entry' => 'c-website', 'webpage_entry' => ['c-webpage'], 'main_content_entry' => 'c-main']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->once()->with($id)->andReturn($found);
+
+    expect($service->getSlotEntryForCurrentContext($slot))->toBe($found);
+})->with([
+    'subject' => ['subject', 'c-subject'],
+    'website' => ['website', 'c-website'],
+    'webpage' => ['webpage', 'c-webpage'],
+    'main content' => ['main_content', 'c-main'],
+]);
+
+it('finds no slot entry on a Control Panel route or without a context entity', function (bool $cpRoute): void {
+    if ($cpRoute) {
+        Config::set('statamic.cp.enabled', true);
+        Config::set('statamic.cp.route', 'cp');
+        app()->instance('request', Request::create('/cp/collections'));
+    }
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject']), [
+        'resolveEntity' => fn (): ?EntryContract => $cpRoute ? throw new LogicException('not reached') : null,
+    ]);
+    Entry::partialMock()->shouldReceive('find')->never();
+
+    expect($service->getSlotEntryForCurrentContext('subject'))->toBeNull();
+})->with([
+    'a Control Panel route' => [true],
+    'no context entity' => [false],
+]);
+
+it('finds no slot entry for an unknown slot or a slot that names no entry', function (string $slot, mixed $stored): void {
+    $service = sosPageService(sosPageCascade(['subject_entry' => $stored]), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->never();
+
+    expect($service->getSlotEntryForCurrentContext($slot))->toBeNull();
+})->with([
+    'an unknown slot' => ['sidebar', 'c-subject'],
+    'no entry' => ['subject', null],
+    'an id that reads as empty' => ['subject', new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return '';
+        }
+    }],
+]);
+
+it('finds no slot entry when its id finds no entry', function (mixed $found): void {
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->once()->with('c-subject')->andReturn($found);
+
+    expect($service->getSlotEntryForCurrentContext('subject'))->toBeNull();
+})->with([
+    'nothing' => [null],
+]);

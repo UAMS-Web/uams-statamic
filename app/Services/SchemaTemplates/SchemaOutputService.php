@@ -2334,27 +2334,14 @@ class SchemaOutputService
         $effectiveSchema = $this->getEffectiveSchema($entry, []);
         $rawEntryId = $entry->id();
         $entryId = \is_scalar($rawEntryId) ? (string) $rawEntryId : '';
-
-        if ($effectiveSchema === null) {
-            $baseUrl = $this->siteRootForEntry($entry);
-
-            // Unset local variables to free up memory
-            unset(
-                $effectiveSchema
-            );
-
-            return $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
-        }
-
-        $properties = $effectiveSchema['properties'];
         $baseUrl = null;
 
-        if (isset($properties['url'])) {
+        if ($effectiveSchema !== null && isset($effectiveSchema['properties']['url'])) {
             $emittedEntryIdsForUrl = [];
             $emittedNodeIdsForUrl = [];
             $materializedForUrl = [];
             $resolvedUrl = $this->resolvePropertyValue(
-                $properties['url'],
+                $effectiveSchema['properties']['url'],
                 $entry,
                 [],
                 [$entryId],
@@ -2363,28 +2350,25 @@ class SchemaOutputService
                 $materializedForUrl,
                 []
             );
-            if (\is_string($resolvedUrl) && $resolvedUrl !== '') {
-                $baseUrl = $resolvedUrl;
-            }
-        }
 
-        if ($baseUrl !== null) {
-            $baseUrl = str_contains($baseUrl, '#')
-                ? substr($baseUrl, 0, (int) strpos($baseUrl, '#'))
-                : $baseUrl;
+            // An empty url falls back to the site root below like no url
+            if (\is_string($resolvedUrl)) {
+                $hashAt = strpos($resolvedUrl, '#');
+                $baseUrl = $hashAt === false ? $resolvedUrl : substr($resolvedUrl, 0, $hashAt);
+            }
         }
 
         if ($baseUrl === null || $baseUrl === '') {
             $baseUrl = $this->siteRootForEntry($entry);
         }
 
-        $nodeId = $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
+        // An empty base leaves the fragment-only `#id`
+        $nodeId = $baseUrl.'#'.$entryId;
 
         // Unset local variables to free up memory
         unset(
             $baseUrl,
-            $effectiveSchema,
-            $properties
+            $effectiveSchema
         );
 
         return $nodeId;
@@ -6077,9 +6061,8 @@ class SchemaOutputService
             return null;
         }
 
-        $entry = EntryFacade::find($entryId);
-
-        return $entry instanceof EntryModel ? $entry : null;
+        // The entry repository returns an entry or null
+        return EntryFacade::find($entryId);
     }
 
     /**
