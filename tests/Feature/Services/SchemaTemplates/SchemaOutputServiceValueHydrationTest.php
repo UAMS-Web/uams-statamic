@@ -656,6 +656,15 @@ it('sorts a match with no readable id first, which resolves to nothing', functio
     'an object without an id' => [new stdClass],
 ]);
 
+it('sorts by the id as stored, so an unreadable id sorts before a capitalized one', function (): void {
+    $capitalized = sosValueTerm('Alpha::shared');
+    $numbered = sosValueTerm(7);
+    sosValueTerms([], ['shared' => [$capitalized, new stdClass], 'numbered' => [$capitalized, $numbered]]);
+
+    expect(sosValueHydrate(['shared']))->toBe(['shared'])
+        ->and(sosValueHydratedItems(['numbered']))->toBe([$numbered]);
+});
+
 it('sorts a term with a non-string id first, and resolves to it', function (): void {
     $tags = sosValueTerm('tags::shared');
     $numbered = sosValueTerm(7);

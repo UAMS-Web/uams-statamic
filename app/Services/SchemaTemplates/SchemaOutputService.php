@@ -5141,10 +5141,6 @@ class SchemaOutputService
         array $context,
         array $antlersContext
     ): array {
-        if ($antlersContext === []) {
-            return $context;
-        }
-
         // Resolve the first taxonomy term implied by overlay keys and merged values
         $taxonomyTerm = $this->resolveSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay(
             $context,
@@ -5199,10 +5195,6 @@ class SchemaOutputService
         array $context,
         array $antlersContext
     ): ?TaxonomyTerm {
-        if ($antlersContext === []) {
-            return null;
-        }
-
         // Collect overlay keys in deterministic lexicographic order
         $overlayKeys = array_keys($antlersContext);
         sort($overlayKeys, SORT_STRING);
@@ -5652,16 +5644,9 @@ class SchemaOutputService
                 $item = $item->value();
             }
 
-            if ($item instanceof LocalizedTerm) {
-                $out->push($item);
-
-                continue;
-            }
-
+            // A localized term implements the Term contract too
             if ($item instanceof Term) {
                 $out->push($item);
-
-                continue;
             }
         }
 
@@ -5727,16 +5712,7 @@ class SchemaOutputService
         /** @var Collection<int, mixed> $matches */
         $matches = $termQuery->get();
 
-        if ($matches->isEmpty()) {
-            return null;
-        }
-
-        if ($matches->count() === 1) {
-            return $this->unwrapStatamicTermFindToTaxonomyTerm(
-                $matches->first()
-            );
-        }
-
+        // With no match the first is null, and with one it is that match
         $sorted = $matches->sortBy(
             function (mixed $t): string {
                 if (is_object($t) && method_exists($t, 'id')) {

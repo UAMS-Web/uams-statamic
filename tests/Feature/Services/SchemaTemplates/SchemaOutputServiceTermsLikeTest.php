@@ -494,3 +494,73 @@ it('reads an augmented query builder into its results', function (): void {
 
     expect(sosTermsLikeCall('normalizeTermsLikeAugmentedResolutionToAntlersLoopableCollection', $builder))->toEqual(collect(['x']));
 });
+
+/**
+ * A localized term double whose `term()` answers the given value.
+ */
+function sosTermsLikeLocalized(mixed $term): LocalizedTerm&MockInterface
+{
+    /** @var LocalizedTerm&MockInterface $localized */
+    $localized = Mockery::mock(LocalizedTerm::class);
+    $localized->shouldReceive('term')->andReturn($term);
+
+    return $localized;
+}
+
+it('unwraps the first taxonomy term of a terms value', function (Closure $make, bool $found): void {
+    $term = mustBe(TaxonomyTerm::class, sosTermsLikeStoredValue('TAXONOMY_TERM'), 'the term');
+
+    expect(sosTermsLikeCall('unwrapFirstTaxonomyTermFromSchemaContextValue', $make($term)))->toBe($found ? $term : null);
+})->with([
+    'a term' => [fn (TaxonomyTerm $term): TaxonomyTerm => $term, true],
+    'a term in a Value' => [fn (TaxonomyTerm $term): Value => new Value($term), true],
+    'a localized term' => [fn (TaxonomyTerm $term): LocalizedTerm => sosTermsLikeLocalized($term), true],
+    'a localized term with no term' => [fn (TaxonomyTerm $term): LocalizedTerm => sosTermsLikeLocalized(null), false],
+    'a localized term with another term object' => [fn (TaxonomyTerm $term): LocalizedTerm => sosTermsLikeLocalized(new stdClass), false],
+    'a collection led by a term' => [fn (TaxonomyTerm $term): Collection => collect([$term, 'x']), true],
+    'a collection led by a term in a Value' => [fn (TaxonomyTerm $term): Collection => collect([new Value($term)]), true],
+    'a collection led by a localized term' => [fn (TaxonomyTerm $term): Collection => collect([sosTermsLikeLocalized($term)]), true],
+    'a collection led by a localized term with another term object' => [fn (TaxonomyTerm $term): Collection => collect([sosTermsLikeLocalized(new stdClass)]), false],
+    'a collection led by a slug' => [fn (TaxonomyTerm $term): Collection => collect(['x', $term]), false],
+    'an empty collection' => [fn (TaxonomyTerm $term): Collection => collect(), false],
+    'a slug' => [fn (TaxonomyTerm $term): string => 'x', false],
+]);
+
+it('resolves the primary related term from the first overlay key, in sorted order, holding one', function (string $skippedKey, bool $inContext): void {
+    $term = mustBe(TaxonomyTerm::class, sosTermsLikeStoredValue('TAXONOMY_TERM'), 'the term');
+    $skippedTerm = sosTermsLikeStoredValue('TAXONOMY_TERM');
+    $context = ['tags' => $term] + ($inContext ? [$skippedKey => $skippedTerm] : []);
+    $overlay = ['tags' => 'x', $skippedKey => 'x'];
+
+    expect(sosTermsLikeCall('resolveSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay', $context, $overlay))->toBe($term);
+})->with([
+    'an empty key' => ['', true],
+    'a reserved key' => [SchemaOutputService::ANTLERS_SCHEMA_PROPERTY_KEY, true],
+    'a key absent from the context' => ['absent', false],
+    'a key holding no term' => ['alpha', false],
+]);
+
+it('resolves no primary related term from an empty overlay', function (): void {
+    expect(sosTermsLikeCall('resolveSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay', ['tags' => sosTermsLikeStoredValue('TAXONOMY_TERM')], []))->toBeNull();
+});
+
+it('injects the default-locale value of the primary related term as it is when it is not a plain localized term', function (Closure $make): void {
+    $presented = $make();
+    /** @var TaxonomyTerm&MockInterface $term */
+    $term = Mockery::mock(TaxonomyTerm::class);
+    $term->shouldReceive('inDefaultLocale')->andReturn($presented);
+
+    $context = sosTermsLikeCall('injectSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay', ['tags' => $term], ['tags' => 'x']);
+
+    expect(mustBeStringKeyed($context, 'the context')[SchemaOutputService::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM])->toBe($presented);
+})->with([
+    'a localized term double' => [fn (): LocalizedTerm => sosTermsLikeLocalized(null)],
+    'a non-object' => [fn (): string => 'presented'],
+]);
+
+it('leaves the context unchanged when no overlay key holds a term', function (array $overlay): void {
+    expect(sosTermsLikeCall('injectSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay', ['tags' => 'x'], $overlay))->toBe(['tags' => 'x']);
+})->with([
+    'an empty overlay' => [[]],
+    'an overlay key holding a slug' => [['tags' => 'x']],
+]);
