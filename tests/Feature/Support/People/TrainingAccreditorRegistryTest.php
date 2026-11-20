@@ -10,7 +10,7 @@ uses(TestCase::class);
 /**
  * Tests for `TrainingAccreditorRegistry` config-driven, taxonomy-derived accreditor blocks.
  *
- * Mutation: 100% on App\Support\People\TrainingAccreditorRegistry (45 mutants, --covered-only).
+ * Mutation: 100% on App\Support\People\TrainingAccreditorRegistry (47 mutants, without --covered-only, #1093).
  *
  * @command  php artisan test --compact tests/Feature/Support/People/TrainingAccreditorRegistryTest.php
  */
@@ -52,4 +52,52 @@ it('returns a decodable object with an unescaped url for an accredited specialty
 
 it('returns null json for a non-accredited specialty', function () {
     expect(TrainingAccreditorRegistry::jsonForSpecialtyTermId('specialties_non_accredited::total-joint-replacement'))->toBeNull();
+});
+
+it('never resolves a term id without a taxonomy prefix through an empty map key', function (string $termId) {
+    // An empty map key is what a missing prefix would read if the parse did not bail first.
+    config(['schema_templates.training_accreditors.taxonomy_map' => ['' => 'acgme']]);
+
+    expect(TrainingAccreditorRegistry::forSpecialtyTermId($termId))->toBeNull();
+})->with([
+    'bare slug' => ['orthopaedic-surgery'],
+    'empty prefix' => ['::orthopaedic-surgery'],
+]);
+
+it('returns null when the mapped accreditor key is not a non-empty string', function (mixed $accreditorKey) {
+    // Each key would resolve this block if the key guard let it through.
+    config([
+        'schema_templates.training_accreditors.taxonomy_map' => ['specialties_test' => $accreditorKey],
+        'schema_templates.training_accreditors.organizations' => [
+            '' => ['@type' => 'Organization', 'name' => 'Empty key'],
+            7 => ['@type' => 'Organization', 'name' => 'Integer key'],
+        ],
+    ]);
+
+    expect(TrainingAccreditorRegistry::forSpecialtyTermId('specialties_test::any'))->toBeNull();
+})->with([
+    'empty string' => [''],
+    'integer' => [7],
+]);
+
+it('returns null when the accreditor organization is not a non-empty array', function (mixed $organization) {
+    config([
+        'schema_templates.training_accreditors.taxonomy_map' => ['specialties_test' => 'test'],
+        'schema_templates.training_accreditors.organizations' => ['test' => $organization],
+    ]);
+
+    expect(TrainingAccreditorRegistry::forSpecialtyTermId('specialties_test::any'))->toBeNull();
+})->with([
+    'string' => ['Organization'],
+    'empty array' => [[]],
+]);
+
+it('returns null json when the accreditor block cannot be encoded', function () {
+    // Invalid UTF-8 makes json_encode return false.
+    config([
+        'schema_templates.training_accreditors.taxonomy_map' => ['specialties_test' => 'test'],
+        'schema_templates.training_accreditors.organizations' => ['test' => ['name' => "\xB1"]],
+    ]);
+
+    expect(TrainingAccreditorRegistry::jsonForSpecialtyTermId('specialties_test::any'))->toBeNull();
 });

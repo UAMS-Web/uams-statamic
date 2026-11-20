@@ -194,12 +194,8 @@ final class CertificationActivityValidity
         }
 
         // Use the first invalid day (exclusive) as the interval end anchor
+        // It starts after the whole expiry day, so it is always after an issue time not later than the expiry
         $endExclusive = $expires->addDay()->startOfDay();
-
-        // Reject a non-positive span after normalization
-        if (! $issued->lt($endExclusive)) {
-            return null;
-        }
 
         return $this->calendarPnYnMnD(
             $issued,
