@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
 use App\Rules\DateBoundary;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +14,7 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
 use Statamic\Fieldtypes\Date as BaseDate;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 
 /**
  * Extended Date fieldtype.

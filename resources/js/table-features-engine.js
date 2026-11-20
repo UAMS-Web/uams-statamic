@@ -22,11 +22,11 @@
  * - the pager is a `<nav>` of `<button>`s with `aria-current`/`aria-label`; and
  * - the information line is an `aria-live` status region.
  *
- * Registered through `lib/alpine-engine.js` for the shared, idempotent
+ * Registered through the fieldtype add-on's `alpine.js` for the shared, idempotent
  * Alpine-lifecycle binding, exactly like the sibling form engines.
  */
 
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for tables the render partial flagged as feature-enhanced. */
 const TABLE_FEATURES_SELECTOR = 'table[data-table-features]';
@@ -639,7 +639,7 @@ export function initTableFeatures(table) {
 
 /**
  * Public entry. The Alpine-lifecycle binding (scan, idempotent flag,
- * per-element init) lives in `lib/alpine-engine.js`, shared with sibling
+ * per-element init) lives in the fieldtype add-on's `alpine.js`, shared with sibling
  * engines.
  */
 export function registerTableFeaturesEngine() {

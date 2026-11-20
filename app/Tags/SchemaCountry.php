@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Enums\Country;
 use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
 use App\Services\SchemaTemplates\SchemaJsonLdFragmentAtId;
 use App\Services\SchemaTemplates\SchemaOutputService;
@@ -14,6 +13,7 @@ use Statamic\Fields\Value;
 use Statamic\Tags\Context;
 use Statamic\Tags\Parameters;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Enums\Country;
 
 /**
  * Antlers tag: emit JSON-LD `Country` object(s) with ISO 3166-1 identifiers.
@@ -29,7 +29,7 @@ use Statamic\Tags\Tags;
  *
  * Unknown codes are skipped.
  *
- * Country labels and codes come from `App\Enums\Country` (`country_name()` for the
+ * Country labels and codes come from `UAMSWeb\Aether\Enums\Country` (`country_name()` for the
  * exonym, `alpha2()` / `alpha3()` / `numeric()`, `requiresThe()` for “the …”).
  * JSON-LD uses the schema.org `name` key for that label. When `useThe` is true,
  * `alternateName` is set to `the ` plus the same label; otherwise

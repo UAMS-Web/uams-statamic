@@ -26,11 +26,11 @@
  *
  * Like `product-pricing-engine.js`, composite subfields drop `x-model`, so this
  * binds plain DOM listeners rather than reaching into an Alpine scope. It still
- * registers through `lib/alpine-engine.js` for the shared lifecycle and
+ * registers through the fieldtype add-on's `alpine.js` for the shared lifecycle and
  * idempotency guard.
  */
 
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for option-field wrappers emitted by `option.antlers.html`. */
 const OPTION_FIELD_SELECTOR = '[data-option-field]';
@@ -122,7 +122,7 @@ function initOptionField(field) {
 
 /**
  * Public entry. Lifecycle (wait for Alpine, scan, idempotent flag, per-element
- * init) lives in `lib/alpine-engine.js` and is shared with sibling engines.
+ * init) lives in the fieldtype add-on's `alpine.js` and is shared with sibling engines.
  */
 export function registerOptionPricingEngine() {
 	registerAlpineEngine({
