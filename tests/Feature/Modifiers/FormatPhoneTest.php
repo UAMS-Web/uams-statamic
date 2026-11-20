@@ -10,30 +10,15 @@ uses(TestCase::class);
 covers(FormatPhone::class);
 
 /**
- * Mutation: tracked under App\Modifiers\FormatPhone (--covered-only).
+ * Pin national and international display, fallbacks, and input normalization.
  *
  * @command  php artisan test --compact tests/Feature/Modifiers/FormatPhoneTest.php
  */
-
-/**
- * Pad Pest's mutant-child timeout once per process under ``--mutate``.
- */
-beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
-});
-
 it('formats E.164 phone numbers for display', function (mixed $value, array $params, string $expected) {
     expect((new FormatPhone)->index($value, $params, []))->toBe($expected);
 })->with([
     'US national (default)' => ['+15016868998', [], '501-686-8998'],
+    'trims an unparseable number before returning it' => [' not a number ', [], 'not a number'],
     'US national explicit' => ['+15016868998', ['national'], '501-686-8998'],
     'US international' => ['+15016868998', ['international'], '+1 501-686-8998'],
     'mode is case-insensitive' => ['+15016868998', ['INTERNATIONAL'], '+1 501-686-8998'],
