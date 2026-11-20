@@ -61,3 +61,31 @@ it('coerces non-scalar items to an empty string', function () {
     expect((new SanitizeArray)->index([['nested'], 'ok'], [], []))
         ->toBe(['', 'ok']);
 });
+
+it('reads double_encode from a string first argument, as Antlers passes it', function () {
+    expect((new SanitizeArray)->index(['&amp;'], ['1'], []))->toBe(['&amp;amp;']);
+});
+
+it('encodes with the configured Statamic charset', function () {
+    config(['statamic.system.charset' => 'ISO-8859-1']);
+
+    // 0xE9 is a valid ISO-8859-1 byte but an invalid UTF-8 sequence, which UTF-8 encoding drops.
+    expect((new SanitizeArray)->index(["caf\xE9 <b>"], [], []))->toBe(["caf\xE9 &lt;b&gt;"]);
+});
+
+it('falls back to UTF-8 when the configured charset is not a string', function () {
+    config(['statamic.system.charset' => ['ISO-8859-1']]);
+
+    expect((new SanitizeArray)->index(["caf\xC3\xA9 <b>"], [], []))->toBe(["caf\xC3\xA9 &lt;b&gt;"]);
+});
+
+it('coerces integer, float and boolean items to strings', function () {
+    expect((new SanitizeArray)->index([42, 1.5, true], [], []))->toBe(['42', '1.5', '1']);
+});
+
+it('keeps list order for associative arrays and keyed Collections', function (mixed $value) {
+    expect((new SanitizeArray)->index($value, [], []))->toBe(['&lt;a&gt;', 'b']);
+})->with([
+    'associative array' => [['x' => '<a>', 'y' => 'b']],
+    'keyed Collection' => [collect([5 => '<a>', 2 => 'b'])],
+]);
