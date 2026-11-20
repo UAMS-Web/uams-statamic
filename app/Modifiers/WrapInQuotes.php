@@ -46,9 +46,8 @@ class WrapInQuotes extends Modifier
             '',
             $text
         );
-        // preg_replace returns string|null; the '' arm is only for the null
-        // error path, which this pattern does not hit under test.
-        // @pest-mutate-ignore: EmptyStringToNotEmpty
+        // preg_replace() returns null for text that is not valid UTF-8, which the
+        // `u` flag refuses, and that value is then treated as empty
         $text = is_string($stripped) ? $stripped : '';
 
         if ($text === '') {
