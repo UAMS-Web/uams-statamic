@@ -73,12 +73,19 @@ class AdaptiveSentenceList extends Modifier
             ),
             $items
         );
-        $anyComma = \in_array(true, $commaFlags, true);
+        $anyComma = \in_array(
+            true,
+            $commaFlags,
+            // Every flag is boolean, so loose and strict comparison agree.
+            // @pest-mutate-ignore:TrueToFalse
+            true
+        );
 
         // Initialize count after normalization
         $count = \count($items);
 
-        // Return nothing for an empty list
+        // The empty list also yields an empty string through makeSentenceList().
+        // @pest-mutate-ignore:DecrementInteger,RemoveEarlyReturn
         if ($count === 0) {
             return '';
         }
@@ -117,7 +124,8 @@ class AdaptiveSentenceList extends Modifier
         array $commaFlags,
         string $glue
     ): string {
-        // Use ", glue " when the first item contains a comma (credentials, etc.)
+        // Both reindexed items have a flag, so the fallback is unreachable.
+        // @pest-mutate-ignore:FalseToTrue
         if ($commaFlags[0] ?? false) {
             return $items[0].', '.$glue.' '.$items[1];
         }
@@ -179,6 +187,8 @@ class AdaptiveSentenceList extends Modifier
      */
     private function scalarToString(mixed $value): string
     {
+        // Without this guard, null reaches the final empty string and false casts to it.
+        // @pest-mutate-ignore:BooleanOrToBooleanAnd,RemoveEarlyReturn
         if ($value === null || $value === false) {
             return '';
         }

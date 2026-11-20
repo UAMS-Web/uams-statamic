@@ -23,15 +23,21 @@ install_php() {
         fi
     done
     if ((${#missing[@]})); then
-        if [[ ! -f /etc/apt/sources.list.d/php.list ]]; then
+        local codename source
+        codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+        source="deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $codename main"
+        if [[ ! -f /usr/share/keyrings/debsuryorg-archive-keyring.gpg ]]; then
             local keyring
             keyring=$(mktemp --suffix=.deb)
             curl --fail --silent --show-error --location --retry 3 \
                 https://packages.sury.org/debsuryorg-archive-keyring.deb -o "$keyring"
             sudo dpkg -i "$keyring"
             rm "$keyring"
-            echo 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ bookworm main' \
-                | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
+        fi
+        # Rewrite a source naming another release too: the image's own copy can name an older
+        # one, and its packages then depend on libraries this release does not ship.
+        if [[ $(cat /etc/apt/sources.list.d/php.list 2>/dev/null) != "$source" ]]; then
+            echo "$source" | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
         fi
         sudo apt-get update -qq
         sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${missing[@]}"
@@ -76,8 +82,11 @@ install_composer() {
 }
 
 install_php_dependencies() {
-    local fingerprint
-    fingerprint=$(sha256sum patches.lock.json patches/*.patch | sha256sum | cut -d ' ' -f 1)
+    local fingerprint patch_files=()
+    # Hash only the local patches that exist: with none, an unmatched glob reaches sha256sum
+    # as a literal path and set -e stops the setup.
+    mapfile -t patch_files < <(compgen -G 'patches/*.patch' || true)
+    fingerprint=$(sha256sum patches.lock.json "${patch_files[@]}" | sha256sum | cut -d ' ' -f 1)
     # Composer install does not reapply a changed patch to vendor files a snapshot restored,
     # so remove every package patched now or at the last install and let it reinstall them.
     if [[ -d vendor && (! -f vendor/.orb-patch-inputs || "$(cat vendor/.orb-patch-inputs)" != "$fingerprint") ]]; then
