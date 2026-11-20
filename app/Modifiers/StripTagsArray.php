@@ -61,7 +61,10 @@ class StripTagsArray extends Modifier
 
         // Check whether Antlers runtime method syntax is active
         if (! $this->usingRuntimeMethodSyntax($context)) {
-            // Coerce the context key to a string the same way core strip_tags does
+            // Coerce the context key to a string. Arr::get() is outside strict_types and
+            // normalizes a scalar key as the cast does, and a non-scalar tag list's key
+            // of '' or any other name misses every Antlers context key alike.
+            // @pest-mutate-ignore: RemoveStringCast, EmptyStringToNotEmpty
             $tagKey = \is_scalar($tags) ? (string) $tags : '';
 
             // Resolve tag names from context when the first param references it
@@ -92,19 +95,24 @@ class StripTagsArray extends Modifier
                 $item = $item->value();
             }
 
-            // Coerce the item to a string the same way the core modifier does
+            // Coerce the item to a string the same way the core modifier does.
+            // Str::stripTags() is untyped and outside strict_types, so strip_tags()
+            // coerces a scalar or Stringable item exactly as this cast does.
+            // @pest-mutate-ignore: RemoveStringCast
             $itemString = (\is_scalar($item) || $item instanceof \Stringable)
                 ? (string) $item
                 : '';
 
-            // Strip tags using the same helper as the core modifier
+            // Strip tags using the same helper as the core modifier; it is untyped but
+            // always returns strip_tags()'s string
+            /** @var string $stripped */
             $stripped = Str::stripTags(
                 $itemString,
                 $tags
             );
 
-            // Coerce the stripped result to a string before appending
-            $result[] = \is_scalar($stripped) ? (string) $stripped : '';
+            // Append the stripped string
+            $result[] = $stripped;
         }
 
         // Return the list of stripped strings
@@ -112,10 +120,12 @@ class StripTagsArray extends Modifier
     }
 
     /**
-     * Turn the modifier value into a reindexed list.
+     * Turn the modifier value into an ordered list of items.
+     *
+     * Keys are kept: the caller appends each item to a new list, which reindexes it.
      *
      * @param  mixed  $value  Array, collection, or scalar
-     * @return array<int, mixed> List items before per-item string coercion
+     * @return array<array-key, mixed> List items before per-item string coercion
      */
     private function listItems(
         mixed $value
@@ -129,12 +139,12 @@ class StripTagsArray extends Modifier
 
         // Unwrap Laravel collections to their underlying items
         if ($value instanceof Collection) {
-            return array_values($value->all());
+            return $value->all();
         }
 
-        // Reindex plain arrays without copying nested structures deeply
+        // Use plain arrays as they are
         if (\is_array($value)) {
-            return array_values($value);
+            return $value;
         }
 
         // Wrap any other single value as a one-element list
