@@ -248,6 +248,9 @@ it('composes uncached when the context entity has no id to key the cache on', fu
 });
 
 it('serves a repeat call for the same entity and slots from the output cache, for the configured TTL', function (): void {
+    // Freeze the clock so the 119- and 121-second points are measured from the cache
+    // write, not from whenever travel() runs on a loaded runner (#1172).
+    $this->freezeTime();
     Config::set('schema_templates.json_ld_cache.ttl_seconds', '120');
     $calls = [];
     $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [

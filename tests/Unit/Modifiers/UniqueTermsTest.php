@@ -12,11 +12,10 @@ use App\Modifiers\UniqueTerms;
  * spl_object_id and resources by get_resource_id.
  * The normalization is covered by NormalizeListTest.
  *
- * Mutation: this is a thin dedup loop, so the residual survivors are equivalents: the
- * dedup-key prefixes and concat order ('scalar:', 'array:', 'obj:', 'resource:') are
- * cosmetic one at a time (each key is already unambiguous, so any consistent unique key
- * dedupes identically), the `(string) $id` cast is redundant with the string return
- * type, and the `$seen[$key] = true` marker is irrelevant to the `isset()` check.
+ * Mutation: the one equivalent is the `$seen[$key] = true` marker, which the `isset()`
+ * check ignores. The dedup-key prefixes ('scalar:', 'array:', 'obj:', 'resource:') are
+ * not cosmetic, because a term's id() key carries none; UniqueTermsMutationTest pins
+ * them, and the `(string) $id` cast, with terms whose ids equal another item's key.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/UniqueTermsTest.php
  */

@@ -74,7 +74,7 @@ class NormalizeList extends Modifier
         // Check if the value is a collection
         if ($value instanceof Collection) {
             // If it is, return the items of the collection
-            return $this->flattenListItems(array_values($value->all()));
+            return $this->flattenListItems($value->all());
         }
 
         // ---
@@ -84,7 +84,7 @@ class NormalizeList extends Modifier
         // Check if the value is an array
         if (\is_array($value)) {
             // If it is, return the items of the array
-            return $this->flattenListItems(array_values($value));
+            return $this->flattenListItems($value);
         }
 
         // Return the value as a one-element array
@@ -94,7 +94,7 @@ class NormalizeList extends Modifier
     /**
      * Expand any query builders in a list and reindex.
      *
-     * @param  array<int, mixed>  $items  List of items to flatten
+     * @param  array<int|string, mixed>  $items  Items to flatten, under any keys
      * @return array<int, mixed> Flattened list of items
      */
     private function flattenListItems(

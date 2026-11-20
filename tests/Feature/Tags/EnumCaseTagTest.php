@@ -25,10 +25,12 @@ uses(TestCase::class);
  * These tests also surface attribute/reflection problems on enum cases (for
  * example attributes that cannot be instantiated via reflection).
  *
- * Mutation: 100% on App\Tags\EnumCase (136 mutants, --covered-only), with 10 equivalents
- * annotated in the class. Three lines are not covered. One is the UnitEnum check, which every enum
- * passes. The other two are the ReflectionException catch after property_exists(), which
- * only an attribute with a dynamic property shadowing a parent's private one can reach.
+ * Mutation, without --covered-only (#804): every mutant of App\Tags\EnumCase is killed, with one
+ * equivalent annotated in the class (the property_exists() early return, after which the
+ * ReflectionException catch returns null as well). The UnitEnum check that followed
+ * enum_exists() could not fail, since every enum implements UnitEnum; its early return was the one
+ * uncovered mutant, and the check is removed as dead code. The non-enum row below pins the
+ * enum_exists() guard that refuses a class that is not an enum.
  *
  * @command  php artisan test --compact tests/Feature/Tags/EnumCaseTagTest.php
  * @command  php artisan test --compact tests/Feature/Tags/EnumCaseTagTest.php --stop-on-failure

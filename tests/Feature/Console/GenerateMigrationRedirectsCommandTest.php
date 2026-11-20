@@ -195,6 +195,30 @@ it('refuses a retired-permalink path that is a directory, and generates nothing'
         ->and(migrationRedirectOutputLines())->toBe(["Could not read retired-permalink list: {$this->redirectsDir}"]);
 });
 
+// A file that exists but cannot be read makes `file_get_contents()` warn, and Laravel turns
+// that warning into an `ErrorException` unless the read is silenced (#1053). Mode 000 does not
+// stop a read on Windows or for root, so the test skips where its premise does not hold.
+it('refuses a list file that exists but cannot be read, and generates nothing', function (string $option, string $message): void {
+    forbidMigrationRedirectGenerator();
+    $path = $this->redirectsDir.'/locked-list';
+    file_put_contents($path, "/kirk/\n");
+    chmod($path, 0o000);
+
+    try {
+        if (is_readable($path)) {
+            $this->markTestSkipped('chmod 000 left the file readable, so no unreadable file can be staged here.');
+        }
+
+        expect(Artisan::call('content:generate-migration-redirects', [$option => $path]))->toBe(1)
+            ->and(migrationRedirectOutputLines())->toBe(["{$message}: {$path}"]);
+    } finally {
+        chmod($path, 0o644);
+    }
+})->with([
+    '--retired-from' => ['--retired-from', 'Could not read retired-permalink list'],
+    '--dedup-redirects' => ['--dedup-redirects', 'Could not read duplicate redirect pairs'],
+]);
+
 it('warns of the rows it could not read before the pairs the generator refused', function (): void {
     $path = $this->redirectsDir.'/pairs.json';
     file_put_contents($path, (string) json_encode([
