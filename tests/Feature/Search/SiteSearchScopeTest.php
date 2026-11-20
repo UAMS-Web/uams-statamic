@@ -13,6 +13,8 @@ use Statamic\Search\QueryBuilder as SearchQueryBuilder;
 use Statamic\Sites\Site as SiteObject;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
+use UAMSWeb\Aether\Search\Contracts\SiteTree;
+use UAMSWeb\Aether\Search\Support\FlatSiteTree;
 use UAMSWeb\Aether\Search\Tags\AetherSearch;
 
 // cspell:ignore gcse searchresults
@@ -25,10 +27,17 @@ uses(TestCase::class);
  * since `uams-web/aether-search` 0.3.1 (#665). Which hits each scope returns is
  * covered by `SiteSearchScopeResultsTest`.
  *
+ * These cases pin the flat contract, so they bind the add-on's flat site tree: with
+ * the `content/` submodule present, `health` is a search tier and its "This site"
+ * covers its subtree (#480), which `SiteSearchTierTest` covers.
+ *
  * @covers \UAMSWeb\Aether\Search\Tags\AetherSearch
  *
  * @command  php artisan test --compact tests/Feature/Search/SiteSearchScopeTest.php
  */
+beforeEach(function (): void {
+    app()->instance(SiteTree::class, new FlatSiteTree);
+});
 
 /**
  * Render the search page as a reader on a site sees it.
