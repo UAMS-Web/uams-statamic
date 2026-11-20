@@ -13,9 +13,11 @@ use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
 use Illuminate\Support\Collection;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Query\Builder as QueryBuilderContract;
 use Statamic\Contracts\Taxonomies\Term;
 use Statamic\Entries\Entry as EntryModel;
+use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Fields\Value;
 use Statamic\Fieldtypes\Terms as TermsFieldtype;
@@ -564,3 +566,78 @@ it('leaves the context unchanged when no overlay key holds a term', function (ar
     'an empty overlay' => [[]],
     'an overlay key holding a slug' => [['tags' => 'x']],
 ]);
+
+/**
+ * A blueprint field double with the given handle and fieldtype handle.
+ */
+function sosTermsLikeTypedField(mixed $handle, mixed $type): Field&MockInterface
+{
+    /** @var Field&MockInterface $field */
+    $field = Mockery::mock(Field::class);
+    $field->shouldReceive('handle')->andReturn($handle);
+    $field->shouldReceive('type')->andReturn($type);
+
+    return $field;
+}
+
+/**
+ * A query builder double whose results are the given items.
+ *
+ * @param  list<mixed>  $items
+ */
+function sosTermsLikeBuilder(array $items): QueryBuilderContract&MockInterface
+{
+    /** @var QueryBuilderContract&MockInterface $builder */
+    $builder = Mockery::mock(QueryBuilderContract::class);
+    $builder->shouldReceive('get')->andReturn(collect($items));
+
+    return $builder;
+}
+
+/**
+ * Hydrate the terms fields of a merged context for an entity whose blueprint holds the given fields.
+ *
+ * @param  list<Field>  $fields
+ * @param  array<string, mixed>  $context
+ * @return array<string, mixed>
+ */
+function sosTermsLikeHydrateFields(array $fields, array $context): array
+{
+    /** @var Blueprint&MockInterface $blueprint */
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('fields->all')->andReturn(collect($fields));
+    /** @var LocalizedTerm&MockInterface $entity */
+    $entity = Mockery::mock(LocalizedTerm::class);
+    $entity->shouldReceive('blueprint')->andReturn($blueprint);
+
+    return mustBeStringKeyed(sosTermsLikeCall('hydrateTermsLikeFieldValuesForSchemaAntlersContext', $entity, $context), 'the hydrated context');
+}
+
+it('reads a terms field query builder after a field it skips', function (Closure $skipped, array $context): void {
+    $result = sosTermsLikeHydrateFields(
+        [mustBe(Field::class, $skipped(), 'the skipped field'), sosTermsLikeTypedField('tags', 'terms_search_index')],
+        mustBeStringKeyed($context, 'the context') + ['tags' => sosTermsLikeBuilder(['tag'])]
+    );
+
+    expect($result['tags'])->toEqual(collect(['tag']));
+})->with([
+    'a terms field absent from the context' => [fn (): Field => sosTermsLikeTypedField('absent', 'terms'), []],
+    'a field of another type' => [fn (): Field => sosTermsLikeTypedField('title', 'text'), ['title' => sosTermsLikeBuilder(['x'])]],
+    'a terms field already holding term models' => [fn (): Field => sosTermsLikeTypedField('topics', 'terms'), ['topics' => [Mockery::mock(Augmentable::class)]]],
+    'a terms field read from a query builder' => [fn (): Field => sosTermsLikeTypedField('topics', 'terms'), ['topics' => sosTermsLikeBuilder(['topic'])]],
+]);
+
+it('reads the context of a terms field under its scalar handle as a string, and under an empty string otherwise', function (mixed $handle, string $key): void {
+    $result = sosTermsLikeHydrateFields([sosTermsLikeTypedField($handle, 'terms')], [$key => sosTermsLikeBuilder(['tag'])]);
+
+    expect($result[$key])->toEqual(collect(['tag']));
+})->with([
+    'a float' => [1.5, '1.5'],
+    'null' => [null, ''],
+]);
+
+it('matches the terms fieldtype handles strictly', function (): void {
+    $builder = sosTermsLikeBuilder(['tag']);
+
+    expect(sosTermsLikeHydrateFields([sosTermsLikeTypedField('tags', true)], ['tags' => $builder]))->toBe(['tags' => $builder]);
+});
