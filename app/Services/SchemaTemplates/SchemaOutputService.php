@@ -3578,12 +3578,7 @@ class SchemaOutputService
         $stripped = $template;
 
         foreach ($termsLikePairStripHandles as $termsHandle) {
-            if ($termsHandle === '') {
-                unset($termsHandle);
-
-                continue;
-            }
-
+            // An empty handle has no pattern either
             $pattern = $this->pairStripRegexPatternForTermsLikeHandle($termsHandle);
 
             if ($pattern === '') {
@@ -5684,10 +5679,7 @@ class SchemaOutputService
     private function unwrapStatamicTermFindToTaxonomyTerm(
         mixed $found
     ): LocalizedTerm|TaxonomyTerm|null {
-        if ($found === null) {
-            return null;
-        }
-
+        // Anything else, nothing found included, is no term
         if ($found instanceof LocalizedTerm) {
             return $found;
         }
@@ -5885,32 +5877,16 @@ class SchemaOutputService
         if (Compare::isQueryBuilder($resolved)) {
             /** @var Builder $resolved */
             $context[$handle] = $resolved->get();
-
-            return;
-        }
-
-        // ---
-        // max_items: 1 terms fields augment to one Term via query->first(), not a builder
-        // ---
-
-        // Check if augmentation resolved to a single taxonomy term instance
-        if ($resolved instanceof Term) {
-            // Wrap the lone term so `{{ handle }}` loops match multi-select shape
+        } elseif ($resolved instanceof Term) {
+            // max_items: 1 terms fields augment to one Term via query->first(), not a
+            // builder; wrap the lone term so `{{ handle }}` loops match multi-select shape
             $context[$handle] = collect([$resolved]);
-
-            return;
-        }
-
-        // Check if augmentation is explicitly empty for a single-select field
-        if ($resolved === null) {
-            // Use an empty list so Antlers loops are valid (zero iterations)
+        } elseif ($resolved === null) {
+            // Use an empty list for an empty single-select field so Antlers loops are
+            // valid (zero iterations)
             $context[$handle] = collect();
-
-            return;
-        }
-
-        // Keep augmented Collection instances as loopable context when present
-        if ($resolved instanceof Collection) {
+        } elseif ($resolved instanceof Collection) {
+            // Keep augmented Collection instances as loopable context when present
             $context[$handle] = $resolved;
         }
     }

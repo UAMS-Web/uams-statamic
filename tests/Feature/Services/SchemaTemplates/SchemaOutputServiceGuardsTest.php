@@ -13,6 +13,7 @@ use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
 use App\Services\SchemaTemplates\SchemaTemplateNodeBuildStack;
 use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
 use App\Support\RequestAttributeMemo;
+use Illuminate\Support\Collection;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Contracts\Data\Augmentable;
@@ -733,4 +734,56 @@ it('reads the site root as the root path for an entry with no site', function ()
     $entry->shouldReceive('site')->andReturnNull();
 
     expect(sosGuardCall(sosGuardService(), 'siteRootForEntry', $entry))->toBe('/');
+});
+
+it('keys an entity context on its id, else on its pinned identity', function (mixed $id, bool $byId): void {
+    $entity = Mockery::mock(EntryModel::class);
+    $entity->shouldReceive('id')->andReturn($id);
+
+    $key = sosGuardCall(sosGuardService(), 'antlersEntityContextCacheKey', $entity);
+
+    expect($key)->toBe($byId ? $id : 'o'.spl_object_id($entity));
+})->with([
+    'an id' => ['entry-1', true],
+    'an empty id' => ['', false],
+    'a numeric id' => [5, false],
+]);
+
+it('exposes an entry context entity as the scoped entry alias', function (Closure $make, bool $aliased): void {
+    $entity = $make();
+    $context = mustBeArray(sosGuardCall(sosGuardService(), 'applyScopedEntryAliasToSchemaAntlersContext', ['title' => 'T'], $entity), 'the context');
+
+    expect($context)->toBe($aliased ? ['title' => 'T', 'entry' => $entity] : ['title' => 'T']);
+})->with([
+    'an entry' => [fn (): EntryModel => Mockery::mock(EntryModel::class), true],
+    'a term' => [fn (): Term => Mockery::mock(Term::class), false],
+    'nothing' => [fn (): null => null, false],
+]);
+
+it('flags whether an entry context belongs to a podcast series', function (): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('blueprint')->andReturnNull();
+    $entry->shouldReceive('get')->andReturnNull();
+
+    expect(sosGuardCall(sosGuardService(), 'injectAudioSeriesPodcastSignal', ['title' => 'T'], $entry))->toBe(['title' => 'T', SchemaOutputService::ANTLERS_IS_PODCAST_EPISODE => false])
+        ->and(sosGuardCall(sosGuardService(), 'injectAudioSeriesPodcastSignal', ['title' => 'T'], Mockery::mock(Term::class)))->toBe(['title' => 'T']);
+});
+
+it('materializes no context for an entity with no field accessor', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'materializeAntlersContextFromEntity', new class implements Term {}))->toBe([]);
+});
+
+it('materializes the stored values of an entity that cannot augment', function (): void {
+    $entity = new class implements Term
+    {
+        /**
+         * @return Collection<string, string>
+         */
+        public function values(): Collection
+        {
+            return collect(['name' => 'Stored']);
+        }
+    };
+
+    expect(sosGuardCall(sosGuardService(), 'materializeAntlersContextFromEntity', $entity))->toBe(['name' => 'Stored']);
 });

@@ -717,3 +717,49 @@ it('keeps the grouped terms fields a template names, or all of them when it name
 it('keeps no grouped terms fields when there are none', function (): void {
     expect(sosTermsLikeCall('filterGroupedTermsLikeBlueprintFieldsByAntlersTemplateReferences', [], '{{ tags }}'))->toBe([]);
 });
+
+it('collects the terms fields of an entity blueprint, grouped by handle', function (): void {
+    $tags = new Field('tags', ['type' => 'terms', 'taxonomies' => ['tags']]);
+    /** @var Blueprint&MockInterface $blueprint */
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('fields->all')->andReturn(collect([$tags, new Field('title', ['type' => 'text'])]));
+    /** @var EntryModel&MockInterface $entity */
+    $entity = Mockery::mock(EntryModel::class);
+    $entity->shouldReceive('blueprint')->andReturn($blueprint);
+
+    expect(sosTermsLikeCall('collectTermsLikeBlueprintFieldsGroupedByHandleUncached', $entity))->toBe(['tags' => [$tags]]);
+});
+
+it('replaces a terms field with the loopable terms its augmented value holds', function (Closure $augmented, Closure $expect): void {
+    /** @var LocalizedTerm&MockInterface $entity */
+    $entity = Mockery::mock(LocalizedTerm::class);
+    $entity->shouldReceive('augmentedValue')->with('tags')->andReturn($augmented());
+    $context = ['tags' => 'raw'];
+
+    $method = new ReflectionMethod(SchemaOutputService::class, 'replaceTermsLikeFieldContextWithAugmentedTerms');
+    $method->invokeArgs(sosTermsLikeService(), [$entity, 'tags', &$context]);
+
+    $expect($context['tags']);
+})->with([
+    'a query builder' => [fn (): Value => new Value(sosTermsLikeBuilder(['tag'])), fn (mixed $tags) => expect($tags)->toEqual(collect(['tag']))],
+    'one term' => [fn (): Value => new Value(sosTermsLikeStoredValue('TAXONOMY_TERM')), fn (mixed $tags) => expect(mustBe(Collection::class, $tags, 'the terms')->all())->toHaveCount(1)->each->toBeInstanceOf(TaxonomyTerm::class)],
+    'nothing' => [fn (): Value => new Value(null), fn (mixed $tags) => expect($tags)->toEqual(collect())],
+    'a collection' => [fn (): Value => new Value(collect(['tag'])), fn (mixed $tags) => expect($tags)->toEqual(collect(['tag']))],
+    'another value' => [fn (): Value => new Value('slug'), fn (mixed $tags) => expect($tags)->toBe('raw')],
+    'no Value' => [fn (): string => 'not a Value', fn (mixed $tags) => expect($tags)->toBe('raw')],
+]);
+
+it('scans an empty template when a terms field pair pattern fails', function (): void {
+    // A limit of 100 lets the handle check pass and fails only the replace over the
+    // long body
+    $limit = ini_get('pcre.backtrack_limit');
+    ini_set('pcre.backtrack_limit', '100');
+
+    try {
+        $stripped = sosTermsLikeCall('stripTermsLikeFieldPairBodiesForFillMissingAnalysis', '{{ tags }}'.str_repeat('x', 2000).'{{ /tags }}', ['tags']);
+    } finally {
+        ini_set('pcre.backtrack_limit', $limit === false ? '1000000' : $limit);
+    }
+
+    expect($stripped)->toBe('');
+});
