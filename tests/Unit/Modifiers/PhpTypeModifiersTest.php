@@ -11,6 +11,7 @@ use App\Modifiers\IsObject;
 covers(IsBoolean::class);
 covers(IsFloat::class);
 covers(IsInteger::class);
+covers(IsNull::class);
 covers(IsObject::class);
 
 /**
@@ -20,7 +21,8 @@ covers(IsObject::class);
  *
  * Mutation: 100% for IsInteger/IsFloat/IsObject/IsBoolean (the aliases lists are the
  * only mutable surface, killed by the aliases test); IsNull has no mutable surface
- * (a bare is_null() with no aliases).
+ * (a bare is_null() with no aliases), so its coverage rests on its `covers()` and the
+ * is_null dataset (#826).
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/PhpTypeModifiersTest.php
  */
