@@ -432,3 +432,39 @@ it('reuses the memo row stored for the same input', function (): void {
 
     expect(sosGuardCall(sosGuardService(), 'memoizedHydrateRawTermSlugValueToAugmentedValue', 'alpha'))->toBe('memoized');
 });
+
+/**
+ * The service with each replicator row resolving to its own `out` value.
+ */
+function sosGuardRowsService(): SchemaOutputService&MockInterface
+{
+    $service = sosGuardService();
+    $service->shouldReceive('resolveSingleReplicatorRowToValue')->andReturnUsing(fn (array $row): mixed => $row['out'] ?? null);
+
+    return $service;
+}
+
+it('collects the values of the enabled rows, flattening lists and dropping empty values', function (array $rows, mixed $expected): void {
+    expect(sosGuardResolveProperty(sosGuardRowsService(), $rows))->toBe($expected);
+})->with([
+    'a null row before a value' => [[['out' => null], ['out' => 'A']], 'A'],
+    'an empty row before a value' => [[['out' => ''], ['out' => 'A']], 'A'],
+    'a disabled row before a value' => [[['out' => 'X', 'enabled' => false], ['out' => 'A']], 'A'],
+    'a list with empty items' => [[['out' => ['x', null, '', 'y']]], ['x', 'y']],
+    'two values' => [[['out' => 'A'], ['out' => 'B']], ['A', 'B']],
+    'a keyed value' => [[['out' => ['k' => 'v']]], ['k' => 'v']],
+    'only empty rows' => [[['out' => null], ['out' => '']], null],
+    'no rows' => [[], null],
+]);
+
+it('resolves a property group by its mode', function (array $group, mixed $expected): void {
+    expect(sosGuardResolveProperty(sosGuardRowsService(), $group))->toBe($expected);
+})->with([
+    'custom rows' => [['mode' => 'custom', 'value' => [['out' => 'A']]], 'A'],
+    'custom with no value' => [['mode' => 'custom'], null],
+    'disabled' => [['mode' => 'disable', 'value' => [['out' => 'A']]], null],
+    'inherit_custom with no base and no rows' => [['mode' => 'inherit_custom'], null],
+    'inherit_custom with a base only' => [['mode' => 'inherit_custom', '_inherit_base' => 'Base'], 'Base'],
+    'inherit_custom with rows only' => [['mode' => 'inherit_custom', 'value' => [['out' => 'A']]], 'A'],
+    'inherit_custom with rows that are not a list' => [['mode' => 'inherit_custom', '_inherit_base' => 'Base', 'value' => 'text'], 'Base'],
+]);

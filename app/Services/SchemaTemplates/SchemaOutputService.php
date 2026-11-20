@@ -2881,12 +2881,12 @@ class SchemaOutputService
         // merges resolved parent base with child rows; else resolve inner value.
         // ---
         if ($this->isPropertyGroupValue($value)) {
-            if (($value['mode'] ?? '') === 'disable') {
+            if ($value['mode'] === 'disable') {
                 return null;
             }
 
             // Check if the mode is inherit_custom
-            if (($value['mode'] ?? '') === 'inherit_custom') {
+            if ($value['mode'] === 'inherit_custom') {
                 // Get the base raw value
                 $baseRaw = $value['_inherit_base'] ?? null;
 
@@ -2896,35 +2896,30 @@ class SchemaOutputService
                 // Normalize the rows value to an array
                 $rows = \is_array($rows) ? $rows : [];
 
-                // Resolve the base raw value
-                $baseResolved = $baseRaw !== null && $baseRaw !== ''
-                    ? $this->resolvePropertyValue(
-                        $baseRaw,
-                        $contextEntity,
-                        $graphEntryIds,
-                        $visitedIds,
-                        $emittedEntryIds,
-                        $emittedNodeIds,
-                        $materializedFullNodeAtIds,
-                        $antlersContext,
-                        $templateInstanceWatermarkBag
-                    )
-                    : null;
-
-                // Resolve the rows value
-                $addonResolved = $rows !== []
-                    ? $this->resolvePropertyValue(
-                        $rows,
-                        $contextEntity,
-                        $graphEntryIds,
-                        $visitedIds,
-                        $emittedEntryIds,
-                        $emittedNodeIds,
-                        $materializedFullNodeAtIds,
-                        $antlersContext,
-                        $templateInstanceWatermarkBag
-                    )
-                    : null;
+                // Resolve the base raw value and the rows value. Each resolves to null
+                // when it is null, empty or an empty list.
+                $baseResolved = $this->resolvePropertyValue(
+                    $baseRaw,
+                    $contextEntity,
+                    $graphEntryIds,
+                    $visitedIds,
+                    $emittedEntryIds,
+                    $emittedNodeIds,
+                    $materializedFullNodeAtIds,
+                    $antlersContext,
+                    $templateInstanceWatermarkBag
+                );
+                $addonResolved = $this->resolvePropertyValue(
+                    $rows,
+                    $contextEntity,
+                    $graphEntryIds,
+                    $visitedIds,
+                    $emittedEntryIds,
+                    $emittedNodeIds,
+                    $materializedFullNodeAtIds,
+                    $antlersContext,
+                    $templateInstanceWatermarkBag
+                );
 
                 // Merge the base resolved value and the addon resolved value
                 $merged = $this->mergeAdditiveResolvedPropertyValues(
@@ -2939,10 +2934,7 @@ class SchemaOutputService
         }
 
         if (\is_array($value)) {
-            if ($value === []) {
-                return null;
-            }
-
+            // An empty list collects nothing and resolves to null below
             $collected = [];
             foreach ($value as $row) {
                 /** @var array<string, mixed> $row */
