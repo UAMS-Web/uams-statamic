@@ -13,7 +13,9 @@ uses(TestCase::class);
 /**
  * Unit tests for the `log` Antlers tag.
  *
- * Mutation: 100% on App\Tags\Log (16 mutants, --covered-only).
+ * Mutation: 100% on App\Tags\Log (16 mutants, --covered-only). Without --covered-only (#809),
+ * 24 of 24 killed, run with `--path=app/Tags/Log.php`: `--class` matches by prefix, so a run
+ * scoped to `app/Tags` also mutates LogoRasterFallback.
  *
  * @command  php artisan test --compact tests/Feature/Tags/LogTagTest.php
  */
