@@ -141,7 +141,12 @@ it('finds a type override compatible only through a known type\'s ancestors', fu
     'an unknown override' => [['NotARealSchemaOrgType'], ['Thing'], false],
     'a subtype of the entry type' => [['Person'], ['Thing'], true],
     'an unrelated known type' => [['Person'], ['Place'], false],
+    'an unknown override equal to a later entry type' => [['NotARealSchemaOrgType'], ['Thing', 'NotARealSchemaOrgType'], true],
 ]);
+
+it('unwraps a type override given only as a value', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'normalizeTypeOverrideContextList', [new Value(' Person ')]))->toBe(['Person']);
+});
 
 it('reads no structure parent for an entry whose page is missing', function (): void {
     /** @var EntryModel&MockInterface $entry */

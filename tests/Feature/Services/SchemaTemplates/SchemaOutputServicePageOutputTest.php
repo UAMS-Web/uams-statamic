@@ -303,6 +303,7 @@ it('reduces a resolved Antlers row to the string a merger receives', function (m
     'blank string' => ['   ', null],
     'integer' => [42, '42'],
     'float' => [1.5, '1.5'],
+    'a float JSON would write differently' => [1.0E+25, '1.0E+25'],
     'true' => [true, '1'],
     'false' => [false, ''],
     'array as JSON, slashes and Unicode unescaped' => [['url' => 'https://example.test/a', 'name' => 'Café'], '{"url":"https://example.test/a","name":"Café"}'],

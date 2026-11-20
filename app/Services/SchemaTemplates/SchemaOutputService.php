@@ -812,11 +812,7 @@ class SchemaOutputService
             /** @var array<string, mixed> $value */
             if ($this->isBareJsonLdAtIdReferenceArray($value)) {
                 $atId = $value['@id'];
-                if (
-                    \is_string($atId)
-                    && $atId !== ''
-                    && ! isset($fullIdsPresent[$atId])
-                ) {
+                if (! isset($fullIdsPresent[$atId])) {
                     $parsed = $this->parseSchemaObjectsEntryIdAndTemplateInstanceIndexFromAtId(
                         $atId
                     );
@@ -951,6 +947,8 @@ class SchemaOutputService
      * Whether the map is a bare JSON-LD node reference (`@id` only, no `@type`).
      *
      * @param  array<string, mixed>  $value  Candidate associative array
+     *
+     * @phpstan-assert-if-true array{'@id': string}  $value
      */
     private function isBareJsonLdAtIdReferenceArray(array $value): bool
     {
@@ -958,9 +956,9 @@ class SchemaOutputService
             return false;
         }
 
+        // An empty @id parses to no schema object, so it needs no check here
         return isset($value['@id'])
             && \is_string($value['@id'])
-            && $value['@id'] !== ''
             && ! isset($value['@type']);
     }
 
@@ -1210,29 +1208,26 @@ class SchemaOutputService
         // Normalize effective schema.type to a list of Schema.org type name strings
         $typeNames = $this->normalizeEffectiveSchemaTypeToStringList($effectiveType);
 
-        // Check whether there is no type list so inherited keys cannot be validated
-        if ($typeNames === []) {
-            // Return the inherited map unchanged when the recipient type is missing
-            return $properties;
-        }
-
-        // Initialize the allowlist of property names permitted for those types
-        $allowedKeys = [];
+        // Collect the property names permitted for those types
+        $allowedNames = [];
 
         // Walk each Schema.org type name declared on the recipient
         foreach ($typeNames as $typeName) {
             // Walk each property exposed by the Spatie type class for that name
             foreach (SchemaPropertyValidator::validPropertiesForType($typeName) as $propertyName) {
                 // Record the property as inheritable for this recipient
-                $allowedKeys[$propertyName] = true;
+                $allowedNames[] = $propertyName;
             }
         }
 
-        // Check whether every type was unknown to Spatie so the allowlist is empty
-        if ($allowedKeys === []) {
+        // Check whether the recipient has no type, or only types unknown to Spatie,
+        // so the allowlist is empty
+        if ($allowedNames === []) {
             // Return the inherited map unchanged when no vocabulary was resolved
             return $properties;
         }
+
+        $allowedKeys = array_flip($allowedNames);
 
         // Build the output map with only keys that pass the allowlist
         $filtered = [];
@@ -1249,6 +1244,7 @@ class SchemaOutputService
         // Unset local variables to free up memory
         unset(
             $allowedKeys,
+            $allowedNames,
             $key,
             $propertyName,
             $typeName,
@@ -1373,6 +1369,8 @@ class SchemaOutputService
                     continue;
                 }
 
+                // Type names are never numeric, so a loose match equals a strict one
+                // @pest-mutate-ignore: TrueToFalse
                 if (\in_array($e, SchemaType::ancestorsOf($o), true)) {
                     return true;
                 }
@@ -1502,7 +1500,8 @@ class SchemaOutputService
             $parentPage
         );
 
-        return \is_string($parentId) && $parentId !== '' ? $parentId : null;
+        // The caller treats an empty parent id as none
+        return \is_string($parentId) ? $parentId : null;
     }
 
     /**
