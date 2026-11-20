@@ -478,10 +478,11 @@ jobs:
       # shard and merges it with the reports the others left in attempt 1.
       #
       # Each operating system chooses among its own timings, saved under
-      # pest-shard-timings-<os>- (#516). A Windows runner cannot restore an entry a
-      # Linux runner saved (`enableCrossOsArchive` is off), so while only the Ubuntu
-      # leg saved, every Windows shard fell back to the committed file ("Cache not
-      # found" on #514's run 41440485266).
+      # pest-shard-timings-<os>- (#516). Every leg of `pest-report` saves on Linux
+      # (#1148), so the restore below sets `enableCrossOsArchive`: without it a
+      # Windows runner cannot restore an entry a Linux runner saved, and every
+      # Windows shard fell back to the committed file ("Cache not found" on #514's
+      # run 41440485266).
       #
       # With no entry from before that start (a new repository, or an evicted cache)
       # a committed copy is used instead: .github/pest-shards.<os>.json where one
@@ -510,6 +511,7 @@ jobs:
         with:
           path: tests/.pest/shards.json
           key: ${{ steps.choose-timings.outputs.key }}
+          enableCrossOsArchive: true
 
       # Logs which timings this shard read, and records their source and hash for
       # `pest-report`. Every shard partitions the band from its own copy, so
@@ -1004,7 +1006,14 @@ jobs:
 
   pest-report:
     name: Pest (parallel band report)
-    runs-on: ${{ matrix.os }}
+    # Every leg runs on Linux (#1148). The job only merges XML and runs PHP over it,
+    # so it needs nothing from the shards' platform, and a macOS or Windows runner
+    # here made every merge wait for the scarcest runner after the tests had passed.
+    # `matrix.os` still names the SHARDS' operating system: each leg downloads only
+    # those shards' reports, keeps their SHARD_TOTAL, writes the same per-OS
+    # artifact and cache key, and keeps the check name `... (<os>)` the required
+    # aggregate reads.
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -1026,6 +1035,11 @@ jobs:
     if: vars.RUN_REMOTE_CI != 'false'
     env:
       SHARD_TOTAL: ${{ matrix.os == 'windows-latest' && 6 || 4 }}
+      # The shards' PHP_OS_FAMILY. check-skip-baseline.php picks a platform's own
+      # count by PHP_OS_FAMILY unless told otherwise, and this leg runs on Linux
+      # whatever the shards ran on: the Windows band's 13 skipOnWindows cases would
+      # read against the shared count (#1148).
+      SHARD_PLATFORM: ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'Darwin' || 'Linux') }}
     steps:
       - uses: actions/checkout@v7
 
@@ -1064,7 +1078,7 @@ jobs:
       # only ever runs a branch's own workflow, so no counterpart is needed here.)
       # PARITY: mirrored by scripts/gate-pest.mjs.
       - name: Check skip baseline (parallel band)
-        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel
+        run: php scripts/check-skip-baseline.php --report=junit-parallel.xml --band=parallel --platform="$SHARD_PLATFORM"
 
       # Nothing pinned what the parallel band COSTS, so a change that reclaimed it
       # passed in silence — the gate reports PASS on any duration. It has happened
@@ -1098,12 +1112,16 @@ jobs:
       # .github/pest-shards.windows-latest.json, are refreshed by hand from this
       # artifact when the cache is empty for long enough to matter.
       # REMOTE-ONLY: the local runner does not shard.
+      # Saved on Linux for every leg, so `enableCrossOsArchive` is set here and on
+      # the shards' restore: without it a Windows runner computes a different cache
+      # version and cannot restore an entry a Linux runner saved (#516, #1148).
       - name: Save shard timings for later runs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v6
         with:
           path: tests/.pest/shards.json
           key: pest-shard-timings-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          enableCrossOsArchive: true
 
       - name: Upload the band report and timings
         uses: actions/upload-artifact@v7
@@ -1296,9 +1314,11 @@ jobs:
     # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    # Framework-free: the unit suite (e.g. the coordinate parser) runs on a
-    # standalone vitest.config.js, so it needs Node + `npm ci` but no PHP,
-    # Composer, or content submodule.
+    # The unit suite (e.g. the coordinate parser) runs on a standalone
+    # vitest.config.js and needs no content submodule. It does need Composer's
+    # vendor tree: the public-form engines import `registerAlpineEngine` from
+    # `vendor/uams-web/aether-fieldtypes` (#995), so the job installs the locked
+    # packages without running their scripts.
     steps:
       - uses: actions/checkout@v7
 
@@ -1307,7 +1327,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          # `ext-imagick` is a declared platform requirement in composer.json, so the
+          # `composer install` below platform-checks it (UAMS-Web/uams-statamic-archive#1830).
+          # The list matches the build job's.
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, dom, gd, fileinfo, bcmath, imagick, zip, exif, sockets
           coverage: none
+          tools: composer:v2
 
       - name: Set up Node 22
         uses: actions/setup-node@v7
@@ -1326,6 +1351,25 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+
+      - name: Determine Composer cache directory
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Configure Composer auth for private GitHub packages
+        run: composer config --global --auth github-oauth.github.com "${{ secrets.COMPOSER_AUTH_TOKEN }}"
+
+      # The engines under test import the fieldtype add-on's Alpine helper from vendor/ (#995).
+      - name: Install Composer dependencies
+        run: composer install --no-scripts --no-interaction --no-progress --prefer-dist
 
       # PARITY: mirrored by the js job in local-ci.json
       - name: Run JS unit tests

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Enums\CanadianProvince;
-use App\Enums\Country;
-use App\Enums\State;
 use App\Fieldtypes\Address;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\CanadianProvince;
+use UAMSWeb\Aether\Enums\Country;
+use UAMSWeb\Aether\Enums\State;
 
 uses(TestCase::class);
 

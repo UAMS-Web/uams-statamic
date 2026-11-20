@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Enums\Isco08;
 use App\Fieldtypes\Isco_08;
 use Illuminate\Support\Str;
 use Statamic\Fields\Field;
+use UAMSWeb\Aether\Enums\Isco08;
 
 /**
  * CP-only `__cp_role_title_unstructured_*` replicator payloads for unstructured

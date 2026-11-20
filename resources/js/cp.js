@@ -292,16 +292,6 @@ Statamic.booting(() => {
 });
 
 /**
- * Subsection Fieldtype
- */
-
-import SubsectionFieldtype from './components/fieldtypes/SubsectionFieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('subsection-fieldtype', SubsectionFieldtype);
-});
-
-/**
  * Schema Object Fieldtype
  * (Schema.org type select + dynamic property fields via spatie/schema-org)
  */
@@ -494,7 +484,7 @@ import CustomInput from './components/fieldtypes/partials/CustomInput.vue';
 import CustomInputText from './components/fieldtypes/partials/CustomInputText.vue';
 import PhoneticTextInput from './components/fieldtypes/partials/PhoneticTextInput.vue';
 import TextPhoneticPair from './components/fieldtypes/partials/TextPhoneticPair.vue';
-import GroupFieldtypeShell from './components/fieldtypes/partials/GroupFieldtypeShell.vue';
+import GroupFieldtypeShell from '../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
 import PhoneticTextInstructions from './components/fieldtypes/partials/PhoneticTextInstructions.vue';
 import SchemaOrgDocsAlert from './components/fieldtypes/partials/SchemaOrgDocsAlert.vue';
 import SchemaOrgTypeCombobox from './components/fieldtypes/partials/SchemaOrgTypeCombobox.vue';

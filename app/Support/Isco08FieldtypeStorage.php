@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Enums\Isco08;
+use UAMSWeb\Aether\Enums\Isco08;
 
 /**
  * Normalizes Statamic `isco_08` field payloads to a consistent tier-key shape for

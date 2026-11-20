@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\Isco08;
 use App\Rules\OnetSocOccupationCode;
 use App\Rules\RoleTitlePerConfigurationOptionRule;
 use App\Rules\RoleTitleScopeJoinerRule;
@@ -17,6 +16,7 @@ use App\Support\RoleTitleValue;
 use Illuminate\Validation\Rule;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\Isco08;
 
 /**
  * Statamic `role_title` fieldtype: exposes subfields in the CP, preloads meta

@@ -158,7 +158,7 @@ import {
 	publishContextKey,
 	Combobox,
 } from '@statamic/cms/ui';
-import GroupFieldtypeShell from './partials/GroupFieldtypeShell.vue';
+import GroupFieldtypeShell from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
 
 export default {
 	name: 'PartialDateFieldtype',

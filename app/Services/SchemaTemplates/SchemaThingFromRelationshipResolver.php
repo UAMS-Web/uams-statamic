@@ -103,7 +103,11 @@ class SchemaThingFromRelationshipResolver
         array $context,
         array $params
     ): string {
+        // Only the truthiness of $profileEnabled is ever read, so the cast changes nothing.
+        // @pest-mutate-ignore: RemoveBooleanCast
         $profileEnabled = (bool) config('schema_templates.json_ld_compose_profile.enabled', false);
+        // The 0.0 is never read: a start time is used only when profiling is on.
+        // @pest-mutate-ignore: IncrementFloat, DecrementFloat
         $resolveStart = $profileEnabled ? microtime(true) : 0.0;
 
         // Read the requested traversal mode
@@ -130,6 +134,8 @@ class SchemaThingFromRelationshipResolver
 
         // Read optional shared emit maps from schema property Antlers (by reference)
         $emitContextRaw = $params['emit_context'] ?? null;
+        // A value that is not an emit context is treated as none either way: the check below still reads the stack.
+        // @pest-mutate-ignore: InstanceOfToTrue
         $emitContext = $emitContextRaw instanceof SchemaTemplateEmitContext
             ? $emitContextRaw
             : null;
@@ -138,6 +144,8 @@ class SchemaThingFromRelationshipResolver
         if (! $emitContext instanceof SchemaTemplateEmitContext) {
             $stackEmit = SchemaTemplateEmitContextRuntimeStack::peek();
 
+            // peek() returns an emit context or null, and $emitContext is already null here.
+            // @pest-mutate-ignore: InstanceOfToTrue
             if ($stackEmit instanceof SchemaTemplateEmitContext) {
                 $emitContext = $stackEmit;
             }
@@ -153,7 +161,7 @@ class SchemaThingFromRelationshipResolver
         // Resolve entities from the selected traversal mode
         if ($mode === 'tertiary') {
             // Collect targets via asset (or other secondary) then term hop then field
-            // The 0.0 is read only when profiling is off, and then never used.
+            // The 0.0 is never read: a start time is used only when profiling is on.
             // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForTertiaryMode(
@@ -165,7 +173,7 @@ class SchemaThingFromRelationshipResolver
             }
         } elseif ($mode === 'secondary') {
             // Collect targets via one relationship hop from secondary entities
-            // The 0.0 is read only when profiling is off, and then never used.
+            // The 0.0 is never read: a start time is used only when profiling is on.
             // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForSecondaryMode(
@@ -177,6 +185,8 @@ class SchemaThingFromRelationshipResolver
             }
         } elseif ($mode === 'global') {
             // Collect targets from a global set relationship field
+            // The 0.0 is never read: a start time is used only when profiling is on.
+            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForGlobalMode($params);
             if ($profileEnabled) {
@@ -185,6 +195,8 @@ class SchemaThingFromRelationshipResolver
         } else {
             // Collect targets from the current context field directly
             $contextEntity = $this->resolveContextEntity($context);
+            // The 0.0 is never read: a start time is used only when profiling is on.
+            // @pest-mutate-ignore: IncrementFloat, DecrementFloat
             $collectStart = $profileEnabled ? microtime(true) : 0.0;
             $targets = $this->collectTargetsForDirectMode(
                 $context,
@@ -313,7 +325,11 @@ class SchemaThingFromRelationshipResolver
                 $compactRef = null;
                 if (
                     \is_string($preMergeCanonicalId)
-                    && $preMergeCanonicalId !== ''
+                    && (
+                        // An empty id compacts to nothing, and the built map below never holds an empty id (see the guard where it is filled).
+                        // @pest-mutate-ignore: EmptyStringToNotEmpty
+                        $preMergeCanonicalId !== ''
+                    )
                 ) {
                     // Check the graph pass map for a prior full emission
                     $compactRef = $this->jsonLdAtIdDeduplication
@@ -383,6 +399,8 @@ class SchemaThingFromRelationshipResolver
                         unset($preparedBuildContext);
 
                         // Build the full template node when this @id is not yet emitted
+                        // The 0.0 is never read: a start time is used only when profiling is on.
+                        // @pest-mutate-ignore: IncrementFloat, DecrementFloat
                         $buildStart = $profileEnabled ? microtime(true) : 0.0;
                         $baseNode = $this->schemaOutputService
                             ->buildStandaloneSchemaObjectNodeSharingEmittedNodeIds(
@@ -450,6 +468,8 @@ class SchemaThingFromRelationshipResolver
                     unset($preparedBuildContext);
 
                     // Use isolated emit maps when the tag runs outside graph property templates
+                    // The 0.0 is never read: a start time is used only when profiling is on.
+                    // @pest-mutate-ignore: IncrementFloat, DecrementFloat
                     $buildStart = $profileEnabled ? microtime(true) : 0.0;
                     $baseNode = $this->schemaOutputService->buildStandaloneSchemaObjectNode(
                         $resolvedTemplateId,
@@ -538,12 +558,18 @@ class SchemaThingFromRelationshipResolver
             if (
                 isset($node['@type'])
                 && \is_string($node['@id'] ?? null)
-                && $node['@id'] !== ''
+                && (
+                    // Only non-empty ids are ever looked up in this map (see the pre-merge check), so an empty key is never read.
+                    // @pest-mutate-ignore: EmptyStringToNotEmpty
+                    $node['@id'] !== ''
+                )
             ) {
                 // Track full nodes built in this tag invocation only (shared map
                 // is not updated here so nested fragments do not pre-mark @id as
                 // emitted for unrelated later properties; see
                 // SchemaJsonLdAtIdDeduplication class doc).
+                // The map is read only with isset(), which is true for a stored false too.
+                // @pest-mutate-ignore: TrueToFalse
                 $builtFullCanonicalIds[$node['@id']] = true;
             }
 
@@ -563,6 +589,8 @@ class SchemaThingFromRelationshipResolver
                 $mergeSourceContext
             );
 
+            // Freeing only: both names are bound by reference again before any later use.
+            // @pest-mutate-ignore: IfNegated, InstanceOfToTrue, InstanceOfToFalse
             if ($emitContext instanceof SchemaTemplateEmitContext) {
                 unset(
                     $sharedEmittedNodeIds,
@@ -865,8 +893,12 @@ class SchemaThingFromRelationshipResolver
             // handles.
             // @pest-mutate-ignore: BreakToContinue
             if (
-                \str_starts_with($directHandleCandidate, 'source_entry.')
-                || \str_starts_with($directHandleCandidate, 'replicator_row.')
+                \str_starts_with($directHandleCandidate, 'replicator_row.')
+                || (
+                    // A source_entry. handle read off the context entity finds nothing, and the source-entry fallback below reads the same field.
+                    // @pest-mutate-ignore: StrStartsWithToStrEndsWith
+                    \str_starts_with($directHandleCandidate, 'source_entry.')
+                )
             ) {
                 $directHandlesUseAntlersContextFieldForms = true;
                 break;
@@ -900,7 +932,11 @@ class SchemaThingFromRelationshipResolver
                 'Mockery_'
             )
             && \is_string($contextIdForAuthoritativeEntryRead)
-            && $contextIdForAuthoritativeEntryRead !== ''
+            && (
+                // Statamic gives every entry a non-empty id, so an empty context id never matches one.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $contextIdForAuthoritativeEntryRead !== ''
+            )
         ) {
             $contextAnchorsAuthoritativeStatamicEntryFieldRead = $contextEntity->id() === $contextIdForAuthoritativeEntryRead;
         }
@@ -2993,6 +3029,8 @@ class SchemaThingFromRelationshipResolver
         $type = \is_string($rawType) ? strtolower(trim($rawType)) : null;
 
         // Check if the type is in the allowed list
+        // $type is a string or null and the allowed names are words, so a loose match agrees.
+        // @pest-mutate-ignore: TrueToFalse
         if (\in_array($type, $allowed, true)) {
             // Return the type
             return $type;
@@ -3316,7 +3354,11 @@ class SchemaThingFromRelationshipResolver
         // Check if the canonical id is a string and not empty
         if (
             \is_string($canonicalId)
-            && $canonicalId !== ''
+            && (
+                // resolveCanonicalIdForEntity() returns a non-empty string or null, never an empty string.
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
+                $canonicalId !== ''
+            )
         ) {
             // Override the node @id with the canonical id
             $node['@id'] = $canonicalId;
@@ -4256,8 +4298,8 @@ class SchemaThingFromRelationshipResolver
                     continue;
                 }
 
-                // Recursively resolve using a single taxonomy handle
-                $resolvedPiece = $this->normalizeToTerm(
+                // Resolve using this single taxonomy handle
+                $resolvedPiece = $this->normalizeToTermForTaxonomy(
                     $item,
                     $taxonomyTrimmed
                 );
@@ -4286,6 +4328,27 @@ class SchemaThingFromRelationshipResolver
             return null;
         }
 
+        return $this->normalizeToTermForTaxonomy(
+            $item,
+            $taxonomy
+        );
+    }
+
+    /**
+     * Normalize one relation item to a taxonomy term within one taxonomy scope.
+     *
+     * Holds the single-scope half of {@see self::normalizeToTerm()}, which calls it
+     * once per handle of a pipe-separated scope. It does not call back into
+     * `normalizeToTerm()`, so a scope can never be split again.
+     *
+     * @param  mixed  $item  Raw relation item.
+     * @param  string|null  $taxonomy  One taxonomy handle, or null for any taxonomy.
+     * @return TaxonomyTerm|null Normalized term.
+     */
+    private function normalizeToTermForTaxonomy(
+        mixed $item,
+        ?string $taxonomy
+    ): ?TaxonomyTerm {
         // Check if the item is an instance of Value
         if ($item instanceof Value) {
             // Unwrap the Value instance to the underlying stored value
@@ -4726,6 +4789,8 @@ class SchemaThingFromRelationshipResolver
                 $targets
             );
 
+            // With no targets the loop below adds nothing and the same empty list is encoded.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return '[]';
         }
 
@@ -4770,6 +4835,8 @@ class SchemaThingFromRelationshipResolver
             foreach ($keywords as $keyword) {
                 // Record first-seen keywords only
                 if (! isset($seenKeys[$keyword])) {
+                    // The map is read only with isset(), which is true for a stored false too.
+                    // @pest-mutate-ignore: TrueToFalse
                     $seenKeys[$keyword] = true;
                     $strings[] = $keyword;
                 }

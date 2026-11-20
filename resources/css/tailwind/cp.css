@@ -2,4 +2,5 @@
 
 @source "../../js";
 
-@import "./components/fieldtypes/subsection.css";
+/* The shared fieldtype partials and mixins the site's components import from the fieldtype add-on (#995) */
+@source "../../../vendor/uams-web/aether-fieldtypes/resources/js";

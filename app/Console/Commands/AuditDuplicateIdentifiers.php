@@ -167,14 +167,12 @@ class AuditDuplicateIdentifiers extends Command
             return self::SUCCESS;
         }
 
-        // Report each finding as a row
+        // Report each finding as a row; each finding's keys are already in
+        // column order (kind, group, value, where)
         $this->newLine();
         $this->table(
             ['Kind', 'Group', 'Value', 'Where'],
-            array_map(
-                static fn (array $f): array => [$f['kind'], $f['group'], $f['value'], $f['where']],
-                $findings
-            )
+            $findings
         );
 
         // State the count separately from the table, which can be long
@@ -278,9 +276,13 @@ class AuditDuplicateIdentifiers extends Command
             }
 
             // Record the form so a later row can be seen as a repeat
+            // Only isset() reads the set, and it is true for false as well as true.
+            // @pest-mutate-ignore: TrueToFalse
             $seen[$forms['compare']] = true;
         }
 
+        // The only caller iterates the values and never reads the keys.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values($repeats);
     }
 }

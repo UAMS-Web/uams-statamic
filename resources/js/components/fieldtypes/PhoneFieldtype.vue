@@ -17,7 +17,7 @@
 <script>
 import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 import { FieldtypeMixin as Fieldtype } from '@statamic/cms';
-import CustomTextInputFieldtypeMixin from './mixins/CustomTextInputFieldtypeMixin.js';
+import CustomTextInputFieldtypeMixin from '../../../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/mixins/CustomTextInputFieldtypeMixin.js';
 
 export default {
 	mixins: [Fieldtype, CustomTextInputFieldtypeMixin],
