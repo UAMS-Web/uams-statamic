@@ -4959,6 +4959,10 @@ class SchemaOutputService
                 );
                 $uncachedMs = $this->elapsedMsSince($uncachedStart);
 
+                // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+                $uncachedMs = (microtime(true) - $uncachedStart) * 1000;
+
                 $this->jsonLdCompositionProfiler->recordAugmentUncachedSample(
                     $uncachedMs
                 );
