@@ -147,3 +147,12 @@ it('collects the identifiers a template reads', function (string $template, arra
 it('collects no Antlers keyword as an identifier', function (string $keyword): void {
     expect(sosVarsCall('antlersTemplateReferencedIdentifierSet', '{{ '.$keyword.' }}{{ a }}'))->toBe(['a' => true]);
 })->with(['true', 'false', 'null', 'if', 'elseif', 'else_if', 'else', 'unless', 'endif', 'endunless']);
+
+it('clears only relationship field handles, never another variable the context holds', function (): void {
+    sosVarsFindsEntity('entry-1', sosVarsEntry(null));
+
+    $out = sosVarsFill('{{ title }}{{ schema:relationship current_field="credentials" }}', ['id' => 'entry-1', 'title' => 'Kept', 'credentials' => 'leaked']);
+
+    expect($out['title'])->toBe('Kept')
+        ->and($out['credentials'])->toBeFalse();
+});
