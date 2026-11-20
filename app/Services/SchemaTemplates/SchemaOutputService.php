@@ -4640,10 +4640,6 @@ class SchemaOutputService
         array $context,
         array $groupedTermsLikeBlueprintFieldsByHandle
     ): array {
-        if ($groupedTermsLikeBlueprintFieldsByHandle === []) {
-            return $context;
-        }
-
         foreach ($groupedTermsLikeBlueprintFieldsByHandle as $handle => $candidates) {
             if ($handle === '') {
                 unset($handle);
@@ -5119,13 +5115,10 @@ class SchemaOutputService
             return collect();
         }
 
-        // Keep {@see LocalizedTerm} instances so localized blueprint keys (for example
-        // `schema_object` on taxonomy terms) resolve inside Antlers loops; peeled
-        // {@see TaxonomyTerm} models omit localized-only storage for `Term::get()`.
-        if ($resolvedAugment instanceof LocalizedTerm) {
-            return collect([$resolvedAugment]);
-        }
-
+        // Keep {@see LocalizedTerm} instances, which implement the Term contract, as
+        // they are so localized blueprint keys (for example `schema_object` on
+        // taxonomy terms) resolve inside Antlers loops; peeled {@see TaxonomyTerm}
+        // models omit localized-only storage for `Term::get()`.
         if ($resolvedAugment instanceof Term) {
             return collect([$resolvedAugment]);
         }

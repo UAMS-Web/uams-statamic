@@ -10,9 +10,12 @@ use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
 use App\Services\SchemaTemplates\SchemaJsonLdSchemaObjectEmissionCoordinator;
 use App\Services\SchemaTemplates\SchemaOutputService;
 use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
+use Illuminate\Support\Collection;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
+use Statamic\Contracts\Query\Builder as QueryBuilderContract;
 use Statamic\Contracts\Taxonomies\Term;
+use Statamic\Entries\Entry as EntryModel;
 use Statamic\Fields\Field;
 use Statamic\Fields\Value;
 use Statamic\Fieldtypes\Terms as TermsFieldtype;
@@ -68,6 +71,7 @@ function sosTermsLikeField(string $kind): Field&MockInterface
     $field = Mockery::mock(Field::class);
     $field->shouldReceive('handle')->andReturn('tags');
     $field->shouldReceive('get')->with('max_items')->andReturn($kind === 'single' ? 1 : null);
+    $field->shouldReceive('config')->andReturn(['type' => 'terms', 'max_items' => $kind === 'single' ? 1 : null]);
 
     return $field;
 }
@@ -397,4 +401,96 @@ it('hydrates every overlay key when the template reads the primary related term'
 
 it('returns the merged context unchanged for an empty overlay', function (): void {
     expect(sosTermsLikeHydrateOverlay(['tags' => 'alpha'], [], '{{ tags }}'))->toBe(['tags' => 'alpha']);
+});
+
+/**
+ * A terms augment parent double with a readable id.
+ */
+function sosTermsLikeParent(string $class, string $id): EntryModel|LocalizedTerm
+{
+    /** @var (EntryModel&MockInterface)|(LocalizedTerm&MockInterface) $parent */
+    $parent = Mockery::mock($class);
+    $parent->shouldReceive('id')->andReturn($id);
+
+    return $parent;
+}
+
+/**
+ * Seed the terms augment memo for one parent, field and stored value.
+ */
+function sosTermsLikeSeedAugmentMemo(Field $field, EntryModel|LocalizedTerm $parent, mixed $present, mixed $augmented): void
+{
+    $key = mustBeString(sosTermsLikeCall('termsLikeAugmentMemoItemKey', $field, $parent, $present), 'the augment memo key');
+    $memo = request()->attributes->get('_app_schema_output_terms_like_augment_memo', []);
+    $memo = is_array($memo) ? $memo : [];
+    $memo[$key] = $augmented;
+    request()->attributes->set('_app_schema_output_terms_like_augment_memo', $memo);
+}
+
+it('augments a stored slug through its blueprint field for an entry or localized term', function (string $parentClass): void {
+    $field = sosTermsLikeField('multi');
+    $parent = sosTermsLikeParent($parentClass, 'parent-1');
+    $term = sosTermsLikeStoredValue('TAXONOMY_TERM');
+    sosTermsLikeSeedAugmentMemo($field, $parent, 'alpha', $term);
+    sosTermsLikeSeedSlugMemo('s'.'alpha', ['in' => 'alpha', 'out' => 'HYDRATED']);
+
+    $result = sosTermsLikeCall('hydrateMergedContextTermsLikeFieldHandleValue', $field, $parent, 'alpha');
+
+    expect($result)->toBeInstanceOf(Collection::class);
+    expect(mustBe(Collection::class, $result, 'the augmented terms')->all())->toBe([$term]);
+})->with([
+    'an entry' => [EntryModel::class],
+    'a localized term' => [LocalizedTerm::class],
+]);
+
+it('hydrates a stored value as raw slugs without a blueprint field, an entry or localized term, or a slug', function (bool $withField, ?string $parentClass, mixed $present, mixed $expected): void {
+    $field = $withField ? sosTermsLikeField('multi') : null;
+    $parent = match ($parentClass) {
+        null => null,
+        'TAXONOMY_TERM' => mustBe(TaxonomyTerm::class, sosTermsLikeStoredValue('TAXONOMY_TERM'), 'the parent term'),
+        default => sosTermsLikeParent($parentClass, 'parent-1'),
+    };
+    if ($field instanceof Field && ($parent instanceof EntryModel || $parent instanceof LocalizedTerm)) {
+        sosTermsLikeSeedAugmentMemo($field, $parent, $present, 'AUGMENTED');
+    }
+    sosTermsLikeSeedSlugMemo('s'.'alpha', ['in' => 'alpha', 'out' => 'HYDRATED']);
+
+    expect(sosTermsLikeCall('hydrateMergedContextTermsLikeFieldHandleValue', $field, $parent, $present))->toBe($expected);
+})->with([
+    'no blueprint field' => [false, LocalizedTerm::class, 'alpha', 'HYDRATED'],
+    'no parent' => [true, null, 'alpha', 'HYDRATED'],
+    'a taxonomy term parent' => [true, 'TAXONOMY_TERM', 'alpha', 'HYDRATED'],
+    'a value that needs no augment' => [true, LocalizedTerm::class, 5, 5],
+]);
+
+it('hydrates each grouped terms field present in the merged context', function (): void {
+    $field = sosTermsLikeField('multi');
+    sosTermsLikeSeedSlugMemo('s'.'alpha', ['in' => 'alpha', 'out' => 'HYDRATED']);
+    $grouped = ['' => [$field], 'absent' => [$field], 'tags' => [$field]];
+
+    $result = sosTermsLikeCall('hydrateMergedContextTermsLikeFieldsIfRawSlugs', null, ['' => 'alpha', 'tags' => 'alpha'], $grouped);
+
+    expect($result)->toBe(['' => 'alpha', 'tags' => 'HYDRATED']);
+});
+
+it('returns the merged context unchanged with no grouped terms fields', function (): void {
+    expect(sosTermsLikeCall('hydrateMergedContextTermsLikeFieldsIfRawSlugs', null, ['tags' => 'alpha'], []))->toBe(['tags' => 'alpha']);
+});
+
+it('shapes an augmented terms value as a loopable collection', function (mixed $augmented, Closure $expect): void {
+    $expect(sosTermsLikeCall('normalizeTermsLikeAugmentedResolutionToAntlersLoopableCollection', sosTermsLikeStoredValue($augmented)));
+})->with([
+    'nothing' => [null, fn (mixed $result) => expect($result)->toEqual(collect())],
+    'a taxonomy term' => ['TAXONOMY_TERM', fn (mixed $result) => expect(mustBe(Collection::class, $result, 'the terms')->all())->toHaveCount(1)->each->toBeInstanceOf(TaxonomyTerm::class)],
+    'a localized term' => ['LOCALIZED_TERM', fn (mixed $result) => expect(mustBe(Collection::class, $result, 'the terms')->all())->toHaveCount(1)->each->toBeInstanceOf(LocalizedTerm::class)],
+    'a collection' => [collect(['x']), fn (mixed $result) => expect($result)->toEqual(collect(['x']))],
+    'a slug' => ['alpha', fn (mixed $result) => expect($result)->toBe('alpha')],
+]);
+
+it('reads an augmented query builder into its results', function (): void {
+    /** @var QueryBuilderContract&MockInterface $builder */
+    $builder = Mockery::mock(QueryBuilderContract::class);
+    $builder->shouldReceive('get')->once()->andReturn(collect(['x']));
+
+    expect(sosTermsLikeCall('normalizeTermsLikeAugmentedResolutionToAntlersLoopableCollection', $builder))->toEqual(collect(['x']));
 });
