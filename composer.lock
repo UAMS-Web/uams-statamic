@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a7c3fd9850011f72b9794ac42909a52",
+    "content-hash": "ae5eabcf63f5de340e7c78d75d8a400f",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12598,16 +12598,16 @@
         },
         {
             "name": "uams-web/aether-people",
-            "version": "v0.3.0",
+            "version": "v0.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-people.git",
-                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9"
+                "reference": "52259c4e363b3d8af50ab1073bd4a3f72878a845"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
-                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/52259c4e363b3d8af50ab1073bd4a3f72878a845",
+                "reference": "52259c4e363b3d8af50ab1073bd4a3f72878a845",
                 "shasum": ""
             },
             "require": {
@@ -12670,7 +12670,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-people/issues",
                 "source": "https://github.com/UAMS-Web/aether-people"
             },
-            "time": "2026-11-17T12:55:41+00:00"
+            "time": "2026-11-18T12:28:41+00:00",
+            "published-time": "2026-11-18T13:49:48+00:00"
         },
         {
             "name": "uams-web/aether-redirects",

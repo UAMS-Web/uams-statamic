@@ -105,16 +105,6 @@ Statamic.booting(() => {
 });
 
 /**
- * Text + Phonetic Pair Fieldtype (shared TextPhoneticPair control + group shell)
- */
-
-import TextPhoneticPairFieldtype from './components/fieldtypes/TextPhoneticPairFieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('text_phonetic_pair-fieldtype', TextPhoneticPairFieldtype);
-});
-
-/**
  * Role Title fieldtype (faculty / administrative configurations + composed value)
  */
 
@@ -482,20 +472,14 @@ Statamic.booting(() => {
 
 import CustomInput from './components/fieldtypes/partials/CustomInput.vue';
 import CustomInputText from './components/fieldtypes/partials/CustomInputText.vue';
-import PhoneticTextInput from './components/fieldtypes/partials/PhoneticTextInput.vue';
-import TextPhoneticPair from './components/fieldtypes/partials/TextPhoneticPair.vue';
 import GroupFieldtypeShell from '../../vendor/uams-web/aether-fieldtypes/resources/js/components/fieldtypes/partials/GroupFieldtypeShell.vue';
-import PhoneticTextInstructions from './components/fieldtypes/partials/PhoneticTextInstructions.vue';
 import SchemaOrgDocsAlert from './components/fieldtypes/partials/SchemaOrgDocsAlert.vue';
 import SchemaOrgTypeCombobox from './components/fieldtypes/partials/SchemaOrgTypeCombobox.vue';
 
 Statamic.booting(() => {
     Statamic.$components.register('custom-input', CustomInput);
     Statamic.$components.register('custom-text-input', CustomInputText);
-    Statamic.$components.register('phonetic-text-input', PhoneticTextInput);
-    Statamic.$components.register('text-phonetic-pair', TextPhoneticPair);
     Statamic.$components.register('group-fieldtype-shell', GroupFieldtypeShell);
-    Statamic.$components.register('phonetic-text-instructions-alert', PhoneticTextInstructions);
     Statamic.$components.register('schema-org-docs-alert', SchemaOrgDocsAlert);
     Statamic.$components.register('schema-org-type-combobox', SchemaOrgTypeCombobox);
 });
