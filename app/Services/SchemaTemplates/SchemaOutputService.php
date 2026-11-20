@@ -343,10 +343,10 @@ class SchemaOutputService
 
         // Read the cache enabled configuration: the master switch and the
         // output-cache switch split from it in UAMS-Web/uams-statamic-archive#1842 must both be on.
-        $cacheEnabled = (bool) config(
+        $cacheEnabled = config(
             'schema_templates.json_ld_cache.enabled',
             true
-        ) && (bool) config(
+        ) && config(
             'schema_templates.json_ld_cache.output_enabled',
             true
         );
@@ -356,12 +356,15 @@ class SchemaOutputService
             'schema_templates.json_ld_cache.ttl_seconds',
             3600
         );
-        $cacheTtlSeconds = max(
-            0,
-            is_numeric($cacheTtlSecondsConfig) ? (int) $cacheTtlSecondsConfig : 0
-        );
+        // A TTL of -1 is refused below like 0. The cache casts a TTL to int itself
+        // and stores nothing for one under a second, so the cast changes nothing.
+        // @pest-mutate-ignore: DecrementInteger, RemoveIntegerCast
+        $cacheTtlSeconds = is_numeric($cacheTtlSecondsConfig) ? (int) $cacheTtlSecondsConfig : 0;
 
-        // Check if the cache is enabled and the TTL is greater than 0
+        // Check if the cache is enabled and the TTL is greater than 0. A TTL of 0
+        // that reached the cache would store nothing, so each call would compose
+        // either way.
+        // @pest-mutate-ignore: SmallerOrEqualToSmaller, DecrementInteger
         if (
             ! $cacheEnabled
             || $cacheTtlSeconds <= 0
@@ -484,6 +487,16 @@ class SchemaOutputService
     }
 
     /**
+     * Milliseconds elapsed since a `microtime(true)` start, for profiler samples.
+     */
+    private function elapsedMsSince(float $start): float
+    {
+        // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+        // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+        return (microtime(true) - $start) * 1000;
+    }
+
+    /**
      * Build the JSON-LD script tag for resolved graph slot entry ids (uncached body).
      *
      * @param  string|null  $subjectEntryId  Normalized subject schema_objects id
@@ -566,7 +579,7 @@ class SchemaOutputService
                     $this->jsonLdCompositionProfiler->recordBucketSample(
                         'schema_object_node_build_calls',
                         'schema_object_node_build_ms',
-                        (microtime(true) - $nodeBuildStart) * 1000
+                        $this->elapsedMsSince($nodeBuildStart)
                     );
 
                     unset($nodeBuildStart);
@@ -624,7 +637,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'dedupe_calls',
                     'dedupe_ms',
-                    (microtime(true) - $dedupeStart) * 1000
+                    $this->elapsedMsSince($dedupeStart)
                 );
 
                 unset($dedupeStart);
@@ -655,7 +668,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'inflate_calls',
                     'inflate_ms',
-                    (microtime(true) - $inflateStart) * 1000
+                    $this->elapsedMsSince($inflateStart)
                 );
 
                 unset($inflateStart);
@@ -674,16 +687,11 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'dedupe_calls',
                     'dedupe_ms',
-                    (microtime(true) - $dedupeStart) * 1000
+                    $this->elapsedMsSince($dedupeStart)
                 );
 
                 unset($dedupeStart);
             }
-
-            $this->jsonLdAtIdDeduplication->syncMaterializedFullNodeAtIdsToUnionOfTreeRoots(
-                $graph,
-                $materializedFullNodeAtIds
-            );
 
             $output = [
                 '@context' => 'https://schema.org',
@@ -701,7 +709,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'json_encode_calls',
                     'json_encode_ms',
-                    (microtime(true) - $jsonEncodeStart) * 1000
+                    $this->elapsedMsSince($jsonEncodeStart)
                 );
 
                 unset($jsonEncodeStart);
@@ -726,7 +734,7 @@ class SchemaOutputService
             return $script;
         } finally {
             $this->jsonLdCompositionProfiler->finalize(
-                (microtime(true) - $composeWallStart) * 1000
+                $this->elapsedMsSince($composeWallStart)
             );
         }
     }
@@ -974,7 +982,8 @@ class SchemaOutputService
         if (\is_array($value)) {
             $first = reset($value);
 
-            return ! in_array($first, [false, null, ''], true) && (\is_scalar($first) || $first instanceof \Stringable) ? (string) $first : null;
+            // A null first item is neither scalar nor Stringable
+            return ! in_array($first, [false, ''], true) && (\is_scalar($first) || $first instanceof \Stringable) ? (string) $first : null;
         }
 
         return \is_scalar($value) || $value instanceof \Stringable ? (string) $value : null;
@@ -1051,9 +1060,8 @@ class SchemaOutputService
                     // inherit_custom
                     // ---
                     if (
-                        \is_array($value)
-                        && $this->isPropertyGroupValue($value)
-                        && (($value['mode'] ?? '') === 'inherit_custom')
+                        $this->isPropertyGroupValue($value)
+                        && $value['mode'] === 'inherit_custom'
                     ) {
                         // Set the value to the effective properties array
                         $effectiveProperties[$key] = [
@@ -1634,7 +1642,9 @@ class SchemaOutputService
                 $fragment['@id']
             );
 
-            // Append the uuid to the emitted entry list when newly seen
+            // Append the uuid to the emitted entry list when newly seen. A uuid is
+            // never numeric, so a loose match with the list equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (
                 $parsed !== null
                 && ! \in_array($parsed['entry_id'], $emittedEntryIds, true)
@@ -1645,16 +1655,15 @@ class SchemaOutputService
             unset($parsed);
         }
 
-        // Recurse into children to record nested full nodes
+        // Recurse into children to record nested full nodes; a scalar child returns
+        // at once
         foreach ($fragment as $child) {
-            if (\is_array($child)) {
-                $this->replayEmitSideEffectsFromCachedNodeFragment(
-                    $child,
-                    $emittedEntryIds,
-                    $emittedNodeIds,
-                    $materializedFullNodeAtIds
-                );
-            }
+            $this->replayEmitSideEffectsFromCachedNodeFragment(
+                $child,
+                $emittedEntryIds,
+                $emittedNodeIds,
+                $materializedFullNodeAtIds
+            );
 
             unset($child);
         }
@@ -1728,11 +1737,8 @@ class SchemaOutputService
         $typeForAtType = $typeArray;
         $subtypeAtType = null;
         $podcastAtType = null;
-        if (
-            $typeOverrideList !== []
-            && $entryTypeNames !== []
-            && $this->typeOverrideListIsCompatibleWithEntryTypes($typeOverrideList, $entryTypeNames)
-        ) {
+        // The compatibility check is false when either list is empty
+        if ($this->typeOverrideListIsCompatibleWithEntryTypes($typeOverrideList, $entryTypeNames)) {
             $typeForAtType = $typeOverrideList;
         } elseif (
             $contextOwnBusinessNodeEntryId !== null
@@ -2083,13 +2089,12 @@ class SchemaOutputService
         ?SchemaTemplateEmitContext $emitContext,
         array $antlersContext = []
     ): string {
-        // Normalize template ids to unique non-empty strings
-        $templateEntryIds = array_values(
-            array_unique(
-                array_filter(
-                    $templateEntryIds,
-                    static fn (string $id): bool => $id !== ''
-                )
+        // Normalize template ids to unique non-empty strings; they are only walked,
+        // so the keys need no reindex
+        $templateEntryIds = array_unique(
+            array_filter(
+                $templateEntryIds,
+                static fn (string $id): bool => $id !== ''
             )
         );
 
@@ -2104,7 +2109,8 @@ class SchemaOutputService
         }
 
         // Use shared emit maps when the tag runs inside schema property Antlers
-        if ($emitContext instanceof SchemaTemplateEmitContext) {
+        $isNested = $emitContext instanceof SchemaTemplateEmitContext;
+        if ($isNested) {
             $contextEntity = $emitContext->contextEntity;
             $graphEntryIds = $emitContext->graphEntryIds;
             $emittedEntryIds = &$emitContext->emittedEntryIds;
@@ -2145,7 +2151,7 @@ class SchemaOutputService
 
             try {
                 // Skip full template expansion when this @id was already emitted in the graph
-                if ($emitContext instanceof SchemaTemplateEmitContext) {
+                if ($isNested) {
                     // A validated type_override changes only the node @type, never its @id.
                     // The coordinator compacts only when a full body for the @id is already
                     // materialized in merged output, and final dedupe collapses any later
@@ -2326,27 +2332,14 @@ class SchemaOutputService
         $effectiveSchema = $this->getEffectiveSchema($entry, []);
         $rawEntryId = $entry->id();
         $entryId = \is_scalar($rawEntryId) ? (string) $rawEntryId : '';
-
-        if ($effectiveSchema === null) {
-            $baseUrl = $this->siteRootForEntry($entry);
-
-            // Unset local variables to free up memory
-            unset(
-                $effectiveSchema
-            );
-
-            return $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
-        }
-
-        $properties = $effectiveSchema['properties'];
         $baseUrl = null;
 
-        if (isset($properties['url'])) {
+        if ($effectiveSchema !== null && isset($effectiveSchema['properties']['url'])) {
             $emittedEntryIdsForUrl = [];
             $emittedNodeIdsForUrl = [];
             $materializedForUrl = [];
             $resolvedUrl = $this->resolvePropertyValue(
-                $properties['url'],
+                $effectiveSchema['properties']['url'],
                 $entry,
                 [],
                 [$entryId],
@@ -2355,28 +2348,25 @@ class SchemaOutputService
                 $materializedForUrl,
                 []
             );
-            if (\is_string($resolvedUrl) && $resolvedUrl !== '') {
-                $baseUrl = $resolvedUrl;
-            }
-        }
 
-        if ($baseUrl !== null) {
-            $baseUrl = str_contains($baseUrl, '#')
-                ? substr($baseUrl, 0, (int) strpos($baseUrl, '#'))
-                : $baseUrl;
+            // An empty url falls back to the site root below like no url
+            if (\is_string($resolvedUrl)) {
+                $hashAt = strpos($resolvedUrl, '#');
+                $baseUrl = $hashAt === false ? $resolvedUrl : substr($resolvedUrl, 0, $hashAt);
+            }
         }
 
         if ($baseUrl === null || $baseUrl === '') {
             $baseUrl = $this->siteRootForEntry($entry);
         }
 
-        $nodeId = $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
+        // An empty base leaves the fragment-only `#id`
+        $nodeId = $baseUrl.'#'.$entryId;
 
         // Unset local variables to free up memory
         unset(
             $baseUrl,
-            $effectiveSchema,
-            $properties
+            $effectiveSchema
         );
 
         return $nodeId;
@@ -2768,13 +2758,7 @@ class SchemaOutputService
         ?SchemaTemplateInstanceWatermarkBag $watermarkBag,
         bool $commit
     ): ?int {
-        if (! \array_key_exists(
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX,
-            $antlersContext
-        )) {
-            return null;
-        }
-
+        // Null when the context sets no usable index, including no index at all
         $requested = $this->parseTemplateInstanceIndexFromAntlersContext(
             $antlersContext
         );
@@ -2808,8 +2792,9 @@ class SchemaOutputService
         }
 
         // Bump past every index already issued under this allocation key
-        $lastCommitted = $watermarkBag->lastIssuedByKey[$key] ?? -1;
-        $effective = max($requested, $lastCommitted + 1);
+        $effective = isset($watermarkBag->lastIssuedByKey[$key])
+            ? max($requested, $watermarkBag->lastIssuedByKey[$key] + 1)
+            : $requested;
 
         // Commit the watermark, and remember the index for this row
         if ($commit) {
@@ -2893,12 +2878,12 @@ class SchemaOutputService
         // merges resolved parent base with child rows; else resolve inner value.
         // ---
         if ($this->isPropertyGroupValue($value)) {
-            if (($value['mode'] ?? '') === 'disable') {
+            if ($value['mode'] === 'disable') {
                 return null;
             }
 
             // Check if the mode is inherit_custom
-            if (($value['mode'] ?? '') === 'inherit_custom') {
+            if ($value['mode'] === 'inherit_custom') {
                 // Get the base raw value
                 $baseRaw = $value['_inherit_base'] ?? null;
 
@@ -2908,35 +2893,30 @@ class SchemaOutputService
                 // Normalize the rows value to an array
                 $rows = \is_array($rows) ? $rows : [];
 
-                // Resolve the base raw value
-                $baseResolved = $baseRaw !== null && $baseRaw !== ''
-                    ? $this->resolvePropertyValue(
-                        $baseRaw,
-                        $contextEntity,
-                        $graphEntryIds,
-                        $visitedIds,
-                        $emittedEntryIds,
-                        $emittedNodeIds,
-                        $materializedFullNodeAtIds,
-                        $antlersContext,
-                        $templateInstanceWatermarkBag
-                    )
-                    : null;
-
-                // Resolve the rows value
-                $addonResolved = $rows !== []
-                    ? $this->resolvePropertyValue(
-                        $rows,
-                        $contextEntity,
-                        $graphEntryIds,
-                        $visitedIds,
-                        $emittedEntryIds,
-                        $emittedNodeIds,
-                        $materializedFullNodeAtIds,
-                        $antlersContext,
-                        $templateInstanceWatermarkBag
-                    )
-                    : null;
+                // Resolve the base raw value and the rows value. Each resolves to null
+                // when it is null, empty or an empty list.
+                $baseResolved = $this->resolvePropertyValue(
+                    $baseRaw,
+                    $contextEntity,
+                    $graphEntryIds,
+                    $visitedIds,
+                    $emittedEntryIds,
+                    $emittedNodeIds,
+                    $materializedFullNodeAtIds,
+                    $antlersContext,
+                    $templateInstanceWatermarkBag
+                );
+                $addonResolved = $this->resolvePropertyValue(
+                    $rows,
+                    $contextEntity,
+                    $graphEntryIds,
+                    $visitedIds,
+                    $emittedEntryIds,
+                    $emittedNodeIds,
+                    $materializedFullNodeAtIds,
+                    $antlersContext,
+                    $templateInstanceWatermarkBag
+                );
 
                 // Merge the base resolved value and the addon resolved value
                 $merged = $this->mergeAdditiveResolvedPropertyValues(
@@ -2951,10 +2931,7 @@ class SchemaOutputService
         }
 
         if (\is_array($value)) {
-            if ($value === []) {
-                return null;
-            }
-
+            // An empty list collects nothing and resolves to null below
             $collected = [];
             foreach ($value as $row) {
                 /** @var array<string, mixed> $row */
@@ -3302,9 +3279,7 @@ class SchemaOutputService
                 );
 
                 if (\is_float($parseStart)) {
-                    // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
-                    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
-                    $parseMs = (microtime(true) - $parseStart) * 1000;
+                    $parseMs = $this->elapsedMsSince($parseStart);
 
                     $this->jsonLdCompositionProfiler->recordBucketSample(
                         'antlers_parse_calls',
@@ -3719,11 +3694,8 @@ class SchemaOutputService
         );
 
         // Track dot-path root variables so we can block nested fallback explicitly.
-        $dotPathRoots = array_values(
-            array_unique(
-                $dotPathMatches[1]
-            )
-        );
+        // They are only searched, so repeats and gaps in the keys do not matter.
+        $dotPathRoots = $dotPathMatches[1];
 
         // Expand pipe-delimited field-handle params into explicit placeholder keys.
         $fieldHandleParamVariables = [];
@@ -3771,17 +3743,14 @@ class SchemaOutputService
             'not',
         ];
 
-        // Normalize matched variable names to a unique list.
-        $variableNames = array_values(
-            array_unique(
-                array_merge(
-                    $pipeMatches[1],
-                    $directMatches[1],
-                    $dotPathRoots,
-                    $conditionalMatches[1],
-                    $fieldHandleParamVariables
-                )
-            )
+        // Collect the matched variable names. A repeated name is handled the same way
+        // each time, and the second pass finds the first pass's placeholder in place.
+        $variableNames = array_merge(
+            $pipeMatches[1],
+            $directMatches[1],
+            $dotPathRoots,
+            $conditionalMatches[1],
+            $fieldHandleParamVariables
         );
 
         // Resolve the current context entity once for field-handle safety checks.
@@ -3793,11 +3762,18 @@ class SchemaOutputService
 
         // Add placeholders only for variables missing from explicit context.
         foreach ($variableNames as $variableName) {
-            // Check whether the matched token is a reserved keyword.
+            // Check whether the matched token is a reserved keyword. The keywords are
+            // not numeric, so a loose match with them equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($variableName, $reservedKeywords, true)) {
                 // Skip reserved tokens.
                 continue;
             }
+
+            // Only names from the field-handle params can be numeric strings, so a loose
+            // match with that list equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
+            $isFieldHandleParam = \in_array($variableName, $fieldHandleParamVariables, true);
 
             // Prevent leaked relationship-field values from surviving into tag evaluation.
             // Terms-like blueprint handles (`organization`, `specialty`, etc.) frequently
@@ -3805,7 +3781,7 @@ class SchemaOutputService
             // fields—so do not coerce them to false when schema relationship param scans
             // mention the same handle name.
             if (
-                \in_array($variableName, $fieldHandleParamVariables, true)
+                $isFieldHandleParam
                 && \array_key_exists($variableName, $context)
                 && $contextEntity instanceof EntryModel
                 && ! \in_array($variableName, $termsLikePairStripHandles, true)
@@ -3830,9 +3806,14 @@ class SchemaOutputService
             if (! \array_key_exists($variableName, $context)) {
                 // Set missing dot-path roots to an empty string to block nested fallback
                 // while staying safe for string modifiers like strip_tags.
-                if (\in_array($variableName, $dotPathRoots, true)) {
+                // Dot-path roots are identifiers, never numeric, so a loose match with
+                // them equals a strict one.
+                // @pest-mutate-ignore: TrueToFalse
+                $isDotPathRoot = \in_array($variableName, $dotPathRoots, true);
+
+                if ($isDotPathRoot) {
                     $context[$variableName] = '';
-                } elseif (\in_array($variableName, $fieldHandleParamVariables, true)) {
+                } elseif ($isFieldHandleParam) {
                     // Set missing relationship-field handles to an empty list to block
                     // ambient fallback while remaining "no targets" for relationship tags.
                     $context[$variableName] = false;
@@ -3853,6 +3834,8 @@ class SchemaOutputService
             $fieldHandleParamVariables,
             $dotPathMatches,
             $dotPathRoots,
+            $isDotPathRoot,
+            $isFieldHandleParam,
             $pipeMatches,
             $reservedKeywords,
             $variableName,
@@ -4581,10 +4564,9 @@ class SchemaOutputService
                     $matches
                 )
             ) {
+                // Every pattern captures at least one character
                 foreach ($matches[1] as $identifier) {
-                    if ($identifier !== '') {
-                        $identifiers[$identifier] = true;
-                    }
+                    $identifiers[$identifier] = true;
 
                     unset($identifier);
                 }
@@ -4596,29 +4578,22 @@ class SchemaOutputService
             );
         }
 
-        /** @var array<string, true> $reserved */
-        $reserved = [
-            'true' => true,
-            'false' => true,
-            'null' => true,
-            'if' => true,
-            'elseif' => true,
-            'else_if' => true,
-            'else' => true,
-            'unless' => true,
-            'endif' => true,
-            'endunless' => true,
-        ];
-
-        foreach (array_keys($identifiers) as $identifier) {
-            if (isset($reserved[$identifier])) {
-                unset($identifiers[$identifier]);
-            }
-
-            unset($identifier);
-        }
-
-        return $identifiers;
+        // Drop the Antlers keywords the patterns also match
+        return array_diff_key(
+            $identifiers,
+            array_flip([
+                'true',
+                'false',
+                'null',
+                'if',
+                'elseif',
+                'else_if',
+                'else',
+                'unless',
+                'endif',
+                'endunless',
+            ])
+        );
     }
 
     /**
@@ -4982,10 +4957,7 @@ class SchemaOutputService
                     $parentAugmentable,
                     $present
                 );
-
-                // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
-                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
-                $uncachedMs = (microtime(true) - $uncachedStart) * 1000;
+                $uncachedMs = $this->elapsedMsSince($uncachedStart);
 
                 $this->jsonLdCompositionProfiler->recordAugmentUncachedSample(
                     $uncachedMs
@@ -6074,9 +6046,8 @@ class SchemaOutputService
             return null;
         }
 
-        $entry = EntryFacade::find($entryId);
-
-        return $entry instanceof EntryModel ? $entry : null;
+        // The entry repository returns an entry or null
+        return EntryFacade::find($entryId);
     }
 
     /**

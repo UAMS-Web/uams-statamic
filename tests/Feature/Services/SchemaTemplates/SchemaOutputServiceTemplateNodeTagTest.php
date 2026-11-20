@@ -9,7 +9,9 @@ use App\Services\SchemaTemplates\SchemaClassificationsIdentifiersMerger;
 use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
 use App\Services\SchemaTemplates\SchemaJsonLdSchemaObjectEmissionCoordinator;
 use App\Services\SchemaTemplates\SchemaOutputService;
+use App\Services\SchemaTemplates\SchemaTemplateEmitContext;
 use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
+use App\Services\SchemaTemplates\SchemaTemplateNodeBuildStack;
 use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
@@ -56,7 +58,7 @@ function sosTagService(): SchemaOutputService&MockInterface
 /**
  * Stub the node builder to answer from a map, recording what each call received.
  *
- * @param  array<string, array<string, mixed>|null>  $nodes  Node by template entry id.
+ * @param  array<array-key, array<string, mixed>|null>  $nodes  Node by template entry id.
  * @param  list<array<string, mixed>>  $calls  Each call's arguments, by reference.
  */
 function sosTagNodes(SchemaOutputService&MockInterface $service, array $nodes, array &$calls): void
@@ -170,4 +172,91 @@ it('reads graph ids for an entity from its resolved cascade', function (): void 
     ])->makePartial();
 
     expect((new ReflectionMethod(SchemaOutputService::class, 'resolveGraphEntryIdsForEntity'))->invoke($service, $entity))->toBe([]);
+});
+
+/**
+ * An emit context over the given emitted node ids and materialized full-node ids.
+ *
+ * @param  array<int, string>  $emittedEntryIds
+ * @param  array<string, bool>  $emittedNodeIds
+ * @param  array<string, bool>  $materialized
+ */
+function sosTagContext(array $emittedEntryIds = [], array $emittedNodeIds = [], array $materialized = []): SchemaTemplateEmitContext
+{
+    return new SchemaTemplateEmitContext($emittedEntryIds, $emittedNodeIds, $materialized, ['slot-1'], null, new SchemaTemplateInstanceWatermarkBag);
+}
+
+it('emits a reference for an id that is still building, and builds the next id', function (): void {
+    $service = sosTagService();
+    $service->shouldReceive('resolveEntity')->andReturn(null);
+    $service->shouldReceive('resolveGraphEntryIdsForEntity')->andReturn([]);
+    $service->shouldReceive('canonicalAtIdForReentrantSchemaTemplateNode')->with('tpl-1')->andReturn('https://example.test/#tpl-1');
+    $calls = [];
+    sosTagNodes($service, ['tpl-2' => ['@type' => 'Person', '@id' => 'https://example.test/#tpl-2']], $calls);
+
+    SchemaTemplateNodeBuildStack::push('tpl-1');
+    try {
+        $json = $service->buildSchemaTemplateNodeJsonForTag(['tpl-1', 'tpl-2'], null);
+    } finally {
+        SchemaTemplateNodeBuildStack::pop();
+    }
+
+    expect(json_decode($json, true))->toBe([['@id' => 'https://example.test/#tpl-1'], ['@type' => 'Person', '@id' => 'https://example.test/#tpl-2']])
+        ->and(array_column($calls, 'id'))->toBe(['tpl-2']);
+});
+
+it('marks each id as building while its node is built', function (): void {
+    $service = sosTagService();
+    $service->shouldReceive('resolveEntity')->andReturn(null);
+    $service->shouldReceive('resolveGraphEntryIdsForEntity')->andReturn([]);
+    $building = [];
+    $service->shouldReceive('schemaObjectEntryToNode')->andReturnUsing(function (string $id) use (&$building): ?array {
+        $building[] = SchemaTemplateNodeBuildStack::contains($id);
+
+        return null;
+    });
+
+    $service->buildSchemaTemplateNodeJsonForTag(['tpl-1'], null);
+
+    expect($building)->toBe([true])
+        ->and(SchemaTemplateNodeBuildStack::contains('tpl-1'))->toBeFalse();
+});
+
+it('compacts an id already fully emitted in the nested graph, and builds the next id', function (): void {
+    $service = sosTagService();
+    $service->shouldReceive('previewCanonicalAtIdForSchemaObjectTemplate')->andReturnUsing(fn (string $id): string => 'https://example.test/#'.$id);
+    $calls = [];
+    sosTagNodes($service, ['tpl-2' => ['@type' => 'Person', '@id' => 'https://example.test/#tpl-2']], $calls);
+    $context = sosTagContext([], ['https://example.test/#tpl-1' => true], ['https://example.test/#tpl-1' => true]);
+
+    $json = $service->buildSchemaTemplateNodeJsonForTag(['tpl-1', 'tpl-2'], $context);
+
+    expect(json_decode($json, true))->toBe([['@id' => 'https://example.test/#tpl-1'], ['@type' => 'Person', '@id' => 'https://example.test/#tpl-2']])
+        ->and(array_column($calls, 'id'))->toBe(['tpl-2']);
+});
+
+it('tracks a nested full node once among the emitted entry ids, matched strictly', function (): void {
+    $service = sosTagService();
+    $service->shouldReceive('previewCanonicalAtIdForSchemaObjectTemplate')->andReturn(null);
+    $calls = [];
+    sosTagNodes($service, [
+        '10' => ['@type' => 'Person', '@id' => 'https://example.test/#10'],
+        'tpl-2' => ['@type' => 'Person', '@id' => 'https://example.test/#tpl-2'],
+        'tpl-3' => ['@id' => 'https://example.test/#tpl-3'],
+    ], $calls);
+    $context = sosTagContext(['1e1', 'tpl-2']);
+
+    $service->buildSchemaTemplateNodeJsonForTag(['10', 'tpl-2', 'tpl-3'], $context);
+
+    expect($context->emittedEntryIds)->toBe(['1e1', 'tpl-2', '10']);
+});
+
+it('returns an empty string when the built node cannot be encoded', function (): void {
+    $service = sosTagService();
+    $service->shouldReceive('resolveEntity')->andReturn(null);
+    $service->shouldReceive('resolveGraphEntryIdsForEntity')->andReturn([]);
+    $calls = [];
+    sosTagNodes($service, ['tpl-1' => ['@type' => 'Thing', '@id' => 'https://example.test/#tpl-1', 'name' => "\xB1\x31"]], $calls);
+
+    expect($service->buildSchemaTemplateNodeJsonForTag(['tpl-1'], null))->toBe('');
 });

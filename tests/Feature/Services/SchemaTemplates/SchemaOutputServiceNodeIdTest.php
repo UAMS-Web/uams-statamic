@@ -72,7 +72,7 @@ function sosNodeIdCall(SchemaOutputService $service, string $method, mixed ...$a
 /**
  * A mocked entry in a collection, with a stored `schema` value and a site.
  */
-function sosNodeIdEntry(string $id, string $collection, mixed $schema = null, ?object $site = null): EntryModel&MockInterface
+function sosNodeIdEntry(mixed $id, string $collection, mixed $schema = null, ?object $site = null): EntryModel&MockInterface
 {
     /** @var EntryModel&MockInterface $entry */
     $entry = Mockery::mock(EntryModel::class);
@@ -219,6 +219,37 @@ it('bases a schema entry @id on its resolved url property, without its fragment,
     'url that is only a fragment' => ['#x', 'https://root.test/#e1'],
     'empty url' => ['', 'https://root.test/#e1'],
     'non-string url' => [5, 'https://root.test/#e1'],
+]);
+
+it('leaves a fragment-only schema entry @id when the site root is empty', function (?array $schema): void {
+    $service = sosNodeIdService([
+        'getEffectiveSchema' => fn (): ?array => $schema,
+        'resolvePropertyValue' => fn (): string => '',
+        'siteRootForEntry' => fn (): string => '',
+    ]);
+
+    expect($service->getCanonicalAtIdForSchemaEntry(sosNodeIdEntry('e1', 'schema_objects')))->toBe('#e1');
+})->with([
+    'no effective schema' => [null],
+    'an empty url' => [['properties' => ['url' => 'URL-ROWS']]],
+]);
+
+it('keys a schema entry @id and its url resolution on the id as a string', function (mixed $id, string $expected, string $visited): void {
+    $calls = [];
+    $service = sosNodeIdService([
+        'getEffectiveSchema' => fn (): array => ['properties' => ['url' => 'URL-ROWS']],
+        'resolvePropertyValue' => function (mixed $value, mixed $context, array $graph, array $visitedIds) use (&$calls): string {
+            $calls[] = $visitedIds;
+
+            return 'https://example.test/page';
+        },
+    ]);
+
+    expect($service->getCanonicalAtIdForSchemaEntry(sosNodeIdEntry($id, 'schema_objects')))->toBe($expected)
+        ->and($calls)->toBe([[$visited]]);
+})->with([
+    'a numeric id' => [7, 'https://example.test/page#7', '7'],
+    'no id' => [null, 'https://example.test/page#', ''],
 ]);
 
 it('uses the site root when a schema entry has no url property', function (): void {
