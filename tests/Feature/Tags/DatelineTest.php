@@ -21,9 +21,9 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * Dateline tag: unit cases (mocked / hand-built context) and augmentation via
  * `Entry::make()` with the real `geographic_locations` entries (no committed posts fixture).
  *
- * Mutation: 100% on App\Tags\Dateline (155 mutants, --covered-only) before UAMS-Web/uams-statamic-archive#2597
- * moved it from terms to entries; not re-measured since. The entries paths are
- * pinned by hand-applied negative controls recorded on that pull request.
+ * Mutation: 100% on App\Tags\Dateline (128 mutants, without --covered-only, on Linux), measured
+ * for UAMS-Web/uams-statamic#802. Four equivalent mutants carry `@pest-mutate-ignore` with the
+ * reason beside each.
  *
  * @command  php artisan test --compact tests/Feature/Tags/DatelineTest.php
  */
@@ -525,3 +525,218 @@ it('treats other truthy values as true for append separator', function () {
 it('treats other falsey values as false for append separator', function () {
     expect(datelineNormalizeAppendSeparatorRawValue([]))->toBeFalse();
 });
+
+/**
+ * Run the dateline tag's `index()` with parameters that Antlers cannot pass, such as
+ * non-string handles.
+ *
+ * @param  array<string, mixed>  $params  The tag parameters
+ * @param  array<string, mixed>  $context  The tag context
+ * @return string|null The dateline output
+ */
+function datelineIndexWithParameters(array $params, array $context): ?string
+{
+    // Build the tag the way Antlers does, with these parameters and this context
+    $dateline = new Dateline;
+    $dateline->setProperties([
+        'parser' => null,
+        'content' => '',
+        'context' => $context,
+        'params' => $params,
+        'tag' => 'dateline',
+        'tag_method' => 'index',
+    ]);
+
+    return $dateline->index();
+}
+
+/**
+ * Invoke the private geographic location resolver with the default handles.
+ *
+ * @param  mixed  $geographicLocation  The `geographic_location` context value
+ * @return string|null The resolved dateline
+ */
+function datelineResolveGeographicLocation(mixed $geographicLocation): ?string
+{
+    $resolveMethod = new ReflectionMethod(
+        Dateline::class,
+        'resolveGeographicLocationDatelineFromContext'
+    );
+
+    /** @var string|null $resolved */
+    $resolved = $resolveMethod->invoke(
+        new Dateline,
+        ['geographic_location' => $geographicLocation],
+        'geographic_location',
+        'geographic_locations',
+        'dateline'
+    );
+
+    return $resolved;
+}
+
+it('falls back to the default handles when the handle parameters are empty strings', function () {
+    // Content-dependent: a slug only resolves within the default collection.
+    datelineLittleRockId();
+
+    $output = Antlers::parse(
+        '{{ dateline location_field="" location_collection="" location_entry_field="" }}',
+        [
+            'geographic_location' => [
+                'little-rock',
+            ],
+        ],
+        true
+    );
+
+    expect((string) $output)->toBe('LITTLE ROCK, Ark.');
+});
+
+it('falls back to the default handles when the handle parameters are not strings', function (string $handle) {
+    // Content-dependent: a slug only resolves within the default collection.
+    datelineLittleRockId();
+
+    $output = datelineIndexWithParameters(
+        [$handle => 5],
+        [
+            'geographic_location' => [
+                'little-rock',
+            ],
+        ]
+    );
+
+    expect($output)->toBe('LITTLE ROCK, Ark.');
+})->with([
+    'location_field',
+    'location_collection',
+    'location_entry_field',
+]);
+
+it('falls back to the context location when the location parameter is empty or not a string', function (mixed $location) {
+    $output = datelineIndexWithParameters(
+        ['location' => $location],
+        [
+            'geographic_location' => [
+                ['dateline' => 'Little Rock'],
+            ],
+        ]
+    );
+
+    expect($output)->toBe('Little Rock');
+})->with([
+    'empty string' => [''],
+    'integer' => [5],
+]);
+
+it('falls back to the context date when the date parameter is empty or not a string', function (mixed $date) {
+    $output = datelineIndexWithParameters(
+        ['date' => $date],
+        [
+            'date' => '2026-01-02',
+        ]
+    );
+
+    expect($output)->toBe('Jan. 2, 2026');
+})->with([
+    'empty string' => [''],
+    'integer' => [5],
+]);
+
+it('normalizes a context date to a string only when it is a non-empty scalar', function (mixed $contextDate, ?string $expected) {
+    $method = new ReflectionMethod(
+        Dateline::class,
+        'normalizeContextDateForApStyle'
+    );
+
+    expect($method->invoke(new Dateline, $contextDate))->toBe($expected);
+})->with([
+    'empty string' => ['', null],
+    'false' => [false, null],
+    'array' => [[], null],
+    'integer timestamp' => [1767312000, '1767312000'],
+]);
+
+it('reads the dateline from the first augmented item of a collection', function () {
+    expect(datelineResolveGeographicLocation(collect([
+        ['dateline' => 'COLLECTED'],
+        ['dateline' => 'SECOND'],
+    ])))->toBe('COLLECTED');
+});
+
+it('unwraps a value wrapping the first location item', function () {
+    expect(datelineResolveGeographicLocation([
+        new Value(['dateline' => 'VALUE ITEM']),
+    ]))->toBe('VALUE ITEM');
+});
+
+it('unwraps a value wrapping the augmented dateline field', function () {
+    expect(datelineResolveGeographicLocation([
+        ['dateline' => new Value('WRAPPED FIELD')],
+    ]))->toBe('WRAPPED FIELD');
+});
+
+it('resolves no dateline from an augmented field that is empty or not a string', function (mixed $field) {
+    expect(datelineResolveGeographicLocation([
+        ['dateline' => $field],
+    ]))->toBeNull();
+})->with([
+    'empty string' => [''],
+    'integer' => [5],
+]);
+
+it('resolves no dateline when the entry field is empty or not a string', function (mixed $field) {
+    $entry = Mockery::mock(StatamicEntry::class);
+    $entry->shouldReceive('value')
+        ->with('dateline')
+        ->andReturn($field);
+
+    Entry::shouldReceive('find')
+        ->with('place-id')
+        ->andReturn($entry);
+
+    expect(datelineResolveGeographicLocation(['place-id']))->toBeNull();
+})->with([
+    'empty string' => [''],
+    'integer' => [5],
+]);
+
+it('looks up the entry named by the id of augmented data', function (mixed $id) {
+    $entry = Mockery::mock(StatamicEntry::class);
+    $entry->shouldReceive('value')
+        ->with('dateline')
+        ->andReturn('ID LITTLE ROCK');
+
+    Entry::shouldReceive('find')
+        ->with('place-id')
+        ->andReturn($entry);
+
+    expect(datelineResolveGeographicLocation([
+        ['id' => $id],
+    ]))->toBe('ID LITTLE ROCK');
+})->with([
+    'string id' => ['place-id'],
+    'value-wrapped id' => [new Value('place-id')],
+]);
+
+it('trims and lowercases a string append separator before matching it', function (string $value, bool $expected) {
+    expect(datelineNormalizeAppendSeparatorRawValue($value))->toBe($expected);
+})->with([
+    'padded uppercase true' => [' TRUE ', true],
+    'mixed-case yes' => ['Yes', true],
+    'padded one' => [' 1 ', true],
+    'padded uppercase false' => [' FALSE ', false],
+    'uppercase no' => ['NO', false],
+    'mixed-case null' => ['Null', false],
+    'mixed-case undefined' => ['Undefined', false],
+    'whitespace only' => ['   ', false],
+]);
+
+it('falls back to PHP truthiness for an append separator outside both lists', function (mixed $value, bool $expected) {
+    expect(datelineNormalizeAppendSeparatorRawValue($value))->toBe($expected);
+})->with([
+    'zero string' => ['0', false],
+    'other string' => ['always', true],
+    'padded zero string' => [' 0 ', true],
+    'integer two' => [2, true],
+    'float zero' => [0.0, false],
+]);
