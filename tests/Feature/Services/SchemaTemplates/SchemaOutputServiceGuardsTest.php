@@ -787,3 +787,12 @@ it('materializes the stored values of an entity that cannot augment', function (
 
     expect(sosGuardCall(sosGuardService(), 'materializeAntlersContextFromEntity', $entity))->toBe(['name' => 'Stored']);
 });
+
+it('merges an additive property value with an empty one as the non-empty value', function (mixed $a, mixed $b, mixed $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'mergeAdditiveResolvedPropertyValues', $a, $b))->toBe($expected);
+})->with([
+    'a value and an empty string' => ['A', '', 'A'],
+    'a value and null' => ['A', null, 'A'],
+    'an empty string and a value' => ['', 'B', 'B'],
+    'two values' => ['A', 'B', ['A', 'B']],
+]);
