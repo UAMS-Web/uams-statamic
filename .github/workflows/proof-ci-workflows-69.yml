@@ -1,0 +1,35 @@
+name: Proof run for uams-ci-workflows#69
+
+# Scratch workflow, not for merge. It proves UAMS-Web/uams-ci-workflows#69 (#68): the `mutate`
+# job of the shared chain checks out the named private submodules with the token passed as
+# `mutate-submodules-token`. It runs only on a push to this branch, so it never runs on `main` or
+# on a pull request, and this repository's own ci.yml (pull_request, push to main, manual runs)
+# does not run on it either.
+#
+# Pass condition: the `mutate` job's "Check out the named submodules" step prints
+# "<path> checked out at <sha>" for content, users and resources/forms, and "Chain result" is
+# green even when `mutate` is red, since `mutate-advisory` keeps it out of the result.
+
+on:
+  push:
+    branches: [proof/ci-workflows-69-mutate-submodules]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@056a412dfbbd0c3aea03c675fe9a75b94c3cf33e
+    permissions:
+      contents: read
+    with:
+      # Every leg on ubuntu-latest: macOS runners are the bottleneck.
+      linux-only: true
+      # The chain jobs the inputs can switch off. The optional jobs are off by default.
+      pest: false
+      mutate: true
+      mutate-advisory: true
+      mutate-paths: app
+      mutate-submodules: 'content users resources/forms'
+    secrets:
+      mutate-submodules-token: ${{ secrets.COMPOSER_AUTH_TOKEN }}
