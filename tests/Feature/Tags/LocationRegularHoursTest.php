@@ -653,3 +653,41 @@ it('trims whitespace around an option row key', function (): void {
 
     expect($html)->toContain('Saturday');
 });
+
+it('reads no days from a days value that is not a list, and keeps reading rules', function (mixed $days): void {
+    $html = renderLocationRegularHours([
+        [
+            'type' => 'custom',
+            'days' => $days,
+            'service_mode' => 'in_person',
+            'status' => 'open',
+            'time_span' => [['open' => '08:00', 'close' => '17:00']],
+        ],
+        openRule(['tuesday'], '09:00', '10:00'),
+    ]);
+
+    expect($html)->toContain('Tuesday')->not->toContain('Monday');
+})->with([
+    'a bare day name' => ['monday'],
+    'null' => [null],
+    'a field value holding a bare day name' => [new Value('monday')],
+]);
+
+it('skips a day option that is not a string, and keeps the other days', function (mixed $option): void {
+    $html = renderLocationRegularHours([
+        [
+            'type' => 'custom',
+            'days' => [$option, 'friday'],
+            'service_mode' => 'in_person',
+            'status' => 'open',
+            'time_span' => [['open' => '09:00', 'close' => '12:00']],
+        ],
+    ]);
+
+    expect($html)->toContain('Friday')->not->toContain('Monday');
+})->with([
+    'an integer' => [1],
+    'null' => [null],
+    'an option row with a numeric key' => [['key' => 5]],
+    'a field value holding an integer' => [new Value(3)],
+]);
