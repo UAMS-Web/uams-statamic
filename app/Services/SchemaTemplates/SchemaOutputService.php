@@ -3426,13 +3426,12 @@ class SchemaOutputService
         }
 
         if (\is_string($rowType) && str_starts_with($rowType, 'thing_') && $val !== null && $val !== '') {
+            // Only the values are read below, so the filtered ids keep their keys.
             $entryIds = \is_string($val)
                 ? [$val]
-                : array_values(
-                    array_filter(
-                        \is_array($val) ? $val : [],
-                        fn ($id): bool => \is_string($id) && $id !== ''
-                    )
+                : array_filter(
+                    \is_array($val) ? $val : [],
+                    fn ($id): bool => \is_string($id) && $id !== ''
                 );
             $resolved = [];
             foreach ($entryIds as $refId) {
