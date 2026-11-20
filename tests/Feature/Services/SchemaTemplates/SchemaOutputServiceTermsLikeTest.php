@@ -703,3 +703,17 @@ it('augments a stored value once per request and records the uncached time in mi
     expect($samples)->toHaveCount(1);
     expect($samples[0])->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60000.0);
 });
+
+it('keeps the grouped terms fields a template names, or all of them when it names none', function (string $template, array $expectedHandles): void {
+    $grouped = ['tags' => [sosTermsLikeField('multi')], 'topics' => [sosTermsLikeField('multi')]];
+
+    expect(array_keys(mustBeArray(sosTermsLikeCall('filterGroupedTermsLikeBlueprintFieldsByAntlersTemplateReferences', $grouped, $template), 'the filtered fields')))->toBe($expectedHandles);
+})->with([
+    'one named' => ['{{ tags }}{{ title }}', ['tags']],
+    'none named' => ['{{ title }}', ['tags', 'topics']],
+    'no identifiers' => ['plain text', ['tags', 'topics']],
+]);
+
+it('keeps no grouped terms fields when there are none', function (): void {
+    expect(sosTermsLikeCall('filterGroupedTermsLikeBlueprintFieldsByAntlersTemplateReferences', [], '{{ tags }}'))->toBe([]);
+});

@@ -170,3 +170,23 @@ it('adds the entry permalink and url to a context that lacks them', function (ar
     'empty URLs' => [[], '', '', []],
     'URLs that are not strings' => [[], null, 7, []],
 ]);
+
+it('strips the bodies of primary related term tag pairs from the scanned template', function (): void {
+    $template = '{{ schema_primary_related_taxonomy_term.audience }}{{ title }}{{ /schema_primary_related_taxonomy_term.audience }}'
+        .'{{ schema_primary_related_taxonomy_term }}{{ name }}{{ /schema_primary_related_taxonomy_term }}{{ caption }}';
+
+    expect(sosVarsCall('stripSchemaPrimaryRelatedTaxonomyTermPairBodiesForFillMissingAnalysis', $template))->toBe('{{ caption }}');
+});
+
+it('scans an empty template when the strip pattern fails', function (): void {
+    $limit = ini_get('pcre.backtrack_limit');
+    ini_set('pcre.backtrack_limit', '1');
+
+    try {
+        $stripped = sosVarsCall('stripSchemaPrimaryRelatedTaxonomyTermPairBodiesForFillMissingAnalysis', '{{ schema_primary_related_taxonomy_term }}'.str_repeat('x', 50).'{{ /schema_primary_related_taxonomy_term }}');
+    } finally {
+        ini_set('pcre.backtrack_limit', $limit === false ? '1000000' : $limit);
+    }
+
+    expect($stripped)->toBe('');
+});

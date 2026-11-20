@@ -918,10 +918,7 @@ class SchemaOutputService
                 $hashPos + 1
             );
 
-        if ($fragment === '') {
-            return null;
-        }
-
+        // An empty fragment matches neither pattern below
         if (
             preg_match(
                 '/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(\d+)$/i',
@@ -937,13 +934,12 @@ class SchemaOutputService
 
         if (
             preg_match(
-                '/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i',
-                $fragment,
-                $matches
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+                $fragment
             ) === 1
         ) {
             return [
-                'entry_id' => $matches[1],
+                'entry_id' => $fragment,
                 'instance_index' => null,
             ];
         }
@@ -1417,10 +1413,8 @@ class SchemaOutputService
             return null;
         }
 
+        // An empty subtype resolves to no @type below
         $subtype = trim($rawSubtype);
-        if ($subtype === '') {
-            return null;
-        }
 
         $atType = $this->medicalOrganizationSubtypeAtTypeResolver->resolve($subtype);
         if ($atType === []) {
@@ -2455,7 +2449,7 @@ class SchemaOutputService
         }
 
         // Build the same base + fragment shape as getCanonicalAtIdForSchemaEntry
-        // without resolving schema.properties.url
+        // without resolving schema.properties.url; an empty base leaves `#id`
         $baseUrl = $this->siteRootForEntry($entry);
 
         // Unset local variables to free up memory
@@ -2463,7 +2457,7 @@ class SchemaOutputService
             $entry
         );
 
-        return $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
+        return $baseUrl.'#'.$entryId;
     }
 
     /**
@@ -3536,18 +3530,17 @@ class SchemaOutputService
     ): string {
         $handle = preg_quote(self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM, '/');
 
-        // Strip `schema_primary_related_taxonomy_term.<field>` pairs so inner
-        // `{{ title }}` tokens are not treated as parent-scope variables.
-        $stripped = (string) preg_replace(
-            '/\{\{\s*'.$handle.'\.([a-z0-9_]+)\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\.\1\s*\}\}/s',
+        // Strip `schema_primary_related_taxonomy_term.<field>` pairs, then plain
+        // `schema_primary_related_taxonomy_term` pairs, so inner `{{ title }}`
+        // tokens are not treated as parent-scope variables. A failed match scans
+        // nothing.
+        return (string) preg_replace(
+            [
+                '/\{\{\s*'.$handle.'\.([a-z0-9_]+)\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\.\1\s*\}\}/s',
+                '/\{\{\s*'.$handle.'\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\s*\}\}/s',
+            ],
             '',
             $template
-        );
-
-        return (string) preg_replace(
-            '/\{\{\s*'.$handle.'\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\s*\}\}/s',
-            '',
-            $stripped
         );
     }
 
@@ -4089,7 +4082,9 @@ class SchemaOutputService
             // Read the field type handle
             $type = $field->type();
 
-            // Skip fieldtypes that must keep raw storage in schema Antlers context
+            // Skip fieldtypes that must keep raw storage in schema Antlers context. A
+            // fieldtype handle is never numeric, so a loose match equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($type, self::SCHEMA_ANTLERS_CONTEXT_SKIP_AUGMENTATION_FIELD_TYPES, true)) {
                 unset(
                     $field,
@@ -4111,7 +4106,9 @@ class SchemaOutputService
                 // Resolve the augmented field Value from Statamic
                 $valueObj = $contextEntity->augmentedValue($handle);
 
-                // Replace raw storage when augmentation returns a Value instance
+                // Replace raw storage when augmentation returns a Value instance. Any
+                // other result throws on value() and keeps the raw value below.
+                // @pest-mutate-ignore: InstanceOfToTrue
                 if ($valueObj instanceof Value) {
                     // Read the evaluated augmented PHP value (URL, models, etc.)
                     $resolved = $valueObj->value();
@@ -4358,24 +4355,15 @@ class SchemaOutputService
         array $groupedTermsLikeBlueprintFieldsByHandle,
         string $template
     ): array {
-        if ($groupedTermsLikeBlueprintFieldsByHandle === []) {
-            return [];
-        }
-
+        // An identifier is never empty, and a template that names none of the
+        // handles keeps them all below
         $referenced = $this->antlersTemplateReferencedIdentifierSet($template);
-
-        if ($referenced === []) {
-            return $groupedTermsLikeBlueprintFieldsByHandle;
-        }
 
         /** @var array<string, list<Field>> $filtered */
         $filtered = [];
 
         foreach ($groupedTermsLikeBlueprintFieldsByHandle as $handle => $candidates) {
-            if (
-                $handle !== ''
-                && isset($referenced[$handle])
-            ) {
+            if (isset($referenced[$handle])) {
                 $filtered[$handle] = $candidates;
             }
 
@@ -4423,7 +4411,9 @@ class SchemaOutputService
 
         $entriesHandles = $this->collectEntriesFieldHandles($contextEntity);
 
-        // Skip an entity whose blueprint has no entries field
+        // Skip an entity whose blueprint has no entries field, before scanning the
+        // template; the loop below would change nothing either
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($entriesHandles === []) {
             return $context;
         }
