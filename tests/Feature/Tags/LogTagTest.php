@@ -119,7 +119,8 @@ function logTagEntry(array $parameters): array
 
     expect($events)->toHaveCount(1);
 
-    $event = mustBe(MessageLogged::class, $events->first()[0] ?? null, 'the logged event');
+    $arguments = mustBeArray($events->first(), 'the logged event arguments');
+    $event = mustBe(MessageLogged::class, $arguments[0] ?? null, 'the logged event');
 
     return ['level' => $event->level, 'message' => $event->message];
 }
@@ -150,7 +151,7 @@ it('logs a scalar or string-like message as its string, and anything else as emp
     expect(logTagEntry(['message' => $message, 'level' => 'info'])['message'])->toBe($logged);
 })->with([
     // LabeledValue is Arrayable as well as string-like, so the logger would dump its
-    // array form if the tag passed it through uncast
+    // array form if the tag passed it through without the cast
     'a labeled option' => [new LabeledValue('Front desk', 'Front Desk'), 'Front desk'],
     'an integer' => [42, '42'],
     'a string-like object' => [new class implements Stringable
