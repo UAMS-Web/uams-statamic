@@ -16,7 +16,10 @@ use Statamic\Tags\Tags;
 class Log extends Tags
 {
     /**
-     * Valid PSR-3 log levels supported by Laravel's Log facade.
+     * PSR-3 log levels supported by Laravel's Log facade, other than `debug`.
+     *
+     * `debug` is the level every other value falls back to, so it needs no entry
+     * here: listing it would change nothing (#809).
      *
      * @var list<string>
      */
@@ -28,7 +31,6 @@ class Log extends Tags
         'warning',
         'notice',
         'info',
-        'debug',
     ];
 
     /**
@@ -63,7 +65,7 @@ class Log extends Tags
                 : 'debug'
         );
 
-        // Normalize level to a supported PSR-3 method name
+        // Normalize level to a supported PSR-3 method name, `debug` included as the fallback
         if (! in_array(
             $level,
             self::LEVELS,
