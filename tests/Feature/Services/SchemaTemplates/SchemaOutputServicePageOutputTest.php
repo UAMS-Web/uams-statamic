@@ -179,9 +179,11 @@ it('takes each slot from its tag parameter, else from the cascade', function ():
 
     expect($service->outputForCurrentContext())->toBe('<script>1</script>')
         ->and($service->outputForCurrentContext(['subject' => 't-subject', 'main_content' => 't-main']))->toBe('<script>2</script>')
+        ->and($service->outputForCurrentContext(['website' => 't-website', 'webpage' => 't-webpage']))->toBe('<script>3</script>')
         ->and($calls)->toBe([
             ['c-subject', 'c-website', 'c-webpage', 'c-main'],
             ['t-subject', 'c-website', 'c-webpage', 't-main'],
+            ['c-subject', 't-website', 't-webpage', 'c-main'],
         ]);
 });
 
@@ -202,6 +204,37 @@ it('composes on every call when the output cache is off', function (string $key,
     'negative TTL' => ['schema_templates.json_ld_cache.ttl_seconds', -5],
     'non-numeric TTL' => ['schema_templates.json_ld_cache.ttl_seconds', 'soon'],
 ]);
+
+it('caches the output for an hour when the cache is not configured', function (): void {
+    Config::set('schema_templates.json_ld_cache', []);
+    $this->freezeTime();
+    $calls = [];
+    $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry('ctx-1'),
+        'composeJsonLdOutputScriptTagForResolvedSlots' => sosPageCompose($calls),
+    ]);
+
+    $first = $service->outputForCurrentContext();
+    $this->travel(3599)->seconds();
+    $second = $service->outputForCurrentContext();
+    $this->travel(1)->seconds();
+    $third = $service->outputForCurrentContext();
+
+    expect([$first, $second, $third])->toBe(['<script>1</script>', '<script>1</script>', '<script>2</script>']);
+});
+
+it('caches the output for a one-second TTL', function (): void {
+    Config::set('schema_templates.json_ld_cache.ttl_seconds', 1);
+    $this->freezeTime();
+    $calls = [];
+    $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry('ctx-1'),
+        'composeJsonLdOutputScriptTagForResolvedSlots' => sosPageCompose($calls),
+    ]);
+
+    expect($service->outputForCurrentContext())->toBe('<script>1</script>')
+        ->and($service->outputForCurrentContext())->toBe('<script>1</script>');
+});
 
 it('composes uncached when the context entity has no id to key the cache on', function (): void {
     $calls = [];

@@ -343,10 +343,10 @@ class SchemaOutputService
 
         // Read the cache enabled configuration: the master switch and the
         // output-cache switch split from it in UAMS-Web/uams-statamic-archive#1842 must both be on.
-        $cacheEnabled = (bool) config(
+        $cacheEnabled = config(
             'schema_templates.json_ld_cache.enabled',
             true
-        ) && (bool) config(
+        ) && config(
             'schema_templates.json_ld_cache.output_enabled',
             true
         );
@@ -356,12 +356,15 @@ class SchemaOutputService
             'schema_templates.json_ld_cache.ttl_seconds',
             3600
         );
-        $cacheTtlSeconds = max(
-            0,
-            is_numeric($cacheTtlSecondsConfig) ? (int) $cacheTtlSecondsConfig : 0
-        );
+        // A TTL of -1 is refused below like 0. The cache casts a TTL to int itself
+        // and stores nothing for one under a second, so the cast changes nothing.
+        // @pest-mutate-ignore: DecrementInteger, RemoveIntegerCast
+        $cacheTtlSeconds = is_numeric($cacheTtlSecondsConfig) ? (int) $cacheTtlSecondsConfig : 0;
 
-        // Check if the cache is enabled and the TTL is greater than 0
+        // Check if the cache is enabled and the TTL is greater than 0. A TTL of 0
+        // that reached the cache would store nothing, so each call would compose
+        // either way.
+        // @pest-mutate-ignore: SmallerOrEqualToSmaller, DecrementInteger
         if (
             ! $cacheEnabled
             || $cacheTtlSeconds <= 0
