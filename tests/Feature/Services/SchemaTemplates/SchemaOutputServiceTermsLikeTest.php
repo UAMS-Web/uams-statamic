@@ -328,7 +328,7 @@ it('hydrates without the memo a value no memo key fits', function (mixed $presen
     'an empty string' => ['', 's'],
     'an empty list' => [[], 'l'.hash('xxh128', '')],
     'a keyed array' => [['a' => 'alpha'], 'l'.hash('xxh128', 'alpha')],
-    'a list with an empty slug' => [['alpha', ''], 'l'.hash('xxh128', 'alpha')],
+    'a list with an empty slug' => [['alpha', ''], 'l'.hash('xxh128', "alpha\0")],
     'a list with a non-string before a slug' => [['alpha', 7, 'beta'], 'l'.hash('xxh128', 'beta')],
     'an integer' => [5, 's5'],
 ]);

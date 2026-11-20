@@ -4708,6 +4708,9 @@ class SchemaOutputService
                 continue;
             }
 
+            // The reserved keys are non-numeric strings, which compare with a string or
+            // an int key the same loosely as strictly.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
@@ -5212,6 +5215,9 @@ class SchemaOutputService
             }
 
             // Skip reserved keys so emit maps and instance index never compete
+            // The reserved keys are non-numeric strings, which compare with a string or
+            // an int key the same loosely as strictly.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
