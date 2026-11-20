@@ -15,7 +15,7 @@ uses(TestCase::class);
  * Feature tests for the CtdlClass fieldtype: process() normalization of the
  * stored CTDL class chain (single-root coercion, invalid-root clearing, and
  * recomputed `value`). The hierarchy comes from the bundled
- * App\Enums\CredentialRegistry enum, so these tests are not content-dependent.
+ * UAMSWeb\Aether\Enums\CredentialRegistry enum, so these tests are not content-dependent.
  *
  * Mutation: 100% on App\Fieldtypes\CtdlClass (110 mutants, --covered-only).
  *

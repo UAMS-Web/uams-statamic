@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Enums\Country;
-use App\Fieldtypes\Traits\Input;
 use App\Rules\InternationalPhone;
 use App\Rules\NationalPhone;
 use App\Rules\SmsShortCode;
@@ -14,6 +12,8 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Propaganistas\LaravelPhone\PhoneNumber;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Enums\Country;
+use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 
 /**
  * Class Phone

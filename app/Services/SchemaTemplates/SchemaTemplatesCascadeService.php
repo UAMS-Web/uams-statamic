@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaTemplates;
 
-use App\Enums\SchemaType;
 use App\Support\RequestAttributeMemo;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Contracts\Taxonomies\Term;
@@ -16,6 +15,7 @@ use Statamic\Fields\Value;
 use Statamic\Globals\Variables;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Taxonomy;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Computes resolved "enabled" and four schema entry ids (subject_entry,

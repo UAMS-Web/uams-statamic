@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Enums\ApStyleGregorianMonth;
 use Carbon\Carbon;
 use Statamic\Tags\Parameters;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Enums\ApStyleGregorianMonth;
 
 /**
  * Emulates Gravity Forms {today} merge tags.

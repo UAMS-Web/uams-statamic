@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3d5c72579815adbed8c058bcaf17d3b0",
+    "content-hash": "2a7c3fd9850011f72b9794ac42909a52",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12151,6 +12151,156 @@
                 "source": "https://github.com/UAMS-Web/aether-alpine-csp-forms"
             },
             "time": "2026-11-13T23:36:01+00:00"
+        },
+        {
+            "name": "uams-web/aether-enums",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-enums.git",
+                "reference": "ae1ef18b13aac93c91c890ee32143af4228f5eab"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-enums/zipball/ae1ef18b13aac93c91c890ee32143af4228f5eab",
+                "reference": "ae1ef18b13aac93c91c890ee32143af4228f5eab",
+                "shasum": ""
+            },
+            "require": {
+                "maatwebsite/excel": "^4.0",
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.4.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\Enums\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Enums",
+                    "description": "The shared enums, and the commands that regenerate them from their sources."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\Enums\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "The enums UAMS Statamic sites read (countries, currencies, languages, U.S. geography, MIME types, schema.org and standard classifications) and the commands that regenerate them.",
+            "homepage": "https://github.com/UAMS-Web/aether-enums",
+            "keywords": [
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-enums/issues",
+                "source": "https://github.com/UAMS-Web/aether-enums"
+            },
+            "time": "2026-11-18T22:01:44+00:00",
+            "published-time": "2026-11-18T22:07:32+00:00"
+        },
+        {
+            "name": "uams-web/aether-fieldtypes",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/UAMS-Web/aether-fieldtypes.git",
+                "reference": "7957e5092b436406b471054a724167305eaf08c4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-fieldtypes/zipball/7957e5092b436406b471054a724167305eaf08c4",
+                "reference": "7957e5092b436406b471054a724167305eaf08c4",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.4",
+                "statamic/cms": "^6.35"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^2.0",
+                "driftingly/rector-laravel": "^2.6",
+                "larastan/larastan": "^3.13",
+                "laravel/pint": "^1.32",
+                "orchestra/testbench": "^11.3",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-phpstan": "^5.2",
+                "rector/rector": "^2.7",
+                "uams-web/patches-orchestra-testbench-core": "^1.1.0",
+                "uams-web/patches-pest-plugin-mutate": "^1.4.0"
+            },
+            "type": "statamic-addon",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "UAMSWeb\\Aether\\Fieldtypes\\ServiceProvider"
+                    ]
+                },
+                "statamic": {
+                    "name": "Aether Fieldtypes",
+                    "description": "Shared fieldtype traits, Control Panel JavaScript, a public Alpine helper and an owner check for each fieldtype handle and component name."
+                },
+                "composer-exit-on-patch-failure": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "UAMSWeb\\Aether\\Fieldtypes\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "UAMS Web Services"
+                },
+                {
+                    "name": "Josh Daugherty",
+                    "role": "Web Developer"
+                }
+            ],
+            "description": "The shared fieldtype add-on for UAMS Statamic sites: the traits, Control Panel JavaScript, public Alpine helper and owner check that every fieldtype family builds on.",
+            "homepage": "https://github.com/UAMS-Web/aether-fieldtypes",
+            "keywords": [
+                "fieldtypes",
+                "statamic",
+                "statamic-addon"
+            ],
+            "support": {
+                "issues": "https://github.com/UAMS-Web/aether-fieldtypes/issues",
+                "source": "https://github.com/UAMS-Web/aether-fieldtypes"
+            },
+            "time": "2026-11-18T22:02:12+00:00",
+            "published-time": "2026-11-18T22:07:53+00:00"
         },
         {
             "name": "uams-web/aether-form-settings",

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\Isco08;
 use App\Fieldtypes\Isco_08;
 use App\Rules\Isco08FieldtypeStoredRule;
 use App\Support\Isco08FieldtypeStorage;
@@ -11,6 +10,7 @@ use Illuminate\Validation\Rule;
 use PHPUnit\Framework\Assert;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\Isco08;
 
 uses(TestCase::class);
 

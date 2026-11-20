@@ -13,7 +13,7 @@ covers(MedicalOrganizationSubtypeAtTypeResolver::class);
  * Unit coverage for the content-independent multi-type `@type` rule
  * (App\Services\SchemaTemplates\MedicalOrganizationSubtypeAtTypeResolver, UAMS-Web/uams-statamic-archive#967).
  *
- * The rule keys off App\Enums\SchemaType's generated ancestor graph: the four
+ * The rule keys off UAMSWeb\Aether\Enums\SchemaType's generated ancestor graph: the four
  * LocalBusiness-descendant subtypes (Hospital, MedicalClinic, Pharmacy,
  * Dentist) emit a single type, while DiagnosticLab — a MedicalOrganization that
  * is not a LocalBusiness — emits the multi-type [DiagnosticLab, LocalBusiness].

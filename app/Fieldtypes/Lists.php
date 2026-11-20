@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
 use Statamic\Fieldtypes\Lists as BaseLists;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
 
 /**
  * Extended Lists fieldtype with enhanced configuration and validation.

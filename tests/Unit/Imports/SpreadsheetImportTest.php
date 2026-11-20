@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Imports\SpreadsheetImport;
 use Maatwebsite\Excel\Concerns\ToArray;
 use Maatwebsite\Excel\Facades\Excel;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\Imports\SpreadsheetImport;
 
 /**
- * Pins `App\Imports\SpreadsheetImport`, the class `Isco08EnumGenerator` passes to
+ * Pins `UAMSWeb\Aether\Enums\Imports\SpreadsheetImport`, the class `Isco08EnumGenerator` passes to
  * `Excel::toArray()` so that `maatwebsite/excel` reads a workbook as plain arrays.
  *
  * The class has no mutable code: the mutation plugin reports `0 Mutations for 0 Files

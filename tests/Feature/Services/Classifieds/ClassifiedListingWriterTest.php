@@ -10,7 +10,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Statamic\Assets\AssetContainer as StatamicAssetContainer;
 use Statamic\Entries\Entry as StatamicEntry;
 use Statamic\Events\AssetDeleted;
 use Statamic\Events\EntrySaving;
@@ -252,30 +251,25 @@ it('stores uploads under random names in the configured container and folder, fe
 });
 
 it('reads the container and folder from config, falling back when either is not a string', function (): void {
-    Storage::fake('zz_listing_images');
-    /** @var StatamicAssetContainer $container */
-    $container = AssetContainer::make('zz_listing_images');
-    $container->disk('zz_listing_images');
-    $container->save();
+    // `files` is a container the content already holds, so nothing is saved: a container
+    // saved here would land in the shared content mirror, where a sibling worker's Stache
+    // warm reads it while its disk is configured only in this process (#1139)
+    Storage::fake('files');
 
-    config(['classifieds.images.container' => 'zz_listing_images', 'classifieds.images.folder' => '/zz-listings/']);
+    config(['classifieds.images.container' => 'files', 'classifieds.images.folder' => '/zz-listings/']);
 
-    try {
-        $entry = listingWriter()->create('user-1', listingWriterFields(), [UploadedFile::fake()->image('front.png')]);
-        $path = 'zz-listings/'.str_repeat('Q', 24).'.png';
+    $entry = listingWriter()->create('user-1', listingWriterFields(), [UploadedFile::fake()->image('front.png')]);
+    $path = 'zz-listings/'.str_repeat('Q', 24).'.png';
 
-        expect($entry->get('featured_image'))->toBe($path)
-            ->and(Storage::disk('zz_listing_images')->exists($path))->toBeTrue()
-            ->and(Storage::disk('images')->allFiles())->toBe([]);
+    expect($entry->get('featured_image'))->toBe($path)
+        ->and(Storage::disk('files')->exists($path))->toBeTrue()
+        ->and(Storage::disk('images')->allFiles())->toBe([]);
 
-        config(['classifieds.images.container' => 5, 'classifieds.images.folder' => ['x']]);
-        $fallback = listingWriter()->create('user-1', listingWriterFields(), [UploadedFile::fake()->image('front.png')]);
+    config(['classifieds.images.container' => 5, 'classifieds.images.folder' => ['x']]);
+    $fallback = listingWriter()->create('user-1', listingWriterFields(), [UploadedFile::fake()->image('front.png')]);
 
-        expect($fallback->get('featured_image'))->toBe('classifieds/'.str_repeat('Q', 24).'.png')
-            ->and(Storage::disk('images')->exists('classifieds/'.str_repeat('Q', 24).'.png'))->toBeTrue();
-    } finally {
-        $container->delete();
-    }
+    expect($fallback->get('featured_image'))->toBe('classifieds/'.str_repeat('Q', 24).'.png')
+        ->and(Storage::disk('images')->exists('classifieds/'.str_repeat('Q', 24).'.png'))->toBeTrue();
 });
 
 it('deletes the files it stored when the new listing cannot be saved', function (): void {

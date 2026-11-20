@@ -50,15 +50,10 @@ Because the alias list is derived from `SchemaType::cases()`, it can be large an
 - **refresh** – clear then warm.
 - Usage: `php artisan scope-alias-cache clear|warm|refresh` (or `php please scope-alias-cache ...`).
 
-### `app/Console/Commands/GenerateSchemaTypeEnum.php`
+### `generate:schema-type-enum` (in `uams-web/aether-enums`)
 
-- **Artisan command** `generate:schema-type-enum`. Runs `SchemaTypeEnumGenerator::generate()` to fetch schema.org JSON-LD and write `SchemaType`, `SchemaProperty`, and `SchemaDataType` enums.
-- After writing the enum files, the generator calls `EntriesBySchemaType::warmAliasesCache($typeNames)` so the scope alias cache is populated with the new type list without requiring a separate warm step. The command reports “Warmed EntriesBySchemaType alias cache.” when that succeeds.
-
-### `app/Services/EnumGeneration/Schema/SchemaTypeEnumGenerator.php`
-
-- **Generator** that fetches schema.org vocabulary, parses it, and writes the three enum files.
-- At the end of `generate()`, if `EntriesBySchemaType` exists and has `warmAliasesCache`, it calls `warmAliasesCache($typeNames)` with the list of type names just written to the enum. That keeps the scope alias list in sync with the generated `SchemaType` enum; the cache is cleared manually (e.g., `scope-alias-cache clear`) or by operations that wipe the cache directory (e.g., `stache:warm`), and can be re-warmed by the generator or by `scope-alias-cache warm`.
+- **Artisan command** from the enums add-on, which holds the schema.org enums and their generator since #995. It runs `SchemaTypeEnumGenerator::generate()` to fetch schema.org JSON-LD and write the `SchemaType`, `SchemaProperty`, `SchemaDataType` and `SchemaEnumerationMember` enums inside the add-on.
+- The add-on has no cache of its own. After writing the enum files, the generator calls the `AliasCacheWarmer` its host binds, with the list of type names just written. The site binds [`App\Cache\SchemaTypeAliasCacheWarmer`](../Cache/SchemaTypeAliasCacheWarmer.php) in `AppServiceProvider`, which calls `EntriesBySchemaType::warmAliasesCache($typeNames)`, so the scope alias list stays in sync with the generated enum without a separate warm step. The command reports "Warmed the alias cache of the host." when that runs. The cache is cleared manually (e.g., `scope-alias-cache clear`) or by operations that wipe the cache directory (e.g., `stache:warm`), and can be re-warmed by the generator or by `scope-alias-cache warm`.
 
 ---
 
