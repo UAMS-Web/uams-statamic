@@ -196,6 +196,21 @@ class SchemaOutputService
         'schema_object',
     ];
 
+    /**
+     * Overlay keys the schema runtime sets for itself. They are never a terms
+     * field to hydrate or a taxonomy selection to resolve.
+     *
+     * @var list<string>
+     */
+    private const array RESERVED_ANTLERS_OVERLAY_KEYS = [
+        self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX,
+        self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE,
+        self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT,
+        self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID,
+        self::ANTLERS_SCHEMA_PROPERTY_KEY,
+        self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM,
+    ];
+
     public function __construct(
         protected SchemaTemplatesCascadeService $cascadeService,
         protected SchemaClassificationsIdentifiersMerger $schemaClassificationsIdentifiersMerger,
@@ -4681,10 +4696,6 @@ class SchemaOutputService
         array $antlersContext,
         string $template
     ): array {
-        if ($antlersContext === []) {
-            return $context;
-        }
-
         // Check whether primary-term injection can run for this snippet
         $templateReferencesPrimaryRelatedTaxonomyTerm = str_contains(
             $template,
@@ -4694,15 +4705,6 @@ class SchemaOutputService
         /** @var array<string, true>|null $referencedIdentifiers */
         $referencedIdentifiers = null;
 
-        $reservedOverlayKeys = [
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => true,
-            self::ANTLERS_SCHEMA_PROPERTY_KEY => true,
-            self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM => true,
-        ];
-
         foreach (array_keys($antlersContext) as $overlayKey) {
             if ($overlayKey === '') {
                 unset($overlayKey);
@@ -4710,7 +4712,7 @@ class SchemaOutputService
                 continue;
             }
 
-            if (isset($reservedOverlayKeys[$overlayKey])) {
+            if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
                 continue;
@@ -4725,6 +4727,9 @@ class SchemaOutputService
             // Skip overlay keys this template cannot read (avoids term queries for
             // unrelated snapshot fields unless primary-term wiring needs them).
             if (! $templateReferencesPrimaryRelatedTaxonomyTerm) {
+                // Recomputing the set gives the same set; the coalesce only saves the
+                // regex passes for each later key.
+                // @pest-mutate-ignore: CoalesceEqualToEqual
                 $referencedIdentifiers ??= $this->antlersTemplateReferencedIdentifierSet(
                     $template
                 );
@@ -4759,7 +4764,6 @@ class SchemaOutputService
 
         unset(
             $referencedIdentifiers,
-            $reservedOverlayKeys,
             $templateReferencesPrimaryRelatedTaxonomyTerm
         );
 
@@ -5210,16 +5214,6 @@ class SchemaOutputService
         $overlayKeys = array_keys($antlersContext);
         sort($overlayKeys, SORT_STRING);
 
-        // Skip reserved Antlers keys that are never taxonomy selections
-        $reservedOverlayKeys = [
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => true,
-            self::ANTLERS_SCHEMA_PROPERTY_KEY => true,
-            self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM => true,
-        ];
-
         foreach ($overlayKeys as $overlayKey) {
             if ($overlayKey === '') {
                 unset($overlayKey);
@@ -5228,7 +5222,7 @@ class SchemaOutputService
             }
 
             // Skip reserved keys so emit maps and instance index never compete
-            if (isset($reservedOverlayKeys[$overlayKey])) {
+            if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
                 continue;
@@ -5251,7 +5245,6 @@ class SchemaOutputService
                 unset(
                     $overlayKeys,
                     $overlayKey,
-                    $reservedOverlayKeys,
                     $taxonomyTerm
                 );
 
@@ -5264,10 +5257,7 @@ class SchemaOutputService
             );
         }
 
-        unset(
-            $overlayKeys,
-            $reservedOverlayKeys
-        );
+        unset($overlayKeys);
 
         return null;
     }

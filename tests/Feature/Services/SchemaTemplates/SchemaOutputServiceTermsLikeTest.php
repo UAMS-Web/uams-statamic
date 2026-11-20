@@ -345,3 +345,56 @@ it('stores the input and the hydrated output in the memo row', function (): void
     $memo = request()->attributes->get('_app_schema_output_raw_term_slug_hydration_memo');
     expect($memo)->toBe(['o'.spl_object_id($present) => ['in' => $present, 'out' => $present]]);
 });
+
+/**
+ * Hydrate the overlay slugs of a merged context, with `alpha` memoized as hydrated.
+ *
+ * @param  array<string, mixed>  $context
+ * @param  array<string, mixed>  $overlay
+ */
+function sosTermsLikeHydrateOverlay(array $context, array $overlay, string $template): mixed
+{
+    sosTermsLikeSeedSlugMemo('s'.'alpha', ['in' => 'alpha', 'out' => 'HYDRATED']);
+
+    return sosTermsLikeCall('hydrateAntlersOverlayTermSlugValuesIfRaw', $context, $overlay, $template);
+}
+
+it('leaves an overlay key it skips and hydrates the key after it', function (string $skippedKey, bool $inContext): void {
+    $context = ['tags' => 'ctx'] + ($inContext ? [$skippedKey => 'ctx'] : []);
+    $overlay = [$skippedKey => 'alpha', 'tags' => 'alpha'];
+
+    $expected = ['tags' => 'HYDRATED'] + ($inContext ? [$skippedKey => 'ctx'] : []);
+
+    expect(sosTermsLikeHydrateOverlay($context, $overlay, '{{ schema_primary_related_taxonomy_term }}'))->toEqual($expected);
+})->with([
+    'an empty key' => ['', true],
+    'the template instance index' => [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX, true],
+    'the type override' => [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE, true],
+    'the emit context' => [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT, true],
+    'the template entry id' => [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID, true],
+    'the property key' => [SchemaOutputService::ANTLERS_SCHEMA_PROPERTY_KEY, true],
+    'the primary related term' => [SchemaOutputService::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM, true],
+    'a key absent from the context' => ['absent', false],
+]);
+
+it('leaves an overlay value that needs no augment and hydrates the key after it', function (): void {
+    $result = sosTermsLikeHydrateOverlay(['count' => 'ctx', 'tags' => 'ctx'], ['count' => 5, 'tags' => 'alpha'], '{{ count }}{{ tags }}');
+
+    expect($result)->toBe(['count' => 'ctx', 'tags' => 'HYDRATED']);
+});
+
+it('hydrates only the overlay keys the template reads', function (): void {
+    $result = sosTermsLikeHydrateOverlay(['other' => 'ctx', 'tags' => 'ctx', 'topics' => 'ctx'], ['other' => 'alpha', 'tags' => 'alpha', 'topics' => 'alpha'], '{{ tags }}{{ if topics }}x{{ /if }}');
+
+    expect($result)->toBe(['other' => 'ctx', 'tags' => 'HYDRATED', 'topics' => 'HYDRATED']);
+});
+
+it('hydrates every overlay key when the template reads the primary related term', function (): void {
+    $result = sosTermsLikeHydrateOverlay(['other' => 'ctx'], ['other' => 'alpha'], '{{ schema_primary_related_taxonomy_term }}');
+
+    expect($result)->toBe(['other' => 'HYDRATED']);
+});
+
+it('returns the merged context unchanged for an empty overlay', function (): void {
+    expect(sosTermsLikeHydrateOverlay(['tags' => 'alpha'], [], '{{ tags }}'))->toBe(['tags' => 'alpha']);
+});
