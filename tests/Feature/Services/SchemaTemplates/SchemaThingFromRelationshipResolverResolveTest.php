@@ -567,6 +567,9 @@ it('records the composition profile when it is enabled', function (): void {
         ->and($bag['relationship_targets_direct'])->toBe(3)
         ->and($bag['relationship_resolve_calls'])->toBe(2)
         ->and($bag['relationship_resolve_ms'])->toBeFloat()->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0)
+        // Elapsed times, not timestamps: a start time of zero would read as decades
+        ->and($bag['relationship_collect_direct_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
+        ->and($bag['relationship_full_build_ms'])->toBeFloat()->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_full_build_calls'])->toBe(2)
         ->and($bag['relationship_compact_ref_hits'])->toBe(1)
         ->and($bag['relationship_full_build_top'])->toHaveCount(2);
@@ -598,6 +601,7 @@ it('records collector samples for each mode, and fragment cache hits', function 
         // Elapsed times, not timestamps: each collector is timed from its own start
         ->and($bag['relationship_collect_secondary_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_collect_tertiary_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
+        ->and($bag['relationship_collect_global_ms'])->toBeFloat()->toBeGreaterThanOrEqual(0.0)->toBeLessThan(60_000.0)
         ->and($bag['relationship_fragment_cache_hits'])->toBe(2)
         ->and($bag['relationship_full_build_calls'])->toBe(1)
         // A call that collects nothing returns before the resolve sample
@@ -649,3 +653,143 @@ it('lazily resolves the fragment cache from the container when none is injected'
     expect($fragmentCache->invoke($resolver))->toBeInstanceOf(SchemaJsonLdFragmentCache::class)
         ->and($fragmentCache->invoke($resolver))->toBe($fragmentCache->invoke($resolver));
 });
+
+it('records no profile when the profile setting is missing', function (): void {
+    // The setting defaults to off, so a config without the key records nothing.
+    Config::set('schema_templates.json_ld_compose_profile', []);
+
+    thingResolveResolver(thingResolveOutput())->resolve(['about' => [thingResolveEntry('a')]], ['current_field' => 'about', 'schema_object' => 'tpl']);
+
+    expect(request()->attributes->get(JsonLdCompositionProfiler::REQUEST_JSON_LD_COMPOSITION_PROFILE))->toBeNull();
+});
+
+it('reads subject keywords only from the traversal mode it is given', function (string $mode): void {
+    // Secondary and tertiary find nothing here, so a direct read of the current field must not stand in for them.
+    GlobalSet::shouldReceive('findByHandle')->andReturnNull();
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart']));
+
+    $json = thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(
+        ['about' => [$subject]],
+        ['current_field' => 'about', 'mode' => $mode]
+    );
+
+    expect($json)->toBe('[]');
+})->with([
+    'secondary' => ['secondary'],
+    'tertiary' => ['tertiary'],
+    'upper case' => ['SECONDARY'],
+    'padded' => [' tertiary '],
+]);
+
+it('reads subject keywords directly for an unknown or missing mode', function (mixed $mode): void {
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart']));
+    $params = ['current_field' => 'about'];
+    if ($mode !== null) {
+        $params['mode'] = $mode;
+    }
+
+    expect(thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(['about' => [$subject]], $params))->toBe('["Heart"]');
+})->with([
+    'missing' => [null],
+    'unknown' => ['sideways'],
+    'not a string' => [7],
+]);
+
+it('skips a globals keyword target even when it carries a title', function (): void {
+    $globals = new Variables;
+    $globals->globalSet('settings');
+    $globals->data(['title' => 'Site settings']);
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart']));
+
+    $json = thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(
+        ['about' => [$globals, $subject]],
+        ['current_field' => 'about']
+    );
+
+    expect($json)->toBe('["Heart"]');
+});
+
+it('gives an empty keyword list when the keywords cannot be encoded', function (): void {
+    // An invalid UTF-8 title cannot be JSON-encoded; the tag then answers an empty list.
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => "Heart \xB1\x31"]));
+
+    expect(thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(['about' => [$subject]], ['current_field' => 'about']))->toBe('[]');
+});
+
+it('collects secondary keyword targets through a global set', function (): void {
+    $subject = thingResolveEntry('heart');
+    $subject->shouldReceive('data')->andReturn(collect(['title' => 'Heart']));
+    $globals = new Variables;
+    $globals->globalSet('settings');
+    $globals->data(['about' => [$subject]]);
+
+    $json = thingResolveResolver(thingResolveOutput())->resolveSubjectMatterKeywords(
+        ['organization' => [$globals]],
+        ['mode' => 'secondary', 'secondary_context' => 'globals', 'current_field' => 'organization', 'secondary_field' => 'about']
+    );
+
+    expect($json)->toBe('["Heart"]');
+});
+
+it('prefers the emit context it is given over the one on the runtime stack', function (): void {
+    // The given context has already emitted b in full, so b is only referenced; the stacked one has not.
+    $given = thingResolveEmitContext(['https://example.test/b' => true], ['https://example.test/b' => true]);
+    $stacked = thingResolveEmitContext();
+    $output = thingResolveOutput();
+    $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturn(['@type' => 'Person']);
+
+    SchemaTemplateEmitContextRuntimeStack::push($stacked);
+    try {
+        $nodes = thingResolveDecode(thingResolveResolver($output)->resolve(['about' => [thingResolveEntry('b')]], ['current_field' => 'about', 'schema_object' => 'tpl', 'emit_context' => $given]));
+    } finally {
+        SchemaTemplateEmitContextRuntimeStack::pop();
+    }
+
+    expect($nodes)->toBe([['@id' => 'https://example.test/b']]);
+});
+
+it('records a fully built node in the shared emit map', function (): void {
+    $emit = thingResolveEmitContext();
+    $output = thingResolveOutput();
+    $output->shouldReceive('buildStandaloneSchemaObjectNodeSharingEmittedNodeIds')->andReturn(['@type' => 'Person']);
+
+    thingResolveResolver($output)->resolve(['about' => [thingResolveEntry('c')]], ['current_field' => 'about', 'schema_object' => 'tpl', 'emit_context' => $emit]);
+
+    expect($emit->emittedNodeIds)->toHaveKey('https://example.test/c')
+        ->and($emit->materializedFullNodeAtIds)->toHaveKey('https://example.test/c');
+});
+
+it('merges the source entry into the build for secondary and tertiary targets', function (string $mode): void {
+    $person = thingResolveEntry('founder');
+    // The tertiary middle hop is a taxonomy term, read through its default locale.
+    $middleLocale = Mockery::mock(LocalizedTerm::class);
+    $middleLocale->shouldReceive('value')->andReturnUsing(fn (string $h): mixed => $h === 'leader' ? [$person] : null);
+    $middle = Mockery::mock(TaxonomyTerm::class);
+    $middle->shouldReceive('inDefaultLocale')->andReturn($middleLocale);
+    $first = $mode === 'secondary' ? [$person] : [$middle];
+    $globals = new Variables;
+    $globals->globalSet('settings');
+    $globals->data(['about' => $first]);
+    $source = thingResolveEntry('page');
+
+    $seen = [];
+    $output = thingResolveOutput();
+    $output->shouldReceive('buildStandaloneSchemaObjectNode')->andReturnUsing(function (string $t, mixed $entity, array $context) use (&$seen): array {
+        $seen[] = $context['source_entry'] ?? null;
+
+        return ['@type' => 'Person'];
+    });
+
+    $params = ['mode' => $mode, 'secondary_context' => 'globals', 'current_field' => 'organization', 'secondary_field' => 'about', 'schema_object' => 'tpl'];
+    if ($mode === 'tertiary') {
+        $params['tertiary_field'] = 'leader';
+    }
+
+    thingResolveResolver($output)->resolve(['entry' => $source, 'organization' => [$globals]], $params);
+
+    expect($seen)->toBe([$source]);
+})->with(['secondary', 'tertiary']);

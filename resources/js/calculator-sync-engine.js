@@ -40,7 +40,7 @@
 // rather than compiled through `new Function()`, so `script-src` needs no
 // `unsafe-eval` (UAMS-Web/uams-statamic-archive#1859). The constraint is on `x-*` attributes, not on modules.
 import Alpine from '@alpinejs/csp';
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for inputs that opted into cross-calculator sync. */
 const SYNC_INPUT_SELECTOR = '[data-sync-handle]';
@@ -159,7 +159,7 @@ function initSync(input) {
 
 /**
  * Public entry. Lifecycle is shared with sibling engines via
- * `lib/alpine-engine.js`.
+ * the fieldtype add-on's `alpine.js`.
  */
 export function registerCalculatorSyncEngine() {
 	registerAlpineEngine({

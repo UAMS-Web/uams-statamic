@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Enums\SchemaType;
 use App\Rules\EntrySchemaTypeIn;
 use Statamic\Entries\Entry as EntryItem;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 uses(StacheIsolatedTestCase::class);
 

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Seo;
 
-use App\Enums\State;
 use App\Services\Locations\LocationInheritedAddressService;
 use App\Services\TitleDisambiguator;
 use Illuminate\Support\Collection;
 use Statamic\Entries\Entry;
 use Statamic\Stache\Repositories\EntryRepository as StacheEntryRepository;
+use UAMSWeb\Aether\Enums\State;
 use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ClinicalTitleResolver;
 
 /**

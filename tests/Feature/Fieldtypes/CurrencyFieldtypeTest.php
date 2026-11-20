@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Enums\Currency as CurrencyEnum;
 use App\Fieldtypes\Currency;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Enums\Currency as CurrencyEnum;
 
 /**
  * Tests for App\Fieldtypes\Currency preload masks, CP metadata, and config maps.

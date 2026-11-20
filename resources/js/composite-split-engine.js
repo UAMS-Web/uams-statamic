@@ -39,7 +39,7 @@
 // rather than compiled through `new Function()`, so `script-src` needs no
 // `unsafe-eval` (UAMS-Web/uams-statamic-archive#1859). The constraint is on `x-*` attributes, not on modules.
 import Alpine from '@alpinejs/csp';
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 import { parseFieldValue, formatCalculatedValue } from './lib/calculation.js';
 
 /** Selector matching each split sub-input emitted by `partials/calculator_variable`. */

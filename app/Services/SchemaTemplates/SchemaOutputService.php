@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\SchemaTemplates;
 
-use App\Enums\SchemaType;
 use App\Support\AudioSeries;
 use App\Support\RequestAttributeMemo;
 use App\Tags\Schema\SchemaPropertyValidator;
@@ -39,6 +38,7 @@ use Statamic\Support\Arr;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
 use Statamic\View\Antlers\AntlersString;
+use UAMSWeb\Aether\Enums\SchemaType;
 
 /**
  * Produces the final schema script tag (or empty string) for the current
@@ -3426,13 +3426,12 @@ class SchemaOutputService
         }
 
         if (\is_string($rowType) && str_starts_with($rowType, 'thing_') && $val !== null && $val !== '') {
+            // Only the values are read below, so the filtered ids keep their keys.
             $entryIds = \is_string($val)
                 ? [$val]
-                : array_values(
-                    array_filter(
-                        \is_array($val) ? $val : [],
-                        fn ($id): bool => \is_string($id) && $id !== ''
-                    )
+                : array_filter(
+                    \is_array($val) ? $val : [],
+                    fn ($id): bool => \is_string($id) && $id !== ''
                 );
             $resolved = [];
             foreach ($entryIds as $refId) {

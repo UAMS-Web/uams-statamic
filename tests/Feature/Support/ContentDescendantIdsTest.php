@@ -191,6 +191,63 @@ it('terminates and dedupes on a pre-existing cycle in the term parent data', fun
     expect(ContentDescendantIds::forTerm('tax::a'))->toBe(['tax::b', 'tax::c']);
 });
 
+it('does not file a term with an empty stored parent under an empty slug', function () {
+    // A start reference whose slug is empty would collect a term whose stored parent
+    // is '' if that parent were qualified to `tax::` rather than read as no parent.
+    $start = new TermDescendantTestStub('tax::', null);
+    $rootWithEmptyParent = new TermDescendantTestStub('tax::a', '');
+
+    $termRepo = bindTermRepository();
+    $termRepo->shouldReceive('find')->once()->with('tax::')->andReturn($start);
+    $termRepo->shouldReceive('whereTaxonomy')->once()->with('tax')->andReturn(collect([$start, $rootWithEmptyParent]));
+
+    expect(ContentDescendantIds::forTerm('tax::'))->toBe([]);
+});
+
+it('skips a taxonomy term that cannot answer id()', function () {
+    $root = new TermDescendantTestStub('tax::root', null);
+    $termWithoutId = new class
+    {
+        public function get(string $key): ?string
+        {
+            return $key === 'parent' ? 'root' : null;
+        }
+    };
+    $realChild = new TermDescendantTestStub('tax::a', 'root');
+
+    $termRepo = bindTermRepository();
+    $termRepo->shouldReceive('find')->once()->with('tax::root')->andReturn($root);
+    $termRepo->shouldReceive('whereTaxonomy')->once()->with('tax')->andReturn(collect([$root, $termWithoutId, $realChild]));
+
+    expect(ContentDescendantIds::forTerm('tax::root'))->toBe(['tax::a']);
+});
+
+it('reads an integer term id as a string reference', function () {
+    $root = new TermDescendantTestStub('tax::root', null);
+    $integerChild = Mockery::mock();
+    $integerChild->shouldReceive('get')->with('parent')->andReturn('root');
+    $integerChild->shouldReceive('id')->andReturn(7);
+
+    $termRepo = bindTermRepository();
+    $termRepo->shouldReceive('find')->once()->with('tax::root')->andReturn($root);
+    $termRepo->shouldReceive('whereTaxonomy')->once()->with('tax')->andReturn(collect([$root, $integerChild]));
+
+    expect(ContentDescendantIds::forTerm('tax::root'))->toBe(['7']);
+});
+
+it('refuses a term id that is not a scalar', function () {
+    $root = new TermDescendantTestStub('tax::root', null);
+    $oddChild = Mockery::mock();
+    $oddChild->shouldReceive('get')->with('parent')->andReturn('root');
+    $oddChild->shouldReceive('id')->andReturn(['not', 'scalar']);
+
+    $termRepo = bindTermRepository();
+    $termRepo->shouldReceive('find')->once()->with('tax::root')->andReturn($root);
+    $termRepo->shouldReceive('whereTaxonomy')->once()->with('tax')->andReturn(collect([$root, $oddChild]));
+
+    ContentDescendantIds::forTerm('tax::root');
+})->throws(AssertionError::class)->skip(ini_get('zend.assertions') !== '1', 'Requires zend.assertions=1.');
+
 /**
  * Bind a fresh TermRepository mock into the container and return it.
  */
