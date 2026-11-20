@@ -36,7 +36,7 @@ covers(SchemaOutputService::class);
 /**
  * The service as a partial mock, with each entry's structure parent given by id.
  *
- * @param  array<string, string|null>  $parents  Parent id by entry id.
+ * @param  array<array-key, string|null>  $parents  Parent id by entry id (a numeric id is an int key).
  */
 function sosEffService(array $parents = []): SchemaOutputService&MockInterface
 {
@@ -66,7 +66,7 @@ function sosEffService(array $parents = []): SchemaOutputService&MockInterface
 /**
  * A mocked entry with a stored `schema` and `inherit_from`.
  */
-function sosEffEntry(string $id, mixed $schema, mixed $inheritFrom = null): EntryModel&MockInterface
+function sosEffEntry(mixed $id, mixed $schema, mixed $inheritFrom = null): EntryModel&MockInterface
 {
     /** @var EntryModel&MockInterface $entry */
     $entry = Mockery::mock(EntryModel::class);
@@ -199,3 +199,54 @@ it('filters inherited properties to the names a known recipient type allows', fu
 
     expect($method->invoke(sosEffService(), ['name' => 'X', 'notASchemaProperty' => 'Y'], 'Thing'))->toBe(['name' => 'X']);
 });
+
+it('reads a schema with no properties as no properties', function (): void {
+    expect(sosEffResolve(sosEffService(), sosEffEntry('e-1', ['type' => 'Thing'])))->toBe(['type' => 'Thing', 'properties' => []]);
+});
+
+it('matches a revisited entry by its id as a string', function (mixed $id, string $visited): void {
+    $lookups = [];
+    sosEffFind([], $lookups);
+    $entry = sosEffEntry($id, ['type' => 'Thing', 'properties' => ['name' => 'X']], ['i-1']);
+
+    expect(sosEffResolve(sosEffService(), $entry, [$visited]))->toBe(['type' => 'Thing', 'properties' => ['name' => 'X']]);
+    expect($lookups)->toBe([]);
+})->with([
+    'a numeric id' => [7, '7'],
+    'no id' => [null, ''],
+]);
+
+it('matches visited entry ids strictly', function (): void {
+    $lookups = [];
+    sosEffFind([], $lookups);
+    $entry = sosEffEntry('10', ['type' => 'Thing', 'properties' => ['name' => 'X']], ['20']);
+
+    sosEffResolve(sosEffService(['10' => 'p-1']), $entry, ['1e1', '2e1']);
+
+    expect($lookups)->toBe(['p-1', '20']);
+});
+
+it('looks up no structure parent for an empty parent id', function (): void {
+    $lookups = [];
+    sosEffFind([], $lookups);
+    $entry = sosEffEntry('e-1', ['type' => 'Thing', 'properties' => ['name' => 'X']]);
+
+    expect(sosEffResolve(sosEffService(['e-1' => '']), $entry))->toBe(['type' => 'Thing', 'properties' => ['name' => 'X']]);
+    expect($lookups)->toBe([]);
+});
+
+it('keeps an inherit_custom property group over the inherited value as its base', function (mixed $own, mixed $expected): void {
+    $parent = sosEffEntry('p-1', ['type' => 'Thing', 'properties' => ['name' => 'From parent']]);
+    sosEffFind(['p-1' => $parent]);
+    $entry = sosEffEntry('e-1', ['type' => 'Thing', 'properties' => ['name' => $own]]);
+
+    $effective = mustBeArray(sosEffResolve(sosEffService(['e-1' => 'p-1']), $entry), 'the effective schema');
+
+    expect(mustBeArray($effective['properties'], 'the properties')['name'])->toBe($expected);
+})->with([
+    'a group with rows' => [['mode' => 'inherit_custom', 'value' => ['row']], ['mode' => 'inherit_custom', 'value' => ['row'], '_inherit_base' => 'From parent']],
+    'a group with a string value' => [['mode' => 'inherit_custom', 'value' => 'text'], ['mode' => 'inherit_custom', 'value' => [], '_inherit_base' => 'From parent']],
+    'a group with no value' => [['mode' => 'inherit_custom'], ['mode' => 'inherit_custom', 'value' => [], '_inherit_base' => 'From parent']],
+    'a plain value' => ['Own', 'Own'],
+    'an array without a mode' => [['a'], ['a']],
+]);

@@ -1059,9 +1059,8 @@ class SchemaOutputService
                     // inherit_custom
                     // ---
                     if (
-                        \is_array($value)
-                        && $this->isPropertyGroupValue($value)
-                        && (($value['mode'] ?? '') === 'inherit_custom')
+                        $this->isPropertyGroupValue($value)
+                        && $value['mode'] === 'inherit_custom'
                     ) {
                         // Set the value to the effective properties array
                         $effectiveProperties[$key] = [
