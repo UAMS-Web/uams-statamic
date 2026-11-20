@@ -15,10 +15,13 @@ use App\Modifiers\FormatBytes;
  * case-insensitive system/display, hyphen normalization, the unit/display/precision
  * fallbacks, negative magnitudes, and the `-0` guard).
  *
- * Mutation: every killable mutant is dead (score ~88%). The residual survivors are
- * equivalent mutants no input can distinguish — divisor +/-1 below float precision,
- * display aliases that map to the default mode, and defensive non-scalar/empty guards —
- * so the modifier is left clean rather than annotated with `@pest-mutate-ignore`.
+ * Mutation (UAMS-Web/uams-statamic#822): every mutant is killed or annotated. The
+ * second test below kills the ones the first left alive: a byte count one below each
+ * tier's divisor selects the tier under it, so a divisor moved by one changes the
+ * unit; integer and string parameters reach the casts; and the remaining aliases,
+ * the default precision and the `-2` clamp boundary are each pinned. What is left is
+ * annotated in the modifier: display aliases that map to the default mode, defensive
+ * non-scalar and empty-string guards, and loop or clamp bounds no input can tell apart.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/FormatBytesTest.php
  */
@@ -159,4 +162,36 @@ it('formats a byte count for the given configuration', function (mixed $value, a
     'unknown display falls back to default' => [1500, ['display' => 'bogus'], '1.5 kB'],
     'unknown unit falls back to auto' => [1500, ['unit' => 'zzz'], '1.5 kB'],
     'known unit absent from system falls back to auto' => [1500, ['unit' => 'MiB'], '1.5 kB'],
+]);
+
+it('kills the mutants the configuration dataset leaves alive', function (mixed $value, array $params, int|float|string $expected) {
+    expect((new FormatBytes)->index($value, $params, []))->toBe($expected);
+})->with([
+    // One byte below each tier's divisor stays in the tier below, so a divisor
+    // one smaller would select the higher tier and print "1 <unit>" instead.
+    'one byte below 1 MB stays in kB' => [999999, ['precision' => 0], '1000 kB'],
+    'one byte below 1 GB stays in MB' => [999999999, ['precision' => 0], '1000 MB'],
+    'one byte below 1 TB stays in GB' => [999999999999, ['precision' => 0], '1000 GB'],
+    'one byte below 1 PB stays in TB' => [999999999999999, ['precision' => 0], '1000 TB'],
+    'one byte below 1 EB stays in PB' => [999999999999999999, ['precision' => 0], '1000 PB'],
+    'one byte below 1 MiB stays in KiB' => [1048575, ['system' => 'binary', 'precision' => 0], '1024 KiB'],
+    'one byte below 1 GiB stays in MiB' => [1073741823, ['system' => 'binary', 'precision' => 0], '1024 MiB'],
+    'one byte below 1 TiB stays in GiB' => [1099511627775, ['system' => 'binary', 'precision' => 0], '1024 GiB'],
+    'one byte below 1 PiB stays in TiB' => [1125899906842623, ['system' => 'binary', 'precision' => 0], '1024 TiB'],
+    'one byte below 1 EiB stays in PiB' => [1152921504606846975, ['system' => 'binary', 'precision' => 0], '1024 PiB'],
+    // The remaining binary system aliases, and an integer system that reaches the cast
+    'base2 system alias' => [1536, ['system' => 'base2'], '1.5 KiB'],
+    'base-2 system alias' => [1536, ['system' => 'base-2'], '1.5 KiB'],
+    '1024 system alias' => [1536, ['system' => '1024'], '1.5 KiB'],
+    'integer system is cast to its string alias' => [1536, ['system' => 1024], '1.5 KiB'],
+    // Integer display and unit parameters reach their string casts
+    'integer display falls back to the default mode' => [1500, ['display' => 5], '1.5 kB'],
+    'integer unit falls back to auto' => [1500, ['unit' => 1], '1.5 kB'],
+    // Precision: the default, a numeric string, a non-scalar, and the clamp boundary
+    'default precision is one decimal place' => [1234, [], '1.2 kB'],
+    'numeric-string precision is cast to an integer' => [1234, ['precision' => '0'], '1 kB'],
+    'non-scalar precision falls back to zero' => [1234, ['precision' => [2]], '1 kB'],
+    'precision of -2 clamps to no rounding' => [1234, ['unit' => 'kB', 'precision' => -2], '1.234 kB'],
+    // A positional unit is read from the fourth segment and overrides auto
+    'positional unit overrides auto-selection' => [3000000, ['decimal', 'abbreviated_unit_with_space', 0, 'kB'], '3000 kB'],
 ]);
