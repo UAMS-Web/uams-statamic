@@ -118,11 +118,25 @@ defaults:
 #                     jobs mirror. The local pint job checks the changed files only,
 #                     where the called one checks every tracked file: `test:pint`
 #                     names the dot-directories Pint's own finder skips (#580).
-# THREE LEGS (#348): every job here but `submodule-access`, the `checks` call, the
-# Linux-only `browser` and `browser-report` jobs (#521) and the aggregate `ci` runs on
-# ubuntu-latest, windows-latest and macos-latest, with `fail-fast: false` so one leg's
-# failure does not cancel the others, and `ci` needs them all. The `checks` call's
-# legs are the chain's own classification; see its comment. Windows differs in
+# THREE LEGS (#348): the Pest jobs (`pest`, `pest-serial`, the `pest-report` matrix)
+# and `mutate` run on ubuntu-latest, windows-latest and macos-latest, with
+# `fail-fast: false` so one leg's failure does not cancel the others, and `ci` needs
+# every job below whatever its legs. The other jobs run on fewer platforms (#1171),
+# because macOS runners queue longest and these jobs read nothing macOS can change:
+# - Linux only: `composer-validate`, `no-emoji-guard` and `content-pointer-guard`
+#   read JSON, tracked bytes and git objects, and `browser` and `browser-report`
+#   check the same assets in Chromium everywhere (#521).
+# - Linux and Windows: `spell` (the `.cmd` spawn arm of `spawn-helpers.mjs`),
+#   `encoding-guard` (`PHP_EOL` and CRLF), `test-isolation-guard` (drive letters and
+#   backslashes), `build` and `js` (Vite and Vitest resolve `\` paths and spawn
+#   through `.cmd` shims there). Each has a Windows-only path, and macOS takes the
+#   Linux one: LF line endings, `/` paths, a direct spawn. What CI no longer runs is
+#   the darwin build of the native packages `npm ci` picks per platform (Rolldown,
+#   lightningcss, Tailwind's oxide and others): a lock missing them now fails on a
+#   Mac rather than here, and the Windows leg still proves the lock carries a
+#   non-Linux platform's optional binaries.
+# `submodule-access` runs on Linux only, and the `checks` call's legs are the
+# chain's own classification; see its comment. Windows differs in
 # two places, each marked where it stands: each `pest` shard runs from a list of
 # its test files instead of `--shard` (#504), and CLI OPcache stays off.
 # JOB FAN-OUT: every job below runs in parallel. Three jobs declare `needs:`, each
@@ -1248,7 +1262,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): see THREE LEGS in the header.
     # Local-chain cost rank: after the JS unit tests.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1317,7 +1332,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): see THREE LEGS in the header.
     # Local-chain cost rank: after spell.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1388,7 +1404,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): cspell reads the same files everywhere, but
+    # `scripts/spell.mjs` spawns it through `spawn-helpers.mjs`, whose Windows arm runs a
+    # `.cmd` shim through `cmd.exe` with its own quoting. Linux and macOS take the same
+    # direct spawn, so Linux covers macOS.
     # Local-chain cost rank: after the encoding guard.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
@@ -1659,11 +1679,10 @@ jobs:
 
   composer-validate:
     name: Composer validate (composer.lock freshness)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): `composer validate` and the PSR-4 check read composer.json,
+    # composer.lock and class names against path strings, and the one-class scan reads
+    # the PHP tokens of the files git lists, none of which an operating system changes.
     # Local-chain position: second. `composer validate` measured ~1.5s against the
     # isolation guard's ~0.8s. The PSR-4 class check added in #322 scans `vendor/`
     # on a local run and took 23s on a loaded Windows machine, so the job is no
@@ -1736,11 +1755,9 @@ jobs:
 
   no-emoji-guard:
     name: No-emoji guard (durable records)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): it decodes the UTF-8 of tracked files with Node, and the
+    # bytes and code points are the same on every operating system.
     # Local-chain cost rank: after the composer.lock validation and BEFORE the
     # encoding guard, which is the first job that costs real time (it runs
     # `composer install`). This one is a pure file scan needing only Node, so
@@ -1772,11 +1789,9 @@ jobs:
 
   content-pointer-guard:
     name: Submodule pointer guard (each on its main)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
+    # Linux only (#1171): it compares gitlinks with git and asks `gh` about commits,
+    # so it reads the repository's object graph, which no operating system changes.
     # Local-chain cost rank: after the no-emoji guard and BEFORE the encoding
     # guard, the first job that runs `composer install`. It needs only git and Node.
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1837,7 +1852,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): the mutate-ignore auditor's reason 2 and the
+    # breadth check depend on `PHP_EOL`, which is CRLF on Windows and LF on Linux and
+    # macOS alike, and the lone-CR guard exists for the line endings Windows produces.
+    # The other steps read tracked bytes, which no operating system changes.
     # Local-chain cost rank: after the content pointer guard, though the shared breadth
     # check below makes it slower than that place implies (UAMS-Web/uams-statamic#403).
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
@@ -1961,7 +1980,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
+    # Linux and Windows, no macOS (#1171): the guard scans PHP tokens under tests/ and
+    # normalizes Windows drive letters and backslashes, the one platform difference it
+    # handles; macOS paths read exactly as Linux paths do.
     # An early link in local-ci.json's cost-ordered chain, where a failure here
     # skips the entire rest of the pipeline. Here
     # it runs in parallel with every other job; see the fan-out note in the header.
@@ -2005,8 +2027,8 @@ jobs:
   # (#749). This caller passes `mutate: false` and leaves `mutate-ignore` at its
   # default, false, so `checks / Mutation annotations (none inert)` reports skipped.
   # The annotation audit is not missing: the `encoding-guard` job above runs
-  # `scripts/check-mutate-ignore.php` and the breadth check on all three
-  # platforms, so setting `mutate-ignore: true` would only run it twice.
+  # `scripts/check-mutate-ignore.php` and the breadth check on Linux and
+  # Windows (#1171), so setting `mutate-ignore: true` would only run it twice.
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only
