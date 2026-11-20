@@ -14,18 +14,10 @@ use App\Modifiers\FormatBitrate;
  * "original:" rows are the hand-verified PHPUnit cases. Explicit-unit rows use
  * adversarial values (auto-unit != explicit unit) so a deleted alias is observable.
  *
- * Mutation: every killable mutant is dead (score ~95%). The residual survivors are
- * equivalents — the `is_scalar`-guarded `(string)`/`(int)` param coercions (system,
- * display, precision, unit; non-strict coercion is identical to the cast), the two
- * display aliases that map to the default `abbreviated_unit_with_space` (redundant with
- * the fallback), the no-op boundary mutants of the `precision < -1` clamp (the `<`/`<=`
- * and `-1`/`0` variants differ only at precision -1, which clamps to -1 either way; the
- * clamp body itself is load-bearing and killed by the precision -2 row), the empty-unit
- * `=== ''` -> `auto` guard (empty and `auto` both trigger auto-selection), the
- * auto-selection loop's `>= 0` lower bound (the default `b` already covers index 0), and
- * the unreachable `'' || '-0'` zero guard (`number_format` normalizes -0 to 0 and integer
- * bits / a positive divisor never yield `''` or `'-0'`). Left clean rather than annotated
- * with `@pest-mutate-ignore`.
+ * Mutation: 100% on App\Modifiers\FormatBitrate (240 mutants, 240 tested, without
+ * --covered-only; macOS, UAMS-Web/uams-statamic#821), with no annotations. Under
+ * `strict_types` the `(string)` and `(int)` param coercions are load-bearing, and the
+ * narrowing rows pin them.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/FormatBitrateTest.php
  */
@@ -207,4 +199,30 @@ it('formats a bitrate for the given configuration', function (mixed $value, arra
     'full_unit plural Tib (binary)' => [2199023255552, ['system' => 'binary', 'display' => 'full_unit', 'unit' => 'Tib'], '2 tebibits per second'],
     'nonstandard with space Tib (binary)' => [2199023255552, ['system' => 'binary', 'display' => 'nonstandard_abbreviated_unit_with_space', 'unit' => 'Tib'], '2 Tibbps'],
     'nonstandard without space Tib (binary)' => [2199023255552, ['system' => 'binary', 'display' => 'nonstandard_abbreviated_unit_without_space', 'unit' => 'Tib'], '2Tibbps'],
+]);
+
+it('narrows non-string params and falls back the same way the defaults do (UAMS-Web/uams-statamic#821)', function (int $value, array $params, string $expected) {
+    expect((new FormatBitrate)->index($value, $params, []))->toBe($expected);
+})->with([
+    // strict_types makes each `(string)` / `(int)` coercion load-bearing for a scalar of another type
+    'an integer system reads as decimal' => [1500000, ['system' => 1], '1.5 Mbit/s'],
+    'an integer display reads as the default' => [1500000, ['display' => 1], '1.5 Mbit/s'],
+    'a numeric-string precision' => [1500000, ['precision' => '0'], '2 Mbit/s'],
+    'a numeric-string no-rounding precision' => [1500000, ['precision' => '-1'], '1.5 Mbit/s'],
+    'an integer unit reads as auto' => [1500000, ['unit' => 5], '1.5 Mbit/s'],
+    // The clamp: -1 means no rounding, and anything below it means the same
+    'precision -1 does not round' => [1500000, ['precision' => -1], '1.5 Mbit/s'],
+    'precision below -1 clamps to no rounding' => [1550000, ['precision' => -2], '1.55 Mbit/s'],
+    // An empty or blank unit selects the unit automatically, as `auto` does
+    'an empty unit' => [1500000, ['unit' => ''], '1.5 Mbit/s'],
+    'a blank unit' => [1500000, ['unit' => '   '], '1.5 Mbit/s'],
+    // The default display mode, named and by its alias
+    'the default display by name' => [1500000, ['display' => 'abbreviated_unit_with_space'], '1.5 Mbit/s'],
+    'the default display by alias' => [1500000, ['display' => 'abbr_with_space'], '1.5 Mbit/s'],
+    // Values that round to or sit at zero
+    'a negative value rounding to zero' => [-1, ['unit' => 'gb', 'precision' => 2], '0 Gbit/s'],
+    'a negative value too small to round, unrounded' => [-1, ['unit' => 'tb', 'precision' => -1], '-0.000000000001 Tbit/s'],
+    'zero at a fixed precision' => [0, ['unit' => 'gb', 'precision' => 2], '0 Gbit/s'],
+    'zero unrounded' => [0, ['precision' => -1], '0 bit/s'],
+    'one bit, auto-selected' => [1, [], '1 bit/s'],
 ]);

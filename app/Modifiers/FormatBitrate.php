@@ -178,8 +178,7 @@ class FormatBitrate extends Modifier
             'full_unit' => 'full_unit',
             'full' => 'full_unit',
             'long' => 'full_unit',
-            'abbreviated_unit_with_space' => 'abbreviated_unit_with_space',
-            'abbr_with_space' => 'abbreviated_unit_with_space',
+            // `abbreviated_unit_with_space` and `abbr_with_space` are the fallback below.
             'abbreviated_unit_without_space' => 'abbreviated_unit_without_space',
             'abbr_without_space' => 'abbreviated_unit_without_space',
             'nonstandard_abbreviated_unit_with_space' => 'nonstandard_abbreviated_unit_with_space',
@@ -212,14 +211,8 @@ class FormatBitrate extends Modifier
         // Cast precision to integer.
         $precision = (int) (is_scalar($rawPrecision) ? $rawPrecision : 1);
 
-        // Clamp precision to -1 minimum.
-        if ($precision < -1) {
-            // Update precision to supported minimum.
-            return -1;
-        }
-
-        // Return the normalized precision.
-        return $precision;
+        // Clamp precision to the -1 minimum, which means no rounding.
+        return max(-1, $precision);
     }
 
     /**
@@ -244,13 +237,8 @@ class FormatBitrate extends Modifier
             trim((string) (is_scalar($rawUnit) ? $rawUnit : 'auto'))
         );
 
-        // Check if the unit is empty.
-        if ($normalizedUnit === '') {
-            // Return auto for empty unit.
-            return 'auto';
-        }
-
-        // Return normalized unit identifier.
+        // Return the normalized unit. An empty one names no unit alias, so it reaches the
+        // automatic selection the same way `auto` does.
         return $normalizedUnit;
     }
 
@@ -288,17 +276,14 @@ class FormatBitrate extends Modifier
         // Initialize absolute value for auto unit selection.
         $absoluteBitsPerSecond = abs($bitsPerSecond);
 
-        // Build the ordered unit keys list.
-        $unitKeys = array_keys($units);
+        // Build the unit keys list, largest first.
+        $unitKeys = array_reverse(array_keys($units));
 
         // Initialize selected key to bits.
         $selectedUnitKey = 'b';
 
-        // Iterate through unit keys from largest to smallest.
-        for ($i = \count($unitKeys) - 1; $i >= 0; $i--) {
-            // Resolve the current unit key.
-            $candidateUnitKey = $unitKeys[$i];
-
+        // Select the largest unit the value reaches.
+        foreach ($unitKeys as $candidateUnitKey) {
             // Resolve the current unit divisor.
             $candidateDivisor = $units[$candidateUnitKey]['divisor'];
 
@@ -358,16 +343,10 @@ class FormatBitrate extends Modifier
             );
         }
 
-        // Check if trimming produced empty or negative-zero output.
-        if (
-            $trimmedNumber === ''
-            || $trimmedNumber === '-0'
-        ) {
-            // Return normalized zero output.
-            return '0';
-        }
-
-        // Return normalized numeric text.
+        // Return the normalized text. It is never empty, since both renderings keep a digit
+        // before the point, and never `-0`: `number_format()` drops the sign of a value that
+        // rounds to zero, and the smallest nonzero magnitude, 1 bit over the largest divisor
+        // (about 9.1e-13), still has a digit within `%.14F`'s fourteen places.
         return $trimmedNumber;
     }
 
