@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Support\ReplicatorSetMeta;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\ReplicatorSetMeta;
 
 uses(TestCase::class);
 
