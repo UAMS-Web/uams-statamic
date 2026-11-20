@@ -65,7 +65,8 @@ it('serializes a 301 to an approved, enabled url-target redirect row', function 
         'target_type' => 'url',
         'target_url' => '/new',
         'response' => '301',
-        'order' => MigrationRedirect::DEFAULT_ORDER,
+        // The literal, not the constant, so a changed order fails here
+        'order' => 40,
     ]);
 });
 
