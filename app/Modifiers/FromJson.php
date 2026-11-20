@@ -48,25 +48,24 @@ class FromJson extends Modifier
         $trimmed = trim($value);
 
         // Return null when nothing remains to decode
-        if ($trimmed === '') {
+        // Bypassing the early return still yields null for blank input.
+        // @pest-mutate-ignore: RemoveEarlyReturn
+        if (
+            // An empty payload still decodes to null if this comparison misses it.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
+            $trimmed === ''
+        ) {
             return null;
         }
 
         // Resolve associative flag from the first parameter (default: true)
         $associative = $this->resolveAssociativeDecodeFlag($params);
 
-        // Decode JSON without throwing; check json_last_error after
-        $decoded = json_decode(
+        // Decode JSON without throwing. The decoder returns null on failure.
+        return json_decode(
             $trimmed,
             $associative
         );
-
-        // Return null when the payload is not valid JSON
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return null;
-        }
-
-        return $decoded;
     }
 
     /**

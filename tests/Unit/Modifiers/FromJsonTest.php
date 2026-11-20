@@ -11,13 +11,8 @@ use Statamic\Fields\Value;
  * Value, trimming whitespace, returning null for empty/invalid/non-string input,
  * and choosing associative arrays (default) vs stdClass objects via the first flag.
  *
- * Mutation: every killable mutant is dead (score ~95%). The two residual survivors are
- * output-equivalent redundant guards — removing the empty-string `=== ''` early return
- * still yields null (an empty string is also invalid JSON, so the json_last_error guard
- * returns null), and removing the json-error early return still yields null (json_decode
- * already returned null on error, so `return $decoded` is null). Left clean rather than
- * annotated with `@pest-mutate-ignore`. (The conversion also dropped the method's dead
- * `unset()` cruft, which had masked the non-string-guard mutant.)
+ * The blank-input fast path and its fall-through both return null. Its two
+ * return-equivalent mutants are annotated in the modifier.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/FromJsonTest.php
  */
@@ -28,6 +23,7 @@ it('decodes JSON to an associative array, or null', function (mixed $value, arra
     'object decodes to an associative array' => ['{"@type":"Language","name":"English"}', [], ['@type' => 'Language', 'name' => 'English']],
     'invalid JSON returns null' => ['{not json', [], null],
     'whitespace-only string returns null' => ["  \n  ", [], null],
+    'trims whitespace that is not legal JSON whitespace' => ["\v[1,2]\v", [], [1, 2]],
     'a Value-wrapped string decodes' => [new Value('[1,2]'), [], [1, 2]],
     'a non-string value returns null' => [['already' => 'array'], [], null],
 
