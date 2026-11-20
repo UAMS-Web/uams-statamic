@@ -6,7 +6,6 @@ namespace App\Tags;
 
 use App\Listeners\SetCurrentEntryForTitleFormat;
 use App\Services\TitleDisambiguator;
-use Statamic\Entries\Collection;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Entry as EntryFacade;
@@ -57,7 +56,7 @@ class DisambiguateTitle extends Tags
             return $baseTitle.$suffix;
         }
 
-        $collectionHandle = $this->resolveCollectionHandle($entry);
+        $collectionHandle = $this->resolveCollectionHandle();
         $siteHandle = $this->resolveSiteHandle($entry);
         // Equivalent for the '' check: resolveCollectionHandle() returns null rather
         // than an empty handle.
@@ -141,21 +140,11 @@ class DisambiguateTitle extends Tags
     }
 
     /**
-     * Resolve collection handle from entry, context, or request (e.g., CP URL).
+     * Resolve collection handle from context or request (e.g., CP URL), for an
+     * entry without a collection: index() handles one with a collection itself.
      */
-    private function resolveCollectionHandle(?Entry $entry): ?string
+    private function resolveCollectionHandle(): ?string
     {
-        // Unreachable branch: index() returns through suffixForEntry() whenever the
-        // entry has a collection, so skipping it changes nothing.
-        // @pest-mutate-ignore: InstanceOfToFalse
-        if ($entry instanceof Entry && $entry->collection()) {
-            /** @var Collection $collection */
-            $collection = $entry->collection();
-            $handle = $collection->handle();
-
-            return \is_string($handle) ? $handle : null;
-        }
-
         /** @var Context $context */
         $context = $this->context;
         $fromContext = $context->get('collection');
