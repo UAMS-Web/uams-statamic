@@ -15,12 +15,9 @@ use Statamic\Fields\Value;
  * PartialDateStorageSlots (covered by its own test); this covers the modifier's
  * unwrap/trim/explode/precision decisions, with "now" pinned to 2026-06-05.
  *
- * Mutation: every killable mutant is dead (score ~88%). The residual survivors are
- * equivalents — the empty-token `=== ''` guard (an empty year segment already fails
- * isValidYearPart, so the result is false either way) and the `array_key_exists` index
- * mutants for the month/day slots (the year segment always exists, and a missing month
- * or day resolves to null with or without the off-by-one). Left clean rather than
- * annotated with `@pest-mutate-ignore`.
+ * Mutation: clean without `--covered-only` (#827). The empty-token `=== ''` guard was
+ * removed as dead code: an empty or whitespace-only token yields an empty year segment,
+ * which already fails isValidYearPart, and the cases above pin that result.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/PartialDateCompletedTest.php
  */
