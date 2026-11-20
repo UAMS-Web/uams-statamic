@@ -2091,13 +2091,12 @@ class SchemaOutputService
         ?SchemaTemplateEmitContext $emitContext,
         array $antlersContext = []
     ): string {
-        // Normalize template ids to unique non-empty strings
-        $templateEntryIds = array_values(
-            array_unique(
-                array_filter(
-                    $templateEntryIds,
-                    static fn (string $id): bool => $id !== ''
-                )
+        // Normalize template ids to unique non-empty strings; they are only walked,
+        // so the keys need no reindex
+        $templateEntryIds = array_unique(
+            array_filter(
+                $templateEntryIds,
+                static fn (string $id): bool => $id !== ''
             )
         );
 
@@ -2112,7 +2111,8 @@ class SchemaOutputService
         }
 
         // Use shared emit maps when the tag runs inside schema property Antlers
-        if ($emitContext instanceof SchemaTemplateEmitContext) {
+        $isNested = $emitContext instanceof SchemaTemplateEmitContext;
+        if ($isNested) {
             $contextEntity = $emitContext->contextEntity;
             $graphEntryIds = $emitContext->graphEntryIds;
             $emittedEntryIds = &$emitContext->emittedEntryIds;
@@ -2153,7 +2153,7 @@ class SchemaOutputService
 
             try {
                 // Skip full template expansion when this @id was already emitted in the graph
-                if ($emitContext instanceof SchemaTemplateEmitContext) {
+                if ($isNested) {
                     // A validated type_override changes only the node @type, never its @id.
                     // The coordinator compacts only when a full body for the @id is already
                     // materialized in merged output, and final dedupe collapses any later
