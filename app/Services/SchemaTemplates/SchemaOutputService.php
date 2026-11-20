@@ -3719,11 +3719,8 @@ class SchemaOutputService
         );
 
         // Track dot-path root variables so we can block nested fallback explicitly.
-        $dotPathRoots = array_values(
-            array_unique(
-                $dotPathMatches[1]
-            )
-        );
+        // They are only searched, so repeats and gaps in the keys do not matter.
+        $dotPathRoots = $dotPathMatches[1];
 
         // Expand pipe-delimited field-handle params into explicit placeholder keys.
         $fieldHandleParamVariables = [];
@@ -3771,17 +3768,14 @@ class SchemaOutputService
             'not',
         ];
 
-        // Normalize matched variable names to a unique list.
-        $variableNames = array_values(
-            array_unique(
-                array_merge(
-                    $pipeMatches[1],
-                    $directMatches[1],
-                    $dotPathRoots,
-                    $conditionalMatches[1],
-                    $fieldHandleParamVariables
-                )
-            )
+        // Collect the matched variable names. A repeated name is handled the same way
+        // each time, and the second pass finds the first pass's placeholder in place.
+        $variableNames = array_merge(
+            $pipeMatches[1],
+            $directMatches[1],
+            $dotPathRoots,
+            $conditionalMatches[1],
+            $fieldHandleParamVariables
         );
 
         // Resolve the current context entity once for field-handle safety checks.
@@ -3793,11 +3787,18 @@ class SchemaOutputService
 
         // Add placeholders only for variables missing from explicit context.
         foreach ($variableNames as $variableName) {
-            // Check whether the matched token is a reserved keyword.
+            // Check whether the matched token is a reserved keyword. The keywords are
+            // not numeric, so a loose match with them equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($variableName, $reservedKeywords, true)) {
                 // Skip reserved tokens.
                 continue;
             }
+
+            // Only names from the field-handle params can be numeric strings, so a loose
+            // match with that list equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
+            $isFieldHandleParam = \in_array($variableName, $fieldHandleParamVariables, true);
 
             // Prevent leaked relationship-field values from surviving into tag evaluation.
             // Terms-like blueprint handles (`organization`, `specialty`, etc.) frequently
@@ -3805,7 +3806,7 @@ class SchemaOutputService
             // fields—so do not coerce them to false when schema relationship param scans
             // mention the same handle name.
             if (
-                \in_array($variableName, $fieldHandleParamVariables, true)
+                $isFieldHandleParam
                 && \array_key_exists($variableName, $context)
                 && $contextEntity instanceof EntryModel
                 && ! \in_array($variableName, $termsLikePairStripHandles, true)
@@ -3830,9 +3831,14 @@ class SchemaOutputService
             if (! \array_key_exists($variableName, $context)) {
                 // Set missing dot-path roots to an empty string to block nested fallback
                 // while staying safe for string modifiers like strip_tags.
-                if (\in_array($variableName, $dotPathRoots, true)) {
+                // Dot-path roots are identifiers, never numeric, so a loose match with
+                // them equals a strict one.
+                // @pest-mutate-ignore: TrueToFalse
+                $isDotPathRoot = \in_array($variableName, $dotPathRoots, true);
+
+                if ($isDotPathRoot) {
                     $context[$variableName] = '';
-                } elseif (\in_array($variableName, $fieldHandleParamVariables, true)) {
+                } elseif ($isFieldHandleParam) {
                     // Set missing relationship-field handles to an empty list to block
                     // ambient fallback while remaining "no targets" for relationship tags.
                     $context[$variableName] = false;
@@ -3853,6 +3859,8 @@ class SchemaOutputService
             $fieldHandleParamVariables,
             $dotPathMatches,
             $dotPathRoots,
+            $isDotPathRoot,
+            $isFieldHandleParam,
             $pipeMatches,
             $reservedKeywords,
             $variableName,
@@ -4581,10 +4589,9 @@ class SchemaOutputService
                     $matches
                 )
             ) {
+                // Every pattern captures at least one character
                 foreach ($matches[1] as $identifier) {
-                    if ($identifier !== '') {
-                        $identifiers[$identifier] = true;
-                    }
+                    $identifiers[$identifier] = true;
 
                     unset($identifier);
                 }
@@ -4596,29 +4603,22 @@ class SchemaOutputService
             );
         }
 
-        /** @var array<string, true> $reserved */
-        $reserved = [
-            'true' => true,
-            'false' => true,
-            'null' => true,
-            'if' => true,
-            'elseif' => true,
-            'else_if' => true,
-            'else' => true,
-            'unless' => true,
-            'endif' => true,
-            'endunless' => true,
-        ];
-
-        foreach (array_keys($identifiers) as $identifier) {
-            if (isset($reserved[$identifier])) {
-                unset($identifiers[$identifier]);
-            }
-
-            unset($identifier);
-        }
-
-        return $identifiers;
+        // Drop the Antlers keywords the patterns also match
+        return array_diff_key(
+            $identifiers,
+            array_flip([
+                'true',
+                'false',
+                'null',
+                'if',
+                'elseif',
+                'else_if',
+                'else',
+                'unless',
+                'endif',
+                'endunless',
+            ])
+        );
     }
 
     /**
