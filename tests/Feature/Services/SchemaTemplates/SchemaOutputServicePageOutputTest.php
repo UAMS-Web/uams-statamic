@@ -179,9 +179,11 @@ it('takes each slot from its tag parameter, else from the cascade', function ():
 
     expect($service->outputForCurrentContext())->toBe('<script>1</script>')
         ->and($service->outputForCurrentContext(['subject' => 't-subject', 'main_content' => 't-main']))->toBe('<script>2</script>')
+        ->and($service->outputForCurrentContext(['website' => 't-website', 'webpage' => 't-webpage']))->toBe('<script>3</script>')
         ->and($calls)->toBe([
             ['c-subject', 'c-website', 'c-webpage', 'c-main'],
             ['t-subject', 'c-website', 'c-webpage', 't-main'],
+            ['c-subject', 't-website', 't-webpage', 'c-main'],
         ]);
 });
 
@@ -203,6 +205,37 @@ it('composes on every call when the output cache is off', function (string $key,
     'non-numeric TTL' => ['schema_templates.json_ld_cache.ttl_seconds', 'soon'],
 ]);
 
+it('caches the output for an hour when the cache is not configured', function (): void {
+    Config::set('schema_templates.json_ld_cache', []);
+    $this->freezeTime();
+    $calls = [];
+    $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry('ctx-1'),
+        'composeJsonLdOutputScriptTagForResolvedSlots' => sosPageCompose($calls),
+    ]);
+
+    $first = $service->outputForCurrentContext();
+    $this->travel(3599)->seconds();
+    $second = $service->outputForCurrentContext();
+    $this->travel(1)->seconds();
+    $third = $service->outputForCurrentContext();
+
+    expect([$first, $second, $third])->toBe(['<script>1</script>', '<script>1</script>', '<script>2</script>']);
+});
+
+it('caches the output for a one-second TTL', function (): void {
+    Config::set('schema_templates.json_ld_cache.ttl_seconds', 1);
+    $this->freezeTime();
+    $calls = [];
+    $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry('ctx-1'),
+        'composeJsonLdOutputScriptTagForResolvedSlots' => sosPageCompose($calls),
+    ]);
+
+    expect($service->outputForCurrentContext())->toBe('<script>1</script>')
+        ->and($service->outputForCurrentContext())->toBe('<script>1</script>');
+});
+
 it('composes uncached when the context entity has no id to key the cache on', function (): void {
     $calls = [];
     $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
@@ -215,6 +248,9 @@ it('composes uncached when the context entity has no id to key the cache on', fu
 });
 
 it('serves a repeat call for the same entity and slots from the output cache, for the configured TTL', function (): void {
+    // Freeze the clock so the 119- and 121-second points are measured from the cache
+    // write, not from whenever travel() runs on a loaded runner (#1172).
+    $this->freezeTime();
     Config::set('schema_templates.json_ld_cache.ttl_seconds', '120');
     $calls = [];
     $service = sosPageService(sosPageCascade(['subject_entry' => 's1']), [
@@ -413,3 +449,148 @@ it('records the node build sample even when the slot builds nothing', function (
         ->and(array_column($samples, 0))->toBe(['schema_object_node_build_calls'])
         ->and($lifecycle)->toBe(['reset', 'finalize']);
 });
+
+it('counts every named slot among the graph ids', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $graphIdsSeen = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds) use (&$graphIdsSeen): ?array {
+            $graphIdsSeen[] = $graphIds;
+
+            return null;
+        },
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', 'p1', 'm1');
+
+    expect($graphIdsSeen)->toBe(array_fill(0, 4, ['s1', 'w1', 'p1', 'm1']));
+});
+
+it('records each built node as emitted and drops speculative full-node ids before the next slot', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $seen = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds, array $visited, array &$emittedEntries, array &$emittedNodes, array &$materialized) use (&$seen): array {
+            $seen[$id] = ['emitted' => array_keys($emittedNodes), 'materialized' => array_keys($materialized)];
+            $materialized['https://example.test/#ghost'] = true;
+
+            return ['@type' => 'Thing', '@id' => 'https://example.test/#'.$id];
+        },
+        'inflateBareAtIdReferencesMissingFullNodesInGraph' => function (): void {},
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', null, null);
+
+    expect($seen['s1'])->toBe(['emitted' => [], 'materialized' => []])
+        ->and($seen['w1']['emitted'])->toContain('https://example.test/#s1')
+        ->and($seen['w1']['materialized'])->toBe(['https://example.test/#s1']);
+});
+
+it('drops a speculative full-node id a slot leaves without a node before inflating', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $inflatedWith = null;
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds, array $visited, array &$emittedEntries, array &$emittedNodes, array &$materialized): ?array {
+            if ($id === 'w1') {
+                $materialized['https://example.test/#ghost'] = true;
+
+                return null;
+            }
+
+            return ['@type' => 'Thing', '@id' => 'https://example.test/#'.$id];
+        },
+        'inflateBareAtIdReferencesMissingFullNodesInGraph' => function (array &$graph, mixed $entity, array $graphIds, array &$emittedEntries, array &$emittedNodes, array &$materialized) use (&$inflatedWith): void {
+            $inflatedWith = array_keys($materialized);
+        },
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', null, null);
+
+    expect($inflatedWith)->toBe(['https://example.test/#s1']);
+});
+
+it('records a node build sample in milliseconds', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (): ?array {
+            usleep(20_000);
+
+            return null;
+        },
+    ], sosPageProfiler(true, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', null, null, null);
+
+    expect($samples)->toHaveCount(1)
+        ->and($samples[0][2])->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0);
+});
+
+// ---
+// getSlotEntryForCurrentContext()
+// ---
+
+it('finds the schema entry of each slot for the current context', function (string $slot, string $id): void {
+    $found = sosPageEntry($id);
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject', 'website_entry' => 'c-website', 'webpage_entry' => ['c-webpage'], 'main_content_entry' => 'c-main']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->once()->with($id)->andReturn($found);
+
+    expect($service->getSlotEntryForCurrentContext($slot))->toBe($found);
+})->with([
+    'subject' => ['subject', 'c-subject'],
+    'website' => ['website', 'c-website'],
+    'webpage' => ['webpage', 'c-webpage'],
+    'main content' => ['main_content', 'c-main'],
+]);
+
+it('finds no slot entry on a Control Panel route or without a context entity', function (bool $cpRoute): void {
+    if ($cpRoute) {
+        Config::set('statamic.cp.enabled', true);
+        Config::set('statamic.cp.route', 'cp');
+        app()->instance('request', Request::create('/cp/collections'));
+    }
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject']), [
+        'resolveEntity' => fn (): ?EntryContract => $cpRoute ? throw new LogicException('not reached') : null,
+    ]);
+    Entry::partialMock()->shouldReceive('find')->never();
+
+    expect($service->getSlotEntryForCurrentContext('subject'))->toBeNull();
+})->with([
+    'a Control Panel route' => [true],
+    'no context entity' => [false],
+]);
+
+it('finds no slot entry for an unknown slot or a slot that names no entry', function (string $slot, mixed $stored): void {
+    $service = sosPageService(sosPageCascade(['subject_entry' => $stored]), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->never();
+
+    expect($service->getSlotEntryForCurrentContext($slot))->toBeNull();
+})->with([
+    'an unknown slot' => ['sidebar', 'c-subject'],
+    'no entry' => ['subject', null],
+    'an id that reads as empty' => ['subject', new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return '';
+        }
+    }],
+]);
+
+it('finds no slot entry when its id finds no entry', function (mixed $found): void {
+    $service = sosPageService(sosPageCascade(['subject_entry' => 'c-subject']), [
+        'resolveEntity' => fn (): EntryContract => sosPageEntry(),
+    ]);
+    Entry::partialMock()->shouldReceive('find')->once()->with('c-subject')->andReturn($found);
+
+    expect($service->getSlotEntryForCurrentContext('subject'))->toBeNull();
+})->with([
+    'nothing' => [null],
+]);

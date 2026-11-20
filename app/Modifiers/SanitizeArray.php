@@ -102,10 +102,12 @@ class SanitizeArray extends Modifier
     }
 
     /**
-     * Turn the modifier value into a reindexed list.
+     * Turn the modifier value into an ordered list of items.
+     *
+     * Keys are kept: the caller appends each item to a new list, which reindexes it.
      *
      * @param  mixed  $value  Array, collection, or scalar
-     * @return array<int, mixed> List items before per-item string coercion
+     * @return array<array-key, mixed> List items before per-item string coercion
      */
     private function listItems(
         mixed $value
@@ -119,12 +121,12 @@ class SanitizeArray extends Modifier
 
         // Unwrap Laravel collections to their underlying items
         if ($value instanceof Collection) {
-            return array_values($value->all());
+            return $value->all();
         }
 
-        // Reindex plain arrays without copying nested structures deeply
+        // Use plain arrays as they are
         if (\is_array($value)) {
-            return array_values($value);
+            return $value;
         }
 
         // Wrap any other single value as a one-element list

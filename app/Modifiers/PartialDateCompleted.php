@@ -49,12 +49,8 @@ class PartialDateCompleted extends Modifier
         // Trim whitespace from the storage token
         $trimmed = trim($value);
 
-        // Treat an empty token as in-progress (no completion date)
-        if ($trimmed === '') {
-            return false;
-        }
-
         // Split on hyphens while keeping the remainder in the third segment
+        // (an empty token yields an empty year segment, which fails below)
         $segments = explode(
             '-',
             $trimmed,

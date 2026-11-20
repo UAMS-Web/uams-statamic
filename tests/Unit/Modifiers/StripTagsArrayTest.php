@@ -14,13 +14,11 @@ use Statamic\Fields\Value;
  * strip all, tag names to strip only those, or a context variable holding the tag
  * list (unless Antlers runtime method syntax is active).
  *
- * Mutation: every killable mutant is dead (score ~84%). The residual survivors are
- * equivalents — the tagKey `(string)` cast / `: ''` fallback (Arr::get with an empty or
- * non-existent key both miss the context and fall back to params), the redundant
- * `(string)` casts on the already-string item/stripped values (Str::stripTags both takes
- * and returns a string), and the `array_values` reindexing on the Collection/array paths
- * (the foreach + `$result[]` already reindexes). Left clean rather than annotated with
- * `@pest-mutate-ignore`.
+ * Mutation: clean on Linux without `--covered-only` (#830). The `array_values`
+ * reindexing was removed as dead code, since the foreach and `$result[]` already
+ * reindex. The remaining equivalents carry `@pest-mutate-ignore` in the class with
+ * their reasons: the tag-key cast and its `''` fallback, and the item cast that
+ * `Str::stripTags()` repeats.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/StripTagsArrayTest.php
  */
