@@ -5033,7 +5033,7 @@ class SchemaOutputService
     ): string {
         $parentKey = $this->memoKeyForTermsAugmentParent($parentAugmentable);
         $rawFieldHandle = $blueprintField->handle();
-        $fieldHandle = \is_scalar($rawFieldHandle) ? (string) $rawFieldHandle : '';
+        $fieldHandle = \is_scalar($rawFieldHandle) ? $rawFieldHandle : '';
         $fieldSig = $fieldHandle."\0".hash(
             'xxh128',
             serialize($blueprintField->config())
@@ -5539,12 +5539,13 @@ class SchemaOutputService
             ]
         );
 
-        // Reuse the memoized result only when the stored input is the same value
+        // Reuse the memoized result only when the stored input is the same value: the
+        // same object, or the same slug or slug list, which a content key implies
         if (
             \is_array($row)
             && \array_key_exists('in', $row)
             && \array_key_exists('out', $row)
-            && (\is_object($present) ? $row['in'] === $present : $row['in'] == $present)
+            && $row['in'] === $present
         ) {
             return $row['out'];
         }
