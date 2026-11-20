@@ -284,6 +284,7 @@ it('falls back to the link URL, as stored, when the target has no absolute URL',
 })->with([
     'entry, empty absolute URL' => [EntryModel::class, '', '/about', '/about'],
     'entry, null absolute URL, null URL' => [EntryModel::class, null, null, ''],
+    'entry, null absolute URL, numeric URL' => [EntryModel::class, null, 7, '7'],
     'page, empty absolute URL' => [Page::class, '', '/news', '/news'],
     'asset, empty absolute URL' => [StatamicAsset::class, '', '/assets/a.jpg', '/assets/a.jpg'],
     'asset, null absolute URL, numeric URL' => [StatamicAsset::class, null, 7, '7'],

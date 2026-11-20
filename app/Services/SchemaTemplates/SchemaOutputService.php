@@ -1521,7 +1521,7 @@ class SchemaOutputService
         }
 
         if (\is_array($type)) {
-            return array_values(array_filter($type, fn ($t): bool => $t !== null && $t !== '')) !== [];
+            return array_filter($type, fn ($t): bool => $t !== null && $t !== '') !== [];
         }
 
         return true;
@@ -2549,22 +2549,24 @@ class SchemaOutputService
             }
         }
 
+        // An empty context url leaves the fragment-only `#id`, like no url
         if ($baseUrl === null && $contextEntity !== null && method_exists($contextEntity, 'url')) {
             $contextUrl = $contextEntity->url();
-            if (\is_string($contextUrl) && $contextUrl !== '') {
+            if (\is_string($contextUrl)) {
                 $baseUrl = $contextUrl;
             }
         }
 
         if ($baseUrl !== null) {
-            $baseUrl = str_contains($baseUrl, '#') ? substr($baseUrl, 0, (int) strpos($baseUrl, '#')) : $baseUrl;
+            $hashAt = strpos($baseUrl, '#');
+            $baseUrl = $hashAt === false ? $baseUrl : substr($baseUrl, 0, $hashAt);
         }
 
         $rawResolvedEntryId = $entry->id();
+        // Concatenation casts a scalar id the same way
+        // @pest-mutate-ignore: RemoveStringCast
         $resolvedEntryId = \is_scalar($rawResolvedEntryId) ? (string) $rawResolvedEntryId : '';
-        $nodeId = $baseUrl !== null && $baseUrl !== ''
-            ? $baseUrl.'#'.$resolvedEntryId
-            : '#'.$resolvedEntryId;
+        $nodeId = ($baseUrl ?? '').'#'.$resolvedEntryId;
 
         // Unset local variables to free up memory
         unset(
@@ -4240,20 +4242,9 @@ class SchemaOutputService
             $resolved
         );
 
-        // Return empty strings unchanged
-        if ($url === '') {
-            return $url;
-        }
-
-        // Keep already-absolute HTTP(S) URLs unchanged
-        if (
-            str_starts_with($url, 'http://')
-            || str_starts_with($url, 'https://')
-        ) {
-            return $url;
-        }
-
-        // Resolve root-relative paths against the current site (same as permalink)
+        // Resolve root-relative paths against the current site (same as permalink).
+        // Anything else, an empty or an absolute HTTP(S) URL included, is returned
+        // unchanged below.
         if (str_starts_with($url, '/')) {
             // Ask Statamic to prepend the active site URL
             $madeAbsolute = URL::makeAbsolute($url);

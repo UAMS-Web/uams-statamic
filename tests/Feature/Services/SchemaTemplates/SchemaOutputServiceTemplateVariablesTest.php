@@ -156,3 +156,17 @@ it('clears only relationship field handles, never another variable the context h
     expect($out['title'])->toBe('Kept')
         ->and($out['credentials'])->toBeFalse();
 });
+
+it('adds the entry permalink and url to a context that lacks them', function (array $context, mixed $absolute, mixed $relative, array $expected): void {
+    /** @var EntryModel&MockInterface $entry */
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('absoluteUrl')->andReturn($absolute);
+    $entry->shouldReceive('url')->andReturn($relative);
+
+    expect(sosVarsCall('mergeCanonicalUrlKeysIntoSchemaAntlersContext', $entry, $context))->toBe($expected);
+})->with([
+    'both missing' => [[], 'https://example.test/a', '/a', ['permalink' => 'https://example.test/a', 'url' => '/a']],
+    'both given' => [['permalink' => 'given', 'url' => 'given'], 'https://example.test/a', '/a', ['permalink' => 'given', 'url' => 'given']],
+    'empty URLs' => [[], '', '', []],
+    'URLs that are not strings' => [[], null, 7, []],
+]);

@@ -112,6 +112,12 @@ it('loads the entry by id when none is passed', function (): void {
     expect(sosNodeIdCall(sosNodeIdService(), 'entryIdToNodeId', 'e1', null, [], []))->toBe('#e1');
 });
 
+it('bases the node id of a loaded entry on the context URL', function (): void {
+    Entry::shouldReceive('find')->once()->with('e1')->andReturn(sosNodeIdEntry('e1', 'pages', ['properties' => []]));
+
+    expect(sosNodeIdCall(sosNodeIdService(), 'entryIdToNodeId', 'e1', sosNodeIdContext('/ctx'), [], []))->toBe('/ctx#e1');
+});
+
 it('uses the canonical @id of a schema_objects entry, suffixed by a non-negative instance index', function (?int $index, string $expected): void {
     Entry::shouldReceive('find')->never();
     $service = sosNodeIdService(['getCanonicalAtIdForSchemaEntry' => fn (): string => 'https://example.test/#e1']);
