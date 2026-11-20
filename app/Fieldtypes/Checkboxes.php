@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Fieldtypes;
 
-use App\Fieldtypes\Traits\ConfigSectionWrapper;
-use App\Fieldtypes\Traits\DynamicDefaultValue;
-use App\Fieldtypes\Traits\FieldtypeValidationRules;
 use App\Fieldtypes\Traits\HasChoiceSubmissionLimits;
-use App\Fieldtypes\Traits\OtherOption;
 use App\Fieldtypes\Traits\PresetOptions;
-use App\Fieldtypes\Traits\RandomizesOptions;
 use Statamic\Fields\Field;
 use Statamic\Fieldtypes\Checkboxes as BaseCheckboxes;
+use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
+use UAMSWeb\Aether\Fieldtypes\Traits\DynamicDefaultValue;
+use UAMSWeb\Aether\Fieldtypes\Traits\FieldtypeValidationRules;
+use UAMSWeb\Aether\Fieldtypes\Traits\OtherOption;
+use UAMSWeb\Aether\Fieldtypes\Traits\RandomizesOptions;
 
 /**
  * Custom Checkboxes fieldtype that extends Statamic's Checkboxes to support an

@@ -19,11 +19,11 @@
  * its `product:price-changed` event is caught by the listener registered here.
  *
  * Like the sibling pricing engines, it binds plain DOM listeners (composite
- * subfields drop `x-model`) but registers through `lib/alpine-engine.js` for the
+ * subfields drop `x-model`) but registers through the fieldtype add-on's `alpine.js` for the
  * shared lifecycle and idempotency guard.
  */
 
-import { registerAlpineEngine } from './lib/alpine-engine.js';
+import { registerAlpineEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 /** Selector for total-field wrappers emitted by `total.antlers.html`. */
 const TOTAL_FIELD_SELECTOR = '[data-total-field]';
@@ -81,7 +81,7 @@ function initTotalField(field) {
 
 /**
  * Public entry. Lifecycle (wait for Alpine, scan, idempotent flag, per-element
- * init) lives in `lib/alpine-engine.js` and is shared with sibling engines.
+ * init) lives in the fieldtype add-on's `alpine.js` and is shared with sibling engines.
  */
 export function registerTotalPricingEngine() {
 	registerAlpineEngine({

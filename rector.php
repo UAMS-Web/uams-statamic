@@ -51,37 +51,11 @@ $sweepOnlyRules = [
     RemoveUselessVarTagRector::class,
 ];
 
-// Large machine-generated reference-data enums — same list as phpstan.neon.dist
-// `excludePaths.analyse` and phpunit.xml coverage excludes. Rector would spend
-// minutes on files with no hand-written control flow to improve.
-$generatedEnumSkips = [
-    __DIR__.'/app/Enums/CanadianProvince.php',
-    __DIR__.'/app/Enums/Country.php',
-    __DIR__.'/app/Enums/County.php',
-    __DIR__.'/app/Enums/CredentialRegistry.php',
-    __DIR__.'/app/Enums/Currency.php',
-    __DIR__.'/app/Enums/InternationalCodeDesignator.php',
-    __DIR__.'/app/Enums/IscedA2011.php',
-    __DIR__.'/app/Enums/IscedF2013.php',
-    __DIR__.'/app/Enums/IscedP2011.php',
-    __DIR__.'/app/Enums/Isco08.php',
-    __DIR__.'/app/Enums/Language.php',
-    __DIR__.'/app/Enums/LanguageBCP47.php',
-    __DIR__.'/app/Enums/MimeType.php',
-    __DIR__.'/app/Enums/SchemaDataType.php',
-    __DIR__.'/app/Enums/SchemaEnumerationMember.php',
-    __DIR__.'/app/Enums/SchemaProperty.php',
-    __DIR__.'/app/Enums/SchemaType.php',
-    __DIR__.'/app/Enums/State.php',
-    __DIR__.'/app/Enums/ZipCode.php',
-];
-
 return RectorConfig::configure()
     ->withPaths([
         __DIR__.'/app',
     ])
     ->withSkip([
-        ...$generatedEnumSkips,
         ...($isSweepProfile ? [] : $sweepOnlyRules),
     ])
     ->withPreparedSets(

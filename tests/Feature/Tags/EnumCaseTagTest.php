@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\MovedClassAliases;
 use App\Tags\EnumCase;
 use PHPUnit\Framework\Assert;
 use Statamic\Fields\Value;
@@ -163,7 +164,12 @@ it('matches the first attribute property to reflection for every app enum', func
 });
 
 /**
- * Discover every `App\Enums\*` enum class on disk, sorted.
+ * Every `App\Enums\*` enum class, sorted.
+ *
+ * The enums moved into `uams-web/aether-enums` (#995) and keep their old names through
+ * the shims in {@see MovedClassAliases}, which is how templates name them, so the old
+ * names are read from the shim map. The list must not be empty, or every "for every app
+ * enum" test below would pass over nothing.
  *
  * @return list<class-string<UnitEnum>>
  */
@@ -171,16 +177,15 @@ function enumCaseTag_discoverAppEnumClasses(): array
 {
     $classes = [];
 
-    foreach (glob(base_path('app/Enums/*.php')) ?: [] as $path) {
-        $base = basename($path, '.php');
-        $fqcn = 'App\\Enums\\'.$base;
-
-        if (enum_exists($fqcn)) {
+    foreach (array_keys(MovedClassAliases::map()) as $fqcn) {
+        if (str_starts_with($fqcn, 'App\\Enums\\') && substr_count($fqcn, '\\') === 2 && enum_exists($fqcn)) {
             $classes[] = $fqcn;
         }
     }
 
     sort($classes);
+
+    Assert::assertNotEmpty($classes, 'No App\\Enums enum resolved through the shims.');
 
     return $classes;
 }

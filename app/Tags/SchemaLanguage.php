@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tags;
 
-use App\Enums\Language;
-use App\Enums\LanguageBCP47;
 use App\Support\RequestAttributeMemo;
 use Statamic\Fields\Value;
 use Statamic\Tags\Parameters;
 use Statamic\Tags\Tags;
+use UAMSWeb\Aether\Enums\Language;
+use UAMSWeb\Aether\Enums\LanguageBCP47;
 
 /**
  * Antlers tag: JSON-encode Schema.org `Language` nodes (or Text fallbacks) for
