@@ -45,7 +45,6 @@ use App\Rules\NaicsCode;
 use App\Rules\Name;
 use App\Rules\NationalPhone;
 use App\Rules\Npi;
-use App\Rules\OnetSocOccupationCode;
 use App\Rules\OpeId;
 use App\Rules\Orcid;
 use App\Rules\OtherCertificationTerm;
@@ -81,6 +80,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\ValidatorAwareRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use UAMSWeb\Aether\People\Rules\OnetSocOccupationCode;
 
 /**
  * Service provider for custom validation rules with enhanced display name support.

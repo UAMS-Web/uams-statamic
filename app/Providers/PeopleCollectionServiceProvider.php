@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar;
 use App\Services\Locations\LocationInheritedAddressService;
+use App\Services\Organizations\OrganizationPublicLabelService;
 use App\Services\PubMed\PubMedEsummaryService;
 use App\Services\Seo\DocumentTitle;
 use App\Support\Collections\CollectionExtensions;
@@ -17,6 +18,7 @@ use UAMSWeb\Aether\People\Contracts\DepartmentHubRoster;
 use UAMSWeb\Aether\People\Contracts\EntryReferenceRepointer as EntryReferenceRepointerContract;
 use UAMSWeb\Aether\People\Contracts\LocationRegions;
 use UAMSWeb\Aether\People\Contracts\MergeRedirectWriter;
+use UAMSWeb\Aether\People\Contracts\OrganizationDisplayName;
 use UAMSWeb\Aether\People\Contracts\PublicationCitations;
 use UAMSWeb\Aether\People\Entries\PersonEntry;
 use UAMSWeb\Aether\People\Merge\RedirectsGlobalWriter;
@@ -44,6 +46,9 @@ use UAMSWeb\Aether\People\Support\PeopleCollection;
  *   E-summary cache the site warms.
  * - **`DepartmentHubRoster`:** {@see DepartmentHubPeopleRoster}, which maps a hub site to
  *   its organization and derives that organization's roster.
+ * - **`OrganizationDisplayName`:** {@see OrganizationPublicLabelService}, which gives a
+ *   `role_title` scope the public name of a linked unit that has no `formal_name`
+ *   (UAMS-Web/uams-statamic#1143).
  *
  * Collection behavior:
  *
@@ -66,6 +71,7 @@ final class PeopleCollectionServiceProvider extends ServiceProvider
         LocationRegions::class => LocationInheritedAddressService::class,
         PublicationCitations::class => PubMedEsummaryService::class,
         DepartmentHubRoster::class => DepartmentHubPeopleRoster::class,
+        OrganizationDisplayName::class => OrganizationPublicLabelService::class,
     ];
 
     /**

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a7c3fd9850011f72b9794ac42909a52",
+    "content-hash": "d48dabc230ddf948436490854eb8b4ae",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12598,21 +12598,23 @@
         },
         {
             "name": "uams-web/aether-people",
-            "version": "v0.3.0",
+            "version": "v0.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-people.git",
-                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9"
+                "reference": "5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
-                "reference": "9ea9eb93c7124cbdc5b40b893ff1d008cdc2faa9",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98",
+                "reference": "5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.4",
-                "statamic/cms": "^6.35"
+                "statamic/cms": "^6.35",
+                "uams-web/aether-enums": "^0.1.0",
+                "uams-web/aether-fieldtypes": "^0.1.0"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -12670,7 +12672,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-people/issues",
                 "source": "https://github.com/UAMS-Web/aether-people"
             },
-            "time": "2026-11-17T12:55:41+00:00"
+            "time": "2026-11-19T19:05:07+00:00",
+            "published-time": "2026-11-19T19:11:16+00:00"
         },
         {
             "name": "uams-web/aether-redirects",

@@ -2,13 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\RoleTitle;
-use App\Rules\RoleTitleScopeUnitRule;
 use App\Services\Organizations\OrganizationPublicLabelService;
 use App\Services\People\RoleTitleScopeUnitLinker;
-use App\Support\RoleTitleDefinition;
-use App\Support\RoleTitleScopeUnit;
-use App\Support\RoleTitleValue;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Assert;
@@ -23,6 +18,11 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Stache\Repositories\EntryRepository;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Fieldtypes\RoleTitle;
+use UAMSWeb\Aether\People\Rules\RoleTitleScopeUnitRule;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleScopeUnit;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 
@@ -359,7 +359,7 @@ it('refuses a linked unit beside a selected object, which the composer would dro
     $row = ['title' => ['configuration' => 'academic_leadership', 'object' => 'department', 'scope' => ['scope_joiner' => 'of', 'scope_unit' => 'peds']]];
 
     expect(scopeUnitRowMessages($row))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_unit_object')]);
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_unit_object')]);
 });
 
 it('treats a blank or none-sentinel object as no object', function (string $object): void {
@@ -385,9 +385,9 @@ it('refuses a link that does not resolve, and a unit with no public name, with o
     $sibling = ['department' => ['elsewhere']];
 
     expect(scopeUnitRowMessages(scopeUnitRow(['scope_joiner' => 'for', 'scope_unit' => 'gone'], $sibling)))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_unit_not_found')])
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_unit_not_found')])
         ->and(scopeUnitRowMessages(scopeUnitRow(['scope_joiner' => 'for', 'scope_unit' => 'wd'], $sibling)))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_unit_unnamed')]);
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_unit_unnamed')]);
 });
 
 it('accepts a linked unit whose posted scope carries no joiner', function (): void {
@@ -632,7 +632,7 @@ it('ships the picker config and an editor row for the scope unit', function (): 
         'collections' => ['organizations'],
         'max_items' => 1,
     ])->and($meta['scope_unit_meta'] ?? null)->toBe([])
-        ->and($labels['scope.scope_unit'] ?? null)->toBe(__('statamic::fieldtypes.role_title.field.scope_unit'));
+        ->and($labels['scope.scope_unit'] ?? null)->toBe(__('aether-people::fieldtypes.role_title.field.scope_unit'));
 
     $nestedTypes = [];
 
@@ -712,7 +712,7 @@ it('reads a padded object the way the composer reads it', function (): void {
     $row = ['title' => ['configuration' => 'academic_leadership', 'object' => '  department  ', 'scope' => ['scope_joiner' => 'of', 'scope_unit' => 'peds']]];
 
     expect(scopeUnitRowMessages($row))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_unit_object')]);
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_unit_object')]);
 });
 
 it('walks every sibling, past scalars and past a classified payload, from any root', function (): void {

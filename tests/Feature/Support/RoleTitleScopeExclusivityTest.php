@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Support\RoleTitleValue;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Entry as EntryFacade;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 

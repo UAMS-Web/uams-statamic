@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Support\RoleTitleDefinition;
-use App\Support\RoleTitleValue;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 
@@ -12,7 +12,8 @@ uses(TestCase::class);
  * Parity tests for `RoleTitleDefinition` vs `config/role_title.php` and
  * `RoleTitleValue` delegation.
  *
- * Mutation: 100% on App\Support\RoleTitleDefinition (551 mutants, --covered-only).
+ * Mutation: 100% on the site's former `App\Support\RoleTitleDefinition` (551 mutants, --covered-only). The class
+ * now lives in `uams-web/aether-people` (UAMS-Web/uams-statamic#1143), whose suite owns its mutation run.
  *
  * @command  php artisan test --compact tests/Feature/Support/RoleTitleDefinitionTest.php
  */
@@ -261,14 +262,14 @@ it('includes the faculty scope qualifier and role rows in the compose checklist'
 it('resolves CP subfield labels from config for the Title Options toggle', function () {
     $labels = RoleTitleDefinition::instance()->cpSubfieldLabelsForPreload();
 
-    expect($labels['title_options'])->toBe(__('statamic::fieldtypes.role_title.field.toggle_options'));
+    expect($labels['title_options'])->toBe(__('aether-people::fieldtypes.role_title.field.toggle_options'));
 });
 
 it('uses dotted paths for nested CP group field labels', function () {
     $nested = RoleTitleDefinition::instance()->cpNestedFieldLabelsForPreload();
 
-    expect($nested['scope.scope_joiner'])->toBe(__('statamic::fieldtypes.role_title.field.scope_joiner'));
-    expect($nested['scope.scope_name'])->toBe(__('statamic::fieldtypes.role_title.field.scope_name'));
+    expect($nested['scope.scope_joiner'])->toBe(__('aether-people::fieldtypes.role_title.field.scope_joiner'));
+    expect($nested['scope.scope_name'])->toBe(__('aether-people::fieldtypes.role_title.field.scope_name'));
 });
 
 it('lists checkbox and group top-level storage keys for the CP value merge', function () {
@@ -338,7 +339,7 @@ function roleTitleCpLabelsForTranslationCheck(): array
 
     foreach ($def->optionLabelMapKeyListsByPreloadKey() as $slot => $optionKeys) {
         foreach ($optionKeys as $optionKey) {
-            $labels[sprintf('option %s.%s', $slot, $optionKey)] = __('statamic::fieldtypes.role_title.field.option.'.$optionKey);
+            $labels[sprintf('option %s.%s', $slot, $optionKey)] = __('aether-people::fieldtypes.role_title.field.option.'.$optionKey);
         }
     }
 
@@ -350,7 +351,7 @@ it('translates every role_title subfield, nested field, option and no-selection 
 
     $untranslated = array_keys(array_filter(
         $labels,
-        static fn (string $label): bool => str_starts_with($label, 'statamic::')
+        static fn (string $label): bool => str_starts_with($label, 'aether-people::')
     ));
 
     // The honorific rows are the case UAMS-Web/uams-statamic-archive#2545 was filed for, so they must be in the set checked

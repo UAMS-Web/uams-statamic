@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Support\ReplicatorVueSet;
+use UAMSWeb\Aether\People\Support\ReplicatorVueSet;
 
 it('carries the resolved handle once, at the top level and at index 0', function (): void {
     $set = ReplicatorVueSet::fromSet('row', [['handle' => 'row'], 'display' => 'Row', 'fields' => []], [['handle' => 'code', 'type' => 'text']]);

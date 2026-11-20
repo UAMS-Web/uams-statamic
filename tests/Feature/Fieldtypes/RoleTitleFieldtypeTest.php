@@ -2,24 +2,25 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\RoleTitle;
-use App\Rules\RoleTitlePerConfigurationOptionRule;
-use App\Support\RoleTitleDefinition;
-use App\Support\RoleTitleSchemaOutputComputer;
-use App\Support\RoleTitleValue;
 use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use Statamic\Entries\Entry;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Fieldtypes\RoleTitle;
+use UAMSWeb\Aether\People\Rules\RoleTitlePerConfigurationOptionRule;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleSchemaOutputComputer;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 
 /**
  * Unit tests for `RoleTitle` fieldtype processing and `RoleTitleValue` compose helpers.
  *
- * Mutation: 100% on App\Fieldtypes\RoleTitle (482 mutants, --covered-only).
+ * Mutation: 100% on the site's former `App\Fieldtypes\RoleTitle` (482 mutants, --covered-only). The class
+ * now lives in `uams-web/aether-people` (UAMS-Web/uams-statamic#1143), whose suite owns its mutation run.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/RoleTitleFieldtypeTest.php
  */

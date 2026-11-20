@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Rules\RoleTitlePerConfigurationOptionRule;
-use App\Support\RoleTitleDefinition;
-use App\Support\RoleTitleValue;
 use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Rules\RoleTitlePerConfigurationOptionRule;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 

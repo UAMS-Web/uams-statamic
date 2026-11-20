@@ -23,13 +23,24 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Feature tests for the {{ disambiguate_title }} paired tag.
  *
- * Mutation: on App\Tags\DisambiguateTitle (--covered-only); see the class for annotated
- * equivalents. The entry branch at the top of resolveCollectionHandle() is not covered:
- * index() returns through suffixForEntry() whenever the entry has a collection, so
- * resolveCollectionHandle() never receives one.
+ * Mutation: on App\Tags\DisambiguateTitle, without --covered-only; see the class for
+ * annotated equivalents (#803).
  *
  * @command  php artisan test --compact tests/Feature/Tags/DisambiguateTitleTagTest.php
  */
+
+/**
+ * Pad Pest's mutant-child timeout once per process under `--mutate` (a constant, since Pest
+ * resets a closure's `static` and by-reference variables for every test): a child boots the
+ * application cold and otherwise overruns a limit sized from the warm initial run (#803).
+ */
+beforeEach(function (): void {
+    if (! defined('DISAMBIGUATE_TITLE_TAG_PADDED') && runningUnderMutate()) {
+        define('DISAMBIGUATE_TITLE_TAG_PADDED', true);
+        usleep(20_000_000);
+    }
+});
+
 it('returns empty when parsed base title empty', function () {
     $tag = new DisambiguateTitle;
     $tag->setContent('   ');

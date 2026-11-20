@@ -38,8 +38,6 @@ import './conditions/selectionContains/index.js';
 // Load `notContains` and `notContainsAny` (self-registers on import)
 import './conditions/notContains/index.js';
 import './conditions/notContainsAny/index.js';
-// Load role_title blueprint editor helpers (self-registers on import)
-import './conditions/roleTitleDefaultConfigurationVisible/index.js';
 // Load `parkingVisible` (location parking leaf-field visibility; self-registers on import)
 import './conditions/parkingVisible/index.js';
 // Load `parentOverride` (clinical_locations per-child address/parking override; self-registers on import)
