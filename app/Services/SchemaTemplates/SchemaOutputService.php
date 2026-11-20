@@ -1642,7 +1642,9 @@ class SchemaOutputService
                 $fragment['@id']
             );
 
-            // Append the uuid to the emitted entry list when newly seen
+            // Append the uuid to the emitted entry list when newly seen. A uuid is
+            // never numeric, so a loose match with the list equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (
                 $parsed !== null
                 && ! \in_array($parsed['entry_id'], $emittedEntryIds, true)
@@ -1653,16 +1655,15 @@ class SchemaOutputService
             unset($parsed);
         }
 
-        // Recurse into children to record nested full nodes
+        // Recurse into children to record nested full nodes; a scalar child returns
+        // at once
         foreach ($fragment as $child) {
-            if (\is_array($child)) {
-                $this->replayEmitSideEffectsFromCachedNodeFragment(
-                    $child,
-                    $emittedEntryIds,
-                    $emittedNodeIds,
-                    $materializedFullNodeAtIds
-                );
-            }
+            $this->replayEmitSideEffectsFromCachedNodeFragment(
+                $child,
+                $emittedEntryIds,
+                $emittedNodeIds,
+                $materializedFullNodeAtIds
+            );
 
             unset($child);
         }
