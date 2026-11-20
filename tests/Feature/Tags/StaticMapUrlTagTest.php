@@ -82,3 +82,13 @@ it('falls back to a safe street-level zoom when neither a zoom nor a numeric def
     expect(renderStaticMapUrlTag('lat="34.7" lng="-92.3"'))
         ->toBe('https://static.example.test/?c=34.7,-92.3&z=16');
 });
+
+it('reads a numeric-string default zoom as an integer', function () {
+    config([
+        'maps.viewer.static_url' => 'https://static.example.test/?c={lat},{lng}&z={zoom}',
+        'maps.viewer.default_zoom' => '12',
+    ]);
+
+    expect(renderStaticMapUrlTag('lat="34.7" lng="-92.3"'))
+        ->toBe('https://static.example.test/?c=34.7,-92.3&z=12');
+});
