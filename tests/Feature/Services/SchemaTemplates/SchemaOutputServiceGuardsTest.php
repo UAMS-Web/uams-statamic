@@ -10,6 +10,7 @@ use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
 use App\Services\SchemaTemplates\SchemaJsonLdSchemaObjectEmissionCoordinator;
 use App\Services\SchemaTemplates\SchemaOutputService;
 use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
+use App\Services\SchemaTemplates\SchemaTemplateNodeBuildStack;
 use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
 use App\Support\RequestAttributeMemo;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -432,3 +433,183 @@ it('reuses the memo row stored for the same input', function (): void {
 
     expect(sosGuardCall(sosGuardService(), 'memoizedHydrateRawTermSlugValueToAugmentedValue', 'alpha'))->toBe('memoized');
 });
+
+/**
+ * The service with each replicator row resolving to its own `out` value.
+ */
+function sosGuardRowsService(): SchemaOutputService&MockInterface
+{
+    $service = sosGuardService();
+    $service->shouldReceive('resolveSingleReplicatorRowToValue')->andReturnUsing(fn (array $row): mixed => $row['out'] ?? null);
+
+    return $service;
+}
+
+it('collects the values of the enabled rows, flattening lists and dropping empty values', function (array $rows, mixed $expected): void {
+    expect(sosGuardResolveProperty(sosGuardRowsService(), $rows))->toBe($expected);
+})->with([
+    'a null row before a value' => [[['out' => null], ['out' => 'A']], 'A'],
+    'an empty row before a value' => [[['out' => ''], ['out' => 'A']], 'A'],
+    'a disabled row before a value' => [[['out' => 'X', 'enabled' => false], ['out' => 'A']], 'A'],
+    'a list with empty items' => [[['out' => ['x', null, '', 'y']]], ['x', 'y']],
+    'two values' => [[['out' => 'A'], ['out' => 'B']], ['A', 'B']],
+    'a keyed value' => [[['out' => ['k' => 'v']]], ['k' => 'v']],
+    'only empty rows' => [[['out' => null], ['out' => '']], null],
+    'no rows' => [[], null],
+]);
+
+it('resolves a property group by its mode', function (array $group, mixed $expected): void {
+    expect(sosGuardResolveProperty(sosGuardRowsService(), $group))->toBe($expected);
+})->with([
+    'custom rows' => [['mode' => 'custom', 'value' => [['out' => 'A']]], 'A'],
+    'custom with no value' => [['mode' => 'custom'], null],
+    'disabled' => [['mode' => 'disable', 'value' => [['out' => 'A']]], null],
+    'inherit_custom with no base and no rows' => [['mode' => 'inherit_custom'], null],
+    'inherit_custom with a base only' => [['mode' => 'inherit_custom', '_inherit_base' => 'Base'], 'Base'],
+    'inherit_custom with rows only' => [['mode' => 'inherit_custom', 'value' => [['out' => 'A']]], 'A'],
+    'inherit_custom with rows that are not a list' => [['mode' => 'inherit_custom', '_inherit_base' => 'Base', 'value' => 'text'], 'Base'],
+]);
+
+/**
+ * The service building `tpl-1` from the given type and properties, recording every
+ * property resolution and node id computed.
+ *
+ * @param  array<string, mixed>  $properties
+ * @param  list<array<string, mixed>>  $resolutions  Each property resolution, by reference.
+ * @param  list<array<int, string>>  $nodeIdVisits  The visited ids each node id saw, by reference.
+ */
+function sosGuardNodeService(mixed $type, array $properties, array &$resolutions = [], array &$nodeIdVisits = []): SchemaOutputService&MockInterface
+{
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('get')->andReturnNull();
+    $entry->shouldReceive('id')->andReturn('tpl-1');
+    EntryFacade::partialMock()->shouldReceive('find')->andReturn($entry);
+    $service = sosGuardService();
+    $service->shouldReceive('getEffectiveSchema')->andReturn(['type' => $type, 'properties' => $properties]);
+    $service->shouldReceive('entryIdToNodeId')->andReturnUsing(function (string $id, mixed $entity, array $graph, array $visited) use (&$nodeIdVisits): string {
+        $nodeIdVisits[] = $visited;
+
+        return 'https://example.test/#'.$id;
+    });
+    $service->shouldReceive('resolvePropertyValue')->andReturnUsing(
+        function (mixed $value, mixed $entity, array $graph, array $visited, array &$a, array &$b, array &$c, array $context) use (&$resolutions): mixed {
+            $resolutions[] = ['value' => $value, 'visited' => $visited, 'context' => $context, 'building' => SchemaTemplateNodeBuildStack::contains('tpl-1')];
+
+            return $value;
+        }
+    );
+
+    return $service;
+}
+
+/**
+ * Build `tpl-1` as a node.
+ *
+ * @param  array<int, string>  $visited
+ * @param  array<string, mixed>  $antlers
+ */
+function sosGuardBuildNode(SchemaOutputService $service, mixed $context = null, array $visited = [], array $antlers = [], ?SchemaTemplateInstanceWatermarkBag $bag = null, ?string $ownBusinessId = null, string $entryId = 'tpl-1'): mixed
+{
+    $emittedEntryIds = [];
+    $emittedNodeIds = [];
+    $materialized = [];
+
+    return (new ReflectionMethod(SchemaOutputService::class, 'schemaObjectEntryToNode'))->invokeArgs($service, [
+        $entryId, $context, [], $visited, &$emittedEntryIds, &$emittedNodeIds, &$materialized, $antlers, $bag, $ownBusinessId,
+    ]);
+}
+
+it('builds no node for a blank scalar type', function (mixed $type): void {
+    expect(sosGuardBuildNode(sosGuardNodeService($type, [])))->toBeNull();
+})->with([
+    'an empty string' => [''],
+    'null' => [null],
+]);
+
+it('reads the node @type from the declared types', function (mixed $type, mixed $expected): void {
+    $node = mustBeArray(sosGuardBuildNode(sosGuardNodeService($type, [])), 'the built node');
+
+    expect($node['@type'])->toBe($expected);
+})->with([
+    'one type after a blank' => [['', 'Thing'], 'Thing'],
+    'a numeric type' => [5, '5'],
+    'a non-scalar type' => [[['Thing']], ''],
+    'two types' => [['Thing', 'Person'], ['Thing', 'Person']],
+]);
+
+it('builds an entry whose id only loosely matches a visited one', function (): void {
+    expect(sosGuardBuildNode(sosGuardNodeService('Thing', []), null, ['1e1'], [], null, null, '10'))->toBeArray();
+});
+
+it('applies a compatible type override, and keeps the declared type for another', function (array $override, mixed $expected): void {
+    $node = mustBeArray(sosGuardBuildNode(sosGuardNodeService('Thing', []), null, [], [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE => $override]), 'the built node');
+
+    expect($node['@type'])->toBe($expected);
+})->with([
+    'a subtype' => [['Person'], 'Person'],
+    'an unknown type' => [['NotASchemaType'], 'Thing'],
+    'no override' => [[], 'Thing'],
+]);
+
+it('types the context entity\'s own business node by its subtype, else as a podcast episode', function (?array $subtype, ?array $podcast, mixed $expected): void {
+    $service = sosGuardNodeService('MedicalOrganization', []);
+    $service->shouldReceive('resolveContextEntitySubtypeAtType')->once()->andReturn($subtype);
+    $service->shouldReceive('resolvePodcastEpisodeAtType')->times($subtype === null ? 1 : 0)->andReturn($podcast);
+
+    $node = mustBeArray(sosGuardBuildNode($service, null, [], [], null, 'tpl-1'), 'the built node');
+
+    expect($node['@type'])->toBe($expected);
+})->with([
+    'a subtype' => [['MedicalClinic'], null, 'MedicalClinic'],
+    'a podcast episode' => [null, ['Article', 'PodcastEpisode'], ['Article', 'PodcastEpisode']],
+    'neither' => [null, null, 'MedicalOrganization'],
+]);
+
+it('keeps the declared type for a node that is not the context entity\'s own business node', function (?string $ownBusinessId): void {
+    $service = sosGuardNodeService('MedicalOrganization', []);
+    $service->shouldNotReceive('resolveContextEntitySubtypeAtType');
+    $service->shouldNotReceive('resolvePodcastEpisodeAtType');
+
+    $node = mustBeArray(sosGuardBuildNode($service, null, [], [], null, $ownBusinessId), 'the built node');
+
+    expect($node['@type'])->toBe('MedicalOrganization');
+})->with([
+    'no own business node' => [null],
+    'another entry' => ['tpl-2'],
+]);
+
+it('resolves each property with the entry added to the visited ids, while the entry is building', function (): void {
+    $resolutions = [];
+    $nodeIdVisits = [];
+    $service = sosGuardNodeService('Thing', ['empty' => null, 'name' => 'N'], $resolutions, $nodeIdVisits);
+
+    $node = mustBeArray(sosGuardBuildNode($service, null, ['parent-1']), 'the built node');
+
+    expect($node)->toBe(['@id' => 'https://example.test/#tpl-1', '@type' => 'Thing', 'name' => 'N'])
+        ->and($nodeIdVisits)->toBe([['parent-1', 'tpl-1']])
+        ->and(array_column($resolutions, 'visited'))->toBe([['parent-1', 'tpl-1'], ['parent-1', 'tpl-1']])
+        ->and(array_column($resolutions, 'building'))->toBe([true, true])
+        ->and(SchemaTemplateNodeBuildStack::contains('tpl-1'))->toBeFalse();
+});
+
+it('commits the template instance index it issues', function (): void {
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+
+    sosGuardBuildNode(sosGuardNodeService('Thing', []), null, [], [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 0], $bag);
+
+    expect(array_values($bag->lastIssuedByKey))->toBe([0]);
+});
+
+it('exposes an entry context entity as the property source entry, unless one is given', function (Closure $context, array $antlers, mixed $expected): void {
+    $resolutions = [];
+    $entity = $context();
+    sosGuardBuildNode(sosGuardNodeService('Thing', ['name' => 'N'], $resolutions), $entity, [], mustBeStringKeyed($antlers, 'the Antlers context'));
+
+    $propertyContext = mustBeArray($resolutions[0]['context'], 'the property context');
+    expect($propertyContext['source_entry'] ?? null)->toBe($expected === 'ENTITY' ? $entity : $expected);
+})->with([
+    'an entry' => [fn (): EntryModel => Mockery::mock(EntryModel::class), [], 'ENTITY'],
+    'an entry, with a source entry given' => [fn (): EntryModel => Mockery::mock(EntryModel::class), ['source_entry' => 'given'], 'given'],
+    'a term' => [fn (): Term => Mockery::mock(Term::class), [], null],
+    'no context entity' => [fn (): null => null, [], null],
+]);

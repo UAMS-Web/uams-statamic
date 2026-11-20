@@ -93,3 +93,45 @@ it('string-casts object ids before comparing', function (): void {
 it('returns an empty array for empty input', function (): void {
     expect((new UniqueTerms)->index([], [], []))->toBe([]);
 });
+
+// A term's key is its id() string, unprefixed, so the 'scalar:', 'array:', 'obj:' and
+// 'resource:' prefixes are what keep another item's key from equaling a term's. Each case
+// pairs an item with two terms whose ids are that item's key with its prefix removed and
+// with the prefix moved to the end; all three are distinct items and are kept. Removing
+// the prefix (ConcatRemoveLeft) or moving it (ConcatSwitchSides) makes the item's key
+// equal one of those ids, and the term is then dropped as a duplicate.
+it('keeps a term whose id equals another item\'s key without its prefix, or with the prefix moved', function (Closure $makeItem, string $prefix): void {
+    $term = static fn (string $id): object => new class($id)
+    {
+        public function __construct(private readonly string $key) {}
+
+        public function id(): string
+        {
+            return $this->key;
+        }
+    };
+
+    $item = $makeItem();
+
+    try {
+        // The item's key as UniqueTerms builds it, less the prefix
+        $bare = match (true) {
+            \is_object($item) => (string) spl_object_id($item),
+            \is_resource($item) => (string) get_resource_id($item),
+            default => serialize($item),
+        };
+        $list = [$item, $term($bare), $term($bare.$prefix)];
+
+        expect((new UniqueTerms)->index($list, [], []))->toBe($list);
+    } finally {
+        if (\is_resource($item)) {
+            fclose($item);
+        }
+    }
+})->with([
+    'a scalar' => [fn (): int => 5, 'scalar:'],
+    'null' => [fn (): null => null, 'scalar:'],
+    'an array' => [fn (): array => ['a'], 'array:'],
+    'an id-less object' => [fn (): stdClass => new stdClass, 'obj:'],
+    'a resource' => [fn (): mixed => fopen('php://memory', 'r'), 'resource:'],
+]);
