@@ -982,7 +982,8 @@ class SchemaOutputService
         if (\is_array($value)) {
             $first = reset($value);
 
-            return ! in_array($first, [false, null, ''], true) && (\is_scalar($first) || $first instanceof \Stringable) ? (string) $first : null;
+            // A null first item is neither scalar nor Stringable
+            return ! in_array($first, [false, ''], true) && (\is_scalar($first) || $first instanceof \Stringable) ? (string) $first : null;
         }
 
         return \is_scalar($value) || $value instanceof \Stringable ? (string) $value : null;
@@ -2759,13 +2760,7 @@ class SchemaOutputService
         ?SchemaTemplateInstanceWatermarkBag $watermarkBag,
         bool $commit
     ): ?int {
-        if (! \array_key_exists(
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX,
-            $antlersContext
-        )) {
-            return null;
-        }
-
+        // Null when the context sets no usable index, including no index at all
         $requested = $this->parseTemplateInstanceIndexFromAntlersContext(
             $antlersContext
         );
@@ -2799,8 +2794,9 @@ class SchemaOutputService
         }
 
         // Bump past every index already issued under this allocation key
-        $lastCommitted = $watermarkBag->lastIssuedByKey[$key] ?? -1;
-        $effective = max($requested, $lastCommitted + 1);
+        $effective = isset($watermarkBag->lastIssuedByKey[$key])
+            ? max($requested, $watermarkBag->lastIssuedByKey[$key] + 1)
+            : $requested;
 
         // Commit the watermark, and remember the index for this row
         if ($commit) {

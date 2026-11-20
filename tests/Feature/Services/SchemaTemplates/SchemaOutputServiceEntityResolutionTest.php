@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\SchemaTemplates\SchemaOutputService;
+use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
 use Illuminate\Routing\Route;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
@@ -19,10 +20,12 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 covers(SchemaOutputService::class);
 
 /**
- * Pins two lookups of {@see SchemaOutputService}: `resolveEntity()`, which finds
- * the page's entry or term from the route's `data` parameter or the request URL
- * (a structure page resolving to its entry), and `templateInstanceRowIdentity()`,
- * which names the replicator row that asks for a template instance.
+ * Pins the lookups and identities of {@see SchemaOutputService}: `resolveEntity()`,
+ * which finds the page's entry or term from the route's `data` parameter or the
+ * request URL (a structure page resolving to its entry); `normalizeEntryId()`,
+ * which reads a stored slot value as an entry id; `templateInstanceRowIdentity()`,
+ * which names the replicator row that asks for a template instance; and
+ * `resolveEffectiveTemplateInstanceIndexForWatermark()`, which issues the index.
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaOutputServiceEntityResolutionTest.php
  */
@@ -124,3 +127,87 @@ it('names no replicator row without an id of its own', function (array $context)
     'a numeric id' => [['id' => 7]],
     'the context entity id' => [['id' => 'entry-1']],
 ]);
+
+it('normalizes a stored slot value to an entry id', function (mixed $stored, ?string $expected): void {
+    expect(sosEntityCall('normalizeEntryId', $stored))->toBe($expected);
+})->with([
+    'an id' => ['entry-1', 'entry-1'],
+    'a number' => [7, '7'],
+    'a Stringable' => [new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return 'entry-2';
+        }
+    }, 'entry-2'],
+    'another object' => [new stdClass, null],
+    'null' => [null, null],
+    'an empty string' => ['', null],
+    'a list holding an id' => [['entry-3', 'entry-4'], 'entry-3'],
+    'a list holding a number' => [[8], '8'],
+    'a list holding a Stringable' => [[new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return 'entry-5';
+        }
+    }], 'entry-5'],
+    'a list holding another object' => [[new stdClass], null],
+    'a list holding false' => [[false], null],
+    'a list holding null' => [[null], null],
+    'a list holding an empty string' => [[''], null],
+    'an empty list' => [[], null],
+]);
+
+/**
+ * Resolve the effective template instance index for one emit of `tpl-1` under `entry-1`.
+ *
+ * @param  array<string, mixed>  $context
+ */
+function sosEntityIndex(array $context, ?SchemaTemplateInstanceWatermarkBag $bag, bool $commit = true): mixed
+{
+    return sosEntityCall('resolveEffectiveTemplateInstanceIndexForWatermark', 'tpl-1', sosEntityEntry('entry-1'), ['s1'], $context, $bag, $commit);
+}
+
+/**
+ * The watermark allocation key for `tpl-1` under `entry-1`.
+ */
+function sosEntityIndexKey(): string
+{
+    return mustBeString(sosEntityCall('templateInstanceWatermarkAllocationKey', 'tpl-1', ['s1'], sosEntityEntry('entry-1')), 'the allocation key');
+}
+
+it('resolves no template instance index for an unusable one, even with a watermark bag', function (mixed $index): void {
+    expect(sosEntityIndex([SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => $index], new SchemaTemplateInstanceWatermarkBag))->toBeNull();
+})->with([
+    'a negative index' => [-1],
+    'text' => ['first'],
+]);
+
+it('takes the requested template instance index as it is without a watermark bag', function (): void {
+    expect(sosEntityIndex([SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 2], null))->toBe(2);
+});
+
+it('issues each repeated template instance index past the last one committed', function (): void {
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+    $at = fn (int $index, bool $commit = true): mixed => sosEntityIndex([SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => $index], $bag, $commit);
+
+    expect([$at(0), $at(0, false), $at(0), $at(5), $at(2)])->toBe([0, 1, 1, 5, 6])
+        ->and($bag->lastIssuedByKey)->toBe([sosEntityIndexKey() => 6])
+        ->and($bag->issuedByRowIdentity)->toBe([]);
+});
+
+it('reissues the index a replicator row already holds, and commits a new row\'s index for it', function (): void {
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+    $row = fn (string $id, bool $commit = true): mixed => sosEntityIndex([SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 0, 'id' => $id], $bag, $commit);
+
+    expect([$row('row-1'), $row('row-2', false), $row('row-1'), $row('row-2')])->toBe([0, 1, 0, 1])
+        ->and($bag->issuedByRowIdentity)->toBe([sosEntityIndexKey() => ["entry-1\0"."0\0".'row-1' => 0, "entry-1\0"."0\0".'row-2' => 1]]);
+});
+
+it('reissues no index for a row without an id of its own', function (): void {
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+    $bag->issuedByRowIdentity[sosEntityIndexKey()][''] = 9;
+
+    expect(sosEntityIndex([SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => 0], $bag))->toBe(0);
+});
