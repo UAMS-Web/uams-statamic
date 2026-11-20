@@ -35,9 +35,18 @@ $script = $root.'/.claude/skills/writing-release-notes/gen_release_notes.py';
  */
 $startedAt = time();
 
-$resolvePython = static function (): string {
+/**
+ * Seconds each Python child may run (#1185). Symfony Process defaults to 60, and one child
+ * on a Windows parallel band shard went past it while doing work that takes well under a
+ * second, so the limit is set well above that stall, as #339 set it for a Rector child. A
+ * real hang still fails. The probe below takes the same limit: a probe that timed out
+ * would read as no Python and skip every test instead of failing one.
+ */
+$pythonTimeout = 300;
+
+$resolvePython = static function () use ($pythonTimeout): string {
     foreach (['python3', 'python'] as $candidate) {
-        $probe = new Process([$candidate, '-c', 'import sys; print(sys.version_info[0])']);
+        $probe = new Process([$candidate, '-c', 'import sys; print(sys.version_info[0])'], timeout: $pythonTimeout);
         $probe->run();
 
         if ($probe->isSuccessful() && str_starts_with(trim($probe->getOutput()), '3')) {
@@ -67,7 +76,7 @@ $route = static function (
     array $paths = [],
     int $testLines = 0,
     int $otherLines = 0,
-): string {
+) use ($pythonTimeout): string {
     $payload = json_encode([
         'title' => $title,
         'labels' => $labels,
@@ -94,7 +103,8 @@ PY;
     $process = new Process(
         [$python, '-X', 'pycache_prefix=', '-c', $driver, $script, $payload],
         null,
-        ['PYTHONDONTWRITEBYTECODE' => '1']
+        ['PYTHONDONTWRITEBYTECODE' => '1'],
+        timeout: $pythonTimeout,
     );
     $process->run();
 
