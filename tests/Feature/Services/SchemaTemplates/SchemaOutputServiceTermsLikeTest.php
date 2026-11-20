@@ -23,6 +23,7 @@ use Statamic\Fields\Value;
 use Statamic\Fieldtypes\Terms as TermsFieldtype;
 use Statamic\Taxonomies\LocalizedTerm;
 use Statamic\Taxonomies\Term as TaxonomyTerm;
+use Tests\Support\Doubles\SchemaTermsAugmentProbeFieldtype;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
@@ -34,23 +35,24 @@ covers(SchemaOutputService::class);
  * context: which of several blueprint fields sharing a handle is chosen for a
  * stored value, which stored values still need a blueprint-aware augment, which
  * fields of a blueprint field (nested replicator sets, grids and groups included)
- * are terms fields, how a terms augment is keyed, and when a raw slug hydration
- * is reused from the request memo.
+ * are terms fields, how a terms augment is keyed and run, when a raw slug
+ * hydration is reused from the request memo, and how the primary related term
+ * is found in the overlay.
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaOutputServiceTermsLikeTest.php
  */
 
 /**
- * The service, built from the container's collaborators.
+ * The service, built from the container's collaborators and the given profiler.
  */
-function sosTermsLikeService(): SchemaOutputService
+function sosTermsLikeService(?JsonLdCompositionProfiler $profiler = null): SchemaOutputService
 {
     return new SchemaOutputService(
         app(SchemaTemplatesCascadeService::class),
         app(SchemaClassificationsIdentifiersMerger::class),
         app(SchemaJsonLdAtIdDeduplication::class),
         app(SchemaJsonLdSchemaObjectEmissionCoordinator::class),
-        app(JsonLdCompositionProfiler::class),
+        $profiler ?? app(JsonLdCompositionProfiler::class),
         app(MedicalOrganizationSubtypeAtTypeResolver::class),
         app(PodcastEpisodeAtTypeResolver::class),
     );
@@ -640,4 +642,64 @@ it('matches the terms fieldtype handles strictly', function (): void {
     $builder = sosTermsLikeBuilder(['tag']);
 
     expect(sosTermsLikeHydrateFields([sosTermsLikeTypedField('tags', true)], ['tags' => $builder]))->toBe(['tags' => $builder]);
+});
+
+/**
+ * A blueprint field of the probe fieldtype, nested in a replicator at the given index.
+ *
+ * @return array{Field, Field}
+ */
+function sosTermsLikeProbeField(int $index): array
+{
+    SchemaTermsAugmentProbeFieldtype::register();
+    $parentField = new Field('rows', ['type' => 'replicator']);
+    $field = new Field('tags', ['type' => SchemaTermsAugmentProbeFieldtype::handle()]);
+    $field->setParentField($parentField, $index);
+
+    return [$field, $parentField];
+}
+
+it('augments a stored value through a copy of the blueprint field on the parent', function (mixed $present): void {
+    [$field, $parentField] = sosTermsLikeProbeField(3);
+    $parent = sosTermsLikeParent(LocalizedTerm::class, 'term-1');
+
+    $augmented = sosTermsLikeCall('hydrateMergedContextTermsLikeValueViaTermsBlueprintFieldAugmentUncached', $field, $parent, $present);
+
+    expect($augmented)->toBe([
+        'value' => 'alpha',
+        'parent' => $parent,
+        'parentField' => $parentField,
+        'parentIndex' => 3,
+        'fieldValue' => 'alpha',
+    ]);
+    expect($field->value())->toBeNull();
+})->with([
+    'a slug' => ['alpha'],
+    'a slug in a Value' => [new Value('alpha')],
+]);
+
+it('augments a stored value once per request and records the uncached time in milliseconds', function (): void {
+    [$field] = sosTermsLikeProbeField(0);
+    $parent = sosTermsLikeParent(LocalizedTerm::class, 'term-1');
+    $samples = [];
+    /** @var JsonLdCompositionProfiler&MockInterface $profiler */
+    $profiler = Mockery::mock(JsonLdCompositionProfiler::class);
+    $profiler->shouldReceive('recordAugmentUncachedSample')->andReturnUsing(function (float $ms) use (&$samples): void {
+        $samples[] = $ms;
+    });
+    $service = sosTermsLikeService($profiler);
+    $method = new ReflectionMethod(SchemaOutputService::class, 'hydrateMergedContextTermsLikeValueViaTermsBlueprintFieldAugment');
+    SchemaTermsAugmentProbeFieldtype::$sleepMicroseconds = 20_000;
+
+    try {
+        $first = $method->invoke($service, $field, $parent, 'alpha');
+        $second = $method->invoke($service, $field, $parent, 'alpha');
+    } finally {
+        SchemaTermsAugmentProbeFieldtype::$sleepMicroseconds = 0;
+    }
+
+    expect($second)->toBe($first);
+    expect(mustBeStringKeyed($first, 'the augmented value')['value'])->toBe('alpha');
+    expect($samples)->toHaveCount(1);
+    expect($samples[0])->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60000.0);
 });

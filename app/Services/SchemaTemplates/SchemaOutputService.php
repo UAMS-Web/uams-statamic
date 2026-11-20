@@ -4980,8 +4980,12 @@ class SchemaOutputService
                     $present
                 );
 
+                // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+                $uncachedMs = (microtime(true) - $uncachedStart) * 1000;
+
                 $this->jsonLdCompositionProfiler->recordAugmentUncachedSample(
-                    (microtime(true) - $uncachedStart) * 1000
+                    $uncachedMs
                 );
 
                 return $built;
@@ -5001,8 +5005,9 @@ class SchemaOutputService
             ? $present->raw()
             : $present;
 
+        // The Value built below sets its augmentable as the parent of the fieldtype's
+        // field, so the working field needs no parent set here.
         $workingField = new Field($blueprintField->handle(), $blueprintField->config());
-        $workingField->setParent($parentAugmentable);
         $workingField->setParentField(
             $blueprintField->parentField(),
             $blueprintField->parentIndex()
