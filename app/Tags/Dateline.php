@@ -411,7 +411,10 @@ class Dateline extends Tags
             $location = $location instanceof Value ? $location->value() : $location;
         }
 
-        // Only a non-empty string can name an entry
+        // Only a non-empty string can name an entry. A non-string or empty id finds no entry by id
+        // or by slug (`Entry::find(5)` and `Entry::find('')` return null), so the guard only skips
+        // two lookups and its mutants are equivalent
+        // @pest-mutate-ignore: BooleanOrToBooleanAnd,EmptyStringToNotEmpty,RemoveEarlyReturn
         if (! \is_string($location) || $location === '') {
             return null;
         }
@@ -428,6 +431,9 @@ class Dateline extends Tags
             $entry = $query->first();
         }
 
+        // `find()` and an entry query's `first()` return an entry or null, so the check only narrows
+        // the type for static analysis (InstanceOfToTrue is equivalent)
+        // @pest-mutate-ignore: InstanceOfToTrue
         return $entry instanceof StatamicEntry ? $entry : null;
     }
 
@@ -440,102 +446,16 @@ class Dateline extends Tags
     private function normalizeBoolValue(
         mixed $value
     ): bool {
-        // Normalize string values for consistent true/false checks
-        $normalizedStringValue = \is_string($value)
-            ? \strtolower(\trim($value))
-            : null;
-
-        // Define the explicit true strings matched against the normalized value
-        $explicitTrueStringValues = [
-            'true',
-            '1',
-            'yes',
-        ];
-
-        // Define explicit true values for append-separator normalization
-        $explicitTrueValues = [
-            true,
-            1,
-            ...$explicitTrueStringValues,
-        ];
-
-        // Define the explicit false strings matched against the normalized value
-        $explicitFalseStringValues = [
-            '',
-            'null',
-            'false',
-            'undefined',
-            'no',
-        ];
-
-        // Define explicit false values for append-separator normalization
-        $explicitFalseValues = [
-            0,
-            false,
-            null,
-            ...$explicitFalseStringValues,
-        ];
-
-        // Check if the raw value is one of the explicit true values
-        $isExplicitTrueValue = \in_array(
-            $value,
-            $explicitTrueValues,
-            true
-        );
-
-        // Check if the normalized string value is one of the explicit true values
-        $isExplicitTrueStringValue = $normalizedStringValue !== null
-            && \in_array(
-                $normalizedStringValue,
-                $explicitTrueStringValues,
-                true
-            );
-
-        // Check if the raw value is one of the explicit false values
-        $isExplicitFalseValue = \in_array(
-            $value,
-            $explicitFalseValues,
-            true
-        );
-
-        // Check if the normalized string value is one of the explicit false values
-        $isExplicitFalseStringValue = $normalizedStringValue !== null
-            && \in_array(
-                $normalizedStringValue,
-                $explicitFalseStringValues,
-                true
-            );
-
-        // Check if either explicit true condition is matched
-        if (
-            $isExplicitTrueValue
-            || $isExplicitTrueStringValue
-        ) {
-            // Set normalized result to true for explicit true values
-            $normalizedResult = true;
-        } elseif (
-            $isExplicitFalseValue
-            || $isExplicitFalseStringValue
-        ) {
-            // Set normalized result to false for explicit false values
-            $normalizedResult = false;
-        } else {
-            // Fall back to PHP truthy/falsey evaluation for all other values
-            $normalizedResult = (bool) $value;
+        // A non-string is true or false by PHP truthiness: `true` and `1` are truthy, and `0`, `false` and `null` are not
+        if (! \is_string($value)) {
+            return (bool) $value;
         }
 
-        // Unset local normalization variables before returning the result
-        unset(
-            $normalizedStringValue,
-            $explicitTrueValues,
-            $explicitFalseValues,
-            $isExplicitTrueValue,
-            $isExplicitTrueStringValue,
-            $isExplicitFalseValue,
-            $isExplicitFalseStringValue
-        );
-
-        // Return the normalized append-separator value
-        return $normalizedResult;
+        // The explicit false strings are false whatever their case or padding. Every other
+        // string takes PHP truthiness, which already makes the documented true strings true
+        return match (\strtolower(\trim($value))) {
+            '', 'null', 'false', 'undefined', 'no' => false,
+            default => (bool) $value,
+        };
     }
 }
