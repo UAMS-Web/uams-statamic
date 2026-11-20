@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Support\RoleTitleValue;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 

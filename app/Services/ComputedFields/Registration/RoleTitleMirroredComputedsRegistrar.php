@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\Registration;
 
-use App\Support\RoleTitleValue;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 /**
  * Optional `Collection::computed` registrations that expose a root-level string

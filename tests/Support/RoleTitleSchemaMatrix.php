@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Support\RoleTitleSchemaOutputComputer;
-use App\Support\RoleTitleValue;
+use UAMSWeb\Aether\People\Support\RoleTitleSchemaOutputComputer;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 /**
  * Derives the `role_title` schema-output matrix from `config/role_title.php`.
