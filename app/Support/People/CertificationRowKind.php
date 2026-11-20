@@ -47,9 +47,13 @@ final class CertificationRowKind
      * @var array<string, int>
      */
     private const array ORDER = [
+        // Only the relative order of the ranks matters, and -1 still sorts first
+        // @pest-mutate-ignore: DecrementInteger
         self::BOARD_CERTIFICATION => 0,
         BoardCertifications::CREDENTIAL_KIND_FOCUSED_PRACTICE_DESIGNATION => 1,
         BoardCertifications::CREDENTIAL_KIND_CERTIFICATION => 2,
+        // Only the relative order of the ranks matters, and 4 still sorts last
+        // @pest-mutate-ignore: IncrementInteger
         BoardCertifications::CREDENTIAL_KIND_ASSESSMENT_BASED_CERTIFICATE => 3,
     ];
 
