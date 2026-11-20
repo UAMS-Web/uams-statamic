@@ -124,7 +124,6 @@ Current state of the tree, kept in sync with the templates. If you change attrib
 | `select.antlers.html` | — | `disabled` |
 | `spacer.antlers.html` | — | none (structural / no form controls) |
 | `text.antlers.html` | — | `readonly` |
-| `text_phonetic_pair.antlers.html` | — | `readonly` on both inputs |
 | `textarea.antlers.html` | — | `readonly` |
 | `time.antlers.html` | `default.antlers.html` | `readonly` (transitively) |
 | `toggle.antlers.html` | — | `disabled` on the visible checkbox (the hidden `value="0"` companion input is unaffected and submits `0`) |

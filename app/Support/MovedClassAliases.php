@@ -89,13 +89,16 @@ use UAMSWeb\Aether\Fieldtypes\Traits\ProcessesInputValue;
 use UAMSWeb\Aether\Fieldtypes\Traits\ProvidesAutocompleteOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\RandomizesOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\SometimesValidationRules;
+use UAMSWeb\Aether\People\Fieldtypes\TextPhoneticPair;
 
 /**
- * Keeps the class names that moved into `uams-web/aether-enums` and
- * `uams-web/aether-fieldtypes` resolving under their old `App\` names.
+ * Keeps the class names that moved into `uams-web/aether-enums`,
+ * `uams-web/aether-fieldtypes` and `uams-web/aether-people` resolving under their old
+ * `App\` names.
  *
  * The enums, their generators, the shared fieldtype traits and the `Subsection`
- * fieldtype left the site in UAMS-Web/uams-statamic#995. A template, a content file
+ * fieldtype left the site in UAMS-Web/uams-statamic#995, and the `TextPhoneticPair`
+ * fieldtype in UAMS-Web/uams-statamic#1000. A template, a content file
  * or a configured string that still names an old class keeps working: the first time
  * a process asks the autoloader for an old name, {@see self::load()} aliases it to the
  * add-on's class with `class_alias()`, so both names are the same class and enum cases
@@ -178,6 +181,7 @@ final class MovedClassAliases
             'App\\Enums\\ZipCode' => ZipCode::class,
             'App\\Enums\\ZipCodeInfo' => ZipCodeInfo::class,
             'App\\Fieldtypes\\Subsection' => Subsection::class,
+            'App\\Fieldtypes\\TextPhoneticPair' => TextPhoneticPair::class,
             'App\\Fieldtypes\\Traits\\BuildsPreloadConfig' => BuildsPreloadConfig::class,
             'App\\Fieldtypes\\Traits\\ConfigCache' => ConfigCache::class,
             'App\\Fieldtypes\\Traits\\ConfigSectionWrapper' => ConfigSectionWrapper::class,

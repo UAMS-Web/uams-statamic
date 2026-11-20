@@ -302,7 +302,7 @@ it('offers no clinical title when no listed provider carries one', function (arr
     'providers with none' => [fn (): array => [specialtyFilterProvider('default', 'zz-filter-provider-bare', [])]],
 ]);
 
-it('reads the specialty options from the providers in the section bar, and the whole collection in the Find-a-Doc block', function (): void {
+it('reads the specialty options from the providers in the section bar, and the block\'s own providers in the Find-a-Doc block (UAMS-Web/aether-people#119)', function (): void {
     $section = (string) file_get_contents(resource_path('views/clinical_expertise/_section_filter.antlers.html'));
     $block = (string) file_get_contents(aetherPeopleResourcePath('views/page_builder/components/_block_fad_filter.antlers.html'));
     $page = (string) file_get_contents(resource_path('views/clinical_expertise/section.antlers.html'));
@@ -310,7 +310,7 @@ it('reads the specialty options from the providers in the section bar, and the w
     expect($section)->not->toContain('collection:clinical_specializations')
         ->and($section)->toContain('merge_array(clinical_specializations)')
         ->and($page)->toContain(':providers="eligible_providers"')
-        ->and($block)->toContain('{{ collection:clinical_specializations site="default" sort="title:asc" }}')
+        ->and($block)->toContain('{{ collection:clinical_specializations site="default" sort="title:asc" :id:in="fad_filter_title_ids" }}')
         ->and($section.$block)->not->toContain('taxonomy:clinical_specializations');
 });
 
