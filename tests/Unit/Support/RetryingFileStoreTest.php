@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Support\Cache\RetryingFileStore;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -13,9 +14,9 @@ covers(RetryingFileStore::class);
 /**
  * Unit coverage for App\Support\Cache\RetryingFileStore (UAMS-Web/uams-statamic-archive#1381).
  *
- * Mutation: 91.67% (11/12). The survivor is RemoveFunctionCall on ``usleep``:
- * timing-only and cannot be annotated (ignore attaches to children of the call node,
- * not the call; see RedirectRuleMatcher). Every killable mutant is dead.
+ * The backoff goes through the Sleep facade, which every test fakes, so the exact
+ * waits are asserted rather than measured and no test sleeps for real
+ * (UAMS-Web/uams-statamic#1068).
  *
  * @command  php artisan test --compact tests/Unit/Support/RetryingFileStoreTest.php
  */
@@ -33,6 +34,13 @@ beforeEach(function (): void {
         usleep(20_000_000);
         $padded = true;
     }
+});
+
+/**
+ * Fake the backoff so each test can assert the waits it caused.
+ */
+beforeEach(function (): void {
+    Sleep::fake();
 });
 
 /**
@@ -80,6 +88,12 @@ it('retries a transient Permission-denied write and then succeeds', function ():
 
     expect($store->put('stache/keys/form-submissions', ['a', 'b'], 60))->toBeTrue();
     expect($attempts)->toBe(3);
+
+    // Linear backoff: 20ms after the first failure, 40ms after the second.
+    Sleep::assertSequence([
+        Sleep::usleep(20_000),
+        Sleep::usleep(40_000),
+    ]);
 });
 
 it('gives up after the maximum attempts and rethrows the Permission-denied error', function (): void {
@@ -89,14 +103,28 @@ it('gives up after the maximum attempts and rethrows the Permission-denied error
     $store = retryingFileStoreWith(function (string $path) use (&$attempts) {
         $attempts++;
 
+        // A store that never gives up would otherwise loop until memory runs out, so
+        // a write past the limit escapes the retry as an error the test does not expect.
+        if ($attempts > 5) {
+            throw new LogicException('Retried past the maximum attempts');
+        }
+
         throw new ErrorException(sprintf('file_put_contents(%s): Failed to open stream: Permission denied', $path));
     });
 
     expect(fn () => $store->put('stache/keys/form-submissions', 'v', 60))
         ->toThrow(ErrorException::class, 'Permission denied');
 
-    // MAX_ATTEMPTS — the write is tried five times before giving up.
+    // MAX_ATTEMPTS: the write is tried five times before giving up.
     expect($attempts)->toBe(5);
+
+    // Four waits between five attempts, and none after the last one.
+    Sleep::assertSequence([
+        Sleep::usleep(20_000),
+        Sleep::usleep(40_000),
+        Sleep::usleep(60_000),
+        Sleep::usleep(80_000),
+    ]);
 });
 
 it('does not retry an unrelated write error', function (): void {
@@ -114,6 +142,7 @@ it('does not retry an unrelated write error', function (): void {
 
     // A non-Permission-denied error propagates on the first attempt.
     expect($attempts)->toBe(1);
+    Sleep::assertNeverSlept();
 });
 
 it('succeeds on the first attempt without retrying', function (): void {
@@ -127,4 +156,5 @@ it('succeeds on the first attempt without retrying', function (): void {
 
     expect($store->put('stache/keys/form-submissions', 'ok', 60))->toBeTrue();
     expect($attempts)->toBe(1);
+    Sleep::assertNeverSlept();
 });
