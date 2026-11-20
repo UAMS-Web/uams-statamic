@@ -484,6 +484,16 @@ class SchemaOutputService
     }
 
     /**
+     * Milliseconds elapsed since a `microtime(true)` start, for profiler samples.
+     */
+    private function elapsedMsSince(float $start): float
+    {
+        // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+        // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+        return (microtime(true) - $start) * 1000;
+    }
+
+    /**
      * Build the JSON-LD script tag for resolved graph slot entry ids (uncached body).
      *
      * @param  string|null  $subjectEntryId  Normalized subject schema_objects id
@@ -566,7 +576,7 @@ class SchemaOutputService
                     $this->jsonLdCompositionProfiler->recordBucketSample(
                         'schema_object_node_build_calls',
                         'schema_object_node_build_ms',
-                        (microtime(true) - $nodeBuildStart) * 1000
+                        $this->elapsedMsSince($nodeBuildStart)
                     );
 
                     unset($nodeBuildStart);
@@ -624,7 +634,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'dedupe_calls',
                     'dedupe_ms',
-                    (microtime(true) - $dedupeStart) * 1000
+                    $this->elapsedMsSince($dedupeStart)
                 );
 
                 unset($dedupeStart);
@@ -655,7 +665,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'inflate_calls',
                     'inflate_ms',
-                    (microtime(true) - $inflateStart) * 1000
+                    $this->elapsedMsSince($inflateStart)
                 );
 
                 unset($inflateStart);
@@ -674,16 +684,11 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'dedupe_calls',
                     'dedupe_ms',
-                    (microtime(true) - $dedupeStart) * 1000
+                    $this->elapsedMsSince($dedupeStart)
                 );
 
                 unset($dedupeStart);
             }
-
-            $this->jsonLdAtIdDeduplication->syncMaterializedFullNodeAtIdsToUnionOfTreeRoots(
-                $graph,
-                $materializedFullNodeAtIds
-            );
 
             $output = [
                 '@context' => 'https://schema.org',
@@ -701,7 +706,7 @@ class SchemaOutputService
                 $this->jsonLdCompositionProfiler->recordBucketSample(
                     'json_encode_calls',
                     'json_encode_ms',
-                    (microtime(true) - $jsonEncodeStart) * 1000
+                    $this->elapsedMsSince($jsonEncodeStart)
                 );
 
                 unset($jsonEncodeStart);
@@ -726,7 +731,7 @@ class SchemaOutputService
             return $script;
         } finally {
             $this->jsonLdCompositionProfiler->finalize(
-                (microtime(true) - $composeWallStart) * 1000
+                $this->elapsedMsSince($composeWallStart)
             );
         }
     }
@@ -3302,9 +3307,7 @@ class SchemaOutputService
                 );
 
                 if (\is_float($parseStart)) {
-                    // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
-                    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
-                    $parseMs = (microtime(true) - $parseStart) * 1000;
+                    $parseMs = $this->elapsedMsSince($parseStart);
 
                     $this->jsonLdCompositionProfiler->recordBucketSample(
                         'antlers_parse_calls',
@@ -4982,10 +4985,7 @@ class SchemaOutputService
                     $parentAugmentable,
                     $present
                 );
-
-                // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
-                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
-                $uncachedMs = (microtime(true) - $uncachedStart) * 1000;
+                $uncachedMs = $this->elapsedMsSince($uncachedStart);
 
                 $this->jsonLdCompositionProfiler->recordAugmentUncachedSample(
                     $uncachedMs

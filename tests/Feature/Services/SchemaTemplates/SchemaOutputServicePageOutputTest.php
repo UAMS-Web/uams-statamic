@@ -413,3 +413,82 @@ it('records the node build sample even when the slot builds nothing', function (
         ->and(array_column($samples, 0))->toBe(['schema_object_node_build_calls'])
         ->and($lifecycle)->toBe(['reset', 'finalize']);
 });
+
+it('counts every named slot among the graph ids', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $graphIdsSeen = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds) use (&$graphIdsSeen): ?array {
+            $graphIdsSeen[] = $graphIds;
+
+            return null;
+        },
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', 'p1', 'm1');
+
+    expect($graphIdsSeen)->toBe(array_fill(0, 4, ['s1', 'w1', 'p1', 'm1']));
+});
+
+it('records each built node as emitted and drops speculative full-node ids before the next slot', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $seen = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds, array $visited, array &$emittedEntries, array &$emittedNodes, array &$materialized) use (&$seen): array {
+            $seen[$id] = ['emitted' => array_keys($emittedNodes), 'materialized' => array_keys($materialized)];
+            $materialized['https://example.test/#ghost'] = true;
+
+            return ['@type' => 'Thing', '@id' => 'https://example.test/#'.$id];
+        },
+        'inflateBareAtIdReferencesMissingFullNodesInGraph' => function (): void {},
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', null, null);
+
+    expect($seen['s1'])->toBe(['emitted' => [], 'materialized' => []])
+        ->and($seen['w1']['emitted'])->toContain('https://example.test/#s1')
+        ->and($seen['w1']['materialized'])->toBe(['https://example.test/#s1']);
+});
+
+it('drops a speculative full-node id a slot leaves without a node before inflating', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $inflatedWith = null;
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (string $id, mixed $entity, array $graphIds, array $visited, array &$emittedEntries, array &$emittedNodes, array &$materialized): ?array {
+            if ($id === 'w1') {
+                $materialized['https://example.test/#ghost'] = true;
+
+                return null;
+            }
+
+            return ['@type' => 'Thing', '@id' => 'https://example.test/#'.$id];
+        },
+        'inflateBareAtIdReferencesMissingFullNodesInGraph' => function (array &$graph, mixed $entity, array $graphIds, array &$emittedEntries, array &$emittedNodes, array &$materialized) use (&$inflatedWith): void {
+            $inflatedWith = array_keys($materialized);
+        },
+    ], sosPageProfiler(false, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', 'w1', null, null);
+
+    expect($inflatedWith)->toBe(['https://example.test/#s1']);
+});
+
+it('records a node build sample in milliseconds', function (): void {
+    $samples = [];
+    $lifecycle = [];
+    $service = sosPageService(null, [
+        'schemaObjectEntryToNode' => function (): ?array {
+            usleep(20_000);
+
+            return null;
+        },
+    ], sosPageProfiler(true, $samples, $lifecycle));
+
+    sosPageCall($service, sosPageEntry(), 's1', null, null, null);
+
+    expect($samples)->toHaveCount(1)
+        ->and($samples[0][2])->toBeGreaterThanOrEqual(10.0)->toBeLessThan(60_000.0);
+});
