@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Services\ComputedFields\Registration\RoleTitleMirroredComputedsRegistrar;
-use App\Support\RoleTitleValue;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Collection;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Support\Isco08FieldtypeStorage;
-use App\Support\RoleTitleUnstructuredCpBridge as Bridge;
-use App\Support\RoleTitleValue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\Isco08FieldtypeStorage;
+use UAMSWeb\Aether\People\Support\RoleTitleUnstructuredCpBridge as Bridge;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 

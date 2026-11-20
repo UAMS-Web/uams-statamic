@@ -7,6 +7,7 @@ namespace App\Services\Organizations;
 use App\Support\ContentAncestorIds;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Entry as EntryFacade;
+use UAMSWeb\Aether\People\Contracts\OrganizationDisplayName;
 
 /**
  * Resolves an `organizations` entry's effective public label and its generated
@@ -18,7 +19,7 @@ use Statamic\Facades\Entry as EntryFacade;
  * label or inherits one; inheritance affects **display only** and never
  * identity, so relationships and schema still resolve to the entry itself.
  */
-final readonly class OrganizationPublicLabelService
+final readonly class OrganizationPublicLabelService implements OrganizationDisplayName
 {
     /**
      * The effective public label: this entry's own when it does not inherit,

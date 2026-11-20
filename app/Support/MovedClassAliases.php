@@ -89,7 +89,23 @@ use UAMSWeb\Aether\Fieldtypes\Traits\ProcessesInputValue;
 use UAMSWeb\Aether\Fieldtypes\Traits\ProvidesAutocompleteOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\RandomizesOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\SometimesValidationRules;
+use UAMSWeb\Aether\People\Fieldtypes\Isco_08;
+use UAMSWeb\Aether\People\Fieldtypes\RoleTitle;
 use UAMSWeb\Aether\People\Fieldtypes\TextPhoneticPair;
+use UAMSWeb\Aether\People\Rules\Isco08FieldtypeStoredRule;
+use UAMSWeb\Aether\People\Rules\OnetSocOccupationCode;
+use UAMSWeb\Aether\People\Rules\RoleTitlePerConfigurationOptionRule;
+use UAMSWeb\Aether\People\Rules\RoleTitleScopeJoinerRule;
+use UAMSWeb\Aether\People\Rules\RoleTitleScopeUnitRule;
+use UAMSWeb\Aether\People\Support\Isco08FieldtypeStorage;
+use UAMSWeb\Aether\People\Support\ReplicatorSetMeta;
+use UAMSWeb\Aether\People\Support\ReplicatorVueSet;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleSchemaOutputComputer;
+use UAMSWeb\Aether\People\Support\RoleTitleScopeUnit;
+use UAMSWeb\Aether\People\Support\RoleTitleUnstructuredCpBridge;
+use UAMSWeb\Aether\People\Support\RoleTitleUnstructuredReplicatorSupport;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 /**
  * Keeps the class names that moved into `uams-web/aether-enums`,
@@ -97,8 +113,9 @@ use UAMSWeb\Aether\People\Fieldtypes\TextPhoneticPair;
  * `App\` names.
  *
  * The enums, their generators, the shared fieldtype traits and the `Subsection`
- * fieldtype left the site in UAMS-Web/uams-statamic#995, and the `TextPhoneticPair`
- * fieldtype in UAMS-Web/uams-statamic#1000. A template, a content file
+ * fieldtype left the site in UAMS-Web/uams-statamic#995, the `TextPhoneticPair` fieldtype in
+ * UAMS-Web/uams-statamic#1000, and the `RoleTitle` and `Isco_08` fieldtypes with their rules
+ * and support classes in UAMS-Web/uams-statamic#1143. A template, a content file
  * or a configured string that still names an old class keeps working: the first time
  * a process asks the autoloader for an old name, {@see self::load()} aliases it to the
  * add-on's class with `class_alias()`, so both names are the same class and enum cases
@@ -180,6 +197,8 @@ final class MovedClassAliases
             'App\\Enums\\StateInfo' => StateInfo::class,
             'App\\Enums\\ZipCode' => ZipCode::class,
             'App\\Enums\\ZipCodeInfo' => ZipCodeInfo::class,
+            'App\\Fieldtypes\\Isco_08' => Isco_08::class,
+            'App\\Fieldtypes\\RoleTitle' => RoleTitle::class,
             'App\\Fieldtypes\\Subsection' => Subsection::class,
             'App\\Fieldtypes\\TextPhoneticPair' => TextPhoneticPair::class,
             'App\\Fieldtypes\\Traits\\BuildsPreloadConfig' => BuildsPreloadConfig::class,
@@ -198,6 +217,11 @@ final class MovedClassAliases
             'App\\Fieldtypes\\Traits\\RandomizesOptions' => RandomizesOptions::class,
             'App\\Fieldtypes\\Traits\\SometimesValidationRules' => SometimesValidationRules::class,
             'App\\Imports\\SpreadsheetImport' => SpreadsheetImport::class,
+            'App\\Rules\\Isco08FieldtypeStoredRule' => Isco08FieldtypeStoredRule::class,
+            'App\\Rules\\OnetSocOccupationCode' => OnetSocOccupationCode::class,
+            'App\\Rules\\RoleTitlePerConfigurationOptionRule' => RoleTitlePerConfigurationOptionRule::class,
+            'App\\Rules\\RoleTitleScopeJoinerRule' => RoleTitleScopeJoinerRule::class,
+            'App\\Rules\\RoleTitleScopeUnitRule' => RoleTitleScopeUnitRule::class,
             'App\\Services\\EnumGeneration\\County\\CountyEnumGenerator' => CountyEnumGenerator::class,
             'App\\Services\\EnumGeneration\\CredentialRegistry\\CredentialRegistryEnumGenerator' => CredentialRegistryEnumGenerator::class,
             'App\\Services\\EnumGeneration\\EnumDataUtils' => EnumDataUtils::class,
@@ -219,6 +243,15 @@ final class MovedClassAliases
             'App\\Services\\EnumGeneration\\State\\StateEnumGenerator' => StateEnumGenerator::class,
             'App\\Services\\EnumGeneration\\TigerWebUtils' => TigerWebUtils::class,
             'App\\Services\\EnumGeneration\\ZipCode\\ZipCodeEnumGenerator' => ZipCodeEnumGenerator::class,
+            'App\\Support\\Isco08FieldtypeStorage' => Isco08FieldtypeStorage::class,
+            'App\\Support\\ReplicatorSetMeta' => ReplicatorSetMeta::class,
+            'App\\Support\\ReplicatorVueSet' => ReplicatorVueSet::class,
+            'App\\Support\\RoleTitleDefinition' => RoleTitleDefinition::class,
+            'App\\Support\\RoleTitleSchemaOutputComputer' => RoleTitleSchemaOutputComputer::class,
+            'App\\Support\\RoleTitleScopeUnit' => RoleTitleScopeUnit::class,
+            'App\\Support\\RoleTitleUnstructuredCpBridge' => RoleTitleUnstructuredCpBridge::class,
+            'App\\Support\\RoleTitleUnstructuredReplicatorSupport' => RoleTitleUnstructuredReplicatorSupport::class,
+            'App\\Support\\RoleTitleValue' => RoleTitleValue::class,
         ];
     }
 

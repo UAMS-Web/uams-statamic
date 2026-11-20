@@ -105,16 +105,6 @@ Statamic.booting(() => {
 });
 
 /**
- * Role Title fieldtype (faculty / administrative configurations + composed value)
- */
-
-import RoleTitleFieldtype from './components/fieldtypes/RoleTitleFieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('role_title-fieldtype', RoleTitleFieldtype);
-});
-
-/**
  * Currency Fieldtype
  */
 
@@ -318,15 +308,6 @@ import CtdlClassFieldtype from './components/fieldtypes/CtdlClassFieldtype.vue';
 
 Statamic.booting(() => {
     Statamic.$components.register('ctdl_class-fieldtype', CtdlClassFieldtype);
-});
-
-/**
- * ISCO-08 chained occupation structure (ILO classification)
- */
-import Isco08Fieldtype from './components/fieldtypes/Isco08Fieldtype.vue';
-
-Statamic.booting(() => {
-    Statamic.$components.register('isco_08-fieldtype', Isco08Fieldtype);
 });
 
 /**

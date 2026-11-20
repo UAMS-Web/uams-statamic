@@ -16,7 +16,6 @@ use App\Rules\IsicRev4Code;
 use App\Rules\Iso6523Code;
 use App\Rules\LegalEntityIdentifier;
 use App\Rules\NaicsCode;
-use App\Rules\OnetSocOccupationCode;
 use App\Rules\OpeId;
 use App\Rules\Orcid;
 use App\Rules\PubmedAuthorId;
@@ -45,7 +44,6 @@ covers(
     Iso6523Code::class,
     LegalEntityIdentifier::class,
     NaicsCode::class,
-    OnetSocOccupationCode::class,
     OpeId::class,
     Orcid::class,
     PubmedAuthorId::class,
@@ -140,11 +138,6 @@ function patternIdentifierRules(): array
             'key' => 'statamic::validation.naics_code',
             'valid' => ['62', '622110'],
             'invalid' => ['6', '6221101', '62A'],
-        ],
-        OnetSocOccupationCode::class => [
-            'key' => 'statamic::validation.onet_soc_occupation_code',
-            'valid' => ['29-1141.00'],
-            'invalid' => ['29-1141', '29-1141.0', '291141.00', '29-1141x00'],
         ],
         OpeId::class => [
             'key' => 'statamic::validation.ope_id',
