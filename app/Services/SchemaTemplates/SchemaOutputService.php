@@ -196,6 +196,21 @@ class SchemaOutputService
         'schema_object',
     ];
 
+    /**
+     * Overlay keys the schema runtime sets for itself. They are never a terms
+     * field to hydrate or a taxonomy selection to resolve.
+     *
+     * @var list<string>
+     */
+    private const array RESERVED_ANTLERS_OVERLAY_KEYS = [
+        self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX,
+        self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE,
+        self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT,
+        self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID,
+        self::ANTLERS_SCHEMA_PROPERTY_KEY,
+        self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM,
+    ];
+
     public function __construct(
         protected SchemaTemplatesCascadeService $cascadeService,
         protected SchemaClassificationsIdentifiersMerger $schemaClassificationsIdentifiersMerger,
@@ -4625,10 +4640,6 @@ class SchemaOutputService
         array $context,
         array $groupedTermsLikeBlueprintFieldsByHandle
     ): array {
-        if ($groupedTermsLikeBlueprintFieldsByHandle === []) {
-            return $context;
-        }
-
         foreach ($groupedTermsLikeBlueprintFieldsByHandle as $handle => $candidates) {
             if ($handle === '') {
                 unset($handle);
@@ -4681,10 +4692,6 @@ class SchemaOutputService
         array $antlersContext,
         string $template
     ): array {
-        if ($antlersContext === []) {
-            return $context;
-        }
-
         // Check whether primary-term injection can run for this snippet
         $templateReferencesPrimaryRelatedTaxonomyTerm = str_contains(
             $template,
@@ -4694,15 +4701,6 @@ class SchemaOutputService
         /** @var array<string, true>|null $referencedIdentifiers */
         $referencedIdentifiers = null;
 
-        $reservedOverlayKeys = [
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => true,
-            self::ANTLERS_SCHEMA_PROPERTY_KEY => true,
-            self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM => true,
-        ];
-
         foreach (array_keys($antlersContext) as $overlayKey) {
             if ($overlayKey === '') {
                 unset($overlayKey);
@@ -4710,7 +4708,10 @@ class SchemaOutputService
                 continue;
             }
 
-            if (isset($reservedOverlayKeys[$overlayKey])) {
+            // The reserved keys are non-numeric strings, which compare with a string or
+            // an int key the same loosely as strictly.
+            // @pest-mutate-ignore: TrueToFalse
+            if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
                 continue;
@@ -4725,6 +4726,9 @@ class SchemaOutputService
             // Skip overlay keys this template cannot read (avoids term queries for
             // unrelated snapshot fields unless primary-term wiring needs them).
             if (! $templateReferencesPrimaryRelatedTaxonomyTerm) {
+                // Recomputing the set gives the same set; the coalesce only saves the
+                // regex passes for each later key.
+                // @pest-mutate-ignore: CoalesceEqualToEqual
                 $referencedIdentifiers ??= $this->antlersTemplateReferencedIdentifierSet(
                     $template
                 );
@@ -4759,7 +4763,6 @@ class SchemaOutputService
 
         unset(
             $referencedIdentifiers,
-            $reservedOverlayKeys,
             $templateReferencesPrimaryRelatedTaxonomyTerm
         );
 
@@ -4769,6 +4772,10 @@ class SchemaOutputService
     /**
      * Resolve duplicate blueprint term fields (same handle, different replicator
      * sets) using {@see Field::get('max_items')} plus the merged storage shape.
+     *
+     * A single candidate is returned by every branch. Where a list or collection
+     * finds no multi-select candidate, every candidate caps at one item, so the
+     * first candidate is also the first single-item one.
      *
      * @param  list<Field>  $candidates
      */
@@ -4788,10 +4795,6 @@ class SchemaOutputService
 
         if ($normalizedCandidates === []) {
             return null;
-        }
-
-        if (\count($normalizedCandidates) === 1) {
-            return $normalizedCandidates[0];
         }
 
         $inspected = $present instanceof Value
@@ -4827,7 +4830,7 @@ class SchemaOutputService
             && $inspected !== []
             && array_is_list($inspected)
         ) {
-            return $multiSelectFields[0] ?? $maxItemsOneFields[0] ?? $normalizedCandidates[0];
+            return $multiSelectFields[0] ?? $normalizedCandidates[0];
         }
 
         if ($inspected instanceof Term) {
@@ -4838,7 +4841,7 @@ class SchemaOutputService
             $inspected instanceof Collection
             && $inspected->isNotEmpty()
         ) {
-            return $multiSelectFields[0] ?? $maxItemsOneFields[0] ?? $normalizedCandidates[0];
+            return $multiSelectFields[0] ?? $normalizedCandidates[0];
         }
 
         return $normalizedCandidates[0];
@@ -4980,8 +4983,12 @@ class SchemaOutputService
                     $present
                 );
 
+                // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+                // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+                $uncachedMs = (microtime(true) - $uncachedStart) * 1000;
+
                 $this->jsonLdCompositionProfiler->recordAugmentUncachedSample(
-                    (microtime(true) - $uncachedStart) * 1000
+                    $uncachedMs
                 );
 
                 return $built;
@@ -5001,8 +5008,9 @@ class SchemaOutputService
             ? $present->raw()
             : $present;
 
+        // The Value built below sets its augmentable as the parent of the fieldtype's
+        // field, so the working field needs no parent set here.
         $workingField = new Field($blueprintField->handle(), $blueprintField->config());
-        $workingField->setParent($parentAugmentable);
         $workingField->setParentField(
             $blueprintField->parentField(),
             $blueprintField->parentIndex()
@@ -5033,7 +5041,7 @@ class SchemaOutputService
     ): string {
         $parentKey = $this->memoKeyForTermsAugmentParent($parentAugmentable);
         $rawFieldHandle = $blueprintField->handle();
-        $fieldHandle = \is_scalar($rawFieldHandle) ? (string) $rawFieldHandle : '';
+        $fieldHandle = \is_scalar($rawFieldHandle) ? $rawFieldHandle : '';
         $fieldSig = $fieldHandle."\0".hash(
             'xxh128',
             serialize($blueprintField->config())
@@ -5115,13 +5123,10 @@ class SchemaOutputService
             return collect();
         }
 
-        // Keep {@see LocalizedTerm} instances so localized blueprint keys (for example
-        // `schema_object` on taxonomy terms) resolve inside Antlers loops; peeled
-        // {@see TaxonomyTerm} models omit localized-only storage for `Term::get()`.
-        if ($resolvedAugment instanceof LocalizedTerm) {
-            return collect([$resolvedAugment]);
-        }
-
+        // Keep {@see LocalizedTerm} instances, which implement the Term contract, as
+        // they are so localized blueprint keys (for example `schema_object` on
+        // taxonomy terms) resolve inside Antlers loops; peeled {@see TaxonomyTerm}
+        // models omit localized-only storage for `Term::get()`.
         if ($resolvedAugment instanceof Term) {
             return collect([$resolvedAugment]);
         }
@@ -5144,10 +5149,6 @@ class SchemaOutputService
         array $context,
         array $antlersContext
     ): array {
-        if ($antlersContext === []) {
-            return $context;
-        }
-
         // Resolve the first taxonomy term implied by overlay keys and merged values
         $taxonomyTerm = $this->resolveSchemaPrimaryRelatedTaxonomyTermFromAntlersOverlay(
             $context,
@@ -5202,23 +5203,9 @@ class SchemaOutputService
         array $context,
         array $antlersContext
     ): ?TaxonomyTerm {
-        if ($antlersContext === []) {
-            return null;
-        }
-
         // Collect overlay keys in deterministic lexicographic order
         $overlayKeys = array_keys($antlersContext);
         sort($overlayKeys, SORT_STRING);
-
-        // Skip reserved Antlers keys that are never taxonomy selections
-        $reservedOverlayKeys = [
-            self::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_TYPE_OVERRIDE => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => true,
-            self::ANTLERS_SCHEMA_TEMPLATE_ENTRY_ID => true,
-            self::ANTLERS_SCHEMA_PROPERTY_KEY => true,
-            self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM => true,
-        ];
 
         foreach ($overlayKeys as $overlayKey) {
             if ($overlayKey === '') {
@@ -5228,7 +5215,10 @@ class SchemaOutputService
             }
 
             // Skip reserved keys so emit maps and instance index never compete
-            if (isset($reservedOverlayKeys[$overlayKey])) {
+            // The reserved keys are non-numeric strings, which compare with a string or
+            // an int key the same loosely as strictly.
+            // @pest-mutate-ignore: TrueToFalse
+            if (\in_array($overlayKey, self::RESERVED_ANTLERS_OVERLAY_KEYS, true)) {
                 unset($overlayKey);
 
                 continue;
@@ -5251,7 +5241,6 @@ class SchemaOutputService
                 unset(
                     $overlayKeys,
                     $overlayKey,
-                    $reservedOverlayKeys,
                     $taxonomyTerm
                 );
 
@@ -5264,10 +5253,7 @@ class SchemaOutputService
             );
         }
 
-        unset(
-            $overlayKeys,
-            $reservedOverlayKeys
-        );
+        unset($overlayKeys);
 
         return null;
     }
@@ -5539,12 +5525,13 @@ class SchemaOutputService
             ]
         );
 
-        // Reuse the memoized result only when the stored input is the same value
+        // Reuse the memoized result only when the stored input is the same value: the
+        // same object, or the same slug or slug list, which a content key implies
         if (
             \is_array($row)
             && \array_key_exists('in', $row)
             && \array_key_exists('out', $row)
-            && (\is_object($present) ? $row['in'] === $present : $row['in'] == $present)
+            && $row['in'] === $present
         ) {
             return $row['out'];
         }
@@ -5565,28 +5552,18 @@ class SchemaOutputService
             return $present->get();
         }
 
-        if ($present instanceof LocalizedTerm) {
-            return collect([$present]);
-        }
-
+        // A localized term implements the Term contract too
         if ($present instanceof Term) {
             return collect([$present]);
         }
 
         if ($present instanceof Collection) {
-            if ($present->isEmpty()) {
-                return $present;
-            }
-
             $first = $present->first();
             if ($first instanceof Value) {
                 $first = $first->value();
             }
 
-            if (
-                $first instanceof LocalizedTerm
-                || $first instanceof Term
-            ) {
+            if ($first instanceof Term) {
                 return $present;
             }
 
@@ -5597,16 +5574,13 @@ class SchemaOutputService
                             $item = $item->value();
                         }
 
-                        return \is_string($item) && $item !== '' ? $item : null;
+                        return \is_string($item) ? $item : null;
                     }
                 )
+                // Drops the empty strings as well as the nulls
                 ->filter()
                 ->values()
                 ->all();
-
-            if ($slugList === []) {
-                return $present;
-            }
 
             /** @var list<string> $slugList */
             $hydrated = $this->termCollectionForPlainOrQualifiedTermSlugs(
@@ -5634,25 +5608,14 @@ class SchemaOutputService
             return $present;
         }
 
-        if ($present[0] === null) {
-            return $present;
-        }
-
         $first = $present[0];
 
         if ($first instanceof Value) {
             $first = $first->value();
         }
 
-        if (
-            $first instanceof LocalizedTerm
-            || $first instanceof Term
-        ) {
+        if ($first instanceof Term) {
             return $this->termCollectionForAugmentedList($present);
-        }
-
-        if (! \is_string($first)) {
-            return $present;
         }
 
         $stringSlugs = [];
@@ -5692,16 +5655,9 @@ class SchemaOutputService
                 $item = $item->value();
             }
 
-            if ($item instanceof LocalizedTerm) {
-                $out->push($item);
-
-                continue;
-            }
-
+            // A localized term implements the Term contract too
             if ($item instanceof Term) {
                 $out->push($item);
-
-                continue;
             }
         }
 
@@ -5767,16 +5723,7 @@ class SchemaOutputService
         /** @var Collection<int, mixed> $matches */
         $matches = $termQuery->get();
 
-        if ($matches->isEmpty()) {
-            return null;
-        }
-
-        if ($matches->count() === 1) {
-            return $this->unwrapStatamicTermFindToTaxonomyTerm(
-                $matches->first()
-            );
-        }
-
+        // With no match the first is null, and with one it is that match
         $sorted = $matches->sortBy(
             function (mixed $t): string {
                 if (is_object($t) && method_exists($t, 'id')) {
