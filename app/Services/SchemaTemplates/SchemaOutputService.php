@@ -3165,12 +3165,10 @@ class SchemaOutputService
             $baseContext = $this->buildAntlersContextFromEntity($contextEntity);
 
             // Shallow-copy so fillMissing placeholders do not mutate the memoized bag
-            $context = $antlersContext !== []
-                ? array_merge(
-                    $baseContext,
-                    $antlersContext
-                )
-                : array_merge($baseContext);
+            $context = array_merge(
+                $baseContext,
+                $antlersContext
+            );
 
             // Nested replicator / grid / group `terms` and `terms_search_index` values are
             // not covered by {@see hydrateTermsLikeFieldValuesForSchemaAntlersContext} (it
@@ -3289,19 +3287,26 @@ class SchemaOutputService
                 );
 
                 if (\is_float($parseStart)) {
+                    // A scale of 999 or 1001 is not distinguishable from 1000 in an elapsed time.
+                    // @pest-mutate-ignore: IncrementInteger, DecrementInteger
+                    $parseMs = (microtime(true) - $parseStart) * 1000;
+
                     $this->jsonLdCompositionProfiler->recordBucketSample(
                         'antlers_parse_calls',
                         'antlers_parse_ms',
-                        (microtime(true) - $parseStart) * 1000
+                        $parseMs
                     );
 
                     $this->jsonLdCompositionProfiler->recordAntlersParseSample(
-                        (microtime(true) - $parseStart) * 1000,
+                        $parseMs,
                         $tplEntryId,
                         $propKey
                     );
 
-                    unset($parseStart);
+                    unset(
+                        $parseMs,
+                        $parseStart
+                    );
                 }
 
                 unset(
@@ -3347,9 +3352,11 @@ class SchemaOutputService
 
             // $out is non-empty and already trimmed, so the first byte is safe to read
             // and the old `is_string()` / re-trim guards are gone (UAMS-Web/uams-statamic-archive#1800).
+            $firstByte = $out[0];
+
             if (
-                $out[0] === '['
-                || $out[0] === '{'
+                $firstByte === '['
+                || $firstByte === '{'
             ) {
                 // Decode the out as JSON
                 $decoded = json_decode(
@@ -3368,7 +3375,7 @@ class SchemaOutputService
 
                     return $decoded;
                 }
-            } elseif ($out[0] === '"') {
+            } elseif ($firstByte === '"') {
                 // ---
                 // Decode JSON Text documents (valid JSON whose top-level value is a string).
                 // Tags such as `schema_pronounceable_text` intentionally `json_encode` plain
@@ -3379,7 +3386,12 @@ class SchemaOutputService
                 try {
                     $decodedScalar = json_decode(
                         $out,
+                        // Output that opens with a quote decodes to a string or fails, so the
+                        // object-to-array flag never applies.
+                        // @pest-mutate-ignore: TrueToFalse
                         true,
+                        // A string at the top level has depth 1, so 511 or 513 decodes the same.
+                        // @pest-mutate-ignore: IncrementInteger, DecrementInteger
                         512,
                         JSON_THROW_ON_ERROR
                     );
@@ -3396,7 +3408,7 @@ class SchemaOutputService
             // Wrap @id reference strings (e.g. from get_schema_slot) as {"@id": "..."} for
             // JSON-LD
             // ---
-            if ($out[0] === '#') {
+            if ($firstByte === '#') {
                 $entryId = substr($out, 1);
                 if ($entryId !== '') {
                     $fullId = $this->entryIdToNodeId(
@@ -3414,13 +3426,12 @@ class SchemaOutputService
         }
 
         if (\is_string($rowType) && str_starts_with($rowType, 'thing_') && $val !== null && $val !== '') {
+            // Only the values are read below, so the filtered ids keep their keys.
             $entryIds = \is_string($val)
                 ? [$val]
-                : array_values(
-                    array_filter(
-                        \is_array($val) ? $val : [],
-                        fn ($id): bool => \is_string($id) && $id !== ''
-                    )
+                : array_filter(
+                    \is_array($val) ? $val : [],
+                    fn ($id): bool => \is_string($id) && $id !== ''
                 );
             $resolved = [];
             foreach ($entryIds as $refId) {
