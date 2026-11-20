@@ -5556,28 +5556,18 @@ class SchemaOutputService
             return $present->get();
         }
 
-        if ($present instanceof LocalizedTerm) {
-            return collect([$present]);
-        }
-
+        // A localized term implements the Term contract too
         if ($present instanceof Term) {
             return collect([$present]);
         }
 
         if ($present instanceof Collection) {
-            if ($present->isEmpty()) {
-                return $present;
-            }
-
             $first = $present->first();
             if ($first instanceof Value) {
                 $first = $first->value();
             }
 
-            if (
-                $first instanceof LocalizedTerm
-                || $first instanceof Term
-            ) {
+            if ($first instanceof Term) {
                 return $present;
             }
 
@@ -5588,16 +5578,13 @@ class SchemaOutputService
                             $item = $item->value();
                         }
 
-                        return \is_string($item) && $item !== '' ? $item : null;
+                        return \is_string($item) ? $item : null;
                     }
                 )
+                // Drops the empty strings as well as the nulls
                 ->filter()
                 ->values()
                 ->all();
-
-            if ($slugList === []) {
-                return $present;
-            }
 
             /** @var list<string> $slugList */
             $hydrated = $this->termCollectionForPlainOrQualifiedTermSlugs(
@@ -5625,25 +5612,14 @@ class SchemaOutputService
             return $present;
         }
 
-        if ($present[0] === null) {
-            return $present;
-        }
-
         $first = $present[0];
 
         if ($first instanceof Value) {
             $first = $first->value();
         }
 
-        if (
-            $first instanceof LocalizedTerm
-            || $first instanceof Term
-        ) {
+        if ($first instanceof Term) {
             return $this->termCollectionForAugmentedList($present);
-        }
-
-        if (! \is_string($first)) {
-            return $present;
         }
 
         $stringSlugs = [];

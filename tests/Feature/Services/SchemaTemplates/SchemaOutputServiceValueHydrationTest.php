@@ -579,6 +579,39 @@ it('hydrates a list of slugs, or returns it when none resolves', function (): vo
         ->and(sosValueHydrate(['tags::missing']))->toBe(['tags::missing']);
 });
 
+it('returns a collection that starts with a term model as it is, even beside a slug that resolves', function (Closure $make): void {
+    $collection = collect([$make(), 'tags::a']);
+    sosValueTerms(['tags::a' => sosValueTerm('tags::a')]);
+
+    expect(sosValueHydrate($collection))->toBe($collection);
+})->with([
+    'term' => [fn (): TaxonomyTerm => sosValueTerm()],
+    'localized term' => [fn (): LocalizedTerm => sosValueLocalizedTerm()],
+    'term in a value' => [fn (): Value => new Value(sosValueTerm())],
+]);
+
+it('keeps only the term models of a list that starts with a term', function (): void {
+    $term = sosValueTerm();
+    sosValueTerms(['tags::a' => sosValueTerm('tags::a')]);
+
+    expect(sosValueHydratedItems([$term, 'tags::a']))->toBe([$term]);
+});
+
+it('looks up no empty stored slug, even where a term has an empty slug', function (): void {
+    $lookups = [];
+    sosValueTerms([], ['' => [sosValueTerm('tags::')]], $lookups);
+
+    expect(sosValueHydrate(''))->toBe('')
+        ->and($lookups)->toBe([]);
+});
+
+it('returns a list holding an empty slug as it is, even when its other slugs resolve', function (): void {
+    $list = ['tags::a', ''];
+    sosValueTerms(['tags::a' => sosValueTerm('tags::a')], ['' => [sosValueTerm('tags::')]]);
+
+    expect(sosValueHydrate($list))->toBe($list);
+});
+
 // ---
 // Resolving one stored slug
 // ---
