@@ -93,7 +93,19 @@ function writeHeaderFixture(string $path, array $session): void
 function measureHeaderRow(PendingAwaitablePage $page): array
 {
     /** @var array{controls: list<string>, overlaps: list<string>, covered: list<string>, name: bool|null, er: bool} $result */
-    $result = $page->script('() => {
+    $result = $page->script('async () => {
+        // After a resize the logo <picture> swaps its source asynchronously, so measure
+        // only once the image has loaded and its box has held still for three frames.
+        const logo = document.querySelector(".navbar-brand img");
+        let last = "";
+        let steady = 0;
+        for (let frame = 0; frame < 120 && steady < 3; frame++) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            const box = logo.getBoundingClientRect();
+            const now = logo.currentSrc + " " + box.width + "x" + box.height;
+            steady = logo.complete && now === last ? steady + 1 : 0;
+            last = now;
+        }
         const visible = (el) => {
             const box = el.getBoundingClientRect();
             return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility !== "hidden";
