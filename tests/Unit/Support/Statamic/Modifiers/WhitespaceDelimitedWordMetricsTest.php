@@ -24,12 +24,14 @@ it('counts words by whitespace runs only', function (string $text, int $expected
     'single word is one' => ['hello', 1],
     'mixed whitespace (tabs/newlines) splits' => ["a\tb\nc  d", 4],
     'leading/trailing whitespace is trimmed' => ['  one two  ', 2],
+    'invalid UTF-8 falls back to zero' => ["\xFF", 0],
 ]);
 
 it('reads seconds as ceil(words / wpm * 60), clamping wpm to >= 1', function (string $text, int $wpm, int $expected) {
     expect(WhitespaceDelimitedWordMetrics::readingTimeSecondsFromText($text, $wpm))->toBe($expected);
 })->with([
     'no words is zero' => ['', 200, 0],
+    'single word at 200 wpm -> ceil(0.3) = 1' => ['hello', 200, 1],
     'four words at 200 wpm -> ceil(1.2) = 2' => ['one two three four', 200, 2],
     'four words at 2 wpm -> 120' => ['one two three four', 2, 120],
     'wpm 0 is clamped to 1 -> 240' => ['one two three four', 0, 240],
@@ -42,6 +44,7 @@ it('reads minutes as ceil(seconds / 60)', function (string $text, int $expected)
 })->with([
     'no words is zero' => ['', 0],
     'four words -> 2 seconds -> 1 minute' => ['one two three four', 1],
+    '200 words -> exactly 60 seconds -> 1 minute' => [implode(' ', array_fill(0, 200, 'w')), 1],
     '201 words -> 61 seconds -> 2 minutes' => [implode(' ', array_fill(0, 201, 'w')), 2],
 ]);
 
