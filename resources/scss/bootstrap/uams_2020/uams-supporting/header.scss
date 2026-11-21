@@ -261,6 +261,22 @@ $header-health-logo-clear-space: $header-logo-clear-space;
             right: $spacer * 2;
         }
 
+        // The account links (layout/header/account) sit in this bar so they share its
+        // row instead of being drawn under it (#1210). At `sm` (768px to 991px in this
+        // theme's breakpoints) the bar also carries the text resource links, and the row
+        // no longer fits beside the logo, so there the account links drop to a line of
+        // their own under the row.
+        .site-header__account {
+            margin-left: $spacer-min;
+
+            @include media-breakpoint-only(sm) {
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-left: 0;
+            }
+        }
+
         @at-root body.uamshealth #{&} {
             padding: 0;
 
@@ -382,6 +398,23 @@ $header-health-logo-clear-space: $header-logo-clear-space;
 
     #nav-secondary {
         flex-grow: 0;
+    }
+}
+
+// The signed-in member's name in the account links (#1210). Below `xl` (1500px) the
+// header's right-hand row has no room for a name of arbitrary length beside the logo
+// and the site title, so the name is hidden there and "Log out" stands alone. From
+// `xl` up it shows, cut to a fixed width with an ellipsis so a long name cannot push
+// the row into the title.
+.site-header__account-name {
+    display: none;
+
+    @include media-breakpoint-up(xl) {
+        display: block;
+        max-width: 12rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
