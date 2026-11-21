@@ -9,7 +9,10 @@ use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
+use Statamic\Facades\Taxonomy;
+use Statamic\Facades\Term;
 use Statamic\Globals\Variables;
+use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\StacheIsolatedTestCase;
 use UAMSWeb\Aether\People\Merge\PeopleMergeException;
 use UAMSWeb\Aether\People\Merge\PeopleMergeService;
@@ -244,6 +247,93 @@ it('preview writes nothing and leaves the losers intact', function (): void {
     expect(Entry::find('lose'))->not->toBeNull()
         ->and(pmData('surv')['bio'])->toBe('A')
         ->and(pmData('art')['author'])->toBe('lose');
+});
+
+it('re-points entries, global sets and terms on merge, with preview counts equal to the commit', function (): void {
+    $site = pmDefaultSiteHandle();
+
+    pmMakePerson('surv', 'survivor', ['bio' => 'A']);
+    pmMakePerson('lose', 'loser', ['bio' => 'B']);
+
+    // An entry holding the loser as a relationship value and as a link token inside text
+    pmMakeArticle('art', 'art', [
+        'author' => 'lose',
+        'note' => 'See statamic://entry::lose for details',
+    ]);
+
+    // A global set localization holding the loser
+    /** @var Statamic\Globals\GlobalSet $contacts */
+    $contacts = GlobalSet::make('pm_contacts');
+    $contacts->title('Contacts');
+    $contacts->save();
+    /** @var Variables $contactVars */
+    $contactVars = $contacts->makeLocalization($site);
+    $contactVars->data(['lead' => ['lose']]);
+    $contactVars->save();
+
+    // A taxonomy term holding the loser
+    /** @var Statamic\Taxonomies\Taxonomy $taxonomy */
+    $taxonomy = Taxonomy::make('pm_groups');
+    $taxonomy->title('Groups');
+    $taxonomy->save();
+    /** @var Statamic\Taxonomies\Term $term */
+    $term = Term::make();
+    /** @var Statamic\Taxonomies\Term $term */
+    $term = $term->taxonomy('pm_groups');
+    /** @var LocalizedTerm $localizedTerm */
+    $localizedTerm = $term->inDefaultLocale();
+    $localizedTerm->slug('team');
+    $localizedTerm->data(['members' => ['lose']]);
+    $localizedTerm->saveQuietly();
+
+    $globalData = static function () use ($site): array {
+        /** @var Statamic\Globals\GlobalSet $set */
+        $set = GlobalSet::findByHandle('pm_contacts');
+        /** @var Variables $vars */
+        $vars = $set->in($site);
+        /** @var Collection<string, mixed> $data */
+        $data = $vars->data();
+
+        return $data->all();
+    };
+
+    $termData = static function (): array {
+        /** @var Statamic\Taxonomies\Term $found */
+        $found = Term::find('pm_groups::team');
+        /** @var LocalizedTerm $localized */
+        $localized = $found->inDefaultLocale();
+        /** @var Collection<string, mixed> $data */
+        $data = $localized->data();
+
+        return $data->all();
+    };
+
+    $preview = pmService()->preview(['surv', 'lose'], 'surv', []);
+
+    // The preview writes nothing
+    expect(pmData('art')['author'])->toBe('lose')
+        ->and(pmData('art')['note'])->toBe('See statamic://entry::lose for details')
+        ->and($globalData()['lead'])->toBe(['lose'])
+        ->and($termData()['members'])->toBe(['lose']);
+
+    $merge = pmService()->merge(['surv', 'lose'], 'surv', []);
+
+    // Every reference now points at the survivor
+    expect(pmData('art')['author'])->toBe('surv')
+        ->and(pmData('art')['note'])->toBe('See statamic://entry::surv for details')
+        ->and($globalData()['lead'])->toBe(['surv'])
+        ->and($termData()['members'])->toBe(['surv']);
+
+    // The confirm screen's counts are what the commit changed, and each kind is non-zero
+    expect($preview->references->entries)->toBe(1)
+        ->and($preview->references->globals)->toBe(1)
+        ->and($preview->references->terms)->toBe(1)
+        ->and($preview->references->occurrences)->toBe(4)
+        ->and($merge->references->entries)->toBe($preview->references->entries)
+        ->and($merge->references->globals)->toBe($preview->references->globals)
+        ->and($merge->references->terms)->toBe($preview->references->terms)
+        ->and($merge->references->occurrences)->toBe($preview->references->occurrences)
+        ->and($merge->references->itemsChanged())->toBe($preview->references->itemsChanged());
 });
 
 it('throws when the survivor is not among the candidates', function (): void {
