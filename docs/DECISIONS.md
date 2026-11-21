@@ -4057,3 +4057,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *All support classes into `aether-people`, the enum included*: the site's other users of the enum would then depend on `aether-people` for it. *An interface for everything*: it adds a binding the site must supply for classes that have no site dependency.
 
 **Companion.** #1001 (the decision and the code reading behind the two confirmations), #767 (the people boundary), #994 (the shared enums add-on), `UAMS-Web/aether-people#124` (the move).
+
+## 2026-11-21: The ER resource-nav entry shows "ER" at every width beside the hospital glyph, and stays out of the mobile menu (#96)
+
+**Decision.** Decided by the project owner on 2026-11-21, closing the residuals of the 2026-07-06 dual-code decision. The ER entry in the header icon bar shows the visible label "ER" at every viewport width, with no breakpoint switch, beside the `fa-hospital-symbol` glyph. Its accessible name is set once and starts with the visible label (for example "ER, Emergency Room"). The entry stays in the icon bar, which is visible at every width, and is not added to the mobile menu.
+
+**Why.** "ER" adds 24 px and fits at 320 px; "Emergency" adds 90 px and overlaps the logo below about 414 px. One string keeps the label and the accessible name aligned (WCAG 2.5.3) at every width. `fa-ambulance` is an alias of `fa-truck-medical` in Font Awesome 7 and shows transport rather than an emergency department; `fa-hospital-symbol` is in the same loaded set, so no asset is added. The mobile menu's curated resource links are deduped against the icon bar (#86), which already shows ER.
+
+**Rejected.** *"Emergency" from 414 px up and "ER" below*: two strings and a breakpoint, so the wording changes with width. *Keeping the ambulance glyph*: transport, not the destination.
+
+**Companion.** #96 (the decision and its [measurements](https://github.com/UAMS-Web/uams-statamic/issues/96#issuecomment-7065700863)); #1212 (the build); #1209 and #1210 (header defects found in passing).
