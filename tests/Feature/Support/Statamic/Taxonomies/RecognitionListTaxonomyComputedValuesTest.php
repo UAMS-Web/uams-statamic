@@ -95,7 +95,8 @@ it('exposes computed keys on augmented term instances', function (): void {
     /** @var array<int, mixed> $seriesKeys */
     $seriesKeys = $augmented->keys();
 
-    expect($seriesKeys)->toContain('full_name');
+    expect($seriesKeys)->toContain('full_name')
+        ->and($augmented->keys())->toBe($seriesKeys);
 
     $seriesFullName = $seriesLocalized->augmentedValue('full_name');
 

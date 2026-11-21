@@ -30,8 +30,11 @@ class AugmentedRecognitionListsSeriesTerm extends AugmentedTerm
     #[\Override]
     public function keys(): array
     {
-        // Reuse the cached augmented key list when already built
+        // Reuse the cached augmented key list when already built. Equivalent without
+        // the early return: parent::keys() caches its own list, so falling through
+        // rebuilds the identical sorted key list.
         if ($this->keysWithComputedFullName !== null) {
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return $this->keysWithComputedFullName;
         }
 
