@@ -166,6 +166,8 @@ class DeletedEntryRedirectCapture
             'target_url' => '',
             'notes' => sprintf(
                 'Captured automatically when entry %s was deleted. Set a target and enable this redirect.',
+                // sprintf('%s', ...) formats every scalar identically to (string).
+                // @pest-mutate-ignore: RemoveStringCast
                 is_scalar($id = $entry->id()) ? (string) $id : 'unknown'
             ),
         ];
