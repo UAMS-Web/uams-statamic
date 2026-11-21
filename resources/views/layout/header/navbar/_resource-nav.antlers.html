@@ -67,6 +67,13 @@
 		</ul>
 		{{ /unless }}
 
+		{{# The account links share this bar's row rather than a slot of their own: below `lg` (1200px)
+			the bar is absolutely positioned at the header's right edge, so a sibling placed
+			there separately is drawn underneath it (#1210). They render whatever
+			`hide_resource_nav` says, so a page hiding the resource links keeps a way to log
+			in or out. #}}
+		{{ partial:layout/header/account }}
+
 		{{# Controls the framework-free mobile primary nav (UAMS-Web/uams-statamic-archive#53,
 			layout/navigation/main/mobile.antlers.html); wired by
 			resources/js/uams_2020/source/mobile-nav.js. Suppressed when the primary
