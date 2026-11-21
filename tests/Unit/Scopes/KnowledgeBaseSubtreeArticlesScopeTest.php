@@ -23,15 +23,7 @@ covers(KnowledgeBaseSubtreeArticles::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 it('intersects the results with the subtree article ids for a valid root', function (): void {

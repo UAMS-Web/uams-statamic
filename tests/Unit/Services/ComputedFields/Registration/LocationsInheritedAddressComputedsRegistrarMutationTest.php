@@ -21,9 +21,7 @@ covers(LocationsInheritedAddressComputedsRegistrar::class);
  * (false 100% with ``0 tested``).
  */
 beforeEach(function (): void {
-    if (runningUnderMutate()) {
-        usleep(12_000_000);
-    }
+    padMutateChildTimeout(12_000_000);
 });
 
 /**

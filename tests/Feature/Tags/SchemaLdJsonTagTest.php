@@ -17,15 +17,7 @@ covers(SchemaLdJson::class);
  * ``--mutate`` suite (TestCase boot alone can tip covering re-runs into timeout).
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(12_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout(12_000_000);
 });
 
 /**

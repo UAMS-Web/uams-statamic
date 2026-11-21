@@ -30,15 +30,11 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  */
 
 /**
- * Pad Pest's mutant-child timeout once per process under `--mutate` (a constant, since Pest
- * resets a closure's `static` and by-reference variables for every test): a child boots the
+ * Pad Pest's mutant-child timeout once per process under `--mutate`: a child boots the
  * application cold and otherwise overruns a limit sized from the warm initial run (#803).
  */
 beforeEach(function (): void {
-    if (! defined('DISAMBIGUATE_TITLE_TAG_PADDED') && runningUnderMutate()) {
-        define('DISAMBIGUATE_TITLE_TAG_PADDED', true);
-        usleep(20_000_000);
-    }
+    padMutateChildTimeout();
 });
 
 it('returns empty when parsed base title empty', function () {
