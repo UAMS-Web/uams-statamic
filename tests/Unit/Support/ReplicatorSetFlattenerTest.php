@@ -11,12 +11,6 @@ use App\Support\ReplicatorSetFlattener;
  * trimming and skipping empty/non-array rows, with a configurable separator. Used
  * by the search transformers.
  *
- * Mutation: every killable mutant is dead (score ~88%). The residual survivors are
- * equivalents — the value-validity and empty-handles guards (lines 33/36/41) are
- * redundant with the final empty-parts guard (an invalid/empty input collects no
- * parts and returns null either way; a non-array value only adds a foreach warning).
- * Left clean rather than annotated with `@pest-mutate-ignore`.
- *
  * @command  php artisan test --compact tests/Unit/Support/ReplicatorSetFlattenerTest.php
  */
 it('flattens configured handles from replicator rows, or null', function (mixed $value, array $handles, string $separator, ?string $expected) {
@@ -31,7 +25,9 @@ it('flattens configured handles from replicator rows, or null', function (mixed 
     'null value is null' => [null, ['url'], ' ', null],
     'empty array is null' => [[], ['url'], ' ', null],
     'non-array value is null' => ['https://example.com', ['url'], ' ', null],
+    'object with array property is null' => [(object) ['row' => ['url' => 'https://example.com']], ['url'], ' ', null],
     'empty handle list is null' => [[['url' => 'https://a.test/']], [], ' ', null],
+    'rows with only blank values return null' => [[['url' => '   ']], ['url'], ' ', null],
     'joins each set, trimming values' => [
         [
             ['type' => 'new_set', 'url' => '  https://en.wikipedia.org/wiki/Foo  '],
