@@ -10,6 +10,14 @@
             color: $body-color-lightest;
         }
     }
+    // The provider directory's name search (WCAG 2.4.7). Bootstrap's focus glow
+    // blends to about 1.55:1 against white, below the 3:1 non-text bar, so the
+    // brand ring is added. Scoped to the search input so the selects and
+    // buttons around it keep their own focus styling.
+    &.provider-directory-filter input[type="search"] {
+        @include uams-focus-visible();
+    }
+
     .ajax-filter-message {
         @include line-length-em(max);
         margin-top: $uams-module-padding-mobile;
