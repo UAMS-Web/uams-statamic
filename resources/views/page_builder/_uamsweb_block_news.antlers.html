@@ -123,7 +123,7 @@
 													{{ if excerpt }}
 														<div class="news-item-excerpt" itemprop="description">{{ excerpt }}</div>
 													{{ /if }}
-													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="Read more: {{ title | striptags }}">Read more</a>
 												</div>
 											</div>
 										</div>
@@ -190,7 +190,7 @@
 													{{ if excerpt }}
 														<p class="card-text" itemprop="description">{{ excerpt }}</p>
 													{{ /if }}
-													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="Read more: {{ title | striptags }}">Read more</a>
 												</div>
 											</div>
 										</div>
@@ -240,7 +240,7 @@
 													{{ /if }}
 													<h3 class="h4" itemprop="headline">{{ title }}</h3>
 													{{ if excerpt }}<p itemprop="description">{{ excerpt }}</p>{{ /if }}
-													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+													<a href="{{ url }}" class="btn btn-primary stretched-link" itemprop="url" aria-label="Read more: {{ title | striptags }}">Read more</a>
 												</div>
 											</div>
 											<div class="col-12 col-sm-5 col-md-12 col-lg-5 secondary">
@@ -249,7 +249,7 @@
 												<div class="item" itemscope itemtype="https://schema.org/NewsArticle">
 													<h3 class="h5" itemprop="headline">{{ title }}</h3>
 													{{ if excerpt }}<p itemprop="description">{{ excerpt }}</p>{{ /if }}
-													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="{{ title | striptags }}">Read more</a>
+													<a class="btn btn-primary stretched-link" href="{{ url }}" itemprop="url" aria-label="Read more: {{ title | striptags }}">Read more</a>
 												</div>
 											</div>
 										{{ /if }}
@@ -304,9 +304,9 @@
 											</h2>
 											{{ if excerpt }}<p>{{ excerpt }}</p>{{ /if }}
 											<div class="cta-container">
-												<a class="btn btn-primary" href="{{ url }}" aria-label="Read {{ title | striptags }}">Read more</a>
+												<a class="btn btn-primary" href="{{ url }}" aria-label="Read more: {{ title | striptags }}">Read more</a>
 												{{ if $include_link && category_url }}
-													<a href="{{ category_url }}" class="btn btn-outline-primary" aria-label="View the full list of {{ category_name }} stories">View the {{ category_name }} Archive</a>
+													<a href="{{ category_url }}" class="btn btn-outline-primary">View the {{ category_name }} Archive</a>
 												{{ /if }}
 											</div>
 										</div>
