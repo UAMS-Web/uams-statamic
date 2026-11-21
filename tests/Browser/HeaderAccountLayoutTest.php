@@ -20,8 +20,9 @@ use Statamic\Facades\Antlers;
  | placeholder images at the logo's sizes (386 by 50 horizontal, 81 by 40 vertical). The theme stylesheet is the compiled
  | `uams_2020/app.scss` from the Vite manifest, so `npm run build` must be current.
  |
- | The resource icon's `<i>` is given a 1em box: on a real page an icon font fills it, and
- | without one it would collapse to nothing and take no room in the row.
+ | The icon entry is the health site's ER link (`emergency-link`), so the row carries its
+ | visible "ER" label (#1212). Its `<i>` is given a 1em box: on a real page Font Awesome
+ | fills it, and without that it would collapse to nothing and take no room in the row.
  |
  | @command vendor/bin/pest tests/Browser/HeaderAccountLayoutTest.php
  */
@@ -66,7 +67,7 @@ function writeHeaderFixture(string $path, array $session): void
                     $link('https://giving.uams.edu/', 'Giving'),
                 ],
                 'global_header_resource_navigation_icon' => [
-                    ['link_group' => ['link' => '/emergency/', 'link_text' => 'Emergency Rooms', 'icon' => 'fas fa-ambulance', 'new_window' => false]],
+                    ['link_group' => ['link' => '/emergency/', 'link_text' => 'Emergency Room', 'icon' => 'fas fa-ambulance', 'new_window' => false, 'link_class' => 'emergency-link']],
                 ],
             ],
         ],
@@ -87,11 +88,11 @@ function writeHeaderFixture(string $path, array $session): void
  * two of them or with the brand, and the controls whose centre is not their own.
  *
  * @param  PendingAwaitablePage  $page  The page returned from visit(), already resized.
- * @return array{controls: list<string>, overlaps: list<string>, covered: list<string>, name: bool|null}
+ * @return array{controls: list<string>, overlaps: list<string>, covered: list<string>, name: bool|null, er: bool}
  */
 function measureHeaderRow(PendingAwaitablePage $page): array
 {
-    /** @var array{controls: list<string>, overlaps: list<string>, covered: list<string>, name: bool|null} $result */
+    /** @var array{controls: list<string>, overlaps: list<string>, covered: list<string>, name: bool|null, er: bool} $result */
     $result = $page->script('() => {
         const visible = (el) => {
             const box = el.getBoundingClientRect();
@@ -116,7 +117,8 @@ function measureHeaderRow(PendingAwaitablePage $page): array
             return !(hit && el.contains(hit));
         }).map(label);
         const name = document.querySelector(".site-header__account-name");
-        return { controls: controls.map(label), overlaps, covered, name: name ? visible(name) : null };
+        const er = document.querySelector(".emergency-link .resource-nav-label");
+        return { controls: controls.map(label), overlaps, covered, name: name ? visible(name) : null, er: !!er && visible(er) && er.textContent === "ER" };
     }');
 
     return $result;
@@ -141,6 +143,7 @@ it('keeps the logged-out header controls apart and clickable', function (int $wi
     $row = measureHeaderRow($page);
 
     expect($row['controls'])->toContain('Log in', 'Search')
+        ->and($row['er'])->toBeTrue()
         ->and($row['overlaps'])->toBe([])
         ->and($row['covered'])->toBe([]);
 })->with(['phone' => 375, 'desktop' => 992]);
@@ -158,6 +161,7 @@ it('shows "Log out" alone below xl and the member name from xl up, without overl
     $row = measureHeaderRow($page);
 
     expect($row['controls'])->toContain('Log out', 'Search')
+        ->and($row['er'])->toBeTrue()
         ->and($row['name'])->toBe($nameShown)
         ->and($row['overlaps'])->toBe([])
         ->and($row['covered'])->toBe([]);
