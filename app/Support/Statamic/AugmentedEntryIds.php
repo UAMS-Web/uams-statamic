@@ -73,20 +73,17 @@ final class AugmentedEntryIds
 
         // A raw stored value is the entry id itself.
         if (\is_scalar($item)) {
-            $raw = trim((string) $item);
-
-            return $raw !== '' ? $raw : null;
+            return trim((string) $item);
         }
 
         return null;
     }
 
     /**
-     * Normalize a value to a flat list: a collection/array/query builder becomes
-     * a list of its items; a scalar/object becomes a single-element list; null
-     * becomes empty.
+     * Normalize a value to an array of items: a collection/array/query builder
+     * becomes its items; any other value becomes a single-element array.
      *
-     * @return array<int, mixed>
+     * @return array<array-key, mixed>
      */
     private static function toList(mixed $value): array
     {
@@ -96,17 +93,13 @@ final class AugmentedEntryIds
             $value = self::unwrap($value);
         }
 
-        if ($value === null) {
-            return [];
-        }
-
         $value = self::materializeQueryBuilder($value);
 
         if ($value instanceof Collection) {
-            return $value->values()->all();
+            return $value->all();
         }
 
-        return \is_array($value) ? array_values($value) : [$value];
+        return \is_array($value) ? $value : [$value];
     }
 
     /**
