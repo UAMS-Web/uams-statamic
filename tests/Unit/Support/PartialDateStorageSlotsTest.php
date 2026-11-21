@@ -7,9 +7,9 @@ use App\Support\PartialDateStorageSlots;
 /**
  * @covers \App\Support\PartialDateStorageSlots
  *
- * The `$` anchor in each pattern also matches before one trailing newline, so
- * a digit run followed by `\n` passes. The `trailing_newline` rows pin that
- * behavior as it stands; they do not endorse it.
+ * The `trailing_newline` rows pin that a digit run followed by `\n` is
+ * refused: the pattern ends in `\z`, not `$`, which would also match before a
+ * final newline (#1155).
  *
  * @command php artisan test --compact tests/Unit/Support/PartialDateStorageSlotsTest.php
  */
@@ -26,7 +26,7 @@ it('validates the year slot per Schema.org partial-date rules', function (mixed 
     'too_short' => ['986', false],
     'too_long' => ['19860', false],
     'non_digit' => ['19a6', false],
-    'trailing_newline' => ["1986\n", true],
+    'trailing_newline' => ["1986\n", false],
     'empty' => ['', false],
     'null' => [null, false],
     'integer' => [1986, false],
@@ -42,7 +42,7 @@ it('validates the month slot', function (mixed $part, bool $expected) {
     'one_digit' => ['5', false],
     'three_digits' => ['005', false],
     'non_digit' => ['0a', false],
-    'trailing_newline' => ["05\n", true],
+    'trailing_newline' => ["05\n", false],
     'empty' => ['', false],
     'null' => [null, false],
     'integer' => [5, false],
@@ -58,7 +58,7 @@ it('validates the day slot', function (mixed $part, bool $expected) {
     'one_digit' => ['4', false],
     'three_digits' => ['014', false],
     'non_digit' => ['1a', false],
-    'trailing_newline' => ["14\n", true],
+    'trailing_newline' => ["14\n", false],
     'empty' => ['', false],
     'null' => [null, false],
     'integer' => [14, false],
