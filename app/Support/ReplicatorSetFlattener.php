@@ -30,16 +30,8 @@ final class ReplicatorSetFlattener
         array $fieldHandles,
         string $separator = ' ',
     ): ?string {
-        // Check whether the replicator value is a non-empty list
-        if (
-            ! \is_array($value)
-            || $value === []
-        ) {
-            return null;
-        }
-
-        // Check whether any field handles were configured
-        if ($fieldHandles === []) {
+        // Reject non-array replicator values
+        if (! \is_array($value)) {
             return null;
         }
 
