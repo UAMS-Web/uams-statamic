@@ -35,6 +35,8 @@
 
 		{{# Icon Navigation #}}
 
+		{{# Icon links use `uamsweb_common_link.icon_link_group`, whose handles are `link`
+		    and `link_text`, not the `url` and `text` of the text links above (#1209). #}}
 		<ul class="nav resource-nav" id="nav-resource">
 			{{ uams_multisite_settings:global_header_resource_navigation_icon }}
 			{{ $target = ( link_group:new_window ) ? '_blank' : null }}
@@ -47,11 +49,11 @@
 							link_group:link_class
 						] | classes | collapse_whitespace
 					}}"
-					{{ link_group:url | attribute:href }}
-					{{ link_group:text | attribute:aria-label }}
+					{{ link_group:link | attribute:href }}
+					{{ link_group:link_text | attribute:aria-label }}
 					{{ $target | attribute:target }}
 					{{ $rel | attribute:rel }}
-				><i {{ link_group:icon | attribute:class }}></i><span class="sr-only">{{ link_group:text }}</span></a>
+				><i {{ link_group:icon | attribute:class }}></i><span class="sr-only">{{ link_group:link_text | entities }}</span></a>
 			</li>
 			{{ /uams_multisite_settings:global_header_resource_navigation_icon }}
 			{{# Search entry point: a link to the standalone /search page (UAMS-Web/uams-statamic-archive#890 / UAMS-Web/uams-statamic-archive#815).
