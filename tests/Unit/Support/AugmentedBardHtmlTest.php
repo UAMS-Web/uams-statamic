@@ -34,6 +34,11 @@ function augmentedBardHtmlRecorder(array &$calls): Closure
  *
  * The limits stay in force only for the call, and a plain error handler stands in for the runner's,
  * because the runner's handler and printer use PCRE themselves and fail under the limit.
+ *
+ * @template TResult
+ *
+ * @param  Closure(): TResult  $callback  The call to run under the limit
+ * @return TResult What the callback returned
  */
 function augmentedBardHtmlUnderBacktrackLimit(Closure $callback): mixed
 {
@@ -220,7 +225,20 @@ it('injects before the last closing tag of the element', function (string $html,
 it('returns the fragment unchanged when the closing-tag match fails', function (): void {
     $html = '<p>Body</p'.str_repeat(' ', 50).'>';
 
-    expect(augmentedBardHtmlUnderBacktrackLimit(fn (): string => AugmentedBardHtml::injectBeforeLastClosingTag($html, ' NEW', 'p')))->toBe($html);
+    // Capture the PCRE error inside the limited call, before the runner's own matching can reset it
+    [$result, $error] = augmentedBardHtmlUnderBacktrackLimit(fn (): array => [
+        AugmentedBardHtml::injectBeforeLastClosingTag($html, ' NEW', 'p'),
+        preg_last_error(),
+    ]);
+
+    // PHP caches each compiled pattern with the JIT setting in force when it was first compiled,
+    // and the dataset above compiles this one first. The JIT-compiled match has been measured
+    // succeeding under a limit of 1 (PCRE 10.44, Windows), so the failure cannot be forced (#1226).
+    if ($error !== PREG_BACKTRACK_LIMIT_ERROR) {
+        $this->markTestSkipped('The backtrack limit did not make the closing-tag match fail: the pattern was compiled with JIT before the limit was set (#1226).');
+    }
+
+    expect($result)->toBe($html);
 });
 
 it('normalizes the element argument to a lowercase tag name or p', function (mixed $candidate, string $expected): void {
