@@ -39,8 +39,10 @@ return [
     |   the migrated URLs stay in the sitemap.
     |
     | Sitemapamic 4 also leaves out an entry with any `redirect`, an entry
-    | under Statamic's `protect` scheme, an entry with no stored URI, and an
-    | entry whose template view does not exist (#991, #1232).
+    | under Statamic's `protect` scheme, an entry whose `uri()` is empty, and an
+    | entry whose template view does not exist (#991, #1232). On the Stache,
+    | `uri()` recomputes the URI, so it does not catch an entry the router cannot
+    | resolve; the `post_categories` / `post_tags` gate above still does.
     |
     */
 

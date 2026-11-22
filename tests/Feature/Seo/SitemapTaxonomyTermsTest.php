@@ -115,8 +115,10 @@ it('gives post_tags a collection source and the routeless collection none', func
     // The collection's entries are a source of their own.
     expect($sources->contains(fn (Source $source): bool => $source->isCollection() && $source->collection === 'post_tags'))->toBeTrue();
 
-    // A collection absent from the config resolves to no source at all, so none of
-    // its entries can ever reach the sitemap.
+    // The routeless collection resolves to no source at all, so none of its entries
+    // can ever reach the sitemap. Sitemapamic skips a collection with no route even
+    // when it is configured, so this holds by routability; the config side is
+    // asserted by the test above.
     expect($sources->contains(fn (Source $source): bool => $source->collection === SITEMAP_ROUTELESS_COLLECTION))->toBeFalse();
 });
 

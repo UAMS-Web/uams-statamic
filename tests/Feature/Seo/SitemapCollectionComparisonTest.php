@@ -41,6 +41,13 @@ uses(EntriesTermsAndTreesIsolatedTestCase::class);
 | restated here because the package no longer carries it. The fixtures carry
 | no `redirect`: 4.0.0 drops every redirecting entry where 3.5.1 dropped only an
 | off-site link, a difference recorded in docs/DECISIONS.md rather than compared.
+| Each fixture uses its collection's default blueprint (`knowledge_base` for
+| `knowledge_bases`). The `clinical_expertise` `basic_page` and `landing_page`
+| blueprints store a template whose view does not exist, so 4.0.0 leaves those
+| entries out where 3.5.1 emitted them; that divergence is #1235's and is not
+| compared here. The comparison covers every entry in the collection on the site,
+| so it assumes the content carries no other entries there; one would make the
+| case fail rather than pass.
 |
 | @command php artisan test --compact tests/Feature/Seo/SitemapCollectionComparisonTest.php
 */

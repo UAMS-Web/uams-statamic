@@ -21,8 +21,9 @@ use UAMSWeb\Aether\People\Entries\PersonEntry;
  * site's XML sitemap.
  *
  * Sitemapamic's URL iterator (`MityDigital\Sitemapamic\Support\Content\UrlIterator`)
- * skips unpublished entries, entries with a `redirect`, entries under Statamic's
- * `protect` scheme and entries with no template view, but it never reads this app's
+ * skips, among others, unpublished entries, entries with a `redirect`, entries under
+ * Statamic's `protect` scheme, entries with an empty `uri()` and entries with no
+ * template view, but it never reads this app's
  * `status_and_visibility` or password fields, or a person's profile-page flag. So a *published* entry
  * that is non-public (private / password-protected), non-routable (a person with no
  * profile page), or reachable only via a redirect (an orphaned knowledge-base
@@ -120,8 +121,8 @@ final class SitemapInclusionComputedsRegistrar
 
         // Collections that bring their own rule. `people` registers the shared gate AND
         // exclusion of non-routable profiles (UAMS-Web/uams-statamic-archive#43): a person with `profile_page_query`
-        // explicitly false has no URI, so its `url()` is null and Sitemapamic would emit
-        // a rootless/duplicate <loc>.
+        // explicitly false has no URI. Sitemapamic 4 also skips an entry whose `uri()`
+        // is empty, so this rule and that check both keep the profile out.
         foreach ($this->extensions->sitemapInclusionRules() as $collection => $rule) {
             Collection::computed($collection, self::INCLUDE_HANDLE, $rule);
         }
@@ -207,7 +208,7 @@ final class SitemapInclusionComputedsRegistrar
      * (post_categories, post_tags) may appear in the public XML sitemap.
      *
      * The router resolves a request through the Stache `uri` index, while
-     * Sitemapamic emits `$entry->url()`, which recomputes the URI when the index
+     * Sitemapamic emits the entry's `uri()`, which recomputes the URI when the index
      * has none. The two disagree for an entry saved without a place in the
      * collection's tree: its index URI is saved as null, so its URL 404s, yet the
      * recomputed URI re-roots it and the sitemap would advertise that URL until
