@@ -68,15 +68,7 @@ beforeEach(function (): void {
     Config::set('schema_templates.json_ld_compose_profile.top_n', 10);
     request()->attributes->remove(PROFILER_BAG);
 
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 describe('enabled()', function (): void {

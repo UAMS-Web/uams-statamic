@@ -20,13 +20,7 @@ covers(CustomFieldComposer::class);
  * @command  php artisan test --compact tests/Feature/Http/View/Composers/CustomFieldComposerTest.php
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if (! $padded) {
-        if (runningUnderMutate()) {
-            usleep(20_000_000);
-            $padded = true;
-        }
-    }
+    padMutateChildTimeout();
 
     // Reset Statamic script variables so tests do not leak merge state
     $reflection = new ReflectionClass(Statamic::class);

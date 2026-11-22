@@ -25,13 +25,7 @@ covers(ArticleEngagementRequestResolver::class);
  * @command php artisan test --compact tests/Feature/Services/KnowledgeBase/ArticleEngagementRequestResolverTest.php
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if (! $padded) {
-        if (runningUnderMutate()) {
-            usleep(20_000_000);
-            $padded = true;
-        }
-    }
+    padMutateChildTimeout();
 
     // A knowledge_bases collection with article + topic blueprints, plus a foreign
     // collection to prove the collection gate.

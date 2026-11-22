@@ -33,15 +33,7 @@ function clearSchemaTypeOptionsCaches(): void
 beforeEach(function (): void {
     clearSchemaTypeOptionsCaches();
 
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 afterEach(function (): void {

@@ -20,15 +20,7 @@ covers(WrapInQuotes::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 it('wraps the value in curly double quotes, removing any marks at its ends', function (mixed $value, string $expected): void {
