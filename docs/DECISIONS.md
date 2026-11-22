@@ -4077,3 +4077,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *Moving Pest alone*: Pest `v5.3.6` and later require the newer PHPUnit and paratest, so Pest cannot move without them. *Keeping the `ignore` entry as a guard*: it would also keep paratest out of the weekly minor-and-patch group, which is the reason the #658 entry called it temporary.
 
 **Companion.** #659 (the ticket and its `## Decision`); #658 (the pin); `pestphp/pest#2024` and `pestphp/pest#2025`; #193, which waits on this move.
+
+## 2026-11-22: `mitydigital/sitemapamic` moves to `4.0.0` before launch (#991)
+
+**Decision.** Decided by Josh on 2026-11-22, option A on #991. The site adopts `mitydigital/sitemapamic` `4.0.0` before launch, replacing the locked `3.5.1`. The move, the rewrite of `config/sitemapamic.php` (the same opt-in collection list, gated by `meta_include_in_xml_sitemap`, in single-file mode) and the six sitemap test files that read the old API are #1232's build.
+
+**Why.** Measured on #969 at launch-scale post volume (24,612 synthetic posts sized from the WordPress exports): a cold per-site build is 3 to 5 times faster (`news`, 8,590 URLs: 44 to 46 s against 202 to 233 s), because `3.5.1` loads every entry of each listed collection for every site and drops other sites' entries in PHP, while `4.0.0` filters by site first, so the gain grows with the number of sites. Peak memory is about 200 MB on both in repeat runs, the URL sets are identical on the four sites compared, and every last-modified date matches on the root site's 4,437 URLs, where they were checked. The opt-in list and its gating port without a workaround.
+
+**Rejected.** *Adopting after launch*: the slow cold builds ship, and the config and test port still has to be done. *Staying on `3.5.1`*: the slowdown grows with every site added. *Waiting and re-measuring*: the measurement already answers speed, memory and URL parity.
+
+**Residual.** `4.0.0` leaves out an entry with an off-site `redirect`, which `3.5.1` emits as the external URL, an entry under Statamic's `protect` scheme, and an entry whose template view does not exist. #969 reads the first two as gaps in today's output that the move closes, not regressions; no real local entry uses either. Four collections (`post_categories`, `post_tags`, `clinical_expertise`, `knowledge_bases`) had no local URLs to compare; #1232 compares them or records why it cannot.
+
+**Companion.** #991 (the decision and its `## Decision`); #969 (the [measurement](https://github.com/UAMS-Web/uams-statamic/issues/969#issuecomment-7067234337) and the recommendation); #1232 (the build); #1230 (Dependabot's version-only pull request, which cannot pass alone and which #1232 supersedes or builds on).
