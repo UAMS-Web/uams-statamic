@@ -20,9 +20,10 @@ use UAMSWeb\Aether\People\Entries\PersonEntry;
  * collection so mitydigital/sitemapamic excludes non-public entries from each
  * site's XML sitemap.
  *
- * Sitemapamic's loader (`MityDigital\Sitemapamic\Support\Sitemapamic::loadEntries`)
- * only skips *unpublished* entries — it never checks routability, and it maps a
- * kept entry straight to `URL::makeAbsolute($entry->url())`. So a *published* entry
+ * Sitemapamic's URL iterator (`MityDigital\Sitemapamic\Support\Content\UrlIterator`)
+ * skips unpublished entries, entries with a `redirect`, entries under Statamic's
+ * `protect` scheme and entries with no template view, but it never reads this app's
+ * `status_and_visibility` or password fields, or a person's profile-page flag. So a *published* entry
  * that is non-public (private / password-protected), non-routable (a person with no
  * profile page), or reachable only via a redirect (an orphaned knowledge-base
  * descendant) would otherwise emit a bogus, private, or redirecting `<loc>`. This
@@ -71,8 +72,9 @@ final class SitemapInclusionComputedsRegistrar
     /**
      * The editor-facing blueprint toggle that opts an individual entry out of the
      * sitemap. Deliberately distinct from the mapped self::INCLUDE_HANDLE so a
-     * stored value cannot shadow this computed in Sitemapamic's `get() ??
-     * getComputed()` read (which would bypass the automatic gate).
+     * stored value cannot shadow this computed: Sitemapamic reads the stored value
+     * first and falls back to the computed only when it is null, so a stored value
+     * would bypass the automatic gate.
      */
     public const string EDITOR_TOGGLE_HANDLE = 'include_in_xml_sitemap';
 
