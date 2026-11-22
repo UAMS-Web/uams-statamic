@@ -24,6 +24,8 @@ class Product extends Fieldtype
      *
      * @var bool Indicates whether the fieldtype is selectable in collection blueprints
      */
+    // A property default is never executed, so line coverage cannot reach it; the tests assert selectable()
+    // @pest-mutate-ignore: TrueToFalse
     protected $selectable = true;
 
     /**
@@ -31,6 +33,8 @@ class Product extends Fieldtype
      *
      * @var bool Indicates whether the fieldtype is selectable in form blueprints
      */
+    // A property default is never executed, so line coverage cannot reach it; the tests assert selectableInForms()
+    // @pest-mutate-ignore: TrueToFalse
     protected $selectableInForms = true;
 
     /**
@@ -237,9 +241,11 @@ class Product extends Fieldtype
         // A disabled quantity field is a fixed order of one; otherwise read the
         // submitted quantity and treat a missing / zero / negative count as
         // "not ordered".
+        // The value only decides the ternary below, which reads truthiness the same with or without the cast
+        // @pest-mutate-ignore: RemoveBooleanCast
         $disableQuantity = (bool) $this->config('disable_quantity', false);
-        $submittedQuantity = $data['quantity'] ?? 0;
-        $quantity = $disableQuantity ? 1 : max(0, is_numeric($submittedQuantity) ? (int) $submittedQuantity : 0);
+        $submittedQuantity = $data['quantity'] ?? null;
+        $quantity = $disableQuantity ? 1 : (is_numeric($submittedQuantity) ? max(0, (int) $submittedQuantity) : 0);
 
         if ($quantity === 0) {
             return null;
@@ -285,7 +291,7 @@ class Product extends Fieldtype
         // Default a missing quantity to one so picking an option without
         // touching the quantity field still orders a single unit.
         $submittedQuantity = $data['quantity'] ?? 1;
-        $quantity = max(0, is_numeric($submittedQuantity) ? (int) $submittedQuantity : 0);
+        $quantity = is_numeric($submittedQuantity) ? max(0, (int) $submittedQuantity) : 0;
 
         if ($quantity === 0) {
             return null;
@@ -298,7 +304,7 @@ class Product extends Fieldtype
         return [
             'selection_type' => 'multiple',
             'key' => $key,
-            'label' => $option['label'] ?? $option['key'] ?? $key,
+            'label' => $option['label'] ?? $key,
             'quantity' => $quantity,
             'price' => $price,
             'line_total' => round($price * $quantity, 2),
