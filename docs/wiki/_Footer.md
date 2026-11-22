@@ -1,0 +1,3 @@
+[Home](Home.md) | [Git submodules](Git-submodules.md) | [Guides](Deploying.md) | [Troubleshooting](Troubleshooting.md) | [Reference](Web-server-configuration.md) | [Project](Project.md) | [README](https://github.com/UAMS-Web/uams-statamic#readme) | [Repository](https://github.com/UAMS-Web/uams-statamic)
+
+Written against v0.50.0. Edit these pages in [`docs/wiki/`](https://github.com/UAMS-Web/uams-statamic/tree/main/docs/wiki) through a pull request; edits made in the wiki are overwritten by the next publish.
