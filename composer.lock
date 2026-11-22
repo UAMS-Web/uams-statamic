@@ -12700,23 +12700,23 @@
         },
         {
             "name": "uams-web/aether-people",
-            "version": "v0.5.0",
+            "version": "v0.5.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-people.git",
-                "reference": "5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98"
+                "reference": "fc5d8b3d096800b9d9b62d8e33333f52f3fc61c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98",
-                "reference": "5529ee712d6fc4b0f7680bfddd2dc5431aaf8e98",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/fc5d8b3d096800b9d9b62d8e33333f52f3fc61c1",
+                "reference": "fc5d8b3d096800b9d9b62d8e33333f52f3fc61c1",
                 "shasum": ""
             },
             "require": {
                 "php": "^8.4",
                 "statamic/cms": "^6.35",
-                "uams-web/aether-enums": "^0.1.0",
-                "uams-web/aether-fieldtypes": "^0.1.0"
+                "uams-web/aether-enums": "^0.1.0 || ^0.2.0",
+                "uams-web/aether-fieldtypes": "^0.1.0 || ^0.2.0"
             },
             "require-dev": {
                 "cweagans/composer-patches": "^2.0",
@@ -12774,7 +12774,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-people/issues",
                 "source": "https://github.com/UAMS-Web/aether-people"
             },
-            "time": "2026-11-19T19:05:07+00:00"
+            "time": "2026-11-22T22:48:33+00:00",
+            "published-time": "2026-11-22T22:57:35+00:00"
         },
         {
             "name": "uams-web/aether-redirects",
