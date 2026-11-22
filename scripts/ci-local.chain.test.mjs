@@ -86,7 +86,8 @@ const LINUX_AND_WINDOWS = ['spell', 'encoding-guard', 'test-isolation-guard', 'b
 // the same `--jobs` key. The rest are why `checks` is in REMOTE_ONLY: synced-files,
 // no-emoji and aggregate-needs have no local job (the comparison aggregate-needs
 // makes runs in this file), composer-validate repeats a command the local `validate`
-// job runs. Its mutate-ignore job is off for this caller (#749). A key dropped from the local chain while the call still runs its job
+// job runs. Its mutate-ignore, mutate-plan and mutate jobs have no local job either:
+// the local `mutate` and `encoding-guard` jobs run this repository's own commands (#749, #639). A key dropped from the local chain while the call still runs its job
 // fails the case that reads this list.
 const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan']
 
@@ -199,15 +200,15 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
             return /^ {6}mutate: true$/m.test(checks) || /^ {6}mutate-ignore: true$/m.test(checks)
         }
 
-        expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan'])
+        expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan', 'mutate-ignore', 'mutate-plan', 'mutate'])
         expect(listed(workflow).includes('mutate-ignore')).toBe(runsMutateIgnore(workflow))
         // And it names the job that carries the annotation audit instead.
         expect(checksComment(workflow)).toContain('the `encoding-guard` job above runs `scripts/check-mutate-ignore.php`')
         expect(jobText(workflow, 'encoding-guard')).toContain('php scripts/check-mutate-ignore.php app tests')
         expect(JOBS.encoding.map(([label]) => label)).toContain('mutate-ignore auditor')
 
-        // Control: switching the input on makes the same comparison disagree.
-        const planted = workflow.replace(/^( {6}mutate: )false$/m, '$1true')
+        // Control: switching the input off makes the same comparison disagree.
+        const planted = workflow.replace(/^( {6}mutate: )true$/m, '$1false')
         expect(planted).not.toBe(workflow)
         expect(listed(planted).includes('mutate-ignore')).not.toBe(runsMutateIgnore(planted))
     })
