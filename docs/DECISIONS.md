@@ -4067,3 +4067,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *"Emergency" from 414 px up and "ER" below*: two strings and a breakpoint, so the wording changes with width. *Keeping the ambulance glyph*: transport, not the destination.
 
 **Companion.** #96 (the decision and its [measurements](https://github.com/UAMS-Web/uams-statamic/issues/96#issuecomment-7065700863)); #1212 (the build); #1209 and #1210 (header defects found in passing).
+
+## 2026-11-21: The `brianium/paratest` pin is retired with Pest `v5.3.7` (#659)
+
+**Decision.** Decided by Josh on 2026-11-21. Pest `v5.3.6` carries the fix for `pestphp/pest#2024` (`pestphp/pest#2025`, "support brianium/paratest 7.28 grouped test files"), and it requires `phpunit/phpunit` `^13.4.7` and `brianium/paratest` `^7.29.0`. So `pestphp/pest` moves to `v5.3.7`, the latest, `phpunit/phpunit` to `13.4.7` and `brianium/paratest` to `v7.29.0` under an ordinary `^7.29.0` constraint. The `extra.pinned` entry, the Dependabot `ignore` entry and the `659-pestphp-pest-2024.json` upstream watch row are removed. No other package moves.
+
+**Why.** The 2026-11-12 pin (#658) was a hold until a Pest release could read paratest's regrouped `SuiteLoader::$tests`. Left in place after the fix shipped, the pin would hold paratest back, and the `ignore` entry would hide every later paratest release from Dependabot.
+
+**Rejected.** *Moving Pest alone*: Pest `v5.3.6` and later require the newer PHPUnit and paratest, so Pest cannot move without them. *Keeping the `ignore` entry as a guard*: it would also keep paratest out of the weekly minor-and-patch group, which is the reason the #658 entry called it temporary.
+
+**Companion.** #659 (the ticket and its `## Decision`); #658 (the pin); `pestphp/pest#2024` and `pestphp/pest#2025`; #193, which waits on this move.
