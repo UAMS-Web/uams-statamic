@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fc26ba8f56b4272ec3e2499e337c82eb",
+    "content-hash": "1b890e319856e0540294f8cb9990210e",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -4107,23 +4107,30 @@
         },
         {
             "name": "mitydigital/sitemapamic",
-            "version": "3.5.1",
+            "version": "4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mitydigital/statamic-sitemapamic.git",
-                "reference": "0b7f7eb5b6a97aebd8d2c66d2569312e1705c815"
+                "reference": "ae7b6434c87c40b0edc41adfcfeaed93d3e9ce43"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mitydigital/statamic-sitemapamic/zipball/0b7f7eb5b6a97aebd8d2c66d2569312e1705c815",
-                "reference": "0b7f7eb5b6a97aebd8d2c66d2569312e1705c815",
+                "url": "https://api.github.com/repos/mitydigital/statamic-sitemapamic/zipball/ae7b6434c87c40b0edc41adfcfeaed93d3e9ce43",
+                "reference": "ae7b6434c87c40b0edc41adfcfeaed93d3e9ce43",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.2",
-                "statamic/cms": "^5.0|^6.0"
+                "statamic/cms": "^6.0"
             },
-            "type": "statamic-addon",
+            "require-dev": {
+                "laravel/pint": "^1.24",
+                "orchestra/testbench": "^10.8",
+                "pestphp/pest": "^4.7",
+                "spatie/laravel-ray": "^1.33",
+                "statamic/eloquent-driver": "^5.13",
+                "statamic/ssg": "^4.2"
+            },
+            "type": "library",
             "extra": {
                 "laravel": {
                     "providers": [
@@ -4132,7 +4139,7 @@
                 },
                 "statamic": {
                     "name": "Sitemapamic",
-                    "description": "Adds an XML sitemap to a Statamic site."
+                    "description": "A powerful and performant XML sitemap generator for Statamic."
                 }
             },
             "autoload": {
@@ -4149,16 +4156,12 @@
                     "name": "Marty Friedel"
                 }
             ],
-            "description": "An XML sitemap generator for Statamic that includes all collections and related taxonomy pages.",
-            "keywords": [
-                "Sitemap",
-                "statamic"
-            ],
+            "description": "A powerful and performant XML sitemap generator for Statamic.",
             "support": {
                 "issues": "https://github.com/mitydigital/statamic-sitemapamic/issues",
-                "source": "https://github.com/mitydigital/statamic-sitemapamic/tree/3.5.1"
+                "source": "https://github.com/mitydigital/statamic-sitemapamic/tree/v4.0.0-beta.6"
             },
-            "time": "2026-07-31T00:19:49+00:00"
+            "time": "2026-11-18T00:07:10+00:00"
         },
         {
             "name": "mjaschen/phpgeo",
