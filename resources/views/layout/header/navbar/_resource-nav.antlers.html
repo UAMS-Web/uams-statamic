@@ -41,6 +41,14 @@
 			{{ uams_multisite_settings:global_header_resource_navigation_icon }}
 			{{ $target = ( link_group:new_window ) ? '_blank' : null }}
 			{{ $rel = ( link_group:new_window ) ? 'noopener noreferrer' : null }}
+			{{# The ER entry, marked by its `emergency-link` class, is the one high-stakes link
+			    in this bar, so #96 dual-codes it: the hospital "H" glyph and a visible "ER" label
+			    at every width (#1212). Its accessible name comes from its text alone, the
+			    visible "ER" first and the stored label after it ("ER, Emergency Room"), so it
+			    is set once and starts with what is on screen (WCAG 2.5.3). The glyph is fixed
+			    here rather than read from the stored `icon`, so every site's ER entry looks the
+			    same. Every other entry stays icon-only, named by its stored label. #}}
+			{{ $is_emergency = ( link_group:link_class ?? '' ) | explode(' ') | contains('emergency-link') }}
 			<li class="nav-item">
 				<a
 					class="{{
@@ -50,10 +58,10 @@
 						] | classes | collapse_whitespace
 					}}"
 					{{ link_group:link | attribute:href }}
-					{{ link_group:link_text | attribute:aria-label }}
+					{{ if ! $is_emergency }}{{ link_group:link_text | attribute:aria-label }}{{ /if }}
 					{{ $target | attribute:target }}
 					{{ $rel | attribute:rel }}
-				><i {{ link_group:icon | attribute:class }}></i><span class="sr-only">{{ link_group:link_text | entities }}</span></a>
+				>{{ if $is_emergency }}<i class="fas fa-hospital-symbol" aria-hidden="true"></i><span class="resource-nav-label">ER</span><span class="sr-only">, {{ link_group:link_text | entities }}</span>{{ else }}<i {{ link_group:icon | attribute:class }}></i><span class="sr-only">{{ link_group:link_text | entities }}</span>{{ /if }}</a>
 			</li>
 			{{ /uams_multisite_settings:global_header_resource_navigation_icon }}
 			{{# Search entry point: a link to the standalone /search page (UAMS-Web/uams-statamic-archive#890 / UAMS-Web/uams-statamic-archive#815).

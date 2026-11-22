@@ -323,6 +323,13 @@ $header-health-logo-clear-space: $header-logo-clear-space;
                     box-shadow: 0 0 0 $input-btn-focus-width rgba($black, .25);
                 }
             }
+
+            // The visible "ER" beside the ER entry's glyph (#1212), shown at every width.
+            .resource-nav-label {
+                margin-left: .25em;
+                font-weight: $font-weight-bold;
+                line-height: 1;
+            }
         }
 
         .toggle-search {
