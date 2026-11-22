@@ -183,6 +183,7 @@ parameters:
                 - tests/Browser/ReplicatorRebuildStateGapsTest.php
                 - tests/Browser/ReplicatorSubfieldConditionsTest.php
                 - tests/Browser/SignatureConditionalRebuildTest.php
+                - tests/Browser/TextPhoneticPairAddOnTest.php
                 - tests/Feature/Forms/AlpineCspFormsAddonTest.php
                 - tests/Feature/Forms/DateDefaultNowPublicFormTest.php
                 - tests/Feature/Forms/FormScoringAddOnTest.php
