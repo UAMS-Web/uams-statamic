@@ -46,7 +46,7 @@
         "laravel/tinker": "^3.0",
         "league/commonmark": "^2.8.1",
         "maatwebsite/excel": "^4.0",
-        "mitydigital/sitemapamic": "^3.5.0",
+        "mitydigital/sitemapamic": "^4.0.0",
         "propaganistas/laravel-phone": "^6.0",
         "smalot/pdfparser": "^2.0",
         "spatie/browsershot": "^5.0",

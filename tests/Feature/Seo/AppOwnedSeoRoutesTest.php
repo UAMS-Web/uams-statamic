@@ -147,10 +147,11 @@ it('serves a per-site sitemap.xml via mitydigital/sitemapamic', function (): voi
     $response = get('/sitemap.xml');
 
     $response->assertOk();
-    $response->assertHeader('Content-Type', 'application/xml');
+    $response->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
 
-    // Sitemapamic emits a <urlset> even when the site has no published entries.
-    expect($response->getContent())->toContain('<urlset');
+    // Sitemapamic emits a <urlset> even when the site has no published entries. The
+    // body is streamed, so `getContent()` is empty and `streamedContent()` reads it.
+    expect($response->streamedContent())->toContain('<urlset');
 });
 
 it('serves a nested non-default site sitemap.xml (multisite AC)', function (): void {
@@ -177,8 +178,8 @@ it('serves a nested non-default site sitemap.xml (multisite AC)', function (): v
     $response = get($path);
 
     $response->assertOk();
-    $response->assertHeader('Content-Type', 'application/xml');
-    expect($response->getContent())->toContain('<urlset');
+    $response->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
+    expect($response->streamedContent())->toContain('<urlset');
 });
 
 it('excludes private and password-protected pages from the sitemap (security)', function (): void {

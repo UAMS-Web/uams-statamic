@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use App\Support\Redirects\DeletedEntryRedirectCapture;
-use MityDigital\Sitemapamic\Facades\Sitemapamic;
+use MityDigital\Sitemapamic\Data\Source;
 use MityDigital\Sitemapamic\Models\SitemapamicUrl;
+use MityDigital\Sitemapamic\Support\Content\UrlIterator;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Data;
 use Statamic\Facades\Entry;
@@ -210,13 +211,11 @@ it('emits the migrated category archive loc via the collection defaults sitemap 
     ]);
     $categoryTree->save();
 
-    // The migrated collection is emitted via the `defaults` collection path
-    // (config/sitemapamic.php), at its hierarchical `/category/…` URL — not the
-    // retired flat-taxonomy globals path (UAMS-Web/uams-statamic-archive#1486). The `defaults` loader is keyed by
-    // collection handle and gated by the shared inclusion computed.
-    /** @var callable(): Illuminate\Support\Collection<int, SitemapamicUrl> $loader */
-    $loader = Sitemapamic::getLoaders()->get('post_categories');
-    $locs = collect($loader())
+    // The migrated collection is emitted as a collection source (config/sitemapamic.php),
+    // at its hierarchical `/category/…` URL, not the retired flat-taxonomy path
+    // (UAMS-Web/uams-statamic-archive#1486). The source's URLs are gated by the shared
+    // inclusion computed.
+    $locs = collect(app(UrlIterator::class)->forSource(new Source('default', collection: 'post_categories')))
         ->map(fn (SitemapamicUrl $url): string => $url->loc);
 
     expect($locs->contains(fn (string $loc): bool => str_contains($loc, '/category/'.PC_ARCHIVE_TEST_PREFIX.'sitemap-cat')))->toBeTrue();
