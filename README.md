@@ -23,31 +23,17 @@ The Composer vendor patches come from the `uams-web/patches-*` packages; see `pa
 
 Asset rows live in SQLite and are mirrored to YAML under `content/models/assets/`. See [`docs/assets-metadata.md`](docs/assets-metadata.md) for architecture, sync commands, and deploy notes.
 
-## Troubleshooting
+## Documentation
 
-- **Public form renders without fields / Alpine never starts (`504 Outdated Optimize Dep` in DevTools).** Vite's optimize-dep cache went stale (common after `npm ci`, lockfile-touching branch switches, or dep upgrades while the dev server is running). See [`docs/runbooks/vite-stale-optimize-dep-cache.md`](docs/runbooks/vite-stale-optimize-dep-cache.md) for symptoms, cause, and fix.
+The [wiki](https://github.com/UAMS-Web/uams-statamic/wiki) holds the longer documentation: the [git submodules](https://github.com/UAMS-Web/uams-statamic/wiki/Git-submodules), [deploying](https://github.com/UAMS-Web/uams-statamic/wiki/Deploying), the [web server configuration](https://github.com/UAMS-Web/uams-statamic/wiki/Web-server-configuration), [working copies of `people` entries](https://github.com/UAMS-Web/uams-statamic/wiki/Working-copies-of-people-entries) and [troubleshooting](https://github.com/UAMS-Web/uams-statamic/wiki/Troubleshooting). Its pages are written in [`docs/wiki/`](docs/wiki) and change through pull requests.
 
 ## Git Submodules
 
-This repository uses Git submodules for Statamic content, users, form configurations and asset storage so those can be versioned and deployed separately.
+Content, users, form configurations and assets live in five private git submodules. Clone with `--recurse-submodules`, or run `git submodule update --init --recursive` after cloning. [Git submodules](https://github.com/UAMS-Web/uams-statamic/wiki/Git-submodules) in the wiki lists them and says what a clone without access to them can still do.
 
-| Submodule                               | Path                 | Purpose                                       |
-| --------------------------------------- | -------------------- | --------------------------------------------- |
-| `UAMS-Web/uams-statamic-content`        | `content/`           | Statamic collections, taxonomies, globals     |
-| `UAMS-Web/uams-statamic-users`          | `users/`             | Statamic user accounts and groups             |
-| `UAMS-Web/uams-statamic-forms`          | `resources/forms/`   | Statamic form configurations                  |
-| `UAMS-Web/uams-statamic-assets-public`  | `public/assets/`     | Public asset containers (images, files, etc.) |
-| `UAMS-Web/uams-statamic-assets-private` | `app/private/assets/`| Private asset containers (form uploads, etc.) |
+## Deploying
 
-- **Clone with submodules:**  
-  `git clone --recurse-submodules <repo-url>`
-- **If you already cloned without submodules:**  
-  `git submodule update --init --recursive`
-- **Update submodules to latest committed refs:**  
-  `git submodule update --init --recursive`  
-  (Deploy scripts run this after `git pull` so production stays in sync.)
-
-All five submodules are private repositories (UAMS-Web/uams-statamic-archive#2654). A clone without access to them gets the submodule pointers but not their contents, so it cannot boot the site with real content or forms. The test suite still runs: a test that needs content checks for the `content/` submodule, and a test that reads the real form configurations checks for the `resources/forms/` submodule, and each is skipped, not failed, when its submodule is absent (`tests/Support/ContentSubmodule.php`, `tests/Support/FormsSubmodule.php`). Expect those tests to report as skipped in such a clone.
+The deploy scripts, the NGINX cache settings and what a deploy must keep in `storage/` are in the wiki: [Deploying](https://github.com/UAMS-Web/uams-statamic/wiki/Deploying), [Web server configuration](https://github.com/UAMS-Web/uams-statamic/wiki/Web-server-configuration) and [Working copies of `people` entries](https://github.com/UAMS-Web/uams-statamic/wiki/Working-copies-of-people-entries).
 
 # Statamic Peak Starter Kit Information
 
@@ -56,101 +42,6 @@ See below for information about what was and wasn't added to the repository from
 * [Files Added and Modified](README_Statamic-Peak_added.md)
 * [Files and Modifications Withheld](README_Statamic-Peak_withheld.md)
 * [Alternate Changes Made](README_Statamic-Peak_alternate.md)
-
-## NGINX config
-
-Add the following to your NGINX config __inside the server block__ enable static resource caching:
-```
-expires $expires;
-```
-
-And this __outside the server block__:
-```
-map $sent_http_content_type $expires {
-    default    off;
-    text/css    max;
-    ~image/    max;
-    application/javascript    max;
-    application/octet-stream    max;
-}
-```
-
-## Deploy script Ploi
-
-```bash
-if [[ {COMMIT_MESSAGE} =~ "[BOT]" ]] && [[ {DEPLOYMENT_SOURCE} == "quick-deploy" ]]; then
-    echo "Automatically committed on production. Nothing to deploy."
-    {DO_NOT_NOTIFY}
-    exit 0
-fi
-
-cd {SITE_DIRECTORY}
-git pull origin {BRANCH}
-git submodule update --init --recursive
-{SITE_COMPOSER} install --no-interaction --prefer-dist --optimize-autoloader --no-dev
-
-# `.npmrc` sets engine-strict against `engines.npm >= 11.10.0` (UAMS-Web/uams-statamic-archive#1826), and Node 22
-# bundles npm 10.9.x — so `npm ci` fails with EBADENGINE unless npm is pinned first.
-npm install -g npm@^11.10.0
-npm ci
-npm run build
-
-{RELOAD_PHP_FPM}
-
-{SITE_PHP} artisan cache:clear
-{SITE_PHP} artisan config:cache
-{SITE_PHP} artisan route:cache
-{SITE_PHP} artisan statamic:stache:warm
-{SITE_PHP} artisan queue:restart
-{SITE_PHP} artisan statamic:search:update --all
-{SITE_PHP} artisan statamic:static:clear
-{SITE_PHP} artisan statamic:static:warm --queue
-
-echo "Application deployed!"
-```
-
-## Deploy script Forge
-
-```bash
-if [[ $FORGE_QUICK_DEPLOY == 1 ]]; then
-    if [[ $FORGE_DEPLOY_MESSAGE =~ "[BOT]" ]]; then
-        echo "Automatically committed on production. Nothing to deploy."
-        exit 0
-    fi
-fi
-
-cd $FORGE_SITE_PATH
-git pull origin $FORGE_SITE_BRANCH
-git submodule update --init --recursive
-$FORGE_COMPOSER install --no-interaction --prefer-dist --optimize-autoloader --no-dev
-
-# `.npmrc` sets engine-strict against `engines.npm >= 11.10.0` (UAMS-Web/uams-statamic-archive#1826), and Node 22
-# bundles npm 10.9.x — so `npm ci` fails with EBADENGINE unless npm is pinned first.
-npm install -g npm@^11.10.0
-npm ci
-npm run build
-
-( flock -w 10 9 || exit 1
-    echo 'Restarting FPM...'; sudo -S service $FORGE_PHP_FPM reload ) 9>/tmp/fpmlock
-
-$FORGE_PHP artisan cache:clear
-$FORGE_PHP artisan config:cache
-$FORGE_PHP artisan route:cache
-$FORGE_PHP artisan statamic:stache:warm
-$FORGE_PHP artisan queue:restart
-$FORGE_PHP artisan statamic:search:update --all
-$FORGE_PHP artisan statamic:static:clear
-$FORGE_PHP artisan statamic:static:warm --queue
-```
-
-## Working copies of `people` entries (revisions)
-
-A change to a published `people` entry is saved as a working copy and goes live only when an administrator publishes it (UAMS-Web/uams-statamic-archive#3127, UAMS-Web/uams-statamic-archive#3184). That needs `STATAMIC_REVISIONS_ENABLED=true` in the environment's `.env`; `people` is the only collection with `revisions: true`, so no other collection changes. With the setting off, a change to a published `people` entry is saved to the entry directly, as before.
-
-Working copies and revision history are stored under `storage/statamic/revisions` (`config/statamic/revisions.php`), which is git-ignored and outside the content repository. So:
-
-- **They survive a deploy only if `storage/` does.** Both deploy scripts above pull into the same directory, so `storage/` stays in place. A deploy that builds each release in a fresh directory (zero-downtime deployment) must share `storage/statamic/revisions` across releases, or every pending change is lost on the next deploy.
-- **They are not in the content repository's history.** Include `storage/statamic/revisions` in the server's backups; nothing else holds a change that is waiting to be published.
 
 ## Continuous integration
 
