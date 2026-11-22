@@ -104,7 +104,7 @@ tabs:
             field:
               type: hidden
               display: Template
-              default: clinical_expertise/landing_page
+              default: pages/page_landing
               localizable: false
       -
         display: 'Site Navigation'
