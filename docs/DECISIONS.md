@@ -4091,3 +4091,13 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Correction (#1232).** The first exclusion is wider than stated above: `4.0.0` leaves out an entry with any `redirect` value, on-site as well as off-site (`UrlIterator::isPublic()` tests `$record->value('redirect')`), where `3.5.1` emitted every redirect except an off-site one on the `link` blueprint, at the redirect target. #1232 compared the four collections above with one self-provisioned, tree-placed entry each, on the collection's default blueprint and carrying no redirect, and `4.0.0` emitted the same URL set as `3.5.1`'s rule for each. A `clinical_expertise` (and `clinical_locations`) `basic_page` or `landing_page` entry differs: its stored template view does not exist, so `4.0.0` leaves it out where `3.5.1` emitted it, and the page itself returns 500 (#1235) (`tests/Feature/Seo/SitemapCollectionComparisonTest.php`).
 
 **Companion.** #991 (the decision and its `## Decision`); #969 (the [measurement](https://github.com/UAMS-Web/uams-statamic/issues/969#issuecomment-7067234337) and the recommendation); #1232 (the build); #1230 (Dependabot's version-only pull request, which cannot pass alone and which #1232 supersedes or builds on).
+
+## 2026-11-22: Clinical content pages render through the shared `pages` views (#1235)
+
+**Decision.** Decided by Josh on 2026-11-22, option A on #1235. The `basic_page` blueprints in `clinical_expertise` and `clinical_locations` default their template to `pages/default`, and the `landing_page` blueprints in both to `pages/page_landing`. No new views are added. Before this, all four defaulted to a view under their own collection's folder that did not exist, so an entry saved with the default returned 500.
+
+**Why.** A throwaway test returned 200 for all four blueprints with the `pages` defaults, rendering a basic page's `content` and the same page chrome as the collection template. The change touches the four blueprint defaults and the test that pins them. The importer does not write these defaults into entries, so only an entry saved in the control panel would store the old value, and none exists locally.
+
+**Rejected.** *Four dedicated views, one per blueprint and subsite*: four near-copies of views that already exist, kept for room to diverge nobody has asked for. *Removing the template default so the collection template applies*: `clinical_expertise/show` and `clinical_locations/show` render neither `content` nor a content page's own body, so a basic page loses its text.
+
+**Companion.** #1235 (the defect and its `## Decision`); `tests/Feature/ClinicalContentPageRenderTest.php` requests a page on each blueprint and fails while its default view is missing.
