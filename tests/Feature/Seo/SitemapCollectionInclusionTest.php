@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar as Inclusion;
 use Illuminate\Support\Facades\File;
+use MityDigital\Sitemapamic\Support\Configuration;
 use PHPUnit\Framework\Assert;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
@@ -31,7 +32,7 @@ uses(TestCase::class);
 | @command php artisan test --compact tests/Feature/Seo/SitemapCollectionInclusionTest.php
 */
 
-/** Every routable collection that must appear in the sitemap `defaults`. */
+/** Every routable collection that must appear in the sitemap's `collections`. */
 const SITEMAP_COLLECTIONS = ['pages', 'posts', 'people', 'clinical_expertise', 'knowledge_bases'];
 
 /** Every blueprint that must surface the per-entry `include_in_xml_sitemap` toggle. */
@@ -42,17 +43,18 @@ const SITEMAP_TOGGLE_BLUEPRINTS = [
     'knowledge_bases/knowledge_base', 'knowledge_bases/topic', 'knowledge_bases/article',
 ];
 
-it('lists every routable collection in the sitemap defaults with taxonomies off', function (): void {
-    /** @var array<string, array<string, mixed>> $defaults */
-    $defaults = config('sitemapamic.defaults', []);
+it('lists every routable collection in the sitemap collections with taxonomies off', function (): void {
+    // Read through Sitemapamic's own resolution of the config, so a '*' or a
+    // contextual-taxonomy key in config/sitemapamic.php fails here.
+    $collections = app(Configuration::class)->collections();
 
-    expect(array_keys($defaults))->toContain(...SITEMAP_COLLECTIONS);
+    expect(array_keys($collections))->toContain(...SITEMAP_COLLECTIONS);
 
-    // Each collection emits its entries but not its attached-taxonomy terms — those
-    // are handled by the global-taxonomies path (UAMS-Web/uams-statamic-archive#1346), so includeTaxonomies is off.
+    // Each collection emits its entries but not its attached-taxonomy terms, which would
+    // duplicate a term archive (UAMS-Web/uams-statamic-archive#1346): an empty list is
+    // entries only.
     foreach (SITEMAP_COLLECTIONS as $handle) {
-        expect($defaults[$handle]['include'] ?? null)->toBeTrue()
-            ->and($defaults[$handle]['includeTaxonomies'] ?? null)->toBeFalse();
+        expect($collections[$handle])->toBe([]);
     }
 });
 
