@@ -1,4 +1,4 @@
-These NGINX settings tell browsers to cache the site's stylesheets, scripts, images and downloads for as long as they can, and leave pages uncached.
+These NGINX settings tell browsers to cache the site's stylesheets, scripts, images and `application/octet-stream` downloads for as long as they can. Every other response, pages included, gets no caching header from them and keeps whatever the application sends.
 
 ## Static file caching
 
@@ -26,6 +26,6 @@ map $sent_http_content_type $expires {
 | any `image/` type | the maximum |
 | `application/javascript` | the maximum |
 | `application/octet-stream` | the maximum |
-| anything else (pages included) | not set, so pages are never cached by this rule |
+| anything else (pages included) | no header added; the application's own headers apply |
 
 See also [Deploying](Deploying.md).

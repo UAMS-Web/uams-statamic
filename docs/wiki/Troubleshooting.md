@@ -12,12 +12,12 @@ One entry per symptom, as you meet it.
 
 ## A published news release has no PDF
 
-**Cause:** news release PDFs are rendered with a headless Chrome that `npm` does not download, because `.npmrc` sets `ignore-scripts=true`. Without it the entry saves with no PDF, and the reason is only in `storage/logs/laravel.log`.
+**Cause:** the headless Chrome that renders news release PDFs is not installed; the reason is logged only in `storage/logs/laravel.log`.
 
-**Fix:** run `npx --no-install puppeteer browsers install chrome-headless-shell`, then save the published entry again: saving a published `news_release` regenerates its PDF. In a development copy, `node scripts/worktree-slots.mjs status` names the browser when it is missing.
+**Fix:** install it as step 10 of the [installation instructions (README)](https://github.com/UAMS-Web/uams-statamic#installation-instructions) describes, then save the published entry again: saving a published `news_release` regenerates its PDF.
 
 ## Tests report as skipped in a fresh clone
 
-**Cause:** the clone has no access to the private `content/` or `resources/forms/` submodules, and the tests that need them skip rather than fail.
+**Cause:** the `content/` or `resources/forms/` submodule is empty, and the tests that need it skip rather than fail. Either the clone was made without `--recurse-submodules`, or the account that made it has no access to the private submodule repositories.
 
-**Fix:** none is needed when the clone is not meant to have content. Otherwise fetch the submodules; see [Git submodules](Git-submodules.md#a-clone-without-access-to-the-submodules).
+**Fix:** none is needed when the clone is not meant to have content. Otherwise, get access to the submodule repositories if the account lacks it, then run `git submodule update --init --recursive`; see [Git submodules](Git-submodules.md#a-clone-without-access-to-the-submodules).

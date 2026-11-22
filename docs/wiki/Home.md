@@ -23,4 +23,6 @@ The pages are written in [`docs/wiki/`](https://github.com/UAMS-Web/uams-statami
 
 ## Project
 
-- [Project](Project.md): where the site is developed, how to report a problem, and how these pages are published.
+- [Project](Project.md): where the site is developed and how these pages are published.
+- [Report a problem](https://github.com/UAMS-Web/uams-statamic/issues): open an issue.
+- [Releases](https://github.com/UAMS-Web/uams-statamic/releases): the release notes.

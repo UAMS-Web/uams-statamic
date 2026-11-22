@@ -2,10 +2,10 @@ Each deploy pulls the site repository, brings the submodules to the commits it r
 
 ## Steps
 
-1. **Skip the deploy for a commit made on the server.** A commit whose message carries `[BOT]` was made on production, so there is nothing to deploy and the script exits.
+1. **Skip a quick deploy for a commit made on the server.** When a quick deploy is triggered by a commit whose message carries `[BOT]`, the commit was made on production, so there is nothing to deploy and the script exits. A deploy started by hand still runs.
 2. **Pull and update the submodules:** `git pull`, then `git submodule update --init --recursive` (see [Git submodules](Git-submodules.md)).
 3. **Install the PHP dependencies** without the development packages.
-4. **Pin npm, then install and build the front end.** `.npmrc` sets `engine-strict` against `engines.npm >= 11.10.0`, and Node 22 bundles npm 10.9.x, so `npm ci` fails with `EBADENGINE` unless npm is raised first.
+4. **Pin npm, then install and build the front end.** `.npmrc` sets `engine-strict` against `engines.npm >= 11.10.0`, and Node 22 bundles npm 10.9.x, so `npm ci` fails with `EBADENGINE` unless npm is raised first ([UAMS-Web/uams-statamic-archive#1826](https://github.com/UAMS-Web/uams-statamic-archive/issues/1826)).
 5. **Reload PHP-FPM.**
 6. **Refresh the caches:** the application, configuration and route caches, the Stache, the queue workers, the search indexes and the static cache.
 
