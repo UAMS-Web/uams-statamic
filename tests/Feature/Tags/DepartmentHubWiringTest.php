@@ -30,15 +30,11 @@ covers(DepartmentHub::class);
  */
 
 /**
- * Pad Pest's mutant-child timeout once per process under `--mutate` (a constant, since Pest
- * resets a closure's `static` and by-reference variables for every test): a child boots the
+ * Pad Pest's mutant-child timeout once per process under `--mutate`: a child boots the
  * application cold and otherwise overruns a limit sized from the warm initial run.
  */
 beforeEach(function (): void {
-    if (! defined('DEPARTMENT_HUB_WIRING_PADDED') && runningUnderMutate()) {
-        define('DEPARTMENT_HUB_WIRING_PADDED', true);
-        usleep(20_000_000);
-    }
+    padMutateChildTimeout();
 });
 
 /**

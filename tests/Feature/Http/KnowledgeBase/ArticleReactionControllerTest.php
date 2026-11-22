@@ -33,13 +33,7 @@ covers(ArticleReactionController::class);
 const KB_REACT_BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
 beforeEach(function (): void {
-    static $padded = false;
-    if (! $padded) {
-        if (runningUnderMutate()) {
-            usleep(20_000_000);
-            $padded = true;
-        }
-    }
+    padMutateChildTimeout();
 
     foreach (['knowledge_base', 'article', 'topic'] as $handle) {
         $blueprint = Blueprint::make($handle);
