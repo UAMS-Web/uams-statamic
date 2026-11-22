@@ -29,15 +29,7 @@ beforeEach(function (): void {
         TermsMutateProbeScope::class
     );
 
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 /**
