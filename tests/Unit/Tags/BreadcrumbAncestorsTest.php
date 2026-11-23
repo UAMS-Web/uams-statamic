@@ -133,11 +133,11 @@ it('coerces scalar entry URLs and labels and defaults non-scalar values to empty
     $entries = Mockery::mock();
     $entries->shouldReceive('findByUri')->once()->with('/scalar', 'default')
         ->andReturn(makeBreadcrumbEntry(123, 456));
-    $entries->shouldReceive('findByUri')->once()->with('/scalar/nonscalar', 'default')
+    $entries->shouldReceive('findByUri')->once()->with('/scalar/non-scalar', 'default')
         ->andReturn(makeBreadcrumbEntry(['bad'], ['bad'], ''));
     EntryFacade::swap($entries);
 
-    expect(makeBreadcrumbTag(params: ['url' => '/scalar/nonscalar/missing'])->index())->toBe([
+    expect(makeBreadcrumbTag(params: ['url' => '/scalar/non-scalar/missing'])->index())->toBe([
         ['url' => '123', 'title' => '456'],
         ['url' => '', 'title' => ''],
     ]);
