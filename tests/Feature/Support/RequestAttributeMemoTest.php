@@ -13,15 +13,7 @@ covers(RequestAttributeMemo::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 /**
@@ -103,4 +95,74 @@ it('clears the bag on forget so the next remember runs the factory again', funct
     RequestAttributeMemo::remember($bagAttribute, 'k', $factory);
 
     expect($invocations)->toBe(2);
+});
+
+it('preserves existing keys in the same bag when storing another key', function (): void {
+    $bagAttribute = '_test_request_attribute_memo_multi_key';
+    $firstInvocations = 0;
+    $secondInvocations = 0;
+
+    $first = RequestAttributeMemo::remember($bagAttribute, 'first', static function () use (&$firstInvocations): string {
+        $firstInvocations++;
+
+        return 'one';
+    });
+
+    $second = RequestAttributeMemo::remember($bagAttribute, 'second', static function () use (&$secondInvocations): string {
+        $secondInvocations++;
+
+        return 'two';
+    });
+
+    $firstAgain = RequestAttributeMemo::remember($bagAttribute, 'first', static function () use (&$firstInvocations): string {
+        $firstInvocations++;
+
+        return 'recomputed';
+    });
+
+    expect($first)->toBe('one')
+        ->and($second)->toBe('two')
+        ->and($firstAgain)->toBe('one')
+        ->and($firstInvocations)->toBe(1)
+        ->and($secondInvocations)->toBe(1);
+});
+
+it('invokes the factory on every call without memoizing when no request is bound', function (): void {
+    $originalRequest = app('request');
+    $invocations = 0;
+
+    $factory = static function () use (&$invocations): string {
+        $invocations++;
+
+        return 'uncached-'.$invocations;
+    };
+
+    try {
+        app()->forgetInstance('request');
+        expect(app()->bound('request'))->toBeFalse();
+
+        $first = RequestAttributeMemo::remember('_test_request_attribute_memo_unbound', 'key', $factory);
+        $second = RequestAttributeMemo::remember('_test_request_attribute_memo_unbound', 'key', $factory);
+
+        expect($first)->toBe('uncached-1')
+            ->and($second)->toBe('uncached-2')
+            ->and($invocations)->toBe(2);
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
+});
+
+it('does nothing on forget when no request is bound', function (): void {
+    $originalRequest = app('request');
+
+    try {
+        app()->forgetInstance('request');
+        expect(app()->bound('request'))->toBeFalse();
+
+        RequestAttributeMemo::forget('_test_request_attribute_memo_unbound_forget');
+
+        expect(app()->bound('request'))->toBeFalse();
+    } finally {
+        app()->instance('request', $originalRequest);
+    }
 });

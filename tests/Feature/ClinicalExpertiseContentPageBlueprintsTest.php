@@ -21,13 +21,14 @@ beforeEach(fn () => Blink::flush());
 | The WordPress "AoE Content Item" (expertise_type=0) becomes two distinct
 | blueprints living in the clinical_expertise collection alongside `expertise`
 | — exactly as knowledge_bases carries knowledge_base/topic/article together.
-| Each reuses its pages sibling's fieldsets verbatim, differing only in the
-| template default (the clinical_expertise namespace). The structure tree is
+| Each reuses its pages sibling's fieldsets verbatim and renders through the same
+| `pages` view (#1235: the clinical_expertise views those defaults used to name
+| never existed, so every such page returned 500). The structure tree is
 | the sole source of the parent hierarchy — the decorative `parent_page`
 | reference field was removed in UAMS-Web/uams-statamic-archive#1371 (see docs/DECISIONS.md).
 */
 
-it('builds basic_page from the pages/basic_page fieldsets, retargeted to clinical_expertise', function () {
+it('builds basic_page from the pages/basic_page fieldsets, rendered through pages/default', function () {
     /** @var Statamic\Fields\Blueprint $bp */
     $bp = Blueprint::in('collections/clinical_expertise')->get('basic_page');
 
@@ -38,11 +39,11 @@ it('builds basic_page from the pages/basic_page fieldsets, retargeted to clinica
     $template = $bp->field('template');
     // The content field is the shared article_with_sets fieldtype (bard).
     expect($content->type())->toBe('bard');
-    // Template defaults to the clinical_expertise namespace, not pages/*.
-    expect($template->defaultValue())->toBe('clinical_expertise/basic_page');
+    // Template defaults to the shared pages view, which exists (#1235).
+    expect($template->defaultValue())->toBe('pages/default');
 });
 
-it('builds landing_page from the pages/landing_page fieldsets, retargeted to clinical_expertise', function () {
+it('builds landing_page from the pages/landing_page fieldsets, rendered through pages/page_landing', function () {
     /** @var Statamic\Fields\Blueprint $bp */
     $bp = Blueprint::in('collections/clinical_expertise')->get('landing_page');
 
@@ -52,7 +53,7 @@ it('builds landing_page from the pages/landing_page fieldsets, retargeted to cli
     /** @var Field $template */
     $template = $bp->field('template');
     expect($pageBuilder->type())->toBe('replicator');
-    expect($template->defaultValue())->toBe('clinical_expertise/landing_page');
+    expect($template->defaultValue())->toBe('pages/page_landing');
 });
 
 it('leaves the pages blueprints untouched (fieldsets reused by reference, not edited)', function () {

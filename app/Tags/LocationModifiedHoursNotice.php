@@ -214,6 +214,8 @@ class LocationModifiedHoursNotice extends Tags
     private function allRulesClosed(mixed $rules, string $mode): bool
     {
         // Keep only the rules describing the mode this notice is about
+        // The filtered rows reach only `=== []` and `array_all()`, neither of which reads the keys, so keeping the original keys changes nothing (UnwrapArrayValues is equivalent)
+        // @pest-mutate-ignore: UnwrapArrayValues
         $rows = array_values(array_filter(
             $this->rows($rules),
             fn ($rule): bool => $this->ruleMode($rule) === $mode

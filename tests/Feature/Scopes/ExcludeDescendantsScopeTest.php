@@ -29,15 +29,7 @@ covers(ExcludeDescendants::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 it('skips when not a statamic builder', function () {
     // A valid edit context with real descendants is set up so the Builder guard

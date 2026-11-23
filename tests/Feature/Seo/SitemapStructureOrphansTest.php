@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 use App\Services\ComputedFields\Registration\SitemapInclusionComputedsRegistrar as Inclusion;
 use Illuminate\Support\Collection;
-use MityDigital\Sitemapamic\Facades\Sitemapamic;
+use MityDigital\Sitemapamic\Data\Source;
 use MityDigital\Sitemapamic\Models\SitemapamicUrl;
+use MityDigital\Sitemapamic\Support\Content\UrlIterator;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
@@ -107,17 +108,14 @@ function makeSitemapOrphanEntry(
 }
 
 /**
- * The URL paths the collection's sitemap loader emits.
+ * The URL paths Sitemapamic emits for the collection on the default site.
  *
  * @param  string  $handle  The collection handle.
  * @return array<int, mixed>
  */
 function sitemapOrphanPaths(string $handle): array
 {
-    /** @var callable(): iterable<int, SitemapamicUrl> $loader */
-    $loader = Sitemapamic::getLoaders()->get($handle);
-
-    $paths = collect($loader())
+    $paths = collect(app(UrlIterator::class)->forSource(new Source('default', collection: $handle)))
         ->map(fn (SitemapamicUrl $url): mixed => parse_url($url->loc, PHP_URL_PATH))
         ->values();
 

@@ -34,11 +34,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 beforeEach(function () {
     // Pad Pest's mutant-child timeout once per process under `--mutate`.
-    static $padded = false;
-    if (! $padded && runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 
     Blink::flush();
 });

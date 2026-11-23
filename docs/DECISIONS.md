@@ -4057,3 +4057,47 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Rejected.** *All support classes into `aether-people`, the enum included*: the site's other users of the enum would then depend on `aether-people` for it. *An interface for everything*: it adds a binding the site must supply for classes that have no site dependency.
 
 **Companion.** #1001 (the decision and the code reading behind the two confirmations), #767 (the people boundary), #994 (the shared enums add-on), `UAMS-Web/aether-people#124` (the move).
+
+## 2026-11-21: The ER resource-nav entry shows "ER" at every width beside the hospital glyph, and stays out of the mobile menu (#96)
+
+**Decision.** Decided by the project owner on 2026-11-21, closing the residuals of the 2026-07-06 dual-code decision. The ER entry in the header icon bar shows the visible label "ER" at every viewport width, with no breakpoint switch, beside the `fa-hospital-symbol` glyph. Its accessible name is set once and starts with the visible label (for example "ER, Emergency Room"). The entry stays in the icon bar, which is visible at every width, and is not added to the mobile menu.
+
+**Why.** "ER" adds 24 px and fits at 320 px; "Emergency" adds 90 px and overlaps the logo below about 414 px. One string keeps the label and the accessible name aligned (WCAG 2.5.3) at every width. `fa-ambulance` is an alias of `fa-truck-medical` in Font Awesome 7 and shows transport rather than an emergency department; `fa-hospital-symbol` is in the same loaded set, so no asset is added. The mobile menu's curated resource links are deduped against the icon bar (#86), which already shows ER.
+
+**Rejected.** *"Emergency" from 414 px up and "ER" below*: two strings and a breakpoint, so the wording changes with width. *Keeping the ambulance glyph*: transport, not the destination.
+
+**Companion.** #96 (the decision and its [measurements](https://github.com/UAMS-Web/uams-statamic/issues/96#issuecomment-7065700863)); #1212 (the build); #1209 and #1210 (header defects found in passing).
+
+## 2026-11-21: The `brianium/paratest` pin is retired with Pest `v5.3.7` (#659)
+
+**Decision.** Decided by Josh on 2026-11-21. Pest `v5.3.6` carries the fix for `pestphp/pest#2024` (`pestphp/pest#2025`, "support brianium/paratest 7.28 grouped test files"), and it requires `phpunit/phpunit` `^13.4.7` and `brianium/paratest` `^7.29.0`. So `pestphp/pest` moves to `v5.3.7`, the latest, `phpunit/phpunit` to `13.4.7` and `brianium/paratest` to `v7.29.0` under an ordinary `^7.29.0` constraint. The `extra.pinned` entry, the Dependabot `ignore` entry and the `659-pestphp-pest-2024.json` upstream watch row are removed. No other package moves.
+
+**Why.** The 2026-11-12 pin (#658) was a hold until a Pest release could read paratest's regrouped `SuiteLoader::$tests`. Left in place after the fix shipped, the pin would hold paratest back, and the `ignore` entry would hide every later paratest release from Dependabot.
+
+**Rejected.** *Moving Pest alone*: Pest `v5.3.6` and later require the newer PHPUnit and paratest, so Pest cannot move without them. *Keeping the `ignore` entry as a guard*: it would also keep paratest out of the weekly minor-and-patch group, which is the reason the #658 entry called it temporary.
+
+**Companion.** #659 (the ticket and its `## Decision`); #658 (the pin); `pestphp/pest#2024` and `pestphp/pest#2025`; #193, which waits on this move.
+
+## 2026-11-22: `mitydigital/sitemapamic` moves to `4.0.0` before launch (#991)
+
+**Decision.** Decided by Josh on 2026-11-22, option A on #991. The site adopts `mitydigital/sitemapamic` `4.0.0` before launch, replacing the locked `3.5.1`. The move, the rewrite of `config/sitemapamic.php` (the same opt-in collection list, gated by `meta_include_in_xml_sitemap`, in single-file mode) and the six sitemap test files that read the old API are #1232's build.
+
+**Why.** Measured on #969 at launch-scale post volume (24,612 synthetic posts sized from the WordPress exports): a cold per-site build is 3 to 5 times faster (`news`, 8,590 URLs: 44 to 46 s against 202 to 233 s), because `3.5.1` loads every entry of each listed collection for every site and drops other sites' entries in PHP, while `4.0.0` filters by site first, so the gain grows with the number of sites. Peak memory is about 200 MB on both in repeat runs, the URL sets are identical on the four sites compared, and every last-modified date matches on the root site's 4,437 URLs, where they were checked. The opt-in list and its gating port without a workaround.
+
+**Rejected.** *Adopting after launch*: the slow cold builds ship, and the config and test port still has to be done. *Staying on `3.5.1`*: the slowdown grows with every site added. *Waiting and re-measuring*: the measurement already answers speed, memory and URL parity.
+
+**Residual.** `4.0.0` leaves out an entry with an off-site `redirect`, which `3.5.1` emits as the external URL, an entry under Statamic's `protect` scheme, and an entry whose template view does not exist. #969 reads the first two as gaps in today's output that the move closes, not regressions; no real local entry uses either. Four collections (`post_categories`, `post_tags`, `clinical_expertise`, `knowledge_bases`) had no local URLs to compare; #1232 compares them or records why it cannot.
+
+**Correction (#1232).** The first exclusion is wider than stated above: `4.0.0` leaves out an entry with any `redirect` value, on-site as well as off-site (`UrlIterator::isPublic()` tests `$record->value('redirect')`), where `3.5.1` emitted every redirect except an off-site one on the `link` blueprint, at the redirect target. #1232 compared the four collections above with one self-provisioned, tree-placed entry each, on the collection's default blueprint and carrying no redirect, and `4.0.0` emitted the same URL set as `3.5.1`'s rule for each. A `clinical_expertise` (and `clinical_locations`) `basic_page` or `landing_page` entry differs: its stored template view does not exist, so `4.0.0` leaves it out where `3.5.1` emitted it, and the page itself returns 500 (#1235) (`tests/Feature/Seo/SitemapCollectionComparisonTest.php`).
+
+**Companion.** #991 (the decision and its `## Decision`); #969 (the [measurement](https://github.com/UAMS-Web/uams-statamic/issues/969#issuecomment-7067234337) and the recommendation); #1232 (the build); #1230 (Dependabot's version-only pull request, which cannot pass alone and which #1232 supersedes or builds on).
+
+## 2026-11-22: Clinical content pages render through the shared `pages` views (#1235)
+
+**Decision.** Decided by Josh on 2026-11-22, option A on #1235. The `basic_page` blueprints in `clinical_expertise` and `clinical_locations` default their template to `pages/default`, and the `landing_page` blueprints in both to `pages/page_landing`. No new views are added. Before this, all four defaulted to a view under their own collection's folder that did not exist, so an entry saved with the default returned 500.
+
+**Why.** A throwaway test returned 200 for all four blueprints with the `pages` defaults, rendering a basic page's `content` and the same page chrome as the collection template. The change touches the four blueprint defaults and the test that pins them. The importer does not write these defaults into entries, so only an entry saved in the control panel would store the old value, and none exists locally.
+
+**Rejected.** *Four dedicated views, one per blueprint and subsite*: four near-copies of views that already exist, kept for room to diverge nobody has asked for. *Removing the template default so the collection template applies*: `clinical_expertise/show` and `clinical_locations/show` render neither `content` nor a content page's own body, so a basic page loses its text.
+
+**Companion.** #1235 (the defect and its `## Decision`); `tests/Feature/ClinicalContentPageRenderTest.php` requests a page on each blueprint and fails while its default view is missing.

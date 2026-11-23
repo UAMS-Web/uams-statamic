@@ -92,6 +92,13 @@
              the Stache lock pin above (UAMS-Web/uams-statamic-archive#3303). -->
         <env name="MAP_CENSUS_GEOCODER_ENABLED" value="0" force="true"/>
         <server name="MAP_CENSUS_GEOCODER_ENABLED" value="0"/>
+        <!-- Build each sitemap without Sitemapamic's file cache (#1232). Its cache
+             is a set of files on the `local` disk shared by every test process,
+             so a parallel worker could serve a sitemap another worker built
+             against different content. Written as 0, not false: see the Stache
+             lock pin above (UAMS-Web/uams-statamic-archive#3303). -->
+        <env name="SITEMAPAMIC_CACHE_ENABLED" value="0" force="true"/>
+        <server name="SITEMAPAMIC_CACHE_ENABLED" value="0"/>
         <!-- PubMed lookups refuse without a contact email (UAMS-Web/uams-statamic-archive#2409). The suite runs
              as a configured client would; the refusal itself is asserted by a test
              that clears this value explicitly. -->

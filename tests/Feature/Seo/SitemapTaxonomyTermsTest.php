@@ -3,10 +3,14 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Collection;
-use MityDigital\Sitemapamic\Facades\Sitemapamic;
+use MityDigital\Sitemapamic\Data\Source;
 use MityDigital\Sitemapamic\Models\SitemapamicUrl;
+use MityDigital\Sitemapamic\Support\Configuration;
+use MityDigital\Sitemapamic\Support\Content\SourceResolver;
+use MityDigital\Sitemapamic\Support\Content\UrlIterator;
 use Statamic\Facades\Collection as CollectionFacade;
 use Statamic\Facades\Entry;
+use Statamic\Facades\Site;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Structures\CollectionStructure;
 use Statamic\Structures\Tree;
@@ -24,15 +28,14 @@ uses(EntriesTermsAndTreesIsolatedTestCase::class);
 |
 | Once UAMS-Web/uams-statamic-archive#1145/UAMS-Web/uams-statamic-archive#1410 shipped the public `post_categories` / `post_tags` archives,
 | the app sitemap emitted their URLs through Sitemapamic's global-taxonomies path
-| (config/sitemapamic.php `globals.taxonomies`). Both have since become
+| (config/sitemapamic.php, `taxonomies` since Sitemapamic 4). Both have since become
 | collections — `post_categories` in UAMS-Web/uams-statamic-archive#1433/UAMS-Web/uams-statamic-archive#1434, `post_tags` in UAMS-Web/uams-statamic-archive#2532 — so both
-| are emitted through the `defaults` collection path instead, and the
-| global-taxonomies list is empty. These tests keep the original acceptance
+| are emitted as collection sources instead, and the taxonomies list is empty. These tests keep the original acceptance
 | criteria: a tag archive URL is present, and a vocabulary without a public
 | archive (now the routeless `subject_matter` collection) never is.
 |
 | Two layers: a hermetic config check that always runs, and a behavioral check
-| over the real loader output (skipped without the content submodule, which holds
+| over Sitemapamic's real URL output (skipped without the content submodule, which holds
 | the collection config).
 |
 | @command php artisan test --compact tests/Feature/Seo/SitemapTaxonomyTermsTest.php
@@ -40,8 +43,8 @@ uses(EntriesTermsAndTreesIsolatedTestCase::class);
 
 /**
  * A collection with no route, so it has no public URLs and must never be sitemapped.
- * It is absent from `sitemapamic.defaults` and `globals.taxonomies`, so Sitemapamic
- * builds no loader for it.
+ * It is absent from `sitemapamic.collections` and `sitemapamic.taxonomies`, so Sitemapamic
+ * resolves no source for it.
  */
 const SITEMAP_ROUTELESS_COLLECTION = 'subject_matter';
 
@@ -56,7 +59,7 @@ const SITEMAP_POST_TAGS_TEST_PREFIX = 'zz-sitemap-posttags-test-';
  * `ShouldQueue` listener that runs inline under the suite's sync queue across every
  * local search index. Measured on UAMS-Web/uams-statamic-archive#2291 (macOS, 2026-09-16) for the taxonomy-term
  * version of this test: 121.77s with events, 2.50s without. Nothing here is
- * search-driven: the assertions read the Sitemapamic loader, not an index.
+ * search-driven: the assertions read Sitemapamic's URL output, not an index.
  */
 function tearDownSitemapPostTagsFixtures(): void
 {
@@ -81,39 +84,42 @@ function tearDownSitemapPostTagsFixtures(): void
 beforeEach(fn () => tearDownSitemapPostTagsFixtures());
 afterEach(fn () => tearDownSitemapPostTagsFixtures());
 
-it('emits tag archives through the collection path, and no taxonomy through the globals path', function (): void {
-    /** @var array<string, mixed> $taxonomies */
-    $taxonomies = config('sitemapamic.globals.taxonomies', []);
+it('emits tag archives through the collection path, and no taxonomy through the taxonomies path', function (): void {
+    $configuration = app(Configuration::class);
 
-    // Empty: a retired taxonomy left here would fatal /sitemap.xml, because
-    // Sitemapamic dereferences `Taxonomy::find(...)->sites()` with no null guard.
-    expect($taxonomies)->toBe([]);
+    // Empty, read through Sitemapamic's own resolution: an absent key would fall back
+    // to the package default of every taxonomy.
+    expect(config('sitemapamic.taxonomies'))->toBe([])
+        ->and($configuration->taxonomies())->toBe([]);
 
-    /** @var array{include?: bool} $postTags */
-    $postTags = config('sitemapamic.defaults.post_tags', []);
+    // The tag archive is emitted as a collection's entries, with no contextual
+    // taxonomy. Its `post_tags/show` view is guarded by TaxonomyTermArchiveTest,
+    // and Larastan resolves it statically.
+    expect($configuration->collections())->toHaveKey('post_tags')
+        ->and($configuration->collections()['post_tags'])->toBe([]);
 
-    // The tag archive is emitted as a collection. Its `post_tags/show` view is
-    // guarded by TaxonomyTermArchiveTest, and Larastan resolves it statically.
-    expect($postTags['include'] ?? null)->toBeTrue();
-
-    // The routeless collection is not a configured taxonomy and has no public archive view.
-    expect(array_keys($taxonomies))->not->toContain(SITEMAP_ROUTELESS_COLLECTION)
+    // The routeless collection is not selected and has no public archive view.
+    expect($configuration->collections())->not->toHaveKey(SITEMAP_ROUTELESS_COLLECTION)
         ->and(view()->exists(SITEMAP_ROUTELESS_COLLECTION.'/show'))->toBeFalse();
 });
 
-it('gives post_tags a collection loader and the routeless collection none', function (): void {
+it('gives post_tags a collection source and the routeless collection none', function (): void {
     if (! CollectionFacade::find('post_tags')) {
         ContentSubmodule::reportMissing('post_tags collection config');
     }
 
-    $loaders = Sitemapamic::getLoaders();
+    /** @var Statamic\Sites\Site $site */
+    $site = Site::get('default');
+    $sources = collect(app(SourceResolver::class)->resolve($site));
 
-    // The `defaults` loader is keyed by collection handle.
-    expect($loaders->has('post_tags'))->toBeTrue();
+    // The collection's entries are a source of their own.
+    expect($sources->contains(fn (Source $source): bool => $source->isCollection() && $source->collection === 'post_tags'))->toBeTrue();
 
-    // A collection absent from `defaults` produces no loader at all, so none of its
-    // entries can ever reach the sitemap.
-    expect($loaders->has(SITEMAP_ROUTELESS_COLLECTION))->toBeFalse();
+    // The routeless collection resolves to no source at all, so none of its entries
+    // can ever reach the sitemap. Sitemapamic skips a collection with no route even
+    // when it is configured, so this holds by routability; the config side is
+    // asserted by the test above.
+    expect($sources->contains(fn (Source $source): bool => $source->collection === SITEMAP_ROUTELESS_COLLECTION))->toBeFalse();
 });
 
 it('emits a self-provisioned post_tags archive loc, with no routeless-collection leak', function (): void {
@@ -143,9 +149,7 @@ it('emits a self-provisioned post_tags archive loc, with no routeless-collection
     $tagTree->tree([['entry' => $tag->id()]]);
     $tagTree->save();
 
-    /** @var callable(): iterable<int, SitemapamicUrl> $loader */
-    $loader = Sitemapamic::getLoaders()->get('post_tags');
-    $locs = collect($loader())
+    $locs = collect(app(UrlIterator::class)->forSource(new Source('default', collection: 'post_tags')))
         ->map(fn (SitemapamicUrl $url): string => $url->loc);
 
     expect($locs)->not->toBeEmpty()
