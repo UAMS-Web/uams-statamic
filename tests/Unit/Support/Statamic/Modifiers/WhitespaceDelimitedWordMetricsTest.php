@@ -24,6 +24,9 @@ it('counts words by whitespace runs only', function (string $text, int $expected
     'single word is one' => ['hello', 1],
     'mixed whitespace (tabs/newlines) splits' => ["a\tb\nc  d", 4],
     'leading/trailing whitespace is trimmed' => ['  one two  ', 2],
+    'NUL-only text is zero' => [" \0 ", 0],
+    'trailing NUL does not count as a word' => ["hello \0", 1],
+    'interior NUL does not split a word' => ["hel\0lo", 1],
     'invalid UTF-8 falls back to zero' => ["\xFF", 0],
 ]);
 

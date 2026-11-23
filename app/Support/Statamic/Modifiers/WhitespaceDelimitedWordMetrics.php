@@ -30,7 +30,7 @@ final class WhitespaceDelimitedWordMetrics
         // Split on runs of Unicode whitespace (`PREG_SPLIT_NO_EMPTY` drops leading/trailing runs and empty strings)
         $tokens = preg_split(
             '/\s+/u',
-            $text,
+            trim($text),
             // preg_split() treats both -1 and 0 as "no limit", so -1 -> 0 is equivalent.
             // @pest-mutate-ignore: IncrementInteger
             -1,
