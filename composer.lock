@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0ff023719f1d2fb1e4b312426f792e1b",
+    "content-hash": "a96b7dc82aa1986aedb23e6dac919c21",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12333,16 +12333,16 @@
         },
         {
             "name": "uams-web/aether-fieldtypes",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-fieldtypes.git",
-                "reference": "7957e5092b436406b471054a724167305eaf08c4"
+                "reference": "8dc1e98c0967c2fae30d38b67e8aa00ba19540c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-fieldtypes/zipball/7957e5092b436406b471054a724167305eaf08c4",
-                "reference": "7957e5092b436406b471054a724167305eaf08c4",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-fieldtypes/zipball/8dc1e98c0967c2fae30d38b67e8aa00ba19540c9",
+                "reference": "8dc1e98c0967c2fae30d38b67e8aa00ba19540c9",
                 "shasum": ""
             },
             "require": {
@@ -12403,7 +12403,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-fieldtypes/issues",
                 "source": "https://github.com/UAMS-Web/aether-fieldtypes"
             },
-            "time": "2026-11-18T22:02:12+00:00"
+            "time": "2026-11-21T18:11:39+00:00",
+            "published-time": "2026-11-21T19:16:38+00:00"
         },
         {
             "name": "uams-web/aether-form-settings",
