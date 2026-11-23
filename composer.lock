@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a96b7dc82aa1986aedb23e6dac919c21",
+    "content-hash": "127fe189a86f83e3a7f1a7d9430a4fbd",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12556,16 +12556,16 @@
         },
         {
             "name": "uams-web/aether-listings-management",
-            "version": "v0.1.2",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-listings-management.git",
-                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e"
+                "reference": "2d9cc2778326312526dc3e16b5b1830398f67a2f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-listings-management/zipball/2c492d40db90c25c0be362b9065f8ca80dbcd09e",
-                "reference": "2c492d40db90c25c0be362b9065f8ca80dbcd09e",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-listings-management/zipball/2d9cc2778326312526dc3e16b5b1830398f67a2f",
+                "reference": "2d9cc2778326312526dc3e16b5b1830398f67a2f",
                 "shasum": ""
             },
             "require": {
@@ -12581,7 +12581,11 @@
                 "pestphp/pest": "^5.3",
                 "pestphp/pest-plugin-phpstan": "^5.2",
                 "rector/rector": "^2.7",
-                "uams-web/patches-pest-plugin-mutate": "^1.0"
+                "uams-web/patches-orchestra-testbench-core": "^1.1",
+                "uams-web/patches-pest-plugin-mutate": "^1.4"
+            },
+            "suggest": {
+                "uams-web/aether-people": "Provides the people collection and the clinical provider layer whose entries the listing sync reads."
             },
             "type": "statamic-addon",
             "extra": {
@@ -12602,6 +12606,9 @@
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
             "authors": [
                 {
                     "name": "UAMS Web Services"
@@ -12623,7 +12630,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-listings-management/issues",
                 "source": "https://github.com/UAMS-Web/aether-listings-management"
             },
-            "time": "2026-11-11T18:34:01+00:00"
+            "time": "2026-11-22T21:33:32+00:00",
+            "published-time": "2026-11-22T21:41:09+00:00"
         },
         {
             "name": "uams-web/aether-multisite-forms",
