@@ -83,7 +83,9 @@ jobs:
         run: |
           php -r 'echo "PHP ", PHP_VERSION, " pcov=", (extension_loaded("pcov") ? phpversion("pcov") : "none"), PHP_EOL;'
           vendor/bin/pest --version
-          composer show pestphp/pest-plugin-mutate phpunit/php-code-coverage phpunit/phpunit | grep -E '^(name|versions)'
+          for p in pestphp/pest-plugin-mutate phpunit/php-code-coverage phpunit/phpunit brianium/paratest; do
+            composer show --no-ansi "$p" 2>/dev/null | grep -E '^(name|versions)' || echo "$p: not reported"
+          done
           nproc
 
       # Bounded below the job limit so the progress log survives a long arm.
