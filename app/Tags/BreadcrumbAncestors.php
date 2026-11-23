@@ -69,6 +69,8 @@ class BreadcrumbAncestors extends Tags
             'url',
             $this->getCurrentUri()
         );
+        // Any non-slash fallback string is a single segment dropped by array_pop(), returning false either way.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $uri = \is_scalar($uriParam) ? (string) $uriParam : '';
 
         // ---
@@ -86,26 +88,10 @@ class BreadcrumbAncestors extends Tags
         // Split the URI into non-empty path segments (e.g. "/department/program/missing"
         // becomes ["department", "program", "missing"])
         // ---
-        $segments = \array_values(
-            \array_filter(
-                \explode(
-                    '/',
-                    \trim(
-                        $uri,
-                        '/'
-                    )
-                ),
-                static fn (string $segment): bool => $segment !== ''
-            )
+        $segments = \array_filter(
+            \explode('/', $uri),
+            static fn (string $segment): bool => $segment !== ''
         );
-
-        // ---
-        // Return false when there are no segments to walk (e.g. site root) so the
-        // paired tag renders zero times rather than once with an empty scope
-        // ---
-        if ($segments === []) {
-            return false;
-        }
 
         // ---
         // Drop the final segment because it is the requested (missing) page itself;
@@ -197,38 +183,32 @@ class BreadcrumbAncestors extends Tags
 
         // ---
         // Derive the site's mount path from its URL (e.g. "/medicine/anesthesiology"),
-        // normalizing the root mount to a single forward slash
+        // returning the URI unchanged when the site has no parseable path prefix
         // ---
-        // Narrow the untyped site URL accessor to a string before parsing
         $siteUrl = $site->url();
-        $siteUrlString = \is_scalar($siteUrl) ? (string) $siteUrl : '';
 
-        $mountPath = '/'.\trim(
-            (string) (\parse_url(
-                $siteUrlString,
-                PHP_URL_PATH
-            ) ?? ''),
-            '/'
-        );
-
-        // Return the URI unchanged for root-mounted sites, which carry no prefix
-        if ($mountPath === '/') {
+        if (! \is_scalar($siteUrl)) {
             return $uri;
         }
+
+        $parsedPath = \parse_url(
+            (string) $siteUrl,
+            PHP_URL_PATH
+        );
+
+        if (! \is_string($parsedPath)) {
+            return $uri;
+        }
+
+        $mountPath = '/'.\trim($parsedPath, '/');
 
         // Return the URI unchanged when it does not begin with the mount prefix
         if (! \str_starts_with($uri, $mountPath)) {
             return $uri;
         }
 
-        // ---
-        // Strip the mount prefix and ensure the remaining site-relative URI begins
-        // with a forward slash
-        // ---
-        return '/'.\ltrim(
-            \substr($uri, \strlen($mountPath)),
-            '/'
-        );
+        // Strip the mount prefix; index() splits on '/' and filters empty segments
+        return \substr($uri, \strlen($mountPath));
     }
 
     /**
@@ -249,16 +229,12 @@ class BreadcrumbAncestors extends Tags
 
         // Return the URI from context when it is available
         if ($currentUri) {
+            // Any non-slash fallback string is a single segment dropped by array_pop(), returning false either way.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             return \is_scalar($currentUri) ? (string) $currentUri : '';
         }
 
-        // ---
-        // Fall back to the request path, ensuring it starts with a forward slash;
-        // the leading slash means the result is always at least the site root
-        // ---
-        return '/'.\ltrim(
-            request()->path(),
-            '/'
-        );
+        // Fall back to the request path, ensuring a leading slash for mount-prefix matching
+        return '/'.request()->path();
     }
 }
