@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1b890e319856e0540294f8cb9990210e",
+    "content-hash": "0ff023719f1d2fb1e4b312426f792e1b",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -12258,16 +12258,16 @@
         },
         {
             "name": "uams-web/aether-enums",
-            "version": "v0.1.0",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-enums.git",
-                "reference": "ae1ef18b13aac93c91c890ee32143af4228f5eab"
+                "reference": "98560b5236780264e9ac7c16436a83ad463a3fc7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-enums/zipball/ae1ef18b13aac93c91c890ee32143af4228f5eab",
-                "reference": "ae1ef18b13aac93c91c890ee32143af4228f5eab",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-enums/zipball/98560b5236780264e9ac7c16436a83ad463a3fc7",
+                "reference": "98560b5236780264e9ac7c16436a83ad463a3fc7",
                 "shasum": ""
             },
             "require": {
@@ -12328,7 +12328,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-enums/issues",
                 "source": "https://github.com/UAMS-Web/aether-enums"
             },
-            "time": "2026-11-18T22:01:44+00:00"
+            "time": "2026-11-22T21:22:15+00:00",
+            "published-time": "2026-11-22T21:52:13+00:00"
         },
         {
             "name": "uams-web/aether-fieldtypes",
