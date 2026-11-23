@@ -95,7 +95,7 @@ tabs:
             field:
               type: hidden
               display: Template
-              default: clinical_locations/basic_page
+              default: pages/default
               localizable: false
       -
         display: 'Site Navigation'

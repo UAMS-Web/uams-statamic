@@ -30,23 +30,6 @@ namespace App\Support;
  */
 final class RetiredFeaturedImageMigrator
 {
-    /**
-     * The line terminators of a Statamic entry file, spelled out.
-     *
-     * Emphatically NOT `/\R/`. PCRE compiles `\R` to its Unicode newline set, so
-     * in 8-bit non-UTF mode it also matches the bare bytes 0x0B, 0x0C and
-     * **0x85** — and 0x85 is a legal UTF-8 *continuation* byte. Splitting on it
-     * tears any character whose encoding contains it in half: `Å` (U+00C5 = C3
-     * 85), `℅` (U+2105 = E2 84 85), `₅` (U+2085 = E2 82 85). Verified on PHP 8.4:
-     * a title containing `Å` comes back as a dangling `C3` byte followed by a new
-     * front-matter line — invalid UTF-8 and unparseable YAML, while the command
-     * cheerfully reports `moved`.
-     *
-     * `/\R/u` is not the fix either: in UTF mode `\R` still matches U+0085,
-     * U+2028 and U+2029, none of which is a line break in a YAML entry file.
-     */
-    private const string LINE_SPLIT = "/\r\n|\n|\r/";
-
     /** The retired handle being migrated away from. */
     public const string RETIRED_HANDLE = 'featured_image';
 
@@ -79,17 +62,10 @@ final class RetiredFeaturedImageMigrator
      */
     public static function apply(string $contents): array
     {
-        $bound = self::frontMatterBound($contents);
-
-        if ($bound === null) {
-            return [$contents, self::OUTCOME_UNCHANGED];
-        }
-
-        $lines = preg_split(self::LINE_SPLIT, $contents);
-
-        if ($lines === false) {
-            return [$contents, self::OUTCOME_UNCHANGED];
-        }
+        // Split on CRLF, LF, or CR only: never `/\R/`, whose Unicode newline set
+        // matches 0x0B, 0x0C, and 0x85 (a legal UTF-8 continuation byte in
+        // characters such as `Å`, `℅`, and `₅`), tearing UTF-8 apart.
+        $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $contents));
 
         $newline = str_contains($contents, "\r\n") ? "\r\n" : "\n";
         $retiredAt = null;
@@ -98,12 +74,12 @@ final class RetiredFeaturedImageMigrator
         // Column 0 only, and only inside the front matter: an indented key of the
         // same name belongs to a nested block, and a line in the markdown body is
         // prose, not data.
-        for ($i = 1; $i < $bound; $i++) {
-            if (str_starts_with($lines[$i], self::RETIRED_HANDLE.':')) {
+        foreach (self::frontMatterLines($lines) as $i => $line) {
+            if (str_starts_with($line, self::RETIRED_HANDLE.':')) {
                 $retiredAt ??= $i;
             }
 
-            if (str_starts_with($lines[$i], self::REPLACEMENT_HANDLE.':')) {
+            if (str_starts_with($line, self::REPLACEMENT_HANDLE.':')) {
                 $replacementPresent = true;
             }
         }
@@ -132,26 +108,33 @@ final class RetiredFeaturedImageMigrator
     }
 
     /**
-     * The line index of the front matter's closing `---`, or null when the file
-     * has no front matter to work in.
+     * Front-matter lines keyed by their original index, or empty when the file
+     * has no valid front matter to work in.
+     *
+     * @param  non-empty-list<string>  $lines
+     * @return array<int, string>
      */
-    private static function frontMatterBound(string $contents): ?int
+    private static function frontMatterLines(array $lines): array
     {
-        $lines = preg_split(self::LINE_SPLIT, $contents);
-
-        if ($lines === false || ($lines[0] ?? null) !== '---') {
-            return null;
+        if ($lines[0] !== '---') {
+            return [];
         }
 
-        $count = \count($lines);
+        $frontMatter = [];
 
-        for ($i = 1; $i < $count; $i++) {
-            if ($lines[$i] === '---') {
-                return $i;
+        foreach ($lines as $index => $line) {
+            if ($index === 0) {
+                continue;
             }
+
+            if ($line === '---') {
+                return $frontMatter;
+            }
+
+            $frontMatter[$index] = $line;
         }
 
-        return null;
+        return [];
     }
 
     /**
@@ -160,6 +143,9 @@ final class RetiredFeaturedImageMigrator
      */
     private static function isNullLiteral(string $value): bool
     {
-        return \in_array(strtolower($value), ['null', '~', "''", '""'], true);
+        return match (strtolower($value)) {
+            'null', '~', "''", '""' => true,
+            default => false,
+        };
     }
 }

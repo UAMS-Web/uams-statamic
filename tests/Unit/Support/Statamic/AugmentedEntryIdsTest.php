@@ -108,3 +108,12 @@ it('firstId returns the first id or null', function () {
     expect(AugmentedEntryIds::firstId([]))->toBeNull();
     expect(AugmentedEntryIds::firstId(null))->toBeNull();
 });
+
+it('coerces non-string scalar ids to strings', function () {
+    expect(AugmentedEntryIds::fromValue(42))->toBe(['42']);
+    expect(AugmentedEntryIds::fromValue([10, '20']))->toBe(['10', '20']);
+});
+
+it('reads ids from an associative array without preserving string keys', function () {
+    expect(AugmentedEntryIds::fromValue(['first' => 'a', 'second' => 'b']))->toBe(['a', 'b']);
+});

@@ -54,15 +54,7 @@ beforeEach(function (): void {
         throw new ErrorException($message, 0, $severity);
     });
 
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 afterEach(function (): void {

@@ -523,3 +523,61 @@ it('does not fatal or leak the author byline when a post has authors but an uncr
 
     expect($html)->not->toContain('photo-credit');
 })->with(['excerpts', 'cards', 'grid', 'full', 'side']);
+
+// ---------------------------------------------------------------------------
+// UAMS-Web/uams-statamic#83 — label in name (WCAG 2.5.3)
+// ---------------------------------------------------------------------------
+// Each "Read more" link carried the story title alone (or "Read <title>") as its
+// accessible name, so "click Read more" by voice could not activate it. The name
+// now starts with the visible text and appends the title to keep the repeated
+// links distinguishable.
+
+/**
+ * Every link in a render that carries an `aria-label`, as visible text => label.
+ *
+ * @return array<int, array{text: string, label: string}>
+ */
+function newsBlockLabelledLinks(string $html): array
+{
+    preg_match_all('~<a\b[^>]*\baria-label="([^"]*)"[^>]*>(.*?)</a>~s', $html, $matches, PREG_SET_ORDER);
+
+    return array_map(fn (array $match): array => [
+        'text' => trim(html_entity_decode(strip_tags($match[2]))),
+        'label' => html_entity_decode($match[1]),
+    ], $matches);
+}
+
+it('names each Read more link with its visible text, then the story title', function (string $format): void {
+    $html = renderNewsBlock($format, [newsImageItem(), newsImageItem()]);
+
+    $readMore = array_values(array_filter(
+        newsBlockLabelledLinks($html),
+        fn (array $link): bool => $link['text'] === 'Read more',
+    ));
+
+    expect($readMore)->not->toBeEmpty();
+
+    foreach ($readMore as $link) {
+        expect($link['label'])->toBe('Read more: Example Story');
+    }
+})->with(['excerpts', 'cards', 'grid', 'side']);
+
+it('starts every labelled link name with its visible text in each format', function (string $format): void {
+    $item = newsImageItem() + ['category_name' => 'Cardiology', 'category_url' => '/news/cardiology'];
+    $html = renderNewsBlock($format, [$item, $item], fields: ['include_link' => true]);
+
+    // headlines and full carry no labelled link, so first assert the items rendered
+    expect($html)->toContain('Example Story');
+
+    foreach (newsBlockLabelledLinks($html) as $link) {
+        expect(mb_strtolower($link['label']))->toContain(mb_strtolower($link['text']));
+    }
+})->with(['headlines', 'excerpts', 'cards', 'grid', 'side', 'full']);
+
+it('lets the side archive link take its name from its visible text', function (): void {
+    $item = newsImageItem() + ['category_name' => 'Cardiology', 'category_url' => '/news/cardiology'];
+    $html = renderNewsBlock('side', [$item], fields: ['include_link' => true]);
+
+    expect($html)->toMatch('~<a href="/news/cardiology" class="btn btn-outline-primary">View the Cardiology Archive</a>~')
+        ->and($html)->toContain('aria-label="See more Cardiology stories">Cardiology</a>');
+});

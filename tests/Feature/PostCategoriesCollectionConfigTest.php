@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
+use MityDigital\Sitemapamic\Support\Configuration;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Stache;
 use Statamic\Facades\YAML;
@@ -130,11 +131,13 @@ it('retires the flat post_categories taxonomy (hard replace on the shared handle
 });
 
 it('sitemaps the post_categories collection, not the retired taxonomy path', function () {
-    // The migrated `/category/…` archives are emitted via the collection `defaults`
-    // path; leaving `post_categories` under `globals.taxonomies` would fatal
-    // `/sitemap.xml` (Sitemapamic dereferences the now-null `Taxonomy::find(...)`).
-    expect(config('sitemapamic.defaults.post_categories.include'))->toBeTrue();
-    /** @var array<string, mixed> $globalTaxonomies */
-    $globalTaxonomies = config('sitemapamic.globals.taxonomies', []);
-    expect(array_keys($globalTaxonomies))->not->toContain('post_categories');
+    // The migrated `/category/…` archives are emitted as `post_categories`
+    // collection entries, read through Sitemapamic's own resolution of the config:
+    // the collection is selected with no contextual taxonomy, and no taxonomy named
+    // `post_categories` is emitted site-wide.
+    $configuration = app(Configuration::class);
+
+    expect($configuration->collections())->toHaveKey('post_categories')
+        ->and($configuration->collections()['post_categories'])->toBe([])
+        ->and($configuration->taxonomies())->not->toContain('post_categories');
 });

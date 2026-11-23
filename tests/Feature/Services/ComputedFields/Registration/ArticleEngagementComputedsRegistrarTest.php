@@ -26,11 +26,7 @@ uses(StacheIsolatedTestCase::class, RefreshDatabase::class);
  */
 beforeEach(function (): void {
     // Pad Pest's mutant-child timeout once per process under `--mutate`.
-    static $padded = false;
-    if (! $padded && runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 
     foreach (['article', 'topic'] as $handle) {
         /** @var Statamic\Fields\Blueprint $blueprint */
