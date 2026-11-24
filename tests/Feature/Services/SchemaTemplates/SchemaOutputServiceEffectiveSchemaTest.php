@@ -250,3 +250,24 @@ it('keeps an inherit_custom property group over the inherited value as its base'
     'a plain value' => ['Own', 'Own'],
     'an array without a mode' => [['a'], ['a']],
 ]);
+
+it('reads whether a schema type is set', function (mixed $type, bool $expected): void {
+    expect((new ReflectionMethod(SchemaOutputService::class, 'isTypeSet'))->invoke(sosEffService(), $type))->toBe($expected);
+})->with([
+    'a type' => ['Thing', true],
+    'null' => [null, false],
+    'an empty string' => ['', false],
+    'a list with a type after blanks' => [[null, '', 'Thing'], true],
+    'a list of blanks' => [[null, ''], false],
+    'an empty list' => [[], false],
+]);
+
+it('normalizes a schema type to a list of unique non-empty names', function (mixed $type, array $expected): void {
+    expect((new ReflectionMethod(SchemaOutputService::class, 'normalizeEffectiveSchemaTypeToStringList'))->invoke(sosEffService(), $type))->toBe($expected);
+})->with([
+    'a type' => ['Thing', ['Thing']],
+    'an empty string' => ['', []],
+    'a number' => [5, []],
+    'a list with repeats and blanks' => [['Thing', 'Thing', '', 7, 'Person'], ['Thing', 'Person']],
+    'a list of blanks' => [['', null], []],
+]);

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Floatval;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Floatval;
 
 /**
- * Tests for App\Fieldtypes\Floatval: its Control Panel identity, the config lists it hands the Input
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Floatval: its Control Panel identity, the config lists it hands the Input
  * trait, and its validation rules.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/FloatvalFieldtypeTest.php

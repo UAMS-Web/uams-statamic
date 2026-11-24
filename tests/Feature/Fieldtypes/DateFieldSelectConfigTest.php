@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Date;
-use App\Fieldtypes\DateFieldSelect;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\DateFieldSelect;
 
 /**
  * UAMS-Web/uams-statamic-archive#1393 — the custom Date fieldtype's `earliest_date_field` / `latest_date_field`
  * boundary selects are backed by the CP-only `date_field_select` fieldtype, whose
  * Vue component populates the options from the blueprint's other date fields
  * client-side. The OPTION DERIVATION is unit-tested in
- * `resources/js/date-field-options.test.js`; these guard the PHP wiring — the
+ * `vendor/uams-web/aether-fieldtypes/resources/js/lib/date-field-options.test.js`; these guard the PHP wiring — the
  * config points at the fieldtype, and the fieldtype is config-only.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/DateFieldSelectConfigTest.php

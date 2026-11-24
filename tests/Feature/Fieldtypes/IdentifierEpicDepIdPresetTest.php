@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Identifier;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Identifier;
 
 uses(TestCase::class);
 

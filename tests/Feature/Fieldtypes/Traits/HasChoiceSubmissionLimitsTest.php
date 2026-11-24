@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Traits\HasChoiceSubmissionLimits;
 use Statamic\Contracts\Forms\Submission;
 use Statamic\Facades\Form as FormFacade;
 use Statamic\Fields\Field;
 use Statamic\Forms\Form;
 use Tests\Support\Doubles\ChoiceSubmissionLimitsHarness;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Traits\HasChoiceSubmissionLimits;
 
 covers(HasChoiceSubmissionLimits::class);
 

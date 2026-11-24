@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Traits\PresetOptions;
 use Statamic\Fields\Field;
 use Tests\Support\Doubles\PresetOptionsHarness;
 use Tests\TestCase;
@@ -12,6 +11,7 @@ use UAMSWeb\Aether\Enums\Language;
 use UAMSWeb\Aether\Enums\LanguageBCP47;
 use UAMSWeb\Aether\Enums\MimeType;
 use UAMSWeb\Aether\Enums\State;
+use UAMSWeb\Aether\Fieldtypes\Traits\PresetOptions;
 
 covers(PresetOptions::class);
 

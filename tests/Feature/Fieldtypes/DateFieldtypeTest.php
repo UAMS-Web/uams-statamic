@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Date;
 use Carbon\Carbon;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Support\Facades\Config;
@@ -15,11 +14,12 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Support\DateFormat;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 /**
- * Unit tests for the custom Date fieldtype (App\Fieldtypes\Date).
+ * Unit tests for the custom Date fieldtype (UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date).
  *
  * Tests application-specific functionality:
  *   - date_exceptions replicator field configuration
@@ -30,7 +30,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *   - Validation of date field nested in a replicator (commit 1148a51)
  *   - Deep copy of objects in replicator sets
  *
- * Mutation: 100% on App\Fieldtypes\Date (507 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date (507 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/DateFieldtypeTest.php
  */

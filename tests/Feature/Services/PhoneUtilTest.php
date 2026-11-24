@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Services\PhoneUtil;
 use Illuminate\Support\Facades\Log;
 use Mockery\LegacyMockInterface;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Services\PhoneUtil;
 
 uses(TestCase::class);
 

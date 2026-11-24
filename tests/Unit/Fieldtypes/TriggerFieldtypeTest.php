@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Trigger;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Trigger;
 
 /**
  * @covers \App\Fieldtypes\Trigger

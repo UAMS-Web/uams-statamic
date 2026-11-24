@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Product;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Product;
 
 uses(TestCase::class);
 
 /**
- * Tests for App\Fieldtypes\Product — the Gravity Forms product-field analog.
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Product — the Gravity Forms product-field analog.
  *
  * Covers the server-side `process()` normalization (authoritative line-total
  * recomputation for single and multiple modes), the `extraRenderableFieldData()`
  * currency formatting consumed by `product.antlers.html`, and the enable flags
  * that make the fieldtype selectable in form blueprints.
  *
- * Mutation: 100% on App\Fieldtypes\Product (205 mutants, without --covered-only, Windows 11, #956).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Product (205 mutants, without --covered-only, Windows 11, #956).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/ProductFieldtypeTest.php
  */

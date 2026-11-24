@@ -161,3 +161,16 @@ it('asks for no augmentation when a collection holds only terms or nothing', fun
     'empty' => [collect()],
     'terms only' => fn (): Collection => collect([Mockery::mock(LocalizedTerm::class)]),
 ]);
+
+it('loads each referenced entries field builder, after fields it leaves alone', function (): void {
+    $entries = collect(['entry-a']);
+    $unread = sosBagQuery(collect(['entry-x']));
+    $failing = sosBagQuery(['not a collection']);
+    $context = sosBagHydrateEntries(
+        sosBagEntry('ctx-4', ['unread' => 'entries', 'stored' => 'entries', 'failing' => 'entries', 'related' => 'entries']),
+        ['unread' => $unread, 'stored' => 'entry-b', 'failing' => $failing, 'related' => sosBagQuery($entries)],
+        '{{ stored }}{{ failing }}{{ related }}{{ title }}{{ /related }}'
+    );
+
+    expect($context)->toBe(['unread' => $unread, 'stored' => 'entry-b', 'failing' => $failing, 'related' => $entries]);
+});

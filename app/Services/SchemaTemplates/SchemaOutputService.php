@@ -812,11 +812,7 @@ class SchemaOutputService
             /** @var array<string, mixed> $value */
             if ($this->isBareJsonLdAtIdReferenceArray($value)) {
                 $atId = $value['@id'];
-                if (
-                    \is_string($atId)
-                    && $atId !== ''
-                    && ! isset($fullIdsPresent[$atId])
-                ) {
+                if (! isset($fullIdsPresent[$atId])) {
                     $parsed = $this->parseSchemaObjectsEntryIdAndTemplateInstanceIndexFromAtId(
                         $atId
                     );
@@ -918,10 +914,7 @@ class SchemaOutputService
                 $hashPos + 1
             );
 
-        if ($fragment === '') {
-            return null;
-        }
-
+        // An empty fragment matches neither pattern below
         if (
             preg_match(
                 '/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(\d+)$/i',
@@ -937,13 +930,12 @@ class SchemaOutputService
 
         if (
             preg_match(
-                '/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i',
-                $fragment,
-                $matches
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
+                $fragment
             ) === 1
         ) {
             return [
-                'entry_id' => $matches[1],
+                'entry_id' => $fragment,
                 'instance_index' => null,
             ];
         }
@@ -955,6 +947,8 @@ class SchemaOutputService
      * Whether the map is a bare JSON-LD node reference (`@id` only, no `@type`).
      *
      * @param  array<string, mixed>  $value  Candidate associative array
+     *
+     * @phpstan-assert-if-true array{'@id': string}  $value
      */
     private function isBareJsonLdAtIdReferenceArray(array $value): bool
     {
@@ -962,9 +956,9 @@ class SchemaOutputService
             return false;
         }
 
+        // An empty @id parses to no schema object, so it needs no check here
         return isset($value['@id'])
             && \is_string($value['@id'])
-            && $value['@id'] !== ''
             && ! isset($value['@type']);
     }
 
@@ -1214,29 +1208,26 @@ class SchemaOutputService
         // Normalize effective schema.type to a list of Schema.org type name strings
         $typeNames = $this->normalizeEffectiveSchemaTypeToStringList($effectiveType);
 
-        // Check whether there is no type list so inherited keys cannot be validated
-        if ($typeNames === []) {
-            // Return the inherited map unchanged when the recipient type is missing
-            return $properties;
-        }
-
-        // Initialize the allowlist of property names permitted for those types
-        $allowedKeys = [];
+        // Collect the property names permitted for those types
+        $allowedNames = [];
 
         // Walk each Schema.org type name declared on the recipient
         foreach ($typeNames as $typeName) {
             // Walk each property exposed by the Spatie type class for that name
             foreach (SchemaPropertyValidator::validPropertiesForType($typeName) as $propertyName) {
                 // Record the property as inheritable for this recipient
-                $allowedKeys[$propertyName] = true;
+                $allowedNames[] = $propertyName;
             }
         }
 
-        // Check whether every type was unknown to Spatie so the allowlist is empty
-        if ($allowedKeys === []) {
+        // Check whether the recipient has no type, or only types unknown to Spatie,
+        // so the allowlist is empty
+        if ($allowedNames === []) {
             // Return the inherited map unchanged when no vocabulary was resolved
             return $properties;
         }
+
+        $allowedKeys = array_flip($allowedNames);
 
         // Build the output map with only keys that pass the allowlist
         $filtered = [];
@@ -1253,6 +1244,7 @@ class SchemaOutputService
         // Unset local variables to free up memory
         unset(
             $allowedKeys,
+            $allowedNames,
             $key,
             $propertyName,
             $typeName,
@@ -1377,7 +1369,11 @@ class SchemaOutputService
                     continue;
                 }
 
-                if (\in_array($e, SchemaType::ancestorsOf($o), true)) {
+                // Type names are never numeric, so a loose match equals a strict one
+                // @pest-mutate-ignore: TrueToFalse
+                $isAncestor = \in_array($e, SchemaType::ancestorsOf($o), true);
+
+                if ($isAncestor) {
                     return true;
                 }
             }
@@ -1417,10 +1413,8 @@ class SchemaOutputService
             return null;
         }
 
+        // An empty subtype resolves to no @type below
         $subtype = trim($rawSubtype);
-        if ($subtype === '') {
-            return null;
-        }
 
         $atType = $this->medicalOrganizationSubtypeAtTypeResolver->resolve($subtype);
         if ($atType === []) {
@@ -1508,7 +1502,8 @@ class SchemaOutputService
             $parentPage
         );
 
-        return \is_string($parentId) && $parentId !== '' ? $parentId : null;
+        // The caller treats an empty parent id as none
+        return \is_string($parentId) ? $parentId : null;
     }
 
     /**
@@ -1521,7 +1516,7 @@ class SchemaOutputService
         }
 
         if (\is_array($type)) {
-            return array_values(array_filter($type, fn ($t): bool => $t !== null && $t !== '')) !== [];
+            return array_filter($type, fn ($t): bool => $t !== null && $t !== '') !== [];
         }
 
         return true;
@@ -2381,14 +2376,9 @@ class SchemaOutputService
     protected function siteRootForEntry(
         EntryModel $entry
     ): string {
-        // Get the entry's site
+        // Get the entry's site; a missing one is not an object, and falls through to
+        // the root path below
         $site = $entry->site();
-
-        // Check if the site is not found
-        if ($site === null) {
-            // Return '/' to signal no site root is available
-            return '/';
-        }
 
         // Initialize the site URL value as null
         $url = null;
@@ -2455,7 +2445,7 @@ class SchemaOutputService
         }
 
         // Build the same base + fragment shape as getCanonicalAtIdForSchemaEntry
-        // without resolving schema.properties.url
+        // without resolving schema.properties.url; an empty base leaves `#id`
         $baseUrl = $this->siteRootForEntry($entry);
 
         // Unset local variables to free up memory
@@ -2463,7 +2453,7 @@ class SchemaOutputService
             $entry
         );
 
-        return $baseUrl !== '' ? $baseUrl.'#'.$entryId : '#'.$entryId;
+        return $baseUrl.'#'.$entryId;
     }
 
     /**
@@ -2549,22 +2539,24 @@ class SchemaOutputService
             }
         }
 
+        // An empty context url leaves the fragment-only `#id`, like no url
         if ($baseUrl === null && $contextEntity !== null && method_exists($contextEntity, 'url')) {
             $contextUrl = $contextEntity->url();
-            if (\is_string($contextUrl) && $contextUrl !== '') {
+            if (\is_string($contextUrl)) {
                 $baseUrl = $contextUrl;
             }
         }
 
         if ($baseUrl !== null) {
-            $baseUrl = str_contains($baseUrl, '#') ? substr($baseUrl, 0, (int) strpos($baseUrl, '#')) : $baseUrl;
+            $hashAt = strpos($baseUrl, '#');
+            $baseUrl = $hashAt === false ? $baseUrl : substr($baseUrl, 0, $hashAt);
         }
 
         $rawResolvedEntryId = $entry->id();
+        // Concatenation casts a scalar id the same way
+        // @pest-mutate-ignore: RemoveStringCast
         $resolvedEntryId = \is_scalar($rawResolvedEntryId) ? (string) $rawResolvedEntryId : '';
-        $nodeId = $baseUrl !== null && $baseUrl !== ''
-            ? $baseUrl.'#'.$resolvedEntryId
-            : '#'.$resolvedEntryId;
+        $nodeId = ($baseUrl ?? '').'#'.$resolvedEntryId;
 
         // Unset local variables to free up memory
         unset(
@@ -2655,22 +2647,13 @@ class SchemaOutputService
         // Normalize numeric strings from Antlers to integers
         // ---
 
-        // Check if the raw value is a string and is not empty
-        if (
-            \is_string($raw)
-            && $raw !== ''
-        ) {
-            // Filter the string as an integer when possible
-            $filtered = filter_var(
+        // Filter a string as an integer; an empty or non-numeric one filters to false,
+        // which the check below rejects like the string itself
+        if (\is_string($raw)) {
+            $raw = filter_var(
                 $raw,
                 FILTER_VALIDATE_INT
             );
-
-            // Check if filtering produced a usable integer
-            if ($filtered !== false) {
-                // Replace raw with the filtered integer
-                $raw = $filtered;
-            }
         }
 
         // Check if the value is not a non-negative integer
@@ -3534,18 +3517,17 @@ class SchemaOutputService
     ): string {
         $handle = preg_quote(self::ANTLERS_SCHEMA_PRIMARY_RELATED_TAXONOMY_TERM, '/');
 
-        // Strip `schema_primary_related_taxonomy_term.<field>` pairs so inner
-        // `{{ title }}` tokens are not treated as parent-scope variables.
-        $stripped = (string) preg_replace(
-            '/\{\{\s*'.$handle.'\.([a-z0-9_]+)\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\.\1\s*\}\}/s',
+        // Strip `schema_primary_related_taxonomy_term.<field>` pairs, then plain
+        // `schema_primary_related_taxonomy_term` pairs, so inner `{{ title }}`
+        // tokens are not treated as parent-scope variables. A failed match scans
+        // nothing.
+        return (string) preg_replace(
+            [
+                '/\{\{\s*'.$handle.'\.([a-z0-9_]+)\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\.\1\s*\}\}/s',
+                '/\{\{\s*'.$handle.'\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\s*\}\}/s',
+            ],
             '',
             $template
-        );
-
-        return (string) preg_replace(
-            '/\{\{\s*'.$handle.'\s*\}\}.*?\{\{\s*\/\s*'.$handle.'\s*\}\}/s',
-            '',
-            $stripped
         );
     }
 
@@ -3596,12 +3578,7 @@ class SchemaOutputService
         $stripped = $template;
 
         foreach ($termsLikePairStripHandles as $termsHandle) {
-            if ($termsHandle === '') {
-                unset($termsHandle);
-
-                continue;
-            }
-
+            // An empty handle has no pattern either
             $pattern = $this->pairStripRegexPatternForTermsLikeHandle($termsHandle);
 
             if ($pattern === '') {
@@ -4087,7 +4064,9 @@ class SchemaOutputService
             // Read the field type handle
             $type = $field->type();
 
-            // Skip fieldtypes that must keep raw storage in schema Antlers context
+            // Skip fieldtypes that must keep raw storage in schema Antlers context. A
+            // fieldtype handle is never numeric, so a loose match equals a strict one.
+            // @pest-mutate-ignore: TrueToFalse
             if (\in_array($type, self::SCHEMA_ANTLERS_CONTEXT_SKIP_AUGMENTATION_FIELD_TYPES, true)) {
                 unset(
                     $field,
@@ -4109,7 +4088,9 @@ class SchemaOutputService
                 // Resolve the augmented field Value from Statamic
                 $valueObj = $contextEntity->augmentedValue($handle);
 
-                // Replace raw storage when augmentation returns a Value instance
+                // Replace raw storage when augmentation returns a Value instance. Any
+                // other result throws on value() and keeps the raw value below.
+                // @pest-mutate-ignore: InstanceOfToTrue
                 if ($valueObj instanceof Value) {
                     // Read the evaluated augmented PHP value (URL, models, etc.)
                     $resolved = $valueObj->value();
@@ -4240,20 +4221,9 @@ class SchemaOutputService
             $resolved
         );
 
-        // Return empty strings unchanged
-        if ($url === '') {
-            return $url;
-        }
-
-        // Keep already-absolute HTTP(S) URLs unchanged
-        if (
-            str_starts_with($url, 'http://')
-            || str_starts_with($url, 'https://')
-        ) {
-            return $url;
-        }
-
-        // Resolve root-relative paths against the current site (same as permalink)
+        // Resolve root-relative paths against the current site (same as permalink).
+        // Anything else, an empty or an absolute HTTP(S) URL included, is returned
+        // unchanged below.
         if (str_starts_with($url, '/')) {
             // Ask Statamic to prepend the active site URL
             $madeAbsolute = URL::makeAbsolute($url);
@@ -4367,24 +4337,15 @@ class SchemaOutputService
         array $groupedTermsLikeBlueprintFieldsByHandle,
         string $template
     ): array {
-        if ($groupedTermsLikeBlueprintFieldsByHandle === []) {
-            return [];
-        }
-
+        // An identifier is never empty, and a template that names none of the
+        // handles keeps them all below
         $referenced = $this->antlersTemplateReferencedIdentifierSet($template);
-
-        if ($referenced === []) {
-            return $groupedTermsLikeBlueprintFieldsByHandle;
-        }
 
         /** @var array<string, list<Field>> $filtered */
         $filtered = [];
 
         foreach ($groupedTermsLikeBlueprintFieldsByHandle as $handle => $candidates) {
-            if (
-                $handle !== ''
-                && isset($referenced[$handle])
-            ) {
+            if (isset($referenced[$handle])) {
                 $filtered[$handle] = $candidates;
             }
 
@@ -4432,7 +4393,9 @@ class SchemaOutputService
 
         $entriesHandles = $this->collectEntriesFieldHandles($contextEntity);
 
-        // Skip an entity whose blueprint has no entries field
+        // Skip an entity whose blueprint has no entries field, before scanning the
+        // template; the loop below would change nothing either
+        // @pest-mutate-ignore: RemoveEarlyReturn
         if ($entriesHandles === []) {
             return $context;
         }
@@ -5716,10 +5679,7 @@ class SchemaOutputService
     private function unwrapStatamicTermFindToTaxonomyTerm(
         mixed $found
     ): LocalizedTerm|TaxonomyTerm|null {
-        if ($found === null) {
-            return null;
-        }
-
+        // Anything else, nothing found included, is no term
         if ($found instanceof LocalizedTerm) {
             return $found;
         }
@@ -5917,32 +5877,16 @@ class SchemaOutputService
         if (Compare::isQueryBuilder($resolved)) {
             /** @var Builder $resolved */
             $context[$handle] = $resolved->get();
-
-            return;
-        }
-
-        // ---
-        // max_items: 1 terms fields augment to one Term via query->first(), not a builder
-        // ---
-
-        // Check if augmentation resolved to a single taxonomy term instance
-        if ($resolved instanceof Term) {
-            // Wrap the lone term so `{{ handle }}` loops match multi-select shape
+        } elseif ($resolved instanceof Term) {
+            // max_items: 1 terms fields augment to one Term via query->first(), not a
+            // builder; wrap the lone term so `{{ handle }}` loops match multi-select shape
             $context[$handle] = collect([$resolved]);
-
-            return;
-        }
-
-        // Check if augmentation is explicitly empty for a single-select field
-        if ($resolved === null) {
-            // Use an empty list so Antlers loops are valid (zero iterations)
+        } elseif ($resolved === null) {
+            // Use an empty list for an empty single-select field so Antlers loops are
+            // valid (zero iterations)
             $context[$handle] = collect();
-
-            return;
-        }
-
-        // Keep augmented Collection instances as loopable context when present
-        if ($resolved instanceof Collection) {
+        } elseif ($resolved instanceof Collection) {
+            // Keep augmented Collection instances as loopable context when present
             $context[$handle] = $resolved;
         }
     }

@@ -6,9 +6,9 @@ use App\Rules\DunsNumber;
 use App\Rules\Npi;
 use App\Rules\RxCui;
 use App\Rules\VaStationId;
-use App\Rules\ZipCode;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\ZipCode;
 
 uses(TestCase::class);
 

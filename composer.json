@@ -60,7 +60,7 @@
         "studio1902/statamic-peak-tools": "9.2.3",
         "uams-web/aether-alpine-csp-forms": "^0.3",
         "uams-web/aether-enums": "^0.2",
-        "uams-web/aether-fieldtypes": "^0.2",
+        "uams-web/aether-fieldtypes": "^0.3",
         "uams-web/aether-form-settings": "^0.5",
         "uams-web/aether-incomplete-entries": "^0.2.1",
         "uams-web/aether-listings-management": "^0.4.0",

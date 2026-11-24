@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Scopes\AssetsByFileSize;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Assets\QueryBuilder;
+use UAMSWeb\Aether\Fieldtypes\Scopes\AssetsByFileSize;
 
 uses(MockeryPHPUnitIntegration::class);
 

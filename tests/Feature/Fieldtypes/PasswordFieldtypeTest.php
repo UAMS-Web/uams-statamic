@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Password;
 use Statamic\Facades\Antlers;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Password;
 
 uses(TestCase::class);
 
@@ -15,7 +15,7 @@ uses(TestCase::class);
  * forms: selectable in form blueprints and rendering a masked input via the
  * shared default template. Covers the password-side AC of issue UAMS-Web/uams-statamic-archive#312.
  *
- * Mutation: 100% on App\Fieldtypes\Password (61 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Password (61 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/PasswordFieldtypeTest.php
  */
@@ -54,7 +54,7 @@ it('resolves by handle, is selectable in form blueprints, and drives a masked pa
 
 it('renders a masked single-line input from the public-form template', function () {
     $template = file_get_contents(
-        resource_path('views/vendor/statamic/forms/fields/password.antlers.html')
+        servedResourcePath('views/vendor/statamic/forms/fields/password.antlers.html')
     );
     expect($template)->toBeString();
     $template = is_string($template) ? $template : '';

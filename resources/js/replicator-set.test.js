@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { registerReplicatorSet } from './replicator-field.js';
+import { registerReplicatorSet } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/replicator-field.js';
 
 /**
  * Instantiate the `replicatorSet` component object (without a real Alpine runtime) by capturing

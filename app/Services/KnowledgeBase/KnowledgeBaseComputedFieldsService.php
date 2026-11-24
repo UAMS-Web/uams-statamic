@@ -516,6 +516,39 @@ class KnowledgeBaseComputedFieldsService
     private const string KNOWLEDGE_BASE_BLUEPRINT_HANDLE = 'collections.knowledge_bases.knowledge_base';
 
     /**
+     * Blueprint defaults already read, keyed by source field handle.
+     *
+     * @var array<string, mixed>
+     */
+    private array $knowledgeBaseFieldDefaults = [];
+
+    /**
+     * Read a knowledge_base blueprint field's default on first use, and remember it.
+     *
+     * Reading the default resolves the field's fieldtype, and Statamic caches the
+     * fieldtype it resolves for each handle. Doing it while the service providers
+     * boot ran before the fieldtype add-on had registered its handles, so `text` and
+     * `checkboxes` stayed cached as Statamic's own classes for the whole request
+     * (UAMS-Web/uams-statamic#996). Deferring the read to the first computed value
+     * returns the same default after every add-on has registered.
+     *
+     * @param  string  $sourceHandle  The field handle on the knowledge_base blueprint.
+     * @return mixed The field's default value, or null when it has none.
+     */
+    private function knowledgeBaseFieldDefault(string $sourceHandle): mixed
+    {
+        // Read and remember the default the first time it is asked for
+        if (! array_key_exists($sourceHandle, $this->knowledgeBaseFieldDefaults)) {
+            $this->knowledgeBaseFieldDefaults[$sourceHandle] = FieldDefaultHelper::getDefaultValueForBlueprintField(
+                self::KNOWLEDGE_BASE_BLUEPRINT_HANDLE,
+                $sourceHandle
+            );
+        }
+
+        return $this->knowledgeBaseFieldDefaults[$sourceHandle];
+    }
+
+    /**
      * Registers computed fields for the 'knowledge_bases' collection that inherit
      * their value from the root-level 'knowledge_base' ancestor. Topic and article
      * entries show these values from the ancestor; knowledge_base entries use their
@@ -578,12 +611,6 @@ class KnowledgeBaseComputedFieldsService
         // Loop through each computed field and register it
         foreach ($computedFieldMap as [$computedHandle, $sourceHandle]) {
 
-            // Resolve default value from the knowledge_base blueprint using source handle
-            $default = FieldDefaultHelper::getDefaultValueForBlueprintField(
-                self::KNOWLEDGE_BASE_BLUEPRINT_HANDLE,
-                $sourceHandle
-            );
-
             // Register computed field that inherits value from root knowledge_base ancestor
             Collection::computed(
                 'knowledge_bases',
@@ -591,7 +618,7 @@ class KnowledgeBaseComputedFieldsService
                 fn (Entry $entry): mixed => $this->getKnowledgeBaseAncestorValue(
                     $entry,
                     $sourceHandle,
-                    $default
+                    $this->knowledgeBaseFieldDefault($sourceHandle)
                 )
             );
         }

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Video;
 use Statamic\Fieldtypes\Video as BaseVideo;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Video;
 
 uses(TestCase::class);
 
 /**
  * Unit tests for {@see Video}.
  *
- * Mutation: no mutable surface on App\Fieldtypes\Video — the class only
+ * Mutation: no mutable surface on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Video — the class only
  * overrides component() to return the constant 'custom_video' CP handle, so
  * Pest reports no covered mutants (--covered-only).
  *

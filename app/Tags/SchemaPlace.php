@@ -14,7 +14,7 @@ use UAMSWeb\Aether\Enums\State;
  * Antlers tag: emit a JSON-LD `Place` fragment with a nested `PostalAddress`.
  *
  * Parameters (all optional; omitted or empty values are not included in JSON):
- *   - address: bound value from the `Address` fieldtype (`App\Fieldtypes\Address`);
+ *   - address: bound value from the `Address` fieldtype (`UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address`);
  *     flat associative array (e.g. `preset`, `street_address`, `city`,
  *     `postal_code`, `country`, `state_province_region` or preset-specific
  *     region keys) or Statamic list of `key` / `value` pairs. Supplies defaults

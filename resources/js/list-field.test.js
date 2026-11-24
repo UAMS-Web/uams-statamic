@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { registerListField } from './list-field.js';
+import { registerListField } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/list-field.js';
 
 /**
  * Instantiate the `listField` component object (without a real Alpine runtime) by capturing

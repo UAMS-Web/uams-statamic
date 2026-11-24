@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Total;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Antlers;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Total;
 
 uses(TestCase::class);
 
@@ -50,7 +50,7 @@ function totalContext(array $config = [], mixed $value = '', array $overrides = 
 function renderTotal(array $config = [], mixed $value = '', array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/total.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/total.antlers.html')),
         totalContext($config, $value, $overrides),
         true,
     );

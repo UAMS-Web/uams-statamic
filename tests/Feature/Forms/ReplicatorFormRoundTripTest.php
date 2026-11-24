@@ -23,7 +23,7 @@ uses(TestCase::class);
 /**
  * End-to-end coverage for the public-form Replicator (UAMS-Web/uams-statamic-archive#675): render a form with a replicator field
  * through the real `form:create` pipeline (which calls
- * App\Fieldtypes\Replicator::preProcessTagRenderable), and submit the nested payload the template's
+ * UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator::preProcessTagRenderable), and submit the nested payload the template's
  * Alpine engine produces to prove the round-trip and the min-sets / at-least-one-enabled rules.
  *
  * @command php artisan test --compact tests/Feature/Forms/ReplicatorFormRoundTripTest.php
@@ -225,7 +225,7 @@ it('renders existing-value rows at concrete indices with their subfield values',
     // a boolean so its checkbox is not re-checked — see ReplicatorFieldtypeTest for the coercion
     // datasets; the old-input source of the same branch is exercised end to end by a real POST above.
     $html = (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/replicator.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/replicator.antlers.html')),
         [
             'handle' => 'referrals',
             'replicator_index_token' => 'REPLICATORSETINDEX',

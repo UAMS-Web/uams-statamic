@@ -91,3 +91,15 @@ it('returns null for an empty, whitespace, unknown, or non-string subtype', func
 it('returns null when there are no declared entry types', function (): void {
     expect(subtypeAtType(mockLocationWithSubtype('Hospital'), []))->toBeNull();
 });
+
+it('trims the stored subtype before checking it refines the entry type', function (): void {
+    expect(subtypeAtType(mockLocationWithSubtype('  Hospital  '), ['MedicalOrganization']))->toBe(['Hospital']);
+});
+
+it('returns null for a subtype outside the MedicalOrganization family, even one equal to the entry type', function (mixed $subtype): void {
+    expect(subtypeAtType(mockLocationWithSubtype($subtype), ['Person']))->toBeNull();
+})->with([
+    'the entry type' => ['Person'],
+    'an empty subtype' => [''],
+    'a stored list' => [['Hospital']],
+]);
