@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modifiers\ApStyleDate;
+use Carbon\Carbon;
 use Statamic\Fields\Value;
 use Tests\TestCase;
 
@@ -163,4 +164,96 @@ it('drops or rejects impossible month and day slots', function (string $input, ?
     'unknown year impossible month' => ['198X-13-01', null],
     'unknown year impossible day keeps the month' => ['198X-02-30', 'February'],
     'empty year double hyphen month' => ['--05', 'May'],
+]);
+
+it('formats a date object through the Carbon path', function (array $params, string $expected) {
+    expect((new ApStyleDate)->index(Carbon::parse('1986-01-14T12:30:00Z'), $params, []))->toBe($expected);
+})->with([
+    'default' => [[], 'Jan. 14, 1986'],
+    'with time' => [[true], "Jan. 14, 1986, at 12:30\u{00A0}p.m."],
+    'tabular' => [[false, true], 'Jan 14, 1986'],
+]);
+
+it('resolves every month on the Carbon path', function (int $month, string $expected) {
+    expect((new ApStyleDate)->index(sprintf('1986-%02d-09T00:00:00Z', $month), [], []))->toBe($expected);
+})->with([
+    'January' => [1, 'Jan. 9, 1986'],
+    'February' => [2, 'Feb. 9, 1986'],
+    'March' => [3, 'March 9, 1986'],
+    'April' => [4, 'April 9, 1986'],
+    'May' => [5, 'May 9, 1986'],
+    'June' => [6, 'June 9, 1986'],
+    'July' => [7, 'July 9, 1986'],
+    'August' => [8, 'Aug. 9, 1986'],
+    'September' => [9, 'Sept. 9, 1986'],
+    'October' => [10, 'Oct. 9, 1986'],
+    'November' => [11, 'Nov. 9, 1986'],
+    'December' => [12, 'Dec. 9, 1986'],
+]);
+
+it('keeps the English month name under another locale', function () {
+    $locale = Carbon::getLocale();
+    Carbon::setLocale('es');
+
+    try {
+        expect((new ApStyleDate)->index('1986-01-14T12:00:00Z', [], []))->toBe('Jan. 14, 1986');
+    } finally {
+        Carbon::setLocale($locale);
+    }
+});
+
+it('trims a padded string before reading it', function (string $input, string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'partial token' => [' 1986-05-14 ', 'May 14, 1986'],
+    'space-separated datetime' => [' 1986-05-14 12:30:00 ', 'May 14, 1986'],
+]);
+
+it('reads compact digits as slots rather than as a Carbon date', function (string $input, ?string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'impossible month' => ['19861301', null],
+    'impossible day keeps the month' => ['19860230', 'February 1986'],
+    'last day of a month' => ['19860131', 'Jan. 31, 1986'],
+]);
+
+it('treats more than three hyphen slots as an unusable day', function () {
+    expect((new ApStyleDate)->index('1986-05-14-99', [], []))->toBe('May 1986');
+});
+
+it('checks a day with no known year against a leap year', function (string $input, ?string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'unknown year' => ['198X-02-29', 'Feb. 29'],
+    'leading dashes' => ['-----02-29', 'Feb. 29'],
+    'known common year' => ['1986-02-29', 'February 1986'],
+    'known leap year' => ['1988-02-29', 'Feb. 29, 1988'],
+]);
+
+it('abbreviates the month only beside a day, and drops the day zero', function (string $input, string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'known year' => ['1986-01-04', 'Jan. 4, 1986'],
+    'unknown year' => ['XXXX-01-04', 'Jan. 4'],
+    'leading dashes' => ['-----01-04', 'Jan. 4'],
+    'leading dashes, month only' => ['-----01', 'January'],
+]);
+
+it('rejects two-digit slots that are not months', function (string $input, ?string $expected) {
+    expect((new ApStyleDate)->index($input, [], []))->toBe($expected);
+})->with([
+    'month 00' => ['1986-00', null],
+    'month 00 with day' => ['1986-00-14', null],
+    'month 13' => ['1986-13', null],
+    'month 12' => ['1986-12', 'December 1986'],
+    'leading-dash month 00' => ['-----00', null],
+]);
+
+it('uses tabular months without a known year', function (string $input, string $expected) {
+    expect((new ApStyleDate)->index($input, [false, true], []))->toBe($expected);
+})->with([
+    'unknown year with day' => ['XXXX-01-04', 'Jan 4'],
+    'unknown year, month only' => ['XXXX-01', 'Jan'],
+    'leading dashes with day' => ['-----01-04', 'Jan 4'],
+    'leading dashes, month only' => ['-----01', 'Jan'],
 ]);

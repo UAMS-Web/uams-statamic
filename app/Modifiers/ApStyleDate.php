@@ -66,19 +66,14 @@ class ApStyleDate extends Modifier
 
         // Preserve explicit empty inputs
         if (
-            in_array($value, [null, '', false], true)
+            in_array($value, [null, ''], true)
         ) {
             // Return empty string for optional empty fields
             return '';
         }
 
         // Normalize compact numeric scalars into strings before routing grammar
-        if (
-            ! ($value instanceof DateTimeInterface)
-            && ! \is_string($value)
-            && \is_scalar($value)
-            && ! \is_bool($value)
-        ) {
+        if (\is_int($value) || \is_float($value)) {
             // Cast digits-only scalars so compact tokens hit partial parsing
             $value = (string) $value;
         }
@@ -95,23 +90,11 @@ class ApStyleDate extends Modifier
                 in_array($params[1], [true, 'true', 1, '1'], true)
             );
 
-        // Prefer datetime-aware formatting for objects and instant-like strings
-        if (
-            $value instanceof DateTimeInterface
-            || $this->shouldParseAsDateTimeInstant($value)
-        ) {
-            // Format using Carbon for wall-calendar AP output
-            return $this->formatFromCarbonValue(
-                $value,
-                $includeTime,
-                $isTabular,
-                $context
-            );
-        }
-
-        // Resolve partial-storage strings without Carbon.parse semantics
+        // Resolve partial-storage strings without Carbon.parse semantics, unless
+        // the string carries a time of day
         if (
             \is_string($value)
+            && ! $this->shouldParseAsDateTimeInstant($value)
             && $this->isPartialStorageCandidate($value)
         ) {
             // Attempt AP formatting from slot grammar
@@ -121,7 +104,7 @@ class ApStyleDate extends Modifier
             );
         }
 
-        // Fall back to Carbon for prose dates and timestamps
+        // Use Carbon for objects, instant-like strings and prose dates
         return $this->formatFromCarbonValue(
             $value,
             $includeTime,
@@ -133,18 +116,12 @@ class ApStyleDate extends Modifier
     /**
      * Whether the value should be parsed as an instant (time-capable) string.
      *
-     * @param  mixed  $value  Raw modifier value
+     * @param  string  $value  Raw modifier string
      * @return bool True when the string carries explicit time-of-day semantics
      */
     private function shouldParseAsDateTimeInstant(
-        mixed $value
+        string $value
     ): bool {
-        // Restrict datetime parsing to string scalars
-        if (! \is_string($value)) {
-            // Non-strings use object branch or other paths above
-            return false;
-        }
-
         // Trim whitespace before matching instant markers
         $trimmed = trim($value);
 
@@ -204,18 +181,8 @@ class ApStyleDate extends Modifier
         }
 
         // Placeholder letters exclude naive Carbon parsing paths
-        if (
-            preg_match(
-                '/[Xx]/',
-                $trimmed
-            ) === 1
-        ) {
-            return true;
-        }
-
-        // Leading-dash unknown-year compact forms
         return preg_match(
-            '/^-/',
+            '/[Xx]/',
             $trimmed
         ) === 1;
     }
@@ -246,14 +213,8 @@ class ApStyleDate extends Modifier
             return '';
         }
 
-        // Resolve AP month case from the wall-calendar month index
-        $apMonth = ApStyleGregorianMonth::fromMonthNumber($date->month);
-
-        // Check if the month index failed to resolve to a known enum case
-        if (! $apMonth instanceof ApStyleGregorianMonth) {
-            // Treat impossible calendar months as empty output
-            return '';
-        }
+        // Resolve AP month case from the English month name, which backs each case
+        $apMonth = ApStyleGregorianMonth::from($date->format('F'));
 
         // Extract day without leading zero (e.g., "1", "15")
         $day = $date->format('j');
@@ -319,21 +280,12 @@ class ApStyleDate extends Modifier
         $monthValid = PartialDateStorageSlots::isValidMonthPart($monthPart);
         $dayValid = PartialDateStorageSlots::isValidDayPart($dayPart);
 
-        // Detect structural `--` after a nonempty year prefix (invalid month gap)
-        $hasDoubleHyphenGap = $this->hasDoubleHyphenMonthGap(
-            $slotSource,
-            $yearPart,
-            $monthPart
-        );
-
-        // Force month invalid when consecutive hyphen separators broke the slot
-        if ($hasDoubleHyphenGap) {
-            // Treat exploded empty month as unusable even if digits appeared later
-            $monthValid = false;
-        }
-
-        // Compose output when explode yields a usable month slot directly
-        if ($monthValid) {
+        // Compose output when explode yields a usable month slot directly. A `--`
+        // gap leaves the month slot empty, which is never a valid month
+        if (
+            $monthValid
+            && \is_string($monthPart)
+        ) {
             // Emit AP string when month digits calendar-validated
             return $this->composeApFromSlotValidity(
                 $yearValid,
@@ -441,7 +393,7 @@ class ApStyleDate extends Modifier
                 .'-'
                 .substr($trimmed, 4, 2)
                 .'-'
-                .substr($trimmed, 6, 2);
+                .substr($trimmed, 6);
         }
 
         // Expand six-digit `YYYYMM` tokens into year-month hyphen slots
@@ -454,44 +406,11 @@ class ApStyleDate extends Modifier
             // Slice fixed-width year and month segments
             return substr($trimmed, 0, 4)
                 .'-'
-                .substr($trimmed, 4, 2);
+                .substr($trimmed, 4);
         }
 
         // Indicate the caller should keep the original hyphen token
         return null;
-    }
-
-    /**
-     * Detect consecutive hyphen separators after the year segment (invalid gap).
-     *
-     * @param  string  $trimmed  Original hyphenated token
-     * @param  mixed  $yearPart  First explode segment when present
-     * @param  mixed  $monthPart  Second explode segment when present
-     * @return bool True when `--` follows the year prefix with an empty month slot
-     */
-    private function hasDoubleHyphenMonthGap(
-        string $trimmed,
-        mixed $yearPart,
-        mixed $monthPart
-    ): bool {
-        // Skip detection unless both segments are strings with a nonempty year
-        if (
-            ! \is_string($yearPart)
-            || $yearPart === ''
-            || ! \is_string($monthPart)
-        ) {
-            return false;
-        }
-
-        // Require an empty month slot adjacent to a doubled hyphen delimiter
-        if ($monthPart !== '') {
-            return false;
-        }
-
-        // Require the literal `--` delimiter immediately after the stored year slot
-        $prefix = $yearPart.'--';
-
-        return str_starts_with($trimmed, $prefix);
     }
 
     /**
@@ -514,7 +433,7 @@ class ApStyleDate extends Modifier
      *
      * @param  bool  $yearValid  Whether year digits fully known
      * @param  mixed  $yearPart  Raw year segment text when valid four-digit numeric
-     * @param  mixed  $monthPart  Raw month segment text when two-digit numeric
+     * @param  string  $monthPart  Two-digit month segment text
      * @param  bool  $dayValid  Whether day digits fully known
      * @param  mixed  $dayPart  Raw day segment text when two-digit numeric
      * @param  bool  $isTabular  Tabular month abbreviation toggle
@@ -523,25 +442,21 @@ class ApStyleDate extends Modifier
     private function composeApFromSlotValidity(
         bool $yearValid,
         mixed $yearPart,
-        mixed $monthPart,
+        string $monthPart,
         bool $dayValid,
         mixed $dayPart,
         bool $isTabular
     ): ?string {
-        // Month validity already asserted before calling this composer
-        if (
-            ! \is_string($monthPart)
-            || ! $this->isCalendarMonthAndDayPlausible(
-                (int) $monthPart,
-                1
-            )
-        ) {
-            // Guard impossible months while satisfying static typing contracts
+        // Resolve numeric month for calendar checks
+        $monthNum = (int) $monthPart;
+
+        // Resolve AP month case from the numeric month slot
+        $apMonth = ApStyleGregorianMonth::fromMonthNumber($monthNum);
+
+        // Two digits alone do not make a month (`00`, `13`)
+        if (! $apMonth instanceof ApStyleGregorianMonth) {
             return null;
         }
-
-        // Resolve numeric month for abbreviation helpers
-        $monthNum = (int) $monthPart;
 
         // Known year + month + day yields comma-separated AP calendar dates
         if (
@@ -556,8 +471,8 @@ class ApStyleDate extends Modifier
             )
         ) {
             // Resolve month label when a specific day appears in the phrase
-            $monthAbbr = $this->abbreviateMonthNumber(
-                $monthNum,
+            $monthAbbr = $this->monthLabel(
+                $apMonth,
                 $isTabular,
                 true
             );
@@ -576,8 +491,8 @@ class ApStyleDate extends Modifier
             && \is_string($yearPart)
         ) {
             // Resolve month label for month-year precision without a day
-            $monthAbbr = $this->abbreviateMonthNumber(
-                $monthNum,
+            $monthAbbr = $this->monthLabel(
+                $apMonth,
                 $isTabular,
                 false
             );
@@ -596,8 +511,8 @@ class ApStyleDate extends Modifier
             )
         ) {
             // Resolve month label when pairing month with a specific day
-            $monthAbbr = $this->abbreviateMonthNumber(
-                $monthNum,
+            $monthAbbr = $this->monthLabel(
+                $apMonth,
                 $isTabular,
                 true
             );
@@ -607,8 +522,8 @@ class ApStyleDate extends Modifier
         }
 
         // Unknown year with month-only precision yields bare month label
-        return $this->abbreviateMonthNumber(
-            $monthNum,
+        return $this->monthLabel(
+            $apMonth,
             $isTabular,
             false
         );
@@ -618,7 +533,8 @@ class ApStyleDate extends Modifier
      * Compose AP month/day strings when no calendar year is known.
      *
      * @param  int  $monthNum  Gregorian month number (1-12)
-     * @param  int|null  $dayNum  Optional day-of-month when known
+     * @param  int|null  $dayNum  Day-of-month already checked against the month,
+     *                            or null when unknown
      * @param  bool  $isTabular  Tabular month abbreviation toggle
      * @return string|null Rendered AP fragment or null when validation fails
      */
@@ -627,66 +543,46 @@ class ApStyleDate extends Modifier
         ?int $dayNum,
         bool $isTabular
     ): ?string {
-        // Validate month range independent of day precision
-        if (
-            ! $this->isCalendarMonthAndDayPlausible(
-                $monthNum,
-                1
-            )
-        ) {
+        // Resolve AP month case from the month number
+        $apMonth = ApStyleGregorianMonth::fromMonthNumber($monthNum);
+
+        // Reject a month number outside the calendar, independent of day precision
+        if (! $apMonth instanceof ApStyleGregorianMonth) {
             return null;
         }
 
         // Emit month-only AP fragment when day stays unspecified
         if ($dayNum === null) {
-            return $this->abbreviateMonthNumber(
-                $monthNum,
+            return $this->monthLabel(
+                $apMonth,
                 $isTabular,
                 false
             );
         }
 
-        // Guard absurd day numbers before composing paired output
-        if (
-            ! $this->isCalendarMonthAndDayPlausible(
-                $monthNum,
-                $dayNum
-            )
-        ) {
-            return null;
-        }
-
-        // Emit month-day pair with abbreviated month once a day is present
-        return $this->abbreviateMonthNumber(
-            $monthNum,
+        // Emit month-day pair with abbreviated month once a day is present; callers
+        // have already checked the day against the month
+        return $this->monthLabel(
+            $apMonth,
             $isTabular,
             true
         ).' '.$dayNum;
     }
 
     /**
-     * Translate `01`-`12` month indices into AP Style month strings.
+     * Pick the AP Style label for a month.
      *
-     * @param  int  $monthNum  Gregorian month number (1-12)
+     * @param  ApStyleGregorianMonth  $apMonth  Month to label
      * @param  bool  $isTabular  Tabular month abbreviation toggle
      * @param  bool  $includesSpecificDayInOutput  True when the formatted phrase
      *                                             includes a calendar day number
      * @return string Month label for AP copy or tables
      */
-    private function abbreviateMonthNumber(
-        int $monthNum,
+    private function monthLabel(
+        ApStyleGregorianMonth $apMonth,
         bool $isTabular,
         bool $includesSpecificDayInOutput
     ): string {
-        // Resolve AP month case from the numeric month slot
-        $apMonth = ApStyleGregorianMonth::fromMonthNumber($monthNum);
-
-        // Check if the slot month fell outside the supported Gregorian range
-        if (! $apMonth instanceof ApStyleGregorianMonth) {
-            // Return empty fragment when callers pass an unusable month index
-            return '';
-        }
-
         // Prefer tabular labels whenever tabular material is requested
         if ($isTabular) {
             return $apMonth->tabularLabel();
