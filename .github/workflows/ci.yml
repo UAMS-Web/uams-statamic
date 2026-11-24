@@ -2018,17 +2018,15 @@ jobs:
   # The shared job chain (#580), called from UAMS-Web/uams-ci-workflows at a release
   # tag, so this file takes a change to it only when the tag below moves. For this
   # caller it runs composer-validate, synced-files, no-emoji, aggregate-needs, pint,
-  # rector and phpstan, and reports each check as `checks / <job> (<os>)`, ending in
+  # rector, phpstan, mutate-ignore, mutate-plan and mutate, and reports each check as `checks / <job> (<os>)`, ending in
   # `checks / Chain result`. Each job checks out THIS repository; pint, rector and
   # phpstan install through `.github/actions/setup`, which this repository carries,
   # and the others set up PHP or Node themselves.
   #
-  # The chain's mutate-ignore job runs only when `mutate` or `mutate-ignore` is true
-  # (#749). This caller passes `mutate: false` and leaves `mutate-ignore` at its
-  # default, false, so `checks / Mutation annotations (none inert)` reports skipped.
-  # The annotation audit is not missing: the `encoding-guard` job above runs
-  # `scripts/check-mutate-ignore.php` and the breadth check on Linux and
-  # Windows (#1171), so setting `mutate-ignore: true` would only run it twice.
+  # The chain's mutate-ignore job runs whenever `mutate` is on (#749), and no input
+  # turns it off alone, so `checks / Mutation annotations (none inert)` repeats an
+  # audit this file already runs: the `encoding-guard` job above runs `scripts/check-mutate-ignore.php`
+  # and the breadth check on Linux and Windows (#1171).
   #
   # The chain's own classification decides the legs: pint, rector, phpstan,
   # composer-validate, synced-files, no-emoji and aggregate-needs run on Linux only
@@ -2036,14 +2034,25 @@ jobs:
   # overrides it, so `linux-only`, `all-platform-jobs` and `windows-jobs` are left
   # at their defaults.
   #
-  # Switched off, each for a reason the chain cannot meet here:
-  # - `pest: false`. The suite needs the private content, users and forms
-  #   submodules, which only `secrets.COMPOSER_AUTH_TOKEN` can check out, and it
-  #   runs sharded with its own reports; the `pest`, `pest-serial` and `pest-report`
-  #   jobs above stay (UAMS-Web/uams-ci-workflows#5).
-  # - `mutate: false`. A mutation run executes the suite to find the covering
-  #   tests, so it needs those submodules too. The `mutate` job above keeps the
-  #   tooling smoke, which runs one Unit test and needs none of them.
+  # Mutation (#639). A mutation run executes the suite to find the covering tests, so
+  # it needs the private content, users and forms submodules: `mutate-submodules`
+  # names them and `mutate-submodules-token` passes `secrets.COMPOSER_AUTH_TOKEN` by
+  # name to fetch them (UAMS-Web/uams-ci-workflows#68, proven by a caller run from
+  # `proof/ci-workflows-69-mutate-submodules`). The chain runs the mutate job on
+  # ubuntu-latest only.
+  # - A pull request or a push mutates only the PHP files under `app` it changes; a
+  #   `workflow_dispatch` mutates all of `app`, split across `mutate-shards` jobs.
+  # - `mutate-advisory: true` keeps the result out of `checks / Chain result` while
+  #   the coverage work is unfinished (#255): a red score on a coverage slice is
+  #   expected and does not block a merge. The job reports its own status, and it is
+  #   not a required check.
+  # - The `mutate` job above keeps the tooling smoke until the chain's job has
+  #   passed on a pull request.
+  #
+  # Switched off, for a reason the chain cannot meet here:
+  # - `pest: false`. The suite needs those submodules too, and it runs sharded with
+  #   its own reports; the `pest`, `pest-serial` and `pest-report` jobs above stay
+  #   (UAMS-Web/uams-ci-workflows#5).
   # The optional jobs (encoding-guard, vitest, vite-build, mutation-smoke) stay
   # off: the `encoding-guard`, `js`, `build` and `mutate` jobs above run this
   # repository's own commands for them.
@@ -2057,7 +2066,13 @@ jobs:
     uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.15.0
     with:
       pest: false
-      mutate: false
+      mutate: true
+      mutate-paths: app
+      mutate-advisory: true
+      mutate-shards: 20
+      mutate-submodules: 'content users resources/forms'
+    secrets:
+      mutate-submodules-token: ${{ secrets.COMPOSER_AUTH_TOKEN }}
 
   # The merge gate (#337). The ruleset on `main` requires this job's name and none of
   # the names above, so renaming a job never touches the ruleset, and the job set
