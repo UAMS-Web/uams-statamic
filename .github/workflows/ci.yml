@@ -509,6 +509,11 @@ jobs:
       # a committed copy is used instead: .github/pest-shards.<os>.json where one
       # exists, and .github/pest-shards.json otherwise.
       #
+      # Both `gh api` calls go through scripts/gh-api-retry.php (#1510): an empty
+      # or truncated response once failed a Windows shard here before Pest started
+      # (run 45466456000), so a call is retried up to four times, and the step
+      # fails naming the call and its last output only when every try fails.
+      #
       # REMOTE-ONLY: the local runner runs the parallel band whole, so it reads
       # no timings.
       - name: Choose shard timings
@@ -519,8 +524,8 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           PREFIX: pest-shard-timings-${{ matrix.os }}-
         run: |
-          started=$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/1" --jq .run_started_at)
-          gh api "repos/$REPO/actions/caches?key=$PREFIX&ref=refs/heads/main&sort=created_at&direction=desc&per_page=100" > shard-timings-caches.json
+          started=$(php scripts/gh-api-retry.php -- "repos/$REPO/actions/runs/$RUN_ID/attempts/1" --jq .run_started_at)
+          php scripts/gh-api-retry.php --json -- "repos/$REPO/actions/caches?key=$PREFIX&ref=refs/heads/main&sort=created_at&direction=desc&per_page=100" > shard-timings-caches.json
           key=$(php scripts/select-shard-timings.php --caches=shard-timings-caches.json --started="$started" --prefix="$PREFIX")
           echo "Run's first attempt started $started; timings entry: ${key:-none from before the start}"
           echo "key=$key" >> "$GITHUB_OUTPUT"
