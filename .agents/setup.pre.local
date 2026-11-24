@@ -19,7 +19,8 @@ step() {
 }
 
 # The shared script installs PHP 8.4 with curl, gd, intl, mbstring, sqlite3, xml, zip and pcov.
-# composer.json also requires bcmath and imagick, so they must be present before `composer install`.
+# composer.json requires imagick, so it must be present before `composer install`; bcmath is
+# installed with it because several dependencies suggest it.
 install_php_extras() {
     local packages=(xz-utils php8.4-bcmath php8.4-imagick)
     local missing=() package
