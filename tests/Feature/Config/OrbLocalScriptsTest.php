@@ -6,11 +6,12 @@ declare(strict_types=1);
  * Placement guard for the orb setup split (#1258).
  *
  * The shared `.agents/setup` and `.agents/resume` that the `orb` sync profile delivers from
- * UAMS-Web/uams-claude-skills (`shared/.claude/skills/orb-setup/templates/`, read at `948ee12`)
- * run `.agents/setup.local` and `.agents/resume.local` last. When the sync replaces this
- * repository's own two scripts, any step that is in neither the shared script nor a `.local`
- * file is lost. The table below places every step of the current scripts; the tests fail when a
- * current step is placed nowhere, or is placed in a `.local` file that does not carry it.
+ * UAMS-Web/uams-claude-skills (`shared/.claude/skills/orb-setup/templates/`, read at `6aeb381`)
+ * run `.agents/setup.pre.local` before the dependency installs, and `.agents/setup.local` and
+ * `.agents/resume.local` last. When the sync replaces this repository's own two scripts, any step
+ * that is in neither the shared script nor a `.local` file is lost. The tables below place every
+ * step of the current scripts; the tests fail when a current step is placed nowhere, or is placed
+ * in a `.local` file that does not carry it.
  *
  * Once #641 replaces the current scripts with the shared ones, the step enumeration below finds
  * no `step` calls and the count assertion fails: that is #641's signal to retire this test.
@@ -22,38 +23,38 @@ declare(strict_types=1);
 
 /**
  * Where each `step '<label>'` of the current `.agents/setup` goes. `shared` names the lines of
- * the shared setup template that cover the step (or the shared part of it); `local` is true when
- * `.agents/setup.local` runs a step with the same label.
+ * the shared setup template that cover the step (or the shared part of it); `files` lists the
+ * `.local` files that run a step with the same label.
  *
- * @var array<string, array{shared: ?string, local: bool}>
+ * @var array<string, array{shared: ?string, files: list<string>}>
  */
 const ORB_SETUP_STEP_PLACEMENT = [
-    'PHP 8.4 and extensions' => ['shared' => 'setup:27-55 (PHP 8.4 and every extension but bcmath and imagick)', 'local' => true],
-    'Node 22 and npm' => ['shared' => 'setup:69-83 (Node 22; its npm is below the engines.npm floor)', 'local' => true],
-    'Composer' => ['shared' => 'setup:57-67', 'local' => false],
-    'Test content submodules' => ['shared' => null, 'local' => true],
-    'Locked PHP dependencies' => ['shared' => 'setup:86-88 (composer install, without the patch-input fingerprint)', 'local' => true],
-    'Local application key' => ['shared' => null, 'local' => true],
-    'Publish application assets' => ['shared' => null, 'local' => true],
-    'Install Git hooks' => ['shared' => 'setup:86-88 (composer install runs post-install-cmd)', 'local' => false],
-    'Local SQLite migrations' => ['shared' => null, 'local' => true],
-    'Locked JavaScript dependencies' => ['shared' => 'setup:89-91', 'local' => false],
-    'Browser test runtime' => ['shared' => null, 'local' => true],
-    'News release PDF browser' => ['shared' => null, 'local' => true],
-    'Front-end build' => ['shared' => null, 'local' => true],
-    'Control Panel build' => ['shared' => null, 'local' => true],
-    'Test Stache snapshot' => ['shared' => null, 'local' => true],
+    'PHP 8.4 and extensions' => ['shared' => 'setup:28-56 (PHP 8.4 and every extension but bcmath and imagick)', 'files' => ['setup.pre.local']],
+    'Node 22 and npm' => ['shared' => 'setup:70-84 (Node 22; its npm is below the engines.npm floor)', 'files' => ['setup.pre.local']],
+    'Composer' => ['shared' => 'setup:58-68', 'files' => []],
+    'Test content submodules' => ['shared' => null, 'files' => ['setup.pre.local']],
+    'Locked PHP dependencies' => ['shared' => 'setup:94-96 (composer install, without the patch-input fingerprint)', 'files' => ['setup.pre.local', 'setup.local']],
+    'Local application key' => ['shared' => null, 'files' => ['setup.pre.local']],
+    'Publish application assets' => ['shared' => 'setup:94-96 (composer install runs post-autoload-dump)', 'files' => []],
+    'Install Git hooks' => ['shared' => 'setup:94-96 (composer install runs post-install-cmd)', 'files' => []],
+    'Local SQLite migrations' => ['shared' => null, 'files' => ['setup.local']],
+    'Locked JavaScript dependencies' => ['shared' => 'setup:97-99', 'files' => []],
+    'Browser test runtime' => ['shared' => null, 'files' => ['setup.local']],
+    'News release PDF browser' => ['shared' => null, 'files' => ['setup.local']],
+    'Front-end build' => ['shared' => null, 'files' => ['setup.local']],
+    'Control Panel build' => ['shared' => null, 'files' => ['setup.local']],
+    'Test Stache snapshot' => ['shared' => null, 'files' => ['setup.local']],
 ];
 
 /**
- * Commands the current `.agents/setup` runs outside a `step` call, and the label of the
- * `.agents/setup.local` step that carries each.
+ * Commands the current `.agents/setup` runs outside a `step` call, and the `.local` file and step
+ * label that carry each.
  *
- * @var array<string, string>
+ * @var array<string, array{file: string, label: string}>
  */
 const ORB_SETUP_BARE_COMMAND_PLACEMENT = [
-    'cp .env.example .env' => 'Environment file',
-    'touch database/database.sqlite' => 'SQLite database file',
+    'cp .env.example .env' => ['file' => 'setup.pre.local', 'label' => 'Environment file'],
+    'touch database/database.sqlite' => ['file' => 'setup.local', 'label' => 'SQLite database file'],
 ];
 
 /**
@@ -67,6 +68,13 @@ const ORB_RESUME_CHECK_PLACEMENT = [
     'test -f vendor/autoload.php' => 'resume:12-15',
     'test -d node_modules' => 'resume:16-19',
 ];
+
+/**
+ * The `.local` setup files, in the order the shared setup runs them.
+ *
+ * @var list<string>
+ */
+const ORB_LOCAL_SETUP_FILES = ['setup.pre.local', 'setup.local'];
 
 /**
  * Read a file under `.agents/`.
@@ -115,13 +123,13 @@ it('places every step of the current setup script', function (): void {
     }
 });
 
-it('runs every step placed in setup.local under the same label there', function (): void {
-    $localLabels = orbStepLabels(orbAgentsFile('setup.local'));
-
+it('runs every step placed in a local file under the same label there', function (): void {
     foreach (ORB_SETUP_STEP_PLACEMENT as $label => $placement) {
-        if ($placement['local']) {
-            expect($localLabels)->toContain($label);
-        } else {
+        foreach ($placement['files'] as $file) {
+            expect(orbStepLabels(orbAgentsFile($file)))->toContain($label);
+        }
+
+        if ($placement['files'] === []) {
             expect($placement['shared'])->not->toBeEmpty();
         }
     }
@@ -129,24 +137,35 @@ it('runs every step placed in setup.local under the same label there', function 
 
 it('places the commands the current setup script runs outside a step', function (): void {
     $setup = orbAgentsFile('setup');
-    $local = orbAgentsFile('setup.local');
-    $localLabels = orbStepLabels($local);
 
-    foreach (ORB_SETUP_BARE_COMMAND_PLACEMENT as $command => $label) {
+    foreach (ORB_SETUP_BARE_COMMAND_PLACEMENT as $command => $placement) {
+        $local = orbAgentsFile($placement['file']);
+
         expect($setup)->toContain($command)
             ->and($local)->toContain($command)
-            ->and($localLabels)->toContain($label);
+            ->and(orbStepLabels($local))->toContain($placement['label']);
     }
 });
 
-it('runs no step in setup.local that the table does not place', function (): void {
-    $placed = [
-        ...array_keys(array_filter(ORB_SETUP_STEP_PLACEMENT, static fn (array $placement): bool => $placement['local'])),
-        ...array_values(ORB_SETUP_BARE_COMMAND_PLACEMENT),
-    ];
+it('runs no step in a local file that the tables do not place there', function (): void {
+    foreach (ORB_LOCAL_SETUP_FILES as $file) {
+        $placed = [];
 
-    foreach (orbStepLabels(orbAgentsFile('setup.local')) as $label) {
-        expect($placed)->toContain($label);
+        foreach (ORB_SETUP_STEP_PLACEMENT as $label => $placement) {
+            if (in_array($file, $placement['files'], true)) {
+                $placed[] = $label;
+            }
+        }
+
+        foreach (ORB_SETUP_BARE_COMMAND_PLACEMENT as $placement) {
+            if ($placement['file'] === $file) {
+                $placed[] = $placement['label'];
+            }
+        }
+
+        foreach (orbStepLabels(orbAgentsFile($file)) as $label) {
+            expect($placed)->toContain($label);
+        }
     }
 });
 
