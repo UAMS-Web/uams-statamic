@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Week;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Week;
 
 /**
- * Tests for App\Fieldtypes\Week: its Control Panel identity, the config lists it hands the Input
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Week: its Control Panel identity, the config lists it hands the Input
  * trait, and its validation rules.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/WeekFieldtypeTest.php

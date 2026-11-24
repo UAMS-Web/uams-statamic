@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Identifier;
-use App\Rules\IdentifierRegex;
 use App\Rules\Npi;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Identifier;
+use UAMSWeb\Aether\Fieldtypes\Rules\IdentifierRegex;
 
 /**
  * Behavior of the Identifier fieldtype's validation-rule resolution

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modifiers;
 
-use App\Services\PhoneUtil;
 use Statamic\Modifiers\Modifier;
+use UAMSWeb\Aether\Fieldtypes\Services\PhoneUtil;
 
 /**
  * Formats E.164 phone strings for display using PhoneUtil::formatForDisplay().

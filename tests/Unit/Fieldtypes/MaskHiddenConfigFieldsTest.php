@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\CssSelector;
-use App\Fieldtypes\Currency;
-use App\Fieldtypes\Floatval;
-use App\Fieldtypes\Hidden;
-use App\Fieldtypes\Integer;
-use App\Fieldtypes\Phone;
-use App\Fieldtypes\Time;
-use App\Fieldtypes\Xpath;
-use App\Fieldtypes\ZipCode;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\CssSelector;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Currency;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Floatval;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Hidden;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Integer;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Phone;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Time;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Xpath;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\ZipCode;
 
 /**
  * Mask-suppressing fieldtypes hide every `input_mask_*` config field so the

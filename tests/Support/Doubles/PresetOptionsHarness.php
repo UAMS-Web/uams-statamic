@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support\Doubles;
 
-use App\Fieldtypes\Traits\PresetOptions;
+use UAMSWeb\Aether\Fieldtypes\Traits\PresetOptions;
 
 /**
  * A Select fieldtype using the PresetOptions trait. Its preset definitions are

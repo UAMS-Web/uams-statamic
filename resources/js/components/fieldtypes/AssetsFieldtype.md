@@ -5,7 +5,7 @@ The app uses Statamic’s **core** Assets fieldtype in the CP. No custom Vue com
 ## Behavior
 
 - **CP UI**: Statamic’s default Assets fieldtype component (no fork).
-- **File type restrictions**: Configured in the blueprint (File Type Restrictions section). Enforced **on save** via server-side validation in `App\Fieldtypes\Assets`.
+- **File type restrictions**: Configured in the blueprint (File Type Restrictions section). Enforced **on save** via server-side validation in `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets`.
 - **Asset browser**: When file type restrictions are set, the field’s preload adds the `assets_by_file_type` query scope and params. The browser only filters by type when those scope params are passed with the request (e.g. by a future Statamic mechanism). Until then, the browser shows all assets; validation still applies on save.
 - **Upload file picker / drag-drop**: No `accept` attribute or client-side file-type validation. Users can select or drop any file; invalid types are rejected on save.
 

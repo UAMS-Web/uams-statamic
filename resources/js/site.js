@@ -83,20 +83,20 @@
 import Alpine from '@alpinejs/csp';
 
 // Import the custom Alpine component for checkbox groups with a "required" validation rule.
-import { registerCheckboxRequiredGroup } from './checkbox-required-group.js';
+import { registerCheckboxRequiredGroup } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Public-form Signature fieldtype engine. Captures a drawn signature on a
 // <canvas> via signature_pad (dynamically imported only when a signature field
 // is present) and writes the data URL to the field's hidden input, with an
 // accessible typed-name + attestation fallback. Mirrors the CP
 // SignatureFieldtype.vue value shape.
-import { registerSignatureField } from './signature-field.js';
+import { registerSignatureField } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Public-form Replicator engine. Clones a blank set template on "Add Set", clamps removal at
 // `min_sets`, and reindexes each set's field names to their DOM position on submit so the nested
 // payload matches Statamic\Fieldtypes\Replicator::process().
-import { registerListField } from './list-field.js';
-import { registerReplicatorField, registerReplicatorSet } from './replicator-field.js';
+import { registerListField } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
+import { registerReplicatorField, registerReplicatorSet } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Accessible lightbox for the Image Gallery Bard set (UAMS-Web/uams-statamic-archive#188): prev/next, keyboard,
 // swipe, and focus management over the server-rendered gallery grid.
@@ -109,7 +109,7 @@ import { registerLiteVideo } from './lite-video.js';
 // Public-form calculation engine. Mirrors the CP's `calculation_*` Vue
 // reactivity for public forms, importing the same pure math/text/format
 // helpers as `CustomInput.vue` via `resources/js/lib/calculation.js`.
-import { registerCalculationEngine } from './calculation-engine.js';
+import { registerCalculationEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Public-form PersonName engine. Registers `uams-web/aether-people`'s
 // display_format recomputation, which uses the same `buildDisplayFormatOptions`
@@ -136,18 +136,18 @@ import { registerCalculatorSyncEngine } from './calculator-sync-engine.js';
 // price(s), writes the result to the hidden `[line_total]` input, and
 // dispatches `product:price-changed` so a Total field (UAMS-Web/uams-statamic-archive#488) sums it alongside
 // products. Mirrors the CP-side feedback in `OptionFieldtype.vue`.
-import { registerOptionPricingEngine } from './option-pricing-engine.js';
+import { registerOptionPricingEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Public-form product pricing engine. Computes each product field's line
 // subtotal (quantity × unit price), writes it to the hidden `[line_total]`
 // input, and dispatches `product:price-changed` so a Total field (UAMS-Web/uams-statamic-archive#488) can
 // sum the order. Mirrors the CP-side feedback in `ProductFieldtype.vue`.
-import { registerProductPricingEngine } from './product-pricing-engine.js';
+import { registerProductPricingEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Public-form total pricing engine. Sums every product/option line subtotal in
 // the form on `product:price-changed` and writes the running order total to the
 // Total field's display + hidden input (UAMS-Web/uams-statamic-archive#488).
-import { registerTotalPricingEngine } from './total-pricing-engine.js';
+import { registerTotalPricingEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/alpine.js';
 
 // Front-end Table set features (UAMS-Web/uams-statamic-archive#231). Progressive enhancement for tables the
 // render partial flags with `data-table-features`: sort, search, pagination,

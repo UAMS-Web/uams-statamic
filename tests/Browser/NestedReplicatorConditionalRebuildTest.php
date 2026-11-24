@@ -150,7 +150,7 @@ function useNestedReplicatorRebuildBlueprint(array $groupsOverrides = [], array 
 
 /**
  * Flash old input for the fixture form, so its replicator rows are server-rendered the way a
- * re-render after a validation error renders them. `App\Fieldtypes\Replicator` renders existing
+ * re-render after a validation error renders them. `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator` renders existing
  * rows from old input or a bound value only; a blueprint `default` renders none.
  *
  * @param  array<string, mixed>  $input  The posted form input.

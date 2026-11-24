@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dateFieldOptions, findSetSiblingFields } from './date-field-options.js';
+import { dateFieldOptions, findSetSiblingFields } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/date-field-options.js';
 
 /**
  * A blueprint-builder field in the REAL shape Statamic emits (per

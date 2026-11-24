@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Name;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Name;
 
 uses(TestCase::class);
 

@@ -27,7 +27,7 @@ uses(TestCase::class);
 function renderSignatureField(array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/signature.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/signature.antlers.html')),
         [
             'handle' => 'signature',
             'id' => 'form-signature',

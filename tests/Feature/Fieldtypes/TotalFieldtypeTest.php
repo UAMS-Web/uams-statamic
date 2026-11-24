@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Total;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Total;
 
 uses(TestCase::class);
 

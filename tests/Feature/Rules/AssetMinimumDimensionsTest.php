@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Rules\AssetMinimumDimensions;
 use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use Statamic\Assets\Asset as AssetItem;
 use Statamic\Facades\Asset;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\AssetMinimumDimensions;
 
 uses(TestCase::class);
 

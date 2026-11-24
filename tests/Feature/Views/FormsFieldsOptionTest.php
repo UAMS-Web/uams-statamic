@@ -30,7 +30,7 @@ uses(TestCase::class);
 function renderOptionField(array $context): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/option.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/option.antlers.html')),
         $context,
         true,
     );

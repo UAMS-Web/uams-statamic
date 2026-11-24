@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\MaskField;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\MaskField;
 
 /**
  * @covers \App\Fieldtypes\MaskField

@@ -49,11 +49,13 @@ function aetherPeopleResourcePath(string $siteRelative): string
 }
 
 /**
- * Resolve a resource the site serves, whether it lives in the site or in `uams-web/aether-people`.
+ * Resolve a resource the site serves, whether it lives in the site or in an add-on.
  *
  * A host copy shadows the add-on's, as Statamic resolves views and blueprints, so the
- * site's file wins when it exists and the add-on's is read otherwise. Used by tests whose
- * datasets mix files that stayed in the site with files that moved (#696).
+ * site's file wins when it exists and the add-on's is read otherwise: a form-field partial
+ * from `uams-web/aether-fieldtypes` (#996 to #999), anything else from
+ * `uams-web/aether-people`. Used by tests whose datasets mix files that stayed in the site
+ * with files that moved (#696).
  *
  * @param  string  $siteRelative  The path relative to `resources/` (with or without that
  *                                prefix), as it was in the site.
@@ -71,7 +73,18 @@ function servedResourcePath(string $siteRelative): string
         return $sitePath;
     }
 
-    // Fall back to the add-on, which throws when it has no such file either
+    // A form-field partial that moved into the fieldtype add-on
+    $fieldsPrefix = 'views/vendor/statamic/forms/fields/';
+
+    if (str_starts_with($relative, $fieldsPrefix)) {
+        $fieldtypesPath = base_path('vendor/uams-web/aether-fieldtypes/resources/views/forms/fields/'.substr($relative, strlen($fieldsPrefix)));
+
+        if (is_file($fieldtypesPath)) {
+            return $fieldtypesPath;
+        }
+    }
+
+    // Fall back to aether-people, which throws when it has no such file either
     return aetherPeopleResourcePath($relative);
 }
 

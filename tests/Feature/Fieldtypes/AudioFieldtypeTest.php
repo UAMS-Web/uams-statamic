@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Audio;
-use App\Fieldtypes\Video;
 use Statamic\Fieldtypes\Video as BaseVideo;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Audio;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Video;
 
 uses(TestCase::class);
 

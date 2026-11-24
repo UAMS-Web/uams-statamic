@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Replicator;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use Statamic\Facades\Blueprint;
 use Statamic\Fields\BlueprintRepository;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator;
 
 /**
  * Render-level coverage for field conditions on a subfield inside a NESTED replicator (UAMS-Web/uams-statamic-archive#2133).

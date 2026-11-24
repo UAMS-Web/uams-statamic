@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Support\DateBoundaryEngine;
 use Carbon\CarbonImmutable;
+use UAMSWeb\Aether\Fieldtypes\Support\DateBoundaryEngine;
 
 /**
  * Unit tests for the server-side date-boundary engine — the PHP mirror of
- * `resources/js/date-boundary-engine.test.js`. Every case here has a counterpart
+ * `vendor/uams-web/aether-fieldtypes/resources/js/lib/date-boundary-engine.test.js`. Every case here has a counterpart
  * there so the two engines stay in lockstep (UAMS-Web/uams-statamic-archive#1394).
  *
  * @covers \App\Support\DateBoundaryEngine
  *
- * Mutation: no survivors on App\Support\DateBoundaryEngine, measured on macOS without
+ * Mutation: no survivors on UAMSWeb\Aether\Fieldtypes\Support\DateBoundaryEngine, measured on macOS without
  * --covered-only, against this file and DateBoundaryValidationTest (#1076).
  *
  * @command  php artisan test --compact tests/Unit/Support/DateBoundaryEngineTest.php

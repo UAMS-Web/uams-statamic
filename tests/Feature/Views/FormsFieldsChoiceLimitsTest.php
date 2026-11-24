@@ -11,7 +11,7 @@ uses(TestCase::class);
 /**
  * Tests that the choice templates disable + flag a full option when the fieldtype
  * exposes it in `full_choices` (UAMS-Web/uams-statamic-archive#292). The list is computed at render by
- * App\Support\Forms\ChoiceSubmissionLimits and merged into the field's
+ * UAMSWeb\Aether\Fieldtypes\Support\Forms\ChoiceSubmissionLimits and merged into the field's
  * renderable data; server-side enforcement of the same set is covered by
  * ChoiceSubmissionLimitsEnforcementTest. When `full_choices` is absent (a field
  * without limits, or the quiz field delegating to these partials) the markup is
@@ -28,7 +28,7 @@ uses(TestCase::class);
 function renderChoiceField(string $fieldtype, array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
         [
             'handle' => 'slot',
             'id' => 'form-slot',

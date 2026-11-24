@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Assets;
-use App\Rules\AssetMinimumDimensions;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets;
+use UAMSWeb\Aether\Fieldtypes\Rules\AssetMinimumDimensions;
 
 uses(TestCase::class);
 

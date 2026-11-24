@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Date;
-use App\Rules\DateBoundary;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\MessageBag;
@@ -12,10 +10,12 @@ use Statamic\Fields\Field;
 use Statamic\Fields\Fields;
 use Statamic\Fields\Validator;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date;
+use UAMSWeb\Aether\Fieldtypes\Rules\DateBoundary;
 
 /**
  * UAMS-Web/uams-statamic-archive#1394 — the custom Date fieldtype's Boundaries & Limits config is enforced
- * SERVER-SIDE (App\Rules\DateBoundary, wired via App\Fieldtypes\Date::rules()),
+ * SERVER-SIDE (UAMSWeb\Aether\Fieldtypes\Rules\DateBoundary, wired via UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date::rules()),
  * backstopping the client-side picker so a bypassing POST cannot persist an
  * out-of-range value.
  *
@@ -36,7 +36,7 @@ afterEach(function (): void {
 });
 
 /**
- * Run App\Rules\DateBoundary directly and return the failure message, or null when
+ * Run UAMSWeb\Aether\Fieldtypes\Rules\DateBoundary directly and return the failure message, or null when
  * the value passes.
  *
  * @param  array<string, mixed>  $config

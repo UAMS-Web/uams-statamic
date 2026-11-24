@@ -94,7 +94,7 @@ import CpInputClassesMixin from '../mixins/CpInputClassesMixin.js';
 import InputAttributes from '../mixins/InputAttributes.js';
 import IMaskMixin from '../mixins/IMaskMixin.js';
 // `calculation_*` evaluation: pure helpers shared with the public-form Alpine
-// engine at `resources/js/calculation-engine.js`. Anything that's not Vue
+// engine at `vendor/uams-web/aether-fieldtypes/resources/js/lib/calculation-engine.js`. Anything that's not Vue
 // reactivity glue should live in this lib, not inlined here.
 import * as Calc from '../../../lib/calculation.js';
 

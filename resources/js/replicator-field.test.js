@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { registerReplicatorField } from './replicator-field.js';
+import { registerReplicatorField } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/replicator-field.js';
 
 /**
  * Instantiate the `replicatorField` Alpine component object (without a real Alpine runtime) by

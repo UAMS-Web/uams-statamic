@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Rules\ReplicatorMinSets;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorMinSets;
 
 uses(TestCase::class);
 
 /**
- * Behavior of the App\Rules\ReplicatorMinSets validation rule: enforce min_sets
+ * Behavior of the UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorMinSets validation rule: enforce min_sets
  * only when the field is required for the request (via FieldRequiredHelper), the
  * value is an array, and min_sets is a positive integer. Below the threshold it
  * fails with the singular or plural message depending on min_sets.

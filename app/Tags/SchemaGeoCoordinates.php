@@ -13,7 +13,7 @@ use Statamic\Tags\Tags;
  * Antlers tag: emit a JSON-LD `GeoCoordinates` fragment from a coordinate pair.
  *
  * Parameters (all optional; an empty or unresolved coordinate emits nothing):
- *   - coordinate: bound value from the `Gps` fieldtype (`App\Fieldtypes\Gps`);
+ *   - coordinate: bound value from the `Gps` fieldtype (`UAMSWeb\Aether\Fieldtypes\Fieldtypes\Gps`);
  *     an associative array of `lat` / `lng` (and an ignored `zoom`), or the
  *     schema.org `latitude` / `longitude` keys. Supplies defaults for the
  *     scalar parameters below when those parameters are not passed on the tag.

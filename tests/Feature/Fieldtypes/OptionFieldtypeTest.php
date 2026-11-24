@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Option;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Option;
 
 uses(TestCase::class);
 
 /**
- * Tests for App\Fieldtypes\Option — the Gravity Forms option-field analog.
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Option — the Gravity Forms option-field analog.
  *
  * Covers the server-side `process()` normalization (authoritative line-total
  * recomputation for single drop-down / radio and multiple checkbox modes), the
@@ -17,7 +17,7 @@ uses(TestCase::class);
  * `option.antlers.html`, and the enable flags that make the fieldtype
  * selectable in form blueprints.
  *
- * Mutation: 100% on App\Fieldtypes\Option (178 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Option (178 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/OptionFieldtypeTest.php
  */

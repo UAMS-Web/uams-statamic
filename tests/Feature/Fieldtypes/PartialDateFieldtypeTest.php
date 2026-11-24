@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\PartialDate;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Assert;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\PartialDate;
 
 uses(TestCase::class);
 
 /**
  * @command  php artisan test --compact tests/Feature/Fieldtypes/PartialDateFieldtypeTest.php
  *
- * Brings App\Fieldtypes\PartialDate to full line coverage and mutation-clean, without
+ * Brings UAMSWeb\Aether\Fieldtypes\Fieldtypes\PartialDate to full line coverage and mutation-clean, without
  * --covered-only (UAMS-Web/uams-statamic#312). PCOV gives the $categories, $keywords and
  * $selectableInForms defaults no coverage, so their mutants are applied by hand: the
  * fieldtype listing test kills each.

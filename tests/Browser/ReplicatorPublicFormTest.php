@@ -20,7 +20,7 @@ use Statamic\Forms\Form;
  | Scope, honestly: this asserts on the served document (`content()` returns the HTTP response, not the
  | live post-Alpine DOM), so it proves the field *renders* in a real browser context — not that the
  | engine executed. The engine's JS logic (add / remove / min_sets clamp / reindex-on-submit) is
- | covered directly by the jsdom unit spec `resources/js/replicator-field.test.js`, and its server
+ | covered directly by the jsdom unit spec `vendor/uams-web/aether-fieldtypes/resources/js/lib/replicator-field.test.js`, and its server
  | contract (submit round-trip, enabled coercion, min_sets / at-least-one-enabled) by
  | tests/Feature/Forms/ReplicatorFormRoundTripTest. A click-driven live-DOM browser assertion is
  | blocked by the pest-plugin-browser Webpage API surface here (no locator/evaluate access).

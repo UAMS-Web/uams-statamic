@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Radio;
-use App\Fieldtypes\Select;
 use Statamic\Contracts\Forms\Submission;
 use Statamic\Facades\Form as FormFacade;
 use Statamic\Fields\Field;
 use Statamic\Forms\Form;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Radio;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Select;
 
 uses(TestCase::class);
 
