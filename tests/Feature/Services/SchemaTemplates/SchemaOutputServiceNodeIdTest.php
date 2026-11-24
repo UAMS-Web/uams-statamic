@@ -29,6 +29,7 @@ covers(SchemaOutputService::class);
  *
  * @command  php artisan test --compact tests/Feature/Services/SchemaTemplates/SchemaOutputServiceNodeIdTest.php
  */
+const SOS_NODE_ID_UUID = '0f8fad5b-d9cb-469f-a165-70867728950e';
 
 /**
  * The service as a partial mock, with the given methods stubbed.
@@ -110,6 +111,12 @@ it('loads the entry by id when none is passed', function (): void {
     Entry::shouldReceive('find')->once()->with('e1')->andReturn(sosNodeIdEntry('e1', 'pages', ['properties' => []]));
 
     expect(sosNodeIdCall(sosNodeIdService(), 'entryIdToNodeId', 'e1', null, [], []))->toBe('#e1');
+});
+
+it('bases the node id of a loaded entry on the context URL', function (): void {
+    Entry::shouldReceive('find')->once()->with('e1')->andReturn(sosNodeIdEntry('e1', 'pages', ['properties' => []]));
+
+    expect(sosNodeIdCall(sosNodeIdService(), 'entryIdToNodeId', 'e1', sosNodeIdContext('/ctx'), [], []))->toBe('/ctx#e1');
 });
 
 it('uses the canonical @id of a schema_objects entry, suffixed by a non-negative instance index', function (?int $index, string $expected): void {
@@ -339,3 +346,35 @@ it('previews a schema entry @id with its effective instance index, without commi
     expect($service->previewCanonicalAtIdForSchemaObjectTemplate('t1', null, ['g1'], ['k' => 'v']))->toBe('https://example.test/#t1-3')
         ->and($calls)->toBe([['t1', ['g1'], ['k' => 'v'], false]]);
 });
+
+it('re-enters a schema entry with a fragment-only @id when its site root is empty', function (): void {
+    Entry::shouldReceive('find')->andReturn(sosNodeIdEntry('t1', 'schema_objects'));
+    $service = sosNodeIdService(['siteRootForEntry' => fn (): string => '']);
+
+    expect(sosNodeIdCall($service, 'canonicalAtIdForReentrantSchemaTemplateNode', 't1'))->toBe('#t1');
+});
+
+it('parses a schema object entry id and instance index from an @id', function (string $atId, ?array $expected): void {
+    expect(sosNodeIdCall(sosNodeIdService(), 'parseSchemaObjectsEntryIdAndTemplateInstanceIndexFromAtId', $atId))->toBe($expected);
+})->with([
+    'a fragment with an index' => ['https://example.test/#'.SOS_NODE_ID_UUID.'-3', ['entry_id' => SOS_NODE_ID_UUID, 'instance_index' => 3]],
+    'a fragment' => ['https://example.test/#'.SOS_NODE_ID_UUID, ['entry_id' => SOS_NODE_ID_UUID, 'instance_index' => null]],
+    'a bare uuid' => [SOS_NODE_ID_UUID, ['entry_id' => SOS_NODE_ID_UUID, 'instance_index' => null]],
+    'an empty fragment' => ['https://example.test/#', null],
+    'a named fragment' => ['https://example.test/#organization', null],
+]);
+
+it('reads the graph slot entry ids from a resolved cascade, once each and in slot order', function (array $resolved, array $expected): void {
+    expect(sosNodeIdCall(sosNodeIdService(), 'graphSlotEntryIdsFromResolvedCascade', $resolved))->toBe($expected);
+})->with([
+    'every slot' => [['subject_entry' => 's1', 'website_entry' => 'w1', 'webpage_entry' => 'p1', 'main_content_entry' => 'm1'], ['s1', 'w1', 'p1', 'm1']],
+    'a repeated id' => [['subject_entry' => 's1', 'website_entry' => 's1', 'webpage_entry' => 'p1'], ['s1', 'p1']],
+    'a webpage only' => [['webpage_entry' => 'p1'], ['p1']],
+    'an id that reads as empty' => [['subject_entry' => new class implements Stringable
+    {
+        public function __toString(): string
+        {
+            return '';
+        }
+    }, 'webpage_entry' => 'p1'], ['p1']],
+]);

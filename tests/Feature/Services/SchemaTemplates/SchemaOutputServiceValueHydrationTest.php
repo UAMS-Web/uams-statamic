@@ -284,6 +284,7 @@ it('falls back to the link URL, as stored, when the target has no absolute URL',
 })->with([
     'entry, empty absolute URL' => [EntryModel::class, '', '/about', '/about'],
     'entry, null absolute URL, null URL' => [EntryModel::class, null, null, ''],
+    'entry, null absolute URL, numeric URL' => [EntryModel::class, null, 7, '7'],
     'page, empty absolute URL' => [Page::class, '', '/news', '/news'],
     'asset, empty absolute URL' => [StatamicAsset::class, '', '/assets/a.jpg', '/assets/a.jpg'],
     'asset, null absolute URL, numeric URL' => [StatamicAsset::class, null, 7, '7'],
@@ -622,6 +623,15 @@ it('skips the slug "0" without looking it up', function (): void {
 
     expect(sosValueHydrate(['0']))->toBe(['0'])
         ->and($lookups)->toBe([]);
+});
+
+it('looks up the slugs after a "0"', function (): void {
+    $a = sosValueTerm('tags::a');
+    $lookups = [];
+    sosValueTerms(['tags::a' => $a], [], $lookups);
+
+    expect(sosValueHydratedItems(['0', 'tags::a']))->toBe([$a])
+        ->and($lookups)->toBe(['tags::a']);
 });
 
 it('keeps a localized term that a qualified id finds', function (): void {

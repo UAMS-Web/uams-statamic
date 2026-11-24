@@ -13,6 +13,7 @@ use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
 use App\Services\SchemaTemplates\SchemaTemplateNodeBuildStack;
 use App\Services\SchemaTemplates\SchemaTemplatesCascadeService;
 use App\Support\RequestAttributeMemo;
+use Illuminate\Support\Collection;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Contracts\Data\Augmentable;
@@ -141,7 +142,12 @@ it('finds a type override compatible only through a known type\'s ancestors', fu
     'an unknown override' => [['NotARealSchemaOrgType'], ['Thing'], false],
     'a subtype of the entry type' => [['Person'], ['Thing'], true],
     'an unrelated known type' => [['Person'], ['Place'], false],
+    'an unknown override equal to a later entry type' => [['NotARealSchemaOrgType'], ['Thing', 'NotARealSchemaOrgType'], true],
 ]);
+
+it('unwraps a type override given only as a value', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'normalizeTypeOverrideContextList', [new Value(' Person ')]))->toBe(['Person']);
+});
 
 it('reads no structure parent for an entry whose page is missing', function (): void {
     /** @var EntryModel&MockInterface $entry */
@@ -232,6 +238,7 @@ it('suffixes a canonical @id with a template instance index', function (string $
     'an empty fragment' => ['https://example.test/#', 'https://example.test/#2'],
     'a fragment' => ['https://example.test/#org', 'https://example.test/#org-2'],
     'the last fragment of several' => ['https://example.test/#a#org', 'https://example.test/#a#org-2'],
+    'a one-character id' => ['x', 'x-2'],
 ]);
 
 it('scopes the instance watermark by the entity id', function (mixed $entity, string $expected): void {
@@ -612,4 +619,180 @@ it('exposes an entry context entity as the property source entry, unless one is 
     'an entry, with a source entry given' => [fn (): EntryModel => Mockery::mock(EntryModel::class), ['source_entry' => 'given'], 'given'],
     'a term' => [fn (): Term => Mockery::mock(Term::class), [], null],
     'no context entity' => [fn (): null => null, [], null],
+]);
+
+/**
+ * The service as a partial mock over the given cascade, recording each node build.
+ *
+ * @param  list<array<string, mixed>>  $builds  Each node build's arguments, by reference.
+ */
+function sosGuardStandaloneService(SchemaTemplatesCascadeService $cascade, array &$builds): SchemaOutputService&MockInterface
+{
+    /** @var SchemaOutputService&MockInterface $service */
+    $service = Mockery::mock(SchemaOutputService::class, [
+        $cascade,
+        app(SchemaClassificationsIdentifiersMerger::class),
+        app(SchemaJsonLdAtIdDeduplication::class),
+        app(SchemaJsonLdSchemaObjectEmissionCoordinator::class),
+        app(JsonLdCompositionProfiler::class),
+        app(MedicalOrganizationSubtypeAtTypeResolver::class),
+        app(PodcastEpisodeAtTypeResolver::class),
+    ])
+        ->makePartial()
+        ->shouldAllowMockingProtectedMethods();
+    $service->shouldReceive('schemaObjectEntryToNode')->andReturnUsing(
+        function (string $id, mixed $entity, array $graph, array $visited, array &$a, array &$b, array &$c, array $antlers, mixed $bag, ?string $own) use (&$builds): array {
+            $builds[] = ['graph' => $graph, 'bag' => $bag, 'own' => $own];
+
+            return ['@id' => '#'.$id, '@type' => 'Thing'];
+        }
+    );
+
+    return $service;
+}
+
+it('builds a standalone node without resolving a cascade for no context entity', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+
+    expect(sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNode('tpl-1'))->toBe(['@id' => '#tpl-1', '@type' => 'Thing'])
+        ->and($builds[0]['graph'])->toBe([])
+        ->and($builds[0]['own'])->toBeNull();
+});
+
+it('builds a standalone node against the context entity\'s cascade slots and own business node', function (): void {
+    $entity = Mockery::mock(EntryModel::class);
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldReceive('resolve')->once()->with($entity)->andReturn(['subject_entry' => 's1', 'main_content_entry' => 'm1']);
+    $builds = [];
+
+    sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNode('tpl-1', $entity);
+
+    expect($builds[0]['graph'])->toBe(['s1', 'm1'])
+        ->and($builds[0]['own'])->toBe('m1');
+});
+
+it('shares the given watermark bag and graph ids with a standalone node build', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+    $bag = new SchemaTemplateInstanceWatermarkBag;
+    $emitted = [];
+    $materialized = [];
+
+    sosGuardStandaloneService($cascade, $builds)->buildStandaloneSchemaObjectNodeSharingEmittedNodeIds('tpl-1', Mockery::mock(EntryModel::class), [], $emitted, $materialized, ['g1'], $bag);
+
+    expect($builds[0]['bag'])->toBe($bag)
+        ->and($builds[0]['graph'])->toBe(['g1'])
+        ->and($builds[0]['own'])->toBeNull();
+});
+
+it('reads no graph ids, and resolves no cascade, for a missing entity', function (): void {
+    /** @var SchemaTemplatesCascadeService&MockInterface $cascade */
+    $cascade = Mockery::mock(SchemaTemplatesCascadeService::class);
+    $cascade->shouldNotReceive('resolve');
+    $builds = [];
+
+    expect(sosGuardCall(sosGuardStandaloneService($cascade, $builds), 'resolveGraphEntryIdsForEntity', null))->toBe([]);
+});
+
+it('anchors template instance allocation on the first non-empty graph slot, else the context entity', function (array $graph, string $expected): void {
+    $entity = Mockery::mock(EntryModel::class);
+    $entity->shouldReceive('id')->andReturn('ctx-1');
+
+    expect(sosGuardCall(sosGuardService(), 'templateInstanceWatermarkAllocationAnchor', $graph, $entity))->toBe($expected);
+})->with([
+    'a blank first slot' => [['', 's1'], 's1'],
+    'only blank slots' => [[''], 'ctx-1'],
+]);
+
+it('merges two empty additive property values to nothing', function (mixed $a, mixed $b): void {
+    expect(sosGuardCall(sosGuardService(), 'mergeAdditiveResolvedPropertyValues', $a, $b))->toBeNull();
+})->with([
+    'null and empty' => [null, ''],
+    'empty and null' => ['', null],
+]);
+
+it('parses the template instance index from the Antlers context', function (mixed $raw, ?int $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'parseTemplateInstanceIndexFromAntlersContext', [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_INSTANCE_INDEX => $raw]))->toBe($expected);
+})->with([
+    'an integer' => [3, 3],
+    'a numeric string' => ['3', 3],
+    'an empty string' => ['', null],
+    'text' => ['three', null],
+    'a negative integer' => [-1, null],
+    'true' => [true, null],
+    'a float' => [1.5, null],
+]);
+
+it('reads the site root as the root path for an entry with no site', function (): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('site')->andReturnNull();
+
+    expect(sosGuardCall(sosGuardService(), 'siteRootForEntry', $entry))->toBe('/');
+});
+
+it('keys an entity context on its id, else on its pinned identity', function (mixed $id, bool $byId): void {
+    $entity = Mockery::mock(EntryModel::class);
+    $entity->shouldReceive('id')->andReturn($id);
+
+    $key = sosGuardCall(sosGuardService(), 'antlersEntityContextCacheKey', $entity);
+
+    expect($key)->toBe($byId ? $id : 'o'.spl_object_id($entity));
+})->with([
+    'an id' => ['entry-1', true],
+    'an empty id' => ['', false],
+    'a numeric id' => [5, false],
+]);
+
+it('exposes an entry context entity as the scoped entry alias', function (Closure $make, bool $aliased): void {
+    $entity = $make();
+    $context = mustBeArray(sosGuardCall(sosGuardService(), 'applyScopedEntryAliasToSchemaAntlersContext', ['title' => 'T'], $entity), 'the context');
+
+    expect($context)->toBe($aliased ? ['title' => 'T', 'entry' => $entity] : ['title' => 'T']);
+})->with([
+    'an entry' => [fn (): EntryModel => Mockery::mock(EntryModel::class), true],
+    'a term' => [fn (): Term => Mockery::mock(Term::class), false],
+    'nothing' => [fn (): null => null, false],
+]);
+
+it('flags whether an entry context belongs to a podcast series', function (): void {
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('blueprint')->andReturnNull();
+    $entry->shouldReceive('get')->andReturnNull();
+
+    expect(sosGuardCall(sosGuardService(), 'injectAudioSeriesPodcastSignal', ['title' => 'T'], $entry))->toBe(['title' => 'T', SchemaOutputService::ANTLERS_IS_PODCAST_EPISODE => false])
+        ->and(sosGuardCall(sosGuardService(), 'injectAudioSeriesPodcastSignal', ['title' => 'T'], Mockery::mock(Term::class)))->toBe(['title' => 'T']);
+});
+
+it('materializes no context for an entity with no field accessor', function (): void {
+    expect(sosGuardCall(sosGuardService(), 'materializeAntlersContextFromEntity', new class implements Term {}))->toBe([]);
+});
+
+it('materializes the stored values of an entity that cannot augment', function (): void {
+    $entity = new class implements Term
+    {
+        /**
+         * @return Collection<string, string>
+         */
+        public function values(): Collection
+        {
+            return collect(['name' => 'Stored']);
+        }
+    };
+
+    expect(sosGuardCall(sosGuardService(), 'materializeAntlersContextFromEntity', $entity))->toBe(['name' => 'Stored']);
+});
+
+it('merges an additive property value with an empty one as the non-empty value', function (mixed $a, mixed $b, mixed $expected): void {
+    expect(sosGuardCall(sosGuardService(), 'mergeAdditiveResolvedPropertyValues', $a, $b))->toBe($expected);
+})->with([
+    'a value and an empty string' => ['A', '', 'A'],
+    'a value and null' => ['A', null, 'A'],
+    'an empty string and a value' => ['', 'B', 'B'],
+    'two values' => ['A', 'B', ['A', 'B']],
 ]);

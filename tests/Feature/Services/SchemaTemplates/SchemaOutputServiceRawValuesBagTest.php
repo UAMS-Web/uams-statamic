@@ -7,6 +7,10 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Taxonomies\Term;
+use Statamic\Entries\Entry as EntryModel;
+use Statamic\Fields\Blueprint;
+use Statamic\Fields\Field;
+use Statamic\Fields\Value;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
@@ -124,3 +128,51 @@ it('leaves the context unchanged for an augmentable entity with no blueprint', f
 
     expect($method->invoke(app(SchemaOutputService::class), $entity, ['name' => 'Raw']))->toBe(['name' => 'Raw']);
 });
+
+/**
+ * Overlay augmented values onto a context for an entry whose blueprint holds the
+ * given fields, each augmenting through the given values by handle.
+ *
+ * @param  list<array{0: mixed, 1: string}>  $fields  Handle and fieldtype of each field.
+ * @param  array<array-key, mixed>  $augmented  Augmented value by handle.
+ * @param  array<array-key, mixed>  $context
+ */
+function sosBagOverlay(array $fields, array $augmented, array $context): mixed
+{
+    $doubles = [];
+    foreach ($fields as [$handle, $type]) {
+        /** @var Field&MockInterface $field */
+        $field = Mockery::mock(Field::class);
+        $field->shouldReceive('handle')->andReturn($handle);
+        $field->shouldReceive('type')->andReturn($type);
+        $doubles[] = $field;
+    }
+    /** @var Blueprint&MockInterface $blueprint */
+    $blueprint = Mockery::mock(Blueprint::class);
+    $blueprint->shouldReceive('fields->all')->andReturn(collect($doubles));
+    /** @var EntryModel&MockInterface $entry */
+    $entry = Mockery::mock(EntryModel::class);
+    $entry->shouldReceive('blueprint')->andReturn($blueprint);
+    $entry->shouldReceive('augmentedValue')->andReturnUsing(fn (string $handle): mixed => $augmented[$handle] ?? 'not a Value');
+
+    $method = new ReflectionMethod(SchemaOutputService::class, 'overlayAugmentedFieldTypeValuesForSchemaAntlersContext');
+
+    return $method->invoke(app(SchemaOutputService::class), $entry, $context);
+}
+
+it('overlays each augmented field value, skipping schema object fields and keeping a value that does not augment', function (): void {
+    $out = sosBagOverlay(
+        [['subject', 'schema_object'], ['title', 'text'], ['raw', 'text']],
+        ['subject' => new Value('augmented subject'), 'title' => new Value('Augmented')],
+        ['subject' => 'raw subject', 'title' => 'Raw', 'raw' => 'Kept']
+    );
+
+    expect($out)->toBe(['subject' => 'raw subject', 'title' => 'Augmented', 'raw' => 'Kept']);
+});
+
+it('overlays a field under its scalar handle as a string, and under an empty string otherwise', function (mixed $handle, string $key): void {
+    expect(sosBagOverlay([[$handle, 'text']], [$key => new Value('Augmented')], []))->toBe([$key => 'Augmented']);
+})->with([
+    'a float' => [1.5, '1.5'],
+    'null' => [null, ''],
+]);
