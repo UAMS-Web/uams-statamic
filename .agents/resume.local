@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# This repository's own orb wake checks (UAMS-Web/uams-statamic#1258). The shared .agents/resume,
+# synced from UAMS-Web/uams-claude-skills, runs this file last; it already checks that php,
+# composer, node and npm exist, and that vendor/autoload.php and node_modules are present.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+php -r 'exit(PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 4 ? 0 : 1);' \
+    || { echo 'PHP is not 8.4; run .agents/setup' >&2; exit 1; }
