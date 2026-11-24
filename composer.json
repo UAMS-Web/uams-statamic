@@ -128,7 +128,8 @@
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\""
         ],
         "post-install-cmd": [
-            "@php scripts/setup-git-hooks.php"
+            "@php scripts/setup-git-hooks.php",
+            "@php .claude/skills/upstream-patch-lifecycle/scripts/ensure-patches-applied.php"
         ],
         "test": [
             "@php vendor/bin/pest"
@@ -168,7 +169,8 @@
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php scripts/setup-git-hooks.php"
+            "@php scripts/setup-git-hooks.php",
+            "@php .claude/skills/upstream-patch-lifecycle/scripts/ensure-patches-applied.php"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
