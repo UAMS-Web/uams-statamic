@@ -7,6 +7,8 @@ use App\Tags\UamsNews;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Entries\Entry;
+use Statamic\Fields\Value;
+use Statamic\Sites\Site;
 use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
@@ -314,3 +316,78 @@ it('reports no results when the query returns nothing', function (): void {
         ->and($result['total_results'])->toBe(0)
         ->and($result['news_item'])->toBe([]);
 });
+
+// ---------------------------------------------------------------------------
+// Parameter narrowing (UAMS-Web/uams-statamic#815)
+// ---------------------------------------------------------------------------
+
+/**
+ * Expect the tag to hand the resolver exactly these source tokens.
+ *
+ * @param  array<array-key, mixed>  $sources  The tokens, in order
+ */
+function uamsNewsExpectSources(array $sources, string $currentHandle = 'default'): void
+{
+    $service = uamsNewsFakeService();
+    $service->shouldReceive('resolveSiteHandles')->with($sources, $currentHandle)->once()->andReturn(['news']);
+    $service->shouldReceive('resolveCategoryLink')->andReturn(['name' => null, 'url' => null]);
+    $service->shouldReceive('query')->once()->andReturn(collect([]));
+}
+
+it('reads each kind of source option as its token, and drops the unusable ones', function (mixed $sources, array $expected): void {
+    uamsNewsExpectSources($expected);
+
+    uamsNewsTag(['format' => 'grid', 'source_sites' => $sources])->index();
+})->with([
+    'a collection' => [collect(['news', 'current']), ['news', 'current']],
+    'an empty string' => ['', []],
+    'a non-list, non-string value' => [5, []],
+    'an option array read by value' => [[['value' => 'news', 'key' => 'other']], ['news']],
+    'an option array read by key' => [[['key' => 'news']], ['news']],
+    'an integer option value' => [[['value' => 5]], ['5']],
+    'an option with no usable value' => [[['value' => null], ['value' => ''], ['value' => ['nested']]], []],
+    'a Value object' => [[new Value('news')], ['news']],
+    'a Value object holding an integer' => [[new Value(5)], ['5']],
+    'a Value object holding a list' => [[new Value(['news'])], []],
+    'an object with no value method' => [[new stdClass], []],
+    'an integer item' => [[5], ['5']],
+    'blank items among real ones' => [['news', '', null], ['news']],
+]);
+
+it('passes an empty current-site handle when the site has none', function (): void {
+    $site = Mockery::mock(Site::class);
+    $site->shouldReceive('handle')->andReturn(null);
+    Statamic\Facades\Site::shouldReceive('current')->andReturn($site);
+
+    uamsNewsExpectSources(['news'], '');
+
+    uamsNewsTag(['format' => 'grid', 'source_sites' => ['news']])->index();
+});
+
+it('trims the format before mapping it to a count', function (): void {
+    $service = uamsNewsFakeService();
+    uamsNewsStubListPath($service);
+    $service->shouldReceive('query')->with(['news'], [], 4, 0, false, 'cards')->once()->andReturn(collect([]));
+
+    uamsNewsTag(['format' => '  cards  ', 'source_sites' => ['news']])->index();
+});
+
+it('keys the results by a numeric as alias', function (): void {
+    $service = uamsNewsFakeService();
+    uamsNewsStubListPath($service);
+    $service->shouldReceive('query')->andReturn(collect([uamsNewsEntry('x')]));
+
+    expect(uamsNewsTag(['format' => 'grid', 'source_sites' => ['news'], 'as' => 7])->index())->toHaveKey('7');
+});
+
+it('reads a numeric-string offset, and clamps a negative one to zero', function (mixed $offset, int $expected): void {
+    $service = uamsNewsFakeService();
+    uamsNewsStubListPath($service);
+    $service->shouldReceive('query')->with(['news'], [], 3, $expected, false, 'grid')->once()->andReturn(collect([]));
+
+    uamsNewsTag(['format' => 'grid', 'source_sites' => ['news'], 'offset' => $offset])->index();
+})->with([
+    'a numeric string' => ['4', 4],
+    'zero' => ['0', 0],
+    'a negative number' => [-2, 0],
+]);

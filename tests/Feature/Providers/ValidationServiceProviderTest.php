@@ -44,7 +44,6 @@ use App\Rules\NaicsCode;
 use App\Rules\Name;
 use App\Rules\NationalPhone;
 use App\Rules\Npi;
-use App\Rules\OnetSocOccupationCode;
 use App\Rules\OpeId;
 use App\Rules\Orcid;
 use App\Rules\OtherCertificationTerm;
@@ -80,6 +79,7 @@ use Illuminate\Support\Facades\Validator;
 use Tests\Support\LegacyRuleProbe;
 use Tests\Support\ValidatorAwareRuleProbe;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Rules\OnetSocOccupationCode;
 
 uses(TestCase::class);
 

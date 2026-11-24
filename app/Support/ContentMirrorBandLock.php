@@ -72,6 +72,9 @@ final class ContentMirrorBandLock
 
         // Wait out any seed in progress, and refuse to run with no lock taken
         if (! flock($handle, LOCK_SH)) {
+            // A blocking shared flock() on a handle that just opened does not fail in
+            // practice, so no test reaches this branch to see the handle left open
+            // @pest-mutate-ignore: RemoveFunctionCall
             fclose($handle);
 
             throw new RuntimeException(sprintf('Could not take the shared content mirror band lock at %s.', $path));
@@ -89,6 +92,8 @@ final class ContentMirrorBandLock
             return;
         }
 
+        // fclose() drops the lock too, so removing the explicit unlock changes nothing
+        // @pest-mutate-ignore: RemoveFunctionCall
         flock(self::$held, LOCK_UN);
         fclose(self::$held);
 
@@ -108,6 +113,9 @@ final class ContentMirrorBandLock
         $handle = self::open(self::path($mirror));
 
         if (! flock($handle, LOCK_EX | LOCK_NB)) {
+            // The handle is local, so PHP frees it, and the lock with it, on return
+            // even without this call: removing it changes nothing a caller can see
+            // @pest-mutate-ignore: RemoveFunctionCall
             fclose($handle);
 
             return null;
@@ -123,6 +131,8 @@ final class ContentMirrorBandLock
      */
     public static function releaseExclusive($handle): void
     {
+        // fclose() drops the lock too, so removing the explicit unlock changes nothing
+        // @pest-mutate-ignore: RemoveFunctionCall
         flock($handle, LOCK_UN);
         fclose($handle);
     }

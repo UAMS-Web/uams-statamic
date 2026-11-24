@@ -19,15 +19,7 @@ covers(UniqueTerms::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if ($padded) {
-        return;
-    }
-
-    if (runningUnderMutate()) {
-        usleep(20_000_000);
-        $padded = true;
-    }
+    padMutateChildTimeout();
 });
 
 it('deduplicates id()-bearing objects and keeps later distinct items after a duplicate', function (): void {

@@ -23,7 +23,7 @@ class OnetOccupationOverviewService
     private const string CACHE_KEY_PREFIX = 'onet_ws:occupation_overview:v1:';
 
     /**
-     * Matches the O*NET-SOC format validated by App\Rules\OnetSocOccupationCode.
+     * Matches the O*NET-SOC format validated by UAMSWeb\Aether\People\Rules\OnetSocOccupationCode.
      */
     private const string ONET_SOC_PATTERN = '/^\d{2}-\d{4}\.\d{2}$/';
 

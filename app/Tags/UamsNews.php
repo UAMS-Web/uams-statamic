@@ -186,8 +186,9 @@ class UamsNews extends Tags
             $value = $value->all();
         }
 
+        // A single checkbox value becomes a one-item list; the filter below drops it when empty
         if (\is_string($value)) {
-            $value = $value !== '' ? [$value] : [];
+            $value = [$value];
         }
 
         if (! \is_array($value)) {

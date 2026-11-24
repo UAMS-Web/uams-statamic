@@ -121,17 +121,11 @@ final readonly class DocumentTitle
      */
     private function primaryLocationCityState(Entry $entry): string
     {
+        // An empty list, an empty id, or an id that resolves nothing all fall through to the lookup miss below
         $locationIds = $entry->get('clinical_locations');
-        if (! \is_array($locationIds) || $locationIds === []) {
-            return '';
-        }
+        $first = \is_array($locationIds) ? ($locationIds[0] ?? null) : null;
 
-        $first = $locationIds[0] ?? null;
-        if (! \is_string($first) || $first === '') {
-            return '';
-        }
-
-        $location = $this->entries->find($first);
+        $location = \is_string($first) ? $this->entries->find($first) : null;
         if (! $location instanceof Entry) {
             return '';
         }
@@ -166,11 +160,8 @@ final readonly class DocumentTitle
      */
     private function normalizeState(string $state): string
     {
-        if ($state === '') {
-            return '';
-        }
-
-        // Already a USPS code (the enum is backed by the two-letter code).
+        // Already a USPS code (the enum is backed by the two-letter code); an empty value matches
+        // no code here and no name below, so it passes through unchanged.
         $byCode = State::tryFrom(strtoupper($state));
         if ($byCode !== null) {
             return $byCode->value;
@@ -203,23 +194,18 @@ final readonly class DocumentTitle
 
         // The name is the first segment, so only same-title entries can collide.
         // This exact-title lookup is Stache-index-scoped (UAMS-Web/uams-statamic-archive#862), so the common
-        // unique-name case returns immediately without a full-collection scan.
+        // unique-name case composes no peer title and never scans the collection.
         $peers = $this->titleDisambiguator->entriesWithExactTitle($entry, $name);
-        if ($peers->isEmpty()) {
-            return $base;
-        }
 
         // Keep only same-name peers whose composed title actually collides; a peer
         // with a different specialty or city already renders a distinct title.
         /** @var Collection<int, Entry> $colliding */
         $colliding = $peers->filter(static fn (Entry $peer): bool => $baseFor($peer) === $base);
-        if ($colliding->isEmpty()) {
-            return $base;
-        }
 
         // Deterministic ordinal over {self} ∪ {colliding peers} by id: the lowest
         // id keeps the clean title, the rest take " (2)", " (3)", … Every entry in
         // the set computes the same order, so the ordinals are globally consistent.
+        // With no colliding peer the set is {self} alone, at position 0, so the base is returned.
         $selfId = $this->entryId($entry);
 
         $ordered = $colliding

@@ -71,7 +71,8 @@ class NewsArchive extends Tags
         // three safe literals — the query string is attacker-controllable and the
         // view renders it raw (Antlers is unescaped by default).
         $source = $this->axis($params, 'source', 'both');
-        if (! \in_array($source, ['newsroom', 'local', 'both'], true)) {
+        // Bare in_array (not \in_array): Pest's TrueToFalse mutator skips the strict flag.
+        if (! in_array($source, ['newsroom', 'local'], true)) {
             $source = 'both';
         }
 
@@ -89,8 +90,11 @@ class NewsArchive extends Tags
         }
 
         // Type axis: a recognized post blueprint handle, else no type filter.
+        // Any unrecognized fallback string is rejected by POST_BLUEPRINTS below.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $type = $this->axis($params, 'type', '');
-        $blueprints = \in_array($type, NewsSyndicationQueryService::POST_BLUEPRINTS, true) ? [$type] : [];
+        // Bare in_array (not \in_array): Pest's TrueToFalse mutator skips the strict flag.
+        $blueprints = in_array($type, NewsSyndicationQueryService::POST_BLUEPRINTS, true) ? [$type] : [];
 
         // Category axis (optional): a forced `:category` entries id param.
         $categoryIds = AugmentedEntryIds::fromValue($params['category'] ?? null);
@@ -149,8 +153,15 @@ class NewsArchive extends Tags
 
         $query = request()->query($key);
 
-        if (\is_string($query) && trim($query) !== '') {
-            return strtolower(trim($query));
+        if (\is_string($query)) {
+            $trimmed = trim($query);
+
+            // Both callers whitelist the returned string and fall back to the same default
+            // on an empty string, so a whitespace-only query yields the same result either way.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
+            if ($trimmed !== '') {
+                return strtolower($trimmed);
+            }
         }
 
         return $default;

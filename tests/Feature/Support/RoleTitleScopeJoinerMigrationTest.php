@@ -2,11 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\RoleTitle;
-use App\Rules\RoleTitleScopeJoinerRule;
 use App\Services\People\RoleTitleScopeJoinerMigrator;
-use App\Support\RoleTitleDefinition;
-use App\Support\RoleTitleValue;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Assert;
@@ -19,6 +15,10 @@ use Statamic\Fields\Field;
 use Statamic\Stache\Repositories\EntryRepository as StacheEntryRepository;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Fieldtypes\RoleTitle;
+use UAMSWeb\Aether\People\Rules\RoleTitleScopeJoinerRule;
+use UAMSWeb\Aether\People\Support\RoleTitleDefinition;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 uses(TestCase::class);
 
@@ -258,7 +258,7 @@ function joinerMessages(array $scope): array
 
 it('refuses a typed in scope without the article', function (?string $article): void {
     expect(joinerMessages(['scope_joiner' => 'in', 'scope_article' => $article, 'scope_name' => 'Department of Medicine']))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_joiner_requires_article')]);
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_joiner_requires_article')]);
 })->with([
     'none' => [null],
     'not the article' => ['a'],
@@ -282,7 +282,7 @@ it('lets every other preposition go typed without the article', function (string
 
 it('reads a padded joiner the way the composer reads it', function (): void {
     expect(joinerMessages(['scope_joiner' => '  in  ', 'scope_article' => null, 'scope_name' => 'Department of Medicine']))
-        ->toBe([__('statamic::fieldtypes.role_title.validation.scope_joiner_requires_article')]);
+        ->toBe([__('aether-people::fieldtypes.role_title.validation.scope_joiner_requires_article')]);
 });
 
 it('declares in, and only in, as requiring the article', function (): void {

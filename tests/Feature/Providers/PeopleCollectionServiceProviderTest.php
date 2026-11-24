@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Providers\PeopleCollectionServiceProvider;
 use App\Services\Locations\LocationInheritedAddressService;
+use App\Services\Organizations\OrganizationPublicLabelService;
 use App\Services\PubMed\PubMedEsummaryService;
 use App\Services\Seo\DocumentTitle;
 use App\Support\Collections\CollectionExtensions;
@@ -16,6 +17,7 @@ use UAMSWeb\Aether\People\Contracts\DepartmentHubRoster;
 use UAMSWeb\Aether\People\Contracts\EntryReferenceRepointer as EntryReferenceRepointerContract;
 use UAMSWeb\Aether\People\Contracts\LocationRegions;
 use UAMSWeb\Aether\People\Contracts\MergeRedirectWriter;
+use UAMSWeb\Aether\People\Contracts\OrganizationDisplayName;
 use UAMSWeb\Aether\People\Contracts\PublicationCitations;
 use UAMSWeb\Aether\People\Merge\RedirectsGlobalWriter;
 
@@ -75,6 +77,7 @@ it('names each add-on contract and the class bound to it', function (): void {
         LocationRegions::class => LocationInheritedAddressService::class,
         PublicationCitations::class => PubMedEsummaryService::class,
         DepartmentHubRoster::class => DepartmentHubPeopleRoster::class,
+        OrganizationDisplayName::class => OrganizationPublicLabelService::class,
     ]);
 });
 
@@ -90,6 +93,7 @@ it('binds each contract to its implementation, unshared', function (string $cont
     'the location regions' => [LocationRegions::class, LocationInheritedAddressService::class],
     'the publication citations' => [PublicationCitations::class, PubMedEsummaryService::class],
     'the department hub roster' => [DepartmentHubRoster::class, DepartmentHubPeopleRoster::class],
+    'the organization display name' => [OrganizationDisplayName::class, OrganizationPublicLabelService::class],
 ]);
 
 it('keeps a person in the sitemap only when the shared gate and the profile page allow it', function (array $values, mixed $profilePage, bool $expected): void {

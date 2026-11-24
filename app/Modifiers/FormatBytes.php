@@ -151,6 +151,8 @@ class FormatBytes extends Modifier
 
         // Normalize the system parameter.
         $normalizedSystem = strtolower(
+            // A non-scalar system given any string outside the binary aliases is also decimal
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             (string) (is_scalar($rawSystem) ? $rawSystem : '')
         );
 
@@ -200,6 +202,8 @@ class FormatBytes extends Modifier
             str_replace(
                 '-',
                 '_',
+                // A non-scalar display given any non-alias string also falls back to the default mode
+                // @pest-mutate-ignore: EmptyStringToNotEmpty
                 (string) (is_scalar($rawDisplay) ? $rawDisplay : '')
             )
         );
@@ -217,8 +221,14 @@ class FormatBytes extends Modifier
             'full_unit' => 'full_unit',
             'full' => 'full_unit',
             'long' => 'full_unit',
+            // Without this alias the value falls through to the default mode, which is the same one
+            // @pest-mutate-ignore: RemoveArrayItem
             'abbreviated_unit_with_space' => 'abbreviated_unit_with_space',
+            // Without this alias the value falls through to the default mode, which is the same one
+            // @pest-mutate-ignore: RemoveArrayItem
             'abbr_with_space' => 'abbreviated_unit_with_space',
+            // Without this alias the value falls through to the default mode, which is the same one
+            // @pest-mutate-ignore: RemoveArrayItem
             'abbr_space' => 'abbreviated_unit_with_space',
             'abbreviated_unit_without_space' => 'abbreviated_unit_without_space',
             'abbr_without_space' => 'abbreviated_unit_without_space',
@@ -273,7 +283,11 @@ class FormatBytes extends Modifier
         $precision = (int) (is_scalar($rawPrecision) ? $rawPrecision : 0);
 
         // Clamp precision to -1 minimum.
-        if ($precision < -1) {
+        if (
+            // Clamping -1, or every negative value, to -1 gives the same precision as clamping only values below -1
+            // @pest-mutate-ignore: SmallerToSmallerOrEqual, IncrementInteger
+            $precision < -1
+        ) {
             // Update precision to supported minimum.
             $precision = -1;
         }
@@ -304,10 +318,14 @@ class FormatBytes extends Modifier
 
         // Normalize the unit parameter.
         $normalizedUnit = strtolower(
+            // A non-scalar unit given any non-alias string also reaches auto-selection
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             trim((string) (is_scalar($rawUnit) ? $rawUnit : ''))
         );
 
         // Check if the unit is empty.
+        // An empty unit that passes on misses every alias and reaches auto-selection, which is what the early return gives
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         if ($normalizedUnit === '') {
             // Free local variables before early return.
             unset(
@@ -373,7 +391,13 @@ class FormatBytes extends Modifier
         $selectedUnitKey = 'B';
 
         // Iterate through unit keys from largest to smallest.
-        for ($i = \count($unitKeys) - 1; $i >= 0; $i--) {
+        for (
+            $i = \count($unitKeys) - 1;
+            // The last pass, i = 0, tests the B tier, whose divisor of 1 is also the default selected key, so skipping it selects B all the same
+            // @pest-mutate-ignore: GreaterOrEqualToGreater, IncrementInteger
+            $i >= 0;
+            $i--
+        ) {
             // Resolve the current unit key.
             $candidateUnitKey = $unitKeys[$i];
 
@@ -457,6 +481,8 @@ class FormatBytes extends Modifier
 
         // Check if trimming produced an empty string.
         if (
+            // number_format() and sprintf('%.14F') always print a digit, so trimming never leaves an empty string (EmptyStringToNotEmpty is equivalent)
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             $trimmedNumber === ''
             || $trimmedNumber === '-0'
         ) {

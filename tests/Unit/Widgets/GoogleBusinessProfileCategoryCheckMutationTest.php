@@ -29,13 +29,7 @@ covers(GoogleBusinessProfileCategoryCheck::class);
  * Pad Pest's mutant-child timeout once per process under ``--mutate``.
  */
 beforeEach(function (): void {
-    static $padded = false;
-    if (! $padded) {
-        if (runningUnderMutate()) {
-            usleep(20_000_000);
-            $padded = true;
-        }
-    }
+    padMutateChildTimeout();
 
     Cache::forget(CategoryCheckLog::CACHE_KEY);
     Carbon::setTestNow(Carbon::parse('2026-10-30 12:00:00', 'UTC'));

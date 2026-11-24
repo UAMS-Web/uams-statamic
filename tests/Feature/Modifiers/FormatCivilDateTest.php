@@ -94,3 +94,22 @@ it('returns an empty string for an unparseable non-date string', function () {
 it('falls back to the default format for a non-scalar format parameter', function () {
     expect((new FormatCivilDate)->index('1994-07-15', [['array']], []))->toBe('1994-07-15');
 });
+
+it('reads a scalar format parameter as a format string', function () {
+    // An integer, which `strict_types` would reject without the `(string)` cast
+    expect((new FormatCivilDate)->index('1994-07-15', [5], []))->toBe('5');
+});
+
+it('trims a padded calendar date before matching it', function () {
+    expect((new FormatCivilDate)->index(" 1994-07-15\n", [], []))->toBe('1994-07-15');
+});
+
+it('formats a date instance in the app timezone, or UTC when that is unset', function (mixed $appTimezone, string $expected) {
+    config()->set('app.timezone', $appTimezone);
+
+    expect((new FormatCivilDate)->index(Carbon::parse('2024-01-01 03:00:00', 'UTC'), [], []))->toBe($expected);
+})->with([
+    'a named app timezone' => ['America/Chicago', '2023-12-31'],
+    'an empty app timezone' => ['', '2024-01-01'],
+    'a non-string app timezone' => [null, '2024-01-01'],
+]);

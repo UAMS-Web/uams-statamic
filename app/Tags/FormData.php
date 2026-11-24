@@ -58,17 +58,11 @@ class FormData extends Tags
             return '';
         }
 
-        // Narrow the mixed handle to a string for safe path building
-        $handle = is_scalar($handle) ? (string) $handle : '';
-
-        // Build the form file path
-        $formsRoot = config('statamic.forms.forms');
-        $formsRoot = is_scalar($formsRoot) ? (string) $formsRoot : '';
-
-        $formPath = $formsRoot.sprintf('/%s.yaml', $handle);
+        // Build the form file path, or null when the handle cannot name a form
+        $formPath = $this->formYamlPath($handle);
 
         // Check if the form file exists
-        if (! File::exists($formPath)) {
+        if ($formPath === null || ! File::exists($formPath)) {
             // Return empty string if file doesn't exist
             return '';
         }
@@ -77,25 +71,29 @@ class FormData extends Tags
         /** @var array<string, mixed> $formData */
         $formData = YAML::parse(File::get($formPath));
 
-        // Check if a specific key was requested
-        if (! empty($key)) {
-            // Narrow the mixed key to a valid array offset
-            $key = is_scalar($key) ? (string) $key : '';
-
-            // Return the specific key value or empty string if not found
-            $value = $formData[$key] ?? '';
-
-            // Narrow the mixed value to the declared string|array return type
-            if (is_array($value)) {
-                /** @var array<string, mixed> $value */
-                return $value;
-            }
-
-            return is_scalar($value) ? (string) $value : '';
+        // Return all form data when no specific key was requested
+        if (empty($key)) {
+            return $formData;
         }
 
-        // Otherwise return all form data
-        return $formData;
+        // A key that is not a scalar names no property
+        if (! is_scalar($key)) {
+            return '';
+        }
+
+        // Return the specific key value or empty string if not found
+        $value = $formData[(string) $key] ?? '';
+
+        // Narrow the mixed value to the declared string|array return type
+        if (is_array($value)) {
+            /** @var array<string, mixed> $value */
+            return $value;
+        }
+
+        // `YAML::parse()` yields only scalars, arrays and null, and `??` already turned null
+        // into '', so the fallback is never reached (EmptyStringToNotEmpty is equivalent)
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /**
@@ -105,50 +103,10 @@ class FormData extends Tags
      */
     public function heading(): string
     {
-        // Narrow the untyped Tags::$params bag to its concrete Collection type
-        /** @var Parameters $params */
-        $params = $this->params;
-
-        // Get the form handle from the parameters
-        $handle = TagParam::get(
-            $params,
-            'handle'
+        return $this->formProperty(
+            'heading',
+            'No heading property found'
         );
-
-        // Check if form handle parameter was provided
-        if (empty($handle)) {
-            // Return error message if no handle provided
-            return 'No handle provided';
-        }
-
-        // Narrow the mixed handle to a string for safe path building
-        $handle = is_scalar($handle) ? (string) $handle : '';
-
-        // Build the form file path using Statamic configuration
-        $formsRoot = config('statamic.forms.forms');
-        $formsRoot = is_scalar($formsRoot) ? (string) $formsRoot : '';
-
-        $formPath = $formsRoot.sprintf('/%s.yaml', $handle);
-
-        // Check if the form file exists on disk
-        if (! File::exists($formPath)) {
-            $this->logMissingFormYaml(
-                $handle,
-                $formPath
-            );
-
-            return '';
-        }
-
-        // Read and parse the YAML file content
-        /** @var array<string, mixed> $formData */
-        $formData = YAML::parse(File::get($formPath));
-
-        // Return heading value or fallback message if property doesn't exist
-        $heading = $formData['heading'] ?? 'No heading property found';
-
-        // Narrow the mixed value to the declared string return type
-        return is_scalar($heading) ? (string) $heading : 'No heading property found';
     }
 
     /**
@@ -158,6 +116,23 @@ class FormData extends Tags
      */
     public function description(): string
     {
+        return $this->formProperty(
+            'description',
+            'No description property found'
+        );
+    }
+
+    /**
+     * Read one property of the form the `handle` parameter names.
+     *
+     * @param  string  $property  The form YAML property to read
+     * @param  string  $fallback  The text returned when the property is missing or not a scalar
+     * @return string The property, the fallback, an error message, or an empty string
+     */
+    private function formProperty(
+        string $property,
+        string $fallback
+    ): string {
         // Narrow the untyped Tags::$params bag to its concrete Collection type
         /** @var Parameters $params */
         $params = $this->params;
@@ -174,17 +149,11 @@ class FormData extends Tags
             return 'No handle provided';
         }
 
-        // Narrow the mixed handle to a string for safe path building
-        $handle = is_scalar($handle) ? (string) $handle : '';
-
-        // Build the form file path using Statamic configuration
-        $formsRoot = config('statamic.forms.forms');
-        $formsRoot = is_scalar($formsRoot) ? (string) $formsRoot : '';
-
-        $formPath = $formsRoot.sprintf('/%s.yaml', $handle);
+        // Build the form file path, or null when the handle cannot name a form
+        $formPath = $this->formYamlPath($handle);
 
         // Check if the form file exists on disk
-        if (! File::exists($formPath)) {
+        if ($formPath === null || ! File::exists($formPath)) {
             $this->logMissingFormYaml(
                 $handle,
                 $formPath
@@ -197,27 +166,54 @@ class FormData extends Tags
         /** @var array<string, mixed> $formData */
         $formData = YAML::parse(File::get($formPath));
 
-        // Return description value or fallback message if property doesn't exist
-        $description = $formData['description'] ?? 'No description property found';
+        // Return the property value or the fallback if it doesn't exist
+        $value = $formData[$property] ?? $fallback;
 
         // Narrow the mixed value to the declared string return type
-        return is_scalar($description) ? (string) $description : 'No description property found';
+        return is_scalar($value) ? (string) $value : $fallback;
+    }
+
+    /**
+     * Build the path of the YAML file a form handle names.
+     *
+     * @param  mixed  $handle  The non-empty form handle from tag parameters
+     * @return string|null The path, or null when the handle is not a scalar or the forms
+     *                     directory is not configured as a string
+     */
+    private function formYamlPath(
+        mixed $handle
+    ): ?string {
+        // Only a scalar handle can name a form file
+        if (! is_scalar($handle)) {
+            return null;
+        }
+
+        // Read the forms directory from Statamic configuration
+        $formsRoot = config('statamic.forms.forms');
+
+        // Without a forms directory no form file can be found
+        if (! \is_string($formsRoot)) {
+            return null;
+        }
+
+        return $formsRoot.sprintf('/%s.yaml', $handle);
     }
 
     /**
      * Log a missing form YAML file for operators without exposing paths in templates.
      *
-     * @param  string  $handle  The form handle from tag parameters.
-     * @param  string  $formPath  Resolved filesystem path that was not found.
+     * @param  mixed  $handle  The form handle from tag parameters.
+     * @param  string|null  $formPath  Resolved filesystem path that was not found, or null when
+     *                                 the handle or the forms directory could not build one.
      */
     private function logMissingFormYaml(
-        string $handle,
-        string $formPath
+        mixed $handle,
+        ?string $formPath
     ): void {
         Log::warning(
             'FormData tag: form YAML file not found.',
             [
-                'handle' => $handle,
+                'handle' => is_scalar($handle) ? (string) $handle : $handle,
                 'path' => $formPath,
             ]
         );

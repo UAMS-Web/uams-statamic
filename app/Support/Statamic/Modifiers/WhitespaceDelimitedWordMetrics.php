@@ -27,24 +27,12 @@ final class WhitespaceDelimitedWordMetrics
     public static function countWords(
         string $text
     ): int {
-        // Trim outer whitespace before splitting
-        $trimmed = trim($text);
-
-        // Check if the trimmed text is empty
-        if ($trimmed === '') {
-            // Unset local variable to free memory
-            unset(
-                $trimmed
-            );
-
-            // Return zero when there is nothing to count
-            return 0;
-        }
-
-        // Split on runs of Unicode whitespace
+        // Split on runs of Unicode whitespace (`PREG_SPLIT_NO_EMPTY` drops leading/trailing runs and empty strings)
         $tokens = preg_split(
             '/\s+/u',
-            $trimmed,
+            trim($text),
+            // preg_split() treats both -1 and 0 as "no limit", so -1 -> 0 is equivalent.
+            // @pest-mutate-ignore: IncrementInteger
             -1,
             PREG_SPLIT_NO_EMPTY
         );
@@ -54,7 +42,6 @@ final class WhitespaceDelimitedWordMetrics
 
         // Unset local variables to free memory
         unset(
-            $trimmed,
             $tokens
         );
 
@@ -176,11 +163,6 @@ final class WhitespaceDelimitedWordMetrics
         int $words,
         int $wordsPerMinute
     ): int {
-        // Return zero immediately when there is nothing to read
-        if ($words === 0) {
-            return 0;
-        }
-
         // Avoid division by zero or negative rates
         $effectiveWpm = max(
             1,

@@ -151,6 +151,15 @@ it('preserves CRLF line endings', function (): void {
         ->and($after)->toBe("---\r\ntitle: Kirk\r\nfeatured_image_16_9: default/kirk.jpg\r\n---\r\nBody\r\n");
 });
 
+it('handles bare CR line endings', function (): void {
+    $before = "---\rtitle: Kirk\rfeatured_image: default/kirk.jpg\r---\rBody\r";
+
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_MOVED)
+        ->and($after)->toBe("---\ntitle: Kirk\nfeatured_image_16_9: default/kirk.jpg\n---\nBody\n");
+});
+
 it('preserves multi-byte UTF-8 containing the 0x85 continuation byte', function (string $label, string $char): void {
     // `/\R/` uses PCRE's Unicode newline set, which matches the BARE byte 0x85 —
     // a legal UTF-8 continuation byte. That splits any character encoding it
@@ -199,3 +208,66 @@ it('preserves a quoted value verbatim', function (): void {
     expect($outcome)->toBe(Migrator::OUTCOME_MOVED)
         ->and($after)->toContain("featured_image_16_9: 'default/with spaces.jpg'");
 });
+
+it('leaves an entry with only the replacement handle unchanged', function (): void {
+    $before = migratorFixture([
+        'featured_image_16_9: default/already-migrated.jpg',
+    ]);
+
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_UNCHANGED)
+        ->and($after)->toBe($before);
+});
+
+it('does not treat a longer handle sharing the replacement prefix as the replacement', function (): void {
+    $before = migratorFixture([
+        'featured_image: default/old.jpg',
+        'featured_image_16_9_alt: Custom alt',
+    ]);
+
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_MOVED)
+        ->and($after)->toBe(migratorFixture([
+            'featured_image_16_9: default/old.jpg',
+            'featured_image_16_9_alt: Custom alt',
+        ]));
+});
+
+it('acts on the first retired handle when duplicate keys appear in front matter', function (): void {
+    $before = migratorFixture([
+        'featured_image: default/first.jpg',
+        'featured_image: default/second.jpg',
+    ]);
+
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_MOVED)
+        ->and($after)->toBe(migratorFixture([
+            'featured_image_16_9: default/first.jpg',
+            'featured_image: default/second.jpg',
+        ]));
+});
+
+it('handles a single-character value immediately after the colon with no space', function (): void {
+    $before = migratorFixture([
+        'featured_image:~',
+    ]);
+
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_DROPPED)
+        ->and($after)->toBe("---\n---\nSome page copy.\n");
+});
+
+it('leaves files without valid front matter boundaries unchanged', function (string $before): void {
+    [$after, $outcome] = Migrator::apply($before);
+
+    expect($outcome)->toBe(Migrator::OUTCOME_UNCHANGED)
+        ->and($after)->toBe($before);
+})->with([
+    'unclosed front matter' => ["---\nfeatured_image: default/unclosed.jpg\n"],
+    'no opening delimiter before a horizontal rule' => ["title: Body\nfeatured_image: default/x.jpg\n---\n"],
+    'empty front matter followed by body rule' => ["---\n---\nfeatured_image: default/body.jpg\n---\n"],
+]);

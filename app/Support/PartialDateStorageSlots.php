@@ -14,6 +14,7 @@ namespace App\Support;
  * Each slot is valid only when it is a string of exactly the slot's width in
  * ASCII digits. That one pattern also rejects an empty slot, an `X`
  * placeholder and a stray hyphen, so no separate check is needed for them.
+ * A slot followed by a newline is refused too (#1155).
  */
 final class PartialDateStorageSlots
 {
@@ -61,8 +62,9 @@ final class PartialDateStorageSlots
      */
     private static function isDigits(mixed $part, int $width): bool
     {
-        // Only a string can hold a date token; anything else is an absent slot
+        // Only a string can hold a date token; anything else is an absent slot.
+        // `\z` rather than `$`, which would also match before a final newline
         return \is_string($part)
-            && preg_match('/^\d{'.$width.'}$/', $part) === 1;
+            && preg_match('/^\d{'.$width.'}\z/', $part) === 1;
     }
 }

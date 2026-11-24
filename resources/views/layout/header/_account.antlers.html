@@ -27,14 +27,18 @@
 	rather than by a test, and locked by one now.
 
 	It is escaped because it is member-supplied through the register and profile forms, and
-	Antlers is raw-by-default. #}}
+	Antlers is raw-by-default.
+
+	The name shows only from `xl` (1500px) up, cut with an ellipsis (`.site-header__account-name`
+	in header.scss); below that the header has no room for it and "Log out" stands alone
+	(#1210). The `title` carries the full name where the ellipsis cuts it. #}}
 {{ if logged_in }}
-	<div class="site-header__account d-flex align-items-center gap-2 ms-auto">
-		<a class="nav-link" href="/profile">{{ current_user:name | entities }}</a>
+	<div class="site-header__account d-flex align-items-center gap-2 ms-auto flex-nowrap">
+		<a class="nav-link site-header__account-name" href="/profile" title="{{ current_user:name | entities }}">{{ current_user:name | entities }}</a>
 		<a class="nav-link" href="{{ member:logout_url }}">Log out</a>
 	</div>
 {{ else }}
-	<div class="site-header__account ms-auto">
+	<div class="site-header__account d-flex align-items-center ms-auto">
 		<a class="nav-link" href="/login">Log in</a>
 	</div>
 {{ /if }}

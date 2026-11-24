@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Services\People;
 
 use App\Services\Organizations\OrganizationPublicLabelService;
-use App\Support\RoleTitleScopeUnit;
-use App\Support\RoleTitleValue;
 use Illuminate\Support\Collection as SupportCollection;
 use Statamic\Contracts\Entries\Collection as CollectionContract;
 use Statamic\Entries\Entry;
@@ -14,6 +12,8 @@ use Statamic\Facades\Collection;
 use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Stache\Repositories\EntryRepository as StacheEntryRepository;
+use UAMSWeb\Aether\People\Support\RoleTitleScopeUnit;
+use UAMSWeb\Aether\People\Support\RoleTitleValue;
 
 /**
  * Finds `role_title` scopes that name an organizational unit as typed text and

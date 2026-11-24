@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Isco_08;
-use App\Rules\Isco08FieldtypeStoredRule;
-use App\Support\Isco08FieldtypeStorage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use PHPUnit\Framework\Assert;
 use Statamic\Fields\Field;
 use Tests\TestCase;
 use UAMSWeb\Aether\Enums\Isco08;
+use UAMSWeb\Aether\People\Fieldtypes\Isco_08;
+use UAMSWeb\Aether\People\Rules\Isco08FieldtypeStoredRule;
+use UAMSWeb\Aether\People\Support\Isco08FieldtypeStorage;
 
 uses(TestCase::class);
 
@@ -19,7 +19,8 @@ uses(TestCase::class);
  * value recomputation, CP sentinel handling, extra validation rules, and the
  * enum-backed hierarchy option rows.
  *
- * Mutation: 100% on App\Fieldtypes\Isco_08 (77 mutants, --covered-only).
+ * Mutation: 100% on the site's former `App\Fieldtypes\Isco_08` (77 mutants, --covered-only). The class
+ * now lives in `uams-web/aether-people` (UAMS-Web/uams-statamic#1143), whose suite owns its mutation run.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/Isco08FieldtypeTest.php
  */

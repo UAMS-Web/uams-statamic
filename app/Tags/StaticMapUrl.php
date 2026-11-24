@@ -63,10 +63,17 @@ class StaticMapUrl extends Tags
         // Substitute the coordinate. Casting through float canonicalizes the numeric value
         // (a direct caller's stray whitespace / exponent string collapses to a clean number)
         // and guarantees a URL-safe token; the zoom falls back to the configured viewer
-        // default when the caller passes none.
+        // default when the caller passes none. strtr() converts each replacement to a string
+        // itself, so none of the `(string)` casts below changes the URL.
         return strtr($template, [
+            // strtr() converts the float to the same string the cast would
+            // @pest-mutate-ignore: RemoveStringCast
             '{lat}' => (string) (float) $lat,
+            // strtr() converts the float to the same string the cast would
+            // @pest-mutate-ignore: RemoveStringCast
             '{lng}' => (string) (float) $lng,
+            // strtr() converts the int to the same string the cast would
+            // @pest-mutate-ignore: RemoveStringCast
             '{zoom}' => (string) $this->resolveZoom($params->get('zoom')),
         ]);
     }

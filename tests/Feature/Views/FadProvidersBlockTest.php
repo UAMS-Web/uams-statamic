@@ -398,3 +398,65 @@ it('renders only the published cards when providers are mixed published/unpublis
     expect($out)->toContain('provider-list')
         ->and(substr_count($out, '>View Profile</a>'))->toBe(1);
 });
+
+/**
+ * Create a second eligible provider whose Area of Expertise and Clinical Specialization
+ * differ from `makeEligibleProvider()`'s, sharing its published location.
+ *
+ * @return string The new Area of Expertise entry's id.
+ */
+function makeNeurologyProvider(): string
+{
+    /** @var Statamic\Entries\Entry $expertise */
+    $expertise = Entry::make();
+    $expertise->collection('clinical_expertise');
+    $expertise->slug('neurology');
+    $expertise->published(true);
+    $expertise->data(['title' => 'Neurology']);
+    $expertise->saveQuietly();
+
+    /** @var Statamic\Entries\Entry $specialization */
+    $specialization = Entry::make();
+    $specialization->collection('clinical_specializations');
+    $specialization->locale('default');
+    $specialization->slug('neurosurgery');
+    $specialization->published(true);
+    $specialization->data(['title' => 'Neurosurgery']);
+    $specialization->saveQuietly();
+
+    /** @var Statamic\Entries\Entry $provider */
+    $provider = Entry::make();
+    $provider->collection('people');
+    $provider->slug('christine-chapel');
+    $provider->published(true);
+    $provider->data([
+        ...providerBaseFields(),
+        'title' => 'Christine Chapel',
+        'credentials' => ['md'],
+        'expertise' => [$expertise->id()],
+        'clinical_specializations' => [$specialization->id()],
+    ]);
+    $provider->saveQuietly();
+
+    return mustBeString($expertise->id(), 'the neurology expertise id');
+}
+
+it('offers only the clinical titles a block\'s expertise-narrowed providers carry (UAMS-Web/aether-people#119)', function (): void {
+    makeEligibleProvider();
+    $neurology = makeNeurologyProvider();
+
+    // With no expertise pre-filter, both providers are listed and both titles are offered.
+    $all = fadProvidersBlockRender(['enable_filtering' => true]);
+
+    expect(substr_count($all, '>View Profile</a>'))->toBe(2)
+        ->and($all)->toContain('<option value="general-surgery">General Surgery</option>')
+        ->toContain('<option value="neurosurgery">Neurosurgery</option>');
+
+    // Narrowed to Neurology, the block lists only that provider, and General Surgery,
+    // carried only by the provider outside the subset, is no longer offered.
+    $subset = fadProvidersBlockRender(['enable_filtering' => true, 'expertise' => [['id' => $neurology]]]);
+
+    expect(substr_count($subset, '>View Profile</a>'))->toBe(1)
+        ->and($subset)->toContain('<option value="neurosurgery">Neurosurgery</option>')
+        ->not->toContain('value="general-surgery"');
+});

@@ -10,11 +10,11 @@ use App\Modifiers\FormatDuration;
  * human text, across precision rules, sign handling, rounding overflow, component
  * omission, display aliases, and input guards.
  *
- * Mutation: every killable mutant is dead (score ~83%). The residual survivors are
- * equivalent mutants no input can distinguish — display aliases that map to the ISO
- * default, the precision-clamp no-op, the defensive casts the `int|string` component
- * shape requires, and the unreachable `-0` guard — so the modifier is left clean
- * rather than annotated with `@pest-mutate-ignore`.
+ * Mutation: 100% on App\Modifiers\FormatDuration (240 mutants, 240 tested, without
+ * --covered-only; macOS, UAMS-Web/uams-statamic#824). Under `strict_types` the input
+ * and param coercions are load-bearing, and the narrowing rows pin them. Two mutants are
+ * annotated in the class: the minute divisor's `IncrementInteger`, which the seconds carry
+ * restores, and `number_format()`'s thousands separator, which a remainder under 60 never uses.
  *
  * @command  php artisan test --compact tests/Unit/Modifiers/FormatDurationTest.php
  */
@@ -84,4 +84,41 @@ it('formats a duration for the given configuration', function (mixed $value, arr
     // ── Positional params (display, then precision) ──
     'positional display param' => [3723.5, ['hms'], '01:02:04'],
     'positional precision param' => [3723.5, ['iso_8601', -1], 'PT1H2M3.5S'],
+]);
+
+it('narrows params and reaches each boundary the same way (UAMS-Web/uams-statamic#824)', function (mixed $value, array $params, string $expected) {
+    expect((new FormatDuration)->index($value, $params, []))->toBe($expected);
+})->with([
+    // strict_types makes each `(float)`, `(string)` and `(int)` coercion load-bearing
+    'a numeric-string value' => ['90', ['display' => 'hms'], '00:01:30'],
+    'a numeric-string value in human text' => ['3723', ['display' => 'human_short'], '1h 2m 3s'],
+    'an integer display reads as the default' => [90, ['display' => 1], 'PT1M30S'],
+    'a non-scalar display reads as the default' => [90, ['display' => ['x']], 'PT1M30S'],
+    'a numeric-string precision' => [1.234, ['display' => 'hms', 'precision' => '2'], '00:00:01.23'],
+    'a non-numeric precision rounds to whole seconds' => [90.4, ['display' => 'hms', 'precision' => 'abc'], '00:01:30'],
+    // Every ISO alias is the default display
+    'the iso alias' => [90, ['display' => 'iso'], 'PT1M30S'],
+    'the iso8601 alias' => [90, ['display' => 'iso8601'], 'PT1M30S'],
+    'the duration alias' => [90, ['display' => 'duration'], 'PT1M30S'],
+    'the hyphenated, upper-case name' => [90, ['display' => 'ISO-8601'], 'PT1M30S'],
+    // The clamp: -1 means no rounding, and anything below it means the same
+    'precision -1 does not round' => [59.4, ['display' => 'hms', 'precision' => -1], '00:00:59.4'],
+    'precision below -1 clamps to no rounding' => [59.4, ['display' => 'hms', 'precision' => -2], '00:00:59.4'],
+    // The hour and minute boundaries
+    'one second short of an hour' => [3599, ['display' => 'hms'], '00:59:59'],
+    'two whole hours' => [7200, ['display' => 'hms'], '02:00:00'],
+    'two whole minutes' => [120, ['display' => 'hms'], '00:02:00'],
+    'thousands of hours, far past the overflow carry' => [26280000, ['display' => 'hms'], '7300:00:00'],
+    // A rounded-up second that carries through the minutes into the hour
+    'a carry into the hour, as a clock' => [3599.6, ['display' => 'hms'], '01:00:00'],
+    'a carry into the hour, in short text' => [3599.6, ['display' => 'human_short'], '1h'],
+    'a carry into the hour, in long text' => [3599.6, ['display' => 'human_long'], '1 hour'],
+    'a carry into the hour, in ISO' => [3599.6, [], 'PT1H'],
+    'a carry into the second hour, as minutes' => [7199.6, ['display' => 'minutes_seconds'], '120:00'],
+    'whole units in long text' => [3723, ['display' => 'human_long'], '1 hour, 2 minutes, 3 seconds'],
+    // Zero and near-zero values
+    'zero as a clock' => [0, ['display' => 'hms'], '00:00:00'],
+    'a value rounding to zero' => [0.0001, ['display' => 'hms', 'precision' => 2], '00:00:00'],
+    'a tiny value unrounded' => [0.0001, ['display' => 'human_long', 'precision' => -1], '0.0001 seconds'],
+    'a fractional second unrounded' => [7.25, ['display' => 'hms', 'precision' => -1], '00:00:07.25'],
 ]);

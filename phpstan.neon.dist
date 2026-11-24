@@ -65,6 +65,9 @@ parameters:
         # file, so PHPStan needs the symbols to avoid reporting the function and constant
         # as undefined. Symbol discovery only — the file itself is not analyzed.
         - scripts/tia-blindness.php
+        # The proxy generator its test requires (#971): symbol discovery only, like the line above.
+        - scripts/search-update-proxy/SearchUpdateProxyGenerator.php
+        - scripts/search-update-proxy/XmlControlCharacterFilter.php
     excludePaths:
         # `App\Support\MovedClassAliases` names all 85 classes that moved into the enums and
         # fieldtype add-ons (UAMS-Web/uams-statamic#995), the large generated enums among them
@@ -180,6 +183,7 @@ parameters:
                 - tests/Browser/ReplicatorRebuildStateGapsTest.php
                 - tests/Browser/ReplicatorSubfieldConditionsTest.php
                 - tests/Browser/SignatureConditionalRebuildTest.php
+                - tests/Browser/TextPhoneticPairAddOnTest.php
                 - tests/Feature/Forms/AlpineCspFormsAddonTest.php
                 - tests/Feature/Forms/DateDefaultNowPublicFormTest.php
                 - tests/Feature/Forms/FormScoringAddOnTest.php

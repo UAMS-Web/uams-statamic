@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Rules\Isco08FieldtypeStoredRule;
 use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Translation\PotentiallyTranslatedString;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Rules\Isco08FieldtypeStoredRule;
 
 uses(TestCase::class);
 
 covers(Isco08FieldtypeStoredRule::class);
 
 /**
- * Behavior of the stored `isco_08` rule (App\Rules\Isco08FieldtypeStoredRule): a
+ * Behavior of the stored `isco_08` rule (UAMSWeb\Aether\People\Rules\Isco08FieldtypeStoredRule): a
  * value that is not an array is refused, and a field whose chain has no valid
  * major is refused only when the field is required. A valid major with invalid
  * tiers beneath it passes, because the chain is normalized first and drops them.
@@ -39,7 +39,7 @@ function isco08StoredMessages(bool $required, mixed $value): array
 }
 
 it('refuses a value that is not an array, required or not', function (bool $required, mixed $value): void {
-    expect(isco08StoredMessages($required, $value))->toBe([__('statamic::fieldtypes.isco_08.validation.not_array')]);
+    expect(isco08StoredMessages($required, $value))->toBe([__('aether-people::fieldtypes.isco_08.validation.not_array')]);
 })->with([
     'required string' => [true, '2'],
     'optional string' => [false, '2'],
@@ -47,7 +47,7 @@ it('refuses a value that is not an array, required or not', function (bool $requ
 ]);
 
 it('requires a valid major only when the field is required', function (array $value): void {
-    expect(isco08StoredMessages(true, $value))->toBe([__('statamic::fieldtypes.isco_08.validation.required_major')])
+    expect(isco08StoredMessages(true, $value))->toBe([__('aether-people::fieldtypes.isco_08.validation.required_major')])
         ->and(isco08StoredMessages(false, $value))->toBe([]);
 })->with([
     'no tiers' => [[]],

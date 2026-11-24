@@ -409,3 +409,78 @@ it('tolerates non-array specialty and location fields', function (): void {
 
     expect(documentTitle()->forPeople($person))->toBe('F F, MD | UAMS Health');
 });
+
+it('drops the city segment when the first location reference is empty, not a string, or the list is empty', function (mixed $locations): void {
+    documentTitleMakeLocation('lr-clinic', [
+        'title' => 'Little Rock Clinic',
+        'address' => ['city' => 'Little Rock', 'state_province_region' => 'Arkansas'],
+    ]);
+    $person = documentTitleMakePerson('odd-locations', [
+        'title' => 'G G, MD',
+        'clinical_locations' => $locations,
+    ]);
+
+    expect(documentTitle()->forPeople($person))->toBe('G G, MD | UAMS Health');
+})->with([
+    'empty list' => [[]],
+    'empty string id' => [['']],
+    'integer id' => [[5]],
+    'null id' => [[null]],
+    'keyed, no index 0' => [['first' => 'does-not-exist']],
+]);
+
+it('reads only the first location reference', function (): void {
+    $littleRock = documentTitleMakeLocation('lr-clinic', [
+        'title' => 'Little Rock Clinic',
+        'address' => ['city' => 'Little Rock', 'state_province_region' => 'Arkansas'],
+    ]);
+    $conway = documentTitleMakeLocation('conway-clinic', [
+        'title' => 'Conway Clinic',
+        'address' => ['city' => 'Conway', 'state_province_region' => 'Arkansas'],
+    ]);
+    $person = documentTitleMakePerson('two-locations', [
+        'title' => 'H H, MD',
+        'clinical_locations' => [$conway, $littleRock],
+    ]);
+
+    expect(documentTitle()->forPeople($person))->toBe('H H, MD | Conway, AR | UAMS Health');
+});
+
+it('renders a numeric title as its string form', function (): void {
+    $person = documentTitleMakePerson('numeric', ['title' => 42]);
+
+    expect(documentTitle()->forPeople($person))->toBe('42 | UAMS Health');
+});
+
+it('gives the clean title to the lowest id and the ordinal to the next', function (): void {
+    $locationId = documentTitleMakeLocation('lr-clinic', [
+        'title' => 'Little Rock Clinic',
+        'address' => ['city' => 'Little Rock', 'state_province_region' => 'Arkansas'],
+    ]);
+    $data = ['title' => 'Leonard McCoy, MD', 'clinical_locations' => [$locationId]];
+    $first = documentTitleMakePerson('leonard-mccoy', $data);
+    $second = documentTitleMakePerson('leonard-mccoy-2', $data);
+
+    // Order the two by id, the same order the ordinal is assigned in
+    $byId = [$first, $second];
+    usort($byId, static fn (Statamic\Entries\Entry $left, Statamic\Entries\Entry $right): int => strcmp(mustBeString($left->id(), 'left id'), mustBeString($right->id(), 'right id')));
+
+    expect(documentTitle()->forPeople($byId[0]))->toBe('Leonard McCoy, MD | Little Rock, AR | UAMS Health')
+        ->and(documentTitle()->forPeople($byId[1]))->toBe('Leonard McCoy, MD | Little Rock, AR | UAMS Health (2)');
+});
+
+it('leaves a same-named location with a different city unchanged', function (): void {
+    $littleRock = documentTitleMakeLocation('clinic-lr', [
+        'title' => 'Family Clinic',
+        'address' => ['city' => 'Little Rock', 'state_province_region' => 'Arkansas'],
+    ]);
+    documentTitleMakeLocation('clinic-conway', [
+        'title' => 'Family Clinic',
+        'address' => ['city' => 'Conway', 'state_province_region' => 'Arkansas'],
+    ]);
+
+    $entry = Entry::find($littleRock);
+
+    expect($entry)->toBeInstanceOf(Statamic\Entries\Entry::class)
+        ->and(documentTitle()->forClinicalLocation(mustBe(Statamic\Entries\Entry::class, $entry, 'location')))->toBe('Family Clinic | Little Rock, AR | UAMS Health');
+});

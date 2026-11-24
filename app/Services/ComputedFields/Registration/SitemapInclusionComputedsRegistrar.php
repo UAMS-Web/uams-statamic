@@ -20,9 +20,11 @@ use UAMSWeb\Aether\People\Entries\PersonEntry;
  * collection so mitydigital/sitemapamic excludes non-public entries from each
  * site's XML sitemap.
  *
- * Sitemapamic's loader (`MityDigital\Sitemapamic\Support\Sitemapamic::loadEntries`)
- * only skips *unpublished* entries — it never checks routability, and it maps a
- * kept entry straight to `URL::makeAbsolute($entry->url())`. So a *published* entry
+ * Sitemapamic's URL iterator (`MityDigital\Sitemapamic\Support\Content\UrlIterator`)
+ * skips, among others, unpublished entries, entries with a `redirect`, entries under
+ * Statamic's `protect` scheme, entries with an empty `uri()` and entries with no
+ * template view, but it never reads this app's
+ * `status_and_visibility` or password fields, or a person's profile-page flag. So a *published* entry
  * that is non-public (private / password-protected), non-routable (a person with no
  * profile page), or reachable only via a redirect (an orphaned knowledge-base
  * descendant) would otherwise emit a bogus, private, or redirecting `<loc>`. This
@@ -71,8 +73,9 @@ final class SitemapInclusionComputedsRegistrar
     /**
      * The editor-facing blueprint toggle that opts an individual entry out of the
      * sitemap. Deliberately distinct from the mapped self::INCLUDE_HANDLE so a
-     * stored value cannot shadow this computed in Sitemapamic's `get() ??
-     * getComputed()` read (which would bypass the automatic gate).
+     * stored value cannot shadow this computed: Sitemapamic reads the stored value
+     * first and falls back to the computed only when it is null, so a stored value
+     * would bypass the automatic gate.
      */
     public const string EDITOR_TOGGLE_HANDLE = 'include_in_xml_sitemap';
 
@@ -118,8 +121,8 @@ final class SitemapInclusionComputedsRegistrar
 
         // Collections that bring their own rule. `people` registers the shared gate AND
         // exclusion of non-routable profiles (UAMS-Web/uams-statamic-archive#43): a person with `profile_page_query`
-        // explicitly false has no URI, so its `url()` is null and Sitemapamic would emit
-        // a rootless/duplicate <loc>.
+        // explicitly false has no URI. Sitemapamic 4 also skips an entry whose `uri()`
+        // is empty, so this rule and that check both keep the profile out.
         foreach ($this->extensions->sitemapInclusionRules() as $collection => $rule) {
             Collection::computed($collection, self::INCLUDE_HANDLE, $rule);
         }
@@ -205,7 +208,7 @@ final class SitemapInclusionComputedsRegistrar
      * (post_categories, post_tags) may appear in the public XML sitemap.
      *
      * The router resolves a request through the Stache `uri` index, while
-     * Sitemapamic emits `$entry->url()`, which recomputes the URI when the index
+     * Sitemapamic emits the entry's `uri()`, which recomputes the URI when the index
      * has none. The two disagree for an entry saved without a place in the
      * collection's tree: its index URI is saved as null, so its URL 404s, yet the
      * recomputed URI re-roots it and the sitemap would advertise that URL until

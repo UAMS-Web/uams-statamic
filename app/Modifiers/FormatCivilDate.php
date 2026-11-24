@@ -67,8 +67,9 @@ class FormatCivilDate extends Modifier
             $value = $value->value();
         }
 
-        // Preserve explicit empty inputs for optional date fields
-        if (in_array($value, [null, '', false], true)) {
+        // Preserve explicit empty inputs for optional date fields. An empty string needs no entry:
+        // it matches no date pattern and reaches the empty-string return below.
+        if (in_array($value, [null, false], true)) {
             return $value;
         }
 

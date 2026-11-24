@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Support\RoleTitleUnstructuredReplicatorSupport;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
+use UAMSWeb\Aether\People\Support\RoleTitleUnstructuredReplicatorSupport;
 
 uses(TestCase::class);
 
