@@ -175,6 +175,24 @@ it('refuses markup in a title with its own message', function (string $title, bo
     'a closing bracket only' => ['Communicator > phaser', false],
 ]);
 
+// EmailValidator 4.0.5 (its pull request 428) refuses bytes after a domain literal
+it('checks a contact email address, domain literals included', function (string $email, bool $passes) {
+    AssetContainers::shouldReceive('find')->andReturnNull();
+    $request = new ClassifiedListingRequest;
+    $validator = Validator::make(
+        ['title' => 'Communicator', 'contact_name' => 'Hikaru Sulu', 'contact_email' => $email],
+        $request->rules(),
+        $request->messages(),
+    );
+
+    expect($validator->passes())->toBe($passes)
+        ->and($validator->errors()->has('contact_email'))->toBe(! $passes);
+})->with([
+    'an ordinary address' => ['sulu@example.com', true],
+    'a domain literal' => ['sulu@[192.0.2.1]', true],
+    'text after a domain literal' => ['sulu@[192.0.2.1]x', false],
+]);
+
 it('reports the configured image cap in its message', function () {
     setClassifiedImagesConfig('max_files', 1);
     AssetContainers::shouldReceive('find')->andReturnNull();
