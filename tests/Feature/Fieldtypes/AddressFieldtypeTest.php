@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Address;
 use Statamic\Fields\Field;
 use Tests\TestCase;
 use UAMSWeb\Aether\Enums\CanadianProvince;
 use UAMSWeb\Aether\Enums\Country;
 use UAMSWeb\Aether\Enums\State;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address;
 
 uses(TestCase::class);
 
 covers(Address::class);
 
 /**
- * Unit tests for App\Fieldtypes\Address::process preset persistence and the
+ * Unit tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address::process preset persistence and the
  * subfield validation rules contributed via the HasSubfields trait.
  *
- * Mutation: 100% on App\Fieldtypes\Address (185 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address (185 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/AddressFieldtypeTest.php
  */

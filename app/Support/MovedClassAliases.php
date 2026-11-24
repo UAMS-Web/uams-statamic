@@ -73,7 +73,65 @@ use UAMSWeb\Aether\Enums\State;
 use UAMSWeb\Aether\Enums\StateInfo;
 use UAMSWeb\Aether\Enums\ZipCode;
 use UAMSWeb\Aether\Enums\ZipCodeInfo;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Audio;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Checkboxes;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Consent;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\CssSelector;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\DateFieldSelect;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Email;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Entries;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Floatval;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Gps;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Hidden;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Html;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Identifier;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Integer;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Lists;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\MaskField;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Month;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Name;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Option;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\PartialDate;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Password;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Phone;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Product;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Radio;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Section;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Select;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Signature;
 use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Subsection;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Terms;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\TermsSearchIndex;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Text;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Time;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Total;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Trigger;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\TrueFalse;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Url;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Username;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Video;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Week;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Xpath;
+use UAMSWeb\Aether\Fieldtypes\Listeners\EnforceChoiceSubmissionLimits;
+use UAMSWeb\Aether\Fieldtypes\Rules\AssetMinimumDimensions;
+use UAMSWeb\Aether\Fieldtypes\Rules\DateBoundary;
+use UAMSWeb\Aether\Fieldtypes\Rules\FieldRequiredHelper;
+use UAMSWeb\Aether\Fieldtypes\Rules\IdentifierRegex;
+use UAMSWeb\Aether\Fieldtypes\Rules\InternationalPhone;
+use UAMSWeb\Aether\Fieldtypes\Rules\Latitude;
+use UAMSWeb\Aether\Fieldtypes\Rules\Longitude;
+use UAMSWeb\Aether\Fieldtypes\Rules\NationalPhone;
+use UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorMinSets;
+use UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorRequireAtLeastOneEnabledSet;
+use UAMSWeb\Aether\Fieldtypes\Rules\SmsShortCode;
+use UAMSWeb\Aether\Fieldtypes\Scopes\AssetsByFileSize;
+use UAMSWeb\Aether\Fieldtypes\Services\PhoneUtil;
+use UAMSWeb\Aether\Fieldtypes\Support\DateBoundaryEngine;
+use UAMSWeb\Aether\Fieldtypes\Support\Forms\ChoiceSubmissionLimits;
 use UAMSWeb\Aether\Fieldtypes\Traits\BuildsPreloadConfig;
 use UAMSWeb\Aether\Fieldtypes\Traits\ConfigCache;
 use UAMSWeb\Aether\Fieldtypes\Traits\ConfigSectionWrapper;
@@ -81,10 +139,12 @@ use UAMSWeb\Aether\Fieldtypes\Traits\DefinesInputConfigFields;
 use UAMSWeb\Aether\Fieldtypes\Traits\DynamicDefaultValue;
 use UAMSWeb\Aether\Fieldtypes\Traits\FieldtypeValidationHelpers;
 use UAMSWeb\Aether\Fieldtypes\Traits\FieldtypeValidationRules;
+use UAMSWeb\Aether\Fieldtypes\Traits\HasChoiceSubmissionLimits;
 use UAMSWeb\Aether\Fieldtypes\Traits\HasSubfields;
 use UAMSWeb\Aether\Fieldtypes\Traits\Input;
 use UAMSWeb\Aether\Fieldtypes\Traits\InputMaskValueStorage;
 use UAMSWeb\Aether\Fieldtypes\Traits\OtherOption;
+use UAMSWeb\Aether\Fieldtypes\Traits\PresetOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\ProcessesInputValue;
 use UAMSWeb\Aether\Fieldtypes\Traits\ProvidesAutocompleteOptions;
 use UAMSWeb\Aether\Fieldtypes\Traits\RandomizesOptions;
@@ -115,7 +175,9 @@ use UAMSWeb\Aether\People\Support\RoleTitleValue;
  * The enums, their generators, the shared fieldtype traits and the `Subsection`
  * fieldtype left the site in UAMS-Web/uams-statamic#995, the `TextPhoneticPair` fieldtype in
  * UAMS-Web/uams-statamic#1000, and the `RoleTitle` and `Isco_08` fieldtypes with their rules
- * and support classes in UAMS-Web/uams-statamic#1143. A template, a content file
+ * and support classes in UAMS-Web/uams-statamic#1143, and the four fieldtype families with
+ * their rules, scopes, services and support classes in UAMS-Web/uams-statamic#996,
+ * #997, #998 and #999. A template, a content file
  * or a configured string that still names an old class keeps working: the first time
  * a process asks the autoloader for an old name, {@see self::load()} aliases it to the
  * add-on's class with `class_alias()`, so both names are the same class and enum cases
@@ -197,10 +259,46 @@ final class MovedClassAliases
             'App\\Enums\\StateInfo' => StateInfo::class,
             'App\\Enums\\ZipCode' => ZipCode::class,
             'App\\Enums\\ZipCodeInfo' => ZipCodeInfo::class,
+            'App\\Fieldtypes\\Address' => Address::class,
+            'App\\Fieldtypes\\Assets' => Assets::class,
+            'App\\Fieldtypes\\Audio' => Audio::class,
+            'App\\Fieldtypes\\Checkboxes' => Checkboxes::class,
+            'App\\Fieldtypes\\Consent' => Consent::class,
+            'App\\Fieldtypes\\CssSelector' => CssSelector::class,
+            'App\\Fieldtypes\\Currency' => \UAMSWeb\Aether\Fieldtypes\Fieldtypes\Currency::class,
+            'App\\Fieldtypes\\Date' => Date::class,
+            'App\\Fieldtypes\\DateFieldSelect' => DateFieldSelect::class,
+            'App\\Fieldtypes\\Email' => Email::class,
+            'App\\Fieldtypes\\Entries' => Entries::class,
+            'App\\Fieldtypes\\Floatval' => Floatval::class,
+            'App\\Fieldtypes\\Gps' => Gps::class,
+            'App\\Fieldtypes\\Hidden' => Hidden::class,
+            'App\\Fieldtypes\\Html' => Html::class,
+            'App\\Fieldtypes\\Identifier' => Identifier::class,
+            'App\\Fieldtypes\\Integer' => Integer::class,
             'App\\Fieldtypes\\Isco_08' => Isco_08::class,
+            'App\\Fieldtypes\\Lists' => Lists::class,
+            'App\\Fieldtypes\\MaskField' => MaskField::class,
+            'App\\Fieldtypes\\Month' => Month::class,
+            'App\\Fieldtypes\\Name' => Name::class,
+            'App\\Fieldtypes\\Option' => Option::class,
+            'App\\Fieldtypes\\PartialDate' => PartialDate::class,
+            'App\\Fieldtypes\\Password' => Password::class,
+            'App\\Fieldtypes\\Phone' => Phone::class,
+            'App\\Fieldtypes\\Product' => Product::class,
+            'App\\Fieldtypes\\Radio' => Radio::class,
+            'App\\Fieldtypes\\Replicator' => Replicator::class,
             'App\\Fieldtypes\\RoleTitle' => RoleTitle::class,
+            'App\\Fieldtypes\\Section' => Section::class,
+            'App\\Fieldtypes\\Select' => Select::class,
+            'App\\Fieldtypes\\Signature' => Signature::class,
             'App\\Fieldtypes\\Subsection' => Subsection::class,
+            'App\\Fieldtypes\\Terms' => Terms::class,
+            'App\\Fieldtypes\\TermsSearchIndex' => TermsSearchIndex::class,
+            'App\\Fieldtypes\\Text' => Text::class,
             'App\\Fieldtypes\\TextPhoneticPair' => TextPhoneticPair::class,
+            'App\\Fieldtypes\\Time' => Time::class,
+            'App\\Fieldtypes\\Total' => Total::class,
             'App\\Fieldtypes\\Traits\\BuildsPreloadConfig' => BuildsPreloadConfig::class,
             'App\\Fieldtypes\\Traits\\ConfigCache' => ConfigCache::class,
             'App\\Fieldtypes\\Traits\\ConfigSectionWrapper' => ConfigSectionWrapper::class,
@@ -208,20 +306,44 @@ final class MovedClassAliases
             'App\\Fieldtypes\\Traits\\DynamicDefaultValue' => DynamicDefaultValue::class,
             'App\\Fieldtypes\\Traits\\FieldtypeValidationHelpers' => FieldtypeValidationHelpers::class,
             'App\\Fieldtypes\\Traits\\FieldtypeValidationRules' => FieldtypeValidationRules::class,
+            'App\\Fieldtypes\\Traits\\HasChoiceSubmissionLimits' => HasChoiceSubmissionLimits::class,
             'App\\Fieldtypes\\Traits\\HasSubfields' => HasSubfields::class,
             'App\\Fieldtypes\\Traits\\Input' => Input::class,
             'App\\Fieldtypes\\Traits\\InputMaskValueStorage' => InputMaskValueStorage::class,
             'App\\Fieldtypes\\Traits\\OtherOption' => OtherOption::class,
+            'App\\Fieldtypes\\Traits\\PresetOptions' => PresetOptions::class,
             'App\\Fieldtypes\\Traits\\ProcessesInputValue' => ProcessesInputValue::class,
             'App\\Fieldtypes\\Traits\\ProvidesAutocompleteOptions' => ProvidesAutocompleteOptions::class,
             'App\\Fieldtypes\\Traits\\RandomizesOptions' => RandomizesOptions::class,
             'App\\Fieldtypes\\Traits\\SometimesValidationRules' => SometimesValidationRules::class,
+            'App\\Fieldtypes\\Trigger' => Trigger::class,
+            'App\\Fieldtypes\\TrueFalse' => TrueFalse::class,
+            'App\\Fieldtypes\\Url' => Url::class,
+            'App\\Fieldtypes\\Username' => Username::class,
+            'App\\Fieldtypes\\Video' => Video::class,
+            'App\\Fieldtypes\\Week' => Week::class,
+            'App\\Fieldtypes\\Xpath' => Xpath::class,
+            'App\\Fieldtypes\\ZipCode' => \UAMSWeb\Aether\Fieldtypes\Fieldtypes\ZipCode::class,
             'App\\Imports\\SpreadsheetImport' => SpreadsheetImport::class,
+            'App\\Listeners\\EnforceChoiceSubmissionLimits' => EnforceChoiceSubmissionLimits::class,
+            'App\\Rules\\AssetMinimumDimensions' => AssetMinimumDimensions::class,
+            'App\\Rules\\DateBoundary' => DateBoundary::class,
+            'App\\Rules\\FieldRequiredHelper' => FieldRequiredHelper::class,
+            'App\\Rules\\IdentifierRegex' => IdentifierRegex::class,
+            'App\\Rules\\InternationalPhone' => InternationalPhone::class,
             'App\\Rules\\Isco08FieldtypeStoredRule' => Isco08FieldtypeStoredRule::class,
+            'App\\Rules\\Latitude' => Latitude::class,
+            'App\\Rules\\Longitude' => Longitude::class,
+            'App\\Rules\\NationalPhone' => NationalPhone::class,
             'App\\Rules\\OnetSocOccupationCode' => OnetSocOccupationCode::class,
+            'App\\Rules\\ReplicatorMinSets' => ReplicatorMinSets::class,
+            'App\\Rules\\ReplicatorRequireAtLeastOneEnabledSet' => ReplicatorRequireAtLeastOneEnabledSet::class,
             'App\\Rules\\RoleTitlePerConfigurationOptionRule' => RoleTitlePerConfigurationOptionRule::class,
             'App\\Rules\\RoleTitleScopeJoinerRule' => RoleTitleScopeJoinerRule::class,
             'App\\Rules\\RoleTitleScopeUnitRule' => RoleTitleScopeUnitRule::class,
+            'App\\Rules\\SmsShortCode' => SmsShortCode::class,
+            'App\\Rules\\ZipCode' => \UAMSWeb\Aether\Fieldtypes\Rules\ZipCode::class,
+            'App\\Scopes\\AssetsByFileSize' => AssetsByFileSize::class,
             'App\\Services\\EnumGeneration\\County\\CountyEnumGenerator' => CountyEnumGenerator::class,
             'App\\Services\\EnumGeneration\\CredentialRegistry\\CredentialRegistryEnumGenerator' => CredentialRegistryEnumGenerator::class,
             'App\\Services\\EnumGeneration\\EnumDataUtils' => EnumDataUtils::class,
@@ -243,6 +365,9 @@ final class MovedClassAliases
             'App\\Services\\EnumGeneration\\State\\StateEnumGenerator' => StateEnumGenerator::class,
             'App\\Services\\EnumGeneration\\TigerWebUtils' => TigerWebUtils::class,
             'App\\Services\\EnumGeneration\\ZipCode\\ZipCodeEnumGenerator' => ZipCodeEnumGenerator::class,
+            'App\\Services\\PhoneUtil' => PhoneUtil::class,
+            'App\\Support\\DateBoundaryEngine' => DateBoundaryEngine::class,
+            'App\\Support\\Forms\\ChoiceSubmissionLimits' => ChoiceSubmissionLimits::class,
             'App\\Support\\Isco08FieldtypeStorage' => Isco08FieldtypeStorage::class,
             'App\\Support\\ReplicatorSetMeta' => ReplicatorSetMeta::class,
             'App\\Support\\ReplicatorVueSet' => ReplicatorVueSet::class,

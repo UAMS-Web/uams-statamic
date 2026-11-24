@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Replicator;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator;
 
 uses(TestCase::class);
 
 /**
- * Unit tests for the custom Replicator fieldtype (App\Fieldtypes\Replicator).
+ * Unit tests for the custom Replicator fieldtype (UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator).
  *
  * Verifies min_sets config in Boundaries & Limits and validation that enforces
  * the minimum number of sets.
  *
- * Mutation: 100% on App\Fieldtypes\Replicator (17 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Replicator (17 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/ReplicatorFieldtypeTest.php
  */

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\TermsSearchIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Fluent;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -18,6 +17,7 @@ use Statamic\Search\Index;
 use Statamic\Stache\Query\TermQueryBuilder;
 use Tests\Support\TermsMutateProbeScope;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\TermsSearchIndex;
 
 use function Pest\Laravel\actingAs;
 
@@ -32,7 +32,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *   - Search index configuration and fallback behavior
  *   - Search result accuracy with custom indexes
  *
- * Mutation: 100% on App\Fieldtypes\TermsSearchIndex (42 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\TermsSearchIndex (42 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/TermsSearchIndexTest.php
  */

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support\Doubles;
 
-use App\Fieldtypes\Assets;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets;
 
 /**
  * Exposes the protected file-size scope producers of the Assets fieldtype so the

@@ -32,7 +32,7 @@ uses(TestCase::class);
  *     "Product Name" field on `gravityforms-export_communications-uams-edu_web.json`
  *     ($42.13 / $13.42 / $0.42).
  *
- * Mutation: 100% on App\Fieldtypes\Product (204 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Product (204 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Forms/ProductFormRoundTripTest.php
  */

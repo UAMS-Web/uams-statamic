@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Radio;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Radio;
 
 uses(TestCase::class);
 

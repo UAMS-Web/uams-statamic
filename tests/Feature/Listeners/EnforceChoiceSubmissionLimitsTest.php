@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Listeners\EnforceChoiceSubmissionLimits;
 use Illuminate\Validation\ValidationException;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
@@ -13,6 +12,7 @@ use Statamic\Fields\Fields;
 use Statamic\Forms\Form;
 use Statamic\Forms\Submission;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Listeners\EnforceChoiceSubmissionLimits;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 

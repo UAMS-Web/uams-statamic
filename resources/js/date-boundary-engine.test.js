@@ -13,7 +13,7 @@ import {
 	resolveBoundary,
 	stringifyDate,
 	toPickerValue,
-} from './date-boundary-engine.js';
+} from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/date-boundary-engine.js';
 
 const iso = (date) => (date ? date.toString() : null);
 

@@ -7,7 +7,7 @@
 // "geocode-result -> coordinate update path" the picker uses on selection.
 
 // Decimal places kept for latitude / longitude (mirrors the PHP fieldtype's
-// App\Fieldtypes\Gps::COORDINATE_PRECISION and the component's display).
+// UAMSWeb\Aether\Fieldtypes\Fieldtypes\Gps::COORDINATE_PRECISION and the component's display).
 export const COORDINATE_PRECISION = 7;
 
 /**

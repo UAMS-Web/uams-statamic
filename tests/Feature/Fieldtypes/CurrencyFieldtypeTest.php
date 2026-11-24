@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Currency;
 use Statamic\Fields\Field;
 use Tests\TestCase;
 use UAMSWeb\Aether\Enums\Currency as CurrencyEnum;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Currency;
 
 /**
- * Tests for App\Fieldtypes\Currency preload masks, CP metadata, and config maps.
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Currency preload masks, CP metadata, and config maps.
  *
- * Mutation: 100% on App\Fieldtypes\Currency (--covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Currency (--covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/CurrencyFieldtypeTest.php
  */

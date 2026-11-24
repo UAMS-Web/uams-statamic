@@ -11,7 +11,7 @@ declare(strict_types=1);
  * Quantitative Value (`App\Fieldtypes\QuantitativeValue`, `QuantitativeValueFieldtype.vue`):
  * `statamic::fieldtypes.quantitative_value.*`.
  *
- * Partial Date (`App\Fieldtypes\PartialDate`, `PartialDateFieldtype.vue`):
+ * Partial Date (`UAMSWeb\Aether\Fieldtypes\Fieldtypes\PartialDate`, `PartialDateFieldtype.vue`):
  * `statamic::fieldtypes.partial_date.*`.
  */
 return [

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Date as AppDateFieldtype;
 use Carbon\Carbon;
 use PHPUnit\Framework\Assert;
 use Statamic\Entries\Entry as StatamicEntry;
@@ -13,6 +12,7 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Tests\Support\ContentSubmodule;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date as AppDateFieldtype;
 
 uses(TestCase::class);
 
@@ -23,7 +23,7 @@ uses(TestCase::class);
  *
  * @covers \App\Fieldtypes\Date::preProcess
  *
- * Mutation: content-dependent on App\Fieldtypes\Date — the sole test self-skips
+ * Mutation: content-dependent on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date — the sole test self-skips
  * without the content/ submodule (the dated `posts` collection), so Pest reports
  * no covered mutants locally; coverage runs in CI (--covered-only).
  *

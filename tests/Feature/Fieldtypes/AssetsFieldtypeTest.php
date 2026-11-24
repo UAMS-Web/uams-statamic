@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Assets;
-use App\Rules\AssetMinimumDimensions;
 use Illuminate\Http\Request;
 use Statamic\Auth\File\User as FileUser;
 use Statamic\Facades\User;
@@ -11,13 +9,15 @@ use Statamic\Fields\Field;
 use Statamic\Fieldtypes\Assets\Assets as BaseAssets;
 use Tests\TestCase;
 use UAMSWeb\Aether\Enums\MimeType;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets;
+use UAMSWeb\Aether\Fieldtypes\Rules\AssetMinimumDimensions;
 
 use function Pest\Laravel\actingAs;
 
 uses(TestCase::class);
 
 /**
- * Tests for App\Fieldtypes\Assets: the file restriction config section, the
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Assets: the file restriction config section, the
  * upload validation rules and accept attribute built from it, and the query
  * scopes it adds to the asset browser's preload config.
  *

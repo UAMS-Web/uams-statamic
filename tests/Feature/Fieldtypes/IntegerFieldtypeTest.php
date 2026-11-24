@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Integer;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Integer;
 
 /**
- * Tests for App\Fieldtypes\Integer: its Control Panel identity, the config lists it hands the Input
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Integer: its Control Panel identity, the config lists it hands the Input
  * trait, and its validation rules.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/IntegerFieldtypeTest.php

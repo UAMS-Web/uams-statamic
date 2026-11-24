@@ -49,7 +49,7 @@ function numericFieldContext(array $overrides = []): array
 function renderNumericField(string $fieldtype, array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
         numericFieldContext($overrides),
         true,
     );

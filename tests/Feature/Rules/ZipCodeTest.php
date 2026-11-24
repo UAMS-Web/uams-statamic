@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Rules\ZipCode;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\ZipCode;
 
 uses(TestCase::class);
 

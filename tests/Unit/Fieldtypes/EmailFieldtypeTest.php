@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Email;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Email;
 
 /**
  * @covers \App\Fieldtypes\Email

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Rules\SmsShortCode;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\SmsShortCode;
 
 uses(TestCase::class);
 

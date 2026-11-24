@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Rules\BaseRules\BaseValidationRule;
-use App\Rules\Latitude;
-use App\Rules\Longitude;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\BaseValidationRule;
+use UAMSWeb\Aether\Fieldtypes\Rules\Latitude;
+use UAMSWeb\Aether\Fieldtypes\Rules\Longitude;
 
 uses(TestCase::class);
 

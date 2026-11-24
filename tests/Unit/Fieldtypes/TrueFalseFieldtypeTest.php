@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\TrueFalse;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\TrueFalse;
 
 /**
  * Behavior of the TrueFalse fieldtype (app/Fieldtypes/TrueFalse.php): two fixed

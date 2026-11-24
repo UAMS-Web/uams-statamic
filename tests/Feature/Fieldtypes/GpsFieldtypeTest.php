@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Gps;
-use App\Rules\Latitude;
-use App\Rules\Longitude;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Gps;
+use UAMSWeb\Aether\Fieldtypes\Rules\Latitude;
+use UAMSWeb\Aether\Fieldtypes\Rules\Longitude;
 
 uses(TestCase::class);
 

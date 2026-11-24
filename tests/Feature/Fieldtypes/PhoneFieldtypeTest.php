@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Phone;
-use App\Rules\InternationalPhone;
-use App\Rules\NationalPhone;
-use App\Rules\SmsShortCode;
-use App\Services\PhoneUtil;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Phone;
+use UAMSWeb\Aether\Fieldtypes\Rules\InternationalPhone;
+use UAMSWeb\Aether\Fieldtypes\Rules\NationalPhone;
+use UAMSWeb\Aether\Fieldtypes\Rules\SmsShortCode;
+use UAMSWeb\Aether\Fieldtypes\Services\PhoneUtil;
 
 uses(TestCase::class);
 

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Entries;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\File;
 use Illuminate\Testing\TestResponse;
@@ -16,6 +15,7 @@ use Statamic\Fields\Blueprint as BlueprintItem;
 use Statamic\Fields\Field;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Entries;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;

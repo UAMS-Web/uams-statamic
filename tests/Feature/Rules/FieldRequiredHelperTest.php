@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Rules\FieldRequiredHelper;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\FieldRequiredHelper;
 
 uses(TestCase::class);
 
 /**
- * Behavior of App\Rules\FieldRequiredHelper's "is field required?" helpers shared
+ * Behavior of UAMSWeb\Aether\Fieldtypes\Rules\FieldRequiredHelper's "is field required?" helpers shared
  * by the Replicator rules: configHasRequiredRule detects any required* prefix in a
  * field's validate config, and fieldIsRequiredForRequest reports whether a field is
  * required for the current request.

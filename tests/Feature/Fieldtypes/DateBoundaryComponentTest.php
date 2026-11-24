@@ -7,7 +7,7 @@ use Statamic\Fields\Fieldtype;
 use Tests\TestCase;
 
 /**
- * UAMS-Web/uams-statamic-archive#193 — App\Fieldtypes\Date routes only fields that configure a Boundaries &
+ * UAMS-Web/uams-statamic-archive#193 — UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date routes only fields that configure a Boundaries &
  * Limits constraint to the enhanced `custom_date` CP component, so the override's
  * blast radius stays off every unconstrained date field (entry publish dates,
  * plain form fields, and the fieldtype's own date-typed config sub-fields).

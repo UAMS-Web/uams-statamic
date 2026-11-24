@@ -29,7 +29,7 @@ uses(TestCase::class);
 function renderProductField(array $context): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/product.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/product.antlers.html')),
         $context,
         true,
     );

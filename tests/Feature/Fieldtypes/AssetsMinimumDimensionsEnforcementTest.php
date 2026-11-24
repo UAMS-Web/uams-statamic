@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Rules\AssetMinimumDimensions;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -12,6 +11,7 @@ use Statamic\Facades\Blueprint;
 use Statamic\Facades\Stache;
 use Tests\Support\AssetReferenceSweep;
 use Tests\Support\StacheIsolatedTestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\AssetMinimumDimensions;
 
 /**
  * End-to-end enforcement of the Assets minimum-dimensions rule (UAMS-Web/uams-statamic-archive#1299) THROUGH
