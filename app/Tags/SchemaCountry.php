@@ -90,7 +90,7 @@ class SchemaCountry extends Tags
     private static ?array $countryByUpperAlpha3 = null;
 
     /**
-     * Lazy map: canonical numeric key (string of int, leading zeros stripped) => enum case.
+     * Lazy map: canonical numeric key (int, leading zeros stripped) => enum case.
      *
      * @var array<int, Country>|null
      */
@@ -108,13 +108,6 @@ class SchemaCountry extends Tags
         /** @var Parameters $params */
         $params = $this->params;
         $codeRaw = $params->get('code');
-
-        // If code is empty/null/false, return empty string early
-        if (
-            in_array($codeRaw, ['', null, false], true)
-        ) {
-            return '';
-        }
 
         // Unwrap Statamic Value when the code is field-bound
         if ($codeRaw instanceof Value) {
@@ -134,13 +127,8 @@ class SchemaCountry extends Tags
 
         // Branch on list input vs scalar string input
         if (\is_array($codeRaw)) {
-            // Normalize the list to trimmed non-empty string codes
+            // Normalize the list to trimmed string codes
             $codes = $this->normalizeCodeStringList($codeRaw);
-
-            // Return an empty JSON array when the list has no usable codes
-            if ($codes === []) {
-                return $this->encodeJson([]);
-            }
 
             // Resolve emit context and deduplication service once per tag (not per list item)
             $emitContext = $this->resolveEmitContextFromAntlersScope();
@@ -179,17 +167,14 @@ class SchemaCountry extends Tags
         }
 
         // Coerce scalar code to a trimmed string
+        // Equivalent: any fallback that is not a country code resolves to null, as '' does.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $codeStr = \is_string($codeRaw) ? trim($codeRaw) : '';
-
-        // Return empty output when the code is missing
-        if ($codeStr === '') {
-            return '';
-        }
 
         // Resolve the Country enum case from the code and type
         $country = $this->resolveCountry($codeStr, $codeType);
 
-        // Return empty output when the country is unknown
+        // Return empty output when the code is missing or the country is unknown
         if (! $country instanceof Country) {
             return '';
         }
@@ -304,23 +289,20 @@ class SchemaCountry extends Tags
      * @param  Country  $country  Resolved enum case
      * @param  string  $codeStr  Original code string for this slot
      * @param  string  $codeType  Normalized `alpha2`, `alpha3`, or `numeric`
-     * @param  string|null  $atId  Canonical `@id` when already computed, or null
+     * @param  string  $atId  Canonical `@id` for the country
      * @return array<string, mixed> Map with `@id`, `@type`, `name`, optional `alternateName`, and `identifier`
      */
     private function buildCountryMap(
         Country $country,
         string $codeStr,
         string $codeType,
-        ?string $atId = null
+        string $atId
     ): array {
         // Read canonical metadata from the resolved enum case
         $name = $country->country_name();
         $alpha2 = $country->alpha2();
         $alpha3 = $country->alpha3();
         $numeric = $country->numeric();
-
-        // Resolve the canonical JSON-LD @id when the caller did not supply it
-        $atId ??= $this->canonicalAtIdForCountry($country);
 
         // Start the Country map with @id, @type, and name
         $map = [
@@ -403,7 +385,8 @@ class SchemaCountry extends Tags
     }
 
     /**
-     * Normalize a list parameter to trimmed non-empty string codes.
+     * Normalize a list parameter to trimmed string codes. An empty code is kept
+     * here and skipped by the caller, since `resolveCountry()` matches no country to it.
      *
      * @param  array<int|string, mixed>  $list  Raw list from the tag
      * @return list<string> Ordered trimmed codes from string entries only
@@ -426,16 +409,8 @@ class SchemaCountry extends Tags
                 continue;
             }
 
-            // Trim whitespace from the segment
-            $segment = trim($item);
-
-            // Skip empty segments
-            if ($segment === '') {
-                continue;
-            }
-
-            // Keep the segment in list order
-            $out[] = $segment;
+            // Keep the trimmed segment in list order
+            $out[] = trim($item);
         }
 
         return $out;
@@ -472,14 +447,9 @@ class SchemaCountry extends Tags
         mixed $raw
     ): string {
         // Coerce non-string input to an empty token
+        // Equivalent: any fallback that is not a known token also maps to alpha2.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $token = \is_string($raw) ? strtolower(trim($raw)) : '';
-
-        // Treat empty, null, or unknown tokens as alpha2 (default)
-        if (
-            in_array($token, ['', 'alpha2', 'alpha-2'], true)
-        ) {
-            return 'alpha2';
-        }
 
         // Map alpha-3 aliases to alpha3
         if (
@@ -494,7 +464,7 @@ class SchemaCountry extends Tags
             return 'numeric';
         }
 
-        // Default unknown values to alpha2 for predictable resolution
+        // Default everything else (alpha2, its alias, empty, unknown) to alpha2
         return 'alpha2';
     }
 
@@ -534,8 +504,8 @@ class SchemaCountry extends Tags
                 return null;
             }
 
-            // Compare using the same canonical int string key as stored in the map
-            $key = (string) (int) $code;
+            // Compare using the same canonical int key as stored in the map
+            $key = (int) $code;
 
             // Look up the enum case from the lazily built numeric map
             return $this->countryCasesByNumericIntKey()[$key] ?? null;
@@ -554,6 +524,8 @@ class SchemaCountry extends Tags
     {
         // Return cached map when already built
         if (self::$countryByUpperAlpha3 !== null) {
+            // Equivalent: rebuilding from the same enum cases gives the same map.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return self::$countryByUpperAlpha3;
         }
 
@@ -561,6 +533,8 @@ class SchemaCountry extends Tags
         $map = [];
 
         foreach (Country::cases() as $case) {
+            // Equivalent: every alpha-3 code the enum supplies is already uppercase.
+            // @pest-mutate-ignore: UnwrapStrtoupper
             $map[strtoupper($case->alpha3())] = $case;
         }
 
@@ -572,9 +546,7 @@ class SchemaCountry extends Tags
     }
 
     /**
-     * Canonical numeric string key (same as `(string)(int)$digits` for digit inputs) => enum case.
-     *
-     * PHP coerces the numeric-string keys to ints, so the map is keyed by int.
+     * Canonical numeric key (`(int) $digits` for digit inputs) => enum case.
      *
      * @return array<int, Country>
      */
@@ -582,6 +554,8 @@ class SchemaCountry extends Tags
     {
         // Return cached map when already built
         if (self::$countryByNumericIntKey !== null) {
+            // Equivalent: rebuilding from the same enum cases gives the same map.
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return self::$countryByNumericIntKey;
         }
 
@@ -595,11 +569,13 @@ class SchemaCountry extends Tags
             if (! ctype_digit($n)) {
                 unset($n);
 
+                // Equivalent: unreached, since every numeric code the enum supplies is digit-only.
+                // @pest-mutate-ignore: ContinueToBreak
                 continue;
             }
 
             // Use the same canonical key as numeric lookups
-            $key = (string) (int) $n;
+            $key = (int) $n;
 
             // Keep the first case when keys collide (same as prior linear scan)
             if (! \array_key_exists($key, $map)) {
