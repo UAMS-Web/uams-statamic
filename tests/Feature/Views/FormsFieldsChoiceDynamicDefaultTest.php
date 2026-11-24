@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Checkboxes;
-use App\Fieldtypes\Radio;
-use App\Fieldtypes\Select;
 use Illuminate\Support\Facades\File;
 use Statamic\Facades\Antlers;
 use Statamic\Fields\Fieldtype;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Checkboxes;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Radio;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Select;
 
 uses(TestCase::class);
 
@@ -35,7 +35,7 @@ uses(TestCase::class);
 function renderChoiceDynamicDefaultField(string $template, array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$template}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$template}.antlers.html")),
         [
             'handle' => 'topic',
             'id' => 'form-topic',

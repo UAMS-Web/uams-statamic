@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Url;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Url;
 
 /**
- * Tests for App\Fieldtypes\Url: its Control Panel identity, the config lists it hands the Input
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Url: its Control Panel identity, the config lists it hands the Input
  * trait, and its validation rules.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/UrlFieldtypeTest.php

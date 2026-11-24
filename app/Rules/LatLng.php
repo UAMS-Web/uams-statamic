@@ -6,6 +6,8 @@ namespace App\Rules;
 
 use App\Rules\BaseRules\BaseValidationRule;
 use Closure;
+use UAMSWeb\Aether\Fieldtypes\Rules\Latitude;
+use UAMSWeb\Aether\Fieldtypes\Rules\Longitude;
 
 /**
  * Custom validation rule for validating comma-separated latitude and longitude

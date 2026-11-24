@@ -52,7 +52,7 @@ function formFieldContext(array $overrides = []): array
 function renderFormFieldTemplate(string $fieldtype, array $overrides = []): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
         formFieldContext($overrides),
         true,
     );
@@ -64,7 +64,7 @@ function renderFormFieldTemplate(string $fieldtype, array $overrides = []): stri
 function renderReadOnlyOptionTemplate(string $inputType): string
 {
     return (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/option.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/option.antlers.html')),
         [
             'handle' => 'rate_option',
             'id' => 'form-rate_option',
@@ -171,7 +171,7 @@ it('disables every option of a read_only likert scale', function () {
 
 it('disables the select and makes the quantity readonly for a read_only multiple product', function () {
     $out = (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/product.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/product.antlers.html')),
         [
             'handle' => 'order_item',
             'id' => 'form-order_item',
@@ -195,7 +195,7 @@ it('disables the select and makes the quantity readonly for a read_only multiple
 
 it('makes the quantity readonly for a read_only single product', function () {
     $out = (string) Antlers::parse(
-        File::get(resource_path('views/vendor/statamic/forms/fields/product.antlers.html')),
+        File::get(servedResourcePath('views/vendor/statamic/forms/fields/product.antlers.html')),
         [
             'handle' => 'order_item',
             'id' => 'form-order_item',
@@ -273,7 +273,7 @@ it('does not emit readonly/disabled when the visibility key is omitted', functio
     unset($context['visibility']);
 
     $out = (string) Antlers::parse(
-        File::get(resource_path("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
+        File::get(servedResourcePath("views/vendor/statamic/forms/fields/{$fieldtype}.antlers.html")),
         $context,
         true,
     );

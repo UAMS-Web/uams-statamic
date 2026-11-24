@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\ZipCode;
-use App\Rules\ZipCode as ZipCodeRule;
 use Illuminate\Support\Facades\Validator;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\ZipCode;
+use UAMSWeb\Aether\Fieldtypes\Rules\ZipCode as ZipCodeRule;
 
 /**
- * Tests for App\Fieldtypes\ZipCode: its Control Panel identity, the config lists it hands the Input
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\ZipCode: its Control Panel identity, the config lists it hands the Input
  * trait, and its validation rules.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/ZipCodeFieldtypeTest.php

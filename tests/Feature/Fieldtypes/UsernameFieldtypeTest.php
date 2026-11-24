@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Username;
 use Statamic\Facades\Antlers;
 use Statamic\Fields\Field;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Username;
 
 uses(TestCase::class);
 
@@ -16,7 +16,7 @@ uses(TestCase::class);
  * the username semantics surfaced to the public form (`autocomplete="username"`,
  * spellcheck off) — the AC of issue UAMS-Web/uams-statamic-archive#312.
  *
- * Mutation: 100% on App\Fieldtypes\Username (75 mutants, --covered-only).
+ * Mutation: 100% on UAMSWeb\Aether\Fieldtypes\Fieldtypes\Username (75 mutants, --covered-only).
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/UsernameFieldtypeTest.php
  */
@@ -86,7 +86,7 @@ it('restricts the autocomplete keys to username', function () {
 
 it('renders a username input from the public form template', function () {
     $template = file_get_contents(
-        resource_path('views/vendor/statamic/forms/fields/username.antlers.html')
+        servedResourcePath('views/vendor/statamic/forms/fields/username.antlers.html')
     );
 
     expect($template)->toBeString();

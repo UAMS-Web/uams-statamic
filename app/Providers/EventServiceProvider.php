@@ -11,7 +11,6 @@ use App\Listeners\DeleteYamlAssetMetadata;
 use App\Listeners\DeriveSpotlightTitleAndSlug;
 use App\Listeners\DisambiguateEntryTitle;
 use App\Listeners\DispatchLocationRegionBackfill;
-use App\Listeners\EnforceChoiceSubmissionLimits;
 use App\Listeners\FlattenLogoOrderValues;
 use App\Listeners\ForgetSiteTree;
 use App\Listeners\GenerateNewsReleasePdf;
@@ -60,6 +59,7 @@ use Statamic\Events\StacheCleared;
 use Statamic\Events\StacheWarmed;
 use Statamic\Events\TermSaved;
 use Statamic\Events\TermSaving;
+use UAMSWeb\Aether\Fieldtypes\Listeners\EnforceChoiceSubmissionLimits;
 
 /**
  * Service provider for registering event listeners in the application.

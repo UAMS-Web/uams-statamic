@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Rules\IdentifierRegex;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\IdentifierRegex;
 
 uses(TestCase::class);
 
 covers(IdentifierRegex::class);
 
 /**
- * Narrow mutate coverage for App\Rules\IdentifierRegex.
+ * Narrow mutate coverage for UAMSWeb\Aether\Fieldtypes\Rules\IdentifierRegex.
  *
  * @command  php artisan test --compact tests/Unit/Rules/IdentifierRegexMutationTest.php
  */

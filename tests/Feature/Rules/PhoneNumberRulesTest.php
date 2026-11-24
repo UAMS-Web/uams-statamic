@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Rules\InternationalPhone;
-use App\Rules\NationalPhone;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\InternationalPhone;
+use UAMSWeb\Aether\Fieldtypes\Rules\NationalPhone;
 
 uses(TestCase::class);
 

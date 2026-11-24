@@ -37,8 +37,8 @@ it('keeps a moved enum case identical under its old and new names', function ():
     expect($old::cases()[0])->toBe(Country::cases()[0]);
 });
 
-it('lists 102 moved classes, none of them still declared in the site', function (): void {
-    expect(MovedClassAliases::map())->toHaveCount(102);
+it('lists 165 moved classes, none of them still declared in the site', function (): void {
+    expect(MovedClassAliases::map())->toHaveCount(165);
 
     $leftovers = [];
 

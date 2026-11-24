@@ -5,7 +5,7 @@
  *   - The CP Vue fieldtype component
  *     (`resources/js/components/fieldtypes/partials/CustomInput.vue`)
  *   - The public-form Alpine engine
- *     (`resources/js/calculation-engine.js`)
+ *     (`vendor/uams-web/aether-fieldtypes/resources/js/lib/calculation-engine.js`)
  *
  * Functions here are pure (no `this`, no DOM beyond `window.location` in
  * `getUrlParameters`) so the two reactivity layers — Vue watches and Alpine

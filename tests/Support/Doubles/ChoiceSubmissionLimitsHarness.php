@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support\Doubles;
 
-use App\Fieldtypes\Traits\HasChoiceSubmissionLimits;
 use Statamic\Fields\Fieldtype;
+use UAMSWeb\Aether\Fieldtypes\Traits\HasChoiceSubmissionLimits;
 
 /**
  * A fieldtype exposing the HasChoiceSubmissionLimits trait's config fields and

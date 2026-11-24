@@ -164,7 +164,7 @@ final readonly class LocationInheritedAddressService implements LocationRegions
     /**
      * The state component's storage handle per preset (UAMS-Web/uams-statamic-archive#2389).
      *
-     * One component, three handles: `App\Fieldtypes\Address` shows exactly one of them
+     * One component, three handles: `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address` shows exactly one of them
      * and gates it on the stored `preset`, so reading a fixed handle returns null for any
      * address entered under either of the other two.
      *
@@ -468,7 +468,7 @@ final readonly class LocationInheritedAddressService implements LocationRegions
      * The state subfield handle matching a location's stored preset.
      *
      * Defaults to the American variant when no preset is stored, which is what
-     * `App\Fieldtypes\Address` itself falls back to: `process()` writes the first preset
+     * `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Address` itself falls back to: `process()` writes the first preset
      * option when the field config names none, and that option is `american`.
      */
     private function stateSubfield(

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Html;
 use Statamic\Fields\Fieldtype;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Html;
 
 uses(TestCase::class);
 

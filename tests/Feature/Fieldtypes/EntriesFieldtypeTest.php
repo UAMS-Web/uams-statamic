@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Entries;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Auth\File\User as FileUser;
@@ -16,13 +15,14 @@ use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Tests\Support\TermsMutateProbeScope;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Entries;
 
 use function Pest\Laravel\actingAs;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 /**
- * Tests for App\Fieldtypes\Entries: the blueprint-restriction config field, the
+ * Tests for UAMSWeb\Aether\Fieldtypes\Fieldtypes\Entries: the blueprint-restriction config field, the
  * create-button options it builds per collection and blueprint, and the query
  * scopes it hands to the index query.
  *

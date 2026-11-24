@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Terms;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Fields\Field;
 use Statamic\Query\Builder;
 use Tests\Support\TermsMutateProbeScope;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Terms;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
 covers(Terms::class);
 
 /**
- * Unit tests for `App\Fieldtypes\Terms` index query-scope merging.
+ * Unit tests for `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Terms` index query-scope merging.
  *
  * @command  php artisan test --compact tests/Feature/Fieldtypes/TermsTest.php
  */

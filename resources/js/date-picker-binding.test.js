@@ -4,7 +4,7 @@ import { DatePickerRoot } from 'reka-ui';
 import { createApp, h } from 'vue';
 import { describe, expect, it } from 'vitest';
 
-import { toPickerValue } from './date-boundary-engine.js';
+import { toPickerValue } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/date-boundary-engine.js';
 
 /**
  * Runtime regression test for the custom Date picker value binding

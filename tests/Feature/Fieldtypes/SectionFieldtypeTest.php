@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Fieldtypes\Section;
 use Statamic\Fieldtypes\Section as BaseSection;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Fieldtypes\Section;
 
 uses(TestCase::class);
 

@@ -3,8 +3,8 @@
 import Alpine from '@alpinejs/csp';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { registerCalculationEngine } from './calculation-engine.js';
-import { registerCheckboxRequiredGroup } from './checkbox-required-group.js';
+import { registerCalculationEngine } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/calculation-engine.js';
+import { registerCheckboxRequiredGroup } from '../../vendor/uams-web/aether-fieldtypes/resources/js/lib/checkbox-required-group.js';
 
 /**
  * The real engine against the real `@alpinejs/csp` build. Alpine starts once for the file; each

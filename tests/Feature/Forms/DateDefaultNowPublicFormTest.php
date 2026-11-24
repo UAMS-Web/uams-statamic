@@ -18,7 +18,7 @@ uses(TestCase::class);
  * A public-form date field with `default: now` starts at today's date (UAMS-Web/uams-statamic-archive#2885).
  *
  * `AbstractJsDriver::getInitialFormData()` preprocesses the blueprint fields, and
- * `App\Fieldtypes\Date` passes the `now` sentinel through unchanged for the CP, so
+ * `UAMSWeb\Aether\Fieldtypes\Fieldtypes\Date` passes the `now` sentinel through unchanged for the CP, so
  * without a public-side substitution the form's `x-data` carries the string "now",
  * which a native date input cannot display. Gravity Forms' `{date_mdy}` default,
  * used by 158 exported fields, is the behavior being matched.

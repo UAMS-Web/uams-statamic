@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Rules\ReplicatorRequireAtLeastOneEnabledSet;
 use Tests\TestCase;
+use UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorRequireAtLeastOneEnabledSet;
 
 uses(TestCase::class);
 
 covers(ReplicatorRequireAtLeastOneEnabledSet::class);
 
 /**
- * Behavior of App\Rules\ReplicatorRequireAtLeastOneEnabledSet: when the field is
+ * Behavior of UAMSWeb\Aether\Fieldtypes\Rules\ReplicatorRequireAtLeastOneEnabledSet: when the field is
  * required for the request (via FieldRequiredHelper — required* rules, "sometimes"
  * + Statamic "if", required_if), the value must be an array with at least one set
  * whose `enabled` is not false (a missing `enabled` key counts as enabled). Non-

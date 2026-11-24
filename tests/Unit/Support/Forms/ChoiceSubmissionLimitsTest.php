@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Support\Forms\ChoiceSubmissionLimits;
 use Statamic\Contracts\Forms\Submission;
 use Statamic\Fields\Field;
 use Statamic\Forms\Form;
+use UAMSWeb\Aether\Fieldtypes\Support\Forms\ChoiceSubmissionLimits;
 
 covers(ChoiceSubmissionLimits::class);
 

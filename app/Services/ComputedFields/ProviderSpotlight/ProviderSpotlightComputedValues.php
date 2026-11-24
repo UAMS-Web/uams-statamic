@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\ComputedFields\ProviderSpotlight;
 
-use App\Services\PhoneUtil;
 use Illuminate\Support\Str;
 use Statamic\Assets\Asset;
 use Statamic\Entries\Entry;
 use Statamic\Facades\Asset as AssetFacade;
 use Statamic\Facades\Entry as EntryFacade;
+use UAMSWeb\Aether\Fieldtypes\Services\PhoneUtil;
 use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ClinicalTitleResolver;
 use UAMSWeb\Aether\People\ComputedFields\ProviderPeople\ProviderPeoplePersonNameComputedValues;
 use UAMSWeb\Aether\People\Support\ProviderNarrativeLanguage;
