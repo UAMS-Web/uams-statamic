@@ -27,6 +27,9 @@ covers(HealthTalkSyncController::class);
  *
  * The acting user is never saved, so nothing is written to the `users` submodule.
  *
+ * Mutation: 100% on App\Http\Controllers\CP\Podcasts\HealthTalkSyncController (2 mutants), measured on macOS on 2026-11-25
+ * without --covered-only.
+ *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/Podcasts/HealthTalkSyncControllerTest.php
  */
 beforeEach(function (): void {

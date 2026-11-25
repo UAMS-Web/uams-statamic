@@ -26,6 +26,9 @@ covers(SchemaObjectReplicatorDataController::class);
  *
  * The acting user is never saved, so nothing is written to the `users` submodule.
  *
+ * Mutation: 100% on App\Http\Controllers\CP\SchemaObjectReplicatorDataController (28 mutants), measured on macOS on 2026-11-25
+ * without --covered-only.
+ *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/SchemaObjectReplicatorDataControllerTest.php
  */
 beforeEach(function (): void {

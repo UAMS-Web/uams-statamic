@@ -7,11 +7,14 @@ use App\Services\SchemaTemplates\SchemaBlueprintDefaultsRepository;
 use App\Services\SchemaTemplates\SchemaSectionDefaultsRepository;
 use App\Services\SchemaTemplates\SchemaSiteDefaultsRepository;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
 use Statamic\Auth\File\User as FileStatamicUser;
+use Statamic\CP\PublishForm;
 use Statamic\Entries\Collection as StatamicCollection;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
@@ -19,6 +22,8 @@ use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Facades\User;
 use Statamic\Fields\Blueprint as FieldsBlueprint;
+use Statamic\Fields\Field;
+use Statamic\Sites\Site as SiteInstance;
 use Statamic\Taxonomies\Taxonomy as StatamicTaxonomy;
 use Tests\Support\StacheIsolatedTestCase;
 
@@ -40,6 +45,11 @@ covers(SchemaBlueprintDefaultsController::class);
  *
  * The site and section defaults are stubbed, so the real `resources/addons` file is never
  * read. The acting user is never saved, so nothing is written to the `users` submodule.
+ *
+ * Mutation: 100% on App\Http\Controllers\CP\SchemaTemplates\SchemaBlueprintDefaultsController
+ * (72 mutants), measured on macOS on 2026-11-25 without --covered-only, with one equivalent
+ * annotated in update(): the flag that marks the section disabled changes only each inherit
+ * field's default and read_only, which saving does not read. Every killable mutant is dead.
  *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/SchemaTemplates/SchemaBlueprintDefaultsControllerTest.php
  */
@@ -319,15 +329,9 @@ it('reads the selected site\'s defaults', function (): void {
     expect(blueprintDefaultsFieldSetting(blueprintDefaultsForm(), 'read_only')['inherit_webpage_entry'] ?? null)->toBeTrue();
 });
 
-it('saves the submitted defaults, without those left empty', function (string $type): void {
-    app()->instance(SchemaBlueprintDefaultsRepository::class, Mockery::mock(
-        SchemaBlueprintDefaultsRepository::class,
-        fn (MockInterface $mock) => $mock->expects('put')->once()->with('probe_posts', 'article', $type, [
-            'enabled' => 'inherit',
-            'inherit_webpage_entry' => false,
-            'webpage_entry' => 'entry-one',
-        ])
-    ));
+it('saves the submitted defaults to the section, without those left empty', function (string $type): void {
+    blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
+    blueprintDefaultsSection('taxonomy', 'probe_posts', 'Probe posts');
 
     patchJson(blueprintDefaultsRoute('update', [$type, 'probe_posts', 'article']), [
         'enabled' => 'inherit',
@@ -337,23 +341,85 @@ it('saves the submitted defaults, without those left empty', function (string $t
         'main_content_entry' => [],
         'not_a_field' => 'dropped',
     ])->assertOk()->assertExactJson(['saved' => true]);
+
+    $repository = new SchemaBlueprintDefaultsRepository;
+
+    expect($repository->get('probe_posts', 'article', $type))->toBe([
+        'enabled' => 'inherit',
+        'inherit_webpage_entry' => false,
+        'webpage_entry' => 'entry-one',
+    ])
+        // Only the named section and blueprint are written
+        ->and($repository->get('probe_posts', 'article', $type === 'collection' ? 'taxonomy' : 'collection'))->toBe([])
+        ->and($repository->get('probe_posts', 'other', $type))->toBe([]);
 })->with(['collection', 'taxonomy']);
 
 it('saves the same whether the section is disabled or not', function (array $section): void {
     blueprintDefaultsStub([], $section);
-    app()->instance(SchemaBlueprintDefaultsRepository::class, Mockery::mock(
-        SchemaBlueprintDefaultsRepository::class,
-        fn (MockInterface $mock) => $mock->expects('put')->once()->with('probe_posts', 'article', 'collection', [
-            'enabled' => true,
-            'inherit_webpage_entry' => true,
-        ])
-    ));
+    blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
 
     patchJson(blueprintDefaultsRoute('update', ['collection', 'probe_posts', 'article']), [
         'enabled' => 'true',
         'inherit_webpage_entry' => 'true',
+        'inherit_main_content_entry' => null,
     ])->assertOk();
+
+    expect((new SchemaBlueprintDefaultsRepository)->get('probe_posts', 'article'))->toBe([
+        'enabled' => true,
+        'inherit_webpage_entry' => true,
+    ]);
 })->with([
     'enabled' => [['enabled' => 'true']],
     'disabled' => [['enabled' => 'false']],
 ]);
+
+it('saves nothing when every field is left empty', function (): void {
+    blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
+    (new SchemaBlueprintDefaultsRepository)->put('probe_posts', 'article', 'collection', ['enabled' => true]);
+
+    patchJson(blueprintDefaultsRoute('update', ['collection', 'probe_posts', 'article']), [])->assertOk();
+
+    expect((new SchemaBlueprintDefaultsRepository)->get('probe_posts', 'article'))->toBe([]);
+});
+
+it('lists the blueprints of a section whose handle is not set', function (): void {
+    $collection = (new StatamicCollection)->title('No handle');
+    $taxonomy = (new StatamicTaxonomy)->title('No handle');
+    Collection::shouldReceive('all')->andReturn(collect([$collection]));
+    Taxonomy::shouldReceive('all')->andReturn(collect([$taxonomy]));
+    // The base test case clears the Stache as it tears down, which reads these
+    Collection::shouldReceive('handles')->andReturn(collect());
+    Taxonomy::shouldReceive('handles')->andReturn(collect());
+
+    // Without a handle, the blueprints looked up are those of the namespace itself
+    blueprintDefaultsBlueprint('collections', 'article', 'Article');
+    blueprintDefaultsBlueprint('taxonomies', 'topic', 'Topic');
+
+    $page = Request::create('/');
+    $page->headers->set('X-Inertia', 'true');
+    $props = mustBe(JsonResponse::class, app(SchemaBlueprintDefaultsController::class)->index()->toResponse($page), 'the page')->getData(true);
+
+    expect(data_get($props, 'props.collections.0.blueprints.0.handle'))->toBe('article')
+        ->and(data_get($props, 'props.taxonomies.0.blueprints.0.handle'))->toBe('topic');
+});
+
+it('reads the site defaults for an empty handle when the selected site has none', function (): void {
+    blueprintDefaultsStub(['enabled' => 'false'], ['enabled' => 'inherit'], '');
+    Site::setSites(['default' => ['name' => 'Default', 'url' => '/', 'locale' => 'en_US']]);
+    new ReflectionProperty(SiteInstance::class, 'handle')->setValue(mustBe(SiteInstance::class, Site::selected(), 'the selected site'), null);
+
+    $form = mustBe(PublishForm::class, app(SchemaBlueprintDefaultsController::class)->edit('collection', 'probe_none', 'article'), 'the form');
+    $blueprint = mustBe(FieldsBlueprint::class, new ReflectionProperty($form, 'blueprint')->getValue($form), 'the blueprint');
+
+    $field = mustBe(Field::class, $blueprint->field('inherit_webpage_entry'), 'the field');
+
+    expect($field->get('read_only'))->toBeTrue();
+});
+
+it('submits to nowhere when the Control Panel has no routes', function (): void {
+    config(['statamic.cp.enabled' => false]);
+
+    $form = mustBe(PublishForm::class, app(SchemaBlueprintDefaultsController::class)->edit('collection', 'probe_none', 'article'), 'the form');
+
+    expect(new ReflectionProperty($form, 'submitUrl')->getValue($form))->toBe('');
+});
