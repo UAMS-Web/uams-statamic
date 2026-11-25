@@ -86,9 +86,10 @@ const LINUX_AND_WINDOWS = ['spell', 'encoding-guard', 'test-isolation-guard', 'b
 // the same `--jobs` key. The rest are why `checks` is in REMOTE_ONLY: synced-files,
 // no-emoji and aggregate-needs have no local job (the comparison aggregate-needs
 // makes runs in this file), composer-validate repeats a command the local `validate`
-// job runs. Its mutate-ignore job is off for this caller (#749). A key dropped from the local chain while the call still runs its job
+// job runs. Its mutate-ignore job is off for this caller (#749). changed-tests is on for tests/Unit
+// (#1237). A key dropped from the local chain while the call still runs its job
 // fails the case that reads this list.
-const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan']
+const CALLED_CHAIN_KEYS = ['pint', 'rector', 'phpstan', 'changed-tests']
 
 /**
  * Read the `jobs:` ids and their `needs:` edges out of ci.yml.
@@ -168,7 +169,7 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         expect([...mirrored].sort()).toEqual([...CHAIN].sort())
     })
 
-    it('calls the shared chain at a release tag and mirrors its pint, rector and phpstan jobs locally (#580)', () => {
+    it('calls the shared chain at a release tag and mirrors its pint, rector, phpstan and changed-tests jobs locally (#580, #1237)', () => {
         // A branch would move under every run; a tag moves only when this file does.
         const checks = jobText(workflow, 'checks')
         expect(checks).toMatch(/^ {4}uses: UAMS-Web\/uams-ci-workflows\/\.github\/workflows\/ci\.yml@v\d+\.\d+\.\d+$/m)
@@ -199,7 +200,9 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
             return /^ {6}mutate: true$/m.test(checks) || /^ {6}mutate-ignore: true$/m.test(checks)
         }
 
-        expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan'])
+        expect(listed(workflow)).toEqual(['composer-validate', 'synced-files', 'no-emoji', 'aggregate-needs', 'pint', 'rector', 'phpstan', 'changed-tests'])
+        // changed-tests is listed because the call turns it on (#1237), and only then.
+        expect(listed(workflow).includes('changed-tests')).toBe(/^ {6}changed-tests: true$/m.test(jobText(workflow, 'checks')))
         expect(listed(workflow).includes('mutate-ignore')).toBe(runsMutateIgnore(workflow))
         // And it names the job that carries the annotation audit instead.
         expect(checksComment(workflow)).toContain('the `encoding-guard` job above runs `scripts/check-mutate-ignore.php`')
@@ -245,8 +248,16 @@ describe('ci.yml <-> local-ci.json chain parity', () => {
         // whose tool is missing report SKIPPED, which the shared runner counts as a pass.
         expect(config.chain).toBe(true)
 
+        // The one exception is changed-tests (#1237), selected when a tests/Unit file
+        // changes: with none it has nothing to compare. A skip for that reason is the
+        // report's own answer, not a missing tool, and it still carries no `requires`.
         for (const job of config.jobs) {
-            expect(job.always, job.name).toBe(true)
+            if (job.name === 'changed-tests') {
+                expect(job.always, job.name).toBeUndefined()
+                expect(job.paths, job.name).toEqual(['tests/Unit/**'])
+            } else {
+                expect(job.always, job.name).toBe(true)
+            }
             expect(job.requires, job.name).toBeUndefined()
         }
     })
