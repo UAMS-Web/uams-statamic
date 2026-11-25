@@ -17,8 +17,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Unit tests for the `get_global` Antlers tag.
  *
- * Mutation: 100% on App\Tags\GetGlobal (59 mutants, --covered-only; every line covered). Two
- * equivalents are annotated in the class.
+ * Mutation: no unexplained survivor on App\Tags\GetGlobal, without --covered-only, with two
+ * equivalents annotated in the class: the early returns for a missing field and a missing
+ * fieldtype. Without either, the next call is made on null and throws an Error, which the
+ * method's catch turns into the same false.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GetGlobalTagTest.php
  */
