@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Support\References\EntryReferenceRepointer;
+use Illuminate\Support\Facades\Log;
+use Mockery\LegacyMockInterface;
 use PHPUnit\Framework\Assert;
 use Statamic\Entries\Collection;
 use Statamic\Facades\Collection as CollectionFacade;
@@ -478,26 +480,72 @@ it('rewrites every inline link in a string, to each survivor', function (): void
         ->and($summary->occurrences)->toBe(3);
 });
 
-it('reads a failed match as an empty string with nothing rewritten', function (): void {
+/**
+ * Run a callback with every PCRE match failing, then restore the settings.
+ *
+ * Without the JIT compiler, no match can be tried inside a backtrack limit of zero, so
+ * `preg_replace()` returns null with PREG_BACKTRACK_LIMIT_ERROR.
+ *
+ * @template T
+ *
+ * @param  Closure(): T  $callback
+ * @return T
+ */
+function repointWithFailingMatches(Closure $callback): mixed
+{
     $jit = mustBeString(ini_get('pcre.jit'), 'the PCRE JIT setting');
     $limit = mustBeString(ini_get('pcre.backtrack_limit'), 'the PCRE backtrack limit');
 
     try {
-        // Without the JIT compiler, no match can be tried inside a limit of zero
         ini_set('pcre.jit', '0');
         ini_set('pcre.backtrack_limit', '0');
 
-        $result = new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteString')->invoke(
-            new EntryReferenceRepointer,
-            '[a](statamic://entry::failing-5555)',
-            ['failing-5555' => REPOINT_SURVIVOR]
-        );
+        return $callback();
     } finally {
         ini_set('pcre.jit', $jit);
         ini_set('pcre.backtrack_limit', $limit);
     }
+}
 
-    expect($result)->toBe(['', 0]);
+it('keeps a string whose match fails, rewrites nothing in it, and logs the id', function (): void {
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+
+    $result = repointWithFailingMatches(fn (): mixed => new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteString')->invoke(
+        new EntryReferenceRepointer,
+        '[a](statamic://entry::failing-5555)',
+        ['failing-5555' => REPOINT_SURVIVOR]
+    ));
+
+    expect($result)->toBe(['[a](statamic://entry::failing-5555)', 0]);
+
+    $log->shouldHaveReceived('warning')->once()->with(
+        'Left a string unchanged because matching its inline entry link failed.',
+        ['id' => 'failing-5555', 'error' => 'Backtrack limit exhausted']
+    );
+});
+
+it('keeps the text of a failed match in an item whose other reference still re-points', function (): void {
+    // repoint() saves what rewriteValue() returns for an item's data. Statamic's own save
+    // path also matches patterns, so the save itself cannot run while every match fails.
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+
+    $body = sprintf('[a](statamic://entry::%s)', REPOINT_LOSER);
+
+    // The whole-string id needs no pattern, so it still re-points while every match fails
+    $result = repointWithFailingMatches(fn (): mixed => new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteValue')->invoke(
+        new EntryReferenceRepointer,
+        ['person' => REPOINT_LOSER, 'body' => $body],
+        [REPOINT_LOSER => REPOINT_SURVIVOR]
+    ));
+
+    expect($result)->toBe([['person' => REPOINT_SURVIVOR, 'body' => $body], 1]);
+
+    $log->shouldHaveReceived('warning')->once()->with(
+        'Left a string unchanged because matching its inline entry link failed.',
+        ['id' => REPOINT_LOSER, 'error' => 'Backtrack limit exhausted']
+    );
 });
 
 it('saves each global localization that holds a reference, whatever sites come before it', function (): void {
