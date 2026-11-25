@@ -20,6 +20,9 @@ uses(TestCase::class);
  *
  * Hermetic only: no Stache / collection-tree paths (those live in the feature suite).
  *
+ * Mutation: 100% on App\Support\Relationships\BoundedRelationshipProcessor (10 mutants) from
+ * this file alone, measured on macOS on 2026-11-25 without --covered-only.
+ *
  * @command  php artisan test --compact tests/Unit/Support/Relationships/BoundedRelationshipProcessorMutationTest.php
  */
 
