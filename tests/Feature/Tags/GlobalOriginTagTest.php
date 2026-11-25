@@ -22,16 +22,21 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  *
  * @command  php artisan test --compact tests/Feature/Tags/GlobalOriginTagTest.php
  */
-it('index returns empty string when handle missing', function () {
+it('returns the empty value of its mode when no handle is given', function (array $parameters, string|array $expected): void {
     // Nothing is looked up without a handle
     GlobalSet::shouldReceive('find')->never();
+    Site::shouldReceive('current')->never();
 
     $tag = new GlobalOrigin;
     $tag->setContext([]);
-    $tag->setParameters([]);
+    $tag->setParameters($parameters);
 
-    expect($tag->index())->toBe('');
-});
+    expect($tag->index())->toBe($expected);
+})->with([
+    'mode not given' => [[], ''],
+    'immediate origin' => [['recursive' => false], ''],
+    'ancestor chain' => [['recursive' => true], []],
+]);
 
 it('index returns empty when global localization missing', function () {
     $set = Mockery::mock(GlobalSetContract::class);
