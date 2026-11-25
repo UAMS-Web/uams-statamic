@@ -11,7 +11,8 @@ uses(TestCase::class);
 /**
  * @covers \App\Tags\GetParam
  *
- * Mutation: 100% on App\Tags\GetParam (9 mutants, --covered-only).
+ * Mutation: no survivor on App\Tags\GetParam, without --covered-only, run together with
+ * tests/Unit/Tags/GetParamMutationTest.php.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GetParamTagTest.php
  */
