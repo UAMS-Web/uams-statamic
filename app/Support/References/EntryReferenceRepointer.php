@@ -104,9 +104,9 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
     }
 
     /**
-     * Running total of individual reference occurrences rewritten in this scan.
+     * Running total of individual reference occurrences rewritten in this scan, which scan() starts at 0.
      */
-    private int $occurrences = 0;
+    private int $occurrences;
 
     /**
      * Rewrite references held by entries (excluding the retired entries themselves).
@@ -269,6 +269,8 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
 
         // Cheap bail when the string holds no inline entry link at all
         if (! str_contains($value, self::ENTRY_LINK_PREFIX)) {
+            // Saves only the work: every pattern below starts with that prefix, so none would match
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return [$value, 0];
         }
 
@@ -279,13 +281,12 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
         foreach ($idMap as $oldId => $newId) {
             $pattern = '/'.preg_quote(self::ENTRY_LINK_PREFIX.$oldId, '/').'(?![A-Za-z0-9_-])/';
 
-            $value = (string) preg_replace(
+            $value = preg_replace(
                 $pattern,
                 self::ENTRY_LINK_PREFIX.$newId,
                 $value,
-                -1,
-                $replacements
-            );
+                count: $replacements
+            ) ?? $value;
 
             $count += $replacements;
         }
@@ -374,14 +375,12 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
      */
     private function collapseRepeatedTargets(array $value, array $idMap): array
     {
-        $targets = array_values($idMap);
-
         $seenTargets = [];
         $result = [];
 
         foreach ($value as $item) {
             // Only the survivor ids are subject to de-duplication
-            if (\in_array($item, $targets, true)) {
+            if (\in_array($item, $idMap, true)) {
                 // Skip a survivor id already kept — the duplicate the merge created
                 if (\in_array($item, $seenTargets, true)) {
                     continue;

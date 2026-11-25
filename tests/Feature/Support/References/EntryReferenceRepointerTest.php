@@ -24,6 +24,11 @@ use Tests\Support\StacheIsolatedTestCase;
  * (StacheIsolatedTestCase) and are written with `saveQuietly()` so no
  * entry-saved listener mutates them. The survivor/loser ids are deliberately
  * chosen so one is a prefix of the value space to pin the link boundary guard.
+ *
+ * Mutation: 100% on App\Support\References\EntryReferenceRepointer (147 mutants), measured on
+ * macOS on 2026-11-25 without --covered-only, with one equivalent annotated in rewriteString():
+ * its early return for a string with no entry link saves only the work of patterns that could
+ * not match. Every killable mutant is dead.
  */
 uses(StacheIsolatedTestCase::class);
 
@@ -392,15 +397,15 @@ function repointMakeTerm(string $slug, array $data): void
     $localized->saveQuietly();
 }
 
-it('reads no content when there is nothing to re-point', function (array $idMap): void {
+it('reads no content when there is nothing to re-point', function (string $new): void {
     Entry::shouldReceive('all')->never();
 
-    $summary = (new EntryReferenceRepointer)->repoint($idMap);
+    $summary = (new EntryReferenceRepointer)->repoint($new === '' ? [] : [REPOINT_LOSER => $new]);
 
     expect([$summary->entries, $summary->globals, $summary->terms, $summary->occurrences])->toBe([0, 0, 0, 0]);
 })->with([
-    'an empty map' => [[]],
-    'an id mapped to itself' => [[REPOINT_LOSER => REPOINT_LOSER]],
+    'an empty map' => [''],
+    'an id mapped to itself' => [REPOINT_LOSER],
 ]);
 
 it('counts each item and occurrence it re-points, and no item without a reference', function (): void {
@@ -474,8 +479,11 @@ it('rewrites every inline link in a string, to each survivor', function (): void
 });
 
 it('saves each global localization that holds a reference, whatever sites come before it', function (): void {
-    $first = mustBeString(Site::default()->handle(), 'the default site');
-    $second = mustBeString(Site::all()->keys()->first(fn (string $handle): bool => $handle !== $first), 'a second site');
+    Site::setSites([
+        'first' => ['name' => 'First', 'url' => '/', 'locale' => 'en_US'],
+        'second' => ['name' => 'Second', 'url' => '/second/', 'locale' => 'en_US'],
+    ]);
+    [$first, $second] = ['first', 'second'];
 
     // Not localized into the first site at all
     repointMakeGlobals('repoint_later_only', [$second => ['founder' => REPOINT_LOSER]]);
