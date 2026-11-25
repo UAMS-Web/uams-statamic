@@ -23,6 +23,10 @@ covers(PostsFeedController::class);
  * never touch the Stache, and each case compares the whole document. The feed
  * against real entries is covered by tests/Feature/Feed/PostsFeedControllerTest.php.
  *
+ * Mutation: no unexplained survivor, without --covered-only. Two equivalents are annotated
+ * in the class: removing the endElement() that closes `channel` or the one that closes
+ * `rss` changes no byte, because endDocument() closes every element still open.
+ *
  * @command  php artisan test --compact tests/Unit/Http/Controllers/Feed/PostsFeedControllerMutationTest.php
  */
 
