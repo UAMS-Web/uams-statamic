@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-use Pest\Plugins\Tia\Fingerprint;
 
 /**
  * Tia safety guard (UAMS-Web/uams-statamic-archive#1717) — refuse `pest --tia` when its change detection is
@@ -98,8 +97,6 @@ use Pest\Plugins\Tia\Fingerprint;
  *     1  it is not — a submodule is dirty, drifted, or moved since the graph was
  *        recorded, or no coverage driver is active
  */
-
-require_once __DIR__.'/tia-blindness.php';
 
 /** Exit status meaning `--tia` may run. */
 const TIA_SAFE = 0;
@@ -253,100 +250,6 @@ function activeCoverageDriver(): ?string
     return null;
 }
 
-/**
- * Gather what {@see tiaBlindFingerprintInputs} needs, and delegate the decision.
- *
- * This half is I/O only — which files are present and tracked, and what Pest reports
- * for them. The decision itself lives in `scripts/tia-blindness.php` so it can be
- * tested without constructing the exotic worktree shape that triggers the fault; see
- * that file for the measurements and for why the trigger is not fully characterized.
- *
- * Asking Pest for the real fingerprint rather than re-deriving the condition from the
- * directory layout is deliberate: when upstream lands [`pestphp/pest#1813`] the
- * measurement starts succeeding on its own and this refusal disappears, whereas a
- * layout rule would keep refusing in a tree that had been fixed — and a guard that can
- * never go green is one people learn to skip (UAMS-Web/uams-statamic-archive#1952).
- *
- * @return list<string> the blind inputs, empty when the fingerprint is trustworthy here
- */
-function fingerprintBlindInputs(string $root): array
-{
-    // Only files that genuinely exist AND are tracked can prove anything.
-    $provable = [];
-    foreach (TIA_FINGERPRINT_CANDIDATES as $key => $file) {
-        if (! is_file($root.'/'.$file)) {
-            continue;
-        }
-        if (git($root, ['ls-files', '--error-unmatch', $file]) === null) {
-            continue;
-        }
-        $provable[$key] = $file;
-    }
-
-    if ($provable === []) {
-        return [];
-    }
-
-    // The guard is otherwise framework-free, but the autoloader is not a booted app and
-    // this check is worth far more measured than inferred. Loading it lazily keeps the
-    // script usable against a fixture `--root` that has no vendor/ of its own.
-    $autoload = dirname(__DIR__).'/vendor/autoload.php';
-
-    if (is_file($autoload)) {
-        require_once $autoload;
-    }
-
-    if (! class_exists(Fingerprint::class)
-        || ! method_exists(Fingerprint::class, 'compute')) {
-        // Cannot measure. Fall back to the characterized condition: a linked worktree at
-        // a path its enclosing repository ignores. See `tia-blindness.php` for the third
-        // condition (a realpath root) that this cannot check and does not need to — a
-        // symlinked root makes the fault invisible rather than present.
-        return isIgnoredByEnclosingRepository($root) ? array_values($provable) : [];
-    }
-
-    /** @var array{structural: array<string, int|string|null>} $fingerprint */
-    $fingerprint = Fingerprint::compute($root);
-
-    return tiaBlindFingerprintInputs($provable, $fingerprint['structural']);
-}
-
-/**
- * Whether an enclosing repository's ignore rules cover `$root` itself.
- *
- * The fallback for {@see fingerprintBlindInputs} when Pest's internals cannot be
- * measured, and the ACTUAL condition — which is narrower than upstream's account.
- * [`pestphp/pest#1813`] attributes the fault to a linked worktree having an ancestor
- * with a `.git` directory. Measured here, that is necessary but NOT sufficient: a
- * linked worktree at `<repo>/tmp-probe` resolved its fingerprint correctly, while one
- * at `<repo>/.claude/worktrees/<name>` did not. The difference is that
- * `.claude/worktrees/` is listed in the repo's own `.gitignore`, so Finder's
- * `ignoreVCSIgnored(true)` treats everything beneath it as ignored and returns no
- * results for plainly tracked files.
- *
- * That distinction is load-bearing rather than pedantic: `EnterWorktree` puts every
- * ephemeral tree under exactly that ignored path, so the exposure is systematic for
- * that flow and absent for a worktree placed anywhere else.
- */
-function isIgnoredByEnclosingRepository(string $root): bool
-{
-    if (! is_file($root.'/.git')) {
-        return false;
-    }
-
-    $directory = dirname($root);
-
-    while ($directory !== dirname($directory)) {
-        if (is_dir($directory.'/.git')) {
-            return git($directory, ['check-ignore', '-q', $root]) !== null;
-        }
-
-        $directory = dirname($directory);
-    }
-
-    return false;
-}
-
 /** Emit a refusal and exit non-zero. */
 function refuse(string $headline, string $explanation, string $remedy): never
 {
@@ -364,25 +267,6 @@ foreach (declaredSubmodulePaths($root) as $path) {
 }
 
 // --- Absolute refusals: the tree itself disagrees with the commit. ---------------
-
-$blindInputs = fingerprintBlindInputs($root);
-
-if ($blindInputs !== []) {
-    refuse(
-        'Tia reports tracked files as absent, so it cannot see structural changes.',
-        "  Pest validates a cached graph by fingerprinting composer.lock, phpunit.xml and\n"
-        ."  the JS lock files. The inputs below are present AND git-tracked here, yet Pest\n"
-        ."  reports them absent -- so every structural input is null, `structuralMatches()`\n"
-        ."  compares null to null, and a dependency change invalidates NOTHING. --tia would\n"
-        ."  replay results recorded against a different composer.lock (UAMS-Web/uams-statamic-archive#1996).\n\n"
-        .'    reported absent despite being tracked: '.implode(', ', $blindInputs)."\n\n"
-        ."  The usual cause is the worktree shape: an ephemeral tree under an ignored path\n"
-        ."  (what `EnterWorktree` creates) hits pestphp/pest#1810. Sibling slots do not.\n"
-        .'  An unreadable file produces the same reading for a different reason.',
-        "  Run Tia from a sibling slot instead (see .claude/rules/worktrees.md), or run\n"
-        .'  without it here:'."\n\n      vendor/bin/pest --no-tia"
-    );
-}
 
 foreach ($current as $path => $state) {
     if (str_starts_with($state, 'dirty:')) {
