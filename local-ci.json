@@ -1,5 +1,5 @@
 {
-    "_note": "The shared local CI runner's job list for this repository (#296). Run it through scripts/ci-local.mjs, which places the --branch slot. Every job is always selected and chain is on, as the private runner this replaces ran every job in this order and stopped at the first failure. The jobs mirror .github/workflows/ci.yml by name through scripts/ci-local.chain.test.mjs: pint, rector and phpstan stand in for the shared chain the checks job calls, and pest covers the pest, pest-serial and pest-report jobs. php, dependencies, synced-files and handed-back-workflow are local only. ci.yml's submodule-access job proves a GitHub-only secret on manual runs, and its ci job aggregates the remote results; neither has a counterpart here.",
+    "_note": "The shared local CI runner's job list for this repository (#296). Run it through scripts/ci-local.mjs, which places the --branch slot. Every job but changed-tests is always selected and chain is on, as the private runner this replaces ran every job in this order and stopped at the first failure; changed-tests runs when a tests/Unit file changes. The jobs mirror .github/workflows/ci.yml by name through scripts/ci-local.chain.test.mjs: pint, rector, phpstan and changed-tests stand in for the shared chain the checks job calls, and pest covers the pest, pest-serial and pest-report jobs. php, dependencies, synced-files and handed-back-workflow are local only. ci.yml's submodule-access job proves a GitHub-only secret on manual runs, and its ci job aggregates the remote results; neither has a counterpart here.",
     "_requires": "No job declares requires: the runner reports a job with an unmet requires entry as skipped and still exits 0, so a missing tool would pass. A job without one fails when its tool is absent.",
     "_prepare": "residue lists every tracked directory a job reads. public/ and storage/ are left out because the dependencies job and the suites write ignored and unignored output there on every run. Submodules are initialized by the dependencies job, which authenticates with Composer's GitHub token and clears files a killed run strands in an uninitialized submodule directory; prepare.submodules would use the invoking user's credentials and refuse those files instead. patches is off for the reason scripts/prepare-dependencies.mjs gives.",
     "base": "main",
@@ -109,6 +109,12 @@
             "_note": "ci.yml pest, pest-serial and pest-report: the Stache reset, seed and route cache, the parallel band and the serial tail, and the checks on their reports; see scripts/gate-pest.mjs.",
             "run": "node scripts/gate-pest.mjs",
             "always": true
+        },
+        {
+            "name": "changed-tests",
+            "_note": "The checks call's changed-tests job (#1237): the pull request's changed tests/Unit files, run against origin/main's source in a scratch worktree, reported per file. It reports and never gates; it fails only when the comparison cannot run. The one job selected by paths rather than always: with no changed test file it has nothing to compare, and it installs dependencies in its scratch tree on every run. tests/Unit for the reason ci.yml's checks comment gives.",
+            "run": "node .claude/skills/pest-testing/scripts/changed-tests-against-base.mjs --base origin/main --tests tests/Unit",
+            "paths": ["tests/Unit/**"]
         },
         {
             "name": "browser",
