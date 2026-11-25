@@ -9,6 +9,7 @@ use Statamic\Contracts\Globals\GlobalSet as GlobalSetContract;
 use Statamic\Contracts\Globals\Variables as GlobalVariablesContract;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
+use Statamic\Sites\Site as SiteObject;
 use Tests\TestCase;
 use UAMSWeb\Aether\Forms\Settings\Support\FormRequestContext;
 
@@ -17,11 +18,14 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * @covers \App\Tags\GlobalOrigin
  *
- * Mutation: 100% on App\Tags\GlobalOrigin (44 mutants, --covered-only).
+ * Mutation: no survivor on App\Tags\GlobalOrigin, without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GlobalOriginTagTest.php
  */
 it('index returns empty string when handle missing', function () {
+    // Nothing is looked up without a handle
+    GlobalSet::shouldReceive('find')->never();
+
     $tag = new GlobalOrigin;
     $tag->setContext([]);
     $tag->setParameters([]);
@@ -108,12 +112,7 @@ it('index recursive includes subject for each ancestor', function () {
         ->once()
         ->andReturn('rootsite');
 
-    $childVars = Mockery::mock(GlobalVariablesContract::class);
-    $childVars->shouldReceive('get')
-        ->with('subject')
-        ->andReturn('major_entity');
-    $childVars->shouldReceive('origin')
-        ->andReturn($origin);
+    $childVars = globalOriginVariables('major_entity', $origin);
 
     $rootVars = Mockery::mock(GlobalVariablesContract::class);
     $rootVars->shouldReceive('get')
@@ -358,3 +357,203 @@ it('falls back to the live current site when the captured form-request site is e
 
     expect($captured->during(fn () => $tag->index()))->toBe('parent-site');
 });
+
+/**
+ * Run the tag in recursive mode for the `default` site over the given global set localizations.
+ *
+ * @param  array<string, mixed>  $localizations  site handle => the set's variables there, or null
+ * @param  array<string, mixed>  $sites  site handle => the site, or null
+ * @param  bool  $setStays  Whether the set is still found after the current site's own lookup
+ * @return string|array<int, array<string, string|null>>
+ */
+function globalOriginAncestors(array $localizations, array $sites, bool $setStays = true): string|array
+{
+    $current = Mockery::mock(SiteObject::class);
+    $current->shouldReceive('handle')->andReturn('default');
+    Site::shouldReceive('current')->andReturn($current);
+    Site::shouldReceive('get')->andReturnUsing(fn (string $handle): mixed => $sites[$handle] ?? null);
+
+    $set = Mockery::mock(GlobalSetContract::class);
+    $set->shouldReceive('in')->andReturnUsing(fn (string $handle): mixed => $localizations[$handle] ?? null);
+    $lookups = 0;
+    GlobalSet::shouldReceive('find')
+        ->with('uams_multisite_settings')
+        ->andReturnUsing(function () use (&$lookups, $set, $setStays): ?GlobalSetContract {
+            return ++$lookups === 1 || $setStays ? $set : null;
+        });
+
+    $tag = new GlobalOrigin;
+    $tag->setContext([]);
+    $tag->setParameters(['handle' => 'uams_multisite_settings', 'recursive' => true]);
+
+    return $tag->index();
+}
+
+/**
+ * An origin() answer that allows one pass of the tag's loop: the loop condition, then the body.
+ *
+ * A further read throws, so a loop that never leaves a site fails instead of running forever.
+ * A Mockery call count would not do: it is checked when the test ends, which is never.
+ */
+function globalOriginOnePass(?object $origin): Closure
+{
+    $reads = 0;
+
+    return function () use (&$reads, $origin): ?object {
+        throw_if(++$reads > 2, RuntimeException::class, 'The origin chain did not move on.');
+
+        return $origin;
+    };
+}
+
+/**
+ * Global variables with the given subject and origin.
+ */
+function globalOriginVariables(mixed $subject, ?object $origin): GlobalVariablesContract
+{
+    $vars = Mockery::mock(GlobalVariablesContract::class);
+    $vars->shouldReceive('get')->with('subject')->andReturn($subject);
+    $vars->shouldReceive('origin')->andReturnUsing(globalOriginOnePass($origin));
+
+    return $vars;
+}
+
+/**
+ * An origin at the given locale, whose own origin is the next one up.
+ */
+function globalOriginLocalization(mixed $locale, ?object $origin = null): Localization
+{
+    $localization = Mockery::mock(Localization::class);
+    $localization->shouldReceive('locale')->andReturn($locale);
+    $localization->shouldReceive('origin')->andReturnUsing(globalOriginOnePass($origin));
+
+    return $localization;
+}
+
+/**
+ * A site double with the given name and URL.
+ */
+function globalOriginSite(mixed $name, mixed $url): SiteObject
+{
+    $site = Mockery::mock(SiteObject::class);
+    $site->shouldReceive('name')->andReturn($name);
+    $site->shouldReceive('absoluteUrl')->andReturn($url);
+
+    return $site;
+}
+
+it('returns the empty value of its mode when the global set does not exist', function (bool $recursive, string|array $expected): void {
+    $site = Mockery::mock(SiteObject::class);
+    $site->shouldReceive('handle')->andReturn('default');
+    Site::shouldReceive('current')->andReturn($site);
+    GlobalSet::shouldReceive('find')->with('missing_settings')->andReturn(null);
+
+    $tag = new GlobalOrigin;
+    $tag->setContext([]);
+    $tag->setParameters(['handle' => 'missing_settings', 'recursive' => $recursive]);
+
+    expect($tag->index())->toBe($expected);
+})->with([
+    'immediate origin' => [false, ''],
+    'ancestor chain' => [true, []],
+]);
+
+it('lists ancestors from the outermost in, and stops at the first root-level brand', function (): void {
+    // `beyond` is above the root-level brand, so it is never reached
+    $root = globalOriginLocalization('root', globalOriginLocalization('beyond'));
+    $parent = globalOriginLocalization('parent', $root);
+
+    $ancestors = globalOriginAncestors(
+        [
+            'default' => globalOriginVariables('sub_entity', $parent),
+            'parent' => globalOriginVariables('major_entity', null),
+            'root' => globalOriginVariables('root', null),
+            'beyond' => globalOriginVariables('root', null),
+        ],
+        [
+            'parent' => globalOriginSite('Parent', 'https://parent.test'),
+            'root' => globalOriginSite('Root', 'https://root.test'),
+            'beyond' => globalOriginSite('Beyond', 'https://beyond.test'),
+        ],
+    );
+
+    expect($ancestors)->toBe([
+        ['title' => 'Root', 'url' => 'https://root.test', 'subject' => 'root'],
+        ['title' => 'Parent', 'url' => 'https://parent.test', 'subject' => 'major_entity'],
+    ]);
+});
+
+it('leaves the chain at a root-level brand instead of reading the same origin again', function (): void {
+    $ancestors = globalOriginAncestors(
+        [
+            'default' => globalOriginVariables('sub_entity', globalOriginLocalization('root')),
+            'root' => globalOriginVariables('root', null),
+        ],
+        ['root' => globalOriginSite('Root', 'https://root.test')],
+    );
+
+    expect($ancestors)->toBe([['title' => 'Root', 'url' => 'https://root.test', 'subject' => 'root']]);
+});
+
+it('ends the chain at an origin that is not a localization', function (): void {
+    $ancestors = globalOriginAncestors(['default' => globalOriginVariables('sub_entity', new stdClass)], []);
+
+    expect($ancestors)->toBe([]);
+});
+
+it('keeps an ancestor with no subject when its settings cannot be read', function (bool $setStays): void {
+    // The set has no variables for `parent`
+    $ancestors = globalOriginAncestors(
+        ['default' => globalOriginVariables('sub_entity', globalOriginLocalization('parent'))],
+        ['parent' => globalOriginSite('Parent', 'https://parent.test')],
+        $setStays,
+    );
+
+    expect($ancestors)->toBe([['title' => 'Parent', 'url' => 'https://parent.test', 'subject' => null]]);
+})->with([
+    'the set is gone by the second lookup' => [false],
+    'the set has no variables for the ancestor' => [true],
+]);
+
+it('casts a scalar ancestor title, url and subject to strings', function (): void {
+    $ancestors = globalOriginAncestors(
+        [
+            'default' => globalOriginVariables('sub_entity', globalOriginLocalization('parent')),
+            'parent' => globalOriginVariables(3, null),
+        ],
+        ['parent' => globalOriginSite(1, 2)],
+    );
+
+    expect($ancestors)->toBe([['title' => '1', 'url' => '2', 'subject' => '3']]);
+});
+
+it('reads an ancestor title and url that are not scalar as empty strings', function (): void {
+    $ancestors = globalOriginAncestors(
+        [
+            'default' => globalOriginVariables('sub_entity', globalOriginLocalization('parent')),
+            'parent' => globalOriginVariables(['not', 'scalar'], null),
+        ],
+        ['parent' => globalOriginSite(null, ['not', 'scalar'])],
+    );
+
+    expect($ancestors)->toBe([['title' => '', 'url' => '', 'subject' => null]]);
+});
+
+it('returns the immediate origin locale as a string, or empty when it is not scalar', function (mixed $locale, string $expected): void {
+    $site = Mockery::mock(SiteObject::class);
+    $site->shouldReceive('handle')->andReturn('default');
+    Site::shouldReceive('current')->andReturn($site);
+
+    $set = Mockery::mock(GlobalSetContract::class);
+    $set->shouldReceive('in')->with('default')->andReturn(globalOriginVariables('sub_entity', globalOriginLocalization($locale)));
+    GlobalSet::shouldReceive('find')->with('uams_multisite_settings')->andReturn($set);
+
+    $tag = new GlobalOrigin;
+    $tag->setContext([]);
+    $tag->setParameters(['handle' => 'uams_multisite_settings']);
+
+    expect($tag->index())->toBe($expected);
+})->with([
+    'a scalar that is not a string' => [5, '5'],
+    'not scalar' => [['not', 'scalar'], ''],
+]);
