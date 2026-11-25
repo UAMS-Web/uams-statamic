@@ -88,13 +88,6 @@ class GetSchemaLogoUrls extends Tags
 
         $urls = [];
         foreach ($paths as $path) {
-            // Equivalent: flattenLogoPaths() never returns an empty path. This and that
-            // check back each other up, so neither mutant alone changes the output.
-            // @pest-mutate-ignore: EmptyStringToNotEmpty
-            if ($path === '') {
-                continue;
-            }
-
             $url = $this->pathToUrl($path);
             // Equivalent: pathToUrl() returns null rather than ''. The two checks back
             // each other up.
@@ -110,18 +103,15 @@ class GetSchemaLogoUrls extends Tags
     }
 
     /**
-     * Flatten nested logo group (orientation => color => path) to list of paths.
+     * Flatten nested logo group (orientation => color => path) to list of non-empty paths.
      *
      * @param  array<array-key, mixed>  $group
-     * @return array<int, string>
+     * @return array<int, non-empty-string>
      */
     private function flattenLogoPaths(array $group): array
     {
         $out = [];
         foreach ($group as $value) {
-            // Equivalent: index() skips an empty path as well. The two checks back each
-            // other up.
-            // @pest-mutate-ignore: EmptyStringToNotEmpty
             if (\is_string($value) && $value !== '') {
                 $out[] = $value;
             } elseif (\is_array($value)) {
