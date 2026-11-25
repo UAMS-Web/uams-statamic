@@ -733,7 +733,7 @@ describe('the sharded pest job in ci.yml (#387)', () => {
             .split(' '))
 
         const script = readFileSync(join(repoRoot, 'scripts', 'gate-pest.mjs'), 'utf8')
-        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree\)/)
+        const localCall = script.match(/const parallelCode = runPhp\(\[(.*)\], tree, fontEnv\)/)
         expect(localCall, 'no parallel band call in scripts/gate-pest.mjs').not.toBeNull()
         const local = ['php', ...[...localCall[1].matchAll(/'([^']*)'|`[^`]*`|(parallelReport)/g)]
             .filter((m) => m[0].startsWith("'") || m[2])
