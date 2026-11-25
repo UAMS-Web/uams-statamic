@@ -281,12 +281,12 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
         foreach ($idMap as $oldId => $newId) {
             $pattern = '/'.preg_quote(self::ENTRY_LINK_PREFIX.$oldId, '/').'(?![A-Za-z0-9_-])/';
 
-            $value = preg_replace(
+            $value = (string) preg_replace(
                 $pattern,
                 self::ENTRY_LINK_PREFIX.$newId,
                 $value,
                 count: $replacements
-            ) ?? $value;
+            );
 
             $count += $replacements;
         }

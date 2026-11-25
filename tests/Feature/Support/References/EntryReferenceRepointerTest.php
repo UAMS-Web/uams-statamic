@@ -478,6 +478,28 @@ it('rewrites every inline link in a string, to each survivor', function (): void
         ->and($summary->occurrences)->toBe(3);
 });
 
+it('reads a failed match as an empty string with nothing rewritten', function (): void {
+    $jit = mustBeString(ini_get('pcre.jit'), 'the PCRE JIT setting');
+    $limit = mustBeString(ini_get('pcre.backtrack_limit'), 'the PCRE backtrack limit');
+
+    try {
+        // Without the JIT compiler, no match can be tried inside a limit of zero
+        ini_set('pcre.jit', '0');
+        ini_set('pcre.backtrack_limit', '0');
+
+        $result = new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteString')->invoke(
+            new EntryReferenceRepointer,
+            '[a](statamic://entry::failing-5555)',
+            ['failing-5555' => REPOINT_SURVIVOR]
+        );
+    } finally {
+        ini_set('pcre.jit', $jit);
+        ini_set('pcre.backtrack_limit', $limit);
+    }
+
+    expect($result)->toBe(['', 0]);
+});
+
 it('saves each global localization that holds a reference, whatever sites come before it', function (): void {
     Site::setSites([
         'first' => ['name' => 'First', 'url' => '/', 'locale' => 'en_US'],
