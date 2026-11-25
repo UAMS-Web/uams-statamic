@@ -24,7 +24,12 @@ beforeEach(function (): void {
  *
  * Engine-path augmented shapes (checkbox day rows, button-group LabeledValues,
  * Carbon dates, replicator `Values`) are covered end-to-end in
- * SchemaJsonLdLocationTest.
+ * SchemaJsonLdLocationHoursTest.
+ *
+ * Mutation: no unexplained survivor on App\Tags\SchemaLocationHours, without
+ * --covered-only, with one equivalent annotated in the class: the strict flag of
+ * dayTerms()'s in_array(). Every day term is a non-numeric string, so a loose
+ * comparison matches exactly as the strict one does.
  *
  * @command  php artisan test --compact tests/Feature/Tags/SchemaLocationHoursTest.php
  */
