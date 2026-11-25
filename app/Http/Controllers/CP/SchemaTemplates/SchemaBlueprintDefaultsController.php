@@ -37,7 +37,7 @@ class SchemaBlueprintDefaultsController extends CpController
             ->map(function (\Statamic\Entries\Collection $collection): array {
                 $handle = $collection->handle();
                 /** @var \Illuminate\Support\Collection<int, FieldsBlueprint> $blueprints */
-                $blueprints = Blueprint::in('collections/'.(is_scalar($handle) ? (string) $handle : ''));
+                $blueprints = Blueprint::in('collections/'.(is_scalar($handle) ? $handle : ''));
 
                 return [
                     'title' => $collection->title(),
@@ -60,7 +60,7 @@ class SchemaBlueprintDefaultsController extends CpController
             ->map(function (\Statamic\Taxonomies\Taxonomy $taxonomy): array {
                 $handle = $taxonomy->handle();
                 /** @var \Illuminate\Support\Collection<int, FieldsBlueprint> $blueprints */
-                $blueprints = Blueprint::in('taxonomies/'.(is_scalar($handle) ? (string) $handle : ''));
+                $blueprints = Blueprint::in('taxonomies/'.(is_scalar($handle) ? $handle : ''));
 
                 return [
                     'title' => $taxonomy->title(),
@@ -104,32 +104,21 @@ class SchemaBlueprintDefaultsController extends CpController
         $siteDefaults = $siteRepo->get(is_scalar($selectedSiteHandle) ? (string) $selectedSiteHandle : '');
         $sectionDefaults = $sectionRepo->get($sectionHandle, $sectionType);
 
-        $siteDisabled = ($siteDefaults['enabled'] ?? '') === 'false' || ($siteDefaults['enabled'] ?? '') === false;
-        $sectionDisabled = ($sectionDefaults['enabled'] ?? '') === 'false';
-        $sectionDisabled = $sectionDisabled || ($sectionDefaults['enabled'] ?? '') === 'inherit' && $siteDisabled;
-
-        $defaultInheritTemplate = ! $sectionDisabled;
-
-        $values = $repository->get($sectionHandle, $blueprintHandle, $sectionType);
-        $values = array_merge([
-            'enabled' => 'inherit',
-            'inherit_webpage_provider' => $defaultInheritTemplate,
-            'webpage_provider' => '',
-            'inherit_main_content_provider' => $defaultInheritTemplate,
-            'main_content_provider' => '',
-        ], $values);
+        $siteDisabled = \in_array($siteDefaults['enabled'] ?? null, ['false', false], true);
+        $sectionState = $sectionDefaults['enabled'] ?? null;
+        $sectionDisabled = $sectionState === 'false' || ($sectionState === 'inherit' && $siteDisabled);
 
         $section = $sectionType === 'collection'
             ? Collection::find($sectionHandle)
             : Taxonomy::find($sectionHandle);
         $sectionTitleValue = $section && method_exists($section, 'title') ? $section->title() : $sectionHandle;
-        $sectionTitle = is_scalar($sectionTitleValue) ? (string) $sectionTitleValue : $sectionHandle;
+        $sectionTitle = is_scalar($sectionTitleValue) ? $sectionTitleValue : $sectionHandle;
 
         $blueprint = $sectionType === 'collection'
             ? Blueprint::find(sprintf('collections.%s.%s', $sectionHandle, $blueprintHandle))
             : Blueprint::find(sprintf('taxonomies.%s.%s', $sectionHandle, $blueprintHandle));
         $blueprintTitleValue = $blueprint?->title() ?? $blueprintHandle;
-        $blueprintTitle = is_scalar($blueprintTitleValue) ? (string) $blueprintTitleValue : $blueprintHandle;
+        $blueprintTitle = is_scalar($blueprintTitleValue) ? $blueprintTitleValue : $blueprintHandle;
 
         $updateRoute = cp_route('schema-templates.blueprint-defaults.update', [
             $sectionType,
@@ -140,7 +129,7 @@ class SchemaBlueprintDefaultsController extends CpController
         return PublishForm::make($this->blueprintBlueprint($sectionDisabled))
             ->icon('blueprints')
             ->title(sprintf('%s › %s — ', $sectionTitle, $blueprintTitle).__('Schema Blueprint Defaults'))
-            ->values($values)
+            ->values($repository->get($sectionHandle, $blueprintHandle, $sectionType))
             ->submittingTo(is_string($updateRoute) ? $updateRoute : '');
     }
 
@@ -160,25 +149,20 @@ class SchemaBlueprintDefaultsController extends CpController
     ): array {
         $this->authorize('edit schema blueprint defaults');
 
-        $sectionRepo = app(SchemaSectionDefaultsRepository::class);
-        $siteRepo = app(SchemaSiteDefaultsRepository::class);
-        /** @var \Statamic\Sites\Site $selectedSite */
-        $selectedSite = Site::selected();
-        $selectedSiteHandle = $selectedSite->handle();
-        $siteDefaults = $siteRepo->get(is_scalar($selectedSiteHandle) ? (string) $selectedSiteHandle : '');
-        $sectionDefaults = $sectionRepo->get($sectionHandle, $sectionType);
-        $siteDisabled = ($siteDefaults['enabled'] ?? '') === 'false' || ($siteDefaults['enabled'] ?? '') === false;
-        $sectionDisabled = ($sectionDefaults['enabled'] ?? '') === 'false' || ($sectionDefaults['enabled'] ?? '') === 'inherit' && $siteDisabled;
+        // A disabled section sets only what the form shows, each inherit field's default and
+        // read_only, so the submitted values are processed the same either way.
+        // @pest-mutate-ignore: FalseToTrue
+        $blueprint = $this->blueprintBlueprint(false);
 
         /** @var array<string, mixed> $values */
-        $values = PublishForm::make($this->blueprintBlueprint($sectionDisabled))->submit($request->all());
-        $filtered = array_filter($values, fn ($v): bool => $v !== null && $v !== '');
+        $values = PublishForm::make($blueprint)->submit($request->all());
 
+        // The repository drops the values left empty
         app(SchemaBlueprintDefaultsRepository::class)->put(
             $sectionHandle,
             $blueprintHandle,
             $sectionType,
-            $filtered
+            $values
         );
 
         return ['saved' => true];
