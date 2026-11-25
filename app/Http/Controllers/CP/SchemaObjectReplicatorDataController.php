@@ -27,17 +27,8 @@ class SchemaObjectReplicatorDataController extends CpController
      */
     public function __invoke(Request $request): JsonResponse
     {
-        $types = $this->normalizeTypesFromRequest($request);
-        if ($types === []) {
-            return response()->json([
-                'config_by_property' => [],
-                'meta_by_property' => [],
-                'property_names' => [],
-            ]);
-        }
-
         // Union of property names across all types (dedupe, preserve order).
-        $propertyNames = $this->propertyNamesForTypes($types);
+        $propertyNames = $this->propertyNamesForTypes($this->normalizeTypesFromRequest($request));
 
         $replicatorSetsService = new SchemaPropertyReplicatorSets;
         $configByProperty = [];
@@ -64,22 +55,20 @@ class SchemaObjectReplicatorDataController extends CpController
 
     /**
      * Normalize request to array of type strings (accept types[] or legacy type).
+     * An empty or repeated type adds no property, so neither needs dropping here.
      *
-     * @return array<int, string>
+     * @return array<string>
      */
     private function normalizeTypesFromRequest(Request $request): array
     {
         $types = $request->input('types');
         if (\is_array($types)) {
-            return array_values(array_unique(array_filter($types, static fn ($t): bool => \is_string($t) && $t !== '')));
+            return array_filter($types, \is_string(...));
         }
 
         $type = $request->input('type');
-        if (\is_string($type) && $type !== '') {
-            return [$type];
-        }
 
-        return [];
+        return \is_string($type) ? [$type] : [];
     }
 
     /**
@@ -89,52 +78,29 @@ class SchemaObjectReplicatorDataController extends CpController
      * the blacklist for any of those types, so multi-typed entities do not show
      * properties that are hidden for one of their types.
      *
-     * @param  array<int, string>  $types
-     * @return array<int, string>
+     * @param  array<string>  $types
+     * @return list<string>
      */
     private function propertyNamesForTypes(array $types): array
     {
-        $seen = [];
-        $propertyNames = [];
-
         /** @var array{general?: array<int, string>, specific?: array<string, array<int, string>>} $blacklist */
         $blacklist = config('schema_object.property_blacklist', []);
-        $general = $blacklist['general'] ?? [];
         $specific = $blacklist['specific'] ?? [];
 
         // Union of blacklisted properties across all selected types
-        $combinedHidden = $general;
+        $hidden = $blacklist['general'] ?? [];
         foreach ($types as $type) {
-            $typeHidden = $specific[$type] ?? [];
-            if ($typeHidden !== []) {
-                $combinedHidden = array_merge($combinedHidden, $typeHidden);
-            }
+            $hidden = array_merge($hidden, $specific[$type] ?? []);
         }
 
-        $combinedHidden = array_values(array_unique($combinedHidden));
-
+        $propertyNames = [];
         foreach ($types as $type) {
-            $list = SchemaPropertyValidator::validPropertiesForType($type);
-            if ($combinedHidden !== []) {
-                $list = array_values(array_diff($list, $combinedHidden));
-            }
-
-            foreach ($list as $name) {
-                if (! isset($seen[$name])) {
-                    $seen[$name] = true;
-                    $propertyNames[] = $name;
-                }
-            }
+            $propertyNames = array_merge(
+                $propertyNames,
+                array_diff(SchemaPropertyValidator::validPropertiesForType($type), $hidden)
+            );
         }
 
-        unset(
-            $blacklist,
-            $combinedHidden,
-            $general,
-            $seen,
-            $specific
-        );
-
-        return $propertyNames;
+        return array_values(array_unique($propertyNames));
     }
 }
