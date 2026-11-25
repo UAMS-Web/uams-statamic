@@ -37,8 +37,9 @@ export const MIRROR_FILES = Object.freeze(['local-ci.json', 'scripts/ci-job.mjs'
 
 // The step scripts `local-ci.json` runs (#295). Each marks its mirrored code with
 // `PARITY:` lines, each closed by a `PARITY-END`; the rest of each file is local-only.
-// `scripts/gate-pest.mjs` has two: its job body, and the `SUITE_PHP_INI` declaration
-// that ci.yml's `ini-values:` lines mirror (#699).
+// `scripts/gate-pest.mjs` has three: its job body, the `SUITE_PHP_INI` declaration
+// that ci.yml's `ini-values:` lines mirror (#699), and the default font that ci.yml's
+// "Give ImageMagick a default font (macOS)" steps mirror (#1522).
 export const GATE_STEP_FILES = Object.freeze([
     'scripts/gate-browser.mjs',
     'scripts/gate-pest.mjs',

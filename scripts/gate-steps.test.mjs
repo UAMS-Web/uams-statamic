@@ -3,9 +3,11 @@ import { spawnSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { GATE_STEP_FILES, evaluate, parityRegions } from './check-ci-parity.mjs'
+import { MACOS_DEFAULT_FONT, imageMagickTypeXml } from './gate-pest.mjs'
 
+// cspell:ignore MAGICK typemap
 // #295: each gate step runs standalone. These run the real scripts as commands, with
 // $LOCAL_CI_PHP, $LOCAL_CI_NPM and $LOCAL_CI_NPX pointed at a stub that records its
 // arguments and environment and exits as told. So what is under test is what a caller
@@ -58,9 +60,13 @@ beforeEach(() => {
     mkdirSync(tree)
 
     writeFileSync(join(root, 'stub.mjs'), [
-        "import { appendFileSync } from 'node:fs'",
+        "import { appendFileSync, existsSync, readFileSync } from 'node:fs'",
         'const [tool, ...args] = process.argv.slice(2)',
-        'appendFileSync(process.env.STUB_LOG, JSON.stringify({ tool, args, APP_ENV: process.env.APP_ENV ?? null, DB_DATABASE: process.env.DB_DATABASE ?? null, TMP: process.env.TMP ?? null }) + "\\n")',
+        // The type.xml is read here because the step deletes it after the bands. The path is the
+        // first of a colon-separated list; a Windows drive letter's colon precedes a backslash.
+        "const typeFile = (process.env.MAGICK_CONFIGURE_PATH ?? '').split(/:(?!\\\\)/)[0] + '/type.xml'",
+        'appendFileSync(process.env.STUB_LOG, JSON.stringify({ tool, args, APP_ENV: process.env.APP_ENV ?? null, DB_DATABASE: process.env.DB_DATABASE ?? null, TMP: process.env.TMP ?? null, MAGICK: process.env.MAGICK_CONFIGURE_PATH ?? null, typeXml: existsSync(typeFile) ? readFileSync(typeFile, "utf8") : null }) + "\\n")',
+        "if (args.join(' ').includes('queryFonts')) { process.stdout.write(process.env.STUB_FONTS ?? '') }",
         'const failOn = process.env.STUB_FAIL_ON',
         'process.exit(failOn && args.join(" ").includes(failOn) ? 3 : 0)',
     ].join('\n'))
@@ -75,6 +81,7 @@ beforeEach(() => {
     }
     delete env.APP_ENV
     delete env.DB_DATABASE
+    delete env.MAGICK_CONFIGURE_PATH
 
     // A real repository, because pint diffs against a base and pest's reset cleans.
     git('init', '-q', '-b', 'main')
@@ -324,6 +331,131 @@ describe('gate-pest.mjs', () => {
     })
 })
 
+describe('gate-pest.mjs: the default font for ImageMagick (#1522)', () => {
+    let font
+
+    /**
+     * Run gatePest with the platform and the font file injected, so every case runs on every
+     * operating system. `fonts` is what the stubbed PHP answers the font query with.
+     */
+    function runWithFonts({ platform, fonts, configurePath, fontFile = font, failOn = '' }) {
+        const driver = join(root, 'driver.mjs')
+
+        writeFileSync(driver, [
+            `import { gatePest } from ${JSON.stringify(pathToFileURL(join(scripts, 'gate-pest.mjs')).href)}`,
+            `process.exitCode = gatePest(${JSON.stringify({ tree, php: env.LOCAL_CI_PHP, git: 'git', reset: false, platform, font: fontFile })})`,
+        ].join('\n'))
+
+        return spawnSync(process.execPath, [driver], {
+            encoding: 'utf8',
+            env: {
+                ...env,
+                STUB_FONTS: fonts,
+                STUB_FAIL_ON: failOn,
+                ...(configurePath === undefined ? {} : { MAGICK_CONFIGURE_PATH: configurePath }),
+            },
+        })
+    }
+
+    const bands = () => ['--parallel', '--group=serial'].map((marker) => callOf(marker).call)
+    const queried = () => callOf('queryFonts').index !== -1
+
+    beforeEach(() => {
+        font = join(root, 'Font.ttf')
+        writeFileSync(font, 'x')
+    })
+
+    it('gives both bands a type.xml naming the font on a Mac that lists none', () => {
+        const result = runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n' })
+
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('ImageMagick lists no font')
+
+        for (const band of bands()) {
+            expect(band.typeXml).toContain('<typemap>')
+            expect(band.typeXml).toContain(`glyphs="${font}"`)
+        }
+
+        expect(bands()[0].MAGICK).toBe(bands()[1].MAGICK)
+    })
+
+    it('reads the count past a PHP startup warning', () => {
+        runWithFonts({ platform: 'darwin', fonts: '\nWarning: Module "herd" is already loaded in Unknown on line 0\n\nfonts=0\n' })
+
+        expect(bands().every((band) => band.typeXml !== null)).toBe(true)
+    })
+
+    it('sets the font for the bands alone', () => {
+        runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n' })
+
+        expect(calls().filter((call) => call.MAGICK !== null)).toHaveLength(2)
+    })
+
+    it('puts the directory ahead of the caller\'s own MAGICK_CONFIGURE_PATH', () => {
+        runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n', configurePath: '/callers/own' })
+
+        for (const band of bands()) {
+            expect(band.MAGICK).toMatch(/gate-imagemagick-font-[^:]+:\/callers\/own$/)
+        }
+    })
+
+    it.each([
+        ['after passing bands', '', 0],
+        ['after a failed band', '--parallel', 3],
+    ])('deletes the directory %s', (_label, failOn, status) => {
+        const result = runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n', failOn })
+
+        expect(result.status).toBe(status)
+        expect(bands()[1].MAGICK).toContain('gate-imagemagick-font-')
+        expect(existsSync(bands()[1].MAGICK)).toBe(false)
+    })
+
+    it.each([
+        ['lists a font', 'fonts=1\n'],
+        ['lists many fonts', 'fonts=250\n'],
+        ['has no Imagick extension', 'fonts=absent\n'],
+        ['gives no answer', ''],
+        ['prints only a number in a warning', 'Warning: something in Unknown on line 0\n'],
+    ])('changes nothing on a Mac whose PHP %s', (_label, fonts) => {
+        const result = runWithFonts({ platform: 'darwin', fonts })
+
+        expect(result.status).toBe(0)
+        expect(queried()).toBe(true)
+        expect(bands().map((band) => band.MAGICK)).toEqual([null, null])
+    })
+
+    it('changes nothing when the font query itself fails', () => {
+        const result = runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n', failOn: 'queryFonts' })
+
+        expect(result.status).toBe(0)
+        expect(bands().map((band) => band.MAGICK)).toEqual([null, null])
+    })
+
+    it.each(['win32', 'linux'])('asks nothing and changes nothing on %s', (platform) => {
+        const result = runWithFonts({ platform, fonts: 'fonts=0\n', configurePath: '/callers/own' })
+
+        expect(result.status).toBe(0)
+        expect(queried()).toBe(false)
+        expect(bands().map((band) => band.MAGICK)).toEqual(['/callers/own', '/callers/own'])
+    })
+
+    it('warns and changes nothing when the font file is missing', () => {
+        const result = runWithFonts({ platform: 'darwin', fonts: 'fonts=0\n', fontFile: join(root, 'missing.ttf') })
+
+        expect(result.status).toBe(0)
+        expect(result.stderr).toContain('no default font was set')
+        expect(bands().map((band) => band.MAGICK)).toEqual([null, null])
+    })
+
+    it('writes the font and the type.xml line that ci.yml writes', () => {
+        const ci = readFileSync(join(scripts, '..', '.github', 'workflows', 'ci.yml'), 'utf8')
+        const line = imageMagickTypeXml('$font').split('\n')[2]
+
+        expect(ci.split(`font=${MACOS_DEFAULT_FONT}\n`)).toHaveLength(3)
+        expect(ci.split(line.replaceAll('"', '\\"'))).toHaveLength(3)
+    })
+})
+
 describe('every step script as a command', () => {
     it.each(['gate-browser.mjs', 'gate-pest.mjs', 'gate-pint.mjs', 'gate-rector.mjs'])('%s refuses an unknown flag with exit 2 and starts nothing', (script) => {
         const result = runStep(script, ['--bogus'])
@@ -374,8 +506,9 @@ describe('the gate step scripts stay under the CI parity gate', () => {
         ciSourceOld: '# x\n      # PARITY: y\n      - name: Run\n        run: z\n',
     }
 
-    // gate-pest.mjs also marks the SUITE_PHP_INI declaration that ci.yml's `ini-values:` mirror (#699).
-    const regionCount = { 'scripts/gate-pest.mjs': 2 }
+    // gate-pest.mjs also marks the SUITE_PHP_INI declaration that ci.yml's `ini-values:` mirror (#699),
+    // and the default font ci.yml's macOS steps mirror (#1522).
+    const regionCount = { 'scripts/gate-pest.mjs': 3 }
 
     it.each(GATE_STEP_FILES)('marks a closed region in %s that spans the step', (file) => {
         const source = readFileSync(join(scripts, '..', file), 'utf8')

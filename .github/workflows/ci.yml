@@ -388,6 +388,7 @@ jobs:
           "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
           "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
 
+      # PARITY: mirrored by scripts/gate-pest.mjs, only where ImageMagick lists no font (#1522).
       - name: Give ImageMagick a default font (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -815,6 +816,7 @@ jobs:
           "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
           "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
 
+      # PARITY: mirrored by scripts/gate-pest.mjs, only where ImageMagick lists no font (#1522).
       - name: Give ImageMagick a default font (macOS)
         if: runner.os == 'macOS'
         run: |
