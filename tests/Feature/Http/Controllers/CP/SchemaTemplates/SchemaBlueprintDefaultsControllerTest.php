@@ -50,6 +50,8 @@ covers(SchemaBlueprintDefaultsController::class);
  * (72 mutants), measured on macOS on 2026-11-25 without --covered-only, with one equivalent
  * annotated in update(): the flag that marks the section disabled changes only each inherit
  * field's default and read_only, which saving does not read. Every killable mutant is dead.
+ * That run predates the match in edit() that decides the section's state
+ * (UAMS-Web/uams-statamic#1539), whose arms were mutated by hand.
  *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/SchemaTemplates/SchemaBlueprintDefaultsControllerTest.php
  */
@@ -291,7 +293,7 @@ it('shows the saved defaults, and otherwise inherits', function (): void {
         ->and(data_get(blueprintDefaultsForm('taxonomy'), 'values.enabled'))->toBe('inherit');
 });
 
-it('locks the inherit fields off when the section is disabled, or inherits from a disabled site', function (array $site, array $section, bool $disabled): void {
+it('locks the inherit fields off when the section is disabled, or follows a disabled site', function (array $site, array $section, bool $disabled): void {
     blueprintDefaultsStub($site, $section);
     blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
 
@@ -304,15 +306,44 @@ it('locks the inherit fields off when the section is disabled, or inherits from 
         ->and(data_get($form, 'values.inherit_main_content_entry'))->toBe($disabled ? 'false' : 'true');
 })->with([
     'nothing set' => [[], [], false],
-    'site disabled, section unset' => [['enabled' => 'false'], [], false],
+    'site disabled, section unset' => [['enabled' => 'false'], [], true],
+    'site disabled as a boolean, section unset' => [['enabled' => false], [], true],
+    'site enabled, section unset' => [['enabled' => 'true'], [], false],
+    'site enabled as a boolean, section unset' => [['enabled' => true], [], false],
     'site disabled, section inherits' => [['enabled' => 'false'], ['enabled' => 'inherit'], true],
     'site disabled as a boolean, section inherits' => [['enabled' => false], ['enabled' => 'inherit'], true],
     'site enabled, section inherits' => [['enabled' => 'true'], ['enabled' => 'inherit'], false],
     'site enabled as a boolean, section inherits' => [['enabled' => true], ['enabled' => 'inherit'], false],
     'site unset, section inherits' => [[], ['enabled' => 'inherit'], false],
     'site disabled, section enabled' => [['enabled' => 'false'], ['enabled' => 'true'], false],
+    'site disabled, section enabled as a boolean' => [['enabled' => 'false'], ['enabled' => true], false],
+    'site disabled as a boolean, section enabled as a boolean' => [['enabled' => false], ['enabled' => true], false],
     'site enabled, section disabled' => [['enabled' => 'true'], ['enabled' => 'false'], true],
+    'site enabled, section disabled as a boolean' => [['enabled' => 'true'], ['enabled' => false], true],
     'site unset, section disabled' => [[], ['enabled' => 'false'], true],
+    'site unset, section disabled as a boolean' => [[], ['enabled' => false], true],
+]);
+
+it('follows the section as its own form saves it', function (string $type, string $enabled, bool $disabled): void {
+    blueprintDefaultsStub(['enabled' => ! $disabled]);
+    app()->forgetInstance(SchemaSectionDefaultsRepository::class);
+    blueprintDefaultsSection($type, 'probe_posts', 'Probe posts');
+
+    patchJson(mustBeString(cp_route('schema-templates.section-defaults.update', [$type, 'probe_posts']), 'the route'), ['enabled' => $enabled])
+        ->assertOk();
+
+    // The form stores a boolean, where the other setting is a string
+    expect((new SchemaSectionDefaultsRepository)->get('probe_posts', $type)['enabled'] ?? null)->toBe(! $disabled);
+
+    $readOnly = blueprintDefaultsFieldSetting(blueprintDefaultsForm($type), 'read_only');
+
+    expect($readOnly['inherit_webpage_entry'] ?? null)->toBe($disabled)
+        ->and($readOnly['inherit_main_content_entry'] ?? null)->toBe($disabled);
+})->with([
+    'collection disabled' => ['collection', 'false', true],
+    'collection enabled' => ['collection', 'true', false],
+    'taxonomy disabled' => ['taxonomy', 'false', true],
+    'taxonomy enabled' => ['taxonomy', 'true', false],
 ]);
 
 it('reads the selected site\'s defaults', function (): void {

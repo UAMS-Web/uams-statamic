@@ -105,8 +105,13 @@ class SchemaBlueprintDefaultsController extends CpController
         $sectionDefaults = $sectionRepo->get($sectionHandle, $sectionType);
 
         $siteDisabled = \in_array($siteDefaults['enabled'] ?? null, ['false', false], true);
-        $sectionState = $sectionDefaults['enabled'] ?? null;
-        $sectionDisabled = $sectionState === 'false' || ($sectionState === 'inherit' && $siteDisabled);
+        // The section's own setting decides, as a string or a boolean; anything else inherits
+        // from the site, as SchemaTemplatesCascadeService reads it
+        $sectionDisabled = match ($sectionDefaults['enabled'] ?? null) {
+            'false', false => true,
+            'true', true => false,
+            default => $siteDisabled,
+        };
 
         $section = $sectionType === 'collection'
             ? Collection::find($sectionHandle)

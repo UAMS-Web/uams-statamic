@@ -28,13 +28,13 @@ class SchemaSectionDefaultsRepository
     /**
      * Get section defaults for a collection or taxonomy.
      *
-     * @return array{enabled?: string, inherit_template?: bool, template?: string}
+     * @return array{enabled?: bool|string, inherit_template?: bool, template?: string}
      */
     public function get(string $sectionHandle, string $type = 'collection'): array
     {
         $memoKey = sprintf('%s:%s', $type, $sectionHandle);
 
-        /** @var array{enabled?: string, inherit_template?: bool, template?: string} $defaults */
+        /** @var array{enabled?: bool|string, inherit_template?: bool, template?: string} $defaults */
         $defaults = RequestAttributeMemo::remember(
             self::MEMO_BAG,
             $memoKey,
