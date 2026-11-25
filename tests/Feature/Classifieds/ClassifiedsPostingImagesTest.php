@@ -6,6 +6,7 @@ use App\Support\Redirects\DeletedEntryRedirectCapture;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Statamic\Entries\Entry as StatamicEntry;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\Collection;
@@ -15,6 +16,7 @@ use Statamic\Facades\Stache;
 use Statamic\Facades\User;
 use Statamic\Stache\Query\EntryQueryBuilder;
 use Statamic\Stache\Stores\Store;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\ContentSubmodule;
 use Tests\Support\EntriesAndTermsIsolatedTestCase;
 use Tests\Support\NullDeletedEntryRedirectCapture;
@@ -234,6 +236,61 @@ it('refuses a file named as an image whose content is not one', function (string
     'HTML named .jpg' => ['photo.jpg', '<html><body><script>alert(1)</script></body></html>'],
     'SVG named .png' => ['photo.png', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(2)</script></svg>'],
 ]);
+
+/**
+ * Post the form with `images` given twice, as input values and as uploads under the same
+ * indexes.
+ *
+ * The input half goes in the query string. `call()` cannot carry it in the body: it moves
+ * the uploads it finds in the data into the files bag, and finding none under `images` it
+ * replaces the uploads it was given with an empty array, so the data carries no `images`
+ * key at all. `Request::all()` reads the query through `input()` exactly as it reads the
+ * body, so the merge under test is the same.
+ *
+ * @param  array<int, string>  $inputs  The `images[]` input values.
+ * @param  array<int, UploadedFile>  $uploads  The `images[]` uploads.
+ * @return TestResponse<Response>
+ */
+function postImagesInputAndUploads(
+    TestCase $test,
+    Statamic\Auth\User $user,
+    array $inputs,
+    array $uploads
+): TestResponse {
+    $response = $test->actingAs($user)
+        ->from(IMAGES_MY_LISTINGS.'/new')
+        ->call('POST', IMAGES_MY_LISTINGS.'?'.http_build_query(['images' => $inputs]), array_diff_key(imagesForm([]), ['images' => true]), [], ['images' => $uploads]);
+
+    // The request must carry both halves, or a refusal below says nothing about the merge
+    expect(request()->allFiles()['images'] ?? [])->toHaveCount(count($uploads))
+        ->and(request()->query('images'))->toHaveCount(count($inputs));
+
+    return $response;
+}
+
+// laravel/framework v13.43.0 (#62504): a blank input value no longer hides an upload at its key; a non-empty one still does
+it('refuses a listing whose images input carries text where an upload shares its index', function (): void {
+    /** @var TestCase $test */
+    $test = $this;
+    postImagesInputAndUploads($test, imagesPoster(), ['not-an-upload'], [UploadedFile::fake()->image('front.jpg')])
+        ->assertSessionHasErrors('images.0');
+
+    expect(Storage::disk('images')->allFiles())->toBe([]);
+});
+
+it('stores an upload whose images input at the same index is blank', function (): void {
+    /** @var TestCase $test */
+    $test = $this;
+    postImagesInputAndUploads($test, imagesPoster(), [''], [UploadedFile::fake()->image('front.jpg')])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    /** @var string $featured */
+    $featured = imagesListing()->get('featured_image');
+
+    expect($featured)->toEndWith('.jpg');
+    Storage::disk('images')->assertExists($featured);
+});
 
 it('refuses more images than a listing may carry', function (): void {
     $user = imagesPoster();

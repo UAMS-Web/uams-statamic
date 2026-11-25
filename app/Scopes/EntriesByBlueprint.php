@@ -77,6 +77,47 @@ class EntriesByBlueprint extends Scope
     ];
 
     /**
+     * Register the scope handle now and its blueprint aliases once the
+     * application has booted.
+     *
+     * Statamic registers app scopes while the service providers register, and
+     * the inherited `register()` reads {@see self::aliases()} there. The aliases
+     * come from the collection blueprints, and on `statamic/cms` 6.41.0 and
+     * later a blueprint is parsed through the cache store, whose deferred
+     * binding does not exist yet at that point, so reading them then stops the
+     * application booting (UAMS-Web/uams-statamic#1515). Deferring the aliases
+     * to `booted()` reads the blueprints after every provider has registered;
+     * when the application has already booted, the callback runs at once.
+     */
+    public static function register(): void
+    {
+        self::bind([static::$handle]);
+
+        app()->booted(static fn () => self::bind(static::aliases()));
+    }
+
+    /**
+     * Bind each handle to this class in Statamic's scope registry, keeping
+     * every binding already there.
+     *
+     * @param  array<int, string>  $handles
+     */
+    private static function bind(array $handles): void
+    {
+        $extensions = app('statamic.extensions');
+
+        // Start from the scopes already registered, then add these handles.
+        $bindings = $extensions->get(Scope::class);
+        $bindings = $bindings instanceof Collection ? $bindings : collect();
+
+        foreach ($handles as $handle) {
+            $bindings->put($handle, static::class);
+        }
+
+        $extensions->put(Scope::class, $bindings);
+    }
+
+    /**
      * Register one alias per recognized blueprint so a single class serves them all.
      *
      * @return array<int, string>

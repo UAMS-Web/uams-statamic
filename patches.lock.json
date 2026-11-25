@@ -1,5 +1,5 @@
 {
-    "_hash": "f77a583314f5005f05bea8b8e8f298fe84af805130da9f41054b1ff651fb3a72",
+    "_hash": "e46d4488c44906b08d8ff520524b04003cc2ddb9340c81be293a7cd9e1719519",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
@@ -169,6 +169,16 @@
                 "description": "Run a mutant child again when it times out once, and score a timeout only when the second attempt times out too, so a transient slowdown of the machine cannot keep --min=100 out of reach (temporary; see UAMS-Web/patches-pest-plugin-mutate#30)",
                 "url": "vendor/uams-web/patches-pest-plugin-mutate/patches/pest-plugin-mutate-mutant-timeout-retry.patch",
                 "sha256": "2516b97553a04990fbdfd51a2651b7dc24e372f885d9ebd2f247742f2fa94f19",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:pestphp/pest-plugin-mutate"
+                }
+            },
+            {
+                "package": "pestphp/pest-plugin-mutate",
+                "description": "Report an existing file that cannot be read as present from the mutation stream wrapper's url_stat(), so code that reads it behind an is_file() or file_exists() check reaches the read in a mutant child (temporary; see UAMS-Web/patches-pest-plugin-mutate#52)",
+                "url": "vendor/uams-web/patches-pest-plugin-mutate/patches/pest-plugin-mutate-url-stat-unreadable.patch",
+                "sha256": "c1b7d142cfe2f37d78e898021e22bb60d499ab825fd15be09c968c1b0866186a",
                 "depth": 1,
                 "extra": {
                     "provenance": "dependency:pestphp/pest-plugin-mutate"

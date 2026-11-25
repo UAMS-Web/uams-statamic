@@ -14,7 +14,7 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * @covers \App\Tags\GetSchemaSlot
  *
- * Mutation: 100% on App\Tags\GetSchemaSlot (37 mutants, --covered-only; every line covered).
+ * Mutation: no survivor on App\Tags\GetSchemaSlot, without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GetSchemaSlotTagTest.php
  */

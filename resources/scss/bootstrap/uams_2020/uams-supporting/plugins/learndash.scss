@@ -359,8 +359,11 @@ body {
         // box-shadow: none !important;
 
         &.btn {
+            // Keyboard focus ring (WCAG 2.4.7); the mixin draws it on :focus-visible,
+            // so this rule must not reset `outline` itself (UAMS-Web/uams-statamic#154).
+            @include uams-focus-visible();
+
             &:focus {
-                outline: 0;
                 box-shadow: $btn-focus-box-shadow !important;
             }
         }
@@ -822,8 +825,11 @@ body {
     .learndash-wrapper .ld-item-list .ld-section-heading .ld-item-list-actions .ld-expand-button {
         // margin-left: 1em;
 
+        // Keyboard focus ring (WCAG 2.4.7); the mixin draws it on :focus-visible,
+        // so this rule must not reset `outline` itself (UAMS-Web/uams-statamic#154).
+        @include uams-focus-visible();
+
         &:focus {
-            outline: 0;
             box-shadow: $btn-focus-box-shadow;
         }
     }
@@ -1236,8 +1242,11 @@ body {
     .learndash-wrapper .ld-item-list .ld-item-list-item .ld-item-details .ld-expand-button {
         // margin-left: 1em;
 
+        // Keyboard focus ring (WCAG 2.4.7); the mixin draws it on :focus-visible,
+        // so this rule must not reset `outline` itself (UAMS-Web/uams-statamic#154).
+        @include uams-focus-visible();
+
         &:focus {
-            outline: 0;
             box-shadow: $btn-focus-box-shadow;
         }
     }
@@ -4585,8 +4594,11 @@ body {
     .learndash-wrapper .ld-course-status.ld-course-status-not-enrolled .ld-button {
         // margin: 0;
 
+        // Keyboard focus ring (WCAG 2.4.7); the mixin draws it on :focus-visible,
+        // so this rule must not reset `outline` itself (UAMS-Web/uams-statamic#154).
+        @include uams-focus-visible();
+
         &:focus {
-            outline: 0;
             box-shadow: $btn-focus-box-shadow !important;
         }
     }

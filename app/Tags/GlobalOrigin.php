@@ -43,8 +43,8 @@ class GlobalOrigin extends Tags
      *     ancestor (root-level brand) to just before the current site if recursive is
      *     true and the current site is not a root; returns an empty array if the
      *     current site is a root-level brand.
-     *   - Empty string or array: If no global set or origin is found, returns ''
-     *     (non-recursive) or [] (recursive).
+     *   - Empty string or array: If no handle is given, or no global set or origin is
+     *     found, returns '' (non-recursive) or [] (recursive).
      *
      * @return string|array<int, array<string, string|null>> The origin site handle or array of ancestor sites
      */
@@ -60,6 +60,15 @@ class GlobalOrigin extends Tags
         $globalHandle = $params->get('handle');
 
         // ---
+        // Determine if recursive mode is enabled; defaults to false if not specified,
+        // triggering string output instead of an array
+        // ---
+        $recursive = $params->bool(
+            'recursive',
+            false
+        );
+
+        // ---
         // If no handle is provided, return an empty string as a safe default for
         // non-recursive mode or an empty array for recursive mode to avoid errors
         // downstream
@@ -67,8 +76,8 @@ class GlobalOrigin extends Tags
 
         // Check if the global handle parameter was provided
         if (! $globalHandle) {
-            // Return empty string if no handle provided
-            return '';
+            // Return empty array for recursive mode or empty string for non-recursive mode
+            return $recursive ? [] : '';
         }
 
         // ---
@@ -89,15 +98,6 @@ class GlobalOrigin extends Tags
         $siteHandle = $params->get(
             'in',
             $defaultSiteHandle
-        );
-
-        // ---
-        // Determine if recursive mode is enabled; defaults to false if not specified,
-        // triggering string output instead of an array
-        // ---
-        $recursive = $params->bool(
-            'recursive',
-            false
         );
 
         // ---

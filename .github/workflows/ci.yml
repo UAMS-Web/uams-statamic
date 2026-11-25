@@ -388,6 +388,7 @@ jobs:
           "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
           "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
 
+      # PARITY: mirrored by scripts/gate-pest.mjs, only where ImageMagick lists no font (#1522).
       - name: Give ImageMagick a default font (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -509,6 +510,11 @@ jobs:
       # a committed copy is used instead: .github/pest-shards.<os>.json where one
       # exists, and .github/pest-shards.json otherwise.
       #
+      # Both `gh api` calls go through scripts/gh-api-retry.php (#1510): an empty
+      # or truncated response once failed a Windows shard here before Pest started
+      # (run 45466456000), so a call is retried up to four times, and the step
+      # fails naming the call and its last output only when every try fails.
+      #
       # REMOTE-ONLY: the local runner runs the parallel band whole, so it reads
       # no timings.
       - name: Choose shard timings
@@ -519,8 +525,8 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           PREFIX: pest-shard-timings-${{ matrix.os }}-
         run: |
-          started=$(gh api "repos/$REPO/actions/runs/$RUN_ID/attempts/1" --jq .run_started_at)
-          gh api "repos/$REPO/actions/caches?key=$PREFIX&ref=refs/heads/main&sort=created_at&direction=desc&per_page=100" > shard-timings-caches.json
+          started=$(php scripts/gh-api-retry.php -- "repos/$REPO/actions/runs/$RUN_ID/attempts/1" --jq .run_started_at)
+          php scripts/gh-api-retry.php --json -- "repos/$REPO/actions/caches?key=$PREFIX&ref=refs/heads/main&sort=created_at&direction=desc&per_page=100" > shard-timings-caches.json
           key=$(php scripts/select-shard-timings.php --caches=shard-timings-caches.json --started="$started" --prefix="$PREFIX")
           echo "Run's first attempt started $started; timings entry: ${key:-none from before the start}"
           echo "key=$key" >> "$GITHUB_OUTPUT"
@@ -810,6 +816,7 @@ jobs:
           "SVG formats: ", implode(",", Imagick::queryFormats("*SVG*")), PHP_EOL,
           "Fonts before the default: ", count(Imagick::queryFonts()), PHP_EOL;'
 
+      # PARITY: mirrored by scripts/gate-pest.mjs, only where ImageMagick lists no font (#1522).
       - name: Give ImageMagick a default font (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -2018,7 +2025,7 @@ jobs:
   # The shared job chain (#580), called from UAMS-Web/uams-ci-workflows at a release
   # tag, so this file takes a change to it only when the tag below moves. For this
   # caller it runs composer-validate, synced-files, no-emoji, aggregate-needs, pint,
-  # rector and phpstan, and reports each check as `checks / <job> (<os>)`, ending in
+  # rector, phpstan and changed-tests, and reports each check as `checks / <job> (<os>)`, ending in
   # `checks / Chain result`. Each job checks out THIS repository; pint, rector and
   # phpstan install through `.github/actions/setup`, which this repository carries,
   # and the others set up PHP or Node themselves.
@@ -2051,13 +2058,25 @@ jobs:
   # The jobs the chain also runs keep their own copies above where those check more:
   # `composer-validate` adds the PSR-4 and one-class-per-file checks, and
   # `no-emoji-guard` runs this repository's sweep with its fixture exclusions.
+  #
+  # `changed-tests` (#1237) runs a pull request's changed test files against the
+  # base branch's source and reports per file; it never gates. It is limited to
+  # `tests/Unit`, the directory that runs without the private submodules the chain
+  # cannot check out: measured on a tree with none initialized, 2922 of its 2924
+  # tests pass, one skips, and `HealthTalkSyncMutationTest` fails for the missing
+  # submodules. `tests/Feature` was not measured that way.
+  # PARITY: mirrored by the changed-tests job in local-ci.json, with the same
+  # directory, so a local run reports what this job reports.
   checks:
     # Budget kill-switch (see RUN_REMOTE_CI note in the header).
     if: vars.RUN_REMOTE_CI != 'false'
-    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.14.0
+    uses: UAMS-Web/uams-ci-workflows/.github/workflows/ci.yml@v0.18.0
     with:
       pest: false
       mutate: false
+      changed-tests: true
+      changed-tests-paths: tests/Unit
+      # PARITY-END
 
   # The merge gate (#337). The ruleset on `main` requires this job's name and none of
   # the names above, so renaming a job never touches the ruleset, and the job set

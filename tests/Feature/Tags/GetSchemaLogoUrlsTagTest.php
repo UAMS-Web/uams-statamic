@@ -17,9 +17,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Feature tests for the GetSchemaLogoUrls tag (JSON logo URL list for schema_object).
  *
- * Mutation: 100% on App\Tags\GetSchemaLogoUrls (63 mutants, --covered-only), with five
- * equivalents annotated in the class. One line is not covered: index()'s skip of an empty
- * path, because flattenLogoPaths() never returns one.
+ * Mutation: no unexplained survivor on App\Tags\GetSchemaLogoUrls, without --covered-only,
+ * with three equivalents annotated in the class. Two are index()'s and pathToUrl()'s checks
+ * for an empty URL, which back each other up. The third is the early return for a subject
+ * that is not a string, which matches no branch below it.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GetSchemaLogoUrlsTagTest.php
  */
@@ -199,6 +200,17 @@ it('collects nothing for any other subject', function () {
 it('looks each path up in the logos container and drops paths with no asset', function () {
     schemaLogoGlobal(['subject' => 'root', 'global_header_logo' => ['a' => 'gone.svg', 'b' => 'here.svg']]);
     AssetFacade::shouldReceive('find')->with('logos::gone.svg')->once()->andReturnNull();
+    AssetFacade::shouldReceive('find')->with('logos::here.svg')->once()->andReturn(schemaLogoAsset('https://cdn.test/here.svg'));
+
+    expect(schemaLogoUrls())->toBe('["https://cdn.test/here.svg"]');
+});
+
+it('never looks up an empty path, at any depth of a logo group', function () {
+    schemaLogoGlobal([
+        'subject' => 'root',
+        'global_header_logo' => ['a' => '', 'nested' => ['b' => '', 'c' => 'here.svg']],
+    ]);
+    AssetFacade::shouldReceive('find')->with('logos::')->never();
     AssetFacade::shouldReceive('find')->with('logos::here.svg')->once()->andReturn(schemaLogoAsset('https://cdn.test/here.svg'));
 
     expect(schemaLogoUrls())->toBe('["https://cdn.test/here.svg"]');

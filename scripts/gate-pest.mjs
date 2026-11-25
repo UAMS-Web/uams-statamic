@@ -18,7 +18,8 @@
  * It exits non-zero when any stage fails, or 2 for a wrong flag or a missing tool.
  */
 
-import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
 import { capture, captureResult, isMainModule, PHP_MEMORY_LIMIT, phpRunner, red, resolveGit, resolvePhp, run, runCli, step, warn } from './gate-process.mjs'
@@ -51,6 +52,97 @@ export const SUITE_PHP_INI = ['zend.assertions=1', 'pcre.jit=0']
  */
 export const SUITE_PHP_INI_ARGS = SUITE_PHP_INI.flatMap((setting) => ['-d', setting])
 // PARITY-END
+
+// cspell:ignore typemap MAGICK fontconfig
+/**
+ * The macOS font to use where ImageMagick lists none.
+ *
+ * The ImageMagick in Herd's PHP 8.4.28 is built without fontconfig, so it finds a font only
+ * through a type.xml on MAGICK_CONFIGURE_PATH. With none, SVG `<text>` cannot be drawn and
+ * SvgRasterizerTest fails (#1522).
+ */
+// PARITY: the "Give ImageMagick a default font (macOS)" steps in ci.yml (#1522).
+export const MACOS_DEFAULT_FONT = '/System/Library/Fonts/Supplemental/Arial.ttf'
+
+/**
+ * The type.xml that names `font` as ImageMagick's one font.
+ *
+ * @param  {string}  font
+ * @return {string}
+ */
+export function imageMagickTypeXml(font) {
+    return [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<typemap>',
+        `  <type name="Arial" fullname="Arial" family="Arial" style="Normal" stretch="Normal" weight="400" format="truetype" glyphs="${font}"/>`,
+        '</typemap>',
+        '',
+    ].join('\n')
+}
+
+/**
+ * MAGICK_CONFIGURE_PATH with `directory` first, ahead of what the caller set. Colon-separated,
+ * as only macOS reads it here.
+ *
+ * @param  {string}  directory
+ * @param  {string|undefined}  current
+ * @return {string}
+ */
+export function prependConfigurePath(directory, current) {
+    return current ? `${directory}:${current}` : directory
+}
+// PARITY-END
+
+/**
+ * The number of fonts PHP's ImageMagick lists, or null where Imagick is not loaded or the probe
+ * did not answer. Only a real 0 is read as "no font". The count is read off a line of its own, as
+ * PHP prints a startup warning to the same stream.
+ *
+ * @param  {string}  php
+ * @param  {string}  cwd
+ * @return {number|null}
+ */
+export function imageMagickFontCount(php, cwd) {
+    const { stdout, status } = captureResult(
+        php,
+        ['-r', "echo PHP_EOL, 'fonts=', extension_loaded('imagick') ? count(Imagick::queryFonts()) : 'absent', PHP_EOL;"],
+        cwd,
+    )
+    const count = stdout.match(/^fonts=(\d+)\r?$/m)
+
+    return status === 0 && count ? Number(count[1]) : null
+}
+
+/**
+ * Give ImageMagick a default font on a Mac where it lists none.
+ *
+ * CI's macOS jobs write the font whichever ImageMagick they draw. A developer's Mac may list
+ * fonts of its own, so this asks first and leaves that Mac alone. Windows and Linux are never
+ * asked, and a missing font file leaves the failing tests to report it.
+ *
+ * @param  {{php: string, cwd: string, platform?: string, font?: string}}  options
+ * @return {{env: Record<string, string>|undefined, directory: string|null}}  The environment both
+ *     bands run under, and the directory to delete after them.
+ */
+export function imageMagickDefaultFont({ php, cwd, platform = process.platform, font = MACOS_DEFAULT_FONT }) {
+    const unchanged = { env: undefined, directory: null }
+
+    if (platform !== 'darwin' || imageMagickFontCount(php, cwd) !== 0) {
+        return unchanged
+    }
+
+    if (! existsSync(font)) {
+        warn(`ImageMagick lists no font and ${font} is not on this machine, so no default font was set.`)
+
+        return unchanged
+    }
+
+    const directory = mkdtempSync(join(tmpdir(), 'gate-imagemagick-font-'))
+    writeFileSync(join(directory, 'type.xml'), imageMagickTypeXml(font))
+    console.log(`ImageMagick lists no font: both bands run with ${font} as its default.`)
+
+    return { env: { MAGICK_CONFIGURE_PATH: prependConfigurePath(directory, process.env.MAGICK_CONFIGURE_PATH) }, directory }
+}
 
 /**
  * Split what the suite just wrote into the content/ submodule from what was
@@ -151,10 +243,10 @@ export function clearRuntimeCaches(php, tree) {
 }
 
 /**
- * @param  {{tree: string, php: string, git: string, repoRoot?: string, reset?: boolean}}  options
+ * @param  {{tree: string, php: string, git: string, repoRoot?: string, reset?: boolean, platform?: string, font?: string}}  options
  * @return {number}  The step's exit code.
  */
-export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
+export function gatePest({ tree, php, git, repoRoot = tree, reset = true, platform, font }) {
     const runPhp = phpRunner(php)
 
     if (reset) {
@@ -325,11 +417,17 @@ export function gatePest({ tree, php, git, repoRoot = tree, reset = true }) {
     // removes. CI checks out fresh, so it has nothing to mirror here.
     rmSync(parallelReport, { force: true })
     rmSync(serialReport, { force: true })
+    // Mirrors the "Give ImageMagick a default font (macOS)" steps in ci.yml.
+    const { env: fontEnv, directory: fontDirectory } = imageMagickDefaultFont({ php, cwd: tree, platform, font })
     // SUITE_PHP_INI_ARGS mirrors ci.yml's `ini-values:` for the pest jobs, and is
     // forwarded to the paratest workers, which start their own PHP (#688).
-    const parallelCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT} ${SUITE_PHP_INI_ARGS.join(' ')}`, '--display-all-issues', '--log-junit', parallelReport], tree)
+    const parallelCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--parallel', `--processes=${PARALLEL_WORKERS}`, '--exclude-group=serial', `--passthru-php=-d memory_limit=${PHP_MEMORY_LIMIT} ${SUITE_PHP_INI_ARGS.join(' ')}`, '--display-all-issues', '--log-junit', parallelReport], tree, fontEnv)
     step('JOB pest - serial tail (group=serial)')
-    const serialCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree)
+    const serialCode = runPhp(['-d', 'pcov.enabled=0', ...SUITE_PHP_INI_ARGS, 'vendor/bin/pest', '--group=serial', '--display-all-issues', '--log-junit', serialReport], tree, fontEnv)
+
+    if (fontDirectory !== null) {
+        rmSync(fontDirectory, { recursive: true, force: true })
+    }
 
     // UAMS-Web/uams-statamic-archive#3235: each band beside the interpreter that produced it, so a
     // figure quoted from this log names its PHP. A band that wrote no report says so rather than

@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# This repository's own orb setup steps (UAMS-Web/uams-statamic#1258). The shared .agents/setup,
+# synced from UAMS-Web/uams-claude-skills, runs this file last, after `composer install` (with its
+# Composer scripts) and `npm ci`. Steps those installs need first are in .agents/setup.pre.local.
+# Step labels match the ones in the current .agents/setup, and
+# tests/Feature/Config/OrbLocalScriptsTest.php checks that every current step is placed.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+step() {
+    local label="$1" started=$SECONDS
+    shift
+    printf '\n==> %s\n' "$label"
+    "$@"
+    printf '==> %s completed in %ss\n' "$label" "$((SECONDS - started))"
+}
+
+# Record the patch inputs the shared install applied, so setup.pre.local can tell next time whether
+# they changed. The fingerprint is computed the same way there.
+record_patch_inputs() {
+    local fingerprint patch_files=()
+    mapfile -t patch_files < <(compgen -G 'patches/*.patch' || true)
+    fingerprint=$(sha256sum patches.lock.json "${patch_files[@]}" | sha256sum | cut -d ' ' -f 1)
+    cp patches.lock.json vendor/.orb-patches.lock.json
+    printf '%s\n' "$fingerprint" > vendor/.orb-patch-inputs
+}
+
+ensure_sqlite_file() {
+    [[ -f database/database.sqlite ]] || touch database/database.sqlite
+}
+
+step 'Locked PHP dependencies' record_patch_inputs
+step 'SQLite database file' ensure_sqlite_file
+step 'Local SQLite migrations' env APP_ENV=local DB_URL= DB_CONNECTION=sqlite \
+    DB_DATABASE="$PWD/database/database.sqlite" \
+    ASSET_METADATA_DATABASE="$PWD/storage/framework/cache/asset-metadata.sqlite" \
+    php artisan migrate --force --no-interaction
+step 'Browser test runtime' npx --no-install playwright install --with-deps chromium
+step 'News release PDF browser' npx --no-install puppeteer browsers install chrome-headless-shell
+step 'Front-end build' npm run build
+step 'Control Panel build' npm run cp:build
+step 'Test Stache snapshot' env DB_DATABASE=:memory: APP_ENV=testing php artisan test:seed-stache --no-interaction
+printf '\nRepository-specific orb steps are done.\n'

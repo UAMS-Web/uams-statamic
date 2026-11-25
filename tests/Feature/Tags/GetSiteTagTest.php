@@ -16,17 +16,22 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * Feature tests for the App\Tags\GetSite Antlers tag (fetch a site variable for a
  * specific site, or the site object / [] / null fallbacks).
  *
- * Mutation: 100% on App\Tags\GetSite (27 mutants, --covered-only).
+ * Mutation: no survivor on App\Tags\GetSite, without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Tags/GetSiteTagTest.php
  */
-it('returns null when the handle is missing', function () {
+it('returns null without a lookup when the handle is missing or empty', function (array $parameters): void {
+    Site::shouldReceive('get')->never();
+
     $tag = new GetSite;
     $tag->setContext([]);
-    $tag->setParameters([]);
+    $tag->setParameters($parameters);
 
     expect($tag->index())->toBeNull();
-});
+})->with([
+    'missing handle' => [[]],
+    'empty string handle' => [['handle' => '']],
+]);
 
 it('returns null when the site is unknown and a var is requested', function () {
     Site::shouldReceive('get')
@@ -95,3 +100,35 @@ it('accepts a site object whose handle method resolves the key', function () {
 
     expect($tag->index())->toBe($site);
 });
+
+it('returns the site for an object handle and an empty var', function (): void {
+    $site = new GetSiteTagSiteWithName('Example');
+
+    Site::shouldReceive('get')
+        ->once()
+        ->with('default')
+        ->andReturn($site);
+
+    $tag = new GetSite;
+    $tag->setContext([]);
+    $tag->setParameters([
+        'handle' => (object) ['handle' => 'default'],
+        'var' => '',
+    ]);
+
+    expect($tag->index())->toBe($site);
+});
+
+it('returns null without a lookup when an object has no usable site handle', function (object $handle): void {
+    Site::shouldReceive('get')->never();
+
+    $tag = new GetSite;
+    $tag->setContext([]);
+    $tag->setParameters(['handle' => $handle]);
+
+    expect($tag->index())->toBeNull();
+})->with([
+    'empty handle property' => [(object) ['handle' => '']],
+    'non-string handle property' => [(object) ['handle' => 42]],
+    'missing handle property' => [(object) []],
+]);
