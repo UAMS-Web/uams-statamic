@@ -15,7 +15,8 @@ covers(SchemaTemplatesFields::class);
  *
  * The fixture holds each builder's output as `main` produced it at
  * `c6ffa9440`, in the testing environment (locale `en`, entries collection
- * `schema_objects`). A strict comparison of the whole array kills every
+ * `schema_objects`), without the inherit fields' `read_only`, which
+ * UAMS-Web/uams-statamic#1549 removed. A strict comparison of the whole array kills every
  * changed label, option, default, flag and field order. The remaining cases
  * pin the configured collection, its fallback, and `toBlueprint()`.
  *

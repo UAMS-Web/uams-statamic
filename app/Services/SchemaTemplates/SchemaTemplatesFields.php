@@ -51,7 +51,7 @@ class SchemaTemplatesFields
     /**
      * Blueprint contents for Section Defaults (collection/taxonomy).
      *
-     * @param  bool  $siteDisabled  When true, inherit_template defaults to false and is read-only
+     * @param  bool  $siteDisabled  When true, each inherit field defaults to false
      * @return array<string, mixed>
      */
     public static function sectionDefaults(bool $siteDisabled): array
@@ -90,7 +90,7 @@ class SchemaTemplatesFields
     /**
      * Blueprint contents for Blueprint Defaults (section + blueprint).
      *
-     * @param  bool  $sectionDisabled  When true, inherit_template defaults to false and is read-only
+     * @param  bool  $sectionDisabled  When true, each inherit field defaults to false
      * @return array<string, mixed>
      */
     public static function blueprintDefaults(bool $sectionDisabled): array
@@ -297,6 +297,14 @@ class SchemaTemplatesFields
     /**
      * Per-parameter inherit button group (section or blueprint).
      *
+     * The field is never read-only (UAMS-Web/uams-statamic#1549). A level below the form
+     * can always turn output on, the blueprint's `enabled` under a section form and the
+     * blueprint form's own `enabled` beside its inherit fields, and then the cascade reads
+     * this field (SchemaTemplatesCascadeService::resolveWebpageEntry() and
+     * resolveMainContentEntry()). A disabled parent changes only the default, which
+     * applies where nothing is saved.
+     *
+     * @param  bool  $parentDisabled  When true, the field defaults to false
      * @return array{ handle: string, field: array<string, mixed> }
      */
     protected static function inheritField(
@@ -313,7 +321,6 @@ class SchemaTemplatesFields
                 'display' => $display,
                 'options' => $options,
                 'default' => $parentDisabled ? 'false' : 'true',
-                'read_only' => $parentDisabled,
                 'cast_booleans' => 'true',
             ],
         ];

@@ -106,7 +106,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "true",
-                                    "read_only": false,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -132,7 +131,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "true",
-                                    "read_only": false,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -186,7 +184,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "false",
-                                    "read_only": true,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -212,7 +209,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "false",
-                                    "read_only": true,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -266,7 +262,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "true",
-                                    "read_only": false,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -292,7 +287,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "true",
-                                    "read_only": false,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -346,7 +340,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "false",
-                                    "read_only": true,
                                     "cast_booleans": "true"
                                 }
                             },
@@ -372,7 +365,6 @@
                                         "false": "Use Custom Template"
                                     },
                                     "default": "false",
-                                    "read_only": true,
                                     "cast_booleans": "true"
                                 }
                             },

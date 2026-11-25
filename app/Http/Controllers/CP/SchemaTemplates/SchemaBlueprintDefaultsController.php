@@ -154,8 +154,8 @@ class SchemaBlueprintDefaultsController extends CpController
     ): array {
         $this->authorize('edit schema blueprint defaults');
 
-        // A disabled section sets only what the form shows, each inherit field's default and
-        // read_only, so the submitted values are processed the same either way.
+        // A disabled section sets only each inherit field's default, which the form shows and
+        // saving does not read, so the submitted values are processed the same either way.
         // @pest-mutate-ignore: FalseToTrue
         $blueprint = $this->blueprintBlueprint(false);
 
