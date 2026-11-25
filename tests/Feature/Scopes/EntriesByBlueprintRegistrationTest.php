@@ -6,6 +6,8 @@ use App\Scopes\EntriesByBlueprint;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
+use Statamic\Facades\Blueprint;
+use Statamic\Fields\BlueprintRepository;
 use Statamic\Query\Scopes\Scope;
 use Tests\TestCase;
 
@@ -77,6 +79,59 @@ it('binds only its own handle while the application has not booted', function ()
         expect($application->isBooted())->toBeFalse()
             ->and(boundScopes($application)->keys()->all())->toBe(['entries_by_blueprint']);
     });
+});
+
+it('reads no blueprint until the application boots', function () {
+    $repository = Blueprint::getFacadeRoot();
+
+    if (! $repository instanceof BlueprintRepository) {
+        throw new RuntimeException('The Blueprint facade does not resolve to a blueprint repository.');
+    }
+
+    // Count the namespace reads the aliases come from, forwarding every call.
+    $counting = new class($repository)
+    {
+        public int $reads = 0;
+
+        public function __construct(private readonly BlueprintRepository $repository) {}
+
+        /**
+         * Count a namespace read and forward it.
+         */
+        public function in(string $namespace): mixed
+        {
+            $this->reads++;
+
+            return $this->repository->in($namespace);
+        }
+
+        /**
+         * Forward every other call to the real repository.
+         *
+         * @param  array<int, mixed>  $arguments
+         */
+        public function __call(string $method, array $arguments): mixed
+        {
+            return $this->repository->{$method}(...$arguments);
+        }
+    };
+
+    Blueprint::swap($counting);
+
+    try {
+        withFreshApplication($this->app, function (Application $application) use ($counting): void {
+            EntriesByBlueprint::register();
+            $readsBeforeBoot = $counting->reads;
+
+            $application->boot();
+
+            // The second figure shows the counter sees the reads it is guarding against.
+            expect($readsBeforeBoot)->toBe(0)
+                ->and($counting->reads)->toBeGreaterThan(0);
+        });
+    } finally {
+        Blueprint::swap($repository);
+    }
 });
 
 it('binds every blueprint alias once the application boots', function () {
