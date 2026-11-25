@@ -11,6 +11,7 @@ use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Facades\Term;
+use Statamic\Facades\YAML;
 use Statamic\Globals\Variables;
 use Statamic\Taxonomies\LocalizedTerm;
 use Tests\Support\StacheIsolatedTestCase;
@@ -23,6 +24,11 @@ use Tests\Support\StacheIsolatedTestCase;
  * (StacheIsolatedTestCase) and are written with `saveQuietly()` so no
  * entry-saved listener mutates them. The survivor/loser ids are deliberately
  * chosen so one is a prefix of the value space to pin the link boundary guard.
+ *
+ * Mutation: 100% on App\Support\References\EntryReferenceRepointer (147 mutants), measured on
+ * macOS on 2026-11-25 without --covered-only, with one equivalent annotated in rewriteString():
+ * its early return for a string with no entry link saves only the work of patterns that could
+ * not match. Every killable mutant is dead.
  */
 uses(StacheIsolatedTestCase::class);
 
@@ -342,4 +348,194 @@ it('rewrites references held by global set localizations', function (): void {
 
     expect($reloadedGlobalData->all()['founder'])->toBe([REPOINT_SURVIVOR])
         ->and($summary->globals)->toBe(1);
+});
+
+/**
+ * A global set localized into each given site, with the data for each.
+ *
+ * @param  array<string, array<string, mixed>>  $localizations  Site handle => data
+ */
+function repointMakeGlobals(string $handle, array $localizations): void
+{
+    $set = mustBe(Statamic\Globals\GlobalSet::class, GlobalSet::make($handle), 'the global set');
+    $set->title($handle);
+    $set->sites(array_keys($localizations));
+    $set->save();
+
+    foreach ($localizations as $site => $data) {
+        $variables = mustBe(Variables::class, $set->makeLocalization($site), 'the localization');
+        $variables->data($data);
+        $variables->save();
+    }
+}
+
+/**
+ * The data a global set's localization holds on disk.
+ *
+ * @return array<mixed>
+ */
+function repointGlobalOnDisk(string $handle, string $site): array
+{
+    $set = mustBe(Statamic\Globals\GlobalSet::class, GlobalSet::findByHandle($handle), 'the global set');
+    $variables = mustBe(Variables::class, $set->in($site), 'the localization');
+
+    return YAML::file($variables->path())->parse();
+}
+
+/**
+ * Save a term holding arbitrary data, bypassing save listeners.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function repointMakeTerm(string $slug, array $data): void
+{
+    $term = mustBe(Statamic\Taxonomies\Term::class, Term::make(), 'the term');
+    $term->taxonomy('repoint_tax');
+    $localized = mustBe(LocalizedTerm::class, $term->inDefaultLocale(), 'the localized term');
+    $localized->slug($slug);
+    $localized->data($data);
+    $localized->saveQuietly();
+}
+
+it('reads no content when there is nothing to re-point', function (string $new): void {
+    Entry::shouldReceive('all')->never();
+
+    $summary = (new EntryReferenceRepointer)->repoint($new === '' ? [] : [REPOINT_LOSER => $new]);
+
+    expect([$summary->entries, $summary->globals, $summary->terms, $summary->occurrences])->toBe([0, 0, 0, 0]);
+})->with([
+    'an empty map' => [''],
+    'an id mapped to itself' => [REPOINT_LOSER],
+]);
+
+it('counts each item and occurrence it re-points, and no item without a reference', function (): void {
+    // Numbers, booleans and null are never references, beside one or not
+    repointMakeReferrer('without', ['count' => 5, 'flag' => true, 'none' => null, 'ratio' => 1.5, 'list' => [1, false, null]]);
+    repointMakeReferrer('with', ['count' => 5, 'flag' => true, 'none' => null, 'people' => [REPOINT_LOSER, 7]]);
+
+    $summary = (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect([$summary->entries, $summary->globals, $summary->terms, $summary->occurrences])->toBe([1, 0, 0, 1])
+        ->and(repointReferrerData('with'))->toBe(['count' => 5, 'flag' => true, 'none' => null, 'people' => [REPOINT_SURVIVOR, 7]]);
+});
+
+it('tells ids apart exactly, even where PHP reads two of them as the same number', function (): void {
+    // '1e3' and '1000' are equal numbers and different ids
+    repointMakeReferrer('1000', ['person' => '1e3']);
+
+    $summary = (new EntryReferenceRepointer)->repoint(['1e3' => REPOINT_SURVIVOR]);
+
+    expect(repointReferrerData('1000')['person'])->toBe(REPOINT_SURVIVOR)
+        ->and($summary->entries)->toBe(1);
+});
+
+it('collapses only a survivor id, even where another value reads as the same number', function (): void {
+    repointMakeReferrer('numeric', ['people' => [REPOINT_LOSER, '1e3', '1e3']]);
+    repointMakeReferrer('both', ['people' => [REPOINT_LOSER, 'loser-3333']]);
+
+    (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => '1000', 'loser-3333' => '1.0e3']);
+
+    expect(repointReferrerData('numeric')['people'])->toBe(['1000', '1e3', '1e3'])
+        ->and(repointReferrerData('both')['people'])->toBe(['1000', '1.0e3']);
+});
+
+it('leaves a list it changed nothing in as it was, duplicates and all', function (): void {
+    repointMakeReferrer('untouched', ['person' => REPOINT_LOSER, 'others' => [REPOINT_SURVIVOR, REPOINT_SURVIVOR]]);
+
+    (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect(repointReferrerData('untouched'))->toBe(['person' => REPOINT_SURVIVOR, 'others' => [REPOINT_SURVIVOR, REPOINT_SURVIVOR]]);
+});
+
+it('collapses no duplicates in a list that holds anything but strings, or in a keyed map', function (): void {
+    repointMakeReferrer('structured', [
+        'mixed' => [REPOINT_LOSER, REPOINT_SURVIVOR, 5],
+        'nodes' => [REPOINT_LOSER, REPOINT_SURVIVOR, ['type' => 'set']],
+        'keyed' => ['a' => REPOINT_LOSER, 'b' => REPOINT_SURVIVOR],
+    ]);
+
+    (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect(repointReferrerData('structured'))->toBe([
+        'mixed' => [REPOINT_SURVIVOR, REPOINT_SURVIVOR, 5],
+        'nodes' => [REPOINT_SURVIVOR, REPOINT_SURVIVOR, ['type' => 'set']],
+        'keyed' => ['a' => REPOINT_SURVIVOR, 'b' => REPOINT_SURVIVOR],
+    ]);
+});
+
+it('rewrites every inline link in a string, to each survivor', function (): void {
+    repointMakeReferrer('links', ['body' => sprintf(
+        '[a](statamic://entry::%1$s) [b](statamic://entry::loser-3333) [c](statamic://entry::%1$s)',
+        REPOINT_LOSER
+    )]);
+
+    $summary = (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR, 'loser-3333' => 'survivor-4444']);
+
+    expect(repointReferrerData('links')['body'])->toBe(sprintf(
+        '[a](statamic://entry::%1$s) [b](statamic://entry::survivor-4444) [c](statamic://entry::%1$s)',
+        REPOINT_SURVIVOR
+    ))
+        ->and($summary->occurrences)->toBe(3);
+});
+
+it('reads a failed match as an empty string with nothing rewritten', function (): void {
+    $jit = mustBeString(ini_get('pcre.jit'), 'the PCRE JIT setting');
+    $limit = mustBeString(ini_get('pcre.backtrack_limit'), 'the PCRE backtrack limit');
+
+    try {
+        // Without the JIT compiler, no match can be tried inside a limit of zero
+        ini_set('pcre.jit', '0');
+        ini_set('pcre.backtrack_limit', '0');
+
+        $result = new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteString')->invoke(
+            new EntryReferenceRepointer,
+            '[a](statamic://entry::failing-5555)',
+            ['failing-5555' => REPOINT_SURVIVOR]
+        );
+    } finally {
+        ini_set('pcre.jit', $jit);
+        ini_set('pcre.backtrack_limit', $limit);
+    }
+
+    expect($result)->toBe(['', 0]);
+});
+
+it('saves each global localization that holds a reference, whatever sites come before it', function (): void {
+    Site::setSites([
+        'first' => ['name' => 'First', 'url' => '/', 'locale' => 'en_US'],
+        'second' => ['name' => 'Second', 'url' => '/second/', 'locale' => 'en_US'],
+    ]);
+    [$first, $second] = ['first', 'second'];
+
+    // Not localized into the first site at all
+    repointMakeGlobals('repoint_later_only', [$second => ['founder' => REPOINT_LOSER]]);
+    // Localized into the first site, with no reference there
+    repointMakeGlobals('repoint_later_reference', [$first => ['founder' => 'someone'], $second => ['founder' => REPOINT_LOSER]]);
+
+    $summary = (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect(repointGlobalOnDisk('repoint_later_only', $second))->toBe(['founder' => REPOINT_SURVIVOR])
+        ->and(repointGlobalOnDisk('repoint_later_reference', $second))->toBe(['founder' => REPOINT_SURVIVOR])
+        ->and(repointGlobalOnDisk('repoint_later_reference', $first))->toBe(['founder' => 'someone'])
+        ->and([$summary->globals, $summary->occurrences])->toBe([2, 2]);
+});
+
+it('re-points each term that holds a reference, among terms that do not', function (): void {
+    $taxonomy = mustBe(Statamic\Taxonomies\Taxonomy::class, Taxonomy::make('repoint_tax'), 'the taxonomy');
+    $taxonomy->save();
+    repointMakeTerm('a-without', ['lead' => 'someone']);
+    repointMakeTerm('b-with', ['lead' => REPOINT_LOSER]);
+    repointMakeTerm('c-without', ['lead' => 'someone']);
+    repointMakeTerm('d-with', ['lead' => REPOINT_LOSER]);
+
+    $summary = (new EntryReferenceRepointer)->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    $leads = [];
+    foreach (['a-without', 'b-with', 'c-without', 'd-with'] as $slug) {
+        $term = Term::find('repoint_tax::'.$slug);
+        $leads[$slug] = mustBe(LocalizedTerm::class, $term, 'the term')->get('lead');
+    }
+
+    expect($leads)->toBe(['a-without' => 'someone', 'b-with' => REPOINT_SURVIVOR, 'c-without' => 'someone', 'd-with' => REPOINT_SURVIVOR])
+        ->and([$summary->terms, $summary->occurrences])->toBe([2, 2]);
 });
