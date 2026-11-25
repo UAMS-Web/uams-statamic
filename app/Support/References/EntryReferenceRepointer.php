@@ -84,6 +84,9 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
      */
     private function scan(array $idMap, bool $apply): ReferenceRepointSummary
     {
+        // Count this scan's occurrences only, so a reused instance does not carry the last scan's total over
+        $this->occurrences = 0;
+
         // Drop no-op mappings (an id pointing at itself can never need rewriting)
         $idMap = array_filter($idMap, static fn (string $new, string $old): bool => $new !== $old, ARRAY_FILTER_USE_BOTH);
 

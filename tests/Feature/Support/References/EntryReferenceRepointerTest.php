@@ -245,6 +245,30 @@ it('preview counts references without writing them', function (): void {
         ->and(repointReferrerData('preview')['person'])->toBe(REPOINT_LOSER);
 });
 
+it('reports the same occurrences from preview and repoint on one instance', function (): void {
+    repointMakeReferrer('reused', ['person' => REPOINT_LOSER]);
+    $repointer = new EntryReferenceRepointer;
+
+    $preview = $repointer->preview([REPOINT_LOSER => REPOINT_SURVIVOR]);
+    $repoint = $repointer->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect($preview->occurrences)->toBe(1)
+        ->and($repoint->occurrences)->toBe(1)
+        ->and(repointReferrerData('reused')['person'])->toBe(REPOINT_SURVIVOR);
+});
+
+it('reports no occurrences from a second repoint on one instance once nothing is left to change', function (): void {
+    repointMakeReferrer('repeated', ['person' => REPOINT_LOSER]);
+    $repointer = new EntryReferenceRepointer;
+
+    $first = $repointer->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+    $second = $repointer->repoint([REPOINT_LOSER => REPOINT_SURVIVOR]);
+
+    expect($first->occurrences)->toBe(1)
+        ->and($second->occurrences)->toBe(0)
+        ->and($second->itemsChanged())->toBe(0);
+});
+
 it('treats a no-op id map (id mapped to itself) as nothing to do', function (): void {
     repointMakeReferrer('noop', ['person' => REPOINT_LOSER]);
 
