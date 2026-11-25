@@ -60,12 +60,7 @@ parameters:
         # redundant and rejected by PHPStan as a duplicated directory.
         - tests
     scanFiles:
-        # Declaration-only helper shared by scripts/check-tia-safe.php and its test
-        # (UAMS-Web/uams-statamic-archive#1996). `scripts/` is deliberately outside `paths`, but the test requires this
-        # file, so PHPStan needs the symbols to avoid reporting the function and constant
-        # as undefined. Symbol discovery only — the file itself is not analyzed.
-        - scripts/tia-blindness.php
-        # The proxy generator its test requires (#971): symbol discovery only, like the line above.
+        # The proxy generator its test requires (#971): symbol discovery only; the file itself is not analyzed.
         - scripts/search-update-proxy/SearchUpdateProxyGenerator.php
         - scripts/search-update-proxy/XmlControlCharacterFilter.php
     excludePaths:
@@ -114,7 +109,7 @@ parameters:
         # both the hit and the miss path. There is no non-internal symbol for
         # either — the read and the write are the whole mechanism, so a bound that
         # cannot be set cannot be proven to fire, and avoiding the API would mean
-        # deleting the behaviour rather than the error.
+        # deleting the behavior rather than the error.
         #
         # Pinned by path, matching the tests/Pest.php entry above, so an
         # internal-class call from any other vendor still fails. These retire when
