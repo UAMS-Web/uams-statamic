@@ -13,7 +13,7 @@ uses(TestCase::class);
 /**
  * Tests for the Ip Antlers tag (App\Tags\Ip).
  *
- * Mutation: 100% on App\Tags\Ip (7 mutants, --covered-only).
+ * Mutation: no survivor on App\Tags\Ip, without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Tags/IpTagTest.php
  */

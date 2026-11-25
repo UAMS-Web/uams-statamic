@@ -111,7 +111,7 @@ class GetSite extends Tags
      */
     private function normalizeSiteHandle(mixed $handle): ?string
     {
-        if (\is_string($handle) && $handle !== '') {
+        if (\is_string($handle)) {
             return $handle;
         }
 
