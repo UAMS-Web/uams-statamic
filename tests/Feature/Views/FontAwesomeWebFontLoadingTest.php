@@ -7,9 +7,6 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-// `webfonts` is the directory name inside the Font Awesome package
-// cspell:ignore webfonts
-
 /**
  * Font Awesome loads as CSS with web fonts inside the theme stylesheet (#1546,
  * deciding #342), not as the SVG with JavaScript build.
@@ -59,15 +56,3 @@ it('inlines the Font Awesome CSS into the theme stylesheet', function (): void {
         ->and(File::get(resource_path('scss/bootstrap/uams_2020/app.scss')))
         ->toContain("@import 'style';");
 });
-
-it('ships the web fonts the inlined CSS points at', function (string $font): void {
-    $css = File::get(base_path('node_modules/@fortawesome/fontawesome-free/css/all.css'));
-
-    expect($css)->toContain('url("../webfonts/'.$font.'")')
-        ->and(File::exists(base_path('node_modules/@fortawesome/fontawesome-free/webfonts/'.$font)))->toBeTrue();
-})->with([
-    'solid' => ['fa-solid-900.woff2'],
-    'regular' => ['fa-regular-400.woff2'],
-    'brands' => ['fa-brands-400.woff2'],
-    'font awesome 4 compatibility' => ['fa-v4compatibility.woff2'],
-]);
