@@ -737,7 +737,6 @@
         "Tests\\Feature\\TiaSafetyGuardTest": 33.1848,
         "Tests\\Feature\\TriggerActivateRouteTest": 8.468,
         "Tests\\Feature\\UamsSchemaFieldsetOrphanRemovalTest": 3.3631,
-        "Tests\\Feature\\UpdatesOverviewBadgeTest": 0.7004,
         "Tests\\Feature\\Users\\RegistrantRecordsAreGitIgnoredTest": 3.0233,
         "Tests\\Feature\\Users\\RegistrantRecordsStayOutOfAutomaticCommitsTest": 10.8544,
         "Tests\\Feature\\VideoCaptionContainerTest": 1.4909,

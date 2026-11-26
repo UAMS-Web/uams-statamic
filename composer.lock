@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "94979c7359187aee7f4fbc51ee512ac3",
+    "content-hash": "d58997beb2dddfe1becef53525317a10",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -13288,16 +13288,16 @@
         },
         {
             "name": "uams-web/patches-statamic-cms",
-            "version": "v1.2.0",
+            "version": "v1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/patches-statamic-cms.git",
-                "reference": "7d8ae9c91dcd715d300800002d4a70d74d1abdb3"
+                "reference": "f3dc7e4a4a33d99ca14a607e40d374f1d63d63c0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/patches-statamic-cms/zipball/7d8ae9c91dcd715d300800002d4a70d74d1abdb3",
-                "reference": "7d8ae9c91dcd715d300800002d4a70d74d1abdb3",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-statamic-cms/zipball/f3dc7e4a4a33d99ca14a607e40d374f1d63d63c0",
+                "reference": "f3dc7e4a4a33d99ca14a607e40d374f1d63d63c0",
                 "shasum": ""
             },
             "require": {
@@ -13309,7 +13309,6 @@
                     "statamic/cms": {
                         "Add blueprint-aware collection create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-collection-create-label-blueprint.patch",
                         "Add blueprint-aware taxonomy create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-taxonomy-create-label-blueprint.patch",
-                        "Align CP updates badge with updater availableUpdatesCount": "vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch",
                         "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281; upstream: statamic/cms#15880, statamic/cms#15881)": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch"
                     }
                 }
@@ -13327,7 +13326,7 @@
                 "issues": "https://github.com/UAMS-Web/patches-statamic-cms/issues",
                 "source": "https://github.com/UAMS-Web/patches-statamic-cms"
             },
-            "time": "2026-11-22T23:28:40+00:00"
+            "time": "2026-11-23T21:39:38+00:00"
         },
         {
             "name": "ueberdosis/tiptap-php",
