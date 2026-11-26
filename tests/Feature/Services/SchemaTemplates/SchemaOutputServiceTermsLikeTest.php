@@ -17,6 +17,7 @@ use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Query\Builder as QueryBuilderContract;
 use Statamic\Contracts\Taxonomies\Term;
 use Statamic\Entries\Entry as EntryModel;
+use Statamic\Facades\Term as TermFacade;
 use Statamic\Fields\Blueprint;
 use Statamic\Fields\Field;
 use Statamic\Fields\Value;
@@ -68,13 +69,16 @@ function sosTermsLikeCall(string $method, mixed ...$args): mixed
 
 /**
  * A blueprint terms field double: `single` caps at one item, `multi` does not.
+ *
+ * @param  list<string>  $taxonomies  The taxonomies the field is configured with
  */
-function sosTermsLikeField(string $kind): Field&MockInterface
+function sosTermsLikeField(string $kind, array $taxonomies = []): Field&MockInterface
 {
     /** @var Field&MockInterface $field */
     $field = Mockery::mock(Field::class);
     $field->shouldReceive('handle')->andReturn('tags');
     $field->shouldReceive('get')->with('max_items')->andReturn($kind === 'single' ? 1 : null);
+    $field->shouldReceive('get')->with('taxonomies')->andReturn($taxonomies);
     $field->shouldReceive('config')->andReturn(['type' => 'terms', 'max_items' => $kind === 'single' ? 1 : null]);
 
     return $field;
@@ -119,6 +123,34 @@ it('selects the blueprint field the stored value shape calls for', function (arr
     'an empty collection' => [['single', 'multi'], collect(), 0],
     'an integer, multi first' => [['multi', 'single'], 5, 0],
     'an integer, single first' => [['single', 'multi'], 5, 0],
+]);
+
+it('selects the same-handle field whose taxonomy holds the stored term', function (mixed $present, int $expectedIndex): void {
+    // A degree row and a certification row both store their term under `activity`
+    $candidates = [
+        sosTermsLikeField('single', ['credentials']),
+        sosTermsLikeField('single', ['certifications']),
+    ];
+
+    TermFacade::shouldReceive('find')->with('credentials::acls')->andReturnNull();
+    TermFacade::shouldReceive('find')->with('certifications::acls')->andReturn(Mockery::mock(LocalizedTerm::class));
+    TermFacade::shouldReceive('find')->with('credentials::md')->andReturn(Mockery::mock(LocalizedTerm::class));
+    TermFacade::shouldReceive('find')->with('certifications::md')->andReturnNull();
+    TermFacade::shouldReceive('find')->with('credentials::gone')->andReturnNull();
+    TermFacade::shouldReceive('find')->with('certifications::gone')->andReturnNull();
+
+    $selected = sosTermsLikeCall('selectTermsLikeBlueprintFieldForMergedValue', $candidates, $present);
+
+    expect($selected)->toBe($candidates[$expectedIndex]);
+})->with([
+    'a certification slug' => ['acls', 1],
+    'a certification slug in a Value' => [new Value('acls'), 1],
+    'a certification slug list' => [['acls'], 1],
+    'a padded certification slug' => [' acls ', 1],
+    'a qualified certification id' => ['certifications::acls', 1],
+    'a qualified id naming the other taxonomy' => ['credentials::acls', 0],
+    'a degree slug' => ['md', 0],
+    'a slug no taxonomy holds' => ['gone', 0],
 ]);
 
 it('selects the only blueprint field whatever the stored value', function (string $kind, mixed $present): void {

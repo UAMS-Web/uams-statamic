@@ -24,9 +24,6 @@ The guard tests stay in this repository and read the vendored source, so each go
 
 | Patch | Tracked by | Guard test |
 | --- | --- | --- |
-| `statamic-updates-overview-badge.patch` | none | `tests/Feature/UpdatesOverviewBadgeTest.php` |
-| `statamic-stache-traverser-vanished-file.patch` | `UAMS-Web/uams-statamic-archive#2241`, `UAMS-Web/uams-statamic-archive#2639` | `tests/Feature/Stache/TraverserVanishedFileTest.php` |
-| the six `statamic-stache-*-vanished-file-*` patches on the stores | `UAMS-Web/uams-statamic-archive#2643` | `tests/Feature/Stache/StoreVanishedFileTest.php` |
 | `pest-plugin-browser-per-attempt-timeout.patch` | `UAMS-Web/uams-statamic-archive#1816`, `pestphp/pest#1852` | `tests/Unit/PestBrowserRetryPatchTest.php` |
 | `pest-plugin-browser-server-no-shell.patch` | `UAMS-Web/uams-statamic-archive#1818`, `pestphp/pest#1754` | `tests/Feature/PestBrowserServerPatchTest.php` |
 | `pest-plugin-browser-navigation-no-buffer-space-retry.patch` | #585 | `tests/Unit/PestBrowserNavigationRetryPatchTest.php` |

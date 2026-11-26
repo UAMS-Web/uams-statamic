@@ -6,12 +6,14 @@ declare(strict_types=1);
 // cspell:ignore uamshealthxcom
 
 use App\Http\Middleware\TrustHosts;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use PHPUnit\Framework\Assert;
 use Statamic\Facades\User;
@@ -49,10 +51,22 @@ function trustedHostsAppHost(): string
 }
 
 /**
- * Delete the user the password reset cases create, and only that user.
+ * Delete the user the password reset cases create, and only that user, with
+ * the reset token the broker stored for its email.
+ *
+ * The broker keeps tokens in a file that outlives the test, and refuses a new
+ * reset for an email whose token is under a minute old, so a second run of
+ * this file within a minute would send no reset email (UAMS-Web/uams-statamic#1564).
+ * Only this email's token is removed.
  */
 function deleteTrustedHostsResetUser(): void
 {
+    $probe = mustBe(Statamic\Auth\User::class, User::make(), 'user');
+    $probe->email(TRUSTED_HOSTS_RESET_EMAIL);
+
+    $broker = mustBe(PasswordBroker::class, Password::broker(config()->string('statamic.users.passwords.resets')), 'broker');
+    $broker->getRepository()->delete($probe);
+
     $user = User::findByEmail(TRUSTED_HOSTS_RESET_EMAIL);
 
     if ($user instanceof Statamic\Auth\User) {

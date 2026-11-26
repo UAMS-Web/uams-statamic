@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3bbbf7a82ad8a2fb1fbec047346e853f",
+    "content-hash": "6adb9be6021b6dae174b1bc365a25114",
     "packages": [
         {
             "name": "ajthinking/archetype",
@@ -8105,16 +8105,16 @@
         },
         {
             "name": "statamic/cms",
-            "version": "v6.40.0",
+            "version": "v6.43.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/statamic/cms.git",
-                "reference": "34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6"
+                "reference": "71387ae6a13659529b135d87b0c5b8eafe2ca7c0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/statamic/cms/zipball/34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6",
-                "reference": "34dd84d35d9aaaeb86c22d7a4416e833f56c5bf6",
+                "url": "https://api.github.com/repos/statamic/cms/zipball/71387ae6a13659529b135d87b0c5b8eafe2ca7c0",
+                "reference": "71387ae6a13659529b135d87b0c5b8eafe2ca7c0",
                 "shasum": ""
             },
             "require": {
@@ -8213,7 +8213,7 @@
             ],
             "support": {
                 "issues": "https://github.com/statamic/cms/issues",
-                "source": "https://github.com/statamic/cms/tree/v6.40.0"
+                "source": "https://github.com/statamic/cms/tree/v6.43.1"
             },
             "funding": [
                 {
@@ -8221,7 +8221,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-03T15:49:12+00:00"
+            "time": "2026-11-21T17:32:13+00:00",
+            "published-time": "2026-11-21T17:32:22+00:00"
         },
         {
             "name": "statamic/eloquent-driver",
@@ -12331,16 +12332,16 @@
         },
         {
             "name": "uams-web/aether-fieldtypes",
-            "version": "v0.3.0",
+            "version": "v0.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-fieldtypes.git",
-                "reference": "fe65a983058453caf760f1b1190da9b6324626ce"
+                "reference": "2a6932a599b5baccacb8154826a5be2237ad0450"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-fieldtypes/zipball/fe65a983058453caf760f1b1190da9b6324626ce",
-                "reference": "fe65a983058453caf760f1b1190da9b6324626ce",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-fieldtypes/zipball/2a6932a599b5baccacb8154826a5be2237ad0450",
+                "reference": "2a6932a599b5baccacb8154826a5be2237ad0450",
                 "shasum": ""
             },
             "require": {
@@ -12409,7 +12410,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-fieldtypes/issues",
                 "source": "https://github.com/UAMS-Web/aether-fieldtypes"
             },
-            "time": "2026-11-23T17:19:56+00:00"
+            "time": "2026-11-24T23:16:54+00:00"
         },
         {
             "name": "uams-web/aether-form-settings",
@@ -13019,23 +13020,23 @@
         },
         {
             "name": "uams-web/aether-wordpress-importer",
-            "version": "v0.34.0",
+            "version": "v0.37.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-wordpress-importer.git",
-                "reference": "0efeb7b6db850945634ee28f21f217f447984897"
+                "reference": "da65871b029476047d118d1289f2fa3f19cf1dbb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/0efeb7b6db850945634ee28f21f217f447984897",
-                "reference": "0efeb7b6db850945634ee28f21f217f447984897",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer/zipball/da65871b029476047d118d1289f2fa3f19cf1dbb",
+                "reference": "da65871b029476047d118d1289f2fa3f19cf1dbb",
                 "shasum": ""
             },
             "require": {
                 "james-heinrich/getid3": "^1.9",
                 "laravel/prompts": "^0.3",
                 "php": "^8.4",
-                "statamic/cms": "6.40.0",
+                "statamic/cms": "6.43.1",
                 "uams-web/aether-wordpress-importer-cleanup": "^2.0"
             },
             "require-dev": {
@@ -13050,7 +13051,8 @@
                 "phpstan/phpstan": "^2.2",
                 "phpstan/phpstan-strict-rules": "^2.0",
                 "phpunit/phpunit": "^13.0",
-                "rector/rector": "^2.6"
+                "rector/rector": "^2.6",
+                "uams-web/patches-pest-plugin-mutate": "^1.4"
             },
             "type": "library",
             "extra": {
@@ -13066,7 +13068,8 @@
             },
             "autoload": {
                 "psr-4": {
-                    "UAMSWeb\\Aether\\WordPressImporter\\": "src/"
+                    "UAMSWeb\\Aether\\WordPressImporter\\": "src/",
+                    "UAMSWeb\\Aether\\WordPressImporter\\Data\\": "data/"
                 }
             },
             "autoload-dev": {
@@ -13076,13 +13079,18 @@
             },
             "scripts": {
                 "post-install-cmd": [
-                    "@php scripts/setup-git-hooks.php"
+                    "@php scripts/setup-git-hooks.php",
+                    "@php .claude/skills/upstream-patch-lifecycle/scripts/ensure-patches-applied.php"
                 ],
                 "post-update-cmd": [
-                    "@php scripts/setup-git-hooks.php"
+                    "@php scripts/setup-git-hooks.php",
+                    "@php .claude/skills/upstream-patch-lifecycle/scripts/ensure-patches-applied.php"
                 ],
                 "test": [
                     "pest --testsuite=Unit,Integration"
+                ],
+                "mutate": [
+                    "pest --testsuite=Unit,Integration --mutate --path=src"
                 ],
                 "stan": [
                     "phpstan analyse --memory-limit=-1"
@@ -13141,7 +13149,7 @@
                 "issues": "https://github.com/UAMS-Web/aether-wordpress-importer/issues",
                 "source": "https://github.com/UAMS-Web/aether-wordpress-importer"
             },
-            "time": "2026-11-09T12:11:08+00:00"
+            "time": "2026-11-25T20:59:52+00:00"
         },
         {
             "name": "uams-web/aether-wordpress-importer-cleanup",
@@ -13280,20 +13288,20 @@
         },
         {
             "name": "uams-web/patches-statamic-cms",
-            "version": "v1.1.0",
+            "version": "v1.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/patches-statamic-cms.git",
-                "reference": "67e6527c136cb6a578cc89110a192c03ab03211b"
+                "reference": "f40c6ef121304e57dfb3749e0147968a6ad49ea7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/patches-statamic-cms/zipball/67e6527c136cb6a578cc89110a192c03ab03211b",
-                "reference": "67e6527c136cb6a578cc89110a192c03ab03211b",
+                "url": "https://api.github.com/repos/UAMS-Web/patches-statamic-cms/zipball/f40c6ef121304e57dfb3749e0147968a6ad49ea7",
+                "reference": "f40c6ef121304e57dfb3749e0147968a6ad49ea7",
                 "shasum": ""
             },
             "require": {
-                "statamic/cms": "6.40.0"
+                "statamic/cms": "6.43.1"
             },
             "type": "library",
             "extra": {
@@ -13301,15 +13309,8 @@
                     "statamic/cms": {
                         "Add blueprint-aware collection create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-collection-create-label-blueprint.patch",
                         "Add blueprint-aware taxonomy create labels": "vendor/uams-web/patches-statamic-cms/patches/statamic-taxonomy-create-label-blueprint.patch",
-                        "Align CP updates badge with updater availableUpdatesCount": "vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch",
-                        "Skip a Stache file removed between listing and stat so a concurrent delete cannot abort the traversal (temporary; see UAMS-Web/uams-statamic-archive#2241)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-traverser-vanished-file.patch",
-                        "Skip a Stache file removed after its stat in Store::paths() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-paths.patch",
-                        "Skip a Stache file removed after the change scan in Store::getItemFromModifiedPath() so it is not rebuilt as a new, empty item (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-store-vanished-file-modified.patch",
-                        "Return no items from TaxonomyTermsStore::getItemFromModifiedPath() when the parent skips a vanished file, rather than fatal on null (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-modified.patch",
-                        "Skip a Stache term file removed after its stat in TaxonomyTermsStore::paths() so it is not rebuilt as a new, empty term (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-paths.patch",
-                        "Return null from TaxonomyTermsStore::getItem() for a term file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-terms-vanished-file-get-item.patch",
-                        "Return null from BasicStore::getItem() for a file removed after its path was recorded, rather than rebuild it (temporary; see UAMS-Web/uams-statamic-archive#2643)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-basic-vanished-file-get-item.patch",
-                        "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281)": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch"
+                        "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281; upstream: statamic/cms#15880, statamic/cms#15881)": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch",
+                        "Reset the Stache store's cached file items at the start of warm() so a warm after a query outside a warm does not index from a stale collection (temporary; see UAMS-Web/aether-wordpress-importer#618; upstream: statamic/cms#16022, statamic/cms#16024)": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-clear-file-items.patch"
                     }
                 }
             },
@@ -13326,7 +13327,7 @@
                 "issues": "https://github.com/UAMS-Web/patches-statamic-cms/issues",
                 "source": "https://github.com/UAMS-Web/patches-statamic-cms"
             },
-            "time": "2026-11-12T21:36:28+00:00"
+            "time": "2026-11-24T19:27:22+00:00"
         },
         {
             "name": "ueberdosis/tiptap-php",
@@ -17592,7 +17593,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-19T10:31:11+00:00"
+            "time": "2026-11-19T10:31:11+00:00",
+            "published-time": "2026-11-19T10:31:27+00:00"
         },
         {
             "name": "phpstan/phpstan-mockery",
@@ -19379,5 +19381,5 @@
     "platform-overrides": {
         "php": "8.4.27"
     },
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }
