@@ -82,6 +82,9 @@ final class ApplyScheduledPublishing implements ShouldQueue
     {
         $registered = app(CollectionExtensions::class)->scheduledPublishingCollections();
 
+        // Equivalent: the registrations hold no duplicate, so array_unique() can drop only the
+        // last item and the keys stay 0 to n - 1. array_values() keeps the list type explicit.
+        // @pest-mutate-ignore: UnwrapArrayValues
         return array_values(array_unique([...$registered, ...self::SITE_COLLECTIONS]));
     }
 
@@ -325,7 +328,11 @@ final class ApplyScheduledPublishing implements ShouldQueue
 
         $fieldtype = $field->fieldtype();
 
+        // Equivalent: Field::fieldtype() returns a Fieldtype or throws when the type is not
+        // registered, so this branch cannot run. It narrows the untyped return for augment().
+        // @pest-mutate-ignore: InstanceOfToTrue
         if (! $fieldtype instanceof Fieldtype) {
+            // @pest-mutate-ignore: RemoveEarlyReturn
             return null;
         }
 
