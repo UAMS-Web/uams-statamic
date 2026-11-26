@@ -1,3 +1,12 @@
+// Font Awesome Free 7 as CSS with web fonts (#342, #1546). The package's own
+// stylesheets are inlined into this bundle rather than linked, so a page makes no
+// extra stylesheet request in `<head>`: on #342 one more request there delayed
+// first paint enough to shift the header. `all` covers the solid, regular and
+// brand styles; `v4-shims` maps the Font Awesome 4 names the templates still use
+// (`fa fa-list-alt`). Vite rebases each `url(../webfonts/…)` and emits the fonts.
+@import "@fortawesome/fontawesome-free/css/all";
+@import "@fortawesome/fontawesome-free/css/v4-shims";
+
 // Font Awesome 7 gives every icon a fixed 1.25em width unless it opts out with
 // `fa-width-auto`. Font Awesome 5 sized an icon to its own glyph, so restore that
 // default site-wide. `fa-fw` still sets 1.25em on its own element (UAMS-Web/uams-statamic-archive#3398).

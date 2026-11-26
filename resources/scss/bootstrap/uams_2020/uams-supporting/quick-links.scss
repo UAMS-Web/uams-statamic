@@ -96,7 +96,8 @@
             }
         }
 
-        svg, .far, .fas {
+        // Font Awesome icons are `i` or `span` elements with web fonts (#1546), not SVG
+        .fa, .fas, .far, .fab {
             margin-right: 0.375em;
         }
 

@@ -96,10 +96,9 @@ return {
                             'resources/scss/bootstrap/uams_2020/app.scss', // Main UAMS 2020 theme
                             'resources/scss/bootstrap/uams_2020/uamsalert.scss', // UAMS Alert banner
                         // JS — Vite bundles theme sources in the same concat order as the WP theme
-                        // `gulpfile.js` (`paths.scripts.src` + `paths.fontawesome.src`); see
-                        // `uams-2020-theme-entry.js` and `uams-2020-fontawesome-entry.js`.
+                        // `gulpfile.js` (`paths.scripts.src`); see `uams-2020-theme-entry.js`.
+                        // Font Awesome is CSS with web fonts inside `uams_2020/app.scss` (#1546).
                             'resources/js/uams_2020/uams-2020-theme-entry.js',
-                            'resources/js/uams_2020/uams-2020-fontawesome-entry.js',
                             'resources/js/uams_2020/uamsalert.js', // UAMS alert banner (data feed)
                     // Control Panel Assets
                     // Critical for building fieldtypes
