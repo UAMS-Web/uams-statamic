@@ -149,12 +149,8 @@ class ProfessionalAndLeadershipDevelopmentActivitiesTermType extends Scope
 
         // Walk scope handles in order and return the first known match
         foreach ($queryScopes as $handle) {
-            // Skip entries that are not a non-empty string handle
+            // Skip entries that are not a string handle; an empty one matches neither below
             if (! \is_string($handle)) {
-                continue;
-            }
-
-            if ($handle === '') {
                 continue;
             }
 

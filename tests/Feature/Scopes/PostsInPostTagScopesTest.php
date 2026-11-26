@@ -28,6 +28,12 @@ uses(EntriesTermsAndTreesIsolatedTestCase::class);
  * proven with a mocked builder. Fixtures are saved and deleted quietly, for the
  * reason `SitemapTaxonomyTermsTest` records: nothing here reads a search index.
  *
+ * Mutation: 100% on App\Scopes\PostsInPostTag (13 mutants), over this file,
+ * PostsInPostTagBySlugQueryTest and PostTagsCollectionTest, and 100% on
+ * App\Scopes\PostsInPostTagBySlug (11 mutants), over this file and PostsInPostTagBySlugQueryTest;
+ * both measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only
+ * (UAMS-Web/uams-statamic#842). No mutant is annotated.
+ *
  * @command  php artisan test --compact tests/Feature/Scopes/PostsInPostTagScopesTest.php
  */
 const POSTS_TAG_SCOPE_TEST_PREFIX = 'zz-post-tag-scope-test-';

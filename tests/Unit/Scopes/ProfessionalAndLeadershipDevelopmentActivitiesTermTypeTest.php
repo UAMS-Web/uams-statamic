@@ -14,7 +14,11 @@ uses(MockeryPHPUnitIntegration::class);
  * Unit tests for `ProfessionalAndLeadershipDevelopmentActivitiesTermType` query
  * scope aliases and `apply` behavior.
  *
- * Mutation: 100% on App\Scopes\ProfessionalAndLeadershipDevelopmentActivitiesTermType (36 mutants, --covered-only).
+ * Mutation: 100% on App\Scopes\ProfessionalAndLeadershipDevelopmentActivitiesTermType (34 mutants),
+ * measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over this
+ * file and ProfessionalAndLeadershipDevelopmentActivitiesTermRuleTest (UAMS-Web/uams-statamic#842).
+ * No mutant is annotated. The check that skipped an empty handle was removed as dead code:
+ * an empty handle matches neither known handle, which the dataset test pins.
  *
  * @command  php artisan test --compact tests/Unit/Scopes/ProfessionalAndLeadershipDevelopmentActivitiesTermTypeTest.php
  */
@@ -196,3 +200,30 @@ it('does not alter a non-statamic builder', function () {
         ]
     );
 });
+
+it('passes over handles that are not text, or are empty, to the first known one', function (array $queryScopes, string $type): void {
+    $scope = new ActivitiesScope;
+
+    /** @var TermQueryBuilder&MockInterface $query */
+    $query = Mockery::mock(TermQueryBuilder::class);
+    $query->shouldReceive('whereIn')
+        ->once()
+        ->andReturnSelf();
+    $query->shouldReceive('where')
+        ->once()
+        ->with(
+            ActivitiesScope::TYPE_FIELD,
+            $type
+        )
+        ->andReturnSelf();
+
+    $scope->apply(
+        $query,
+        [
+            'queryScopes' => $queryScopes,
+        ]
+    );
+})->with([
+    'a number, then the professional handle' => [[7, 'professional_development_activity_term'], ActivitiesScope::TYPE_VALUE_PROFESSIONAL_DEVELOPMENT],
+    'an empty handle, then the leadership alias' => [['', ActivitiesScope::ALIAS_LEADERSHIP_DEVELOPMENT_ACTIVITY_TERM], ActivitiesScope::TYPE_VALUE_LEADERSHIP_DEVELOPMENT],
+]);
