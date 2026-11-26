@@ -1,5 +1,5 @@
 {
-    "_hash": "0eb63fa1167c255ba82d6eae5e071dfd7ca8ed53881c375744b508aec8217a41",
+    "_hash": "86bd15438f75dfa2cc2e039af668025b82f0b19a36835ae4f76b901eb7d5bbac",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
@@ -211,6 +211,16 @@
                 "description": "Resolve a collection blueprint served from an add-on directory by normalizing the namespace in makeBlueprintFromFile() (temporary; see UAMS-Web/uams-statamic#281; upstream: statamic/cms#15880, statamic/cms#15881)",
                 "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-blueprint-namespace-slash.patch",
                 "sha256": "0b15638367a8a3fc3a6bd95ac840edea2c07887234d36e06cdca1ef91379ae11",
+                "depth": 1,
+                "extra": {
+                    "provenance": "dependency:statamic/cms"
+                }
+            },
+            {
+                "package": "statamic/cms",
+                "description": "Reset the Stache store's cached file items at the start of warm() so a warm after a query outside a warm does not index from a stale collection (temporary; see UAMS-Web/aether-wordpress-importer#618; upstream: statamic/cms#16022, statamic/cms#16024)",
+                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-stache-clear-file-items.patch",
+                "sha256": "10227d899f2e517d9d102ce66ada8460c9f59ad57dc7ce893fc49d5740c839f3",
                 "depth": 1,
                 "extra": {
                     "provenance": "dependency:statamic/cms"
