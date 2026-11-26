@@ -446,6 +446,7 @@ php .claude/skills/pcov-setup/scripts/check-patchwork-lines.php src
 ### Three-pass walk of the inventory
 
 Close a full-coverage ticket by walking every row in the CSV, one pass at a time across the whole population (or file-by-file through all three). Keep the CSV current as the tracker; each pass preserves cells the other passes already filled. **Pass 3 closes only on a Linux mutation run** (the `Bar` section of the [`tests`](../tests/SKILL.md#bar) skill, UAMS-Web/uams-claude-skills#543): a score taken on Windows or macOS while walking the rows is working evidence and is repeated on Linux before the ticket closes.
+**In this repository pass 3 of a coverage slice also closes on a macOS mutation run** (UAMS-Web/uams-claude-skills#921), so a macOS score for a slice is not repeated on Linux. A Windows score still is.
 
 | Pass | Column | Passes when |
 | --- | --- | --- |
