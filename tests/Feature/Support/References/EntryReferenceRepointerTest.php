@@ -27,10 +27,12 @@ use Tests\Support\StacheIsolatedTestCase;
  * entry-saved listener mutates them. The survivor/loser ids are deliberately
  * chosen so one is a prefix of the value space to pin the link boundary guard.
  *
- * Mutation: 100% on App\Support\References\EntryReferenceRepointer (147 mutants), measured on
- * macOS on 2026-11-25 without --covered-only, with one equivalent annotated in rewriteString():
- * its early return for a string with no entry link saves only the work of patterns that could
- * not match. Every killable mutant is dead.
+ * Mutation: App\Support\References\EntryReferenceRepointer, run on macOS on 2026-11-25 without
+ * --covered-only, gave 152 mutants with one survivor: `ContinueToBreak` on the failed-match
+ * branch's `continue` in rewriteString(), which "goes on to the next id after a failed match"
+ * now kills (checked by hand: with `break` there, that test fails on the warning count). One
+ * equivalent is annotated in rewriteString(): its early return for a string with no entry link
+ * saves only the work of patterns that could not match.
  */
 uses(StacheIsolatedTestCase::class);
 
@@ -523,6 +525,31 @@ it('keeps a string whose match fails, rewrites nothing in it, and logs the id', 
         'Left a string unchanged because matching its inline entry link failed.',
         ['id' => 'failing-5555', 'error' => 'Backtrack limit exhausted']
     );
+});
+
+it('goes on to the next id after a failed match, and logs each one', function (): void {
+    /** @var LegacyMockInterface $log */
+    $log = Log::spy();
+
+    $text = '[a](statamic://entry::failing-5555) [b](statamic://entry::failing-6666)';
+
+    // A failed match moves on to the next id rather than leaving the loop, so both ids are tried
+    $result = repointWithFailingMatches(fn (): mixed => new ReflectionMethod(EntryReferenceRepointer::class, 'rewriteString')->invoke(
+        new EntryReferenceRepointer,
+        $text,
+        ['failing-5555' => REPOINT_SURVIVOR, 'failing-6666' => REPOINT_SURVIVOR]
+    ));
+
+    expect($result)->toBe([$text, 0]);
+
+    $log->shouldHaveReceived('warning')->twice();
+
+    foreach (['failing-5555', 'failing-6666'] as $id) {
+        $log->shouldHaveReceived('warning', [
+            'Left a string unchanged because matching its inline entry link failed.',
+            ['id' => $id, 'error' => 'Backtrack limit exhausted'],
+        ])->once();
+    }
 });
 
 it('keeps the text of a failed match in an item whose other reference still re-points', function (): void {
