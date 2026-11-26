@@ -41,9 +41,8 @@
 				{{# UAMS 2020 theme SCSS #}}
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/scss/bootstrap/uams_2020/app.scss']) }}
 
-				{{# UAMS 2020 theme + Font Awesome (same Vite entries as main layout) #}}
+				{{# UAMS 2020 theme JS (same Vite entry as main layout; Font Awesome now ships inside app.scss) #}}
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-theme-entry.js']) }}
-				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-fontawesome-entry.js']) }}
 
 		{{# Load the layout assets #}}
 		{{# Public-form field conditions (UAMS-Web/uams-statamic-archive#3073, #189): Statamic's `helpers.js` defines the evaluator, and the uams-web/aether-alpine-csp-forms add-on registers the `$showField` magic on `alpine:init` that forwards to it. As classic deferred scripts ahead of the module bundle they run first, in document order. Without `helpers.js`, every conditional field shows. #}}

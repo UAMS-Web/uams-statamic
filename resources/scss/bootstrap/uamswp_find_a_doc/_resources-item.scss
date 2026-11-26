@@ -8,7 +8,8 @@
         font-size: $lead-font-size;
 
         .attachment-link {
-            svg {
+            // Font Awesome icons are `i` or `span` elements with web fonts (#1546), not SVG
+            .fa, .fas, .far {
                 color: $body-color-lightest;
 
                 &.fa-file-pdf {
@@ -29,7 +30,7 @@
             }
 
             @include hover-focus() {
-                svg {
+                .fa, .fas, .far {
                     color: color.adjust($body-color-lightest, $lightness: -$emphasized-link-hover-darken-percentage, $space: hsl);
 
                     &.fa-file-pdf {
