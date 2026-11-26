@@ -2927,6 +2927,8 @@ It is a separate patch rather than an addition to the shared-filter one because 
 
 **Companion.** UAMS-Web/uams-statamic-archive#2639 (the ticket and its `## Decision` section); UAMS-Web/uams-statamic-archive#2643 (the two windows this leaves open); UAMS-Web/uams-statamic-archive#2633 (the validation that surfaced it); UAMS-Web/uams-statamic-archive#2037 and UAMS-Web/uams-statamic-archive#2244 (the shared-filter patch on the same file); UAMS-Web/uams-statamic-archive#2241 (the upstream report both patches ride with); [`patches/README.md`](../patches/README.md) (the per-patch detail and removal checklist).
 
+**Retired (2026-11-26, #1250).** `statamic/cms` `v6.43.0` carries this skip upstream (statamic/cms#15903), with the same fresh-listing condition, so `statamic-stache-traverser-vanished-file.patch` is no longer applied: `uams-web/patches-statamic-cms` `v1.2.0` dropped it. `tests/Feature/Stache/TraverserVanishedFileTest.php` stays and now guards the upstream behavior.
+
 ## 2026-09-29 — Pest's exact PHPUnit pin is accepted as intentional, and no relaxation is requested upstream (UAMS-Web/uams-statamic-archive#1819)
 
 **Decision.** `pestphp/pest` pins `phpunit/phpunit` to one version by requiring and conflicting on the same number (`^13.3.4` and `>13.3.4` at `v5.2.1` and on `5.x` at `8b6607e34`). This repository accepts that as intended: PHPUnit moves when Pest releases, and the dependency sweep takes the newest Pest rather than investigating PHPUnit. No comment is posted on [`pestphp/pest#1679`](https://github.com/pestphp/pest/issues/1679), and no watch row is added for it. The rule is written into the [`update-dependencies-ticket`](../.claude/skills/update-dependencies-ticket/SKILL.md) skill.
@@ -2988,6 +2990,8 @@ It is a separate patch rather than an addition to the shared-filter one because 
 **Residual.** The gap inside `File::get()` itself: a delete landing between its `isFile()` check and its `file_get_contents()` raises an uncaught `ErrorException`, not a null. `RevisionsStore::makeItemFromFile()` ignores the contents it is passed and reads the file again. Both were outside the operator's scope decision. The operator decided on 2026-09-30 to include the four sites first listed here as residual.
 
 **Companion.** UAMS-Web/uams-statamic-archive#2643 (the ticket and its `## Decision` section); UAMS-Web/uams-statamic-archive#2639 and this log's 2026-09-29 entry (the traverser patch whose rule this follows); UAMS-Web/uams-statamic-archive#2241 (the upstream report the Stache patches ride with); [`patches/README.md`](../patches/README.md) (the per-patch detail and removal checklist).
+
+**Retired (2026-11-26, #1250).** `statamic/cms` `v6.43.0` carries these skips upstream (statamic/cms#15903), so the six store patches are no longer applied: `uams-web/patches-statamic-cms` `v1.2.0` dropped them. `tests/Feature/Stache/StoreVanishedFileTest.php` stays and now guards the upstream behavior.
 
 ## 2026-09-30 — A scheduled publish or unpublish carries to an entry's localizations, whatever status an editor gave them (UAMS-Web/uams-statamic-archive#2621)
 
