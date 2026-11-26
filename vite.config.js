@@ -53,6 +53,14 @@ return {
             cssMinify: 'esbuild', // `esbuild` minifies CSS better than `lightningcss`
             rollupOptions: {
                 output: {
+                    // Run each module's body in source order whatever chunk it lands in (#1546).
+                    // Rolldown puts its CommonJS interop helper in a `rolldown-runtime` chunk
+                    // while several entries need it, and otherwise inside the shared chunk, which
+                    // no setting controls. Without the Font Awesome entry it landed in
+                    // `conditions`, which imports `mathjs`, whose `escape-latex` chunk imports the
+                    // helper back: `site.js` threw "e is not a function" and Alpine never started.
+                    // The wrapping costs about 12.5 kB gzip across the JavaScript chunks.
+                    strictExecutionOrder: true,
                     manualChunks(id) {
                         const normalizedId = id.split(path.sep).join('/');
                         if (! normalizedId.includes('node_modules')) {
