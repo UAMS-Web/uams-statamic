@@ -2,8 +2,7 @@
 # This repository's own orb setup steps (UAMS-Web/uams-statamic#1258). The shared .agents/setup,
 # synced from UAMS-Web/uams-claude-skills, runs this file last, after `composer install` (with its
 # Composer scripts) and `npm ci`. Steps those installs need first are in .agents/setup.pre.local.
-# Step labels match the ones in the current .agents/setup, and
-# tests/Feature/Config/OrbLocalScriptsTest.php checks that every current step is placed.
+# Step labels match the ones in the current .agents/setup.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
