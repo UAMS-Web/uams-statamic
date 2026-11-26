@@ -51,8 +51,17 @@ it('skips empty values so required can own emptiness', function (mixed $value): 
 })->with([
     'null' => [null],
     'empty string' => [''],
-    'zero' => [0],
     'false' => [false],
+    'empty array' => [[]],
+]);
+
+// Since aether-fieldtypes v0.4.0 (UAMS-Web/aether-fieldtypes#74) zero is a value, not emptiness,
+// so it is checked against the pattern like any other input.
+it('validates zero against the pattern instead of skipping it', function (mixed $zero): void {
+    expect(identifierRegexFailed($zero))->toBeTrue();
+})->with([
+    'integer zero' => [0],
+    'string zero' => ['0'],
 ]);
 
 it('accepts matching strings and rejects mismatches', function (mixed $value, bool $shouldPass): void {
