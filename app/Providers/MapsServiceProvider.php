@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Http\Controllers\CP\Gps\NominatimSearchController;
 use App\Services\Locations\CountyRegionMap;
-use Illuminate\Support\Facades\Route;
+use App\Support\Http\OutboundUrlEgressGuard;
 use Illuminate\Support\ServiceProvider;
-use Statamic\Statamic;
+use UAMSWeb\Aether\Fieldtypes\Contracts\EgressGuard;
 
 /**
- * Registers Control-Panel routes and bindings for map / GPS features.
+ * Registers container bindings for map / GPS features.
  *
- * The server-side Nominatim address-search proxy consumed by the GPS fieldtype's
- * picker (App\Http\Controllers\CP\Gps\NominatimSearchController), and the
- * coordinate-to-region derivation services (UAMS-Web/uams-statamic-archive#962).
+ * The GPS picker's address search is served by the shared fieldtype add-on at the Control Panel
+ * route `gps/nominatim-search`; this provider binds the egress guard that endpoint fetches through
+ * to the site's {@see OutboundUrlEgressGuard}. It also memoizes the coordinate-to-region map
+ * (UAMS-Web/uams-statamic-archive#962).
  */
 class MapsServiceProvider extends ServiceProvider
 {
@@ -28,26 +28,10 @@ class MapsServiceProvider extends ServiceProvider
         // Memoize the county -> region map for the whole process: a bulk import
         // saving many locations builds it from the taxonomy once, not per entry.
         $this->app->singleton(CountyRegionMap::class);
-    }
 
-    /**
-     * Bootstrap map-related Control-Panel routes.
-     */
-    public function boot(): void
-    {
-        $this->bootCpRoutes();
-    }
-
-    /**
-     * Register the CP route backing the GPS picker's address search.
-     */
-    protected function bootCpRoutes(): void
-    {
-        Statamic::pushCpRoutes(function (): void {
-            Route::get(
-                'gps/nominatim-search',
-                NominatimSearchController::class,
-            )->name('gps.nominatim-search');
-        });
+        // Route the add-on's address-search fetch through the site's SSRF guard.
+        // The add-on offers its own guard with `bindIf`, so this binding wins
+        // whichever provider registers first.
+        $this->app->bind(EgressGuard::class, OutboundUrlEgressGuard::class);
     }
 }

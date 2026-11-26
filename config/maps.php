@@ -172,58 +172,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Nominatim address search (Control Panel)
-    |--------------------------------------------------------------------------
-    |
-    | The GPS / map picker can offer an optional address-search box that
-    | geocodes a typed address to a marker via OpenStreetMap's Nominatim
-    | service. The search is proxied server-side (App\Http\Controllers\CP\Gps\
-    | NominatimSearchController) rather than called from the editor's browser so
-    | the request carries a descriptive, identifying `User-Agent` and is
-    | centrally rate-limited, and so the outbound fetch passes through
-    | App\Support\Http\OutboundUrlGuard (egress / SSRF hardening, UAMS-Web/uams-statamic-archive#931/UAMS-Web/uams-statamic-archive#1013).
-    |
-    | The Nominatim Usage Policy
-    | (https://operations.osmfoundation.org/policies/nominatim/) requires a
-    | valid identifying `User-Agent`, an absolute maximum of one request per
-    | second, and result attribution. The defaults below honor that; a
-    | high-volume deployment should point `MAP_NOMINATIM_ENDPOINT` at a
-    | dedicated or self-hosted Nominatim instance.
-    |
-    */
-
-    'nominatim' => [
-
-        'endpoint' => env('MAP_NOMINATIM_ENDPOINT', 'https://nominatim.openstreetmap.org/search'),
-
-        // A descriptive identifier sent as the request User-Agent, per policy.
-        // Falls back to the app name + URL when left empty (see the controller).
-        'user_agent' => env('MAP_NOMINATIM_USER_AGENT', ''),
-
-        // An optional contact email appended as the `email=` query parameter,
-        // which the policy recommends so the operators can reach the site owner.
-        'email' => env('MAP_NOMINATIM_EMAIL', ''),
-
-        // Target ceiling on outbound requests per second (policy maximum is 1).
-        // A best-effort app-wide throttle; see NominatimSearchController.
-        'max_requests_per_second' => (int) env('MAP_NOMINATIM_MAX_RPS', 1),
-
-        // Maximum geocoding results returned to the picker.
-        'limit' => (int) env('MAP_NOMINATIM_LIMIT', 5),
-
-        // Minimum query length before a search is issued (avoids noise requests).
-        'min_query_length' => (int) env('MAP_NOMINATIM_MIN_QUERY_LENGTH', 3),
-
-        // Optional ISO 3166-1 alpha-2 country bias, comma-separated (e.g. "us").
-        'country_codes' => env('MAP_NOMINATIM_COUNTRY_CODES', 'us'),
-
-        // Outbound request timeout, in seconds.
-        'timeout' => (int) env('MAP_NOMINATIM_TIMEOUT', 5),
-
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Census county reverse-geocoding (location regions)
     |--------------------------------------------------------------------------
     |
