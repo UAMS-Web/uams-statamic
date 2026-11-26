@@ -154,5 +154,7 @@ it('404s for a draft, a non-article, a foreign entry, or an unknown id', functio
     postView($this, $draftId)->assertNotFound();
     postView($this, $topicId)->assertNotFound();
     postView($this, $foreignId)->assertNotFound();
-    postView($this, 'does-not-exist')->assertNotFound();
+    postView($this, 'does-not-exist')
+        ->assertNotFound()
+        ->assertExactJson(['error' => 'Article not found.']);
 });

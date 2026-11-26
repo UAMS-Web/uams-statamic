@@ -103,7 +103,11 @@ final class PostsFeedController
             $this->writeItem($writer, $entry);
         }
 
+        // Equivalent: endDocument() closes any element still open, so the bytes are
+        // the same without either call. They stay so the document reads as built.
+        // @pest-mutate-ignore: RemoveMethodCall
         $writer->endElement(); // channel
+        // @pest-mutate-ignore: RemoveMethodCall
         $writer->endElement(); // rss
         $writer->endDocument();
 
