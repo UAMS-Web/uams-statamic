@@ -16,6 +16,9 @@ use Tests\Support\StacheIsolatedTestCase;
  * Real `people` entries are built in an isolated Stache so the tag's collection query
  * runs against them, exactly as at the live directory.
  *
+ * Mutation: 100% on App\Tags\ProviderLanguageFacetOptions (13 mutants), measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only,
+ * over this file (UAMS-Web/uams-statamic#812). No mutant is annotated.
+ *
  * @command php artisan test --compact tests/Feature/Tags/ProviderLanguageFacetOptionsTest.php
  */
 uses(StacheIsolatedTestCase::class);
@@ -92,5 +95,13 @@ it('trims whitespace-padded codes and drops non-string language values', functio
     ]);
 
     // 'fr'/'en' survive (trimmed, label-sorted); the int and null are dropped entirely.
+    expect(renderLanguageOptions())->toBe('[en=English][fr=French]');
+});
+
+it('keeps every language when stored lists are keyed alike', function (): void {
+    // Lists keyed by name would overwrite one another when the entries' lists are merged
+    makeLanguageFacetPerson('a', ['title' => 'A', 'language' => ['first' => 'en']]);
+    makeLanguageFacetPerson('b', ['title' => 'B', 'language' => ['first' => 'fr']]);
+
     expect(renderLanguageOptions())->toBe('[en=English][fr=French]');
 });

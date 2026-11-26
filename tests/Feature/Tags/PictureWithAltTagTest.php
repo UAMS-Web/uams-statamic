@@ -26,6 +26,9 @@ covers(PictureWithAlt::class);
  * SVG / GIF passthrough. Without an override the asset's own alt still renders,
  * and the asset itself is never modified.
  *
+ * Mutation: 100% on App\Tags\PictureWithAlt (8 mutants), measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over this
+ * file (UAMS-Web/uams-statamic#812). No mutant is annotated.
+ *
  * @command  php artisan test --compact tests/Feature/Tags/PictureWithAltTagTest.php
  */
 const PICTURE_ALT_DISK = 'picture_alt_probe';

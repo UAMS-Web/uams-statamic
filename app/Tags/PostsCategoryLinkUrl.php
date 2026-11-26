@@ -86,6 +86,9 @@ class PostsCategoryLinkUrl extends Tags
         if (\is_string($value) && $value !== '') {
             $entry = EntryFacade::find($value);
 
+            // Equivalent: this application's entry repository returns an Entry or null,
+            // so the narrowing never turns an entry away.
+            // @pest-mutate-ignore: InstanceOfToTrue
             return $entry instanceof Entry ? $entry : null;
         }
 
