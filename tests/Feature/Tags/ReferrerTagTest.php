@@ -13,7 +13,9 @@ uses(TestCase::class);
 /**
  * Tests for the Referrer Antlers tag (App\Tags\Referrer).
  *
- * Mutation: tracked under App\Tags\Referrer (--covered-only).
+ * Mutation: 100% on App\Tags\Referrer (8 mutants), measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over this file,
+ * ServerRequestTagsOutputTest and the three FormEmail request-context and merge-tag tests
+ * (UAMS-Web/uams-statamic#812). No mutant is annotated.
  *
  * @command  php artisan test --compact tests/Feature/Tags/ReferrerTagTest.php
  */

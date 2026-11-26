@@ -51,10 +51,9 @@ class SchemaTemplatesFields
     /**
      * Blueprint contents for Section Defaults (collection/taxonomy).
      *
-     * @param  bool  $siteDisabled  When true, inherit_template defaults to false and is read-only
      * @return array<string, mixed>
      */
-    public static function sectionDefaults(bool $siteDisabled): array
+    public static function sectionDefaults(): array
     {
         return [
             'tabs' => [
@@ -69,14 +68,12 @@ class SchemaTemplatesFields
                                 static::enabledField(static::enabledOptionsSection()),
                                 static::inheritField(
                                     'inherit_webpage_entry',
-                                    __('Inherit Webpage Entry From Site Defaults'),
-                                    $siteDisabled
+                                    __('Inherit Webpage Entry From Site Defaults')
                                 ),
                                 static::webpageEntryField(),
                                 static::inheritField(
                                     'inherit_main_content_entry',
-                                    __('Inherit Main Content Entry From Site Defaults'),
-                                    $siteDisabled
+                                    __('Inherit Main Content Entry From Site Defaults')
                                 ),
                                 static::mainContentEntryField(),
                             ],
@@ -90,10 +87,9 @@ class SchemaTemplatesFields
     /**
      * Blueprint contents for Blueprint Defaults (section + blueprint).
      *
-     * @param  bool  $sectionDisabled  When true, inherit_template defaults to false and is read-only
      * @return array<string, mixed>
      */
-    public static function blueprintDefaults(bool $sectionDisabled): array
+    public static function blueprintDefaults(): array
     {
         return [
             'tabs' => [
@@ -108,14 +104,12 @@ class SchemaTemplatesFields
                                 static::enabledField(static::enabledOptionsBlueprint()),
                                 static::inheritField(
                                     'inherit_webpage_entry',
-                                    __('Inherit Webpage Entry From Section Defaults'),
-                                    $sectionDisabled
+                                    __('Inherit Webpage Entry From Section Defaults')
                                 ),
                                 static::webpageEntryField(),
                                 static::inheritField(
                                     'inherit_main_content_entry',
-                                    __('Inherit Main Content Entry From Section Defaults'),
-                                    $sectionDisabled
+                                    __('Inherit Main Content Entry From Section Defaults')
                                 ),
                                 static::mainContentEntryField(),
                             ],
@@ -297,12 +291,18 @@ class SchemaTemplatesFields
     /**
      * Per-parameter inherit button group (section or blueprint).
      *
+     * The field is never read-only, and it defaults to "Inherit" whatever the parent's
+     * state (UAMS-Web/uams-statamic#1549, built in #1555). A level below the form can always
+     * turn output on, the blueprint's `enabled` under a section form and the blueprint
+     * form's own `enabled` beside its inherit fields, and then the cascade reads this field
+     * (SchemaTemplatesCascadeService::resolveWebpageEntry() and resolveMainContentEntry()).
+     * A default of "off" would save as a custom setting with no entry.
+     *
      * @return array{ handle: string, field: array<string, mixed> }
      */
     protected static function inheritField(
         string $handle,
-        string $display,
-        bool $parentDisabled
+        string $display
     ): array {
         $options = static::inheritTemplateOptions();
 
@@ -312,8 +312,7 @@ class SchemaTemplatesFields
                 'type' => 'button_group',
                 'display' => $display,
                 'options' => $options,
-                'default' => $parentDisabled ? 'false' : 'true',
-                'read_only' => $parentDisabled,
+                'default' => 'true',
                 'cast_booleans' => 'true',
             ],
         ];
