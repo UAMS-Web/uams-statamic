@@ -126,6 +126,7 @@ function sosGuardField(string $handle, mixed $maxItems): Field&MockInterface
     $field = Mockery::mock(Field::class);
     $field->shouldReceive('handle')->andReturn($handle);
     $field->shouldReceive('get')->with('max_items')->andReturn($maxItems);
+    $field->shouldReceive('get')->with('taxonomies')->andReturn([]);
 
     return $field;
 }
