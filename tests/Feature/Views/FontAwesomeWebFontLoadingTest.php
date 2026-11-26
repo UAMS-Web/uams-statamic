@@ -7,6 +7,9 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
+// `webfonts` is the directory name inside the Font Awesome package
+// cspell:ignore webfonts
+
 /**
  * Font Awesome loads as CSS with web fonts inside the theme stylesheet (#1546,
  * deciding #342), not as the SVG with JavaScript build.
