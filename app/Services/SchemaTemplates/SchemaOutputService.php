@@ -4735,6 +4735,13 @@ class SchemaOutputService
             return null;
         }
 
+        // Keep the candidates whose taxonomies hold the stored term, so a handle shared
+        // by two sets augments through the set that owns the term (#1517)
+        $normalizedCandidates = $this->termsLikeCandidatesHoldingStoredTerm(
+            $normalizedCandidates,
+            $present
+        );
+
         $inspected = $present instanceof Value
             ? $present->value()
             : $present;
@@ -4783,6 +4790,74 @@ class SchemaOutputService
         }
 
         return $normalizedCandidates[0];
+    }
+
+    /**
+     * Narrow same-handle terms fields to those whose taxonomies hold the stored term.
+     *
+     * Two replicator sets can each declare a terms field under one handle with a
+     * different taxonomy (`activity` on a degree row and on a certification row).
+     * Augmenting a stored slug through the wrong set's field finds no term, since
+     * `statamic/cms` 6.43.0 keys its single-term augmentation cache by the
+     * taxonomy-qualified id (statamic/cms#15974). Only a bare or qualified slug is
+     * looked up; a value that is already a term, or that no candidate holds, keeps
+     * every candidate.
+     *
+     * @param  list<Field>  $candidates
+     * @return list<Field>
+     */
+    private function termsLikeCandidatesHoldingStoredTerm(
+        array $candidates,
+        mixed $present
+    ): array {
+        // A single candidate is the only choice there is
+        if (\count($candidates) < 2) {
+            return $candidates;
+        }
+
+        // Read the first stored slug or id, unwrapping a field value to its raw value
+        $raw = $present instanceof Value
+            ? $present->raw()
+            : $present;
+
+        if (\is_array($raw) && array_is_list($raw)) {
+            $raw = $raw[0] ?? null;
+        }
+
+        if (! \is_string($raw) || trim($raw) === '') {
+            return $candidates;
+        }
+
+        $token = trim($raw);
+        $separator = strpos($token, '::');
+        $qualifiedTaxonomy = $separator === false
+            ? null
+            : substr($token, 0, $separator);
+        $slug = $separator === false
+            ? $token
+            : substr($token, $separator + 2);
+
+        $holding = [];
+
+        foreach ($candidates as $candidate) {
+            foreach ((array) $candidate->get('taxonomies') as $taxonomy) {
+                // Skip a taxonomy a qualified id does not name
+                if (
+                    ! \is_string($taxonomy)
+                    || ($qualifiedTaxonomy !== null && $qualifiedTaxonomy !== $taxonomy)
+                ) {
+                    continue;
+                }
+
+                if (TermFacade::find($taxonomy.'::'.$slug) !== null) {
+                    $holding[] = $candidate;
+
+                    break;
+                }
+            }
+        }
+
+        return $holding === [] ? $candidates : $holding;
     }
 
     private function blueprintTermsFieldUsesMaxItemsOne(
