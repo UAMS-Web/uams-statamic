@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\References;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Statamic\Entries\Entry as EntryItem;
 use Statamic\Facades\Entry;
 use Statamic\Facades\GlobalSet;
@@ -281,13 +282,24 @@ class EntryReferenceRepointer implements EntryReferenceRepointerContract
         foreach ($idMap as $oldId => $newId) {
             $pattern = '/'.preg_quote(self::ENTRY_LINK_PREFIX.$oldId, '/').'(?![A-Za-z0-9_-])/';
 
-            $value = (string) preg_replace(
+            $rewritten = preg_replace(
                 $pattern,
                 self::ENTRY_LINK_PREFIX.$newId,
                 $value,
                 count: $replacements
             );
 
+            // A failed match (a PCRE error) returns null: keep the string so a person can still find the reference
+            if ($rewritten === null) {
+                Log::warning('Left a string unchanged because matching its inline entry link failed.', [
+                    'id' => $oldId,
+                    'error' => preg_last_error_msg(),
+                ]);
+
+                continue;
+            }
+
+            $value = $rewritten;
             $count += $replacements;
         }
 
