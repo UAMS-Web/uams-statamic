@@ -3,8 +3,11 @@
 declare(strict_types=1);
 
 use App\Support\Relationships\BoundedRelationshipProcessor;
+use Illuminate\Support\Facades\Event;
 use Stillat\Relationships\Comparisons\ComparisonResult;
 use Stillat\Relationships\EntryRelationship;
+use Stillat\Relationships\Events\UpdatedRelationshipsEvent;
+use Stillat\Relationships\Events\UpdatingRelationshipsEvent;
 use Stillat\Relationships\Processors\RelationshipProcessor;
 use Tests\TestCase;
 
@@ -16,6 +19,9 @@ uses(TestCase::class);
  * Narrow mutate coverage for App\Support\Relationships\BoundedRelationshipProcessor.
  *
  * Hermetic only: no Stache / collection-tree paths (those live in the feature suite).
+ *
+ * Mutation: 100% on App\Support\Relationships\BoundedRelationshipProcessor (10 mutants) from
+ * this file alone, measured on macOS on 2026-11-25 without --covered-only.
  *
  * @command  php artisan test --compact tests/Unit/Support/Relationships/BoundedRelationshipProcessorMutationTest.php
  */
@@ -168,4 +174,19 @@ it('clears every accumulator before processing a relationship', function (): voi
         'terms' => 0,
         'dependencies' => 0,
     ]);
+});
+
+it('hands each relationship on to the vendor processor', function (): void {
+    // Hermetic, so a run without the content submodule kills the dropped parent call too
+    Event::fake([UpdatingRelationshipsEvent::class, UpdatedRelationshipsEvent::class]);
+    $processor = new BoundedRelationshipProcessor;
+    $relationship = new EntryRelationship;
+    $results = new ComparisonResult;
+
+    $processor->processRelationship($relationship, $results);
+
+    Event::assertDispatchedTimes(UpdatingRelationshipsEvent::class, 1);
+    Event::assertDispatched(UpdatingRelationshipsEvent::class, fn (UpdatingRelationshipsEvent $event): bool => $event->relationship === $relationship && $event->results === $results);
+    Event::assertDispatchedTimes(UpdatedRelationshipsEvent::class, 1);
+    expect($processor->isProcessingRelationships())->toBeFalse();
 });

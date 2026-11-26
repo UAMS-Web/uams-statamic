@@ -10,6 +10,8 @@ use Tests\TestCase;
 
 uses(TestCase::class, MockeryPHPUnitIntegration::class);
 
+covers(CalculatorLayout::class);
+
 /**
  * Tests the layout computation that splits a calculator's `parts` into LHS
  * (primary variable), RHS (referenced by the primary's formula), and other
@@ -17,7 +19,13 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
  * doesn't have to deal with augmented-value wrapping; tests stub `Entry::find`
  * to return a mock entry with a predetermined parts array.
  *
- * Mutation: 100% on App\Tags\CalculatorLayout (144 mutants, --covered-only).
+ * Mutation: 100% on App\Tags\CalculatorLayout (138 mutants), measured on macOS 26.5 (arm64) on 2026-11-25 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over
+ * this file and CalculatorCaptionHtmlTest (UAMS-Web/uams-statamic#801). Nine equivalents are
+ * annotated in the tag, each with its reason: the caption's initial label and its stand-in
+ * for a handle that is not text, the preg_split limit and its failure fallback, the escape
+ * of an identifier, the early return for an empty formula (two mutators), and the filter of
+ * part handles (two mutators). The reflection test reads referencedHandlesForPrimary(),
+ * whose duplicates, keys and non-handle identifiers do not reach index()'s output.
  *
  * @command  php artisan test tests/Feature/Tags/CalculatorLayoutTagTest.php
  */
@@ -245,4 +253,156 @@ it('returns empty caption html when no formula exists', function () {
     ]);
 
     expect($tag->index()['caption_html'])->toBe('');
+});
+
+/**
+ * The layout of a calculator whose raw `parts` are the given value.
+ *
+ * @return array<string, mixed>
+ */
+function calculatorLayoutOf(mixed $parts): array
+{
+    $entry = Mockery::mock(Entry::class);
+    $entry->shouldReceive('get')->with('parts')->andReturn($parts);
+    EntryFacade::shouldReceive('find')->with('e1')->andReturn($entry);
+
+    $tag = new CalculatorLayout;
+    $tag->setContext(['id' => 'e1']);
+    $tag->setParameters([]);
+
+    return $tag->index();
+}
+
+/**
+ * The handles of a list of parts, keeping a part with no handle as null.
+ *
+ * @return list<mixed>
+ */
+function calculatorLayoutHandles(mixed $parts): array
+{
+    return array_values(array_map(fn (mixed $part): mixed => is_array($part) ? ($part['handle'] ?? null) : null, is_array($parts) ? $parts : []));
+}
+
+it('returns the empty layout when the parts are not a list', function (): void {
+    expect(calculatorLayoutOf('a + b'))->toBe([
+        'primary_handle' => '',
+        'primary' => [],
+        'referenced' => [],
+        'other' => [],
+        'caption_html' => '',
+    ]);
+});
+
+it('falls back to the first part of parts keyed by name', function (): void {
+    $result = calculatorLayoutOf([
+        'first' => ['handle' => 'a', 'kind' => 'input'],
+        'second' => ['handle' => 'b', 'kind' => 'input'],
+    ]);
+
+    expect($result['primary_handle'])->toBe('a')
+        ->and(calculatorLayoutHandles($result['other']))->toBe(['b']);
+});
+
+it('takes the explicit primary wherever it sits, over the sole formula', function (): void {
+    $result = calculatorLayoutOf([
+        ['handle' => 'a', 'kind' => 'input'],
+        ['handle' => 'total', 'kind' => 'output', 'formula' => ['code' => 'a * 2']],
+        ['handle' => 'shown', 'kind' => 'output', 'primary' => true],
+    ]);
+
+    expect($result['primary_handle'])->toBe('shown')
+        ->and($result['referenced'])->toBe([])
+        ->and(calculatorLayoutHandles($result['other']))->toBe(['a', 'total'])
+        ->and($result['caption_html'])->toBe('');
+});
+
+it('takes the sole formula as the primary when it is not the first part', function (): void {
+    $result = calculatorLayoutOf([
+        ['handle' => 'a', 'label' => 'A', 'kind' => 'input', 'formula' => ['mode' => 'javascript']],
+        ['handle' => 'b', 'label' => 'B', 'kind' => 'input', 'formula' => '   '],
+        ['handle' => 'total', 'label' => 'Total', 'kind' => 'output', 'formula' => ['code' => ' a / b ']],
+    ]);
+
+    // A formula with no code, and one that is only whitespace, are not formulas
+    expect($result['primary_handle'])->toBe('total')
+        ->and(calculatorLayoutHandles($result['referenced']))->toBe(['a', 'b'])
+        ->and($result['caption_html'])->toBe('<strong>A</strong> ÷ <strong>B</strong> = <strong>Total</strong>');
+});
+
+it('names no primary when the part it picks has no text handle', function (array $parts): void {
+    expect(calculatorLayoutOf($parts)['primary_handle'])->toBe('');
+})->with([
+    'the explicit primary' => [[['handle' => 7, 'primary' => true], ['handle' => 'b', 'formula' => 'x']]],
+    'the sole formula' => [[['handle' => 'a'], ['handle' => 7, 'formula' => 'a']]],
+    'the first part' => [[['handle' => 7], ['handle' => 'b']]],
+]);
+
+it('lays out a primary that has no handle', function (): void {
+    $result = calculatorLayoutOf([
+        ['kind' => 'output', 'formula' => 'b * 2'],
+        ['handle' => 'b', 'label' => 'B', 'kind' => 'input'],
+    ]);
+
+    // The part with no handle is the primary, and the caption leaves it out
+    expect($result['primary_handle'])->toBe('')
+        ->and(calculatorLayoutHandles($result['primary']))->toBe([null])
+        ->and(calculatorLayoutHandles($result['referenced']))->toBe(['b'])
+        ->and($result['other'])->toBe([])
+        ->and($result['caption_html'])->toBe('');
+});
+
+it('references nothing when no part carries the primary handle', function (): void {
+    // The first part's handle is not text, so the primary handle is '' and no part has it
+    $result = calculatorLayoutOf([
+        ['handle' => 7],
+        ['handle' => 'here', 'kind' => 'input'],
+        ['handle' => 'was', 'kind' => 'input'],
+    ]);
+
+    expect($result['primary_handle'])->toBe('')
+        ->and($result['referenced'])->toBe([])
+        ->and(calculatorLayoutHandles($result['other']))->toBe([7, 'here', 'was'])
+        ->and($result['caption_html'])->toBe('');
+});
+
+it('builds the caption past a part with no handle', function (): void {
+    expect(calculatorLayoutOf([
+        ['kind' => 'note'],
+        ['handle' => 'r', 'label' => 'R', 'primary' => true, 'formula' => 'x + 1'],
+        ['handle' => 'x', 'label' => 'X'],
+    ])['caption_html'])->toBe('<strong>X</strong> + 1 = <strong>R</strong>');
+});
+
+it('reads the first part that carries the primary handle', function (): void {
+    $result = calculatorLayoutOf([
+        ['handle' => 'r', 'primary' => true, 'formula' => 'a'],
+        ['handle' => 'r', 'formula' => 'b'],
+        ['handle' => 'a'],
+        ['handle' => 'b'],
+    ]);
+
+    expect(calculatorLayoutHandles($result['referenced']))->toBe(['a'])
+        ->and(calculatorLayoutHandles($result['other']))->toBe(['b']);
+});
+
+it('matches handles strictly when sorting parts', function (): void {
+    // A handle that is not text is never one of the formula's identifiers
+    $result = calculatorLayoutOf([
+        ['handle' => 'r', 'formula' => 'a'],
+        ['handle' => 'a'],
+        ['handle' => true],
+    ]);
+
+    expect(calculatorLayoutHandles($result['referenced']))->toBe(['a'])
+        ->and(calculatorLayoutHandles($result['other']))->toBe([true]);
+});
+
+it('lists each part the primary formula names once, in the formula\'s order', function (): void {
+    $method = new ReflectionMethod(CalculatorLayout::class, 'referencedHandlesForPrimary');
+
+    expect($method->invoke(new CalculatorLayout, [
+        ['handle' => 'r', 'formula' => 'floor(b + a + b)'],
+        ['handle' => 'a'],
+        ['handle' => 'b'],
+    ], 'r'))->toBe(['b', 'a']);
 });
