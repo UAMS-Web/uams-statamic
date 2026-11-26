@@ -18,6 +18,10 @@ uses(TestCase::class, MockeryPHPUnitIntegration::class);
 /**
  * Narrow mutate coverage for App\Scopes\PostsInPostCategoryBySlug.
  *
+ * Mutation: 100% on App\Scopes\PostsInPostCategoryBySlug (11 mutants), measured on macOS 26.5 (arm64) on 2026-11-26 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only,
+ * over this file, PostsInPostCategoryBySlugScopeTest and ClassifiedsBoardTest
+ * (UAMS-Web/uams-statamic#842). No mutant is annotated.
+ *
  * @command  php artisan test --compact tests/Unit/Scopes/PostsInPostCategoryBySlugMutationTest.php
  */
 
