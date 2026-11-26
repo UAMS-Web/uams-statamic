@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\CP\SchemaTemplates;
 
 use App\Services\SchemaTemplates\SchemaBlueprintDefaultsRepository;
-use App\Services\SchemaTemplates\SchemaSectionDefaultsRepository;
-use App\Services\SchemaTemplates\SchemaSiteDefaultsRepository;
 use App\Services\SchemaTemplates\SchemaTemplatesFields;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,7 +12,6 @@ use Inertia\Response as InertiaResponse;
 use Statamic\CP\PublishForm;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
-use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Fields\Blueprint as FieldsBlueprint;
 use Statamic\Http\Controllers\CP\CpController;
@@ -95,23 +92,6 @@ class SchemaBlueprintDefaultsController extends CpController
         $this->authorize('edit schema blueprint defaults');
 
         $repository = app(SchemaBlueprintDefaultsRepository::class);
-        $sectionRepo = app(SchemaSectionDefaultsRepository::class);
-        $siteRepo = app(SchemaSiteDefaultsRepository::class);
-
-        /** @var \Statamic\Sites\Site $selectedSite */
-        $selectedSite = Site::selected();
-        $selectedSiteHandle = $selectedSite->handle();
-        $siteDefaults = $siteRepo->get(is_scalar($selectedSiteHandle) ? (string) $selectedSiteHandle : '');
-        $sectionDefaults = $sectionRepo->get($sectionHandle, $sectionType);
-
-        $siteDisabled = \in_array($siteDefaults['enabled'] ?? null, ['false', false], true);
-        // The section's own setting decides, as a string or a boolean; anything else inherits
-        // from the site, as SchemaTemplatesCascadeService reads it
-        $sectionDisabled = match ($sectionDefaults['enabled'] ?? null) {
-            'false', false => true,
-            'true', true => false,
-            default => $siteDisabled,
-        };
 
         $section = $sectionType === 'collection'
             ? Collection::find($sectionHandle)
@@ -131,7 +111,7 @@ class SchemaBlueprintDefaultsController extends CpController
             $blueprintHandle,
         ]);
 
-        return PublishForm::make($this->blueprintBlueprint($sectionDisabled))
+        return PublishForm::make($this->blueprintBlueprint())
             ->icon('blueprints')
             ->title(sprintf('%s › %s — ', $sectionTitle, $blueprintTitle).__('Schema Blueprint Defaults'))
             ->values($repository->get($sectionHandle, $blueprintHandle, $sectionType))
@@ -154,10 +134,7 @@ class SchemaBlueprintDefaultsController extends CpController
     ): array {
         $this->authorize('edit schema blueprint defaults');
 
-        // A disabled section sets only what the form shows, each inherit field's default and
-        // read_only, so the submitted values are processed the same either way.
-        // @pest-mutate-ignore: FalseToTrue
-        $blueprint = $this->blueprintBlueprint(false);
+        $blueprint = $this->blueprintBlueprint();
 
         /** @var array<string, mixed> $values */
         $values = PublishForm::make($blueprint)->submit($request->all());
@@ -173,10 +150,10 @@ class SchemaBlueprintDefaultsController extends CpController
         return ['saved' => true];
     }
 
-    protected function blueprintBlueprint(bool $sectionDisabled): FieldsBlueprint
+    protected function blueprintBlueprint(): FieldsBlueprint
     {
         return SchemaTemplatesFields::toBlueprint(
-            SchemaTemplatesFields::blueprintDefaults($sectionDisabled)
+            SchemaTemplatesFields::blueprintDefaults()
         );
     }
 }

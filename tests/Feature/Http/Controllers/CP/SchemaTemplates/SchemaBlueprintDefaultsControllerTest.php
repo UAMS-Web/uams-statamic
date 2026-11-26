@@ -46,12 +46,12 @@ covers(SchemaBlueprintDefaultsController::class);
  * The site and section defaults are stubbed, so the real `resources/addons` file is never
  * read. The acting user is never saved, so nothing is written to the `users` submodule.
  *
- * Mutation: 100% on App\Http\Controllers\CP\SchemaTemplates\SchemaBlueprintDefaultsController
- * (72 mutants), measured on macOS on 2026-11-25 without --covered-only, with one equivalent
- * annotated in update(): the flag that marks the section disabled changes only each inherit
- * field's default and read_only, which saving does not read. Every killable mutant is dead.
- * That run predates the match in edit() that decides the section's state
- * (UAMS-Web/uams-statamic#1539), whose arms were mutated by hand.
+ * The inherit fields are never read-only, and they default to "Inherit" whatever the site and
+ * the section say (UAMS-Web/uams-statamic#1549, built in #1555): the blueprint's own
+ * `enabled`, on this form and never locked, can turn output on, and then the cascade reads them.
+ *
+ * Mutation: no survivor on App\Http\Controllers\CP\SchemaTemplates\SchemaBlueprintDefaultsController,
+ * without --covered-only.
  *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/SchemaTemplates/SchemaBlueprintDefaultsControllerTest.php
  */
@@ -293,38 +293,38 @@ it('shows the saved defaults, and otherwise inherits', function (): void {
         ->and(data_get(blueprintDefaultsForm('taxonomy'), 'values.enabled'))->toBe('inherit');
 });
 
-it('locks the inherit fields off when the section is disabled, or follows a disabled site', function (array $site, array $section, bool $disabled): void {
+it('never locks the inherit fields, and defaults them to Inherit, whether the site and the section are enabled or not', function (array $site, array $section): void {
     blueprintDefaultsStub($site, $section);
     blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
 
     $form = blueprintDefaultsForm();
     $readOnly = blueprintDefaultsFieldSetting($form, 'read_only');
 
-    expect($readOnly['inherit_webpage_entry'] ?? null)->toBe($disabled)
-        ->and($readOnly['inherit_main_content_entry'] ?? null)->toBe($disabled)
-        ->and(data_get($form, 'values.inherit_webpage_entry'))->toBe($disabled ? 'false' : 'true')
-        ->and(data_get($form, 'values.inherit_main_content_entry'))->toBe($disabled ? 'false' : 'true');
+    expect($readOnly['inherit_webpage_entry'] ?? null)->toBeFalse()
+        ->and($readOnly['inherit_main_content_entry'] ?? null)->toBeFalse()
+        ->and(data_get($form, 'values.inherit_webpage_entry'))->toBe('true')
+        ->and(data_get($form, 'values.inherit_main_content_entry'))->toBe('true');
 })->with([
-    'nothing set' => [[], [], false],
-    'site disabled, section unset' => [['enabled' => 'false'], [], true],
-    'site disabled as a boolean, section unset' => [['enabled' => false], [], true],
-    'site enabled, section unset' => [['enabled' => 'true'], [], false],
-    'site enabled as a boolean, section unset' => [['enabled' => true], [], false],
-    'site disabled, section inherits' => [['enabled' => 'false'], ['enabled' => 'inherit'], true],
-    'site disabled as a boolean, section inherits' => [['enabled' => false], ['enabled' => 'inherit'], true],
-    'site enabled, section inherits' => [['enabled' => 'true'], ['enabled' => 'inherit'], false],
-    'site enabled as a boolean, section inherits' => [['enabled' => true], ['enabled' => 'inherit'], false],
-    'site unset, section inherits' => [[], ['enabled' => 'inherit'], false],
-    'site disabled, section enabled' => [['enabled' => 'false'], ['enabled' => 'true'], false],
-    'site disabled, section enabled as a boolean' => [['enabled' => 'false'], ['enabled' => true], false],
-    'site disabled as a boolean, section enabled as a boolean' => [['enabled' => false], ['enabled' => true], false],
-    'site enabled, section disabled' => [['enabled' => 'true'], ['enabled' => 'false'], true],
-    'site enabled, section disabled as a boolean' => [['enabled' => 'true'], ['enabled' => false], true],
-    'site unset, section disabled' => [[], ['enabled' => 'false'], true],
-    'site unset, section disabled as a boolean' => [[], ['enabled' => false], true],
+    'nothing set' => [[], []],
+    'site disabled, section unset' => [['enabled' => 'false'], []],
+    'site disabled as a boolean, section unset' => [['enabled' => false], []],
+    'site enabled, section unset' => [['enabled' => 'true'], []],
+    'site enabled as a boolean, section unset' => [['enabled' => true], []],
+    'site disabled, section inherits' => [['enabled' => 'false'], ['enabled' => 'inherit']],
+    'site disabled as a boolean, section inherits' => [['enabled' => false], ['enabled' => 'inherit']],
+    'site enabled, section inherits' => [['enabled' => 'true'], ['enabled' => 'inherit']],
+    'site enabled as a boolean, section inherits' => [['enabled' => true], ['enabled' => 'inherit']],
+    'site unset, section inherits' => [[], ['enabled' => 'inherit']],
+    'site disabled, section enabled' => [['enabled' => 'false'], ['enabled' => 'true']],
+    'site disabled, section enabled as a boolean' => [['enabled' => 'false'], ['enabled' => true]],
+    'site disabled as a boolean, section enabled as a boolean' => [['enabled' => false], ['enabled' => true]],
+    'site enabled, section disabled' => [['enabled' => 'true'], ['enabled' => 'false']],
+    'site enabled, section disabled as a boolean' => [['enabled' => 'true'], ['enabled' => false]],
+    'site unset, section disabled' => [[], ['enabled' => 'false']],
+    'site unset, section disabled as a boolean' => [[], ['enabled' => false]],
 ]);
 
-it('follows the section as its own form saves it', function (string $type, string $enabled, bool $disabled): void {
+it('defaults to Inherit whatever the section\'s own form saves', function (string $type, string $enabled, bool $disabled): void {
     blueprintDefaultsStub(['enabled' => ! $disabled]);
     app()->forgetInstance(SchemaSectionDefaultsRepository::class);
     blueprintDefaultsSection($type, 'probe_posts', 'Probe posts');
@@ -335,10 +335,13 @@ it('follows the section as its own form saves it', function (string $type, strin
     // The form stores a boolean, where the other setting is a string
     expect((new SchemaSectionDefaultsRepository)->get('probe_posts', $type)['enabled'] ?? null)->toBe(! $disabled);
 
-    $readOnly = blueprintDefaultsFieldSetting(blueprintDefaultsForm($type), 'read_only');
+    $form = blueprintDefaultsForm($type);
+    $readOnly = blueprintDefaultsFieldSetting($form, 'read_only');
 
-    expect($readOnly['inherit_webpage_entry'] ?? null)->toBe($disabled)
-        ->and($readOnly['inherit_main_content_entry'] ?? null)->toBe($disabled);
+    expect($readOnly['inherit_webpage_entry'] ?? null)->toBeFalse()
+        ->and($readOnly['inherit_main_content_entry'] ?? null)->toBeFalse()
+        ->and(data_get($form, 'values.inherit_webpage_entry'))->toBe('true')
+        ->and(data_get($form, 'values.inherit_main_content_entry'))->toBe('true');
 })->with([
     'collection disabled' => ['collection', 'false', true],
     'collection enabled' => ['collection', 'true', false],
@@ -346,7 +349,64 @@ it('follows the section as its own form saves it', function (string $type, strin
     'taxonomy enabled' => ['taxonomy', 'true', false],
 ]);
 
-it('reads the selected site\'s defaults', function (): void {
+it('never locks the inherit fields and defaults them to Inherit, whatever the site, the section and the blueprint have enabled', function (): void {
+    blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
+    $settings = ['unset' => null, "'inherit'" => 'inherit', "'true'" => 'true', 'true' => true, "'false'" => 'false', 'false' => false];
+
+    $unexpected = [];
+    foreach (array_diff_key($settings, ["'inherit'" => true]) as $siteName => $site) {
+        foreach ($settings as $sectionName => $section) {
+            blueprintDefaultsStub($site === null ? [] : ['enabled' => $site], $section === null ? [] : ['enabled' => $section]);
+
+            foreach ($settings as $blueprintName => $blueprint) {
+                (new SchemaBlueprintDefaultsRepository)->put('probe_posts', 'article', 'collection', $blueprint === null ? [] : ['enabled' => $blueprint]);
+                $form = blueprintDefaultsForm();
+                $readOnly = blueprintDefaultsFieldSetting($form, 'read_only');
+                $seen = [$readOnly['inherit_webpage_entry'] ?? null, $readOnly['inherit_main_content_entry'] ?? null, data_get($form, 'values.inherit_webpage_entry'), data_get($form, 'values.inherit_main_content_entry')];
+
+                if ($seen !== [false, false, 'true', 'true']) {
+                    $unexpected["site {$siteName}, section {$sectionName}, blueprint {$blueprintName}"] = $seen;
+                }
+            }
+        }
+    }
+
+    expect($unexpected)->toBe([]);
+});
+
+it('shows a saved inherit value as it is saved, and saving the form keeps it', function (array $site, array $section, bool $saved): void {
+    blueprintDefaultsStub($site, $section);
+    blueprintDefaultsSection('collection', 'probe_posts', 'Probe posts');
+    (new SchemaBlueprintDefaultsRepository)->put('probe_posts', 'article', 'collection', [
+        'enabled' => 'inherit',
+        'inherit_webpage_entry' => $saved,
+        'inherit_main_content_entry' => $saved,
+    ]);
+
+    $form = blueprintDefaultsForm();
+    $readOnly = blueprintDefaultsFieldSetting($form, 'read_only');
+
+    expect(data_get($form, 'values.inherit_webpage_entry'))->toBe($saved ? 'true' : 'false')
+        ->and(data_get($form, 'values.inherit_main_content_entry'))->toBe($saved ? 'true' : 'false')
+        ->and($readOnly['inherit_webpage_entry'] ?? null)->toBeFalse();
+
+    // The Control Panel submits the values the form shows (measured in a browser, #1549)
+    patchJson(blueprintDefaultsRoute('update', ['collection', 'probe_posts', 'article']), mustBeArray(data_get($form, 'values'), 'the values'))->assertOk();
+
+    expect((new SchemaBlueprintDefaultsRepository)->get('probe_posts', 'article'))->toBe([
+        'enabled' => 'inherit',
+        'inherit_webpage_entry' => $saved,
+        'inherit_main_content_entry' => $saved,
+    ]);
+})->with([
+    'Inherit saved, section disabled' => [['enabled' => 'true'], ['enabled' => false], true],
+    'Inherit saved, site disabled and section inherits' => [['enabled' => false], ['enabled' => 'inherit'], true],
+    'Inherit saved, section enabled' => [['enabled' => 'true'], ['enabled' => true], true],
+    'off saved, section disabled' => [['enabled' => 'true'], ['enabled' => false], false],
+    'off saved, section enabled' => [['enabled' => 'true'], ['enabled' => true], false],
+]);
+
+it('defaults to Inherit whatever the selected site\'s defaults say', function (): void {
     Site::setSites([
         'default' => ['name' => 'Default', 'url' => '/', 'locale' => 'en_US'],
         '7' => ['name' => 'Seven', 'url' => '/seven/', 'locale' => 'en_US'],
@@ -357,7 +417,7 @@ it('reads the selected site\'s defaults', function (): void {
     Site::setSelected('7');
     blueprintDefaultsStub(['enabled' => 'false'], ['enabled' => 'inherit'], '7');
 
-    expect(blueprintDefaultsFieldSetting(blueprintDefaultsForm(), 'read_only')['inherit_webpage_entry'] ?? null)->toBeTrue();
+    expect(data_get(blueprintDefaultsForm(), 'values.inherit_webpage_entry'))->toBe('true');
 });
 
 it('saves the submitted defaults to the section, without those left empty', function (string $type): void {
@@ -434,7 +494,7 @@ it('lists the blueprints of a section whose handle is not set', function (): voi
         ->and(data_get($props, 'props.taxonomies.0.blueprints.0.handle'))->toBe('topic');
 });
 
-it('reads the site defaults for an empty handle when the selected site has none', function (): void {
+it('builds the form when the selected site has no handle', function (): void {
     blueprintDefaultsStub(['enabled' => 'false'], ['enabled' => 'inherit'], '');
     Site::setSites(['default' => ['name' => 'Default', 'url' => '/', 'locale' => 'en_US']]);
     new ReflectionProperty(SiteInstance::class, 'handle')->setValue(mustBe(SiteInstance::class, Site::selected(), 'the selected site'), null);
@@ -444,7 +504,9 @@ it('reads the site defaults for an empty handle when the selected site has none'
 
     $field = mustBe(Field::class, $blueprint->field('inherit_webpage_entry'), 'the field');
 
-    expect($field->get('read_only'))->toBeTrue();
+    expect($field->get('default'))->toBe('true')
+        // The field's own config sets no read_only at all
+        ->and($field->get('read_only'))->toBeNull();
 });
 
 it('submits to nowhere when the Control Panel has no routes', function (): void {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\CP\SchemaTemplates;
 
 use App\Services\SchemaTemplates\SchemaSectionDefaultsRepository;
-use App\Services\SchemaTemplates\SchemaSiteDefaultsRepository;
 use App\Services\SchemaTemplates\SchemaTemplatesFields;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +12,6 @@ use Inertia\Response as InertiaResponse;
 use Statamic\CP\PublishForm;
 use Statamic\Entries\Collection as CollectionInstance;
 use Statamic\Facades\Collection;
-use Statamic\Facades\Site;
 use Statamic\Facades\Taxonomy;
 use Statamic\Fields\Blueprint as FieldsBlueprint;
 use Statamic\Http\Controllers\CP\CpController;
@@ -66,12 +64,6 @@ class SchemaSectionDefaultsController extends CpController
         $this->authorize('edit schema section defaults');
 
         $repository = app(SchemaSectionDefaultsRepository::class);
-        $siteRepo = app(SchemaSiteDefaultsRepository::class);
-        /** @var \Statamic\Sites\Site $selectedSite */
-        $selectedSite = Site::selected();
-        $selectedSiteHandle = $selectedSite->handle();
-        $siteHandle = is_scalar($selectedSiteHandle) ? (string) $selectedSiteHandle : '';
-        $siteDefaults = $siteRepo->get($siteHandle);
         $sectionDefaults = $repository->get($sectionHandle, $sectionType);
 
         $section = $sectionType === 'collection'
@@ -80,20 +72,11 @@ class SchemaSectionDefaultsController extends CpController
         $rawSectionTitle = $section && method_exists($section, 'title') ? $section->title() : $sectionHandle;
         $sectionTitle = is_scalar($rawSectionTitle) ? (string) $rawSectionTitle : $sectionHandle;
 
-        $siteDisabled = ($siteDefaults['enabled'] ?? '') === 'false' || ($siteDefaults['enabled'] ?? '') === false;
-        $defaultInheritTemplate = ! $siteDisabled;
-
-        $values = array_merge([
-            'enabled' => 'inherit',
-            'inherit_webpage_provider' => $defaultInheritTemplate,
-            'webpage_provider' => '',
-            'inherit_main_content_provider' => $defaultInheritTemplate,
-            'main_content_provider' => '',
-        ], $sectionDefaults);
+        $values = array_merge(['enabled' => 'inherit'], $sectionDefaults);
 
         $updateRoute = cp_route('schema-templates.section-defaults.update', [$sectionType, $sectionHandle]);
 
-        return PublishForm::make($this->sectionBlueprint($siteDisabled))
+        return PublishForm::make($this->sectionBlueprint())
             ->icon('folder')
             ->title($sectionTitle.' — '.__('Schema Section Defaults'))
             ->values($values)
@@ -107,15 +90,8 @@ class SchemaSectionDefaultsController extends CpController
     {
         $this->authorize('edit schema section defaults');
 
-        $siteRepo = app(SchemaSiteDefaultsRepository::class);
-        /** @var \Statamic\Sites\Site $selectedSite */
-        $selectedSite = Site::selected();
-        $selectedSiteHandle = $selectedSite->handle();
-        $siteDefaults = $siteRepo->get(is_scalar($selectedSiteHandle) ? (string) $selectedSiteHandle : '');
-        $siteDisabled = ($siteDefaults['enabled'] ?? '') === 'false' || ($siteDefaults['enabled'] ?? '') === false;
-
         /** @var array<string, mixed> $values */
-        $values = PublishForm::make($this->sectionBlueprint($siteDisabled))->submit($request->all());
+        $values = PublishForm::make($this->sectionBlueprint())->submit($request->all());
         $filtered = array_filter($values, fn ($v): bool => $v !== null && $v !== '');
 
         app(SchemaSectionDefaultsRepository::class)->put($sectionHandle, $sectionType, $filtered);
@@ -123,10 +99,10 @@ class SchemaSectionDefaultsController extends CpController
         return ['saved' => true];
     }
 
-    protected function sectionBlueprint(bool $siteDisabled): FieldsBlueprint
+    protected function sectionBlueprint(): FieldsBlueprint
     {
         return SchemaTemplatesFields::toBlueprint(
-            SchemaTemplatesFields::sectionDefaults($siteDisabled)
+            SchemaTemplatesFields::sectionDefaults()
         );
     }
 }
