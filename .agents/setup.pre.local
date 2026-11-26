@@ -3,8 +3,7 @@
 # The shared .agents/setup, synced from UAMS-Web/uams-claude-skills, runs this file after it installs
 # PHP 8.4, Composer 2 and Node 22, and before it runs `composer install` and `npm ci`. Steps that need
 # the installed dependencies are in .agents/setup.local, which the shared script runs last. Step labels
-# match the ones in the current .agents/setup, and tests/Feature/Config/OrbLocalScriptsTest.php checks
-# that every current step is placed.
+# match the ones in the current .agents/setup.
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
