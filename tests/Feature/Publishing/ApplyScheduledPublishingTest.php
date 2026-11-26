@@ -26,6 +26,13 @@ use Tests\Support\StacheIsolatedTestCase;
  * holding the string a Control Panel save stores, so the job reads them through the
  * same `augment()` it uses in production.
  *
+ * Mutation: no unexplained survivor on App\Jobs\ApplyScheduledPublishing, without
+ * --covered-only, with three equivalents annotated in the class. `array_values()` in
+ * `collections()` re-indexes nothing, because the registrations hold no duplicate and
+ * `array_unique()` can drop only the last item. The guard after `Field::fieldtype()` cannot
+ * run, because that method returns a Fieldtype or throws: its `InstanceOfToTrue` and the
+ * `RemoveEarlyReturn` inside it change nothing.
+ *
  * @covers \App\Jobs\ApplyScheduledPublishing
  *
  * @command  php artisan test --compact tests/Feature/Publishing/ApplyScheduledPublishingTest.php
@@ -487,4 +494,234 @@ it('warns about a stored schedule whose blueprint has no field for it', function
     expect($warning['level'] ?? null)->toBe('warning')
         ->and($warning['context'] ?? null)->toMatchArray(['id' => $page->id(), 'blueprint' => 'bare_page', 'field' => 'publish_at'])
         ->and(reloadScheduledEntry($page)->published())->toBeFalse();
+});
+
+/**
+ * Record every log line the run writes.
+ *
+ * @return ArrayObject<int, array{level: string, message: string, context: array<mixed>}>
+ */
+function scheduledLogLines(): ArrayObject
+{
+    /** @var ArrayObject<int, array{level: string, message: string, context: array<mixed>}> $lines */
+    $lines = new ArrayObject;
+    Event::listen(MessageLogged::class, function (MessageLogged $event) use ($lines): void {
+        $lines->append(['level' => $event->level, 'message' => $event->message, 'context' => $event->context]);
+    });
+
+    return $lines;
+}
+
+/**
+ * The log lines with the given message.
+ *
+ * @param  ArrayObject<int, array{level: string, message: string, context: array<mixed>}>  $lines
+ * @return list<array{level: string, message: string, context: array<mixed>}>
+ */
+function scheduledLogLinesFor(ArrayObject $lines, string $message): array
+{
+    return array_values(array_filter($lines->getArrayCopy(), fn (array $line): bool => $line['message'] === $message));
+}
+
+it('writes both the status and the published flag itself, without the status listener', function (): void {
+    $up = scheduledPerson('self-up', 'draft', ['publish_at' => '2026-06-15 16:00']);
+    $down = scheduledPerson('self-down', 'published', ['unpublish_at' => '2026-06-15 16:00']);
+
+    // With SyncEntryPublishedStatus silenced, each of the two writes is the only one
+    Event::fake([EntrySaving::class]);
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(reloadScheduledEntry($up)->published())->toBeTrue()
+        ->and(reloadScheduledEntry($up)->get('status_and_visibility'))->toBe('published')
+        ->and(reloadScheduledEntry($down)->published())->toBeFalse()
+        ->and(reloadScheduledEntry($down)->get('status_and_visibility'))->toBe('draft');
+});
+
+it('logs each transition and the run with their whole context', function (): void {
+    $lines = scheduledLogLines();
+    $person = scheduledPerson('logged-context', 'draft', ['publish_at' => '2026-06-15 16:00', 'unpublish_at' => '2026-06-15 15:00']);
+    $untouched = scheduledPerson('logged-not-yet', 'draft', ['publish_at' => '2026-06-20 16:00']);
+
+    (new ApplyScheduledPublishing)->handle();
+
+    $transition = scheduledLogLinesFor($lines, 'Applied a scheduled publish.');
+    $summary = scheduledLogLinesFor($lines, 'Applied scheduled publishing.');
+    $context = $transition[0]['context'] ?? [];
+
+    // The origin has no origin, so no `origin` key at all
+    expect(array_keys($context))->toBe(['id', 'collection', 'site', 'title', 'action', 'publish_at', 'unpublish_at'])
+        ->and(array_intersect_key($context, array_flip(['id', 'collection', 'site', 'title', 'action'])))->toBe([
+            'id' => $person->id(),
+            'collection' => 'people',
+            'site' => 'default',
+            'title' => 'Person logged-context',
+            'action' => 'published',
+        ])
+        ->and($context['publish_at'] ?? null)->toStartWith('2026-06-15T')
+        ->and($context['unpublish_at'] ?? null)->toStartWith('2026-06-15T')
+        ->and($summary[0]['context'] ?? null)->toBe([
+            'published' => 1,
+            'unpublished' => 0,
+            'failed' => 0,
+            'scheduled' => 2,
+            'now' => '2026-06-15T17:00:00+00:00',
+        ])
+        ->and(reloadScheduledEntry($untouched)->published())->toBeFalse();
+});
+
+it('logs a failed entry with its id, collection and the exception', function (): void {
+    $lines = scheduledLogLines();
+    $broken = scheduledPerson('failing-context', 'draft', ['publish_at' => '2026-06-15 16:00']);
+
+    Event::listen(EntrySaving::class, function (EntrySaving $event) use ($broken): void {
+        if ($event->entry instanceof Statamic\Entries\Entry && $event->entry->id() === $broken->id()) {
+            throw new RuntimeException('Simulated save failure');
+        }
+    });
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(scheduledLogLinesFor($lines, 'Could not apply a scheduled publishing change.')[0]['context'] ?? null)->toBe([
+        'id' => $broken->id(),
+        'collection' => 'people',
+        'exception' => 'Simulated save failure',
+    ]);
+});
+
+it('takes down a live localization after one that was not live', function (string $live): void {
+    $origin = scheduledPage('localized-order-'.$live, 'published', ['unpublish_at' => '2026-06-15 16:00']);
+
+    /** @var Statamic\Entries\Collection $collection */
+    $collection = $origin->collection();
+    $collection->sites(['default', 'health', 'health_nicu']);
+    $collection->save();
+
+    $localizations = [];
+    foreach (['health', 'health_nicu'] as $site) {
+        /** @var Statamic\Entries\Entry $localization */
+        $localization = $origin->makeLocalization($site);
+        $localization->published($site === $live);
+        $localization->saveQuietly();
+        $localizations[$site] = $localization;
+    }
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(reloadScheduledEntry($localizations['health'])->published())->toBeFalse()
+        ->and(reloadScheduledEntry($localizations['health_nicu'])->published())->toBeFalse();
+})->with([
+    'the second one live' => ['health_nicu'],
+    'the first one live' => ['health'],
+]);
+
+it('publishes only from a status that is exactly draft or pending', function (): void {
+    $lines = scheduledLogLines();
+    $person = scheduledPerson('status-not-a-string', 'draft', ['publish_at' => '2026-06-15 16:00']);
+    // A stored status that only compares loosely to one of them
+    $person->set('status_and_visibility', true);
+    $person->saveQuietly();
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(scheduledLogLinesFor($lines, 'Applied a scheduled publish.'))->toBe([])
+        ->and(reloadScheduledEntry($person)->get('publish_at'))->toBeNull();
+});
+
+it('leaves an entry that is not live alone when its unpublish_at passes', function (): void {
+    $lines = scheduledLogLines();
+    $person = scheduledPerson('already-down', 'pending', ['unpublish_at' => '2026-06-15 16:00']);
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(reloadScheduledEntry($person)->get('status_and_visibility'))->toBe('pending')
+        ->and(scheduledLogLinesFor($lines, 'Applied a scheduled unpublish.'))->toBe([])
+        ->and(scheduledLogLinesFor($lines, 'Applied scheduled publishing.')[0]['context']['unpublished'] ?? null)->toBe(0);
+});
+
+it('reads only the schedule fields that hold a value, so a blueprint without one is not warned about', function (array $schedule): void {
+    $lines = scheduledLogLines();
+
+    /** @var Statamic\Fields\Blueprint $publishOnly */
+    $publishOnly = Blueprint::makeFromFields([
+        'title' => ['type' => 'text'],
+        'status_and_visibility' => ['type' => 'select', 'localizable' => false],
+        'publish_at' => ['type' => 'date', 'time_enabled' => true, 'localizable' => false],
+    ]);
+    $publishOnly->setHandle('publish_only_page');
+    $publishOnly->setNamespace('collections.pages');
+    $publishOnly->save();
+
+    /** @var Statamic\Entries\Entry $page */
+    $page = Entry::make();
+    $page->collection('pages');
+    $page->blueprint('publish_only_page');
+    $page->slug('publish-only');
+    $page->published(false);
+    $page->data(array_merge(['title' => 'Publish only', 'status_and_visibility' => 'draft', 'publish_at' => '2026-06-15 16:00'], $schedule));
+    $page->saveQuietly();
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(scheduledLogLinesFor($lines, 'Ignored a stored schedule whose blueprint has no field for it.'))->toBe([])
+        ->and(reloadScheduledEntry($page)->published())->toBeTrue();
+})->with([
+    'no unpublish_at' => [[]],
+    'an empty unpublish_at' => [['unpublish_at' => '']],
+]);
+
+it('warns about a schedule on an entry with no blueprint, and fails nothing', function (): void {
+    $lines = scheduledLogLines();
+
+    $entry = Mockery::mock(Statamic\Entries\Entry::class);
+    $entry->shouldReceive('get')->with('publish_at')->andReturn('2026-06-15 16:00');
+    $entry->shouldReceive('get')->with('unpublish_at')->andReturn(null);
+    $entry->shouldReceive('blueprint')->andReturn(null);
+    $entry->shouldReceive('id')->andReturn('no-blueprint');
+    $entry->shouldReceive('collectionHandle')->andReturn('pages');
+    $entry->shouldNotReceive('save');
+
+    $query = Mockery::mock();
+    $query->shouldReceive('whereIn')->andReturnSelf();
+    $query->shouldReceive('get')->andReturn(collect([$entry]));
+    Entry::shouldReceive('query')->andReturn($query);
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(scheduledLogLinesFor($lines, 'Ignored a stored schedule whose blueprint has no field for it.')[0]['context'] ?? null)->toBe([
+        'id' => 'no-blueprint',
+        'collection' => 'pages',
+        'blueprint' => null,
+        'field' => 'publish_at',
+    ])
+        ->and(scheduledLogLinesFor($lines, 'Could not apply a scheduled publishing change.'))->toBe([])
+        ->and(scheduledLogLinesFor($lines, 'Applied scheduled publishing.')[0]['context']['failed'] ?? null)->toBe(0);
+});
+
+it('ignores a schedule field that does not hold a date', function (): void {
+    $lines = scheduledLogLines();
+
+    /** @var Statamic\Fields\Blueprint $textSchedule */
+    $textSchedule = Blueprint::makeFromFields([
+        'title' => ['type' => 'text'],
+        'status_and_visibility' => ['type' => 'select', 'localizable' => false],
+        'publish_at' => ['type' => 'text', 'localizable' => false],
+    ]);
+    $textSchedule->setHandle('text_schedule_page');
+    $textSchedule->setNamespace('collections.pages');
+    $textSchedule->save();
+
+    /** @var Statamic\Entries\Entry $page */
+    $page = Entry::make();
+    $page->collection('pages');
+    $page->blueprint('text_schedule_page');
+    $page->slug('text-schedule');
+    $page->published(false);
+    $page->data(['title' => 'Text schedule', 'status_and_visibility' => 'draft', 'publish_at' => '2026-06-15 16:00']);
+    $page->saveQuietly();
+
+    (new ApplyScheduledPublishing)->handle();
+
+    expect(reloadScheduledEntry($page)->published())->toBeFalse()
+        ->and(scheduledLogLinesFor($lines, 'Applied scheduled publishing.')[0]['context']['failed'] ?? null)->toBe(0);
 });
