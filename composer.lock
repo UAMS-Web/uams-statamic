@@ -13153,16 +13153,16 @@
         },
         {
             "name": "uams-web/aether-wordpress-importer-cleanup",
-            "version": "v2.0.0",
+            "version": "v2.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup.git",
-                "reference": "45001fcfda7a239a50ddcf8c6f953772420ea36a"
+                "reference": "51a71a94817b91bca96596da44b1278201751805"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer-cleanup/zipball/45001fcfda7a239a50ddcf8c6f953772420ea36a",
-                "reference": "45001fcfda7a239a50ddcf8c6f953772420ea36a",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-wordpress-importer-cleanup/zipball/51a71a94817b91bca96596da44b1278201751805",
+                "reference": "51a71a94817b91bca96596da44b1278201751805",
                 "shasum": ""
             },
             "require": {
@@ -13171,19 +13171,24 @@
                 "php": "^8.4"
             },
             "require-dev": {
+                "cweagans/composer-patches": "^2.0",
                 "laravel/pint": "^1.29",
                 "mrpunyapal/peststan": "^0.2.10",
-                "pestphp/pest": "^4.7",
-                "pestphp/pest-plugin-drift": "^4.1",
+                "pestphp/pest": "^5.3",
+                "pestphp/pest-plugin-drift": "^5.0",
                 "phpstan/extension-installer": "^1.4",
                 "phpstan/phpstan": "^2.0",
                 "phpstan/phpstan-strict-rules": "^2.0",
-                "rector/rector": "^2.6"
+                "rector/rector": "^2.6",
+                "uams-web/patches-pest-plugin-mutate": "^1.4.1"
             },
             "bin": [
                 "bin/wxr-cleanup"
             ],
             "type": "library",
+            "extra": {
+                "composer-exit-on-patch-failure": true
+            },
             "autoload": {
                 "psr-4": {
                     "UAMSWeb\\Aether\\WordPressImporter\\Cleanup\\": "src/"
@@ -13197,6 +13202,10 @@
             "scripts": {
                 "test": [
                     "pest"
+                ],
+                "mutate": [
+                    "Composer\\Config::disableProcessTimeout",
+                    "@php vendor/bin/pest --mutate --path=src"
                 ],
                 "refactor": [
                     "rector"
@@ -13225,10 +13234,10 @@
             ],
             "description": "Deterministic CLI tool to transform WordPress WXR exports — strips legacy <table> markup for Statamic import.",
             "support": {
-                "source": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup/tree/v2.0.0",
+                "source": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup/tree/v2.2.1",
                 "issues": "https://github.com/UAMS-Web/aether-wordpress-importer-cleanup/issues"
             },
-            "time": "2026-11-01T10:53:08+00:00"
+            "time": "2026-11-23T12:25:34+00:00"
         },
         {
             "name": "uams-web/patches-pest-plugin-mutate",
