@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
+# Shared Amp orb wake check (UAMS-Web/uams-claude-skills#562). Written by the sync as .agents/resume;
+# edit it in uams-claude-skills, never in the repository. It installs nothing: it reports a missing
+# tool or dependency and points at .agents/setup. A repository's own checks go in
+# .agents/resume.local, which this script runs last when the file exists.
 set -euo pipefail
 
-# SQLite and file-backed caches need no daemon or per-user authentication.
-# Keep dependency installation in setup so snapshots remain fast to activate.
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-php -r 'exit(PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 4 ? 0 : 1);'
-test -f vendor/autoload.php
-test -d node_modules
-printf 'Orb dependencies are available.\n'
+for tool in php composer node npm; do
+    command -v "$tool" >/dev/null || { echo "Missing $tool; run .agents/setup" >&2; exit 1; }
+done
+if [[ -f composer.json && ! -f vendor/autoload.php ]]; then
+    echo 'Missing Composer dependencies; run .agents/setup' >&2
+    exit 1
+fi
+if [[ -f package-lock.json && ! -d node_modules ]]; then
+    echo 'Missing npm dependencies; run .agents/setup' >&2
+    exit 1
+fi
+if [[ -f .agents/resume.local ]]; then
+    bash .agents/resume.local
+fi
+echo 'Orb toolchain and dependencies available'

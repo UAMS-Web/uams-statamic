@@ -337,6 +337,7 @@ Mutation-clean, not a line-% floor and not a literal `100%`. Line and statement 
    - **equivalent:** no input can kill it; annotate with `@pest-mutate-ignore` and record the reason in the covering test's docblock.
 
 4. **Take the closing measurement from a mutation run on Linux** (UAMS-Web/uams-claude-skills#543): the shared workflow's `mutate` job on `ubuntu-latest`, or a local Linux run with the same command. A mutation run on Windows or macOS may be used while working, but it never closes a coverage ticket. A Windows run can score mutants the tests never detect as killed: on 2026-11-05, in `UAMS-Web/aether-wordpress-importer-cleanup`, the same 3153 mutants scored 100.00% on `windows-latest` while `ubuntu-latest` and `macos-latest` each reported 215 untested, and a control pull request that applied two of those mutants by hand passed the whole suite on all three runners. The cause is not yet found, so a Windows score cannot show the bar is met even with the patched instrument.
+   **In this repository a macOS mutation run with the same command also closes a coverage slice** (UAMS-Web/uams-claude-skills#921). For those slices, read the statement above that a run on Windows or macOS never closes a coverage ticket as applying to Windows only: a Windows run still never does.
 
 **The criterion is *no unexplained survivors*, not a score.** A percentage collapses "unexamined gap" and "provably equivalent mutant" into one number. Chasing a literal `100%` pushes agents to delete defensive guards or invent circular assertions. Accepted equivalents stay; the test docblock states which survive and why.
 
@@ -357,7 +358,7 @@ Before trusting a mutation score:
 When the coverage ticket closes, record on it:
 
 - The population list, or how it is generated from that repository's `phpunit.xml` / Pest config (and any deliberate exclusions).
-- **The run that met the bar, named:** the workflow run id (or the command, for a local Linux run), the platform (Linux) and the score. A closing note that names only a Windows or macOS run does not meet the bar.
+- **The run that met the bar, named:** the workflow run id (or the command, for a local run), the platform (Linux, or macOS for a coverage slice of this repository, UAMS-Web/uams-claude-skills#921) and the score. A closing note that names only a Windows run, or only a macOS run for a ticket that is not a slice, does not meet the bar.
 - Per class, or an equivalent rollup: the platform the score was taken on, mutant counts, and that every killable mutant is dead with equivalents explained.
 - The standing pin-before-change rule stays in force for the life of the repository; closing the follow-up does not retire it.
 
