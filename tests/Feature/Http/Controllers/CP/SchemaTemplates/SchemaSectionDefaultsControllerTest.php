@@ -153,3 +153,19 @@ it('shows a saved inherit value as it is saved, and saving the form keeps it', f
     'off saved, site disabled' => [['enabled' => false], 'inherit', false],
     'off saved, site enabled' => [['enabled' => true], 'inherit', false],
 ]);
+
+it('shows the section as inheriting the site when nothing is saved, and the saved setting otherwise', function (): void {
+    sectionDefaultsSite(['enabled' => false]);
+
+    expect(data_get(sectionDefaultsForm(), 'values'))->toBe([
+        'enabled' => 'inherit',
+        'inherit_webpage_entry' => 'true',
+        'webpage_entry' => [],
+        'inherit_main_content_entry' => 'true',
+        'main_content_entry' => [],
+    ]);
+
+    (new SchemaSectionDefaultsRepository)->put('probe_posts', 'collection', ['enabled' => false]);
+
+    expect(data_get(sectionDefaultsForm(), 'values.enabled'))->toBe('false');
+});
