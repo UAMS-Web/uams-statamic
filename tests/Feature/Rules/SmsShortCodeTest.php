@@ -64,5 +64,10 @@ it('leaves empty input to other rules', function (mixed $value): void {
 })->with([
     'null' => [null],
     'empty string' => [''],
-    'string zero' => ['0'],
 ]);
+
+// Since aether-fieldtypes v0.4.0 (UAMS-Web/aether-fieldtypes#74) only null, false, an empty string
+// and an empty array count as empty; "0" is a value and is validated.
+it('rejects the string zero as a value rather than skipping it as empty', function (): void {
+    expect(smsShortCodeMessages('0'))->toBe([__('statamic::validation.sms_short_code')]);
+});
