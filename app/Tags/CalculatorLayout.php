@@ -128,10 +128,17 @@ class CalculatorLayout extends Tags
     protected function captionHtml(array $parts, string $primaryHandle): string
     {
         $formula = '';
+        // Equivalent: the label is read only when the formula is not empty, and the two
+        // are set together below.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty
         $primaryLabel = '';
         $labels = [];
 
         foreach ($parts as $part) {
+            // Equivalent: a part whose handle is not text is skipped below; any other
+            // stand-in would only add a label under a key no identifier matches, since
+            // identifiers have no spaces.
+            // @pest-mutate-ignore: EmptyStringToNotEmpty
             $handle = \is_string($part['handle'] ?? null) ? $part['handle'] : '';
             if ($handle === '') {
                 continue;
@@ -154,6 +161,8 @@ class CalculatorLayout extends Tags
         // Every segment is HTML-escaped before it lands in the raw-rendered
         // caption, so a formula containing `<`, `>`, `"` or `=` cannot inject
         // markup; only the `<strong>` wrappers we add ourselves stay literal.
+        // Equivalent: a limit of 0 means no limit, as -1 does.
+        // @pest-mutate-ignore: IncrementInteger
         $segments = preg_split(
             '/([a-zA-Z_]\w*)/',
             $formula,
@@ -161,6 +170,9 @@ class CalculatorLayout extends Tags
             PREG_SPLIT_DELIM_CAPTURE
         );
 
+        // Equivalent: this fixed pattern, without the `u` flag, cannot fail to split, so
+        // the fallback is never taken.
+        // @pest-mutate-ignore: FalseToTrue
         if ($segments === false) {
             $segments = [];
         }
@@ -170,9 +182,16 @@ class CalculatorLayout extends Tags
             if ($index % 2 === 1) {
                 // Identifier: a known part handle becomes a bold label; anything
                 // else (mathjs function names like `floor`/`sqrt`) passes through.
-                $pretty .= isset($labels[$segment])
-                    ? '<strong>'.htmlspecialchars($labels[$segment], ENT_QUOTES, 'UTF-8').'</strong>'
-                    : htmlspecialchars($segment, ENT_QUOTES, 'UTF-8');
+                if (isset($labels[$segment])) {
+                    $pretty .= '<strong>'.htmlspecialchars($labels[$segment], ENT_QUOTES, 'UTF-8').'</strong>';
+
+                    continue;
+                }
+
+                // Equivalent: an identifier is letters, digits and underscores, which
+                // escaping leaves alone. It is escaped all the same, as every segment is.
+                // @pest-mutate-ignore: UnwrapHtmlspecialchars
+                $pretty .= htmlspecialchars($segment, ENT_QUOTES, 'UTF-8');
 
                 continue;
             }
@@ -234,12 +253,18 @@ class CalculatorLayout extends Tags
             }
         }
 
+        // Equivalent: an empty formula has no identifiers, so the result below is the
+        // same empty list.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty, RemoveEarlyReturn
         if ($primaryFormula === '') {
             return [];
         }
 
         preg_match_all('/[a-zA-Z_]\w*/', $primaryFormula, $matches);
         $identifiers = array_unique($matches[0]);
+        // Equivalent: an identifier is never empty and has no spaces, so neither the
+        // filter nor the stand-in for a handle that is not text changes the intersection.
+        // @pest-mutate-ignore: EmptyStringToNotEmpty, UnwrapArrayFilter
         $partHandles = array_filter(array_map(fn (array $p): string => \is_string($p['handle'] ?? null) ? $p['handle'] : '', $parts));
 
         return array_values(array_intersect($identifiers, $partHandles));

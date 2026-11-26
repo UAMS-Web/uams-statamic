@@ -45,6 +45,9 @@ class CanViewPrivateEntry extends Tags
         // contract return so the shared rule can read the entry's collection.
         $entry = EntryFacade::find((string) $id);
 
+        // Equivalent: this application's entry repository returns an Entry or null, so the
+        // narrowing never turns an entry away.
+        // @pest-mutate-ignore: InstanceOfToTrue
         return app(PrivateEntryAccess::class)->canView($entry instanceof Entry ? $entry : null);
     }
 }
