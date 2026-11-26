@@ -1,5 +1,5 @@
 {
-    "_hash": "2d5a068ac6758196c90e54e0048b5a0e2d2b0269662984ead3a63da1c1773dcd",
+    "_hash": "0eb63fa1167c255ba82d6eae5e071dfd7ca8ed53881c375744b508aec8217a41",
     "patches": {
         "pestphp/pest-plugin-browser": [
             {
@@ -201,16 +201,6 @@
                 "description": "Add blueprint-aware taxonomy create labels",
                 "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-taxonomy-create-label-blueprint.patch",
                 "sha256": "97c8ac5b5de383513981adeb14c0c725beb1f74c22b832a630fddf9e263dd5fe",
-                "depth": 1,
-                "extra": {
-                    "provenance": "dependency:statamic/cms"
-                }
-            },
-            {
-                "package": "statamic/cms",
-                "description": "Align CP updates badge with updater availableUpdatesCount",
-                "url": "vendor/uams-web/patches-statamic-cms/patches/statamic-updates-overview-badge.patch",
-                "sha256": "8a89d44c84095f3e0a2560f0419d017bf58d090a46e14639d2ff3c9161a9fe6c",
                 "depth": 1,
                 "extra": {
                     "provenance": "dependency:statamic/cms"
