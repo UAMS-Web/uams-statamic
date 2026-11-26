@@ -16,17 +16,19 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 
 /**
- * HTTP coverage for the GPS picker's server-side Nominatim address-search proxy
- * (App\Http\Controllers\CP\Gps\NominatimSearchController, UAMS-Web/uams-statamic-archive#984).
+ * HTTP coverage for the GPS picker's address search as the site serves it. The shared
+ * fieldtype add-on answers `gps/nominatim-search`
+ * (UAMSWeb\Aether\Fieldtypes\Http\Controllers\NominatimSearchController), and the site binds the
+ * add-on's egress guard to App\Support\Http\OutboundUrlEgressGuard (UAMS-Web/uams-statamic#1256,
+ * UAMS-Web/uams-statamic-archive#984).
  *
- * Proves the proxy: gates on CP auth; normalizes the upstream geocoding response
- * into the picker's { lat, lng, label } shape (the geocode-result -> coordinate
- * update path); identifies itself with a descriptive User-Agent; enforces the
- * Nominatim usage policy's one-request-per-second cap; routes the outbound fetch
- * through the SSRF egress guard; and degrades to an empty result set on upstream
- * failure. The external service and DNS resolution are both stubbed so the test
- * stays offline (Http::fake + OutboundUrlGuard::setResolver, mirroring
- * tests/Feature/Rules/FeedUrlSsrfTest).
+ * Proves the endpoint: gates on CP auth; normalizes the upstream geocoding response
+ * into the picker's { lat, lng, label } shape; identifies itself with a descriptive
+ * User-Agent; enforces the Nominatim usage policy's one-request-per-second cap; routes
+ * the outbound fetch through the site's SSRF egress guard; and degrades to an empty
+ * result set on upstream failure. The external service and DNS resolution are both
+ * stubbed so the test stays offline (Http::fake + OutboundUrlGuard::setResolver,
+ * mirroring tests/Feature/Rules/FeedUrlSsrfTest).
  *
  * @command  php artisan test --compact tests/Feature/Http/Controllers/CP/Gps/NominatimSearchControllerTest.php
  */
@@ -218,6 +220,27 @@ it('refuses to fetch when the configured endpoint targets an internal host (SSRF
     actAsNominatimSearchUser();
     config()->set('maps.nominatim.endpoint', 'http://169.254.169.254/search');
     Http::fake();
+
+    /** @var string $url */
+    $url = cp_route('gps.nominatim-search', ['q' => 'Little Rock']);
+    $response = getJson($url);
+
+    $response->assertStatus(502);
+    $response->assertExactJson(['results' => []]);
+    Http::assertNothingSent();
+});
+
+it('refuses to fetch when the site resolver puts the endpoint host on a private network', function (): void {
+    actAsNominatimSearchUser();
+
+    // Only the site guard consults this resolver; the add-on's default guard asks the
+    // system resolver and would let the request through to the fake below.
+    OutboundUrlGuard::setResolver(fn (string $host): array => ['10.0.0.5']);
+    Http::fake([
+        'nominatim.openstreetmap.org/*' => Http::response([
+            ['lat' => '34.75', 'lon' => '-92.32', 'display_name' => 'Unreachable'],
+        ], 200),
+    ]);
 
     /** @var string $url */
     $url = cp_route('gps.nominatim-search', ['q' => 'Little Rock']);
