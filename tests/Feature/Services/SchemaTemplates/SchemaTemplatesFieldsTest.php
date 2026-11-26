@@ -15,7 +15,9 @@ covers(SchemaTemplatesFields::class);
  *
  * The fixture holds each builder's output as `main` produced it at
  * `c6ffa9440`, in the testing environment (locale `en`, entries collection
- * `schema_objects`). A strict comparison of the whole array kills every
+ * `schema_objects`), with the inherit fields neither read-only nor defaulting to
+ * "off" under a disabled parent, which UAMS-Web/uams-statamic#1555 removed, so each
+ * builder has one output. A strict comparison of the whole array kills every
  * changed label, option, default, flag and field order. The remaining cases
  * pin the configured collection, its fallback, and `toBlueprint()`.
  *
@@ -75,32 +77,22 @@ it('builds the pinned site defaults contents', function (): void {
     expect(SchemaTemplatesFields::siteDefaults())->toBe(pinnedSchemaTemplatesFields()['siteDefaults']);
 });
 
-it('builds the pinned section defaults contents', function (bool $siteDisabled): void {
-    $key = 'sectionDefaults('.($siteDisabled ? 'true' : 'false').')';
+it('builds the pinned section defaults contents', function (): void {
+    expect(SchemaTemplatesFields::sectionDefaults())->toBe(pinnedSchemaTemplatesFields()['sectionDefaults()']);
+});
 
-    expect(SchemaTemplatesFields::sectionDefaults($siteDisabled))->toBe(pinnedSchemaTemplatesFields()[$key]);
-})->with([
-    'site enabled' => false,
-    'site disabled' => true,
-]);
-
-it('builds the pinned blueprint defaults contents', function (bool $sectionDisabled): void {
-    $key = 'blueprintDefaults('.($sectionDisabled ? 'true' : 'false').')';
-
-    expect(SchemaTemplatesFields::blueprintDefaults($sectionDisabled))->toBe(pinnedSchemaTemplatesFields()[$key]);
-})->with([
-    'section enabled' => false,
-    'section disabled' => true,
-]);
+it('builds the pinned blueprint defaults contents', function (): void {
+    expect(SchemaTemplatesFields::blueprintDefaults())->toBe(pinnedSchemaTemplatesFields()['blueprintDefaults()']);
+});
 
 it('points every entries field at the configured collection', function (): void {
     Config::set('schema_object.entries_collection', 'other_objects');
 
     expect(schemaTemplatesEntriesCollections(SchemaTemplatesFields::siteDefaults()))
         ->toBe(array_fill(0, 4, ['other_objects']))
-        ->and(schemaTemplatesEntriesCollections(SchemaTemplatesFields::sectionDefaults(false)))
+        ->and(schemaTemplatesEntriesCollections(SchemaTemplatesFields::sectionDefaults()))
         ->toBe(array_fill(0, 2, ['other_objects']))
-        ->and(schemaTemplatesEntriesCollections(SchemaTemplatesFields::blueprintDefaults(false)))
+        ->and(schemaTemplatesEntriesCollections(SchemaTemplatesFields::blueprintDefaults()))
         ->toBe(array_fill(0, 2, ['other_objects']));
 });
 

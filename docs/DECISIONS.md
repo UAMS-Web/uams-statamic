@@ -4113,3 +4113,15 @@ The builder's lookup lists are this site's content and live in `UAMS-Web/uams-st
 **Residual.** Not measured: whether any environment enforces `style-src` today, and whether the news-release PDF prints its icons, which #1546 records. One extra stylesheet request in `<head>` delayed first paint enough to cause a 0.13 header shift in the measurements, so #1546 delivers the CSS inside an existing stylesheet. The 2026-10-27 entry's accepted cost names a knowledge-base topic field as one an editor types an icon into; #342 found those fields hidden and read by no template. The editor-entered name that reaches a page is the header icon link's `icon`.
 
 **Companion.** #342 (the decision, its `## Decision` and the [measurements](https://github.com/UAMS-Web/uams-statamic/issues/342#issuecomment-7176530932)); #1546 (the build); #33 (the enforcing flip); UAMS-Web/uams-statamic-archive#3395 and UAMS-Web/uams-statamic-archive#3398 (Font Awesome Free 7).
+
+## 2026-11-25: The Schema defaults forms never lock their inherit fields, and default them to "Inherit" (#1549, #1555)
+
+**Decision.** Decided by Josh on 2026-11-25 on #1549, after the options were priced there. "Inherit Webpage Entry" and "Inherit Main Content Entry" are never read-only on the Schema Section Defaults or the Schema Blueprint Defaults form. With nothing saved, each defaults to "Inherit", whatever the site, the section or the blueprint has enabled. A saved value is shown as it is saved. #1555 removes the lock #1539 and #1543 added, and the "off" default under a disabled parent with it.
+
+**Why.** The blueprint's own `enabled`, on the blueprint form and never locked, can turn output on, and then `SchemaTemplatesCascadeService::resolveWebpageEntry()` and `resolveMainContentEntry()` read the inherit fields. Under a section form, the blueprint below can do the same. A locked field could therefore still decide the output, and an editor could not change it until the section was enabled. Without the lock, an "off" default would be saved as `inherit_*: false` with no entry, which stops that level inheriting the section's or the site's entry once output is enabled. Measured in a browser on #1549, the Control Panel submits a read-only field's value, so removing the lock does not change what a save stores for a field with a saved value.
+
+**Rejected.** *Today's lock*: it keeps the editor stuck on a field that can still decide the output. *A live lock on the blueprint form*, following the unsaved `enabled` field in the browser: a custom fieldtype and a browser test, about 7 to 9 files, and it matches the cascade on one form only, since the section form cannot match. *No lock with the "off" default kept*: a save under a disabled parent stores "custom, no entry".
+
+**Residual.** Values already stored are not changed, including an `inherit_*: false` with no entry that an earlier save under a disabled parent stored.
+
+**Companion.** #1549 (the decision, its prices and the browser measurement); #1542 (the display decision); #1555 (the build); #1539 and #1543 (the lock this removes).
