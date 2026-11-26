@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Tags\ChildSiteUrl;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Statamic\Facades\Antlers;
 use Statamic\Facades\Site;
+use Statamic\Fields\Value;
 use Statamic\Sites\Site as SiteObject;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, MockeryPHPUnitIntegration::class);
+
+covers(ChildSiteUrl::class);
 
 /**
  * Coverage for the `{{ child_site_url }}` tag (UAMS-Web/uams-statamic-archive#219): in the primary-nav loop it
@@ -15,7 +20,9 @@ uses(TestCase::class);
  * field in context) to its absolute URL, and returns an empty string for a
  * normal page so the nav falls back to the page's own URL.
  *
- * @covers \App\Tags\ChildSiteUrl
+ * Mutation: 100% on App\Tags\ChildSiteUrl (31 mutants), measured on macOS 26.5 (arm64) on 2026-11-25 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over this file,
+ * PostsCategoryLinkUrlTagTest and PostsCategoryLinkNavTest (UAMS-Web/uams-statamic#801). No mutant
+ * is annotated.
  *
  * @command  php artisan test --compact tests/Feature/Tags/ChildSiteUrlTagTest.php
  */
@@ -62,4 +69,56 @@ it('resolves the first valid site from an iterable of handles', function (): voi
 
     /** @var SiteObject $health */
     expect(trim($out))->toBe($health->absoluteUrl());
+});
+
+/**
+ * The tag's output for a context and parameters, without Antlers.
+ *
+ * @param  array<string, mixed>  $context
+ * @param  array<string, mixed>  $params
+ */
+function childSiteUrlFor(array $context, array $params = []): string
+{
+    $tag = new ChildSiteUrl;
+    $tag->setContext($context);
+    $tag->setParameters($params);
+
+    return $tag->index();
+}
+
+it('prefers the handle parameter over the context', function (): void {
+    $health = mustBe(SiteObject::class, Site::get('health'), 'the site');
+
+    expect(childSiteUrlFor(['child_site' => 'default'], ['handle' => 'health']))->toBe($health->absoluteUrl());
+});
+
+it('reads a field value wrapping the selected site', function (): void {
+    $health = mustBe(SiteObject::class, Site::get('health'), 'the site');
+
+    expect(childSiteUrlFor(['child_site' => new Value('health')]))->toBe($health->absoluteUrl());
+});
+
+it('skips the items of a list that name no site', function (): void {
+    $health = mustBe(SiteObject::class, Site::get('health'), 'the site');
+
+    expect(childSiteUrlFor(['child_site' => ['definitely_not_a_site_xyz', 7, 'health']]))->toBe($health->absoluteUrl());
+});
+
+it('looks up no site for an empty handle', function (): void {
+    Site::shouldReceive('get')->never();
+
+    expect(childSiteUrlFor(['child_site' => '']))->toBe('');
+});
+
+it('returns an empty string when the site lookup gives something other than a site', function (): void {
+    Site::shouldReceive('get')->with('health')->andReturn('health');
+
+    expect(childSiteUrlFor(['child_site' => 'health']))->toBe('');
+});
+
+it('returns an empty string when the site has no text URL', function (): void {
+    $site = Mockery::mock(SiteObject::class);
+    $site->allows('absoluteUrl')->andReturns(null);
+
+    expect(childSiteUrlFor(['child_site' => $site]))->toBe('');
 });

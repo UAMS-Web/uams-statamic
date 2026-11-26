@@ -21,6 +21,10 @@ covers(ClinicalResourceFilter::class);
  * `ClinicalResourceProviderFilter` is final, so the tag is exercised against a
  * real filter with Entry/Site facade stubs.
  *
+ * Mutation: 100% on App\Tags\ClinicalResourceFilter (9 mutants), measured on macOS 26.5 (arm64) on 2026-11-25 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only,
+ * over this file and ClinicalResourcesTemplatesTest (UAMS-Web/uams-statamic#801), with the one
+ * equivalent annotated in the tag (UnwrapTrim).
+ *
  * @command  php artisan test --compact tests/Unit/Tags/ClinicalResourceFilterMutationTest.php
  */
 

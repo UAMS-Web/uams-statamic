@@ -13,7 +13,8 @@ uses(TestCase::class);
 /**
  * Tests for the CspNonce Antlers tag (App\Tags\CspNonce).
  *
- * Mutation: 100% on App\Tags\CspNonce (7 mutants, --covered-only).
+ * Mutation: 100% on App\Tags\CspNonce (7 mutants), measured on macOS 26.5 (arm64) on 2026-11-25 with PHP 8.4.28 and Herd's Xdebug 3.5.3, without --covered-only, over this file,
+ * SecurityHeadersMiddlewareTest and GoogleTagManagerPartialTest. No mutant is annotated.
  *
  * @command  php artisan test --compact tests/Feature/Tags/CspNonceTagTest.php
  */
