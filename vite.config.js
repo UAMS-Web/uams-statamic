@@ -53,6 +53,14 @@ return {
             cssMinify: 'esbuild', // `esbuild` minifies CSS better than `lightningcss`
             rollupOptions: {
                 output: {
+                    // Run each module's body in source order whatever chunk it lands in (#1546).
+                    // Rolldown puts its CommonJS interop helper in a `rolldown-runtime` chunk
+                    // while several entries need it, and otherwise inside the shared chunk, which
+                    // no setting controls. Without the Font Awesome entry it landed in
+                    // `conditions`, which imports `mathjs`, whose `escape-latex` chunk imports the
+                    // helper back: `site.js` threw "e is not a function" and Alpine never started.
+                    // The wrapping costs about 12.5 kB gzip across the JavaScript chunks.
+                    strictExecutionOrder: true,
                     manualChunks(id) {
                         const normalizedId = id.split(path.sep).join('/');
                         if (! normalizedId.includes('node_modules')) {
@@ -96,10 +104,9 @@ return {
                             'resources/scss/bootstrap/uams_2020/app.scss', // Main UAMS 2020 theme
                             'resources/scss/bootstrap/uams_2020/uamsalert.scss', // UAMS Alert banner
                         // JS — Vite bundles theme sources in the same concat order as the WP theme
-                        // `gulpfile.js` (`paths.scripts.src` + `paths.fontawesome.src`); see
-                        // `uams-2020-theme-entry.js` and `uams-2020-fontawesome-entry.js`.
+                        // `gulpfile.js` (`paths.scripts.src`); see `uams-2020-theme-entry.js`.
+                        // Font Awesome is CSS with web fonts inside `uams_2020/app.scss` (#1546).
                             'resources/js/uams_2020/uams-2020-theme-entry.js',
-                            'resources/js/uams_2020/uams-2020-fontawesome-entry.js',
                             'resources/js/uams_2020/uamsalert.js', // UAMS alert banner (data feed)
                     // Control Panel Assets
                     // Critical for building fieldtypes

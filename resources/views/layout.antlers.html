@@ -160,9 +160,6 @@
 				{{# UAMS 2020 theme JS (jQuery + Migrate, skip-links, npm libs, `source/` — Gulp order) #}}
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-theme-entry.js']) }}
 
-				{{# Font Awesome Free 7 (`@fortawesome/fontawesome-free` `all.js` + `v4-shims.js`) #}}
-				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uams-2020-fontawesome-entry.js']) }}
-
 				{{# UAMS 2020 theme UAMS Alert JavaScript #}}
 				{{ $vite_layout_assets = $vite_layout_assets | merge_array(['resources/js/uams_2020/uamsalert.js']) }}
 
