@@ -195,7 +195,7 @@ it('pins every config field override exactly', function (): void {
             'type' => 'float',
         ],
         'input_mask_min' => [
-            'display' => 'Maximum Value',
+            'display' => 'Minimum Value',
             'default' => null,
             'instructions' => 'Set the minimum allowed value for this field.',
             'type' => 'float',
