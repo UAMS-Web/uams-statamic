@@ -26,8 +26,9 @@ use Tests\Support\StacheIsolatedTestCase;
  * empty array, finds no id, generates one, and for an entry writes the file back to
  * disk. So a file deleted in that window, by a parallel worker in the shared content
  * mirror or by a Control Panel delete during an index build, comes back as an empty
- * entry under a new id. The two local `statamic-stache-store-vanished-file` patches
- * skip such a file.
+ * entry under a new id. `statamic/cms` skips such a file since `v6.43.0`
+ * (statamic/cms#15903), which retired the local patches that did it (#1250); these
+ * tests now guard the upstream behavior.
  *
  * The window is reached by swapping `File::get()` for a version that deletes the
  * target file and returns null, which is exactly what a delete landing between the

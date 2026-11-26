@@ -53,7 +53,7 @@
         "spatie/image": "^3.8",
         "spatie/laravel-pdf": "^2.5",
         "spatie/schema-org": "^5.0",
-        "statamic/cms": "6.40.0",
+        "statamic/cms": "6.43.1",
         "statamic/eloquent-driver": "5.13.0",
         "statamic/ssg": "^4.1",
         "stillat/relationships": "^2.4",
@@ -71,7 +71,7 @@
         "uams-web/aether-tables": ">=0.1 <1.0",
         "uams-web/aether-wordpress-importer": ">=0.1 <1.0",
         "uams-web/patches-pest-plugin-mutate": "^1.4.1",
-        "uams-web/patches-statamic-cms": "^1.1"
+        "uams-web/patches-statamic-cms": "^1.2"
     },
     "require-dev": {
         "brianium/paratest": "^7.29.0",

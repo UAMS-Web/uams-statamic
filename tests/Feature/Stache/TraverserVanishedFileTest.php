@@ -18,13 +18,16 @@ use Tests\TestCase;
  * on each file. Parallel test workers share `storage/framework/testing/content-mirror`,
  * so one worker deleting an entry it created can remove a file another worker
  * has just listed. The raise then aborts that worker's index build as a 500 in
- * whatever suite triggered it. The local `statamic-stache-traverser-vanished-file`
- * patch skips such a file.
+ * whatever suite triggered it. `statamic/cms` skips such a file since `v6.43.0`
+ * (statamic/cms#15903), which retired the local patch that did it (#1250); these
+ * tests now guard the upstream behavior.
  *
  * Each test reaches the window between listing and stat through the traverser's
- * filter, which runs per file after `sortByName()` has materialized the whole
- * listing. That makes the race deterministic: the filter removes or breaks the
- * file, then keeps it, so the very next call is the `getMTime()` under test.
+ * filter, which runs on each file just before its `getMTime()`. That makes the
+ * race deterministic: the filter removes or breaks the file, then keeps it, so the
+ * very next call is the `getMTime()` under test. Finder stats each file while
+ * listing it, so a control that breaks the stat clears PHP's stat cache first;
+ * otherwise `getMTime()` answers from the cache and never reaches the wrapper.
  *
  * The skip must stay narrow, so the two controls use a stream wrapper rather than
  * file permissions. A permission denial is ignored for root and meaningless on
@@ -109,6 +112,9 @@ it('still raises for a listed file that cannot be stat\'ed', function (): void {
             // Arm the failure for the file the traversal is about to stat
             if ($file->getFilename() === 'b.md') {
                 StatFailingStreamWrapper::$fileWithFailingStat = 'sub/b.md';
+
+                // Drop the stat Finder cached while listing, so the next read reaches the wrapper
+                clearstatcache();
             }
 
             return true;
@@ -127,6 +133,9 @@ it('still raises when the directory can no longer be listed to confirm the file 
             if ($file->getFilename() === 'b.md') {
                 StatFailingStreamWrapper::$fileWithFailingStat = 'sub/b.md';
                 StatFailingStreamWrapper::$listingFails = true;
+
+                // Drop the stat Finder cached while listing, so the next read reaches the wrapper
+                clearstatcache();
             }
 
             return true;
