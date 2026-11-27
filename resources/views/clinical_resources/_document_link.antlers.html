@@ -1,0 +1,31 @@
+{{#
+	@name Clinical Resource Document Link
+	@desc One row of a document resource's file list: a Font Awesome file-type
+	      icon, the document's label, and the type as screen-reader-only text, so a
+	      screen reader hears what the icon shows. Expects the file asset in scope
+	      (`url`, `extension`). (UAMS-Web/uams-statamic#1582)
+
+	      The extension map is Find-a-Doc's (`includes/class.fad-single-clinical-resource.php`,
+	      `uamswp_resource_document()`, at `69435a55`). One deliberate difference:
+	      Find-a-Doc gives a file of an unmapped type the icon of the row before it,
+	      while this gives it the generic file icon.
+	@param label  The document's display label.
+#}}
+
+{{ $doc_extension = extension | lower }}
+{{ $doc_icon = 'fa-file' }}
+{{ $doc_type = 'File' }}
+{{ if $doc_extension == 'pdf' }}
+	{{ $doc_icon = 'fa-file-pdf' }}{{ $doc_type = 'PDF' }}
+{{ elseif $doc_extension == 'doc' || $doc_extension == 'docx' }}
+	{{ $doc_icon = 'fa-file-word' }}{{ $doc_type = 'Word document' }}
+{{ elseif $doc_extension == 'ppt' || $doc_extension == 'pptx' }}
+	{{ $doc_icon = 'fa-file-powerpoint' }}{{ $doc_type = 'PowerPoint presentation' }}
+{{ elseif $doc_extension == 'xls' || $doc_extension == 'xlsx' }}
+	{{ $doc_icon = 'fa-file-excel' }}{{ $doc_type = 'Excel spreadsheet' }}
+{{ elseif $doc_extension == 'jpg' || $doc_extension == 'jpeg' || $doc_extension == 'gif' || $doc_extension == 'png' || $doc_extension == 'bmp' }}
+	{{ $doc_icon = 'fa-file-image' }}{{ $doc_type = 'Image' }}
+{{ /if }}
+
+{{# The label is editor text, so it is escaped: Antlers output is raw by default. #}}
+<li><a class="attachment-link" href="{{ url }}" download><span class="far {{ $doc_icon }} fa-fw" aria-hidden="true"></span> <span class="attachment-label">{{ label | sanitize }}</span><span class="sr-only"> ({{ $doc_type }})</span></a></li>
