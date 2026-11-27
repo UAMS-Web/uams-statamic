@@ -1,0 +1,11 @@
+{{#
+	@name Area of Expertise Also Called
+	@desc "Also called" with an Area of Expertise's alternate names (UAMS-Web/uams-statamic#1580),
+	      as Find-a-Doc's single-expertise page shows it above the page content: one callout,
+	      the names separated by semicolons. Renders nothing when there are no names. The
+	      names are editor text, so each is escaped.
+#}}
+{{ $also_called = alternate_name | pluck('text') | filter_empty }}
+{{ if $also_called | length }}
+	<p class="text-callout text-callout-info expertise-also-called">Also called: {{ $also_called }}{{ unless first }}; {{ /unless }}{{ value | strip_tags | sanitize | trim }}{{ /$also_called }}</p>
+{{ /if }}

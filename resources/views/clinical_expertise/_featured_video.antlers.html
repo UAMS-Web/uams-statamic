@@ -1,0 +1,10 @@
+{{#
+	@name Area of Expertise Featured Video
+	@desc The Area of Expertise's Featured Video (`video_url`, UAMS-Web/uams-statamic#1580), as
+	      Find-a-Doc's single-expertise page embeds it after the page content. Uses the site's
+	      video set partial, which embeds a YouTube or Vimeo URL as an iframe and a Box direct
+	      link as an HTML5 video. Renders nothing without a URL.
+#}}
+{{ if video_url }}
+	{{ partial:sets/video :video_url="video_url" figure_class="alignwide expertise-featured-video" }}
+{{ /if }}
