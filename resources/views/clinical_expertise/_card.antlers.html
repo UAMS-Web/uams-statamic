@@ -40,7 +40,9 @@
 		{{ if parent_expertise_name }}
 			<p class="card-parent"><small>Part of {{ if parent_expertise_url }}<a href="{{ parent_expertise_url }}">{{ parent_expertise_name | sanitize }}</a>{{ else }}{{ parent_expertise_name | sanitize }}{{ /if }}</small></p>
 		{{ /if }}
-		<h2 class="card-title h5"><span itemprop="name">{{ title | sanitize }}</span></h2>
+		{{# A caller that nests the card under its own h2 passes `card_heading_level="h3"`. #}}
+		{{ $card_heading = card_heading_level == 'h3' ? 'h3' : 'h2' }}
+		<{{ $card_heading }} class="card-title h5"><span itemprop="name">{{ title | sanitize }}</span></{{ $card_heading }}>
 		{{ if excerpt }}
 			<div class="card-excerpt" itemprop="description">{{ excerpt | sanitize }}</div>
 		{{ /if }}

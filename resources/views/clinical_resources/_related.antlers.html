@@ -66,8 +66,10 @@
 		{{ if $provider_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-providers" aria-labelledby="related-providers-title">
 				<h2 class="h5" id="related-providers-title">Related Providers</h2>
+				{{# The provider card's portrait is an `image` property with no item scope of
+					its own; the ItemList scope keeps it off the resource article's item. #}}
 				<div class="card-list-container">
-					<div class="card-list card-list-doctors">
+					<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">
 						{{ eligible_providers }}
 							{{ if ! $provider_overflow || index < $provider_visible }}
 								{{ partial:page_builder/components/fad_provider_card profile_url="{{ people_lens_url lens='provider' }}" }}
@@ -80,7 +82,7 @@
 					<details class="clinical-resource-related-more">
 						<summary class="btn btn-primary">Load all providers</summary>
 						<div class="card-list-container">
-							<div class="card-list card-list-doctors">
+							<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">
 								{{ eligible_providers }}
 									{{ if index >= $provider_visible }}
 										{{ partial:page_builder/components/fad_provider_card profile_url="{{ people_lens_url lens='provider' }}" }}
@@ -99,7 +101,7 @@
 				<div class="card-list-container location-card-list-container">
 					<div class="card-list">
 						{{ clinical_locations }}
-							{{ partial:clinical_locations/card }}
+							{{ partial:clinical_locations/card card_heading_level="h3" }}
 						{{ /clinical_locations }}
 					</div>
 				</div>
@@ -112,7 +114,7 @@
 				{{# The expertise card is an `itemListElement`, so its list is the ItemList. #}}
 				<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_expertise }}
-						{{ partial:clinical_expertise/card }}
+						{{ partial:clinical_expertise/card card_heading_level="h3" }}
 					{{ /clinical_expertise }}
 				</div>
 			</section>
@@ -128,7 +130,7 @@
 				<h2 class="h5" id="related-resources-title">Related Resources</h2>
 				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_resources }}
-						{{ partial:clinical_resources/card }}
+						{{ partial:clinical_resources/card card_heading_level="h3" }}
 					{{ /clinical_resources }}
 				</div>
 			</section>

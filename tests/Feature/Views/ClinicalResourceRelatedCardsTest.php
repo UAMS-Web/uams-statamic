@@ -281,3 +281,44 @@ it('renders the document list through the document link partial on the show page
 
     expect($src)->toContain('partial:clinical_resources/document_link :label="$doc_label"');
 });
+
+it('titles each related card one level below its section heading', function (): void {
+    $html = renderResourceRelated([
+        'clinical_locations' => [['title' => 'UAMS Medical Center', 'url' => '/locations/medical-center']],
+        'clinical_expertise' => [['title' => 'Cardiology', 'url' => '/expertise/cardiology']],
+        'clinical_resources' => relatedResources(1),
+    ]);
+
+    expect($html)->toContain('<h3 class="card-title h5" itemprop="https://schema.org/name">UAMS Medical Center</h3>')
+        ->and($html)->toContain('<h3 class="card-title h5"><span itemprop="name">Cardiology</span></h3>')
+        ->and($html)->toContain('<h3 class="card-title h5" itemprop="https://schema.org/name">Resource 1</h3>')
+        ->and($html)->not->toContain('<h2 class="card-title');
+});
+
+it('keeps an archive card titled h2 when no heading level is passed', function (string $partial, string $title, string $heading): void {
+    $html = renderRelatedCards('{{ partial:'.$partial.' }}', ['title' => $title, 'url' => '/card', 'blueprint' => 'article']);
+
+    expect($html)->toContain($heading);
+})->with([
+    'resource card' => ['clinical_resources/card', 'Resource 1', '<h2 class="card-title h5" itemprop="https://schema.org/name">Resource 1</h2>'],
+    'location card' => ['clinical_locations/card', 'UAMS Medical Center', '<h2 class="card-title h5" itemprop="https://schema.org/name">UAMS Medical Center</h2>'],
+    'expertise card' => ['clinical_expertise/card', 'Cardiology', '<h2 class="card-title h5"><span itemprop="name">Cardiology</span></h2>'],
+]);
+
+it('gives the related provider cards their own item scope', function (): void {
+    $html = renderResourceRelated(['clinical_providers' => relatedProviders(19)]);
+
+    expect(substr_count($html, '<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">'))->toBe(2);
+});
+
+it('escapes a related title on the link-list path', function (): void {
+    $html = renderResourceRelated([
+        'clinical_conditions' => [['title' => '<img src=x onerror=alert(1)>', 'url' => '/conditions/x']],
+        'clinical_resources' => array_merge(relatedResources(4), [['title' => '<b>Bold</b>', 'url' => null]]),
+    ]);
+
+    expect($html)->not->toContain('<img src=x onerror=alert(1)>')
+        ->and($html)->toContain('&lt;img src=x onerror=alert(1)&gt;')
+        ->and($html)->not->toContain('<b>Bold</b>')
+        ->and($html)->toContain('&lt;b&gt;Bold&lt;/b&gt;');
+});

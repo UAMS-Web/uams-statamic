@@ -65,7 +65,9 @@
 			{{ /if }}
 			{{# Title/short-title are editor/import free-text → escape (Antlers is raw by
 			    default). `$card_excerpt` is a Bard field (intended HTML) and stays raw. #}}
-			<h2 class="card-title h5" itemprop="https://schema.org/name">{{ $card_title | sanitize }}</h2>
+			{{# A caller that nests the card under its own h2 passes `card_heading_level="h3"`. #}}
+			{{ $card_heading = card_heading_level == 'h3' ? 'h3' : 'h2' }}
+			<{{ $card_heading }} class="card-title h5" itemprop="https://schema.org/name">{{ $card_title | sanitize }}</{{ $card_heading }}>
 			{{ if $card_excerpt }}
 				<div class="card-text" itemprop="https://schema.org/description">{{ $card_excerpt }}</div>
 			{{ /if }}

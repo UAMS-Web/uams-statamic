@@ -68,7 +68,9 @@
 			    ENT_QUOTES) because Antlers output is raw by default — `title`/`generic_name`,
 			    the `excerpt` textarea, the parent name, and the phone (format_phone returns
 			    its raw input on an unparseable value) are all stored verbatim. #}}
-			<h2 class="card-title h5" itemprop="https://schema.org/name">{{ $location_name | sanitize }}</h2>
+			{{# A caller that nests the card under its own h2 passes `card_heading_level="h3"`. #}}
+			{{ $card_heading = card_heading_level == 'h3' ? 'h3' : 'h2' }}
+			<{{ $card_heading }} class="card-title h5" itemprop="https://schema.org/name">{{ $location_name | sanitize }}</{{ $card_heading }}>
 			{{# "Part of {parent}" subtitle for a child location. The parent name / URL come
 			    from the structure-tree computeds (the parent is a tree relationship, not a
 			    plain field, so it is not exposed in the listing augmentation); both are
