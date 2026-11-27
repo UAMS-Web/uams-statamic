@@ -1,0 +1,23 @@
+{{#
+	@name Clinical Location Directions Link
+	@desc A Google Maps "Get Directions" link to a clinical location, rendered in the
+	      location entry's scope. Shared by the directory card and the profile
+	      (UAMS-Web/uams-statamic#1578) so both build the destination the same way.
+
+	      The destination is assembled from whichever `resolved_*` address parts exist,
+	      so there are no dangling separators. The address is the universal source: the
+	      `map` coordinate is populated only for standalone locations, while the
+	      `resolved_*` computeds also answer for a child or a location inside a facility.
+	      Renders nothing when no address part exists.
+
+	      Parameters: `name`, the location name for the accessible label; `class`, the
+	      link's classes (default `btn btn-outline-primary`).
+#}}
+{{ $directions_dest = '' }}
+{{ if resolved_street_address }}{{ $directions_dest += resolved_street_address }}{{ /if }}
+{{ if resolved_city }}{{ $directions_dest += ($directions_dest ? ', ' : '') + resolved_city }}{{ /if }}
+{{ if resolved_state }}{{ $directions_dest += ($directions_dest ? ', ' : '') + resolved_state }}{{ /if }}
+{{ if resolved_postal_code }}{{ $directions_dest += ($directions_dest ? ' ' : '') + resolved_postal_code }}{{ /if }}
+{{ if $directions_dest }}
+	<a href="https://www.google.com/maps/dir/?api=1&amp;destination={{ $directions_dest | rawurlencode }}" class="{{ class ?? 'btn btn-outline-primary' }}" target="_blank" rel="noopener noreferrer" aria-label="Get directions to {{ name | striptags | sanitize }}">Get Directions</a>
+{{ /if }}
