@@ -1,0 +1,37 @@
+{{#
+	@name Areas Within an Area of Expertise
+	@desc The "Areas Within {title}" cards on an Area of Expertise page (UAMS-Web/uams-statamic#1581),
+	      matching Find-a-Doc's `uamswp_list_child_expertise()`: the entry's
+	      immediate structure children on the `clinical_expertise` blueprint,
+	      alphabetical by title, each as an Area of Expertise card without the
+	      "Part of {parent}" subtitle. Nothing renders when the entry has no such
+	      children, or when its `child_expertise_hidden` toggle is on.
+
+	      Expects the Area of Expertise entry in scope. Its `id` and `title` are
+	      captured before the collection tag, whose loop rebinds both.
+#}}
+
+{{ if ! child_expertise_hidden }}
+	{{ $areas_within_parent_id = id }}
+	{{ $areas_within_title = title }}
+	{{ collection:clinical_expertise blueprint:is="clinical_expertise" :parent:is="$areas_within_parent_id" sort="title:asc" as="areas_within" }}
+		{{ unless no_results }}
+			<section class="uams-module expertise-list bg-auto aoe-areas-within" id="sub-expertise" aria-labelledby="sub-expertise-title">
+				<div class="container-fluid">
+					<div class="row">
+						<div class="col-12">
+							<h2 class="module-title" id="sub-expertise-title"><span class="title">Areas Within {{ $areas_within_title | sanitize }}</span></h2>
+							<div class="card-list-container">
+								<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
+									{{ areas_within }}
+										{{ partial:clinical_expertise/card child_expertise_list="true" card_heading_level="h3" }}
+									{{ /areas_within }}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		{{ /unless }}
+	{{ /collection:clinical_expertise }}
+{{ /if }}
