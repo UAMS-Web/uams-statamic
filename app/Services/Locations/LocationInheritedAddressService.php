@@ -640,6 +640,18 @@ final readonly class LocationInheritedAddressService implements LocationRegions
     }
 
     /**
+     * The location a child inherits from: its structural parent when that is a location, otherwise null.
+     *
+     * Public for the inherited image groups (UAMS-Web/uams-statamic#1578), which follow the same tree.
+     */
+    public function resolveParentLocation(
+        Entry $location
+    ): ?Entry {
+        // Delegate to the lookup the address groups use
+        return $this->parentLocation($location);
+    }
+
+    /**
      * The location's structural parent when that parent is itself a location, otherwise null.
      */
     private function parentLocation(

@@ -109,7 +109,7 @@
 	location to its parent. The facility's name comes from `resolved_parking_facility_name`,
 	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172). #}}
 {{ if resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
-	<section class="location-parking">
+	<section class="location-parking" id="parking-info">
 		<h2>Parking and Directions</h2>
 		{{ if resolved_parking_facility_name }}
 			<p class="location-parking-facility">{{ resolved_parking_facility_name | sanitize }}</p>
