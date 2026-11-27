@@ -1,6 +1,7 @@
 {{#
 	@name Clinical Location Show
-	@desc The `clinical_locations` profile: name, lead description, an interactive map,
+	@desc The `clinical_locations` profile: a closure banner (`clinical_locations/status_banner`,
+	      UAMS-Web/uams-statamic#1576), name, lead description, an interactive map,
 	      external website, related Find-a-Doc entities, and — through
 	      `clinical_locations/profile_details` — eligibility messaging, contact and
 	      appointment detail, interior wayfinding and the modified-hours notice.
@@ -27,6 +28,9 @@
 		partial:layout/entry-content
 		content_width="true"
 	}}
+		{{# Closure and telemedicine banner, above the rest of the profile (UAMS-Web/uams-statamic#1576). #}}
+		{{ partial:clinical_locations/status_banner }}
+
 		{{# Lead description. #}}
 		{{ if short_desc }}
 			<div class="location-lead" itemprop="https://schema.org/description">{{ short_desc }}</div>
