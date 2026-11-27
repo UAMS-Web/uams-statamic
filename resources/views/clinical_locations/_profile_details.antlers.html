@@ -7,6 +7,11 @@
 	      is optional and renders only when its backing field has a value, so a
 	      sparsely-filled location stays visually unchanged. Rendered within the
 	      location entry's scope by `clinical_locations/show`.
+
+	      UAMS-Web/uams-statamic#1576 added the Alert, Closing Information, After Hours
+	      and Telemedicine sections, ported from Find-a-Doc's `single-locations.php`; the
+	      closure banner above the profile is `clinical_locations/status_banner`. Their
+	      system-wide copy comes from the Find-a-Doc Settings global, `uams_fad_settings`.
 #}}
 
 {{# Eligibility-restricted access notice (UAMS-Web/uams-statamic-archive#1177). Surfaced first so patients see
@@ -18,6 +23,50 @@
 		{{ if restricted_access_message }}
 			<div class="location-restricted-access-message">{{ restricted_access_message }}</div>
 		{{ /if }}
+	</section>
+{{ /if }}
+
+{{# Closure state, read by the alert, Closing Information and Telemedicine sections below
+	(UAMS-Web/uams-statamic#1576). `clinical_locations/status_banner` computes the same state
+	in its own scope, so the two must change together. A closure is
+	in effect while `closing_query` is on and the closure is permanent or its reopening
+	date has not passed; it is "closed now" once its closing date has arrived. Dates compare
+	as calendar dates (`format_civil_date`) against today in the display timezone. #}}
+{{ $today = 'now' | format('Ymd') }}
+{{ $closing_temporary = closing_permanent_query ? false : true }}
+{{ $closing_reopened = closing_query && $closing_temporary && reopening_date_query && reopening_date && (reopening_date | format_civil_date('Ymd')) <= $today }}
+{{ $closing_display = closing_query && ! $closing_reopened }}
+{{ $closing_closed_now = $closing_display && (closing_date ? ((closing_date | format_civil_date('Ymd')) <= $today) : true) }}
+
+{{# Location alert (UAMS-Web/uams-statamic#1576), ported from Find-a-Doc's Location Alert
+	section. The system alert comes from the Find-a-Doc Settings global
+	(`uams_fad_settings`), and the location's `alert_modification` either keeps it,
+	suppresses it, overrides its heading, body and color, or inserts its own body before or
+	after it. An empty heading reads "Alert" and is visually hidden, as Find-a-Doc does. The
+	section is withheld while the location is closed, where the closure banner speaks
+	instead. #}}
+{{ $alert_override = alert_modification == 'override' }}
+{{ $alert_heading = $alert_override && alert_heading ? alert_heading : uams_fad_settings:location_alert_heading }}
+{{ $alert_color = $alert_override && alert_color && alert_color != 'inherit' ? alert_color : (uams_fad_settings:location_alert_color ? uams_fad_settings:location_alert_color : 'alert-warning') }}
+{{ $alert_local_body = alert_modification == 'override' || alert_modification == 'prepend' || alert_modification == 'append' ? alert_body : '' }}
+{{ $alert_system_body = $alert_override && alert_body ? '' : uams_fad_settings:location_alert_body }}
+{{ if alert_modification != 'suppress' && ! $closing_closed_now && ($alert_heading || $alert_local_body || $alert_system_body) }}
+	<section class="location-alert location-{{ $alert_color | sanitize }}" id="location-alert" role="note" aria-labelledby="location-alert-heading">
+		<h2 id="location-alert-heading"{{ if ! $alert_heading }} class="sr-only"{{ /if }}>{{ if $alert_heading }}{{ $alert_heading | sanitize }}{{ else }}Alert{{ /if }}</h2>
+		<div class="location-alert-body">
+			{{ if alert_modification == 'prepend' }}{{ $alert_local_body }}{{ /if }}
+			{{ $alert_system_body }}
+			{{ if alert_modification == 'append' || alert_modification == 'override' }}{{ $alert_local_body }}{{ /if }}
+		</div>
+	</section>
+{{ /if }}
+
+{{# Closing Information (UAMS-Web/uams-statamic#1576): the closure's own explanation, while
+	the closure is in effect. The banner's "Learn more" link targets its id. #}}
+{{ if $closing_display && closing_info }}
+	<section class="location-closing-info" id="closing-info">
+		<h2>Closing Information</h2>
+		<div class="location-closing-info-body">{{ closing_info }}</div>
 	</section>
 {{ /if }}
 
@@ -163,6 +212,52 @@
 	closures (Closing tab) and system alerts (Alert tab) are handled elsewhere
 	and are not duplicated here. #}}
 {{ location_modified_hours_notice :special_hours="special_hours" }}
+
+{{# After Hours (UAMS-Web/uams-statamic#1576): what to do when the location is closed. The
+	location's own `after_hours_description` wins; without one, the system-wide copy from the
+	Find-a-Doc Settings global (`location_after_hours_description`) stands in, as Find-a-Doc
+	falls back to its own setting. With neither, no section renders. #}}
+{{ $after_hours = after_hours_description ? after_hours_description : uams_fad_settings:location_after_hours_description }}
+{{ if $after_hours }}
+	<section class="location-after-hours" id="after-hours">
+		<h2>After Hours</h2>
+		<div class="location-after-hours-body">{{ $after_hours }}</div>
+	</section>
+{{ /if }}
+
+{{# Telemedicine (UAMS-Web/uams-statamic#1576), ported from Find-a-Doc's Telemedicine
+	Information section. Renders when the location offers telemedicine. While a closure is in
+	effect without telemedicine during it, the section says telemedicine is unavailable;
+	otherwise it carries the system-wide description from the Find-a-Doc Settings global
+	(`location_telemed_description`), the patients it serves (`telemed_patients`), and the
+	number to call: the appointments number, or the information number when there is none. #}}
+{{ if telemed_query }}
+	<section class="location-telemedicine" id="telemedicine-info">
+		<h2>Telemedicine</h2>
+		{{ if $closing_display && ! ($closing_temporary && closing_telemed_available_query) }}
+			<p class="location-telemedicine-unavailable">
+				{{ if $closing_closed_now }}
+					Telemedicine is not available while this location is {{ $closing_temporary ? 'temporarily' : 'permanently' }} closed.
+				{{ else }}
+					Telemedicine will not be available after this location closes {{ $closing_temporary ? 'temporarily beginning' : 'permanently' }} on {{ closing_date | format_civil_date('F j, Y') }}.
+				{{ /if }}
+			</p>
+		{{ else }}
+			{{ if uams_fad_settings:location_telemed_description }}
+				<div class="location-telemedicine-description">{{ uams_fad_settings:location_telemed_description }}</div>
+			{{ /if }}
+			{{ $telemed_phone = $display_appointment_phone ? $display_appointment_phone : $display_info_phone }}
+			{{ if telemed_patients || $telemed_phone }}
+				<p class="location-telemedicine-patients">
+					{{ if telemed_patients == 'all' }}This service is available to both new and existing patients.{{ /if }}
+					{{ if telemed_patients == 'new' }}This service is available to new patients only.{{ /if }}
+					{{ if telemed_patients == 'existing' }}This service is available to existing patients only.{{ /if }}
+					{{ if $telemed_phone }}Patients should call <a href="tel:{{ $telemed_phone }}">{{ $telemed_phone | format_phone }}</a> to schedule a telemedicine appointment.{{ /if }}
+				</p>
+			{{ /if }}
+		{{ /if }}
+	</section>
+{{ /if }}
 
 {{# Interior wayfinding image — navigating once inside the building (UAMS-Web/uams-statamic-archive#1186).
 	Renders independently of the exterior Wayfinding Photo. #}}

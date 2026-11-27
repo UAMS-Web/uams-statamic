@@ -1,0 +1,59 @@
+{{#
+	@name Clinical Location Status Banner
+	@desc The closure and telemedicine banner shown above a `clinical_locations`
+	      profile (UAMS-Web/uams-statamic#1576), ported from the banner under the page
+	      title in Find-a-Doc's `templates/single-locations.php`.
+
+	      It renders only while a closure is in effect or announced: `closing_query` is on,
+	      and the closure is permanent or its reopening date has not passed. A closing date
+	      in the past reads "is closed", a future one "will be closing on", and a permanent
+	      closure says so where a temporary one names its reopening date or says it is
+	      closed until further notice.
+
+	      Dates are compared and printed as calendar dates (`format_civil_date`) against
+	      today in the display timezone, so a closure starts on its own date in Central time
+	      rather than at midnight UTC the evening before.
+
+	      Two departures from Find-a-Doc, both from the Statamic blueprint's own shape:
+	      Find-a-Doc's `location_reopen_known` is a three-way choice (date, TBD, unknown),
+	      and here `reopening_date_query` is a yes or no, so "no" reads as "until further
+	      notice". And a temporary closure whose reopening date is unknown stays on the page
+	      until an editor turns the closure off, where Find-a-Doc's empty-date comparison
+	      decided it by the clock.
+
+	      The closure state below is also computed in `clinical_locations/_profile_details`,
+	      for its alert, Closing Information and Telemedicine sections; change the two
+	      together. Rendered within the location entry's scope by `clinical_locations/show`.
+#}}
+
+{{ if closing_query }}
+	{{ $today = 'now' | format('Ymd') }}
+	{{ $closing_temporary = closing_permanent_query ? false : true }}
+	{{ $reopening_known = $closing_temporary && reopening_date_query && reopening_date }}
+	{{ $reopened = $reopening_known && (reopening_date | format_civil_date('Ymd')) <= $today }}
+	{{ if ! $reopened }}
+		{{ $closed_now = closing_date ? ((closing_date | format_civil_date('Ymd')) <= $today) : true }}
+		<div class="location-closure-banner{{ $closing_temporary ? ' location-closure-banner-temporary' : ' location-closure-banner-permanent' }}" role="alert">
+			<p>
+				{{ if $closed_now }}
+					This location is {{ $closing_temporary ? 'temporarily' : 'permanently' }} closed.
+				{{ else }}
+					This location will be closing {{ $closing_temporary ? 'temporarily beginning' : 'permanently' }} on {{ closing_date | format_civil_date('F j, Y') }}.
+				{{ /if }}
+				{{ if $closing_temporary }}
+					{{ if $reopening_known && (reopening_date | format_civil_date('Ymd')) >= (closing_date | format_civil_date('Ymd')) }}
+						It is scheduled to reopen on {{ reopening_date | format_civil_date('F j, Y') }}.
+					{{ elseif ! reopening_date_query }}
+						It will remain closed until further notice.
+					{{ /if }}
+				{{ /if }}
+				{{ if closing_info }}
+					<a href="#closing-info" class="location-closure-banner-link">Learn more about the closure</a>.
+				{{ /if }}
+			</p>
+			{{ if $closing_temporary && telemed_query && closing_telemed_available_query }}
+				<p class="location-closure-banner-telemedicine">Telemedicine will still be available. <a href="#telemedicine-info" class="location-closure-banner-link">Learn more about telemedicine</a>.</p>
+			{{ /if }}
+		</div>
+	{{ /if }}
+{{ /if }}
