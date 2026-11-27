@@ -6,11 +6,23 @@
 	      block appears only when its relationship is populated, and each item links
 	      to its own page. The full, standalone per-section pages live at the routed
 	      `/{entry}/{section}` URLs (UAMS-Web/uams-statamic-archive#1058); the AoE primary nav links to them.
+
+	      UAMS-Web/uams-statamic#1581, matching Find-a-Doc's single-expertise page:
+	      - Related Areas of Expertise render as a linked list with each area's short
+	        description, alphabetical by title (`uamswp_expertise_associated()`).
+	      - Related Resources render as cards, the four newest by publish date. When
+	        there are more than four, a "View the Full List" link reaches the routed
+	        `{entry}/resources` section page, which lists them all
+	        (`templates/blocks/clinical-resources.php`).
 #}}
+
+{{# Capture the entry's own url and title: the relationship loops below rebind both. #}}
+{{ $aoe_url = url }}
+{{ $aoe_title = title }}
 
 {{# UAMS-Web/uams-statamic-archive#919: narrow the provider relationship to clinical-provider-eligible, searchable people before it drives the gate and the list. #}}
 {{ eligible_providers = clinical_providers | clinical_provider_eligible }}
-{{ if eligible_providers || clinical_locations || clinical_conditions || clinical_services || clinical_resources }}
+{{ if eligible_providers || clinical_locations || clinical_expertise_related || clinical_conditions || clinical_services || clinical_resources }}
 	<div class="aoe-related">
 		{{ if eligible_providers }}
 			<section class="aoe-related-section aoe-related-providers">
@@ -31,6 +43,22 @@
 					{{ clinical_locations }}
 						<li><a href="{{ url }}">{{ title }}</a></li>
 					{{ /clinical_locations }}
+				</ul>
+			</section>
+		{{ /if }}
+
+		{{ if clinical_expertise_related }}
+			<section class="aoe-related-section aoe-related-expertise" id="related-expertise" aria-labelledby="related-expertise-title">
+				<h2 class="aoe-related-title" id="related-expertise-title">Related Areas of Expertise</h2>
+				<ul class="aoe-related-list">
+					{{ clinical_expertise_related sort="title:asc" }}
+						{{# The excerpt is capped at 160 characters by the blueprint, shorter than
+							Find-a-Doc's 30-word trim, so it renders whole. Editor text is escaped. #}}
+						<li class="item">
+							<h3 class="h5"><a href="{{ url }}" aria-label="Go to Area of Expertise page for {{ title | striptags | sanitize }}">{{ title | sanitize }}</a></h3>
+							{{ if excerpt }}<p>{{ excerpt | sanitize }}</p>{{ /if }}
+						</li>
+					{{ /clinical_expertise_related }}
 				</ul>
 			</section>
 		{{ /if }}
@@ -58,13 +86,22 @@
 		{{ /if }}
 
 		{{ if clinical_resources }}
-			<section class="aoe-related-section aoe-related-resources">
-				<h2 class="aoe-related-title">Related Clinical Resources</h2>
-				<ul class="aoe-related-list">
-					{{ clinical_resources }}
-						<li><a href="{{ url }}">{{ title }}</a></li>
+			{{ $resource_count = clinical_resources | count }}
+			<section class="aoe-related-section aoe-related-resources" id="related-resources" aria-labelledby="related-resources-title">
+				<h2 class="aoe-related-title" id="related-resources-title">Related Resources</h2>
+				<div class="card-list card-list-left">
+					{{ clinical_resources sort="date:desc" limit="4" }}
+						{{ partial:clinical_resources/card }}
 					{{ /clinical_resources }}
-				</ul>
+				</div>
+				{{ if $resource_count > 4 }}
+					<div class="more">
+						<p class="lead">Want to find more resources related to {{ $aoe_title | sanitize }}?</p>
+						<div class="cta-container">
+							<a href="{{ $aoe_url }}/resources" class="btn btn-outline-primary" aria-label="View the full list of clinical resources related to {{ $aoe_title | striptags | sanitize }}">View the Full List</a>
+						</div>
+					</div>
+				{{ /if }}
 			</section>
 		{{ /if }}
 	</div>
