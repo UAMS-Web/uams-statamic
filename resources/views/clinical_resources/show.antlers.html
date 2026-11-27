@@ -100,6 +100,10 @@
 
 		{{# Related Find-a-Doc entities (providers, locations, expertise, …). #}}
 		{{ partial:clinical_resources/related }}
+
+		{{# Default "Make an Appointment" band (UAMS-Web/uams-statamic#1584). Provider Spotlight
+			resources take the branch above, which carries its own call to action. #}}
+		{{ partial:clinical_resources/appointment }}
 	{{ /partial:layout/entry-content }}
 	{{ /if }}
 {{ /partial:layout/article }}

@@ -13,7 +13,10 @@
 	      and passed raw to the scope, where it is used only for PHP-side matching.
 #}}
 
-<form method="get" role="search" class="expertise-search" aria-label="Search areas of expertise by condition or treatment">
+{{# `id="expertise-listing"` is where a page change lands (UAMS-Web/uams-statamic#1584): each pager
+	link carries the fragment, so the next page opens at the top of the listing
+	rather than the top of the document, as Find-a-Doc scrolls to its listing. #}}
+<form method="get" role="search" class="expertise-search" id="expertise-listing" aria-label="Search areas of expertise by condition or treatment">
 	<label for="expertise-search-q" class="expertise-search-label">Search by condition or treatment</label>
 	<input type="search" id="expertise-search-q" name="q" class="expertise-search-input"
 		value="{{ get:q | sanitize }}"
@@ -51,17 +54,19 @@
 					{{ /areas }}
 				</div>
 
+				{{# The pager shows only when there is more than one page (UAMS-Web/uams-statamic#1584). Find-a-Doc
+					hides it at three or fewer results; at 12 per page that is always one page. #}}
 				{{ if paginate:total_pages > 1 }}
 					<nav class="expertise-pagination" aria-label="Areas of expertise pagination">
 						<ul class="pagination">
 							{{ if paginate:prev_page }}
-								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}" rel="prev">Previous</a></li>
+								<li class="page-item"><a class="page-link" href="{{ paginate:prev_page }}#expertise-listing" rel="prev">Previous</a></li>
 							{{ /if }}
 							<li class="page-item active" aria-current="page">
 								<span class="page-link">Page {{ paginate:current_page }} of {{ paginate:total_pages }}</span>
 							</li>
 							{{ if paginate:next_page }}
-								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}" rel="next">Next</a></li>
+								<li class="page-item"><a class="page-link" href="{{ paginate:next_page }}#expertise-listing" rel="next">Next</a></li>
 							{{ /if }}
 						</ul>
 					</nav>

@@ -1,0 +1,20 @@
+{{#
+	@name Areas of Expertise archive header
+	@desc The heading and introduction that open the Areas of Expertise archive
+	      (UAMS-Web/uams-statamic#1584), read from the `uams_fad_settings` global as
+	      Find-a-Doc's `archive-expertise.php` reads its options: the
+	      `expertise_archive_headline` text (falling back to "Areas of Expertise"
+	      when empty) and the `expertise_archive_intro_text` rich text, omitted when
+	      empty. The headline is editor-controlled plain text, so it is escaped.
+#}}
+
+{{ $archive_headline = uams_fad_settings:expertise_archive_headline ?? null }}
+{{ $archive_intro = uams_fad_settings:expertise_archive_intro_text ?? null }}
+<section class="archive-description">
+	<header class="entry-header">
+		<h1 class="entry-title" itemprop="headline">{{ $archive_headline ? ($archive_headline | sanitize) : 'Areas of Expertise' }}</h1>
+	</header>
+	{{ if $archive_intro }}
+		<div class="entry-content clearfix archive-intro" itemprop="text">{{ $archive_intro }}</div>
+	{{ /if }}
+</section>

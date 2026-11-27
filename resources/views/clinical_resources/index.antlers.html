@@ -10,6 +10,8 @@
 		partial:layout/entry-content
 		content_width="true"
 	}}
+		{{# Archive heading and introduction from the Find-a-Doc settings global (UAMS-Web/uams-statamic#1584). #}}
+		{{ partial:clinical_resources/archive_header }}
 		{{# Patient-safety 911 disclaimer above the directory listing (UAMS-Web/uams-statamic-archive#1466). #}}
 		{{ partial:components/emergency_disclaimer_911 }}
 		{{ partial:clinical_resources/listing }}

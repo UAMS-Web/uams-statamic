@@ -18,20 +18,15 @@
 			clinical resources) surfaced on the AoE overview (UAMS-Web/uams-statamic-archive#573). #}}
 		{{ partial:clinical_expertise/related }}
 
-		{{# Appointment CTA (UAMS-Web/uams-statamic-archive#1059): render the entry's own authored CTA bar(s). The
-			`cta_bars` replicator set type is `new_set` (it imports the
-			`uamsweb_block_cta` fieldset), so render that block partial directly rather
-			than `page_builder/{type}`; `{{ cta }}` is the entry's own augmented field,
-			so its nested Bard/action fields render correctly.
+		{{# Appointment CTA (UAMS-Web/uams-statamic-archive#1059, UAMS-Web/uams-statamic#1584): the entry's own
+			authored CTA bar(s), else the default "Make an Appointment" band, unless
+			`cta_inherit_disabled` is on. `{{ cta }}` is the entry's own augmented
+			field, so its nested Bard/action fields render correctly.
 
 			The INHERITED effective CTA (nearest ancestor's, unless opted out) ships as
 			the tested `aoe_effective_cta` computed; rendering it needs cross-entry
 			augmentation of the ancestor's replicator and is a follow-up (a computed's
 			raw value does not augment). #}}
-		{{ if cta }}
-			{{ cta }}
-				{{ partial:page_builder/uamsweb_block_cta }}
-			{{ /cta }}
-		{{ /if }}
+		{{ partial:clinical_expertise/appointment }}
 	{{ /partial:layout/entry-content }}
 {{ /partial:layout/article }}
