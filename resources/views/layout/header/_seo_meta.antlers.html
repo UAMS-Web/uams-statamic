@@ -16,7 +16,8 @@
 	      are null off Provider Spotlights, so both fallbacks are inert elsewhere.
 	      The `<title>`, robots (UAMS-Web/uams-statamic-archive#187),
 	      canonical (UAMS-Web/uams-statamic-archive#189), and Google Tag Manager (UAMS-Web/uams-statamic-archive#83) are handled separately —
-	      this partial does not emit them, so there is no duplication.
+	      this partial does not emit them, so there is no duplication. An Area of Expertise
+	      also gets meta keywords from its alternate names (UAMS-Web/uams-statamic#1580).
 
 #}}
 
@@ -49,6 +50,16 @@
 
 	{{ if $seo_description }}
 		<meta name="description" content="{{ $seo_description | strip_tags | entities | trim }}">
+	{{ /if }}
+
+	{{# Meta keywords on an Area of Expertise (UAMS-Web/uams-statamic#1580), from its alternate
+	    names, as Find-a-Doc's single-expertise page emits them: comma-separated, each name with
+	    its own commas removed. Other collections emit none, as on Find-a-Doc. #}}
+	{{ if collection:handle == 'clinical_expertise' }}
+		{{ $seo_keywords = alternate_name | pluck('text') | filter_empty }}
+		{{ if $seo_keywords | length }}
+			<meta name="keywords" content="{{ $seo_keywords }}{{ unless first }}, {{ /unless }}{{ value | replace(',', '') | strip_tags | entities | trim }}{{ /$seo_keywords }}">
+		{{ /if }}
 	{{ /if }}
 
 	{{# Open Graph #}}

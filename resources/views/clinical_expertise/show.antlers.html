@@ -10,9 +10,15 @@
 		partial:layout/entry-content
 		content_width="false"
 	}}
+		{{# "Also called" with the alternate names, above the content as on Find-a-Doc (UAMS-Web/uams-statamic#1580). #}}
+		{{ partial:clinical_expertise/also_called }}
+
 		{{ page_builder scope="block" }}
 			{{ partial src="page_builder/{type}" }}
 		{{ /page_builder }}
+
+		{{# The Featured Video, after the content as on Find-a-Doc (UAMS-Web/uams-statamic#1580). #}}
+		{{ partial:clinical_expertise/featured_video }}
 
 		{{# "Areas Within" cards: the entry's child areas, unless hidden (UAMS-Web/uams-statamic#1581). #}}
 		{{ partial:clinical_expertise/areas_within }}
