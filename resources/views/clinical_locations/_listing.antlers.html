@@ -2,20 +2,113 @@
 	@name Clinical Locations Listing
 	@desc Paginated card directory of the site's clinical locations, rendered
 	      through the shared `_list_body` (empty state, card grid, pagination).
-	      Faceted narrowing by region / service / expertise is the Find-a-Doc
-	      locations page-builder block's job (UAMS-Web/uams-statamic-archive#63), which reuses the same
-	      `_list_body`. (UAMS-Web/uams-statamic-archive#574)
+	      (UAMS-Web/uams-statamic-archive#574)
+
+	      UAMS-Web/uams-statamic#1579: a GET form narrows the directory by a text
+	      search (`?q=`), an Arkansas region (`?region=`) and a location type
+	      (`?type=`), and orders it by `?sort=`, so every filtered view is a link.
+	      The filters run through the `clinical_locations_archive_filter` scope,
+	      which treats a blank parameter as no filter, as `clinical_resource_type`
+	      does for the resources archive's `?type=`. The result count is the
+	      paginator's total, the selected values are listed above the results, and
+	      Reset returns to the unfiltered archive. Every value reflected from the
+	      query string is escaped with `sanitize` (Antlers output is raw by default).
+
+	      The Find-a-Doc locations page-builder block (UAMS-Web/uams-statamic-archive#63)
+	      reuses `_list_body` with its own facets and is unaffected.
 #}}
+
+{{# The filter values from the query string. `$filter_active` is true when any
+	filter narrows the list, which selects the filtered empty state. #}}
+{{ $filter_q = get:q ?? '' }}
+{{ $filter_region = get:region ?? '' }}
+{{ $filter_type = get:type ?? '' }}
+{{ $filter_active = $filter_q || $filter_region || $filter_type }}
+
+{{# Only the listed sort keys reach the collection tag; anything else is the
+	default, title A to Z, which is the order the archive had before. #}}
+{{ $sort_key = get:sort == 'title_desc' ? 'title_desc' : 'title_asc' }}
+{{ $sort = $sort_key == 'title_desc' ? 'title:desc' : 'title:asc' }}
+
+{{# The archive root. `current_url` carries `/page/N` on a paginated request, so a
+	form submitting to it would keep the reader on page N of a new filter. #}}
+{{ $archive_url = url ?? current_url }}
+
+{{ partial:page_builder/components/container_row }}
+	<div class="col-12">
+		<form method="get" action="{{ $archive_url }}" role="search" class="locations-filter" aria-label="Search and filter locations">
+			<div class="locations-filter-field">
+				<label for="locations-filter-q">Search locations</label>
+				<input type="search" id="locations-filter-q" name="q" class="form-control"
+					value="{{ $filter_q | sanitize }}"
+					autocomplete="off">
+			</div>
+			<div class="locations-filter-field">
+				<label for="locations-filter-region">Region</label>
+				<select id="locations-filter-region" name="region" class="form-control">
+					<option value="">All regions</option>
+					{{ taxonomy:regions sort="title:asc" }}
+						<option value="{{ slug | sanitize }}"{{ if slug == $filter_region }} selected{{ /if }}>{{ title | sanitize }}</option>
+					{{ /taxonomy:regions }}
+				</select>
+			</div>
+			<div class="locations-filter-field">
+				<label for="locations-filter-type">Location type</label>
+				<select id="locations-filter-type" name="type" class="form-control">
+					<option value="">All location types</option>
+					{{ taxonomy:location_types sort="title:asc" }}
+						<option value="{{ slug | sanitize }}"{{ if slug == $filter_type }} selected{{ /if }}>{{ title | sanitize }}</option>
+					{{ /taxonomy:location_types }}
+				</select>
+			</div>
+			<div class="locations-filter-field">
+				<label for="locations-filter-sort">Sort by</label>
+				<select id="locations-filter-sort" name="sort" class="form-control">
+					<option value="title_asc"{{ if $sort_key == 'title_asc' }} selected{{ /if }}>Name, A to Z</option>
+					<option value="title_desc"{{ if $sort_key == 'title_desc' }} selected{{ /if }}>Name, Z to A</option>
+				</select>
+			</div>
+			<button type="submit" class="btn btn-primary locations-filter-submit">Apply</button>
+			<a href="{{ $archive_url }}" class="btn btn-outline-primary locations-filter-reset">Reset</a>
+		</form>
+	</div>
+{{ /partial:page_builder/components/container_row }}
 
 {{
 	collection:clinical_locations
-	sort="title:asc"
+	query_scope="clinical_locations_archive_filter"
+	q="{{ $filter_q }}"
+	region="{{ $filter_region }}"
+	type="{{ $filter_type }}"
+	sort="{{ $sort }}"
 	paginate="12"
 	as="locations"
 }}
 	{{ partial:page_builder/components/container_row }}
 		<div class="col-12">
-			{{ partial:clinical_locations/list_body }}
+			{{# The count and the selected values, announced when the results change. #}}
+			<div class="locations-result-status" role="status">
+				<span class="locations-result-count">{{ paginate:total_items ?? 0 }} {{ paginate:total_items == 1 ? 'location' : 'locations' }}</span>
+				{{ if $filter_active }}
+					<ul class="locations-selections" aria-label="Selected filters">
+						{{ if $filter_q }}
+							<li class="locations-selection">Search: {{ $filter_q | sanitize }}</li>
+						{{ /if }}
+						{{ if $filter_region }}
+							<li class="locations-selection">Region: {{ taxonomy:regions slug:is="{{ $filter_region }}" }}{{ title | sanitize }}{{ /taxonomy:regions }}</li>
+						{{ /if }}
+						{{ if $filter_type }}
+							<li class="locations-selection">Location type: {{ taxonomy:location_types slug:is="{{ $filter_type }}" }}{{ title | sanitize }}{{ /taxonomy:location_types }}</li>
+						{{ /if }}
+					</ul>
+				{{ /if }}
+			</div>
+
+			{{ if no_results && $filter_active }}
+				<p class="locations-empty">No locations match these filters. <a href="{{ $archive_url }}" class="locations-filter-reset">Show all locations</a></p>
+			{{ else }}
+				{{ partial:clinical_locations/list_body }}
+			{{ /if }}
 		</div>
 	{{ /partial:page_builder/components/container_row }}
 {{ /collection:clinical_locations }}
