@@ -16,7 +16,7 @@
 	      - `child_expertise_list="true"` drops the "Part of {parent}" subtitle, for a
 	        list of one area's own children, where every card shares that parent (as
 	        Find-a-Doc's expertise card does with `$child_expertise_list`).
-	      - `card_title_tag` sets the title's element, `h2` by default; a list under its
+	      - `card_heading_level` sets the title's element, `h2` by default; a list under its
 	        own `h2` heading passes `h3`.
 #}}
 
@@ -47,8 +47,8 @@
 		{{ if parent_expertise_name && ! child_expertise_list }}
 			<p class="card-parent"><small>Part of {{ if parent_expertise_url }}<a href="{{ parent_expertise_url }}">{{ parent_expertise_name | sanitize }}</a>{{ else }}{{ parent_expertise_name | sanitize }}{{ /if }}</small></p>
 		{{ /if }}
-		{{ $card_title_tag = card_title_tag == 'h3' ? 'h3' : 'h2' }}
-		<{{ $card_title_tag }} class="card-title h5"><span itemprop="name">{{ title | sanitize }}</span></{{ $card_title_tag }}>
+		{{ $card_heading = card_heading_level == 'h3' ? 'h3' : 'h2' }}
+		<{{ $card_heading }} class="card-title h5"><span itemprop="name">{{ title | sanitize }}</span></{{ $card_heading }}>
 		{{ if excerpt }}
 			<div class="card-excerpt" itemprop="description">{{ excerpt | sanitize }}</div>
 		{{ /if }}

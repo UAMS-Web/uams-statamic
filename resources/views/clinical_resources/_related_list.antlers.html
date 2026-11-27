@@ -18,7 +18,7 @@
 		<ul class="clinical-resource-related-list">
 			{{ entries }}
 				<li>
-					{{ if url }}<a href="{{ url }}">{{ title }}</a>{{ else }}{{ title }}{{ /if }}
+					{{ if url }}<a href="{{ url }}">{{ title | sanitize }}</a>{{ else }}{{ title | sanitize }}{{ /if }}
 				</li>
 			{{ /entries }}
 		</ul>

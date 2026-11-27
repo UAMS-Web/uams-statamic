@@ -1,10 +1,18 @@
 {{#
 	@name Clinical Resource Related Entities
-	@desc Renders the resource's related Find-a-Doc entities (providers,
-	      locations, areas of expertise, conditions, treatments, and related
-	      resources) as linked lists. Each entity links to its show page when it
-	      has a resolvable URL, otherwise renders its name as plain text. Expects
-	      the clinical resource entry in scope. (UAMS-Web/uams-statamic-archive#577)
+	@desc Renders the resource's related Find-a-Doc entities in the layouts the
+	      Find-a-Doc clinical resource page uses (UAMS-Web/uams-statamic#1582, read from
+	      `UAMS-Web/UAMSWP-Find-a-Doc` `templates/single-clinical-resource.php` and
+	      `templates/blocks/clinical-resources.php` at `69435a55`):
+
+	      - Providers, locations and areas of expertise render as cards.
+	      - Providers show every card up to a cutoff of 18; above it, the first 12
+	        show and the rest sit behind a "Load all providers" control.
+	      - Related resources render as cards when there are four or fewer, and as
+	        a link list above that.
+	      - Conditions and treatments render as link lists, as on Find-a-Doc.
+
+	      Expects the clinical resource entry in scope. (UAMS-Web/uams-statamic-archive#577)
 #}}
 
 {{# UAMS-Web/uams-statamic-archive#919: filter related providers to clinical-provider-eligible, searchable people once, then reuse. #}}
@@ -15,15 +23,117 @@
 	opened over six empty lists (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422).
 	`eligible_providers` is already a plain array (`clinical_provider_eligible`
 	returns one), so `| length` there counts what renders. #}}
-{{ $has_related = ( eligible_providers | length ) || ( clinical_locations | count ) || ( clinical_expertise | count ) || ( clinical_conditions | count ) || ( clinical_services | count ) || ( clinical_resources | count ) }}
+{{ $provider_total = eligible_providers | length }}
+{{ $location_total = clinical_locations | count }}
+{{ $expertise_total = clinical_expertise | count }}
+{{ $resource_total = clinical_resources | count }}
+{{ $has_related = $provider_total || $location_total || $expertise_total || ( clinical_conditions | count ) || ( clinical_services | count ) || $resource_total }}
+
+{{# Find-a-Doc's provider cutoff: a list of up to 18 shows in full; a longer
+	one shows its first 12 and offers the rest. #}}
+{{ $provider_cutoff = 18 }}
+{{ $provider_visible = 12 }}
+{{ $provider_overflow = $provider_total > $provider_cutoff }}
 
 {{ if $has_related }}
+	{{# The cards below render inside this page's scope, and Antlers resolves a
+		field a related entry does not carry from the enclosing scope: a related
+		document has no `intro`, so its card would show this page's introduction.
+		Blank every page field a card reads, so a card shows only its own entry's
+		values. #}}
+	{{ intro = null }}
+	{{ title_short = null }}
+	{{ excerpt = null }}
+	{{ short_desc = null }}
+	{{ generic_name = null }}
+	{{ documents_description = null }}
+	{{ infographic_description = null }}
+	{{ cover_image_query = null }}
+	{{ cover_image_alt_text_override = null }}
+	{{ featured_image = null }}
+	{{ featured_image_16_9 = null }}
+	{{ featured_image_credit_query = null }}
+	{{ featured_provider = null }}
+	{{ spotlight_auto_excerpt = null }}
+	{{ spotlight_image_wide = null }}
+	{{ spotlight_provider_name = null }}
+	{{ portrait = null }}
+	{{ portrait_wide = null }}
+	{{ clinical_title = null }}
+	{{ fad_facet = null }}
+
 	<aside class="clinical-resource-related" aria-label="Related">
-		{{ partial:clinical_resources/related_list :entries="eligible_providers" heading="Related Providers" }}
-		{{ partial:clinical_resources/related_list :entries="clinical_locations" heading="Related Locations" }}
-		{{ partial:clinical_resources/related_list :entries="clinical_expertise" heading="Areas of Expertise" }}
+		{{ if $provider_total }}
+			<section class="clinical-resource-related-group clinical-resource-related-providers" aria-labelledby="related-providers-title">
+				<h2 class="h5" id="related-providers-title">Related Providers</h2>
+				{{# The provider card's portrait is an `image` property with no item scope of
+					its own; the ItemList scope keeps it off the resource article's item. #}}
+				<div class="card-list-container">
+					<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">
+						{{ eligible_providers }}
+							{{ if ! $provider_overflow || index < $provider_visible }}
+								{{ partial:page_builder/components/fad_provider_card profile_url="{{ people_lens_url lens='provider' }}" }}
+							{{ /if }}
+						{{ /eligible_providers }}
+					</div>
+				</div>
+				{{ if $provider_overflow }}
+					{{# A native disclosure, so the rest of the list opens without script. #}}
+					<details class="clinical-resource-related-more">
+						<summary class="btn btn-primary">Load all providers</summary>
+						<div class="card-list-container">
+							<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">
+								{{ eligible_providers }}
+									{{ if index >= $provider_visible }}
+										{{ partial:page_builder/components/fad_provider_card profile_url="{{ people_lens_url lens='provider' }}" }}
+									{{ /if }}
+								{{ /eligible_providers }}
+							</div>
+						</div>
+					</details>
+				{{ /if }}
+			</section>
+		{{ /if }}
+
+		{{ if $location_total }}
+			<section class="clinical-resource-related-group clinical-resource-related-locations" aria-labelledby="related-locations-title">
+				<h2 class="h5" id="related-locations-title">Related Locations</h2>
+				<div class="card-list-container location-card-list-container">
+					<div class="card-list">
+						{{ clinical_locations }}
+							{{ partial:clinical_locations/card card_heading_level="h3" }}
+						{{ /clinical_locations }}
+					</div>
+				</div>
+			</section>
+		{{ /if }}
+
+		{{ if $expertise_total }}
+			<section class="clinical-resource-related-group clinical-resource-related-expertise" aria-labelledby="related-expertise-title">
+				<h2 class="h5" id="related-expertise-title">Areas of Expertise</h2>
+				{{# The expertise card is an `itemListElement`, so its list is the ItemList. #}}
+				<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
+					{{ clinical_expertise }}
+						{{ partial:clinical_expertise/card card_heading_level="h3" }}
+					{{ /clinical_expertise }}
+				</div>
+			</section>
+		{{ /if }}
+
 		{{ partial:clinical_resources/related_list :entries="clinical_conditions" heading="Conditions" }}
 		{{ partial:clinical_resources/related_list :entries="clinical_services" heading="Treatments" }}
-		{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Related Resources" }}
+
+		{{ if $resource_total > 4 }}
+			{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Related Resources" }}
+		{{ elseif $resource_total }}
+			<section class="clinical-resource-related-group clinical-resource-related-resources" aria-labelledby="related-resources-title">
+				<h2 class="h5" id="related-resources-title">Related Resources</h2>
+				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+					{{ clinical_resources }}
+						{{ partial:clinical_resources/card card_heading_level="h3" }}
+					{{ /clinical_resources }}
+				</div>
+			</section>
+		{{ /if }}
 	</aside>
 {{ /if }}
