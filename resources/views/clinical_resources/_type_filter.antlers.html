@@ -21,6 +21,11 @@
 	      `$provider_only` the "All types" href. The separator is `&amp;` because an
 	      href is an HTML attribute — a bare `&` there is invalid markup — and the
 	      slug is `sanitize_url`ed because it arrives from the query string.
+
+	      Every tab also preserves the listing's search, location, area of expertise and
+	      sort (UAMS-Web/uams-statamic#1583), passed in as `filter_query`: each parameter
+	      already URL-encoded and prefixed with `&amp;`, so switching type narrows the
+	      current selection rather than discarding it.
 #}}
 {{# The archive root, passed in by the listing. `current_url` carries `/page/N` on a
 	paginated request, so a tab built from it would switch type WITHOUT returning to
@@ -28,7 +33,8 @@
 {{ $base_url = archive_url ?? current_url }}
 {{ $provider_slug = filter_provider ?? '' }}
 {{ $provider_query = $provider_slug ? ( '&amp;provider=' + ( $provider_slug | sanitize_url ) ) : '' }}
-{{ $provider_only = $provider_slug ? ( '?provider=' + ( $provider_slug | sanitize_url ) ) : '' }}
+{{ $provider_query = $provider_query + ( filter_query ?? '' ) }}
+{{ $provider_only = $provider_query ? ( '?' + ( $provider_query | remove_left('&amp;') ) ) : '' }}
 <nav class="resources-type-filter" aria-label="Filter clinical resources by type">
 	<ul class="nav nav-pills resources-type-filter-list">
 		<li class="nav-item">

@@ -10,6 +10,10 @@
 	      same details partial, read through the `resolved_*` computeds rather than the
 	      stored fields so an inherited value renders like an owned one.
 
+	      UAMS-Web/uams-statamic#1578 added, from Find-a-Doc's `single-locations.php`, the Get
+	      Directions and parking links, the photo gallery, the About section (lead
+	      description, video and description sections) and the list of child locations.
+
 	      STILL NOT RENDERED HERE: the regular opening hours. `hours_of_operation` exists on
 	      the blueprint and is emitted as JSON-LD, and only the UAMS-Web/uams-statamic-archive#1328 modified-hours NOTICE
 	      reaches a reader -- so a location can say its hours are different this week without
@@ -50,6 +54,9 @@
 			</section>
 		{{ /if }}
 
+		{{# Get Directions and parking links, the photo gallery and the About section (UAMS-Web/uams-statamic#1578). #}}
+		{{ partial:clinical_locations/profile_overview }}
+
 		{{# External website. #}}
 		{{ if external_website_url }}
 			<p class="location-website">
@@ -61,6 +68,9 @@
 			guidance, modified hours, wayfinding) — each optional, rendered only
 			when its field has a value. #}}
 		{{ partial:clinical_locations/profile_details }}
+
+		{{# The child locations nested under this one (UAMS-Web/uams-statamic#1578). #}}
+		{{ partial:clinical_locations/child_locations }}
 
 		{{# Related Find-a-Doc entities. `clinical_resources/related_list` is a
 			generic (entries + heading) linked-list partial reused here. Related

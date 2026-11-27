@@ -1,19 +1,21 @@
 <!--
-  Skeleton only — .claude/skills/writing-pull-requests/SKILL.md is the source of truth.
+  Skeleton only: .claude/skills/writing-pull-requests/SKILL.md is the source of truth.
   Delete the sections you don't need, and delete these comments before submitting.
 
-  Title — it renders verbatim into the GitHub Release notes, so write it for someone
+  Title: it renders verbatim into the GitHub Release notes, so write it for someone
   skimming "what shipped": imperative, verb-first, no trailing period, no Conventional-Commit
   prefix, and no internal-process references (no `Wave N`, `Group X`, `Iteration N`, batch or
   merge-order hints). Correct acronym casing; "and", never "&".
 
-  Before opening: run `npm run spell` if you touched prose or identifiers, run
-  `composer mutate-ignore` if you added or changed a `@pest-mutate-ignore` annotation, and open as a
-  DRAFT unless the branch is ready to merge once its required remote checks pass. Docs-only
-  PRs open ready.
+  Before opening: this repository is public, so its remote checks run on a pull request.
+  Open it as a draft, let those checks run, and mark it ready once every one is green. Run
+  locally only what the remote checks do not cover.
+  Never add an attribution footer or a session link to the body.
 
-  Closing multiple issues? Repeat the keyword — `Closes #1, Closes #2.` A comma-separated
+  Closing multiple issues? Repeat the keyword: `Closes #1, Closes #2.` A comma-separated
   list links only the FIRST issue.
+
+  Pull requests from an issue's branch go to `main`. See CONTRIBUTING.md for the flow and for which environment each test plan covers.
 -->
 
 Closes #
@@ -31,7 +33,7 @@ Closes #
 
 ## Files
 
-<!-- - **edit** [`path/to/file.php`](https://github.com/UAMS-Web/uams-statamic/blob/<branch>/path/to/file.php) — reason. -->
+<!-- - **edit** [`path/to/file`](https://github.com/OWNER/REPO/blob/BRANCH/path/to/file): reason. -->
 
 ## Verification
 
@@ -39,8 +41,8 @@ Closes #
 
 ## Companion PRs
 
-<!-- Sibling PRs in uams-statamic-content, wordpress-importer, etc. When this depends on a
-     submodule companion, state the merge order and add the gated pointer bump to the test plan. -->
+<!-- Sibling PRs in other repositories. When this depends on a companion, state the merge
+     order and which side breaks if the order is ignored. -->
 
 ## Out of scope
 
@@ -48,7 +50,19 @@ Closes #
 
 ## Test plan
 
-<!-- Mandatory, and always last. `- [x]` = verified locally; `- [ ]` = deferred to CI, review,
-     or staging. Name the command, URL, or observation. -->
+<!--
+  Mandatory, and always last. First line: the environment this plan was run on.
+    To `main`: Run on the local environment.
+  `- [x]` = verified here; `- [ ]` = deferred to CI or review. A check that needs another environment goes under `## Follow-up`. Name the
+  command, URL, or observation. Check a box only for a check you actually ran.
+-->
 
-- [ ] Local CI green (`node scripts/ci-local.mjs --branch <branch>`).
+Run on
+
+<!-- uams-claude-skills:repository-begin -->
+<!-- This repository: before every push, run `npm run spell` if you touched prose or
+     identifiers, and `composer mutate-ignore` if you added or changed a
+     `@pest-mutate-ignore` annotation (.claude/rules/pre-push-check.md). When this depends
+     on a `uams-statamic-content` submodule companion, add the gated pointer bump as an
+     item here. -->
+<!-- uams-claude-skills:repository-end -->

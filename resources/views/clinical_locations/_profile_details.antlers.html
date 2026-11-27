@@ -12,6 +12,8 @@
 	      and Telemedicine sections, ported from Find-a-Doc's `single-locations.php`; the
 	      closure banner above the profile is `clinical_locations/status_banner`. Their
 	      system-wide copy comes from the Find-a-Doc Settings global, `uams_fad_settings`.
+	      UAMS-Web/uams-statamic#1577 added Appointment Information and Prescription
+	      Information from the same template, with their system-wide copy from that global.
 #}}
 
 {{# Eligibility-restricted access notice (UAMS-Web/uams-statamic-archive#1177). Surfaced first so patients see
@@ -107,7 +109,7 @@
 	location to its parent. The facility's name comes from `resolved_parking_facility_name`,
 	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172). #}}
 {{ if resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
-	<section class="location-parking">
+	<section class="location-parking" id="parking-info">
 		<h2>Parking and Directions</h2>
 		{{ if resolved_parking_facility_name }}
 			<p class="location-parking-facility">{{ resolved_parking_facility_name | sanitize }}</p>
@@ -158,6 +160,68 @@
 			{{ /if }}
 		</dl>
 	</section>
+{{ /if }}
+
+{{# Appointment Information (UAMS-Web/uams-statamic#1577), ported from Find-a-Doc's Appointment
+	Information section: setting up an appointment, what to bring, and what to expect, in that
+	order, each only when it has text. The heading follows Find-a-Doc: "Appointment Information"
+	over the parts when the setting-up text is present or both other parts are, otherwise the
+	one part's own heading.
+
+	The setting-up text renders only while the location takes appointments and lets patients
+	schedule them (`appointments_required_query`, then `appointments_schedule_query`), the
+	conditions under which the blueprint shows the field, so text left behind after an editor
+	turns scheduling off stays hidden. What to bring falls back to the system-wide copy in the
+	Find-a-Doc Settings global (`location_bring_to_appointment_info`), as the field's
+	instructions say; Find-a-Doc itself has no such fallback. #}}
+{{ $appointment_setup = appointments_required_query && appointments_schedule_query ? setting_up_appointment_info : '' }}
+{{ $appointment_bring = bring_to_appointment_info ? bring_to_appointment_info : uams_fad_settings:location_bring_to_appointment_info }}
+{{ $appointment_expect = expect_at_appointment_info }}
+{{ if $appointment_setup || $appointment_bring || $appointment_expect }}
+	<section class="location-appointment-info" id="appointment-info">
+		{{ if $appointment_setup || ($appointment_bring && $appointment_expect) }}
+			<h2>Appointment Information</h2>
+			{{ if $appointment_setup }}
+				<div class="location-appointment-setup">{{ $appointment_setup }}</div>
+			{{ /if }}
+			{{ if $appointment_bring }}
+				<h3>What to Bring to Your Appointment</h3>
+				<div class="location-appointment-bring">{{ $appointment_bring }}</div>
+			{{ /if }}
+			{{ if $appointment_expect }}
+				<h3>What to Expect at Your Appointment</h3>
+				<div class="location-appointment-expect">{{ $appointment_expect }}</div>
+			{{ /if }}
+		{{ elseif $appointment_bring }}
+			<h2>What to Bring to Your Appointment</h2>
+			<div class="location-appointment-bring">{{ $appointment_bring }}</div>
+		{{ else }}
+			<h2>What to Expect at Your Appointment</h2>
+			<div class="location-appointment-expect">{{ $appointment_expect }}</div>
+		{{ /if }}
+	</section>
+{{ /if }}
+
+{{# Prescription Information (UAMS-Web/uams-statamic#1577), ported from Find-a-Doc's
+	prescription text. With `prescription_query` on, `prescription_type` picks the text: the
+	Find-a-Doc Settings global's "call the clinic" copy (`location_prescription_clinic`), its
+	"call your pharmacy" copy (`location_prescription_pharmacy`), or the location's own
+	`prescription` for custom. An unset type is the pharmacy copy, the field's default. With no
+	text the section is omitted, as Find-a-Doc omits it. #}}
+{{ if prescription_query }}
+	{{ if prescription_type == 'custom' }}
+		{{ $prescription_text = prescription }}
+	{{ elseif prescription_type == 'clinic' }}
+		{{ $prescription_text = uams_fad_settings:location_prescription_clinic }}
+	{{ else }}
+		{{ $prescription_text = uams_fad_settings:location_prescription_pharmacy }}
+	{{ /if }}
+	{{ if $prescription_text }}
+		<section class="location-prescription-info" id="prescription-info">
+			<h2>Prescription Information</h2>
+			<div class="location-prescription-info-body">{{ $prescription_text }}</div>
+		</section>
+	{{ /if }}
 {{ /if }}
 
 {{# Appointment guidance — post-appointment expectations (UAMS-Web/uams-statamic-archive#1181). #}}
