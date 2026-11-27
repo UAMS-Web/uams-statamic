@@ -1,9 +1,21 @@
 {{#
 	@name Clinical Resources Listing
 	@desc Type-filterable, paginated card grid of the site's clinical resources.
-	      Narrowing by area of expertise / condition / treatment is deferred to
-	      the Find-a-Doc faceted filter component (UAMS-Web/uams-statamic-archive#61/UAMS-Web/uams-statamic-archive#62/UAMS-Web/uams-statamic-archive#63), which needs a
-	      relationship-array query scope this template does not build. (UAMS-Web/uams-statamic-archive#576)
+	      (UAMS-Web/uams-statamic-archive#576)
+
+	      UAMS-Web/uams-statamic#1583: a GET form narrows the grid by a text search
+	      (`?q=`), a location (`?location=`) and an area of expertise (`?expertise=`),
+	      each facet a slug, and orders it by `?sort=`, so every filtered view is a link.
+	      The filters run through the `clinical_resources_archive_filter` scope, which
+	      treats a blank parameter as no filter, as the `clinical_locations` archive's
+	      filter does. They combine with the type tabs and the provider filter, which the
+	      form carries as hidden fields and the tabs carry in their links. The result
+	      count is the paginator's total, the selected values are listed above the
+	      results, and Reset returns to the unfiltered archive. Every value reflected
+	      from the query string is escaped (Antlers output is raw by default).
+
+	      Condition and treatment facets are not built: those pages no longer route on
+	      this site.
 #}}
 
 {{# Optional type filter from the query string (?type=article|audio|…). Applied via
@@ -36,6 +48,37 @@
 {{ $filter_provider_name = {clinical_resource_filter:provider_name provider="{{ get:provider }}"} }}
 {{ $filter_provider_active = $filter_provider_name ? ( get:provider | trim ) : '' }}
 
+{{# The search and facet values from the query string (UAMS-Web/uams-statamic#1583).
+	`$filter_narrowed` is true when any of them is given, which selects the filtered
+	empty state and the list of selected values. #}}
+{{ $filter_q = get:q ?? '' }}
+{{ $filter_location = get:location ?? '' }}
+{{ $filter_expertise = get:expertise ?? '' }}
+{{ $filter_narrowed = $filter_q || $filter_location || $filter_expertise }}
+
+{{# Only the listed sort keys reach the collection tag; anything else is the default,
+	newest first, which is the order the archive had before. #}}
+{{ $sort_key = 'newest' }}
+{{ $sort = 'date:desc' }}
+{{ if get:sort == 'oldest' }}
+	{{ $sort_key = 'oldest' }}
+	{{ $sort = 'date:asc' }}
+{{ elseif get:sort == 'title_asc' }}
+	{{ $sort_key = 'title_asc' }}
+	{{ $sort = 'title:asc' }}
+{{ elseif get:sort == 'title_desc' }}
+	{{ $sort_key = 'title_desc' }}
+	{{ $sort = 'title:desc' }}
+{{ /if }}
+
+{{# The search, facets and a non-default sort as query parameters, each URL-encoded
+	and prefixed with `&amp;`, for the type tabs to carry. #}}
+{{ $filter_query = '' }}
+{{ if $filter_q }}{{ $filter_query = $filter_query + '&amp;q=' + ( $filter_q | urlencode ) }}{{ /if }}
+{{ if $filter_location }}{{ $filter_query = $filter_query + '&amp;location=' + ( $filter_location | urlencode ) }}{{ /if }}
+{{ if $filter_expertise }}{{ $filter_query = $filter_query + '&amp;expertise=' + ( $filter_expertise | urlencode ) }}{{ /if }}
+{{ if $sort_key != 'newest' }}{{ $filter_query = $filter_query + '&amp;sort=' + $sort_key }}{{ /if }}
+
 {{# The archive root, for every filter link on the page. `current_url` is the REQUEST
 	url, so on page 2 it is `/health/resources/page/2` — building a filter href from it
 	would keep the page segment and drop the reader into page 2 of a list they have not
@@ -43,16 +86,71 @@
 	carries pagination; `current_url` remains the fallback for a context without one. #}}
 {{ $archive_url = url ?? current_url }}
 
+{{# The search, facet and sort form. It submits to the archive root, so a new filter
+	starts on page 1, and carries the type and provider as hidden fields so they
+	combine with it. The facet options are every published location and area of
+	expertise, by title. #}}
+{{ partial:page_builder/components/container_row }}
+	<div class="col-12">
+		<form method="get" action="{{ $archive_url }}" role="search" class="resources-filter" aria-label="Search and filter clinical resources">
+			{{ if $filter_type }}
+				<input type="hidden" name="type" value="{{ $filter_type | sanitize }}">
+			{{ /if }}
+			{{ if $filter_provider_active }}
+				<input type="hidden" name="provider" value="{{ $filter_provider_active | sanitize }}">
+			{{ /if }}
+			<div class="resources-filter-field">
+				<label for="resources-filter-q">Search clinical resources</label>
+				<input type="search" id="resources-filter-q" name="q" class="form-control"
+					value="{{ $filter_q | sanitize }}"
+					autocomplete="off">
+			</div>
+			<div class="resources-filter-field">
+				<label for="resources-filter-location">Location</label>
+				<select id="resources-filter-location" name="location" class="form-control">
+					<option value="">All locations</option>
+					{{ clinical_resource_facets:locations }}
+						<option value="{{ slug | sanitize }}"{{ if slug == $filter_location }} selected{{ /if }}>{{ title | sanitize }}</option>
+					{{ /clinical_resource_facets:locations }}
+				</select>
+			</div>
+			<div class="resources-filter-field">
+				<label for="resources-filter-expertise">Area of expertise</label>
+				<select id="resources-filter-expertise" name="expertise" class="form-control">
+					<option value="">All areas of expertise</option>
+					{{ clinical_resource_facets:expertise }}
+						<option value="{{ slug | sanitize }}"{{ if slug == $filter_expertise }} selected{{ /if }}>{{ title | sanitize }}</option>
+					{{ /clinical_resource_facets:expertise }}
+				</select>
+			</div>
+			<div class="resources-filter-field">
+				<label for="resources-filter-sort">Sort by</label>
+				<select id="resources-filter-sort" name="sort" class="form-control">
+					<option value="newest"{{ if $sort_key == 'newest' }} selected{{ /if }}>Newest first</option>
+					<option value="oldest"{{ if $sort_key == 'oldest' }} selected{{ /if }}>Oldest first</option>
+					<option value="title_asc"{{ if $sort_key == 'title_asc' }} selected{{ /if }}>Title, A to Z</option>
+					<option value="title_desc"{{ if $sort_key == 'title_desc' }} selected{{ /if }}>Title, Z to A</option>
+				</select>
+			</div>
+			<button type="submit" class="btn btn-primary resources-filter-submit">Apply</button>
+			<a href="{{ $archive_url }}" class="btn btn-outline-primary resources-filter-reset">Reset</a>
+		</form>
+	</div>
+{{ /partial:page_builder/components/container_row }}
+
 {{# `exclude_suppressed_dependents` (UAMS-Web/uams-statamic-archive#1593) drops any resource whose declared
 	`publish_depends_on` source(s) have gone dark, so a suppressed dependent
 	never appears as a card here (it also 302s on its own URL). Pipe-composed
 	with the resource-type and provider scopes. #}}
 {{
 	collection:clinical_resources
-	query_scope="clinical_resource_type|clinical_resources_for_provider|exclude_suppressed_dependents"
+	query_scope="clinical_resource_type|clinical_resources_for_provider|clinical_resources_archive_filter|exclude_suppressed_dependents"
 	type="{{ get:type }}"
 	provider="{{ get:provider }}"
-	sort="date:desc"
+	q="{{ $filter_q }}"
+	location="{{ $filter_location }}"
+	expertise="{{ $filter_expertise }}"
+	sort="{{ $sort }}"
 	paginate="12"
 	as="resources"
 }}
@@ -62,7 +160,7 @@
 				active tab reflects $filter_type, so the old textual "Showing X / Clear
 				filter" notice is redundant. Rendered above the results so a visitor can
 				switch types even when the current type has none. (UAMS-Web/uams-statamic-archive#1468) #}}
-			{{ partial:clinical_resources/type_filter :filter_provider="$filter_provider_active" :archive_url="$archive_url" }}
+			{{ partial:clinical_resources/type_filter :filter_provider="$filter_provider_active" :archive_url="$archive_url" :filter_query="$filter_query" }}
 
 			{{# The provider filter has no on-page control of its own — it is arrived at
 				from a provider profile — so it states itself in words and offers the way
@@ -78,6 +176,26 @@
 				`$archive_url` rather than `current_url`: on page 2 `current_url` is
 				`/health/resources/page/2`, so building filter links from it would keep the
 				page segment and drop the reader into page 2 of a differently-filtered list. #}}
+			{{# The count and the selected search and facet values, announced when the
+				results change. The type shows as the active tab and the provider in its own
+				notice below, so neither is repeated here. #}}
+			<div class="resources-result-status" role="status">
+				<span class="resources-result-count">{{ paginate:total_items ?? 0 }} {{ paginate:total_items == 1 ? 'clinical resource' : 'clinical resources' }}</span>
+				{{ if $filter_narrowed }}
+					<ul class="resources-selections" aria-label="Selected filters">
+						{{ if $filter_q }}
+							<li class="resources-selection">Search: {{ $filter_q | sanitize }}</li>
+						{{ /if }}
+						{{ if $filter_location }}
+							<li class="resources-selection">Location: {{ clinical_resource_facets:locations }}{{ if slug == $filter_location }}{{ title | sanitize }}{{ /if }}{{ /clinical_resource_facets:locations }}</li>
+						{{ /if }}
+						{{ if $filter_expertise }}
+							<li class="resources-selection">Area of expertise: {{ clinical_resource_facets:expertise }}{{ if slug == $filter_expertise }}{{ title | sanitize }}{{ /if }}{{ /clinical_resource_facets:expertise }}</li>
+						{{ /if }}
+					</ul>
+				{{ /if }}
+			</div>
+
 			{{ if $filter_provider_name }}
 				<p class="resources-provider-filter">
 					Showing resources related to {{ $filter_provider_name | sanitize }}.
@@ -88,7 +206,9 @@
 			{{ if no_results }}
 				{{# One clause per state. Concatenating the two `if`s produced the ungrammatical
 					"…found for this type for this provider." #}}
-				{{ if $filter_provider_name && $filter_type }}
+				{{ if $filter_narrowed }}
+					<p class="resources-empty">No clinical resources match these filters. <a href="{{ $archive_url }}" class="resources-filter-reset">Show all clinical resources</a></p>
+				{{ elseif $filter_provider_name && $filter_type }}
 					<p class="resources-empty">No clinical resources of this type found for {{ $filter_provider_name | sanitize }}.</p>
 				{{ elseif $filter_provider_name }}
 					<p class="resources-empty">No clinical resources found for {{ $filter_provider_name | sanitize }}.</p>
