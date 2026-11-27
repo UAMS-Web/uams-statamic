@@ -1,0 +1,23 @@
+{{#
+	@name Clinical Resource appointment call to action
+	@desc The default "Make an Appointment" band on a clinical resource page (UAMS-Web/uams-statamic#1584),
+	      matching Find-a-Doc's `uamswp_resource_appointment()`. A clinical resource
+	      has no authored call to action of its own, so the band always renders on the
+	      pages that include it. Provider Spotlight resources render their own
+	      eligibility-gated call to action instead and do not include this partial.
+
+	      "Contacting a clinic directly" links to the locations collection's mount
+	      page, and renders as plain text when that collection has no mount.
+#}}
+
+{{ $appointment_locations_url = {mount_url handle="clinical_locations"} }}
+<section class="uams-module cta-bar cta-bar-1 bg-auto appointment-cta" id="appointment-info" aria-labelledby="appointment-info-heading">
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-xs-12">
+				<h2 id="appointment-info-heading">Make an Appointment</h2>
+				<p>Request an appointment by {{ if $appointment_locations_url }}<a href="{{ $appointment_locations_url }}" data-itemtitle="Contact a clinic directly">contacting a clinic directly</a>{{ else }}contacting a clinic directly{{ /if }} or by calling the UAMS&nbsp;Health appointment line at <a href="tel:501-686-8000" class="no-break" data-itemtitle="Call the UAMS Health appointment line">(501) 686-8000</a>.</p>
+			</div>
+		</div>
+	</div>
+</section>

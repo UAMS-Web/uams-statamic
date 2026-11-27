@@ -1,0 +1,21 @@
+{{#
+	@name Clinical Resources archive header
+	@desc The heading and introduction that open the Clinical Resources archive
+	      (UAMS-Web/uams-statamic#1584), read from the `uams_fad_settings` global as
+	      Find-a-Doc's `archive-clinical-resource.php` reads its options: the
+	      `clinical_resource_archive_headline` text (falling back to "Clinical
+	      Resources" when empty) and the `clinical_resource_archive_intro_text` rich
+	      text, omitted when empty. The headline is editor-controlled plain text, so
+	      it is escaped.
+#}}
+
+{{ $archive_headline = uams_fad_settings:clinical_resource_archive_headline ?? null }}
+{{ $archive_intro = uams_fad_settings:clinical_resource_archive_intro_text ?? null }}
+<section class="archive-description">
+	<header class="entry-header">
+		<h1 class="entry-title" itemprop="headline">{{ $archive_headline ? ($archive_headline | sanitize) : 'Clinical Resources' }}</h1>
+	</header>
+	{{ if $archive_intro }}
+		<div class="entry-content clearfix archive-intro" itemprop="text">{{ $archive_intro }}</div>
+	{{ /if }}
+</section>

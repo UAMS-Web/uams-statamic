@@ -24,7 +24,8 @@
 		{{ /if }}
 
 		{{ if clinical_locations }}
-			<section class="aoe-related-section aoe-related-locations">
+			{{# `id="locations"` is the target of the default appointment band's "contacting a clinic directly" link (UAMS-Web/uams-statamic#1584). #}}
+			<section class="aoe-related-section aoe-related-locations" id="locations">
 				<h2 class="aoe-related-title">Related Clinical Locations</h2>
 				<ul class="aoe-related-list">
 					{{ clinical_locations }}

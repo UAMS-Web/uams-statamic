@@ -1,0 +1,36 @@
+{{#
+	@name Area of Expertise appointment call to action
+	@desc The appointment call to action on an Area of Expertise page (UAMS-Web/uams-statamic#1584),
+	      rendered from the entry scope:
+
+	      - the entry's own authored `cta` bar(s), when it has any; otherwise
+	      - the default "Make an Appointment" band, matching Find-a-Doc's
+	        `uamswp_expertise_appointment()`; unless
+	      - `cta_inherit_disabled` is on, in which case nothing renders.
+
+	      The `cta_bars` replicator set type is `new_set` (it imports the
+	      `uamsweb_block_cta` fieldset), so the authored bars render that block
+	      partial directly rather than `page_builder/{type}`.
+
+	      The default band links "contacting a clinic directly" to the page's own
+	      related-locations list (`#locations`) when the entry has related locations,
+	      and to the locations collection's mount page otherwise, as Find-a-Doc does.
+#}}
+
+{{ if cta }}
+	{{ cta }}
+		{{ partial:page_builder/uamsweb_block_cta }}
+	{{ /cta }}
+{{ elseif ! cta_inherit_disabled }}
+	{{ $appointment_locations_url = clinical_locations ? '#locations' : {mount_url handle="clinical_locations"} }}
+	<section class="uams-module cta-bar cta-bar-1 bg-auto appointment-cta" id="appointment-info" aria-labelledby="appointment-info-heading">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-xs-12">
+					<h2 id="appointment-info-heading">Make an Appointment</h2>
+					<p>Request an appointment by {{ if $appointment_locations_url }}<a href="{{ $appointment_locations_url }}" data-itemtitle="Contact a clinic directly">contacting a clinic directly</a>{{ else }}contacting a clinic directly{{ /if }} or by calling the UAMS&nbsp;Health appointment line at <a href="tel:501-686-8000" class="no-break" data-itemtitle="Call the UAMS Health appointment line">(501) 686-8000</a>.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+{{ /if }}
