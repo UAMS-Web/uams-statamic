@@ -6,9 +6,11 @@ use App\Services\SchemaTemplates\SchemaJsonLdAtIdDeduplication;
 use App\Services\SchemaTemplates\SchemaJsonLdFragmentAtId;
 use App\Services\SchemaTemplates\SchemaOutputService;
 use App\Services\SchemaTemplates\SchemaTemplateEmitContext;
+use App\Services\SchemaTemplates\SchemaTemplateEmitContextRuntimeStack;
 use App\Services\SchemaTemplates\SchemaTemplateInstanceWatermarkBag;
 use App\Tags\SchemaCountry;
 use Statamic\Facades\Antlers;
+use Statamic\Fields\Value;
 use Tests\TestCase;
 
 uses(TestCase::class);
@@ -19,9 +21,10 @@ uses(TestCase::class);
  * Covers JSON-LD `Country` output: canonical `@id` via
  * `SchemaJsonLdFragmentAtId`, Wikidata-backed `identifier` values, scalar and
  * list `code`, `code_type` resolution, `SchemaTemplateEmitContext` compact
- * references, and invalid or empty input.
+ * references, invalid or empty input, and a JSON encoding failure.
  *
- * Mutation: 100% on App\Tags\SchemaCountry (143 mutants, --covered-only).
+ * Mutation: 100% on App\Tags\SchemaCountry (121 mutants, without --covered-only).
+ * Six equivalent mutants are annotated in the class.
  *
  * @command  php artisan test --compact tests/Feature/Tags/SchemaCountryTest.php
  */
@@ -42,6 +45,69 @@ function schemaCountryExpectedAtId(string $iso3166Alpha2Uppercase): string
 
     return SchemaJsonLdFragmentAtId::atIdFromRootRelativePath($path);
 }
+
+/**
+ * Run the tag directly, so that a parameter can hold a value Antlers syntax
+ * cannot express.
+ *
+ * @param  array<string, mixed>  $parameters  Tag parameters
+ * @param  array<string, mixed>  $context  Antlers context
+ * @return string Raw tag output
+ */
+function schemaCountryTagOutput(array $parameters, array $context = []): string
+{
+    $tag = app(SchemaCountry::class);
+
+    // The parameters are resolved against the context, so the context goes first
+    $tag->setContext($context);
+    $tag->setParameters($parameters);
+
+    return $tag->index();
+}
+
+/**
+ * Reduce a decoded `Country` map to its name and its three identifier values.
+ *
+ * @param  mixed  $country  Decoded `Country` map
+ * @return list<mixed> Name, alpha-2, alpha-3 and numeric values
+ */
+function schemaCountrySummary(mixed $country): array
+{
+    return [
+        data_get($country, 'name'),
+        data_get($country, 'identifier.0.value'),
+        data_get($country, 'identifier.1.value'),
+        data_get($country, 'identifier.2.value'),
+    ];
+}
+
+/**
+ * Reduce a JSON array of `Country` objects to one summary per country.
+ *
+ * @param  string  $json  Raw tag output
+ * @return list<list<mixed>>|null Summaries in output order, or null when the output is not a JSON array
+ */
+function schemaCountryListSummaries(string $json): ?array
+{
+    $decoded = json_decode($json, true);
+
+    if (! is_array($decoded)) {
+        return null;
+    }
+
+    return array_values(array_map(schemaCountrySummary(...), $decoded));
+}
+
+/*
+ * Clear the tag's process-wide lookup maps, so that every test builds the map it
+ * reads. A mutant's child runs only the tests that cover the mutated line, and a
+ * map left over from an earlier test hides the build lines from the later ones.
+ */
+beforeEach(function () {
+    foreach (['countryByUpperAlpha3', 'countryByNumericIntKey'] as $property) {
+        (new ReflectionProperty(SchemaCountry::class, $property))->setValue(null, null);
+    }
+});
 
 it('resolves the tag handle to schema_country', function () {
     expect(SchemaCountry::handle())->toBe('schema_country');
@@ -378,4 +444,172 @@ it('records the full node after emit without persisting new full ids to the shar
     expect(data_get($afterDedupe, '@id'))->toBe($usAtId);
     expect(data_get($afterDedupe, '@type'))->toBe('Country');
     expect(data_get($afterDedupe, 'name'))->toBe('United States of America');
+});
+
+it('resolves a code and code_type after normalizing them', function (string $code, mixed $codeType, array $expected) {
+    $decoded = json_decode(schemaCountryTagOutput([
+        'code' => $code,
+        'code_type' => $codeType,
+    ]), true);
+
+    expect(schemaCountrySummary($decoded))->toBe($expected);
+})->with([
+    'lowercase alpha2' => ['us', null, ['United States of America', 'US', 'USA', '840']],
+    'padded alpha2' => [' us ', null, ['United States of America', 'US', 'USA', '840']],
+    'lowercase alpha3' => ['esp', 'alpha3', ['Spain', 'ES', 'ESP', '724']],
+    'alpha-3 alias' => ['ESP', 'alpha-3', ['Spain', 'ES', 'ESP', '724']],
+    'uppercase code_type' => ['ESP', 'ALPHA3', ['Spain', 'ES', 'ESP', '724']],
+    'padded code_type' => ['ESP', ' alpha3 ', ['Spain', 'ES', 'ESP', '724']],
+    'alpha-2 alias' => ['US', 'alpha-2', ['United States of America', 'US', 'USA', '840']],
+    'empty code_type' => ['US', '', ['United States of America', 'US', 'USA', '840']],
+    'null code_type' => ['US', null, ['United States of America', 'US', 'USA', '840']],
+    'non-string code_type' => ['US', 3, ['United States of America', 'US', 'USA', '840']],
+    'unknown code_type' => ['US', 'bogus', ['United States of America', 'US', 'USA', '840']],
+    'numeric with leading zeros' => ['004', 'numeric', ['Afghanistan', 'AF', 'AFG', '004']],
+    'numeric without leading zeros' => ['4', 'numeric', ['Afghanistan', 'AF', 'AFG', '4']],
+]);
+
+it('unwraps a Value that is still wrapped after the parameters are resolved', function () {
+    // Parameters::make() unwraps one level, so a nested Value reaches the tag
+    $fromCode = json_decode(schemaCountryTagOutput([
+        'code' => new Value(new Value('US')),
+    ]), true);
+
+    $fromCodeType = json_decode(schemaCountryTagOutput([
+        'code' => 'ESP',
+        'code_type' => new Value(new Value('alpha3')),
+    ]), true);
+
+    expect(schemaCountrySummary($fromCode))->toBe(['United States of America', 'US', 'USA', '840']);
+    expect(schemaCountrySummary($fromCodeType))->toBe(['Spain', 'ES', 'ESP', '724']);
+});
+
+it('outputs an empty string for a code that resolves to no country', function (mixed $code, string $codeType) {
+    expect(schemaCountryTagOutput([
+        'code' => $code,
+        'code_type' => $codeType,
+    ]))->toBe('');
+})->with([
+    'empty code' => ['', 'alpha2'],
+    'null code' => [null, 'alpha2'],
+    'false code' => [false, 'alpha2'],
+    'true code' => [true, 'alpha2'],
+    'integer code' => [840, 'numeric'],
+    'whitespace alpha2' => ['  ', 'alpha2'],
+    'whitespace alpha3' => ['  ', 'alpha3'],
+    'whitespace numeric' => ['  ', 'numeric'],
+    'unknown alpha3' => ['ZZZ', 'alpha3'],
+    'unknown numeric' => ['000', 'numeric'],
+    'numeric with trailing letters' => ['840abc', 'numeric'],
+]);
+
+it('outputs an empty string when no code parameter is given', function () {
+    expect(schemaCountryTagOutput([]))->toBe('');
+});
+
+it('keeps the usable codes of a mixed list in order', function () {
+    $output = schemaCountryTagOutput([
+        'code' => [
+            840,
+            null,
+            '',
+            ' ',
+            '__',
+            new Value('us'),
+            ['FR'],
+            ' FR ',
+        ],
+    ]);
+
+    expect(schemaCountryListSummaries($output))->toBe([
+        ['United States of America', 'US', 'USA', '840'],
+        ['France', 'FR', 'FRA', '250'],
+    ]);
+});
+
+it('resolves every code of a list by its code_type', function (string $codeType, array $codes, array $expected) {
+    $output = schemaCountryTagOutput([
+        'code' => $codes,
+        'code_type' => $codeType,
+    ]);
+
+    expect(schemaCountryListSummaries($output))->toBe($expected);
+})->with([
+    'alpha3' => ['alpha3', ['usa', 'FRA'], [
+        ['United States of America', 'US', 'USA', '840'],
+        ['France', 'FR', 'FRA', '250'],
+    ]],
+    'numeric' => ['numeric', ['004', '840'], [
+        ['Afghanistan', 'AF', 'AFG', '004'],
+        ['United States of America', 'US', 'USA', '840'],
+    ]],
+]);
+
+it('outputs an empty json array for a list with no usable code', function () {
+    expect(schemaCountryTagOutput(['code' => ['', 5]]))->toBe('[]');
+});
+
+it('leaves slashes and non-ascii characters unescaped', function () {
+    $output = schemaCountryTagOutput(['code' => 'AX']);
+
+    expect($output)->toContain('"name":"Åland Islands"');
+    expect($output)->toContain('"propertyID":"https://www.wikidata.org/wiki/Property:P297"');
+});
+
+it('outputs an empty string when the json cannot be encoded', function (string|array $code) {
+    // An invalid UTF-8 byte in the @id stem makes json_encode() throw
+    config(['app.url' => "http://\xB1"]);
+
+    expect(schemaCountryTagOutput(['code' => $code]))->toBe('');
+})->with([
+    'scalar' => ['US'],
+    'list' => [['US']],
+]);
+
+it('ignores a context value that is not an emit context', function () {
+    $decoded = json_decode(schemaCountryTagOutput(
+        ['code' => 'US'],
+        [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => 'not an emit context']
+    ), true);
+
+    expect(schemaCountrySummary($decoded))->toBe(['United States of America', 'US', 'USA', '840']);
+});
+
+it('prefers the runtime stack emit context over the Antlers context', function () {
+    $emittedEntryIds = [];
+    $materializedFullNodeAtIds = [];
+    $usAtId = schemaCountryExpectedAtId('US');
+    $emittedOnStack = [$usAtId => true];
+    $emittedInAntlers = [];
+
+    $onStack = new SchemaTemplateEmitContext(
+        $emittedEntryIds,
+        $emittedOnStack,
+        $materializedFullNodeAtIds,
+        [],
+        null,
+        new SchemaTemplateInstanceWatermarkBag
+    );
+
+    $inAntlers = new SchemaTemplateEmitContext(
+        $emittedEntryIds,
+        $emittedInAntlers,
+        $materializedFullNodeAtIds,
+        [],
+        null,
+        new SchemaTemplateInstanceWatermarkBag
+    );
+
+    SchemaTemplateEmitContextRuntimeStack::push($onStack);
+
+    try {
+        $output = schemaCountryTagOutput(
+            ['code' => 'US'],
+            [SchemaOutputService::ANTLERS_SCHEMA_TEMPLATE_EMIT_CONTEXT => $inAntlers]
+        );
+    } finally {
+        SchemaTemplateEmitContextRuntimeStack::pop();
+    }
+
+    expect(json_decode($output, true))->toBe(['@id' => $usAtId]);
 });
