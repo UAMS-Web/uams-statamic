@@ -1,0 +1,77 @@
+{{#
+	@name Clinical Location Profile Overview
+	@desc The opening blocks of a `clinical_locations` profile after the map
+	      (UAMS-Web/uams-statamic#1578), ported from Find-a-Doc's `single-locations.php`:
+	      the Get Directions and parking links, the photo gallery, and the About section.
+	      Rendered within the location entry's scope by `clinical_locations/show`. Each
+	      block renders only when it has something to show.
+#}}
+
+{{# Get Directions and the parking link (UAMS-Web/uams-statamic#1578), as Find-a-Doc's
+	address block offers them. Directions come from the same address the directory card
+	uses (`clinical_locations/directions_link`, which renders nothing without an address
+	part). The parking link jumps to the Parking and Directions section, so it shows
+	under the same condition that section does. #}}
+{{ $has_directions = resolved_street_address || resolved_city || resolved_state || resolved_postal_code }}
+{{ $has_parking_section = resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
+{{ if $has_directions || $has_parking_section }}
+	<p class="location-actions">
+		{{ partial:clinical_locations/directions_link :name="title" class="btn btn-primary" }}
+		{{ if $has_parking_section }}
+			<a class="btn btn-outline-primary" href="#parking-info" aria-label="Parking instructions for {{ title | striptags | sanitize }}">Parking Instructions</a>
+		{{ /if }}
+	</p>
+{{ /if }}
+
+{{# Photo gallery (UAMS-Web/uams-statamic#1578). `resolved_gallery_image` is the
+	location's own gallery or, for a child that does not override it, its parent's, as
+	Find-a-Doc resolves it. Each image's alt text comes from the asset, escaped because
+	it is editor text. #}}
+{{ if resolved_gallery_image | length }}
+	<section class="location-gallery" aria-label="Photos of {{ title | striptags | sanitize }}">
+		<ul class="location-gallery-list">
+			{{ resolved_gallery_image }}
+				<li class="location-gallery-item"><img src="{{ url | sanitize_url }}" alt="{{ alt | strip_tags | sanitize }}" loading="lazy"></li>
+			{{ /resolved_gallery_image }}
+		</ul>
+	</section>
+{{ /if }}
+
+{{# About (UAMS-Web/uams-statamic#1578), ported from Find-a-Doc's About section: the
+	lead description (`about`), the featured video, and the additional description
+	sections, each a subheading over its content. A Generic Section takes its own
+	heading; Affiliation, Billing and Medical Records take fixed ones. Billing and
+	Medical Records start from the standard copy in the Find-a-Doc Settings global and
+	keep it, put the location's content before or after it, or replace it, per the set's
+	`modification`. #}}
+{{ if about || video_url || description_sections }}
+	<section class="location-about" id="description">
+		<h2>About {{ title | sanitize }}</h2>
+		{{ if about }}
+			<div class="location-about-body">{{ about }}</div>
+		{{ /if }}
+		{{ if video_url }}
+			{{ partial:sets/video :video_url="video_url" figure_class="location-video" }}
+		{{ /if }}
+		{{ description_sections }}
+			{{ if type == 'section' }}
+				<h3>{{ heading | sanitize }}</h3>
+				<div class="location-description-section">{{ body }}</div>
+			{{ elseif type == 'affiliation' }}
+				<h3 id="affiliation">Affiliation</h3>
+				<div class="location-affiliation">{{ body }}</div>
+			{{ elseif type == 'billing' || type == 'medical_records' }}
+				{{ $standard_body = type == 'billing' ? uams_fad_settings:location_section_billing : uams_fad_settings:location_section_medical_records }}
+				{{ $own_body = modification == 'prepend' || modification == 'append' || modification == 'override' ? body : '' }}
+				{{ if $own_body || ($standard_body && modification != 'override') }}
+					<h3 id="{{ type == 'billing' ? 'billing' : 'medical-records' }}">{{ type == 'billing' ? 'Billing' : 'Medical Records' }}</h3>
+					<div class="location-description-section">
+						{{ if modification == 'prepend' }}{{ $own_body }}{{ /if }}
+						{{ if modification != 'override' }}{{ $standard_body }}{{ /if }}
+						{{ if modification == 'append' || modification == 'override' }}{{ $own_body }}{{ /if }}
+					</div>
+				{{ /if }}
+			{{ /if }}
+		{{ /description_sections }}
+	</section>
+{{ /if }}

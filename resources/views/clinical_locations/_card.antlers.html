@@ -37,15 +37,6 @@
 {{ $shared_number = shared_phone_number ? shared_phone : '' }}
 {{ $card_phone = $shared_number ? $shared_number : ( phone_appointment_new ? phone_appointment_new : phone ) }}
 
-{{# Get Directions destination, assembled from whichever address parts exist so
-	there are no dangling separators (the `map` coordinate field is populated only
-	for standalone locations, so the address is the universal source). #}}
-{{ $directions_dest = '' }}
-{{ if resolved_street_address }}{{ $directions_dest += resolved_street_address }}{{ /if }}
-{{ if resolved_city }}{{ $directions_dest += ($directions_dest ? ', ' : '') + resolved_city }}{{ /if }}
-{{ if $address_region }}{{ $directions_dest += ($directions_dest ? ', ' : '') + $address_region }}{{ /if }}
-{{ if resolved_postal_code }}{{ $directions_dest += ($directions_dest ? ' ' : '') + resolved_postal_code }}{{ /if }}
-
 <div class="item" itemscope itemtype="https://schema.org/MedicalClinic"{{ if fad_facet }} data-id="{{ id }}"{{ /if }}>
 	<div class="card h-100">
 		{{ if featured_image }}
@@ -97,9 +88,8 @@
 			{{ /if }}
 			<div class="card-actions d-flex flex-wrap gap-2">
 				<a href="{{ $location_url }}" class="btn btn-primary" itemprop="https://schema.org/url" aria-label="View location: {{ $location_name | striptags | sanitize }}">View location</a>
-				{{ if $directions_dest }}
-					<a href="https://www.google.com/maps/dir/?api=1&amp;destination={{ $directions_dest | rawurlencode }}" class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" aria-label="Get directions to {{ $location_name | striptags | sanitize }}">Get Directions</a>
-				{{ /if }}
+				{{# Shared with the profile, so both build the destination the same way (UAMS-Web/uams-statamic#1578). #}}
+				{{ partial:clinical_locations/directions_link :name="$location_name" }}
 			</div>
 		</div>
 	</div>

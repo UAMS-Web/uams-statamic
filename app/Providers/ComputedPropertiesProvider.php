@@ -21,6 +21,7 @@ use App\Services\ComputedFields\Registration\ImpliedOntologyCollectionComputedsR
 use App\Services\ComputedFields\Registration\IptcDigitalSourceCollectionComputedsRegistrar;
 use App\Services\ComputedFields\Registration\KnowledgeBaseCollectionComputedsRegistrar;
 use App\Services\ComputedFields\Registration\LocationsInheritedAddressComputedsRegistrar;
+use App\Services\ComputedFields\Registration\LocationsInheritedGalleryComputedsRegistrar;
 use App\Services\ComputedFields\Registration\OrganizationsReverseReferenceComputedsRegistrar;
 use App\Services\ComputedFields\Registration\OrganizationTitleComputedsRegistrar;
 use App\Services\ComputedFields\Registration\PeopleOnlyCollectionComputedsRegistrar;
@@ -118,6 +119,9 @@ class ComputedPropertiesProvider extends ServiceProvider
 
         // The same computed handle on clinical_locations, resolving a different chain (UAMS-Web/uams-statamic-archive#1269)
         $this->app->make(LocationsInheritedAddressComputedsRegistrar::class)->register();
+
+        // Register the clinical_locations own-or-inherited photo gallery (UAMS-Web/uams-statamic#1578)
+        $this->app->make(LocationsInheritedGalleryComputedsRegistrar::class)->register();
 
         // Register facilities reverse-reference computeds (UAMS-Web/uams-statamic-archive#1372): the areas that
         // name this facility for parking + the locations contained within it
