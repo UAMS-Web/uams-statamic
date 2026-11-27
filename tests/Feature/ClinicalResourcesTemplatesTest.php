@@ -114,7 +114,7 @@ it('wires the resources listing query, type filter, empty state, and pagination'
         // matches nothing in Statamic 6, so "All" would render empty) (UAMS-Web/uams-statamic-archive#1468),
         // pipe-composed with the publish-dependency listing exclusion (UAMS-Web/uams-statamic-archive#1593) so a
         // suppressed dependent never renders as a card here.
-        ->toContain('query_scope="clinical_resource_type|clinical_resources_for_provider|exclude_suppressed_dependents"')
+        ->toContain('query_scope="clinical_resource_type|clinical_resources_for_provider|clinical_resources_archive_filter|exclude_suppressed_dependents"')
         ->toContain('get:type')
         // The on-page resource-type control drives the ?type= query (UAMS-Web/uams-statamic-archive#1468).
         ->toContain('partial:clinical_resources/type_filter')
