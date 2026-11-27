@@ -377,6 +377,13 @@ tabs:
       -
         fields:
           -
+            handle: child_expertise_hidden
+            field: uamsweb_common.true_false
+            config:
+              display: 'Hide the Areas Within list on this page'
+              instructions: 'By default, an area of expertise with child areas lists them as cards under an "Areas Within" heading on its page. Enable this to hide that list. The Sub-specialties section page is unaffected.'
+              clearable: true
+          -
             handle: clinical_expertise_descendant_fpage_intro
             field: uamsweb_common_fad.ontology_fpage_intro
             config:

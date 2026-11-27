@@ -14,6 +14,9 @@
 			{{ partial src="page_builder/{type}" }}
 		{{ /page_builder }}
 
+		{{# "Areas Within" cards: the entry's child areas, unless hidden (UAMS-Web/uams-statamic#1581). #}}
+		{{ partial:clinical_expertise/areas_within }}
+
 		{{# Related-entity blocks (providers / locations / conditions / treatments /
 			clinical resources) surfaced on the AoE overview (UAMS-Web/uams-statamic-archive#573). #}}
 		{{ partial:clinical_expertise/related }}
