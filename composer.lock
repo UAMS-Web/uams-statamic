@@ -12715,16 +12715,16 @@
         },
         {
             "name": "uams-web/aether-people",
-            "version": "v0.5.4",
+            "version": "v0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/UAMS-Web/aether-people.git",
-                "reference": "1c36e141beb2cfdff6c52460cc6a6a06536fd304"
+                "reference": "99f9a0290ec6d9f23e0f8095dce78b4c87a26812"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/1c36e141beb2cfdff6c52460cc6a6a06536fd304",
-                "reference": "1c36e141beb2cfdff6c52460cc6a6a06536fd304",
+                "url": "https://api.github.com/repos/UAMS-Web/aether-people/zipball/99f9a0290ec6d9f23e0f8095dce78b4c87a26812",
+                "reference": "99f9a0290ec6d9f23e0f8095dce78b4c87a26812",
                 "shasum": ""
             },
             "require": {
@@ -12789,7 +12789,8 @@
                 "issues": "https://github.com/UAMS-Web/aether-people/issues",
                 "source": "https://github.com/UAMS-Web/aether-people"
             },
-            "time": "2026-11-23T22:26:40+00:00"
+            "time": "2026-11-28T14:30:47+00:00",
+            "published-time": "2026-11-28T14:31:39+00:00"
         },
         {
             "name": "uams-web/aether-redirects",
