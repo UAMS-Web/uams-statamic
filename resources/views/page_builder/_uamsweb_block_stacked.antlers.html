@@ -59,7 +59,7 @@
 			{{ partial:page_builder/components/card_list }}
 				{{ $card_item_position_increment = 'card_list_' + {increment:card_list} }}
 				{{ items }}
-					{{ partial:page_builder/components/card_item :card_item_position_increment="$card_item_position_increment" }}
+					{{ partial:page_builder/components/card_item :card_item_position_increment="$card_item_position_increment" card_align="left" }}
 						{{ partial:page_builder/components/card_image :image="image" :alt_override="alt_override" }}
 						{{ partial:page_builder/components/card_body }}
 							{{ partial:page_builder/components/card_title :heading="heading" }}

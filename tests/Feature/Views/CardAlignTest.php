@@ -92,3 +92,37 @@ it('styles the card class at the specificity of the list rule, directly after it
         ->and($cardRule)->toBeInt()
         ->and(is_int($listRule) && is_int($cardRule) && $cardRule > $listRule)->toBeTrue();
 });
+
+it('adds the alignment class to a card item only when card_align is left', function (): void {
+    $plain = renderCardAlign('{{ partial:page_builder/components/card_item }}Chekov{{ /partial:page_builder/components/card_item }}', []);
+    $left = renderCardAlign('{{ partial:page_builder/components/card_item card_align="left" }}Chekov{{ /partial:page_builder/components/card_item }}', []);
+
+    expect($plain)->toMatch('/<div\s+class="card"\s/')
+        ->and($plain)->not->toContain('card-align-left')
+        ->and($left)->toMatch('/<div\s+class="card card-align-left"\s/');
+});
+
+it('renders a card list without an alignment class, whatever card_list_position is passed', function (string $call): void {
+    $html = renderCardAlign("{{ {$call} }}Scotty{{ /partial:page_builder/components/card_list }}", []);
+
+    expect($html)->toContain('class="card-list"')
+        ->and($html)->not->toContain('card-list-left')
+        ->and($html)->toContain('Scotty');
+})->with([
+    'default' => ['partial:page_builder/components/card_list'],
+    'left' => ['partial:page_builder/components/card_list card_list_position="left"'],
+    'center' => ['partial:page_builder/components/card_list card_list_position="center"'],
+]);
+
+it('left-aligns the cards of every card list caller through the card item', function (string $view, int $count): void {
+    $source = File::get(resource_path("views/{$view}"));
+
+    // Control: the scan reads a view that renders a card item.
+    expect($source)->toContain('partial:page_builder/components/card_item')
+        ->and(substr_count($source, 'card_align="left"'))->toBe($count);
+})->with([
+    'knowledge base attachments' => ['knowledge_bases/default.antlers.html', 1],
+    'knowledge base topics' => ['knowledge_bases/_topic_list.antlers.html', 1],
+    'knowledge base article card' => ['knowledge_bases/_article_card.antlers.html', 1],
+    'stacked block' => ['page_builder/_uamsweb_block_stacked.antlers.html', 1],
+]);

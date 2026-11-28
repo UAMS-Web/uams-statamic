@@ -8,6 +8,9 @@
 	                                      :card_item_position_increment="$card_item_position_increment" through to this partial. The
 	                                      variable name is arbitrary; only the value and the partial parameter name
 	                                      matter.
+	@param card_align  Optional. 'left' adds `card-align-left` to the card, left-aligning its text
+	                   (UAMS-Web/uams-statamic#1604); without it the card takes the list's alignment,
+	                   centered by default.
 #}}
 
 {{ item_itemprop = ( item_itemprop === '' ) ? null : ( item_itemprop ?? 'https://schema.org/itemListElement' ) }}
@@ -37,7 +40,7 @@
 	/>
 
 	<div
-		class="card"
+		class="card{{ if card_align == 'left' }} card-align-left{{ /if }}"
 		{{ card_itemprop | attribute:itemprop }}
 		{{ card_itemscope | attribute:itemscope }}
 		{{ card_itemtype | attribute:itemtype }}
