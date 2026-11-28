@@ -107,6 +107,12 @@
 				{{ /if }}
 
 				{{# UAMSWP Find-a-Doc and People SCSS #}}
+				{{# The template list is read against the template the response renders, which Statamic
+				    passes as `current_template` (`$entry->template()`): an entry that inherits its
+				    collection's default stores no `template`, so the augmented `template` is empty for it
+				    (UAMS-Web/uams-statamic#1629). `template` remains the fallback for a render that passes
+				    no `current_template`. #}}
+				{{ $fad_template = current_template ? current_template : template }}
 				{{ if
 					(
 						$page_builder_types | contains(
@@ -119,7 +125,7 @@
 						)
 					)
 					|| (
-						template
+						$fad_template
 						&& (
 							[
 								'clinical_resources/index',
@@ -133,7 +139,7 @@
 								'people/provider/index',
 								'people/provider/show',
 								'people/show'
-							] | in_array(template)
+							] | in_array($fad_template)
 						)
 					)
 					|| (
