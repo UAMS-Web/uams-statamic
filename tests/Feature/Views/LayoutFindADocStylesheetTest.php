@@ -27,37 +27,59 @@ uses(StacheIsolatedTestCase::class);
 const LAYOUT_FAD_SHEET = 'resources/scss/bootstrap/uamswp_find_a_doc/app.scss';
 
 /**
- * Laravel's Vite with its output replaced by a record of the entry points requested.
+ * The entry points the layout requested in the current test, shared with every clone of the
+ * recording Vite, since Statamic's `vite` tag renders through a clone of the bound instance.
+ *
+ * @return ArrayObject<int, string> The requested entry points.
  */
-class LayoutFadStylesheetVite extends LaravelVite
+function layoutFadRequestedLog(): ArrayObject
 {
-    /**
-     * The entry points requested since the last reset.
-     *
-     * @var list<string>
-     */
-    public static array $requested = [];
+    /** @var ArrayObject<int, string>|null $log */
+    static $log = null;
 
-    /**
-     * Record the entry points and render nothing.
-     *
-     * @param  string|string[]  $entrypoints  The entry points.
-     * @param  string|null  $buildDirectory  The build directory, unused.
-     * @return HtmlString An empty string.
-     */
-    public function __invoke($entrypoints, $buildDirectory = null): HtmlString
+    return $log ??= new ArrayObject;
+}
+
+/**
+ * Laravel's Vite with its output replaced by a record of the entry points requested. An
+ * anonymous class, as `SeedTestStacheCommandTest` uses, so the file declares no class for
+ * `composer dump-autoload --strict-psr` to reject.
+ *
+ * @param  ArrayObject<int, string>  $log  Where to record the entry points.
+ * @return LaravelVite The recording Vite.
+ */
+function layoutFadRecordingVite(ArrayObject $log): LaravelVite
+{
+    return new class($log) extends LaravelVite
     {
-        foreach ((array) $entrypoints as $entrypoint) {
-            self::$requested[] = $entrypoint;
-        }
+        /**
+         * Keep the shared record.
+         *
+         * @param  ArrayObject<int, string>  $log  Where to record the entry points.
+         */
+        public function __construct(private readonly ArrayObject $log) {}
 
-        return new HtmlString('');
-    }
+        /**
+         * Record the entry points and render nothing.
+         *
+         * @param  string|string[]  $entrypoints  The entry points.
+         * @param  string|null  $buildDirectory  The build directory, unused.
+         * @return HtmlString An empty string.
+         */
+        public function __invoke($entrypoints, $buildDirectory = null): HtmlString
+        {
+            foreach ((array) $entrypoints as $entrypoint) {
+                $this->log->append($entrypoint);
+            }
+
+            return new HtmlString('');
+        }
+    };
 }
 
 beforeEach(function (): void {
-    $this->app->instance(LaravelVite::class, new LayoutFadStylesheetVite);
-    LayoutFadStylesheetVite::$requested = [];
+    layoutFadRequestedLog()->exchangeArray([]);
+    $this->app->instance(LaravelVite::class, layoutFadRecordingVite(layoutFadRequestedLog()));
 
     // The layout's navigation reads the `pages` structure.
     $pages = CollectionFacade::make('pages');
@@ -105,7 +127,7 @@ function layoutFadRequested(string $collectionTemplate, array $data = []): array
 
     test()->get('/layout-fad/one')->assertOk();
 
-    return LayoutFadStylesheetVite::$requested;
+    return array_values(layoutFadRequestedLog()->getArrayCopy());
 }
 
 it('requests the sheet for an entry that inherits a Find-a-Doc template from its collection', function (): void {
