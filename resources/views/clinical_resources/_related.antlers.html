@@ -98,10 +98,10 @@
 		{{ if $location_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-locations" aria-labelledby="related-locations-title">
 				<h2 class="h5" id="related-locations-title" data-jump-link="Locations">Related Locations</h2>
-				<div class="card-list-container location-card-list-container">
+				<div class="card-list-container">
 					<div class="card-list">
 						{{ clinical_locations }}
-							{{ partial:clinical_locations/card card_heading_level="h3" }}
+							{{ partial:clinical_locations/card card_heading_level="h3" card_class="location-card" }}
 						{{ /clinical_locations }}
 					</div>
 				</div>

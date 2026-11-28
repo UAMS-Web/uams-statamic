@@ -1,8 +1,11 @@
 @use "sass:math";
 
-.card-list-container.location-card-list-container {
+// Keyed to the card's own class (UAMS-Web/uams-statamic#1602). The selector keeps the old
+// container-keyed rule's specificity (0,4,0), so no other `.card-list .card` rule now wins or
+// loses against it.
+.card-list-container {
     .card-list {
-        .card {
+        .card.location-card {
             margin: math.div($grid-gutter-width, 2);
             text-align: center;
 

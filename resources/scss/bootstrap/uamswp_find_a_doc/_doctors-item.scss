@@ -1,8 +1,7 @@
 @use "sass:map";
 
 .person-item,
-.location-item,
-.location-card-list-container {
+.location-item {
     dl {
         line-height: $nav-line-height;
 
