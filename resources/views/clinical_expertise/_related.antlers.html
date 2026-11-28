@@ -24,28 +24,10 @@
 {{ eligible_providers = clinical_providers | clinical_provider_eligible }}
 {{ if eligible_providers || clinical_locations || clinical_expertise_related || clinical_conditions || clinical_services || clinical_resources }}
 	<div class="aoe-related">
-		{{ if eligible_providers }}
-			<section class="aoe-related-section aoe-related-providers">
-				<h2 class="aoe-related-title" data-jump-link="Providers">Related Clinical Providers</h2>
-				<ul class="aoe-related-list">
-					{{ eligible_providers }}
-						<li><a href="{{ url }}">{{ title }}</a></li>
-					{{ /eligible_providers }}
-				</ul>
-			</section>
-		{{ /if }}
+		{{ partial:related_list :entries="eligible_providers" heading="Related Clinical Providers" jump_link="Providers" section_class="aoe-related-section aoe-related-providers" heading_class="aoe-related-title" list_class="aoe-related-list" }}
 
-		{{ if clinical_locations }}
-			{{# `id="locations"` is the target of the default appointment band's "contacting a clinic directly" link (UAMS-Web/uams-statamic#1584). #}}
-			<section class="aoe-related-section aoe-related-locations" id="locations">
-				<h2 class="aoe-related-title" data-jump-link="Locations">Related Clinical Locations</h2>
-				<ul class="aoe-related-list">
-					{{ clinical_locations }}
-						<li><a href="{{ url }}">{{ title }}</a></li>
-					{{ /clinical_locations }}
-				</ul>
-			</section>
-		{{ /if }}
+		{{# `id="locations"` is the target of the default appointment band's "contacting a clinic directly" link (UAMS-Web/uams-statamic#1584). #}}
+		{{ partial:related_list :entries="clinical_locations" heading="Related Clinical Locations" jump_link="Locations" section_class="aoe-related-section aoe-related-locations" section_id="locations" heading_class="aoe-related-title" list_class="aoe-related-list" }}
 
 		{{ if clinical_expertise_related }}
 			<section class="aoe-related-section aoe-related-expertise" id="related-expertise" aria-labelledby="related-expertise-title">
@@ -63,27 +45,9 @@
 			</section>
 		{{ /if }}
 
-		{{ if clinical_conditions }}
-			<section class="aoe-related-section aoe-related-conditions">
-				<h2 class="aoe-related-title" data-jump-link="Conditions">Related Clinical Conditions</h2>
-				<ul class="aoe-related-list">
-					{{ clinical_conditions }}
-						<li><a href="{{ url }}">{{ title }}</a></li>
-					{{ /clinical_conditions }}
-				</ul>
-			</section>
-		{{ /if }}
+		{{ partial:related_list :entries="clinical_conditions" heading="Related Clinical Conditions" jump_link="Conditions" section_class="aoe-related-section aoe-related-conditions" heading_class="aoe-related-title" list_class="aoe-related-list" }}
 
-		{{ if clinical_services }}
-			<section class="aoe-related-section aoe-related-services">
-				<h2 class="aoe-related-title" data-jump-link="Treatments &amp; Procedures">Related Treatments and Procedures</h2>
-				<ul class="aoe-related-list">
-					{{ clinical_services }}
-						<li><a href="{{ url }}">{{ title }}</a></li>
-					{{ /clinical_services }}
-				</ul>
-			</section>
-		{{ /if }}
+		{{ partial:related_list :entries="clinical_services" heading="Related Treatments and Procedures" jump_link="Treatments & Procedures" section_class="aoe-related-section aoe-related-services" heading_class="aoe-related-title" list_class="aoe-related-list" }}
 
 		{{ if clinical_resources }}
 			{{ $resource_count = clinical_resources | count }}
