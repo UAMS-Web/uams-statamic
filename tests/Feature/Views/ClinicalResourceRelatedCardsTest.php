@@ -311,6 +311,12 @@ it('gives the related provider cards their own item scope', function (): void {
     expect(substr_count($html, '<div class="card-list card-list-doctors" itemscope itemtype="https://schema.org/ItemList">'))->toBe(2);
 });
 
+it('marks every related provider card for its own width rule, behind the control too', function (): void {
+    $html = renderResourceRelated(['clinical_providers' => relatedProviders(19)]);
+
+    expect(substr_count($html, '<div class="card provider-card">'))->toBe(19);
+});
+
 it('escapes a related title on the link-list path', function (): void {
     $html = renderResourceRelated([
         'clinical_conditions' => [['title' => '<img src=x onerror=alert(1)>', 'url' => '/conditions/x']],

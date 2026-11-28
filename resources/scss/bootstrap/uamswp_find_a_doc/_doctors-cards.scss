@@ -109,10 +109,13 @@ $person-list-rows: (
         margin-right: auto;
         margin-left: auto;
         @include person-cards-per-row();
+    }
 
-        .card {
-            width: $person-card-width;
-        }
+    // Keyed to the card's own class (UAMS-Web/uams-statamic#1603). The selector keeps the old
+    // list-keyed rule's specificity (0,3,0), so no other `.card-list .card` rule now wins or
+    // loses against it.
+    .card.provider-card {
+        width: $person-card-width;
     }
     // .no-results {
     // }
