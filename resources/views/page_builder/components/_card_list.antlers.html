@@ -1,7 +1,10 @@
 {{#
 	@name UAMS Card List
 	@desc Wraps content in col-12 and card-list; use with page_builder blocks.
-	@param card_list_position  Optional. 'left' (default) adds card-list-left; otherwise no card-list-* class.
+	@param card_list_position  Accepted and ignored. It no longer sets the cards' alignment: slot content renders
+	                           before this component, so the list cannot pass an alignment to its cards. A
+	                           caller left-aligns its cards by passing `card_align="left"` to
+	                           `page_builder/components/card_item` (UAMS-Web/uams-statamic#1604).
 #}}
 
 {{# Resolve schema params #}}
@@ -13,17 +16,13 @@
 {{ link_element_itemprop = ( link_element_itemprop === '' ) ? null : ( link_element_itemprop ?? 'https://schema.org/itemListOrder' ) }}
 {{ link_element_href = ( link_element_href === '' ) ? null : ( link_element_href ?? 'https://schema.org/ItemListOrderAscending' ) }}
 
-{{# Apply default and build card-list position class (only when left) #}}
-{{ card_list_position = ( card_list_position === '' ) ? null : ( card_list_position ?? 'left' ) }}
+{{# No alignment class on the list: each caller passes `card_align` to its card items
+   (UAMS-Web/uams-statamic#1604). #}}
+{{# Both comments stand in for removed lines, keeping the blank lines CertificationsListByKindTest pins byte for byte. #}}
 
 <div class="col-12">
 	<div
-		class="{{
-			[
-				'card-list' => true,
-				'card-list-left' => ( card_list_position == 'left' ),
-			] | classes | collapse_whitespace
-		}}"
+		class="card-list"
 		{{ itemprop | attribute:itemprop }}
 		{{ itemscope | attribute:itemscope }}
 		{{ itemtype | attribute:itemtype }}
