@@ -112,7 +112,7 @@
 			<section class="clinical-resource-related-group clinical-resource-related-expertise" aria-labelledby="related-expertise-title">
 				<h2 class="h5" id="related-expertise-title" data-jump-link="Areas of Expertise">Areas of Expertise</h2>
 				{{# The expertise card is an `itemListElement`, so its list is the ItemList. #}}
-				<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
+				<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_expertise }}
 						{{ partial:clinical_expertise/card card_heading_level="h3" }}
 					{{ /clinical_expertise }}

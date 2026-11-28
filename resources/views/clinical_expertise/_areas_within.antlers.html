@@ -22,7 +22,7 @@
 						<div class="col-12">
 							<h2 class="module-title" id="sub-expertise-title" data-jump-link=""><span class="title">Areas Within {{ $areas_within_title | sanitize }}</span></h2>
 							<div class="card-list-container">
-								<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
+								<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 									{{ areas_within }}
 										{{ partial:clinical_expertise/card child_expertise_list="true" card_heading_level="h3" }}
 									{{ /areas_within }}

@@ -1,0 +1,32 @@
+{{#
+	@name Related Entity List
+	@desc One related-entities group: a heading over a linked list of entries, shared by the
+	      Find-a-Doc profile views (UAMS-Web/uams-statamic-archive#577, UAMS-Web/uams-statamic#1601).
+	      Renders nothing when `entries` holds no published entry. Each entry links to its show
+	      page when it has a URL, else renders as plain text (Find-a-Doc collections are not all
+	      publicly routed yet). Titles are escaped. The class parameters keep each page's own
+	      class names: `clinical_resources/related_list` passes the resource and location ones,
+	      `clinical_expertise/related` the `aoe-related-*` ones.
+	@param entries        An entries-field value: a raw augmented relation or a resolved array.
+	@param heading        The group heading.
+	@param jump_link      Optional link text that lists this group in the page's jump-links nav
+	                      (UAMS-Web/uams-statamic#1575); omit it to leave the group out.
+	@param section_class  The `<section>` class list.
+	@param section_id     Optional `id` for the `<section>`.
+	@param heading_class  The `<h2>` class list.
+	@param list_class     The `<ul>` class list.
+#}}
+
+{{# A count, not a bare `entries`: callers pass either a raw augmented relation or a
+	resolved array, and `| count` counts the published entries the loop below emits for
+	both (UAMS-Web/uams-statamic-archive#1693, UAMS-Web/uams-statamic-archive#2422). #}}
+{{ if entries | count }}
+	<section class="{{ section_class }}"{{ if section_id }} id="{{ section_id }}"{{ /if }}>
+		<h2 class="{{ heading_class }}"{{ if jump_link }} data-jump-link="{{ jump_link | sanitize }}"{{ /if }}>{{ heading }}</h2>
+		<ul class="{{ list_class }}">
+			{{ entries }}
+				<li>{{ if url }}<a href="{{ url }}">{{ title | sanitize }}</a>{{ else }}{{ title | sanitize }}{{ /if }}</li>
+			{{ /entries }}
+		</ul>
+	</section>
+{{ /if }}
