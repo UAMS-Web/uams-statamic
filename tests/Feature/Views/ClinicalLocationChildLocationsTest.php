@@ -109,7 +109,7 @@ it('lists the published location children as cards in title order', function ():
     preg_match_all('~<h2 class="card-title h5"[^>]*>([^<]*)</h2>~', $html, $matches);
 
     expect($html)->toContain('<section class="location-list location-child-locations" id="sub-clinics"')
-        ->and($html)->toContain('<h2 id="sub-location-title">Additional Clinics Within Main Campus</h2>')
+        ->and($html)->toContain('<h2 id="sub-location-title" data-jump-link="Clinics Within This Location">Additional Clinics Within Main Campus</h2>')
         ->and($matches[1])->toBe(['Cardiology Clinic', 'Radiology Clinic'])
         ->and($html)->toContain('aria-label="View location: Radiology Clinic"');
 });

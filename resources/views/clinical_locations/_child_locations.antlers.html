@@ -13,7 +13,7 @@
 {{ collection:clinical_locations :parent:is="id" blueprint:is="location" hidden_query:isnt="true" sort="title:asc" as="child_locations" }}
 	{{ unless no_results }}
 		<section class="location-list location-child-locations" id="sub-clinics" aria-labelledby="sub-location-title">
-			<h2 id="sub-location-title">Additional Clinics Within {{ title | sanitize }}</h2>
+			<h2 id="sub-location-title" data-jump-link="Clinics Within This Location">Additional Clinics Within {{ title | sanitize }}</h2>
 			<div class="card-list card-list-left">
 				{{ child_locations }}
 					{{ partial:clinical_locations/card }}

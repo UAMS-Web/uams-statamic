@@ -1,0 +1,17 @@
+{{#
+	@name Jump Links
+	@desc The "On this page" nav on the Find-a-Doc profile pages (UAMS-Web/uams-statamic#1575),
+	      rendered by the `jump_links` tag from the sections a page rendered, and only when
+	      there are at least two. The outline follows the decision on UAMS-Web/uams-statamic#97:
+	      a `<nav>` landmark named by its visible `<h2>`, "On this page", at the level of the
+	      section headings it links to. Find-a-Doc labels the block "Contents".
+	@param links  A list of `{id, label}`: the heading id each link reaches and its text.
+#}}
+<nav class="jump-links" id="jump-links" aria-labelledby="jump-links-title">
+	<h2 id="jump-links-title">On this page</h2>
+	<ul class="jump-links-list">
+		{{ links }}
+			<li class="jump-links-item"><a href="#{{ id | sanitize }}">{{ label | sanitize }}</a></li>
+		{{ /links }}
+	</ul>
+</nav>

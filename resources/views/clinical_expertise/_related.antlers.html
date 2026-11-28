@@ -26,7 +26,7 @@
 	<div class="aoe-related">
 		{{ if eligible_providers }}
 			<section class="aoe-related-section aoe-related-providers">
-				<h2 class="aoe-related-title">Related Clinical Providers</h2>
+				<h2 class="aoe-related-title" data-jump-link="Providers">Related Clinical Providers</h2>
 				<ul class="aoe-related-list">
 					{{ eligible_providers }}
 						<li><a href="{{ url }}">{{ title }}</a></li>
@@ -38,7 +38,7 @@
 		{{ if clinical_locations }}
 			{{# `id="locations"` is the target of the default appointment band's "contacting a clinic directly" link (UAMS-Web/uams-statamic#1584). #}}
 			<section class="aoe-related-section aoe-related-locations" id="locations">
-				<h2 class="aoe-related-title">Related Clinical Locations</h2>
+				<h2 class="aoe-related-title" data-jump-link="Locations">Related Clinical Locations</h2>
 				<ul class="aoe-related-list">
 					{{ clinical_locations }}
 						<li><a href="{{ url }}">{{ title }}</a></li>
@@ -49,7 +49,7 @@
 
 		{{ if clinical_expertise_related }}
 			<section class="aoe-related-section aoe-related-expertise" id="related-expertise" aria-labelledby="related-expertise-title">
-				<h2 class="aoe-related-title" id="related-expertise-title">Related Areas of Expertise</h2>
+				<h2 class="aoe-related-title" id="related-expertise-title" data-jump-link="Related Areas">Related Areas of Expertise</h2>
 				<ul class="aoe-related-list">
 					{{ clinical_expertise_related sort="title:asc" }}
 						{{# The excerpt is capped at 160 characters by the blueprint, shorter than
@@ -65,7 +65,7 @@
 
 		{{ if clinical_conditions }}
 			<section class="aoe-related-section aoe-related-conditions">
-				<h2 class="aoe-related-title">Related Clinical Conditions</h2>
+				<h2 class="aoe-related-title" data-jump-link="Conditions">Related Clinical Conditions</h2>
 				<ul class="aoe-related-list">
 					{{ clinical_conditions }}
 						<li><a href="{{ url }}">{{ title }}</a></li>
@@ -76,7 +76,7 @@
 
 		{{ if clinical_services }}
 			<section class="aoe-related-section aoe-related-services">
-				<h2 class="aoe-related-title">Related Treatments and Procedures</h2>
+				<h2 class="aoe-related-title" data-jump-link="Treatments &amp; Procedures">Related Treatments and Procedures</h2>
 				<ul class="aoe-related-list">
 					{{ clinical_services }}
 						<li><a href="{{ url }}">{{ title }}</a></li>
@@ -88,7 +88,7 @@
 		{{ if clinical_resources }}
 			{{ $resource_count = clinical_resources | count }}
 			<section class="aoe-related-section aoe-related-resources" id="related-resources" aria-labelledby="related-resources-title">
-				<h2 class="aoe-related-title" id="related-resources-title">Related Resources</h2>
+				<h2 class="aoe-related-title" id="related-resources-title" data-jump-link="Resources">Related Resources</h2>
 				<div class="card-list card-list-left">
 					{{ clinical_resources sort="date:desc" limit="4" }}
 						{{ partial:clinical_resources/card }}

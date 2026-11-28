@@ -20,6 +20,10 @@
 		{{# The Featured Video, after the content as on Find-a-Doc (UAMS-Web/uams-statamic#1580). #}}
 		{{ partial:clinical_expertise/featured_video }}
 
+		{{# The "On this page" nav (UAMS-Web/uams-statamic#1575), after the page content as on
+			Find-a-Doc: the tag lists the sections below whose heading carries `data-jump-link`,
+			once at least two rendered, and puts the nav before them. #}}
+		{{ jump_links }}
 		{{# "Areas Within" cards: the entry's child areas, unless hidden (UAMS-Web/uams-statamic#1581). #}}
 		{{ partial:clinical_expertise/areas_within }}
 
@@ -37,5 +41,6 @@
 			augmentation of the ancestor's replicator and is a follow-up (a computed's
 			raw value does not augment). #}}
 		{{ partial:clinical_expertise/appointment }}
+		{{ /jump_links }}
 	{{ /partial:layout/entry-content }}
 {{ /partial:layout/article }}

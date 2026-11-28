@@ -54,7 +54,7 @@
 {{ $alert_system_body = $alert_override && alert_body ? '' : uams_fad_settings:location_alert_body }}
 {{ if alert_modification != 'suppress' && ! $closing_closed_now && ($alert_heading || $alert_local_body || $alert_system_body) }}
 	<section class="location-alert location-{{ $alert_color | sanitize }}" id="location-alert" role="note" aria-labelledby="location-alert-heading">
-		<h2 id="location-alert-heading"{{ if ! $alert_heading }} class="sr-only"{{ /if }}>{{ if $alert_heading }}{{ $alert_heading | sanitize }}{{ else }}Alert{{ /if }}</h2>
+		<h2 id="location-alert-heading" data-jump-link=""{{ if ! $alert_heading }} class="sr-only"{{ /if }}>{{ if $alert_heading }}{{ $alert_heading | sanitize }}{{ else }}Alert{{ /if }}</h2>
 		<div class="location-alert-body">
 			{{ if alert_modification == 'prepend' }}{{ $alert_local_body }}{{ /if }}
 			{{ $alert_system_body }}
@@ -67,7 +67,7 @@
 	the closure is in effect. The banner's "Learn more" link targets its id. #}}
 {{ if $closing_display && closing_info }}
 	<section class="location-closing-info" id="closing-info">
-		<h2>Closing Information</h2>
+		<h2 data-jump-link="">Closing Information</h2>
 		<div class="location-closing-info-body">{{ closing_info }}</div>
 	</section>
 {{ /if }}
@@ -110,7 +110,7 @@
 	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172). #}}
 {{ if resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
 	<section class="location-parking" id="parking-info">
-		<h2>Parking and Directions</h2>
+		<h2 data-jump-link="Parking Information">Parking and Directions</h2>
 		{{ if resolved_parking_facility_name }}
 			<p class="location-parking-facility">{{ resolved_parking_facility_name | sanitize }}</p>
 		{{ /if }}
@@ -180,7 +180,7 @@
 {{ if $appointment_setup || $appointment_bring || $appointment_expect }}
 	<section class="location-appointment-info" id="appointment-info">
 		{{ if $appointment_setup || ($appointment_bring && $appointment_expect) }}
-			<h2>Appointment Information</h2>
+			<h2 data-jump-link="">Appointment Information</h2>
 			{{ if $appointment_setup }}
 				<div class="location-appointment-setup">{{ $appointment_setup }}</div>
 			{{ /if }}
@@ -218,7 +218,7 @@
 	{{ /if }}
 	{{ if $prescription_text }}
 		<section class="location-prescription-info" id="prescription-info">
-			<h2>Prescription Information</h2>
+			<h2 data-jump-link="">Prescription Information</h2>
 			<div class="location-prescription-info-body">{{ $prescription_text }}</div>
 		</section>
 	{{ /if }}
@@ -297,7 +297,7 @@
 	number to call: the appointments number, or the information number when there is none. #}}
 {{ if telemed_query }}
 	<section class="location-telemedicine" id="telemedicine-info">
-		<h2>Telemedicine</h2>
+		<h2 data-jump-link="">Telemedicine</h2>
 		{{ if $closing_display && ! ($closing_temporary && closing_telemed_available_query) }}
 			<p class="location-telemedicine-unavailable">
 				{{ if $closing_closed_now }}

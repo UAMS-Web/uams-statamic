@@ -65,7 +65,7 @@
 	<aside class="clinical-resource-related" aria-label="Related">
 		{{ if $provider_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-providers" aria-labelledby="related-providers-title">
-				<h2 class="h5" id="related-providers-title">Related Providers</h2>
+				<h2 class="h5" id="related-providers-title" data-jump-link="Providers">Related Providers</h2>
 				{{# The provider card's portrait is an `image` property with no item scope of
 					its own; the ItemList scope keeps it off the resource article's item. #}}
 				<div class="card-list-container">
@@ -97,7 +97,7 @@
 
 		{{ if $location_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-locations" aria-labelledby="related-locations-title">
-				<h2 class="h5" id="related-locations-title">Related Locations</h2>
+				<h2 class="h5" id="related-locations-title" data-jump-link="Locations">Related Locations</h2>
 				<div class="card-list-container location-card-list-container">
 					<div class="card-list">
 						{{ clinical_locations }}
@@ -110,7 +110,7 @@
 
 		{{ if $expertise_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-expertise" aria-labelledby="related-expertise-title">
-				<h2 class="h5" id="related-expertise-title">Areas of Expertise</h2>
+				<h2 class="h5" id="related-expertise-title" data-jump-link="Areas of Expertise">Areas of Expertise</h2>
 				{{# The expertise card is an `itemListElement`, so its list is the ItemList. #}}
 				<div class="card-list card-list-expertise" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_expertise }}
@@ -120,14 +120,14 @@
 			</section>
 		{{ /if }}
 
-		{{ partial:clinical_resources/related_list :entries="clinical_conditions" heading="Conditions" }}
-		{{ partial:clinical_resources/related_list :entries="clinical_services" heading="Treatments" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_conditions" heading="Conditions" jump_link="Conditions" }}
+		{{ partial:clinical_resources/related_list :entries="clinical_services" heading="Treatments" jump_link="Treatments & Procedures" }}
 
 		{{ if $resource_total > 4 }}
-			{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Related Resources" }}
+			{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Related Resources" jump_link="Resources" }}
 		{{ elseif $resource_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-resources" aria-labelledby="related-resources-title">
-				<h2 class="h5" id="related-resources-title">Related Resources</h2>
+				<h2 class="h5" id="related-resources-title" data-jump-link="Resources">Related Resources</h2>
 				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_resources }}
 						{{ partial:clinical_resources/card card_heading_level="h3" }}

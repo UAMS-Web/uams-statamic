@@ -46,7 +46,7 @@
 	`modification`. #}}
 {{ if about || video_url || description_sections }}
 	<section class="location-about" id="description">
-		<h2>About {{ title | sanitize }}</h2>
+		<h2 data-jump-link="About">About {{ title | sanitize }}</h2>
 		{{ if about }}
 			<div class="location-about-body">{{ about }}</div>
 		{{ /if }}
