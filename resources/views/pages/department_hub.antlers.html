@@ -51,9 +51,9 @@
 					{{# Sticky-first, org-filtered lead across all post types. #}}
 					{{ if lead | length }}
 						<section class="hub-lead">
-							<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+							<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 								{{ lead }}
-									{{ partial:posts/card show_primary_category="true" }}
+									{{ partial:posts/card show_primary_category="true" card_align="left" }}
 								{{ /lead }}
 							</div>
 						</section>
@@ -65,9 +65,9 @@
 							{{ if heading }}
 								<h2 class="hub-section-heading">{{ heading | sanitize }}</h2>
 							{{ /if }}
-							<div class="card-list card-list-left">
+							<div class="card-list">
 								{{ posts }}
-									{{ partial:posts/card show_primary_category="true" }}
+									{{ partial:posts/card show_primary_category="true" card_align="left" }}
 								{{ /posts }}
 							</div>
 						</section>

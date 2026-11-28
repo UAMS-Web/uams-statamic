@@ -4,6 +4,9 @@
 	      / featured image, resource type (article / audio / video / infographic /
 	      document), title, and a short description — linking to its show page.
 	      Expects one clinical resource entry in scope. (UAMS-Web/uams-statamic-archive#576)
+	      Pass `card_align="left"` to left-align the card's text through its own `card-align-left` class
+	      (UAMS-Web/uams-statamic#1604), as the left-aligned listings do. Without it the
+	      card takes the list's alignment, centered by default.
 #}}
 
 {{# Capture the entry's own url first: the featured-image asset pair rebinds `url`. #}}
@@ -31,7 +34,7 @@
 {{ $card_cta = blueprint == 'provider_spotlight' ? 'Read the Q&A' : 'View resource' }}
 
 <div class="item" itemscope itemtype="https://schema.org/CreativeWork"{{ if fad_facet }} data-fad-card data-type="{{ blueprint }}"{{ /if }}>
-	<div class="card h-100">
+	<div class="card h-100{{ if card_align == 'left' }} card-align-left{{ /if }}">
 		{{# Spotlight cards resolve their image by precedence: the 16:9 override,
 			then the featured provider's wide portrait, then the 3:4 portrait —
 			mirroring the `spotlight_featured_image` computed (the tested contract),

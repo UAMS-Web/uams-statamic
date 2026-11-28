@@ -12,9 +12,9 @@
 {{ if no_results }}
 	<p class="locations-empty">No locations found.</p>
 {{ else }}
-	<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+	<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 		{{ locations }}
-			{{ partial:clinical_locations/card :fad_facet="fad_facet" }}
+			{{ partial:clinical_locations/card :fad_facet="fad_facet" card_align="left" }}
 		{{ /locations }}
 	</div>
 

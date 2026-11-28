@@ -18,12 +18,14 @@
 	        Find-a-Doc's expertise card does with `$child_expertise_list`).
 	      - `card_heading_level` sets the title's element, `h2` by default; a list under its
 	        own `h2` heading passes `h3`.
+	      - `card_align="left"` left-aligns the card's text through its own `card-align-left`
+	        class (UAMS-Web/uams-statamic#1604), as the left-aligned listings do. Without it the card takes the list's alignment, centered by default.
 #}}
 
 {{# Capture the entry's own url first: the featured-image asset pair rebinds `url`. #}}
 {{ $expertise_url = url }}
 
-<article class="card expertise-card h-100" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+<article class="card expertise-card h-100{{ if card_align == 'left' }} card-align-left{{ /if }}" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
 	{{# Image-forward card: the entry's 16:9 featured image when one is set, else the
 	    shared 16:9 "no image available" fallback. Gated on `featured_image_16_9` alone
 	    (image-forward, no opt-in toggle) — unlike the clinical_resources card, the

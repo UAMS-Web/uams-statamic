@@ -11,7 +11,10 @@
 	      collections are empty today). Expects one location entry in scope.
 	      Pass `card_class` to append a class to the `div.card`, as the related-locations
 	      section of a clinical resource page does with `location-card` (UAMS-Web/uams-statamic#1602);
-	      without it the card's class is `card h-100` alone.
+	      without it the card's class is `card h-100` alone. Pass `card_align="left"` to left-align
+	      the card's text through its own `card-align-left` class (UAMS-Web/uams-statamic#1604), as the
+	      left-aligned listings do; without it the card takes the list's
+	      alignment, centered by default.
 
 	      The whole-card `stretched-link` was dropped in UAMS-Web/uams-statamic-archive#1465: the card is now
 	      multi-action (View / Call / Get Directions), and a stretched overlay would
@@ -41,7 +44,7 @@
 {{ $card_phone = $shared_number ? $shared_number : ( phone_appointment_new ? phone_appointment_new : phone ) }}
 
 <div class="item" itemscope itemtype="https://schema.org/MedicalClinic"{{ if fad_facet }} data-id="{{ id }}"{{ /if }}>
-	<div class="card h-100{{ if card_class }} {{ card_class | sanitize }}{{ /if }}">
+	<div class="card h-100{{ if card_align == 'left' }} card-align-left{{ /if }}{{ if card_class }} {{ card_class | sanitize }}{{ /if }}">
 		{{ if featured_image }}
 			{{ featured_image }}
 				<div class="card-img-top">

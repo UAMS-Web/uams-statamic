@@ -12,9 +12,9 @@
 				already rendered above, plus a clear "no posts" message (UAMS-Web/uams-statamic-archive#1171). #}}
 			<p class="posts-empty">There are no posts here yet. Please check back soon.</p>
 		{{ else }}
-			<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+			<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 				{{ posts }}
-					{{ partial:posts/card }}
+					{{ partial:posts/card card_align="left" }}
 				{{ /posts }}
 			</div>
 

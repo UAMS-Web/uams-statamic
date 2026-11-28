@@ -31,9 +31,9 @@
 			{{ if no_results }}
 				<p class="posts-empty">No news found{{ if active_type || (active_source && active_source != "both") }} for this filter{{ /if }}.</p>
 			{{ else }}
-				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+				<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 					{{ posts }}
-						{{ partial:posts/card }}
+						{{ partial:posts/card card_align="left" }}
 					{{ /posts }}
 				</div>
 

@@ -3,6 +3,9 @@
 	@desc One `classifieds` listing as a card: featured image, categories, title,
 	      price, and posted date, linking to the listing. Every text value is
 	      escaped, because listings are written by the people posting them (UAMS-Web/uams-statamic-archive#2096).
+	      Pass `card_align="left"` to left-align the card's text through its own `card-align-left` class
+	      (UAMS-Web/uams-statamic#1604), as the left-aligned listings do. Without it the
+	      card takes the list's alignment, centered by default.
 #}}
 
 {{# Capture the listing's own url first: the featured-image asset pair below rebinds
@@ -10,7 +13,7 @@
 {{ $listing_url = url }}
 
 <div class="item classified-card">
-	<div class="card h-100">
+	<div class="card h-100{{ if card_align == 'left' }} card-align-left{{ /if }}">
 		{{ featured_image }}
 			<div class="card-img-top">
 				<picture><img src="{{ url }}" alt="{{ alt | entities }}" loading="lazy"></picture>

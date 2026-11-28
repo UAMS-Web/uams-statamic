@@ -14,9 +14,9 @@
 	{{ unless no_results }}
 		<section class="location-list location-child-locations" id="sub-clinics" aria-labelledby="sub-location-title">
 			<h2 id="sub-location-title" data-jump-link="Clinics Within This Location">Additional Clinics Within {{ title | sanitize }}</h2>
-			<div class="card-list card-list-left">
+			<div class="card-list">
 				{{ child_locations }}
-					{{ partial:clinical_locations/card }}
+					{{ partial:clinical_locations/card card_align="left" }}
 				{{ /child_locations }}
 			</div>
 		</section>
