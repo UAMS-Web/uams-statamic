@@ -218,9 +218,9 @@
 					<p class="resources-empty">No clinical resources found.</p>
 				{{ /if }}
 			{{ else }}
-				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+				<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 					{{ resources }}
-						{{ partial:clinical_resources/card }}
+						{{ partial:clinical_resources/card card_align="left" }}
 					{{ /resources }}
 				</div>
 

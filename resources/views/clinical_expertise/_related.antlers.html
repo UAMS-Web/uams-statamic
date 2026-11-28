@@ -53,9 +53,9 @@
 			{{ $resource_count = clinical_resources | count }}
 			<section class="aoe-related-section aoe-related-resources" id="related-resources" aria-labelledby="related-resources-title">
 				<h2 class="aoe-related-title" id="related-resources-title" data-jump-link="Resources">Related Resources</h2>
-				<div class="card-list card-list-left">
+				<div class="card-list">
 					{{ clinical_resources sort="date:desc" limit="4" }}
-						{{ partial:clinical_resources/card }}
+						{{ partial:clinical_resources/card card_align="left" }}
 					{{ /clinical_resources }}
 				</div>
 				{{ if $resource_count > 4 }}

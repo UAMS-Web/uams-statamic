@@ -21,9 +21,9 @@
 			{{ if no_results }}
 				<p class="classifieds-empty">There are no listings on the board right now.</p>
 			{{ else }}
-				<div class="card-list card-list-left classifieds-list">
+				<div class="card-list classifieds-list">
 					{{ listings }}
-						{{ partial:classifieds/card }}
+						{{ partial:classifieds/card card_align="left" }}
 					{{ /listings }}
 				</div>
 

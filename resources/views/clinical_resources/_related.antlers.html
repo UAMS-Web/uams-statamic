@@ -128,9 +128,9 @@
 		{{ elseif $resource_total }}
 			<section class="clinical-resource-related-group clinical-resource-related-resources" aria-labelledby="related-resources-title">
 				<h2 class="h5" id="related-resources-title" data-jump-link="Resources">Related Resources</h2>
-				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+				<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 					{{ clinical_resources }}
-						{{ partial:clinical_resources/card card_heading_level="h3" }}
+						{{ partial:clinical_resources/card card_heading_level="h3" card_align="left" }}
 					{{ /clinical_resources }}
 				</div>
 			</section>

@@ -146,10 +146,10 @@
 						{{ partial:page_builder/components/container_row }}
 							{{ partial:page_builder/components/block_header }}
 							<div class="col-12">
-								<div class="card-list card-list-left">
+								<div class="card-list">
 									{{ news_item }}
 										<div class="item" itemscope itemtype="https://schema.org/NewsArticle">
-											<div class="card">
+											<div class="card card-align-left">
 												{{ if $hide_img != true }}
 													{{ if cover_image_query && featured_image_16_9 }}
 														{{# Capture the featured image credit via scoped `featured_image_16_9:creator` (safe: returns the asset value or null) — NOT a bare `creator` inside the loop below, which falls through to the entry byline array and fatals `strip_tags` (UAMS-Web/uams-statamic-archive#1532). #}}

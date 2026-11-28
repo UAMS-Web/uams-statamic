@@ -170,7 +170,7 @@ it('renders conditions and treatments as link lists, as Find-a-Doc does', functi
 it('renders up to four related resources as cards', function (): void {
     $html = renderResourceRelated(['clinical_resources' => relatedResources(4)]);
 
-    expect(substr_count($html, '<div class="card h-100">'))->toBe(4)
+    expect(substr_count($html, '<div class="card h-100 card-align-left">'))->toBe(4)
         ->and($html)->toContain('Related Resources')
         ->and($html)->toContain('Resource 4')
         ->and($html)->not->toContain('clinical-resource-related-list');
@@ -181,7 +181,7 @@ it('renders more than four related resources as a link list', function (): void 
 
     expect($html)->toContain('class="clinical-resource-related-list"')
         ->and($html)->toContain('<a href="/resources/r-5">Resource 5</a>')
-        ->and($html)->not->toContain('<div class="card h-100">');
+        ->and($html)->not->toContain('<div class="card h-100 card-align-left">');
 });
 
 it('does not let the page resource\'s own introduction fall through into a related resource card', function (): void {

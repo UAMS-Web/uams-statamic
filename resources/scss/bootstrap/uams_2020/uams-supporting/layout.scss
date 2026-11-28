@@ -197,6 +197,13 @@ section.archive-description .entry-content {
             text-align: left;
         }
     }
+
+    // A card's own left alignment (UAMS-Web/uams-statamic#1604), set by a card partial's
+    // `card_align="left"`. Directly after the list-keyed rule above and at its specificity
+    // (0,3,0), so it wins and loses against every other rule exactly as that rule does.
+    .card.card-align-left {
+        text-align: left;
+    }
 }
 
 .module-body {

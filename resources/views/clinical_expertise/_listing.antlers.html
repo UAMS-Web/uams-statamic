@@ -46,11 +46,11 @@
 					<p class="expertise-empty">No areas of expertise found.</p>
 				{{ /if }}
 			{{ else }}
-				<div class="card-list card-list-left" itemscope itemtype="https://schema.org/ItemList">
+				<div class="card-list" itemscope itemtype="https://schema.org/ItemList">
 					{{ areas }}
 						{{# Image-forward card at WP-archive parity: 16:9 featured image (+ fallback),
 						    "Part of {parent}" subtitle, and a CTA link, all sanitized (UAMS-Web/uams-statamic-archive#1467). #}}
-						{{ partial:clinical_expertise/card }}
+						{{ partial:clinical_expertise/card card_align="left" }}
 					{{ /areas }}
 				</div>
 
