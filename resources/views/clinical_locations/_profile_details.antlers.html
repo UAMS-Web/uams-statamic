@@ -107,7 +107,10 @@
 {{# Parking and directions (UAMS-Web/uams-statamic-archive#2389). The same rule: read the `resolved_*` computeds UAMS-Web/uams-statamic-archive#976
 	registered on this collection, which already walk a wing to its building and a child
 	location to its parent. The facility's name comes from `resolved_parking_facility_name`,
-	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172). #}}
+	resolved in PHP, because an `entries:find` lookup tag renders nothing here (UAMS-Web/uams-statamic-archive#3172).
+	The instructions and directions computeds return the stored value, which the Control Panel
+	saves as Bard (ProseMirror) content, so `bard_html` renders it; a value stored as a string
+	passes through unchanged (UAMS-Web/uams-statamic#1599). #}}
 {{ if resolved_parking_facility_name || resolved_parking_instructions || resolved_directions_from_parking }}
 	<section class="location-parking" id="parking-info">
 		<h2 data-jump-link="Parking Information">Parking and Directions</h2>
@@ -115,10 +118,10 @@
 			<p class="location-parking-facility">{{ resolved_parking_facility_name | sanitize }}</p>
 		{{ /if }}
 		{{ if resolved_parking_instructions }}
-			<div class="location-parking-instructions">{{ resolved_parking_instructions }}</div>
+			<div class="location-parking-instructions">{{ resolved_parking_instructions | bard_html }}</div>
 		{{ /if }}
 		{{ if resolved_directions_from_parking }}
-			<div class="location-directions-from-parking">{{ resolved_directions_from_parking }}</div>
+			<div class="location-directions-from-parking">{{ resolved_directions_from_parking | bard_html }}</div>
 		{{ /if }}
 	</section>
 {{ /if }}
