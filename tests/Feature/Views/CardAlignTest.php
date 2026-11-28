@@ -90,5 +90,5 @@ it('styles the card class at the specificity of the list rule, directly after it
 
     expect($listRule)->toBeInt()
         ->and($cardRule)->toBeInt()
-        ->and($cardRule)->toBeGreaterThan($listRule);
+        ->and(is_int($listRule) && is_int($cardRule) && $cardRule > $listRule)->toBeTrue();
 });
