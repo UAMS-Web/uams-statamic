@@ -85,9 +85,9 @@ it('renders every status block for a location that sets them all, and none for a
     expect($full)
         ->toContain('location-closure-banner')
         ->toContain('Parking Garage Closed')
-        ->toContain('<h2>Closing Information</h2>')
+        ->toContain('<h2 data-jump-link="">Closing Information</h2>')
         ->toContain('<h2>After Hours</h2>')
-        ->toContain('<h2>Telemedicine</h2>');
+        ->toContain('<h2 data-jump-link="">Telemedicine</h2>');
 
     $empty = renderLocationStatusBanner([]).renderLocationStatusDetails([]);
 
@@ -217,7 +217,7 @@ it('renders the system alert from the Find-a-Doc Settings global with its color'
 
     expect($html)
         ->toContain('location-alert-danger')
-        ->toContain('<h2 id="location-alert-heading">Masks Required</h2>')
+        ->toContain('<h2 id="location-alert-heading" data-jump-link="">Masks Required</h2>')
         ->toContain('Wear a mask in every clinic.');
 });
 
@@ -228,7 +228,7 @@ it('hides an empty alert heading and defaults the color to warning', function ()
 
     expect($html)
         ->toContain('location-alert-warning')
-        ->toContain('<h2 id="location-alert-heading" class="sr-only">Alert</h2>')
+        ->toContain('<h2 id="location-alert-heading" data-jump-link="" class="sr-only">Alert</h2>')
         ->toContain('Flu shots available.');
 });
 

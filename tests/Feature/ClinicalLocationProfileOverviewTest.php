@@ -97,7 +97,7 @@ it('renders the About section with the lead description, the video and each desc
     ]);
 
     expect($html)->toContain('<section class="location-about" id="description">')
-        ->and($html)->toContain('<h2>About Enterprise Clinic</h2>')
+        ->and($html)->toContain('<h2 data-jump-link="About">About Enterprise Clinic</h2>')
         ->and($html)->toContain('A full-service clinic.')
         ->and($html)->toContain('location-video')
         ->and($html)->toContain('<h3>Our Team</h3>')
@@ -109,7 +109,7 @@ it('renders the About section with the lead description, the video and each desc
 it('renders the About section for any one of its parts alone', function (array $location, string $text): void {
     $html = renderLocationOverview($location);
 
-    expect($html)->toContain('<h2>About Enterprise Clinic</h2>')
+    expect($html)->toContain('<h2 data-jump-link="About">About Enterprise Clinic</h2>')
         ->and($html)->toContain($text);
 })->with([
     'lead description' => [['about' => '<p>A full-service clinic.</p>'], 'A full-service clinic.'],

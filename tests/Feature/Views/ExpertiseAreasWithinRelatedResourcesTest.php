@@ -198,7 +198,7 @@ it('includes the Areas Within partial on the show template', function (): void {
 it('lists related areas of expertise alphabetically with their short description', function (): void {
     $out = renderAreaOfExpertisePartial('clinical_expertise/related', 'aoe-cardiology');
 
-    expect($out)->toContain('<h2 class="aoe-related-title" id="related-expertise-title">Related Areas of Expertise</h2>')
+    expect($out)->toContain('<h2 class="aoe-related-title" id="related-expertise-title" data-jump-link="Related Areas">Related Areas of Expertise</h2>')
         ->and($out)->toContain('>Vascular Surgery</a></h3>')
         ->and($out)->toContain('<p>Care for arteries and veins.</p>')
         ->and(strpos($out, '>Endocrinology</a>'))->toBeLessThan((int) strpos($out, '>Vascular Surgery</a>'));

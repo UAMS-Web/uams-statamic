@@ -6,6 +6,8 @@
 	      (Find-a-Doc collections are not all publicly routed yet). (UAMS-Web/uams-statamic-archive#577)
 	@param entries  An entries-field value (list of related entries).
 	@param heading  The group heading.
+	@param jump_link  Optional link text that lists this group in the page's jump-links nav
+	                  (UAMS-Web/uams-statamic#1575); omit it to leave the group out.
 #}}
 
 {{# A count, not a bare `entries`: a raw augmented relation is a query builder,
@@ -14,7 +16,7 @@
 	a resolved array, and this counts both correctly. #}}
 {{ if entries | count }}
 	<section class="clinical-resource-related-group">
-		<h2 class="h5">{{ heading }}</h2>
+		<h2 class="h5"{{ if jump_link }} data-jump-link="{{ jump_link | sanitize }}"{{ /if }}>{{ heading }}</h2>
 		<ul class="clinical-resource-related-list">
 			{{ entries }}
 				<li>

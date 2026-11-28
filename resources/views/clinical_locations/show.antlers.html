@@ -35,6 +35,11 @@
 		{{# Closure and telemedicine banner, above the rest of the profile (UAMS-Web/uams-statamic#1576). #}}
 		{{ partial:clinical_locations/status_banner }}
 
+		{{# The "On this page" nav (UAMS-Web/uams-statamic#1575): the tag lists the sections below
+			whose heading carries `data-jump-link`, once at least two rendered, and places the nav
+			at the marker, after the map, where Find-a-Doc's sits below the page header. #}}
+		{{ jump_links }}
+
 		{{# Lead description. #}}
 		{{ if short_desc }}
 			<div class="location-lead" itemprop="https://schema.org/description">{{ short_desc }}</div>
@@ -53,6 +58,8 @@
 				{{ partial:map :coordinate="resolved_map" :label="title" height="360" }}
 			</section>
 		{{ /if }}
+
+		<!--jump-links-->
 
 		{{# Get Directions and parking links, the photo gallery and the About section (UAMS-Web/uams-statamic#1578). #}}
 		{{ partial:clinical_locations/profile_overview }}
@@ -86,12 +93,13 @@
 			computed, and `clinical_provider_eligible` returns an array. #}}
 		{{ if ( expertise | count ) || ( implied_conditions | length ) || ( implied_services | length ) || ( eligible_providers | length ) || ( clinical_resources | count ) }}
 			<aside class="location-related" aria-label="Related">
-				{{ partial:clinical_resources/related_list :entries="eligible_providers" heading="Providers at This Location" }}
-				{{ partial:clinical_resources/related_list :entries="expertise" heading="Areas of Expertise" }}
-				{{ partial:clinical_resources/related_list :entries="implied_conditions" heading="Conditions" }}
-				{{ partial:clinical_resources/related_list :entries="implied_services" heading="Treatments" }}
-				{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Clinical Resources" }}
+				{{ partial:clinical_resources/related_list :entries="eligible_providers" heading="Providers at This Location" jump_link="Providers" }}
+				{{ partial:clinical_resources/related_list :entries="expertise" heading="Areas of Expertise" jump_link="Areas of Expertise" }}
+				{{ partial:clinical_resources/related_list :entries="implied_conditions" heading="Conditions" jump_link="Conditions" }}
+				{{ partial:clinical_resources/related_list :entries="implied_services" heading="Treatments" jump_link="Treatments & Procedures" }}
+				{{ partial:clinical_resources/related_list :entries="clinical_resources" heading="Clinical Resources" jump_link="Resources" }}
 			</aside>
 		{{ /if }}
+		{{ /jump_links }}
 	{{ /partial:layout/entry-content }}
 {{ /partial:layout/article }}

@@ -99,12 +99,17 @@
 			</p>
 		{{ /if }}
 
+		{{# The "On this page" nav (UAMS-Web/uams-statamic#1575), after the resource body as on
+			Find-a-Doc: the tag lists the related sections and the appointment band below, once at
+			least two rendered, and puts the nav before them. #}}
+		{{ jump_links }}
 		{{# Related Find-a-Doc entities (providers, locations, expertise, …). #}}
 		{{ partial:clinical_resources/related }}
 
 		{{# Default "Make an Appointment" band (UAMS-Web/uams-statamic#1584). Provider Spotlight
 			resources take the branch above, which carries its own call to action. #}}
 		{{ partial:clinical_resources/appointment }}
+		{{ /jump_links }}
 	{{ /partial:layout/entry-content }}
 	{{ /if }}
 {{ /partial:layout/article }}

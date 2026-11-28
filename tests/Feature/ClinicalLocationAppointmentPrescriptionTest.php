@@ -58,7 +58,7 @@ function appointmentSectionOutline(string $html): array
     if (preg_match('~<section class="location-appointment-info".*?</section>~s', $html, $section) !== 1) {
         return [];
     }
-    preg_match_all('~<(h[23])>([^<]*)</h[23]>|class="location-appointment-(setup|bring|expect)"~', $section[0], $matches, PREG_SET_ORDER);
+    preg_match_all('~<(h[23])\b[^>]*>([^<]*)</h[23]>|class="location-appointment-(setup|bring|expect)"~', $section[0], $matches, PREG_SET_ORDER);
 
     return array_map(
         static fn (array $match): string => ($match[3] ?? '') !== '' ? 'body:'.$match[3] : ($match[1] ?? '').':'.($match[2] ?? ''),
@@ -166,7 +166,7 @@ it('renders the prescription text the type selects', function (?string $type, st
     $html = renderLocationAppointmentDetails($location);
 
     expect($html)->toContain('<section class="location-prescription-info" id="prescription-info">')
-        ->toContain('<h2>Prescription Information</h2>')
+        ->toContain('<h2 data-jump-link="">Prescription Information</h2>')
         ->toContain($text);
     foreach (['Refills are handled by the front desk.', 'Call the clinic for refills.', 'Call your pharmacy for refills.'] as $other) {
         if ($other !== $text) {
