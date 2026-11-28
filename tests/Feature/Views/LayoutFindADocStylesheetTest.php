@@ -74,6 +74,19 @@ function layoutFadRecordingVite(ArrayObject $log): LaravelVite
 
             return new HtmlString('');
         }
+
+        /**
+         * Return the asset path unresolved, so the layout's `vite_asset` font preloads need no
+         * build manifest, which CI does not have.
+         *
+         * @param  string  $asset  The source asset path.
+         * @param  string|null  $buildDirectory  The build directory, unused.
+         * @return string The path as given.
+         */
+        public function asset($asset, $buildDirectory = null): string
+        {
+            return $asset;
+        }
     };
 }
 
