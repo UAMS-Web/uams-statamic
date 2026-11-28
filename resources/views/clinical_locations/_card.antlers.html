@@ -9,6 +9,9 @@
 	      anchor; the region / location-type facet attributes are added by UAMS-Web/uams-statamic-archive#1242,
 	      which verifies the augmented term shapes against real content (the
 	      collections are empty today). Expects one location entry in scope.
+	      Pass `card_class` to append a class to the `div.card`, as the related-locations
+	      section of a clinical resource page does with `location-card` (UAMS-Web/uams-statamic#1602);
+	      without it the card's class is `card h-100` alone.
 
 	      The whole-card `stretched-link` was dropped in UAMS-Web/uams-statamic-archive#1465: the card is now
 	      multi-action (View / Call / Get Directions), and a stretched overlay would
@@ -38,7 +41,7 @@
 {{ $card_phone = $shared_number ? $shared_number : ( phone_appointment_new ? phone_appointment_new : phone ) }}
 
 <div class="item" itemscope itemtype="https://schema.org/MedicalClinic"{{ if fad_facet }} data-id="{{ id }}"{{ /if }}>
-	<div class="card h-100">
+	<div class="card h-100{{ if card_class }} {{ card_class | sanitize }}{{ /if }}">
 		{{ if featured_image }}
 			{{ featured_image }}
 				<div class="card-img-top">
